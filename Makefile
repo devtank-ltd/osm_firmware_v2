@@ -70,4 +70,12 @@ flash: $(TARGET_HEX)
 clean:
 	rm -rf $(BUILD_DIR)
 
+
+debug: $(TARGET_HEX)
+	xterm -e openocd -f board/st_nucleo_f0.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init" & \
+	pid=$$!; \
+	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF); \
+	kill -9 $$pid
+
+
 -include $(DEPS)
