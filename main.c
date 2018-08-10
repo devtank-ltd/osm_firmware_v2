@@ -6,6 +6,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
+#include <libopencm3/cm3/nvic.h>
 
 
 static void
@@ -21,10 +22,13 @@ uart_setup(void) {
     usart_set_baudrate( USART2, 115200 );
     usart_set_databits( USART2, 8 );
     usart_set_stopbits( USART2, USART_CR2_STOPBITS_1 );
-    usart_set_mode( USART2, USART_MODE_TX );
+    usart_set_mode( USART2, USART_MODE_TX_RX );
     usart_set_parity( USART2, USART_PARITY_NONE );
     usart_set_flow_control( USART2, USART_FLOWCONTROL_NONE );
+
+    nvic_enable_irq(NVIC_USART2_IRQ);
     usart_enable(USART2);
+    usart_enable_rx_interrupt(USART2);
 }
 
 
@@ -37,6 +41,15 @@ static void uart_send(const char * str)
     usart_send_blocking(USART2, '\r');
 }
 
+
+void
+usart2_isr(void) {
+    usart_wait_recv_ready(USART2);
+
+    char ping[4] = {'-', usart_recv(USART2), '-', 0};
+
+    uart_send(ping);
+}
 
 
 static void flash_led(unsigned delay) {

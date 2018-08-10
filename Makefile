@@ -78,4 +78,8 @@ debug: $(TARGET_HEX)
 	kill -9 $$pid
 
 
+output:
+	screen /dev/ttyACM0 115200 8n1
+
+
 -include $(DEPS)
