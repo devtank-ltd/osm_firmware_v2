@@ -30,6 +30,7 @@ SOURCES += main.c \
            libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM0/port.c \
            libs/freertos/FreeRTOS/Source/portable/MemMang/heap_1.c \
            libs/freertos/FreeRTOS/Source/list.c \
+           libs/freertos/FreeRTOS/Source/queue.c \
            libs/freertos/FreeRTOS/Source/tasks.c
 
 BUILD_DIR := build/

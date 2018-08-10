@@ -2,11 +2,14 @@
 
 #include <FreeRTOS.h>
 #include <task.h>
+#include <queue.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
+
+static QueueHandle_t uart_txq;
 
 
 static void
@@ -52,9 +55,32 @@ usart2_isr(void) {
 }
 
 
+
+static void
+uart_task(void *args __attribute((unused))) {
+    uart_send("uart_task");
+    for(;;) {
+        char ch;
+        if ( xQueueReceive(uart_txq, &ch, 10) == pdPASS ) {
+            usart_send_blocking(USART2, ch);
+        }
+        uart_send("[");
+    }
+}
+
+
+static inline void
+log_msg(const char *s) {
+    for ( ; *s; ++s )
+        xQueueSend(uart_txq,s,portMAX_DELAY);
+    xQueueSend(uart_txq,"\n",portMAX_DELAY);
+    xQueueSend(uart_txq,"\r",portMAX_DELAY);
+}
+
 static void
 task1(void *args __attribute((unused))) {
 
+    uart_send("task1");
     for (;;) {
         gpio_toggle(GPIOA, GPIO5);
         vTaskDelay(pdMS_TO_TICKS(500)); //NOT EVEN PAUSING
@@ -69,9 +95,13 @@ int main(void)
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     uart_setup();
 
-    uart_send("hello");
+    uart_txq = xQueueCreate(32,sizeof(char));
 
-    xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-1,NULL);
+    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL); /* Highest priority */
+    xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
+
+    log_msg("log_out");
+
     vTaskStartScheduler();
 
     return 0;
