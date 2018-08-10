@@ -86,7 +86,9 @@ task1(void *args __attribute((unused))) {
     log_msg("task1");
     for (;;) {
         gpio_toggle(GPIOA, GPIO5);
-        vTaskDelay(pdMS_TO_TICKS(500)); /* NOT EVEN PAUSING */
+        log_msg("pre");
+        vTaskDelay(pdMS_TO_TICKS(500)); /* NEVER RETURNS..... */
+        log_msg("post");
     }
 }
 
