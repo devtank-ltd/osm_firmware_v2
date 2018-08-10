@@ -7,7 +7,6 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
-#include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/nvic.h>
 
 static QueueHandle_t uart_txq;
@@ -78,23 +77,12 @@ task1(void *args __attribute((unused))) {
     }
 }
 
-extern void xPortSysTickHandler(void);
-
-void sys_tick_handler(void)
-{
-    xPortSysTickHandler();
-    log_msg("tick");
-}
-
 
 int main(void) {
     rcc_clock_setup_in_hse_8mhz_out_48mhz();
     rcc_periph_clock_enable(RCC_GPIOA);
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     uart_setup();
-
-    systick_interrupt_enable();
-    systick_counter_enable();
 
     uart_txq = xQueueCreate(32,sizeof(char));
 
