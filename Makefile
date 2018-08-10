@@ -44,12 +44,11 @@ TARGET_HEX = $(TARGET_ELF:%.elf=%.hex)
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32f0.a
 
 
-default: $(TARGET_HEX)
+default: $(TARGET_ELF)
 
-$(TARGET_HEX): $(TARGET_ELF)
-	$(OBJCOPY) -Oihex $(TARGET_ELF) $(TARGET_HEX)
+$(BUILD_DIR)main.o : $(LIBOPENCM3)
 
-$(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT) $(LIBOPENCM3)
+$(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
 	$(CC) $(OBJECTS) $(LINK_FLAGS) -o $(TARGET_ELF)
 
 $(OBJECTS): $(BUILD_DIR)%.o: %.c
@@ -59,12 +58,12 @@ $(OBJECTS): $(BUILD_DIR)%.o: %.c
 $(LIBOPENCM3) :
 	$(MAKE) -C libs/libopencm3 TARGETS=stm32/f0
 
-flash: $(TARGET_HEX)
+flash: $(TARGET_ELF)
 
 	openocd -f interface/stlink-v2-1.cfg \
 		    -f target/stm32f0x.cfg \
 		    -c "init" -c "reset init" \
-		    -c "flash write_image erase $(TARGET_HEX)" \
+		    -c "flash write_image erase $(TARGET_ELF)" \
 		    -c "reset" \
 		    -c "shutdown"
 
