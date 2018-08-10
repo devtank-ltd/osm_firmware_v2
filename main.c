@@ -28,6 +28,16 @@ vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
 }
 
 
+static void raw_log_msg(const char * str)
+{
+    while(*str)
+        usart_send_blocking(USART2, *str++);
+
+    usart_send_blocking(USART2, '\n');
+    usart_send_blocking(USART2, '\r');
+}
+
+
 void pend_sv_handler(void) {
     xPortPendSVHandler();
 }
@@ -58,9 +68,7 @@ uart_setup(void) {
     usart_enable_rx_interrupt(USART2);
 }
 
-//#define ASYNC_LOG
 
-#ifdef ASYNC_LOG
 static inline void
 log_msg(const char *s) {
     for ( ; *s; ++s )
@@ -68,16 +76,7 @@ log_msg(const char *s) {
     xQueueSend(uart_txq,"\n",portMAX_DELAY);
     xQueueSend(uart_txq,"\r",portMAX_DELAY);
 }
-#else
-static void log_msg(const char * str)
-{
-    while(*str)
-        usart_send_blocking(USART2, *str++);
 
-    usart_send_blocking(USART2, '\n');
-    usart_send_blocking(USART2, '\r');
-}
-#endif
 
 void
 usart2_isr(void) {
@@ -102,19 +101,15 @@ uart_task(void *args __attribute((unused))) {
 }
 
 
-
 static void
-task1(void *args __attribute((unused))) {
-    log_msg("task1");
+blink_task(void *args __attribute((unused))) {
+    log_msg("blink_task");
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     for (;;) {
         gpio_toggle(GPIOA, GPIO5);
-        for(unsigned n = 0; n < 1000000; n++)
-            asm("nop");
-        log_msg("flash");
-        /*log_msg("pre");
+        log_msg("flash-pre");
         vTaskDelay(pdMS_TO_TICKS(500));
-        log_msg("post");*/
+        log_msg("flash-post");
     }
 }
 
@@ -129,10 +124,10 @@ int main(void) {
     systick_interrupt_enable();
     systick_counter_enable();
 
-    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL);
-    xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
+    raw_log_msg("----start----");
 
-    log_msg("log_out");
+    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL);
+    xTaskCreate(blink_task,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
 
     vTaskStartScheduler();
 
