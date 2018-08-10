@@ -16,13 +16,24 @@ static QueueHandle_t uart_txq;
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
 
+void
+vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
+    (void)pxTask;
+    (void)pcTaskName;
+    while(true) {
+        for(unsigned n = 0; n < 1000000; n++)
+            asm("nop");
+        gpio_toggle(GPIOA, GPIO5);
+    }
+}
+
 
 void pend_sv_handler(void) {
-	xPortPendSVHandler();
+    xPortPendSVHandler();
 }
 
 void sys_tick_handler(void) {
-	xPortSysTickHandler();
+    xPortSysTickHandler();
 }
 
 static void
