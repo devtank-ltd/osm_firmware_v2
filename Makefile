@@ -38,20 +38,16 @@ PROJECT_NAME := test
 OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)%.o)
 DEPS = $(SOURCES:%.c=$(BUILD_DIR)%.d)
 TARGET_ELF = $(BUILD_DIR)$(PROJECT_NAME).elf
-TARGET_BIN = $(TARGET_ELF:%.elf=%.bin)
 TARGET_HEX = $(TARGET_ELF:%.elf=%.hex)
 
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32f0.a
 
 
-default: $(TARGET_BIN)
-
-$(TARGET_BIN): $(TARGET_ELF)
-	$(OBJCOPY) -Obinary $(TARGET_ELF) $(TARGET_BIN)
+default: $(TARGET_HEX)
 
 $(TARGET_HEX): $(TARGET_ELF)
 	$(OBJCOPY) -Oihex $(TARGET_ELF) $(TARGET_HEX)
-	
+
 $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT) $(LIBOPENCM3)
 	$(CC) $(OBJECTS) $(LINK_FLAGS) -o $(TARGET_ELF)
 
