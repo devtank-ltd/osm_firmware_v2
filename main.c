@@ -58,7 +58,9 @@ uart_setup(void) {
     usart_enable_rx_interrupt(USART2);
 }
 
+//#define ASYNC_LOG
 
+#ifdef ASYNC_LOG
 static inline void
 log_msg(const char *s) {
     for ( ; *s; ++s )
@@ -66,7 +68,16 @@ log_msg(const char *s) {
     xQueueSend(uart_txq,"\n",portMAX_DELAY);
     xQueueSend(uart_txq,"\r",portMAX_DELAY);
 }
+#else
+static void log_msg(const char * str)
+{
+    while(*str)
+        usart_send_blocking(USART2, *str++);
 
+    usart_send_blocking(USART2, '\n');
+    usart_send_blocking(USART2, '\r');
+}
+#endif
 
 void
 usart2_isr(void) {
@@ -95,20 +106,23 @@ uart_task(void *args __attribute((unused))) {
 static void
 task1(void *args __attribute((unused))) {
     log_msg("task1");
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     for (;;) {
         gpio_toggle(GPIOA, GPIO5);
-        log_msg("pre");
-        vTaskDelay(pdMS_TO_TICKS(500)); /* NEVER RETURNS..... */
-        log_msg("post");
+        for(unsigned n = 0; n < 1000000; n++)
+            asm("nop");
+        log_msg("flash");
+        /*log_msg("pre");
+        vTaskDelay(pdMS_TO_TICKS(500));
+        log_msg("post");*/
     }
 }
 
 
 int main(void) {
     rcc_clock_setup_in_hse_8mhz_out_48mhz();
-    rcc_periph_clock_enable(RCC_GPIOA);
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     uart_setup();
+    rcc_periph_clock_enable(RCC_GPIOA);
 
     uart_txq = xQueueCreate(32,sizeof(char));
 
