@@ -102,7 +102,7 @@ int main(void) {
     systick_interrupt_enable();
     systick_counter_enable();
 
-    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL); /* Only one task is done. */
+    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL);
     xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
 
     log_msg("log_out");
