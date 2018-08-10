@@ -35,13 +35,12 @@ uart_setup(void) {
 }
 
 
-static void uart_send(const char * str)
-{
-    while(*str)
-        usart_send_blocking(USART2, *str++);
-
-    usart_send_blocking(USART2, '\n');
-    usart_send_blocking(USART2, '\r');
+static inline void
+log_msg(const char *s) {
+    for ( ; *s; ++s )
+        xQueueSend(uart_txq,s,portMAX_DELAY);
+    xQueueSend(uart_txq,"\n",portMAX_DELAY);
+    xQueueSend(uart_txq,"\r",portMAX_DELAY);
 }
 
 
@@ -51,45 +50,35 @@ usart2_isr(void) {
 
     char ping[4] = {'-', usart_recv(USART2), '-', 0};
 
-    uart_send(ping);
+    log_msg(ping);
 }
 
 
 
 static void
 uart_task(void *args __attribute((unused))) {
-    uart_send("uart_task");
+    log_msg("uart_task");
     for(;;) {
         char ch;
         if ( xQueueReceive(uart_txq, &ch, 10) == pdPASS ) {
             usart_send_blocking(USART2, ch);
         }
-        uart_send("[");
     }
 }
 
 
-static inline void
-log_msg(const char *s) {
-    for ( ; *s; ++s )
-        xQueueSend(uart_txq,s,portMAX_DELAY);
-    xQueueSend(uart_txq,"\n",portMAX_DELAY);
-    xQueueSend(uart_txq,"\r",portMAX_DELAY);
-}
 
 static void
 task1(void *args __attribute((unused))) {
-
-    uart_send("task1");
+    log_msg("task1");
     for (;;) {
         gpio_toggle(GPIOA, GPIO5);
-        vTaskDelay(pdMS_TO_TICKS(500)); //NOT EVEN PAUSING
-        uart_send("loop");
+        vTaskDelay(pdMS_TO_TICKS(500)); /* NOT EVEN PAUSING */
     }
 }
 
-int main(void)
-{
+
+int main(void) {
     rcc_clock_setup_in_hse_8mhz_out_48mhz();
     rcc_periph_clock_enable(RCC_GPIOA);
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
@@ -97,7 +86,7 @@ int main(void)
 
     uart_txq = xQueueCreate(32,sizeof(char));
 
-    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL); /* Highest priority */
+    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL); /* Only one task is done. */
     xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
 
     log_msg("log_out");
