@@ -52,20 +52,12 @@ usart2_isr(void) {
 }
 
 
-static void flash_led(unsigned delay) {
-    for(unsigned n = 0; n < delay; n++)
-        asm("nop");
-    gpio_toggle(GPIOA, GPIO5);
-}
-
-
 static void
 task1(void *args __attribute((unused))) {
 
     for (;;) {
-        flash_led(1000000);
-        vTaskDelay(500);
-        flash_led(1000000);
+        gpio_toggle(GPIOA, GPIO5);
+        vTaskDelay(pdMS_TO_TICKS(500)); //NOT EVEN PAUSING
         uart_send("loop");
     }
 }
