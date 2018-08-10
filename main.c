@@ -8,9 +8,22 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/systick.h>
 
 static QueueHandle_t uart_txq;
 
+
+extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
+extern void xPortSysTickHandler( void );
+
+
+void pend_sv_handler(void) {
+	xPortPendSVHandler();
+}
+
+void sys_tick_handler(void) {
+	xPortSysTickHandler();
+}
 
 static void
 uart_setup(void) {
@@ -85,6 +98,9 @@ int main(void) {
     uart_setup();
 
     uart_txq = xQueueCreate(32,sizeof(char));
+
+    systick_interrupt_enable();
+    systick_counter_enable();
 
     xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL); /* Only one task is done. */
     xTaskCreate(task1,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
