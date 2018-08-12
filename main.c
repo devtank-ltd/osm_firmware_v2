@@ -16,10 +16,21 @@ static QueueHandle_t uart_txq;
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
 
+
+extern void raw_log_msg(const char * str)
+{
+    while(*str)
+        usart_send_blocking(USART2, *str++);
+
+    usart_send_blocking(USART2, '\n');
+    usart_send_blocking(USART2, '\r');
+}
+
 void
 vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
     (void)pxTask;
     (void)pcTaskName;
+    raw_log_msg("----big fat FreeRTOS crash -----");
     while(true) {
         for(unsigned n = 0; n < 1000000; n++)
             asm("nop");
@@ -28,13 +39,10 @@ vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
 }
 
 
-static void raw_log_msg(const char * str)
+void hard_fault_handler(void)
 {
-    while(*str)
-        usart_send_blocking(USART2, *str++);
-
-    usart_send_blocking(USART2, '\n');
-    usart_send_blocking(USART2, '\r');
+    raw_log_msg("----big fat libopen3 crash -----");
+    while(true);
 }
 
 
