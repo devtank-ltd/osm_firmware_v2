@@ -102,7 +102,7 @@ uart_task(void *args __attribute((unused))) {
     log_msg("uart_task");
     for(;;) {
         char ch;
-        if ( xQueueReceive(uart_txq, &ch, 10) == pdPASS ) {
+        if ( xQueueReceive(uart_txq, &ch, portMAX_DELAY) == pdPASS ) {
             usart_send_blocking(USART2, ch);
         }
     }
