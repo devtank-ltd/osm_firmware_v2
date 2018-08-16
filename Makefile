@@ -71,13 +71,13 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 
-debug_mon: $(TARGET_HEX)
+debug_mon: $(TARGET_ELF)
 	openocd -f board/st_nucleo_f0.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
-debug_gdb: $(TARGET_HEX)
+debug_gdb: $(TARGET_ELF)
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF);
 
-debug: $(TARGET_HEX)
+debug: $(TARGET_ELF)
 	xterm -e openocd -f board/st_nucleo_f0.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init" & \
 	pid=$$!; \
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF); \
