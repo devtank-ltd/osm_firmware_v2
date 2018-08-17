@@ -90,9 +90,11 @@ void
 usart2_isr(void) {
     usart_wait_recv_ready(USART2);
 
-    char ping[4] = {'-', usart_recv(USART2), '-', 0};
+    char c = usart_recv(USART2);
 
-    log_msg(ping);
+    xQueueSendFromISR(uart_txq, &c, NULL);
+    xQueueSendFromISR(uart_txq,"\n",NULL);
+    xQueueSendFromISR(uart_txq,"\r",NULL);
 }
 
 
