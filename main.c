@@ -10,6 +10,8 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
+#define MAX_LINELEN 32
+
 static QueueHandle_t uart_txq;
 
 
@@ -17,10 +19,10 @@ extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
 
 
-extern void raw_log_msg(const char * str)
-{
-    while(*str)
-        usart_send_blocking(USART2, *str++);
+extern void raw_log_msg(const char * s) {
+
+    for (unsigned n = 0; *s && n < MAX_LINELEN; n++)
+        usart_send_blocking(USART2, *s++);
 
     usart_send_blocking(USART2, '\n');
     usart_send_blocking(USART2, '\r');
@@ -79,10 +81,19 @@ uart_setup(void) {
 
 static inline void
 log_msg(const char *s) {
-    for ( ; *s; ++s )
-        xQueueSend(uart_txq,s,portMAX_DELAY);
-    xQueueSend(uart_txq,"\n",portMAX_DELAY);
-    xQueueSend(uart_txq,"\r",portMAX_DELAY);
+
+    char tmp[MAX_LINELEN];
+
+    for (unsigned n = 0; n < MAX_LINELEN; n++) {
+        if (*s)
+            tmp[n] = *s++;
+        else {
+            tmp[n] = 0;
+            break;
+        }
+    }
+
+    xQueueSend(uart_txq, tmp, portMAX_DELAY);
 }
 
 
@@ -92,9 +103,7 @@ usart2_isr(void) {
 
     char c = usart_recv(USART2);
 
-    xQueueSendFromISR(uart_txq, &c, NULL);
-    xQueueSendFromISR(uart_txq,"\n",NULL);
-    xQueueSendFromISR(uart_txq,"\r",NULL);
+    c = c;
 }
 
 
@@ -103,9 +112,9 @@ static void
 uart_task(void *args __attribute((unused))) {
     log_msg("uart_task");
     for(;;) {
-        char ch;
-        if ( xQueueReceive(uart_txq, &ch, portMAX_DELAY) == pdPASS ) {
-            usart_send_blocking(USART2, ch);
+        char tmp[MAX_LINELEN];
+        if ( xQueueReceive(uart_txq, tmp, portMAX_DELAY) == pdPASS ) {
+            raw_log_msg(tmp);
         }
     }
 }
@@ -129,7 +138,7 @@ int main(void) {
     uart_setup();
     rcc_periph_clock_enable(RCC_GPIOA);
 
-    uart_txq = xQueueCreate(32,sizeof(char));
+    uart_txq = xQueueCreate(4,16);
 
     systick_interrupt_enable();
     systick_counter_enable();
