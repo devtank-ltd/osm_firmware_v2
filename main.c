@@ -12,6 +12,7 @@
 
 #define MAX_LINELEN 32
 
+static TaskHandle_t h_blinky = 0;
 static QueueHandle_t uart_txq;
 
 
@@ -104,18 +105,21 @@ log_msg(const char *s) {
 
 void
 usart2_isr(void) {
+    BaseType_t woken = pdFALSE;
     usart_wait_recv_ready(USART2);
 
     char c = usart_recv(USART2);
 
-    if (!rx_ready)
-    {
+    if (!rx_ready) {
         if (c != '\n' && c != '\r' && rx_buffer_len < MAX_LINELEN - 1) {
             rx_buffer[rx_buffer_len++] = c;
         }
         else {
             rx_buffer[rx_buffer_len++] = 0;
             rx_ready = true;
+
+            vTaskNotifyGiveFromISR(h_blinky,&woken);
+            portYIELD_FROM_ISR(woken);
         }
     }
 }
@@ -140,9 +144,7 @@ blink_task(void *args __attribute((unused))) {
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     for (;;) {
         gpio_toggle(GPIOA, GPIO5);
-        log_msg("flash-pre");
-        vTaskDelay(pdMS_TO_TICKS(500));
-        log_msg("flash-post");
+        ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS(500));
         if (rx_ready)
         {
             log_msg(rx_buffer);
@@ -166,7 +168,7 @@ int main(void) {
     raw_log_msg("----start----");
 
     xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL);
-    xTaskCreate(blink_task,"LED",100,NULL,configMAX_PRIORITIES-2,NULL);
+    xTaskCreate(blink_task,"LED",100,NULL,configMAX_PRIORITIES-2,&h_blinky);
 
     vTaskStartScheduler();
 
