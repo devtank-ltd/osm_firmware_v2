@@ -38,11 +38,7 @@ vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
     (void)pxTask;
     (void)pcTaskName;
     raw_log_msg("----big fat FreeRTOS crash -----");
-    while(true) {
-        for(unsigned n = 0; n < 1000000; n++)
-            asm("nop");
-        gpio_toggle(GPIOA, GPIO5);
-    }
+    while(true);
 }
 
 
