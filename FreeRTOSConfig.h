@@ -117,10 +117,19 @@ to exclude the API function. */
 #define INCLUDE_vTaskDelayUntil		0
 #define INCLUDE_vTaskDelay		1
 
-/* This is the value being used as per the ST library which permits 16
-priority values, 0 to 15.  This must correspond to the
-configKERNEL_INTERRUPT_PRIORITY setting.  Here 15 corresponds to the lowest
-NVIC value of 255. */
-#define configLIBRARY_KERNEL_INTERRUPT_PRIORITY	15
+/* Use the system definition, if there is one */
+#ifdef __NVIC_PRIO_BITS
+	#define configPRIO_BITS       __NVIC_PRIO_BITS
+#else
+	#define configPRIO_BITS       5        /* 32 priority levels */
+#endif
+
+// CM0 has 2 bits for priority as for implementation
+// 0 is highest - 3 is lowest
+// assign priority 3 for the kernel
+// reserve priority 2 for ISRs within the kernel (allowed to make API calls)
+// reserve priority 0 and 1 for non-OS ISRs
+#define configKERNEL_INTERRUPT_PRIORITY			3 //  (3 << (8 - __NVIC_PRIO_BITS))
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY	2 // (2 << (8 - __NVIC_PRIO_BITS))
 
 #endif /* FREERTOS_CONFIG_H */

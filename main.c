@@ -15,6 +15,10 @@
 static QueueHandle_t uart_txq;
 
 
+static char rx_buffer[MAX_LINELEN];
+static unsigned rx_buffer_len = 0;
+static bool rx_ready =false;
+
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
 
@@ -74,6 +78,7 @@ uart_setup(void) {
     usart_set_flow_control( USART2, USART_FLOWCONTROL_NONE );
 
     nvic_enable_irq(NVIC_USART2_IRQ);
+    nvic_set_priority(NVIC_USART2_IRQ, 2);
     usart_enable(USART2);
     usart_enable_rx_interrupt(USART2);
 }
@@ -103,7 +108,16 @@ usart2_isr(void) {
 
     char c = usart_recv(USART2);
 
-    c = c;
+    if (!rx_ready)
+    {
+        if (c != '\n' && c != '\r' && rx_buffer_len < MAX_LINELEN - 1) {
+            rx_buffer[rx_buffer_len++] = c;
+        }
+        else {
+            rx_buffer[rx_buffer_len++] = 0;
+            rx_ready = true;
+        }
+    }
 }
 
 
@@ -129,6 +143,12 @@ blink_task(void *args __attribute((unused))) {
         log_msg("flash-pre");
         vTaskDelay(pdMS_TO_TICKS(500));
         log_msg("flash-post");
+        if (rx_ready)
+        {
+            log_msg(rx_buffer);
+            rx_buffer_len = 0;
+            rx_ready = false;
+        }
     }
 }
 
