@@ -138,7 +138,7 @@ int main(void) {
     uart_setup();
     rcc_periph_clock_enable(RCC_GPIOA);
 
-    uart_txq = xQueueCreate(4,16);
+    uart_txq = xQueueCreate(4,MAX_LINELEN);
 
     systick_interrupt_enable();
     systick_counter_enable();
