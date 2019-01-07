@@ -74,8 +74,8 @@ uart_setup(void) {
     usart_set_parity( USART2, USART_PARITY_NONE );
     usart_set_flow_control( USART2, USART_FLOWCONTROL_NONE );
 
-    nvic_enable_irq(NVIC_USART2_IRQ);
-    nvic_set_priority(NVIC_USART2_IRQ, 2);
+    nvic_enable_irq(NVIC_USART1_EXTI25_IRQ);
+    nvic_set_priority(NVIC_USART1_EXTI25_IRQ, 2);
     usart_enable(USART2);
     usart_enable_rx_interrupt(USART2);
 }
@@ -152,7 +152,7 @@ blink_task(void *args __attribute((unused))) {
 
 
 int main(void) {
-    rcc_clock_setup_in_hsi_out_48mhz();
+    rcc_clock_setup_hsi(&rcc_hsi_configs[RCC_CLOCK_HSI_48MHZ]);
     uart_setup();
     rcc_periph_clock_enable(RCC_GPIOA);
 
