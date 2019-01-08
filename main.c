@@ -20,8 +20,9 @@ extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
 
 
-void
-vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
+void vApplicationStackOverflowHook(xTaskHandle *pxTask,
+                                   signed portCHAR *pcTaskName)
+{
     (void)pxTask;
     (void)pcTaskName;
     platform_raw_msg("----big fat FreeRTOS crash -----");
@@ -36,17 +37,21 @@ void hard_fault_handler(void)
 }
 
 
-void pend_sv_handler(void) {
+void pend_sv_handler(void)
+{
     xPortPendSVHandler();
 }
 
-void sys_tick_handler(void) {
+
+void sys_tick_handler(void)
+{
     xPortSysTickHandler();
 }
 
-static void
-uart_setup(void) {
 
+static void
+uart_setup(void)
+{
     rcc_periph_clock_enable(RCC_GPIOA);
     rcc_periph_clock_enable(RCC_USART2);
 
