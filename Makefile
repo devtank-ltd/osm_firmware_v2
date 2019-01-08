@@ -88,7 +88,7 @@ debug: $(TARGET_ELF)
 
 
 output:
-	screen /dev/ttyACM0 115200 8n1
+	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
 
 
 -include $(DEPS)

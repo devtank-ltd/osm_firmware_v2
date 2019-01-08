@@ -56,8 +56,7 @@ uart_setup(void)
     rcc_periph_clock_enable(RCC_USART2);
 
     gpio_mode_setup( GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO2 | GPIO3 );
-    gpio_set_af( GPIOA, GPIO_AF1, GPIO2 | GPIO3 );
-    gpio_set_output_options( GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_25MHZ, GPIO2 | GPIO3 );
+    gpio_set_af( GPIOA, GPIO_AF7, GPIO2 | GPIO3 );
 
     usart_set_baudrate( USART2, 115200 );
     usart_set_databits( USART2, 8 );
@@ -84,10 +83,10 @@ usart2_isr(void)
 }
 
 
-int main(void) {
+int main(void)
+{
     rcc_clock_setup_hsi(&rcc_hsi_configs[RCC_CLOCK_HSI_48MHZ]);
     uart_setup();
-    rcc_periph_clock_enable(RCC_GPIOA);
 
     systick_interrupt_enable();
     systick_counter_enable();
