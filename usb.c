@@ -10,6 +10,8 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 
+#include "cmd.h"
+
 
 #define USB_COM1_END_ADDR   0x83
 #define USB_DATAR1_END_ADDR 0x01
@@ -400,6 +402,15 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
 
     if (!len)
         return;
+
+    if (end_point == USB_DATAR1_END_ADDR)
+    {
+        for(int n = 0; n < len; n++)
+            cmds_add_char(buf[n]);
+    }
+    else
+    {
+    }
 }
 
 

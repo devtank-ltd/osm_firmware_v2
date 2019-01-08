@@ -10,41 +10,27 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
-#define MAX_LINELEN 32
-
-static TaskHandle_t h_blinky = 0;
-static QueueHandle_t uart_txq;
+#include "cmd.h"
+#include "log.h"
 
 
-static char rx_buffer[MAX_LINELEN];
-static unsigned rx_buffer_len = 0;
-static bool rx_ready =false;
 
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
 
 
-extern void raw_log_msg(const char * s) {
-
-    for (unsigned n = 0; *s && n < MAX_LINELEN; n++)
-        usart_send_blocking(USART2, *s++);
-
-    usart_send_blocking(USART2, '\n');
-    usart_send_blocking(USART2, '\r');
-}
-
 void
 vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
     (void)pxTask;
     (void)pcTaskName;
-    raw_log_msg("----big fat FreeRTOS crash -----");
+    platform_raw_msg("----big fat FreeRTOS crash -----");
     while(true);
 }
 
 
 void hard_fault_handler(void)
 {
-    raw_log_msg("----big fat libopen3 crash -----");
+    platform_raw_msg("----big fat libopen3 crash -----");
     while(true);
 }
 
@@ -81,73 +67,14 @@ uart_setup(void) {
 }
 
 
-static inline void
-log_msg(const char *s) {
-
-    char tmp[MAX_LINELEN];
-
-    for (unsigned n = 0; n < MAX_LINELEN; n++) {
-        if (*s)
-            tmp[n] = *s++;
-        else {
-            tmp[n] = 0;
-            break;
-        }
-    }
-
-    xQueueSend(uart_txq, tmp, portMAX_DELAY);
-}
-
-
 void
-usart2_isr(void) {
-    BaseType_t woken = pdFALSE;
+usart2_isr(void)
+{
     usart_wait_recv_ready(USART2);
 
     char c = usart_recv(USART2);
 
-    if (!rx_ready) {
-        if (c != '\n' && c != '\r' && rx_buffer_len < MAX_LINELEN - 1) {
-            rx_buffer[rx_buffer_len++] = c;
-        }
-        else {
-            rx_buffer[rx_buffer_len++] = 0;
-            rx_ready = true;
-
-            vTaskNotifyGiveFromISR(h_blinky,&woken);
-            portYIELD_FROM_ISR(woken);
-        }
-    }
-}
-
-
-
-static void
-uart_task(void *args __attribute((unused))) {
-    log_msg("uart_task");
-    for(;;) {
-        char tmp[MAX_LINELEN];
-        if ( xQueueReceive(uart_txq, tmp, portMAX_DELAY) == pdPASS ) {
-            raw_log_msg(tmp);
-        }
-    }
-}
-
-
-static void
-blink_task(void *args __attribute((unused))) {
-    log_msg("blink_task");
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
-    for (;;) {
-        gpio_toggle(GPIOA, GPIO5);
-        ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS(500));
-        if (rx_ready)
-        {
-            log_msg(rx_buffer);
-            rx_buffer_len = 0;
-            rx_ready = false;
-        }
-    }
+    cmds_add_char(c);
 }
 
 
@@ -156,18 +83,15 @@ int main(void) {
     uart_setup();
     rcc_periph_clock_enable(RCC_GPIOA);
 
-    uart_txq = xQueueCreate(4,MAX_LINELEN);
-
     systick_interrupt_enable();
     systick_counter_enable();
 
-    raw_log_msg("----start----");
+    platform_raw_msg("----start----");
 
-    xTaskCreate(uart_task,"UART",200,NULL,configMAX_PRIORITIES-1,NULL);
-    xTaskCreate(blink_task,"LED",100,NULL,configMAX_PRIORITIES-2,&h_blinky);
+    log_init();
+    cmds_init();
 
     vTaskStartScheduler();
 
     return 0;
 }
-
