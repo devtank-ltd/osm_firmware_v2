@@ -119,18 +119,19 @@ to exclude the API function. */
 
 /*
 
-CM0 has 2 bits for priority  lowest number is highest priority
+CM4 has 8 bits for priority, lowest number is highest priority
+
 configKERNEL_INTERRUPT_PRIORITY should be set to the lowest priority.
 configMAX_SYSCALL_INTERRUPT_PRIORITY sets the highest interrupt priority
   from which interrupt safe FreeRTOS API functions can be called.
 
- 0 = Highest :
- 1 =           configMAX_SYSCALL_INTERRUPT_PRIORITY
- 2 =
- 3 = Lowest :  configKERNEL_INTERRUPT_PRIORITY
+ Highest :
+           configMAX_SYSCALL_INTERRUPT_PRIORITY
+
+ Lowest :  configKERNEL_INTERRUPT_PRIORITY
 
 */
-#define configKERNEL_INTERRUPT_PRIORITY         3
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY    1
+#define configKERNEL_INTERRUPT_PRIORITY         254
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY    191
 
 #endif /* FREERTOS_CONFIG_H */
