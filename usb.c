@@ -12,22 +12,28 @@
 
 #include "cmd.h"
 
+/*
+Endpoint Address
+Bits 0..3b Endpoint Number.
+Bits 4..6b Reserved. Set to Zero
+Bits 7 Direction 0 = In, 1 = Out
+*/
 
-#define USB_COM1_END_ADDR   0x83
 #define USB_DATAR1_END_ADDR 0x01
 #define USB_DATAW1_END_ADDR 0x82
+#define USB_COM1_END_ADDR   0x83
 
-#define USB_COM2_END_ADDR   0x85
-#define USB_DATAR2_END_ADDR 0x03
-#define USB_DATAW2_END_ADDR 0x84
+#define USB_DATAR2_END_ADDR 0x04
+#define USB_DATAW2_END_ADDR 0x85
+#define USB_COM2_END_ADDR   0x86
 
-#define USB_COM3_END_ADDR   0x87
-#define USB_DATAR3_END_ADDR 0x05
-#define USB_DATAW3_END_ADDR 0x86
+#define USB_DATAR3_END_ADDR 0x07
+#define USB_DATAW3_END_ADDR 0x88
+#define USB_COM3_END_ADDR   0x89
 
-#define USB_COM4_END_ADDR   0x89
-#define USB_DATAR4_END_ADDR 0x07
-#define USB_DATAW4_END_ADDR 0x88
+#define USB_DATAR4_END_ADDR 0x0A
+#define USB_DATAW4_END_ADDR 0x8B
+#define USB_COM4_END_ADDR   0x8C
 
 
 #define USB_DATA_PCK_SZ    64
@@ -42,21 +48,21 @@ static usbd_device *usbd_dev = NULL;
 
 static struct
 {
-    uint8_t com_addr;
     uint8_t r_addr;
     uint8_t w_addr;
-} end_addrs[4] = { { USB_COM1_END_ADDR,
-                     USB_DATAR1_END_ADDR,
-                     USB_DATAW1_END_ADDR},
-                   { USB_COM2_END_ADDR,
-                     USB_DATAR2_END_ADDR,
-                     USB_DATAW2_END_ADDR},
-                   { USB_COM3_END_ADDR,
-                     USB_DATAR3_END_ADDR,
-                     USB_DATAW3_END_ADDR},
-                   { USB_COM4_END_ADDR,
-                     USB_DATAR4_END_ADDR,
-                     USB_DATAW4_END_ADDR}};
+    uint8_t com_addr;
+} end_addrs[4] = { { USB_DATAR1_END_ADDR,
+                     USB_DATAW1_END_ADDR,
+                     USB_COM1_END_ADDR},
+                   { USB_DATAR2_END_ADDR,
+                     USB_DATAW2_END_ADDR,
+                     USB_COM2_END_ADDR},
+                   { USB_DATAR3_END_ADDR,
+                     USB_DATAW3_END_ADDR,
+                     USB_COM3_END_ADDR},
+                   { USB_DATAR4_END_ADDR,
+                     USB_DATAW4_END_ADDR,
+                     USB_COM4_END_ADDR}};
 
 
 static const struct usb_device_descriptor usb_dev_desc =
