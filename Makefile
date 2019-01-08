@@ -64,7 +64,7 @@ $(LIBOPENCM3) :
 flash: $(TARGET_ELF)
 
 	openocd -f interface/stlink-v2-1.cfg \
-		    -f target/stm32f0x.cfg \
+		    -f target/stm32f3x.cfg \
 		    -c "init" -c "reset init" \
 		    -c "flash write_image erase $(TARGET_ELF)" \
 		    -c "reset" \
