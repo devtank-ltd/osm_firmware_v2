@@ -12,6 +12,7 @@
 
 #include "cmd.h"
 #include "log.h"
+#include "usb.h"
 
 
 
@@ -90,6 +91,7 @@ int main(void) {
 
     log_init();
     cmds_init();
+    usb_init();
 
     vTaskStartScheduler();
 

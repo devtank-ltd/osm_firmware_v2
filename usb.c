@@ -448,11 +448,9 @@ static void usb_set_config_cb(usbd_device *usb_dev,
 }
 
 
-void usb_setup()
+void usb_init()
 {
-    crs_autotrim_usb_enable();
-
-    usbd_dev = usbd_init(&st_usbfs_v2_usb_driver,
+    usbd_dev = usbd_init(&st_usbfs_v1_usb_driver,
                          &usb_dev_desc,
                          &usb_config,
                          usb_strings, 3,
