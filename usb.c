@@ -357,6 +357,14 @@ static const struct usb_interface usb_ifaces[] =
     {
         .altsetting     = &usb_ifaces_desc[5],
         .num_altsetting = 1,
+    },
+    {
+        .altsetting     = &usb_ifaces_desc[6],
+        .num_altsetting = 1,
+    },
+    {
+        .altsetting     = &usb_ifaces_desc[7],
+        .num_altsetting = 1,
     }
 };
 
@@ -366,7 +374,7 @@ static const struct usb_config_descriptor usb_config =
     .bLength             = USB_DT_CONFIGURATION_SIZE,
     .bDescriptorType     = USB_DT_CONFIGURATION,
     .wTotalLength        = 0,
-    .bNumInterfaces      = 6,
+    .bNumInterfaces      = 8,
     .bConfigurationValue = 1,
     .iConfiguration      = 0,
     .bmAttributes        = USB_CONFIG_ATTR_DEFAULT,
