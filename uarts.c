@@ -40,6 +40,21 @@ static void uart_setup(uint32_t usart,
 
 
 
+static bool uart_getc(uint32_t uart, char* c)
+{
+    uint32_t flags = USART_ISR(uart);
+
+    if (!(flags & USART_ISR_RXNE))
+        return false;
+
+    usart_wait_recv_ready(uart);
+
+    *c = usart_recv(uart);
+
+    return true;
+}
+
+
 
 static void uart2_setup()
 {
@@ -49,11 +64,9 @@ static void uart2_setup()
 
 void usart2_exti26_isr(void)
 {
-    usart_wait_recv_ready(USART2);
-
-    char c = usart_recv(USART2);
-
-    cmds_add_char(c);
+    char c;
+    if (uart_getc(USART2, &c))
+        cmds_add_char(c);
 }
 
 
@@ -66,9 +79,9 @@ static void uart1_setup()
 
 void usart1_exti25_isr(void)
 {
-    usart_wait_recv_ready(USART1);
-
-    char c = usart_recv(USART1);
+    char c;
+    if (!uart_getc(USART1, &c))
+        return;
 
     log_out("USART1 : %c", c);
 }
@@ -83,9 +96,9 @@ static void uart3_setup()
 
 void usart3_exti28_isr(void)
 {
-    usart_wait_recv_ready(USART3);
-
-    char c = usart_recv(USART3);
+    char c;
+    if (!uart_getc(USART3, &c))
+        return;
 
     log_out("UART3 : %c", c);
 }
@@ -99,10 +112,9 @@ static void uart4_setup()
 
 void uart4_exti34_isr(void)
 {
-    usart_wait_recv_ready(UART4);
-
-    char c = usart_recv(UART4);
-
+    char c;
+    if (!uart_getc(UART4, &c))
+        return;
     log_out("UART4 : %c", c);
 }
 
