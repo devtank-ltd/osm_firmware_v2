@@ -65,15 +65,14 @@ uart_setup(void)
     usart_set_parity( USART2, USART_PARITY_NONE );
     usart_set_flow_control( USART2, USART_FLOWCONTROL_NONE );
 
-    nvic_enable_irq(NVIC_USART1_EXTI25_IRQ);
-    nvic_set_priority(NVIC_USART1_EXTI25_IRQ, 2);
+    nvic_enable_irq(NVIC_USART2_EXTI26_IRQ);
+    nvic_set_priority(NVIC_USART2_EXTI26_IRQ, 2);
     usart_enable(USART2);
     usart_enable_rx_interrupt(USART2);
 }
 
 
-void
-usart2_isr(void)
+void usart2_exti26_isr(void)
 {
     usart_wait_recv_ready(USART2);
 
