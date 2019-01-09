@@ -76,32 +76,24 @@ void usart2_exti26_isr(void)
 }
 
 
-void usart1_exti25_isr(void)
+static void process_serial(unsigned uart)
 {
-    char c;
-    if (!uart_getc(USART1, &c))
+    if (uart > 3)
         return;
 
-    log_out("USART1 : %c", c);
+    char c;
+
+    if (!uart_getc(uart_channels[uart].usart, &c))
+        return;
+
+    log_out("%u : %c", uart, c);
 }
 
 
-void usart3_exti28_isr(void)
-{
-    char c;
-    if (!uart_getc(USART3, &c))
-        return;
 
-    log_out("UART3 : %c", c);
-}
-
-void uart4_exti34_isr(void)
-{
-    char c;
-    if (!uart_getc(UART4, &c))
-        return;
-    log_out("UART4 : %c", c);
-}
+void usart1_exti25_isr(void) { process_serial(1); }
+void usart3_exti28_isr(void) { process_serial(2); }
+void uart4_exti34_isr(void)  { process_serial(3); }
 
 
 void uarts_setup(void)
