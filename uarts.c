@@ -9,10 +9,17 @@
 #include "usb.h"
 
 
+static const uint32_t uart_map[] = {USART1,
+                                    USART2,
+                                    USART3,
+                                    UART4};
+
+
 
 static void uart_setup(uint32_t usart,
                        enum rcc_periph_clken uart_clk,
                        enum rcc_periph_clken gpio_clk,
+                       uint32_t gpioport,
                        uint16_t pins,
                        uint8_t alt_func_num,
                        uint8_t irqn,
@@ -22,8 +29,8 @@ static void uart_setup(uint32_t usart,
     rcc_periph_clock_enable(gpio_clk);
     rcc_periph_clock_enable(uart_clk);
 
-    gpio_mode_setup( GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, pins );
-    gpio_set_af( GPIOA, alt_func_num, pins );
+    gpio_mode_setup( gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, pins );
+    gpio_set_af( gpioport, alt_func_num, pins );
 
     usart_set_baudrate( usart, baud );
     usart_set_databits( usart, 8 );
@@ -33,7 +40,7 @@ static void uart_setup(uint32_t usart,
     usart_set_flow_control( usart, USART_FLOWCONTROL_NONE );
 
     nvic_enable_irq(irqn);
-    nvic_set_priority(irqn, 2);
+    nvic_set_priority(irqn, 191);
     usart_enable(usart);
     usart_enable_rx_interrupt(usart);
 }
@@ -58,7 +65,7 @@ static bool uart_getc(uint32_t uart, char* c)
 
 static void uart2_setup()
 {
-    uart_setup(USART2, RCC_USART2, RCC_GPIOA, GPIO2 | GPIO3, GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200);
+    uart_setup(USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2 | GPIO3, GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200);
 }
 
 
@@ -73,7 +80,7 @@ void usart2_exti26_isr(void)
 
 static void uart1_setup()
 {
-    uart_setup(USART1, RCC_USART1, RCC_GPIOA, GPIO9 | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200);
+    uart_setup(USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9 | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200);
 }
 
 
@@ -90,7 +97,7 @@ void usart1_exti25_isr(void)
 
 static void uart3_setup()
 {
-    uart_setup(USART3, RCC_USART3, RCC_GPIOB, GPIO8 | GPIO9, GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600);
+    uart_setup(USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8 | GPIO9, GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600);
 }
 
 
@@ -106,7 +113,7 @@ void usart3_exti28_isr(void)
 
 static void uart4_setup()
 {
-    uart_setup(UART4, RCC_UART4, RCC_GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ, 9600);
+    uart_setup(UART4, RCC_UART4, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ, 9600);
 }
 
 
@@ -125,4 +132,16 @@ void uarts_setup(void)
     uart2_setup();
     uart3_setup();
     uart4_setup();
+}
+
+
+void uart_out(unsigned uart, const char* s)
+{
+    if (uart > 3)
+        return;
+
+    uart = uart_map[uart];
+
+    for (unsigned n = 0; *s && n < LOG_LINELEN; n++)
+        usart_send_blocking(uart, *s++);
 }
