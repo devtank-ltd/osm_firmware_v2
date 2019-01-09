@@ -18,6 +18,7 @@
 
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
+extern void vPortSVCHandler( void ) __attribute__ (( naked ));
 
 
 void vApplicationStackOverflowHook(xTaskHandle *pxTask,
@@ -46,6 +47,12 @@ void pend_sv_handler(void)
 void sys_tick_handler(void)
 {
     xPortSysTickHandler();
+}
+
+
+void sv_call_handler(void)
+{
+    vPortSVCHandler();
 }
 
 
