@@ -9,40 +9,46 @@
 #include "usb.h"
 
 
-static const uint32_t uart_map[] = {USART1,
-                                    USART2,
-                                    USART3,
-                                    UART4};
-
-
-
-static void uart_setup(uint32_t usart,
-                       enum rcc_periph_clken uart_clk,
-                       enum rcc_periph_clken gpio_clk,
-                       uint32_t gpioport,
-                       uint16_t pins,
-                       uint8_t alt_func_num,
-                       uint8_t irqn,
-                       uint32_t baud
-                       )
+typedef struct
 {
-    rcc_periph_clock_enable(gpio_clk);
-    rcc_periph_clock_enable(uart_clk);
+    uint32_t              usart;
+    enum rcc_periph_clken uart_clk;
+    enum rcc_periph_clken gpio_clk;
+    uint32_t              gpioport;
+    uint16_t              pins;
+    uint8_t               alt_func_num;
+    uint8_t               irqn;
+    uint32_t              baud;
+} uart_channel_t;
 
-    gpio_mode_setup( gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, pins );
-    gpio_set_af( gpioport, alt_func_num, pins );
 
-    usart_set_baudrate( usart, baud );
-    usart_set_databits( usart, 8 );
-    usart_set_stopbits( usart, USART_CR2_STOPBITS_1 );
-    usart_set_mode( usart, USART_MODE_TX_RX );
-    usart_set_parity( usart, USART_PARITY_NONE );
-    usart_set_flow_control( usart, USART_FLOWCONTROL_NONE );
+static const uart_channel_t uart_channels[] = {
+    { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2 | GPIO3, GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200},
+    { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9 | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200},
+    { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8 | GPIO9, GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600},
+    { UART4, RCC_UART4, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ, 9600},
+};
 
-    nvic_enable_irq(irqn);
-    nvic_set_priority(irqn, 191);
-    usart_enable(usart);
-    usart_enable_rx_interrupt(usart);
+
+static void uart_setup(const uart_channel_t * channel)
+{
+    rcc_periph_clock_enable(channel->gpio_clk);
+    rcc_periph_clock_enable(channel->uart_clk);
+
+    gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
+    gpio_set_af( channel->gpioport, channel->alt_func_num, channel->pins );
+
+    usart_set_baudrate( channel->usart, channel->baud );
+    usart_set_databits( channel->usart, 8 );
+    usart_set_stopbits( channel->usart, USART_CR2_STOPBITS_1 );
+    usart_set_mode( channel->usart, USART_MODE_TX_RX );
+    usart_set_parity( channel->usart, USART_PARITY_NONE );
+    usart_set_flow_control( channel->usart, USART_FLOWCONTROL_NONE );
+
+    nvic_enable_irq(channel->irqn);
+    nvic_set_priority(channel->irqn, 191);
+    usart_enable(channel->usart);
+    usart_enable_rx_interrupt(channel->usart);
 }
 
 
@@ -62,25 +68,11 @@ static bool uart_getc(uint32_t uart, char* c)
 }
 
 
-
-static void uart2_setup()
-{
-    uart_setup(USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2 | GPIO3, GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200);
-}
-
-
 void usart2_exti26_isr(void)
 {
     char c;
     if (uart_getc(USART2, &c))
         cmds_add_char(c);
-}
-
-
-
-static void uart1_setup()
-{
-    uart_setup(USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9 | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200);
 }
 
 
@@ -94,13 +86,6 @@ void usart1_exti25_isr(void)
 }
 
 
-
-static void uart3_setup()
-{
-    uart_setup(USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8 | GPIO9, GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600);
-}
-
-
 void usart3_exti28_isr(void)
 {
     char c;
@@ -109,13 +94,6 @@ void usart3_exti28_isr(void)
 
     log_out("UART3 : %c", c);
 }
-
-
-static void uart4_setup()
-{
-    uart_setup(UART4, RCC_UART4, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ, 9600);
-}
-
 
 void uart4_exti34_isr(void)
 {
@@ -128,10 +106,8 @@ void uart4_exti34_isr(void)
 
 void uarts_setup(void)
 {
-    uart1_setup();
-    uart2_setup();
-    uart3_setup();
-    uart4_setup();
+    for(unsigned n = 0; n < 4; n++)
+        uart_setup(&uart_channels[n]);
 }
 
 
@@ -140,7 +116,7 @@ void uart_out(unsigned uart, const char* s)
     if (uart > 3)
         return;
 
-    uart = uart_map[uart];
+    uart = uart_channels[uart].usart;
 
     for (unsigned n = 0; *s && n < LOG_LINELEN; n++)
         usart_send_blocking(uart, *s++);
