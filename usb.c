@@ -9,7 +9,10 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 
+#include <FreeRTOS.h>
+
 #include "cmd.h"
+
 
 /*
 Endpoint Address
@@ -457,7 +460,7 @@ void usb_init()
 
     usbd_register_set_config_callback(usbd_dev, usb_set_config_cb);
 
-    nvic_set_priority(NVIC_USB_LP_IRQ, 2);
+    nvic_set_priority(NVIC_USB_LP_IRQ, USB_PRIORITY);
     nvic_enable_irq(NVIC_USB_LP_IRQ);
 }
 

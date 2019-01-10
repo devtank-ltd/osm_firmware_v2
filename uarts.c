@@ -3,6 +3,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
 
+#include <FreeRTOS.h>
 
 #include "cmd.h"
 #include "log.h"
@@ -19,14 +20,15 @@ typedef struct
     uint8_t               alt_func_num;
     uint8_t               irqn;
     uint32_t              baud;
+    uint8_t               priority;
 } uart_channel_t;
 
 
 static const uart_channel_t uart_channels[] = {
-    { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2 | GPIO3, GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200},
-    { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9 | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200},
-    { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8 | GPIO9, GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600},
-    { UART4, RCC_UART4, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ, 9600},
+    { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2  | GPIO3,  GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200, UART1_PRIORITY },
+    { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9  | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200, UART2_PRIORITY },
+    { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8  | GPIO9,  GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600  , UART3_PRIORITY },
+    { UART4,  RCC_UART4,  RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ,  9600  , UART4_PRIORITY },
 };
 
 
@@ -46,7 +48,7 @@ static void uart_setup(const uart_channel_t * channel)
     usart_set_flow_control( channel->usart, USART_FLOWCONTROL_NONE );
 
     nvic_enable_irq(channel->irqn);
-    nvic_set_priority(channel->irqn, 191);
+    nvic_set_priority(channel->irqn, channel->priority);
     usart_enable(channel->usart);
     usart_enable_rx_interrupt(channel->usart);
 }
