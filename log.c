@@ -18,8 +18,7 @@ static QueueHandle_t log_txq;
 
 extern void platform_raw_msg(const char * s)
 {
-
-    for (unsigned n = 0; *s && n < LOG_LINELEN; n++)
+    while(*s)
         usart_send_blocking(USART2, *s++);
 
     usart_send_blocking(USART2, '\n');
@@ -27,11 +26,13 @@ extern void platform_raw_msg(const char * s)
 }
 
 
+static char log_buffer[LOG_LINELEN];
+
+
 void log_raw(const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    char log_buffer[LOG_LINELEN];
 
     vsnprintf(log_buffer, LOG_LINELEN, s, ap);
     log_buffer[LOG_LINELEN-1] = 0;
@@ -42,8 +43,6 @@ void log_raw(const char * s, ...)
 
 static void log_msgv(const char *s, va_list ap)
 {
-    char log_buffer[LOG_LINELEN];
-
     vsnprintf(log_buffer, LOG_LINELEN, s, ap);
     log_buffer[LOG_LINELEN-1] = 0;
 
