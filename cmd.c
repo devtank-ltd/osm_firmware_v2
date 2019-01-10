@@ -8,7 +8,7 @@
 #include "cmd.h"
 
 
-static char     rx_buffer[MAX_LINELEN];
+static char     rx_buffer[CMD_LINELEN];
 static unsigned rx_buffer_len = 0;
 static bool     rx_ready      = false;
 
@@ -20,7 +20,7 @@ bool cmds_add_char(char c)
     if (rx_ready)
         return false;
 
-    if (c != '\n' && c != '\r' && rx_buffer_len < MAX_LINELEN - 1)
+    if (c != '\n' && c != '\r' && rx_buffer_len < CMD_LINELEN - 1)
     {
         rx_buffer[rx_buffer_len++] = tolower(c);
     }

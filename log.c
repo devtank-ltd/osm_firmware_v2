@@ -88,7 +88,7 @@ static void log_task(void *args __attribute((unused)))
     log_debug("log_task");
     for(;;)
     {
-        char tmp[MAX_LINELEN];
+        char tmp[LOG_LINELEN];
         if ( xQueueReceive(log_txq, tmp, portMAX_DELAY) == pdPASS )
             platform_raw_msg(tmp);
     }
@@ -98,7 +98,7 @@ static void log_task(void *args __attribute((unused)))
 
 void log_init()
 {
-    log_txq = xQueueCreate(4,MAX_LINELEN);
+    log_txq = xQueueCreate(4, LOG_LINELEN);
 
     xTaskCreate(log_task,"LOG",200,NULL,configMAX_PRIORITIES-1,NULL);
 }

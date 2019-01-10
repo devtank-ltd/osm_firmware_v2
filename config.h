@@ -1,7 +1,7 @@
 #ifndef __CONFIG__
 #define __CONFIG__
 
-#define MAX_LINELEN 32
+#define CMD_LINELEN 32
 #define LOG_LINELEN 32
 
 #ifndef DOXYGEN
