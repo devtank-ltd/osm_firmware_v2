@@ -57,7 +57,7 @@ void sv_call_handler(void)
 
 int main(void)
 {
-    rcc_clock_setup_hsi(&rcc_hsi_configs[RCC_CLOCK_HSI_64MHZ]);
+    rcc_clock_setup_pll(&rcc_hse8mhz_configs[RCC_CLOCK_HSE8_72MHZ]);
     uarts_setup();
 
     systick_interrupt_enable();
