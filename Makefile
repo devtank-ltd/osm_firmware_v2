@@ -16,7 +16,9 @@ CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES)
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -Ilibs/freertos/FreeRTOS/Source/include/ -I. -I./libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM4F/
+FREERTOS_PORT = ARM_CM4F
+
+INCLUDE_PATHS += -Ilibs/libopencm3/include -Ilibs/freertos/FreeRTOS/Source/include/ -I. -I./libs/freertos/FreeRTOS/Source/portable/GCC/$(FREERTOS_PORT)/
 
 LINK_SCRIPT = stm32f303re.ld
 
@@ -31,7 +33,7 @@ SOURCES += main.c \
            cmd.c \
            log.c \
            uarts.c \
-           libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
+           libs/freertos/FreeRTOS/Source/portable/GCC/$(FREERTOS_PORT)/port.c \
            libs/freertos/FreeRTOS/Source/portable/MemMang/heap_1.c \
            libs/freertos/FreeRTOS/Source/list.c \
            libs/freertos/FreeRTOS/Source/queue.c \
