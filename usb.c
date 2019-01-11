@@ -33,10 +33,6 @@ Bits 7 Direction 0 = In, 1 = Out
 #define USB_DATAW3_END_ADDR 0x88
 #define USB_COM3_END_ADDR   0x89
 
-#define USB_DATAR4_END_ADDR 0x0A
-#define USB_DATAW4_END_ADDR 0x8B
-#define USB_COM4_END_ADDR   0x8C
-
 
 #define USB_DATA_PCK_SZ    64
 #define USB_COM_PCK_SZ     16
@@ -53,7 +49,7 @@ static struct
     uint8_t r_addr;
     uint8_t w_addr;
     uint8_t com_addr;
-} end_addrs[4] = { { USB_DATAR1_END_ADDR,
+} end_addrs[3] = { { USB_DATAR1_END_ADDR,
                      USB_DATAW1_END_ADDR,
                      USB_COM1_END_ADDR},
                    { USB_DATAR2_END_ADDR,
@@ -62,9 +58,7 @@ static struct
                    { USB_DATAR3_END_ADDR,
                      USB_DATAW3_END_ADDR,
                      USB_COM3_END_ADDR},
-                   { USB_DATAR4_END_ADDR,
-                     USB_DATAW4_END_ADDR,
-                     USB_COM4_END_ADDR}};
+                 };
 
 
 static const struct usb_device_descriptor usb_dev_desc =
@@ -160,31 +154,7 @@ static const struct usb_endpoint_descriptor usb_endp[] =
         .bmAttributes     = USB_ENDPOINT_ATTR_BULK,
         .wMaxPacketSize   = USB_DATA_PCK_SZ,
         .bInterval        = 1,
-    },
-    {
-        .bLength          = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType  = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_COM4_END_ADDR,
-        .bmAttributes     = USB_ENDPOINT_ATTR_INTERRUPT,
-        .wMaxPacketSize   = USB_COM_PCK_SZ,
-        .bInterval        = 255,
-    },
-    {
-        .bLength          = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType  = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_DATAR4_END_ADDR,
-        .bmAttributes     = USB_ENDPOINT_ATTR_BULK,
-        .wMaxPacketSize   = USB_DATA_PCK_SZ,
-        .bInterval        = 1,
-    },
-    {
-        .bLength          = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType  = USB_DT_ENDPOINT,
-        .bEndpointAddress = USB_DATAW4_END_ADDR,
-        .bmAttributes     = USB_ENDPOINT_ATTR_BULK,
-        .wMaxPacketSize   = USB_DATA_PCK_SZ,
-        .bInterval        = 1,
-    },
+    }
 };
 
 
@@ -309,33 +279,7 @@ static const struct usb_interface_descriptor usb_ifaces_desc[] =
         .bInterfaceProtocol = 0,
         .iInterface         = 0,
         .endpoint           = &usb_endp[7],
-    },
-    {
-        .bLength            = USB_DT_INTERFACE_SIZE,
-        .bDescriptorType    = USB_DT_INTERFACE,
-        .bInterfaceNumber   = 0,
-        .bAlternateSetting  = 0,
-        .bNumEndpoints      = 1,
-        .bInterfaceClass    = USB_CLASS_CDC,
-        .bInterfaceSubClass = USB_CDC_SUBCLASS_ACM,
-        .bInterfaceProtocol = USB_CDC_PROTOCOL_AT,
-        .iInterface         = 0,
-        .endpoint           = &usb_endp[9],
-        .extra              = &usb_functional_descriptors,
-        .extralen           = sizeof(usb_functional_descriptors),
-    },
-    {
-        .bLength            = USB_DT_INTERFACE_SIZE,
-        .bDescriptorType    = USB_DT_INTERFACE,
-        .bInterfaceNumber   = 1,
-        .bAlternateSetting  = 0,
-        .bNumEndpoints      = 2,
-        .bInterfaceClass    = USB_CLASS_DATA,
-        .bInterfaceSubClass = 0,
-        .bInterfaceProtocol = 0,
-        .iInterface         = 0,
-        .endpoint           = &usb_endp[10],
-    },
+    }
 };
 
 
@@ -366,14 +310,6 @@ static const struct usb_interface usb_ifaces[] =
         .altsetting     = &usb_ifaces_desc[5],
         .num_altsetting = 1,
     },
-    {
-        .altsetting     = &usb_ifaces_desc[6],
-        .num_altsetting = 1,
-    },
-    {
-        .altsetting     = &usb_ifaces_desc[7],
-        .num_altsetting = 1,
-    }
 };
 
 
@@ -382,7 +318,7 @@ static const struct usb_config_descriptor usb_config =
     .bLength             = USB_DT_CONFIGURATION_SIZE,
     .bDescriptorType     = USB_DT_CONFIGURATION,
     .wTotalLength        = 0,
-    .bNumInterfaces      = 8,
+    .bNumInterfaces      = 6,
     .bConfigurationValue = 1,
     .iConfiguration      = 0,
     .bmAttributes        = USB_CONFIG_ATTR_DEFAULT,
@@ -418,22 +354,13 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
 
     if (!len)
         return;
-
-    if (end_point == USB_DATAR1_END_ADDR)
-    {
-        for(int n = 0; n < len; n++)
-            cmds_add_char(buf[n]);
-    }
-    else
-    {
-    }
 }
 
 
 static void usb_set_config_cb(usbd_device *usb_dev,
                               uint16_t     wValue __attribute((unused)))
 {
-    for(unsigned n = 0; n < 4; n++)
+    for(unsigned n = 0; n < 3; n++)
     {
         usbd_ep_setup(usb_dev, end_addrs[n].com_addr,   USB_ENDPOINT_ATTR_INTERRUPT, USB_COM_PCK_SZ, NULL);
         usbd_ep_setup(usb_dev, end_addrs[n].r_addr, USB_ENDPOINT_ATTR_BULK,      USB_DATA_PCK_SZ, usb_data_rx_cb);
