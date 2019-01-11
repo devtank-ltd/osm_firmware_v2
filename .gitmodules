@@ -1,6 +1,3 @@
 [submodule "libopencm3"]
     path = libs/libopencm3
     url = https://github.com/libopencm3/libopencm3.git
-[submodule "freertos"]
-    path = libs/freertos
-    url = https://github.com/cjlano/freertos.git
