@@ -3,8 +3,6 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include <FreeRTOS.h>
-
 #include "cmd.h"
 #include "log.h"
 #include "usb.h"
@@ -60,7 +58,10 @@ static bool uart_getc(uint32_t uart, char* c)
     uint32_t flags = USART_ISR(uart);
 
     if (!(flags & USART_ISR_RXNE))
+    {
+        USART_ICR(uart) = flags;
         return false;
+    }
 
     usart_wait_recv_ready(uart);
 

@@ -10,4 +10,11 @@
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
+#define UART1_PRIORITY 1
+#define UART2_PRIORITY 2
+#define UART3_PRIORITY 3
+#define UART4_PRIORITY 4
+#define USB_PRIORITY   5
+
+
 #endif //__CONFIG__

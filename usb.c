@@ -9,8 +9,7 @@
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
 
-#include <FreeRTOS.h>
-
+#include "log.h"
 #include "cmd.h"
 
 
