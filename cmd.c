@@ -40,7 +40,6 @@ static cmd_t cmds[] = {
 
 void uart_broadcast_cb()
 {
-    uart_out(0, "Cntl\n\r", 6);
     uart_out(1, "High\n\r", 6);
     uart_out(2, "Low1\n\r", 6);
     uart_out(3, "Low2\n\r", 6);
