@@ -48,9 +48,9 @@ int main(void)
     timer_set_prescaler(TIM3, 72);
     timer_set_period(TIM3, 1);
 
-	nvic_enable_irq(NVIC_TIM3_IRQ);
-	timer_enable_update_event(TIM3);
-	timer_enable_irq(TIM3, TIM_DIER_UIE);
+    nvic_enable_irq(NVIC_TIM3_IRQ);
+    timer_enable_update_event(TIM3);
+    timer_enable_irq(TIM3, TIM_DIER_UIE);
     nvic_set_priority(NVIC_TIM3_IRQ, 0);
     timer_enable_counter(TIM3);
 
