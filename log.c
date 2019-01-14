@@ -3,9 +3,16 @@
 
 #include <libopencm3/stm32/usart.h>
 
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
+
 #include "log.h"
 
 bool log_show_debug = false;
+bool log_async_log  = false;
+
+static QueueHandle_t log_txq;
 
 
 extern void platform_raw_msg(const char * s)
@@ -24,7 +31,10 @@ static void log_msgv(const char *s, va_list ap)
     vsnprintf(log_buffer, LOG_LINELEN, s, ap);
     log_buffer[LOG_LINELEN-1] = 0;
 
-    platform_raw_msg(log_buffer);
+    if (log_async_log)
+        xQueueSend(log_txq, log_buffer, portMAX_DELAY);
+    else
+        platform_raw_msg(log_buffer);
 }
 
 
@@ -57,6 +67,21 @@ void log_error(const char *s, ...)
 }
 
 
+static void log_task(void *args __attribute((unused)))
+{
+    log_out("log_task");
+    for(;;)
+    {
+        char tmp[LOG_LINELEN];
+        if ( xQueueReceive(log_txq, tmp, portMAX_DELAY) == pdPASS )
+            platform_raw_msg(tmp);
+    }
+}
+
+
 void log_init()
 {
+    log_txq = xQueueCreate(3, LOG_LINELEN);
+
+    xTaskCreate(log_task, "LOG", 200, NULL, configMAX_PRIORITIES-1, NULL);
 }

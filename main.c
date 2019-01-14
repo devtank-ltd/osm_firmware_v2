@@ -5,6 +5,11 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/timer.h>
+#include <libopencm3/stm32/usart.h>
+
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
 
 
 #include "cmd.h"
@@ -13,6 +18,17 @@
 #include "uarts.h"
 
 
+extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
+extern void xPortSysTickHandler( void );
+
+
+void
+vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
+    (void)pxTask;
+    (void)pcTaskName;
+    platform_raw_msg("----big fat FreeRTOS crash -----");
+    while(true);
+}
 
 
 void hard_fault_handler(void)
@@ -22,23 +38,19 @@ void hard_fault_handler(void)
 }
 
 
-static unsigned counter = 0;
+void pend_sv_handler(void)
+{
+    xPortPendSVHandler();
+}
 
 void sys_tick_handler(void)
 {
-    usb_iterate();
-    if (counter == 1000)
-    {
-        gpio_toggle(GPIOA, GPIO5);
-        counter = 0;
-    }
-    counter++;
+    xPortSysTickHandler();
 }
 
 
-int main(void)
-{
-    rcc_clock_setup_pll(&rcc_hse8mhz_configs[RCC_CLOCK_HSE8_72MHZ]);
+int main(void) {
+    rcc_clock_setup_in_hsi48_out_48mhz();
     uarts_setup();
 
     platform_raw_msg("----start----");
@@ -50,13 +62,9 @@ int main(void)
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     gpio_clear(GPIOA, GPIO5);
 
-    systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
-    systick_set_reload(rcc_ahb_frequency / 8 / 1000);
-    systick_counter_enable();
-    systick_interrupt_enable();
+    log_async_log = true;
 
-    while(true)
-        cmds_process();
+    vTaskStartScheduler();
 
     return 0;
 }

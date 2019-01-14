@@ -8,6 +8,7 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/cdc.h>
+#include <libopencm3/stm32/crs.h>
 
 #include "log.h"
 #include "cmd.h"
@@ -29,7 +30,7 @@ Bits 7 Direction 0 = In, 1 = Out
 #define USB_DATA2_END_ADDR 0x04 // write addr is OR 0x80
 #define USB_DATA3_END_ADDR 0x06 // write addr is OR 0x80
 
-#define USB_DATA_PCK_SZ    64
+#define USB_DATA_PCK_SZ    32
 #define USB_COM_PCK_SZ     16
 
 
@@ -311,6 +312,9 @@ static void usb_set_config_cb(usbd_device *usb_dev,
 
 void usb_init()
 {
+    crs_autotrim_usb_enable();
+    rcc_set_usbclk_source(RCC_HSI48);
+
     usbd_dev = usbd_init(&st_usbfs_v2_usb_driver,
                          &usb_dev_desc,
                          &usb_config,
@@ -318,20 +322,12 @@ void usb_init()
                          usbd_control_buffer, sizeof(usbd_control_buffer));
 
     usbd_register_set_config_callback(usbd_dev, usb_set_config_cb);
-
-    nvic_set_priority(NVIC_USB_LP_IRQ, USB_PRIORITY);
-    nvic_enable_irq(NVIC_USB_LP_IRQ);
+    nvic_set_priority(NVIC_USB_IRQ, 2);
+    nvic_enable_irq(NVIC_USB_IRQ);
 }
 
 
-void usb_lp_isr()
-{
-    log_out("here lp");
-    usbd_poll(usbd_dev);
-}
-
-
-void usb_iterate()
+void usb_isr()
 {
     usbd_poll(usbd_dev);
 }

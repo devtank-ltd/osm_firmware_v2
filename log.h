@@ -4,6 +4,7 @@
 #include "config.h"
 
 extern bool log_show_debug;
+extern bool log_async_log;
 
 extern void platform_raw_msg(const char * s);
 

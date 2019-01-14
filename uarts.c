@@ -22,12 +22,35 @@ typedef struct
 } uart_channel_t;
 
 
+#ifdef STM32F0
+
+#define UART_1_ISR  usart1_isr
+#define UART_2_ISR  usart2_isr
+#define UART_3_ISR  usart3_4_isr
+
+static const uart_channel_t uart_channels[] = {
+    { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ, 115200, UART1_PRIORITY },
+    { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ, 115200, UART2_PRIORITY },
+    { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO10 | GPIO11, GPIO_AF4, NVIC_USART3_4_IRQ, 9600, UART3_PRIORITY },
+    { USART4, RCC_USART4, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF0, NVIC_USART3_4_IRQ, 9600, UART3_PRIORITY },
+};
+
+#else
+
+#define UART_1_ISR  usart1_exti25_isr
+#define UART_2_ISR  usart2_exti26_isr
+#define UART_3_ISR  usart3_exti28_isr
+#define UART_4_ISR  uart4_exti34_isr
+
 static const uart_channel_t uart_channels[] = {
     { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2  | GPIO3,  GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200, UART1_PRIORITY },
     { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9  | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200, UART2_PRIORITY },
     { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8  | GPIO9,  GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600  , UART3_PRIORITY },
     { UART4,  RCC_UART4,  RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF5, NVIC_UART4_EXTI34_IRQ,  9600  , UART4_PRIORITY },
 };
+
+#endif
+
 
 
 static void uart_setup(const uart_channel_t * channel)
@@ -71,7 +94,7 @@ static bool uart_getc(uint32_t uart, char* c)
 }
 
 
-void usart2_exti26_isr(void)
+void UART_2_ISR(void)
 {
     char c;
     if (uart_getc(USART2, &c))
@@ -95,10 +118,18 @@ static void process_serial(unsigned uart)
 }
 
 
-void usart1_exti25_isr(void) { process_serial(1); }
-void usart3_exti28_isr(void) { process_serial(2); }
-void uart4_exti34_isr(void)  { process_serial(3); }
+void UART_1_ISR(void) { process_serial(1); }
 
+#ifdef STM32F0
+void UART_3_ISR(void)
+{
+    process_serial(2);
+    process_serial(3);
+}
+#else
+void UART_3_ISR(void) { process_serial(2); }
+void UART_4_ISR(void) { process_serial(3); }
+#endif
 
 void uarts_setup(void)
 {

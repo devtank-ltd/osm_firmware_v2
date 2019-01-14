@@ -2,11 +2,18 @@
 #include <ctype.h>
 #include <string.h>
 
+#include <libopencm3/stm32/gpio.h>
+
+#include <FreeRTOS.h>
+#include <task.h>
+#include <queue.h>
 
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
 #include "usb.h"
+
+static TaskHandle_t h_blinky = 0;
 
 static char              rx_buffer[CMD_LINELEN];
 static unsigned volatile rx_buffer_len = 0;
@@ -56,8 +63,13 @@ bool cmds_add_char(char c)
     }
     else
     {
+        BaseType_t woken = pdFALSE;
+
         rx_buffer[rx_buffer_len++] = 0;
         rx_ready = true;
+        vTaskNotifyGiveFromISR(h_blinky,&woken);
+        portYIELD_FROM_ISR(woken);
+
     }
 
     return true;
@@ -91,7 +103,21 @@ void cmds_process()
     rx_ready = false;
 }
 
+static void
+cmds_task(void *args __attribute((unused)))
+{
+    log_out("cmds_task");
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
+    for (;;)
+    {
+        gpio_toggle(GPIOA, GPIO5);
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(500));
+        cmds_process();
+    }
+}
+
 
 void cmds_init()
 {
+    xTaskCreate(cmds_task, "LED", 500, NULL, configMAX_PRIORITIES-2, &h_blinky);
 }
