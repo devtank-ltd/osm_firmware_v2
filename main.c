@@ -24,6 +24,7 @@ void hard_fault_handler(void)
 void tim3_isr(void)
 {
     cmds_process();
+    usb_iterate();
 }
 
 
