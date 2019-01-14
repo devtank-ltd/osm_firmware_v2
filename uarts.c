@@ -24,15 +24,17 @@ typedef struct
 
 #ifdef STM32F0
 
+#pragma message "Compiling UART for STM32F0"
+
 #define UART_1_ISR  usart1_isr
 #define UART_2_ISR  usart2_isr
-#define UART_3_ISR  usart3_4_isr
 
-static const uart_channel_t uart_channels[] = {
-    { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ, 115200, UART1_PRIORITY },
-    { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ, 115200, UART2_PRIORITY },
-    { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO10 | GPIO11, GPIO_AF4, NVIC_USART3_4_IRQ, 9600, UART3_PRIORITY },
-    { USART4, RCC_USART4, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF0, NVIC_USART3_4_IRQ, 9600, UART3_PRIORITY },
+static const uart_channel_t uart_channels[] =
+{
+    { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ,   115200, UART1_PRIORITY },
+    { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ,   115200, UART2_PRIORITY },
+    { USART3, RCC_USART3, RCC_GPIOC, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY },
+    { USART4, RCC_USART4, RCC_GPIOA, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY },
 };
 
 #else
@@ -42,7 +44,8 @@ static const uart_channel_t uart_channels[] = {
 #define UART_3_ISR  usart3_exti28_isr
 #define UART_4_ISR  uart4_exti34_isr
 
-static const uart_channel_t uart_channels[] = {
+static const uart_channel_t uart_channels[] =
+{
     { USART2, RCC_USART2, RCC_GPIOA, GPIOA, GPIO2  | GPIO3,  GPIO_AF7, NVIC_USART2_EXTI26_IRQ, 115200, UART1_PRIORITY },
     { USART1, RCC_USART1, RCC_GPIOA, GPIOA, GPIO9  | GPIO10, GPIO_AF7, NVIC_USART1_EXTI25_IRQ, 115200, UART2_PRIORITY },
     { USART3, RCC_USART3, RCC_GPIOB, GPIOB, GPIO8  | GPIO9,  GPIO_AF7, NVIC_USART3_EXTI28_IRQ, 9600  , UART3_PRIORITY },
@@ -121,7 +124,7 @@ static void process_serial(unsigned uart)
 void UART_1_ISR(void) { process_serial(1); }
 
 #ifdef STM32F0
-void UART_3_ISR(void)
+void usart3_4_isr(void)
 {
     process_serial(2);
     process_serial(3);
