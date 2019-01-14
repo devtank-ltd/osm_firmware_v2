@@ -11,6 +11,7 @@
 
 #include "log.h"
 #include "cmd.h"
+#include "uarts.h"
 
 
 /*
@@ -281,10 +282,10 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
     {
         if (end_addrs[n].data_addr == end_point)
         {
-            
+            uart_out(n+1, buf, len);
+            break;
         }
     }
-
 }
 
 
@@ -336,7 +337,7 @@ void usb_iterate()
 }
 
 
-void raw_usb_send(unsigned uart, void * data, unsigned len)
+void usb_uart_send(unsigned uart, void * data, unsigned len)
 {
     uint8_t w_addr = end_addrs[uart].data_addr | 0x80;
 
@@ -360,6 +361,9 @@ void raw_usb_send(unsigned uart, void * data, unsigned len)
             usbd_poll(usbd_dev);
         }
     }
-    else while( usbd_ep_write_packet(usbd_dev, w_addr, data, len) == 0)
+    else
+    {
+        usbd_ep_write_packet(usbd_dev, w_addr, data, len);
         usbd_poll(usbd_dev);
+    }
 }

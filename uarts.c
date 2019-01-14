@@ -87,11 +87,12 @@ static void process_serial(unsigned uart)
     char c;
 
     if (!uart_getc(uart_channels[uart].usart, &c))
+    {
         return;
+    }
 
-    log_out("%u : %c", uart, c);
+    usb_uart_send(uart - 1, &c, 1);
 }
-
 
 
 void usart1_exti25_isr(void) { process_serial(1); }
@@ -106,13 +107,13 @@ void uarts_setup(void)
 }
 
 
-void uart_out(unsigned uart, const char* s)
+void uart_out(unsigned uart, const char* s, unsigned len)
 {
     if (uart > 3)
         return;
 
     uart = uart_channels[uart].usart;
 
-    for (unsigned n = 0; *s && n < LOG_LINELEN; n++)
-        usart_send_blocking(uart, *s++);
+    for (unsigned n = 0; n < len; n++)
+        usart_send_blocking(uart, s[n]);
 }
