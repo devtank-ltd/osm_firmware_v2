@@ -6,7 +6,7 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-
+#include "usb.h"
 
 static char              rx_buffer[CMD_LINELEN];
 static unsigned volatile rx_buffer_len = 0;
@@ -33,10 +33,15 @@ static cmd_t cmds[] = {
 
 void uart_broadcast_cb()
 {
-    for(unsigned n=1; n < 4; n++)
-        uart_out(n, "UART-TEST\n");
-}
+    uart_out(0, "Cntl\n\r", 6);
+    uart_out(1, "High\n\r", 6);
+    uart_out(2, "Low1\n\r", 6);
+    uart_out(3, "Low2\n\r", 6);
 
+    usb_uart_send(0, "High\n\r", 6);
+    usb_uart_send(1, "Low1\n\r", 6);
+    usb_uart_send(2, "Low2\n\r", 6);
+}
 
 
 
