@@ -2,6 +2,7 @@
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/timer.h>
 
@@ -21,10 +22,17 @@ void hard_fault_handler(void)
 }
 
 
-void tim3_isr(void)
+static unsigned counter = 0;
+
+void sys_tick_handler(void)
 {
-    cmds_process();
     usb_iterate();
+    if (counter == 1000)
+    {
+        gpio_toggle(GPIOA, GPIO5);
+        counter = 0;
+    }
+    counter++;
 }
 
 
@@ -39,22 +47,16 @@ int main(void)
     cmds_init();
     usb_init();
 
-    rcc_periph_clock_enable(RCC_TIM3);
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
+    gpio_clear(GPIOA, GPIO5);
 
-    timer_disable_counter(TIM3);
-    timer_continuous_mode(TIM3);
+    systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
+    systick_set_reload(rcc_ahb_frequency / 8 / 1000);
+    systick_counter_enable();
+    systick_interrupt_enable();
 
-    // 1000Hz
-    timer_set_prescaler(TIM3, 72);
-    timer_set_period(TIM3, 1);
-
-    nvic_enable_irq(NVIC_TIM3_IRQ);
-    timer_enable_update_event(TIM3);
-    timer_enable_irq(TIM3, TIM_DIER_UIE);
-    nvic_set_priority(NVIC_TIM3_IRQ, 0);
-    timer_enable_counter(TIM3);
-
-    while(true);
+    while(true)
+        cmds_process();
 
     return 0;
 }
