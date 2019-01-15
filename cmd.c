@@ -63,11 +63,13 @@ void debug_cb()
 
 void pps_cb()
 {
-    unsigned pps, min_v, max_v;
+    unsigned pps, min_v, max_v, ppsB;
 
-    pulsecount_get(&pps, &min_v, &max_v);
+    pulsecount_A_get(&pps, &min_v, &max_v);
+    pulsecount_B_get(&ppsB);
 
     log_out("pulsecount : %u  %u %u", pps, max_v, min_v);
+    log_out("pulsecount B : %u", ppsB);
 }
 
 
