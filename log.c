@@ -38,6 +38,22 @@ static void log_msgv(const char *s, va_list ap)
 }
 
 
+void log_debug_raw(const char *s, ...)
+{
+    if (!log_show_debug)
+        return;
+    va_list ap;
+    va_start(ap, s);
+    char log_buffer[LOG_LINELEN];
+    vsnprintf(log_buffer, LOG_LINELEN, s, ap);
+    log_buffer[LOG_LINELEN-1] = 0;
+
+    platform_raw_msg(log_buffer);
+    va_end(ap);
+}
+
+
+
 void log_out(const char *s, ...)
 {
     va_list ap;

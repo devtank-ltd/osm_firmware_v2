@@ -30,10 +30,14 @@ typedef struct
 
 
 static void uart_broadcast_cb();
+static void debug_cb();
+static void pps_cb();
 
 
 static cmd_t cmds[] = {
     { "uarts", "Broad message to uarts.", uart_broadcast_cb},
+    { "debug", "Toggle debug",            debug_cb},
+    { "pps",   "Print pulse info.",       pps_cb},
     { NULL },
 };
 
@@ -48,6 +52,22 @@ void uart_broadcast_cb()
     usb_uart_send(0, "High\n\r", 6);
     usb_uart_send(1, "Low1\n\r", 6);
     usb_uart_send(2, "Low2\n\r", 6);
+}
+
+
+void debug_cb()
+{
+    log_show_debug = !log_show_debug;
+}
+
+
+void pps_cb()
+{
+    unsigned pps, min_v, max_v;
+
+    pulsecount_get(&pps, &min_v, &max_v);
+
+    log_out("pulsecount : %u  %u %u", pps, max_v, min_v);
 }
 
 
@@ -111,9 +131,8 @@ static void cmds_task(void *args __attribute((unused)))
     for (;;)
     {
         gpio_toggle(GPIOA, GPIO5);
-        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(500));
         cmds_process();
-        log_out("pulsecount : %u", pulsecount_get());
     }
 }
 

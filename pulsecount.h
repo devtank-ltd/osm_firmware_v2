@@ -2,6 +2,7 @@
 
 extern void pulsecount_init();
 
-extern unsigned pulsecount_get();
+extern void pulsecount_get(unsigned * pps, unsigned * min_v, unsigned * max_v);
+;
 
 #endif //__PULSECOUNT__

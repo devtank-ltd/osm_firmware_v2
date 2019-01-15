@@ -2,12 +2,19 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/exti.h>
 #include <libopencm3/stm32/timer.h>
+#include <libopencm3/stm32/adc.h>
 #include <libopencm3/cm3/nvic.h>
 
 #include "log.h"
 
 static volatile unsigned pulsecount_value = 0;
 static volatile unsigned pulsecount_psp = 0;
+
+static volatile uint32_t adc_max = 0;
+static volatile uint32_t adc_min = 0xFFFFFFFF;
+
+static volatile unsigned cur_adc_max = 0;
+static volatile unsigned cur_adc_min = 0xFFFFFFFF;
 
 
 void exti4_15_isr()
@@ -19,18 +26,42 @@ void exti4_15_isr()
 
 void tim3_isr(void)
 {
-    pulsecount_psp = pulsecount_value;
-    pulsecount_value = 0;
-
     timer_clear_flag(TIM3, TIM_SR_CC1IF);
+
+    static unsigned count = 999;
+
+    count++;
+
+    if (count == 1000)
+    {
+        pulsecount_psp = pulsecount_value;
+        pulsecount_value = 0;
+        count = 0;
+        cur_adc_max = adc_max;
+        cur_adc_min = adc_min;
+        adc_max = 0;
+        adc_min = 0xFFFFFFFF;
+    }
+
+    adc_start_conversion_regular(ADC1);
+    while (!(adc_eoc(ADC1)));
+    uint32_t adc = adc_read_regular(ADC1);
+
+
+    if (adc > adc_max)
+        adc_max = adc;
+
+    if (adc < adc_min)
+        adc_min = adc;
 }
 
 
-unsigned pulsecount_get()
+void pulsecount_get(unsigned * pps, unsigned * min_v, unsigned * max_v)
 {
-    return pulsecount_psp;
+    *pps   = pulsecount_psp;
+    *min_v = (unsigned)cur_adc_min;
+    *max_v = (unsigned)cur_adc_max;
 }
-
 
 
 void pulsecount_init()
@@ -57,8 +88,8 @@ void pulsecount_init()
                    TIM_CR1_CKD_CK_INT,
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
-    //-1 because it starts at zero, and interrupts on the overflow 
-    timer_set_prescaler(TIM3, rcc_ahb_frequency/1000-1);
+    //-1 because it starts at zero, and interrupts on the overflow
+    timer_set_prescaler(TIM3, rcc_ahb_frequency / 1000000-1);
     timer_set_period(TIM3, 1000-1);
 
     timer_enable_preload(TIM3);
@@ -70,4 +101,21 @@ void pulsecount_init()
     timer_set_counter(TIM3, 0);
     nvic_enable_irq(NVIC_TIM3_IRQ);
     nvic_set_priority(NVIC_TIM3_IRQ, 1);
+
+    gpio_mode_setup(GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO0);
+
+    rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADCEN);
+
+    adc_power_off(ADC1);
+    adc_set_clk_source(ADC1, ADC_CLKSOURCE_ADC);
+    adc_calibrate(ADC1);
+    adc_set_operation_mode(ADC1, ADC_MODE_SEQUENTIAL);
+    adc_set_continuous_conversion_mode(ADC1);
+    adc_set_right_aligned(ADC1);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_239DOT5);
+
+    uint8_t channel_array[] = {10};
+    adc_set_regular_sequence(ADC1, ARRAY_SIZE(channel_array), channel_array);
+    adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
+    adc_power_on(ADC1);
 }
