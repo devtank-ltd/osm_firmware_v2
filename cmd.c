@@ -32,12 +32,14 @@ typedef struct
 static void uart_broadcast_cb();
 static void debug_cb();
 static void pps_cb();
+static void adc_cb();
 
 
 static cmd_t cmds[] = {
     { "uarts", "Broad message to uarts.", uart_broadcast_cb},
     { "debug", "Toggle debug",            debug_cb},
     { "pps",   "Print pulse info.",       pps_cb},
+    { "adc",   "Print all ADCs.",         adc_cb},
     { NULL },
 };
 
@@ -70,6 +72,12 @@ void pps_cb()
 
     log_out("pulsecount : %u  %u %u", pps, max_v, min_v);
     log_out("pulsecount B : %u", ppsB);
+}
+
+
+void adc_cb()
+{
+    adc_log();
 }
 
 
@@ -116,10 +124,10 @@ void cmds_process()
     if (!found)
     {
         log_out("Unknown command \"%s\"", rx_buffer);
-        log_out("======================");
+        log_out(LOG_SPACER);
         for(cmd_t * cmd = cmds; cmd->key; cmd++)
             log_out("%10s : %s", cmd->key, cmd->desc);
-        log_out("======================");
+        log_out(LOG_SPACER);
     }
     rx_buffer_len = 0;
     rx_ready = false;

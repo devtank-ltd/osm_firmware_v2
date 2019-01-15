@@ -6,4 +6,6 @@ extern void pulsecount_A_get(unsigned * pps, unsigned * min_v, unsigned * max_v)
 
 extern void pulsecount_B_get(unsigned * pps);
 
+extern void adc_log();
+
 #endif //__PULSECOUNT__
