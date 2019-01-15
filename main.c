@@ -55,6 +55,7 @@ int main(void) {
     uarts_setup();
 
     platform_raw_msg("----start----");
+    log_out("Frequency : %lu", rcc_ahb_frequency);
 
     log_init();
     cmds_init();
