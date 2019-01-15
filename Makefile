@@ -31,6 +31,7 @@ SOURCES += main.c \
            uarts.c \
            cmd.c \
            usb.c \
+           pulsecount.c \
            libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM0/port.c \
            libs/freertos/FreeRTOS/Source/portable/MemMang/heap_1.c \
            libs/freertos/FreeRTOS/Source/list.c \

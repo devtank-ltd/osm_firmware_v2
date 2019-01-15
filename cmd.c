@@ -12,6 +12,7 @@
 #include "cmd.h"
 #include "uarts.h"
 #include "usb.h"
+#include "pulsecount.h"
 
 static TaskHandle_t h_blinky = 0;
 
@@ -102,16 +103,17 @@ void cmds_process()
     rx_ready = false;
 }
 
-static void
-cmds_task(void *args __attribute((unused)))
+
+static void cmds_task(void *args __attribute((unused)))
 {
     log_out("cmds_task");
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     for (;;)
     {
         gpio_toggle(GPIOA, GPIO5);
-        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(500));
+        ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(1000));
         cmds_process();
+        log_out("pulsecount : %u", pulsecount_get());
     }
 }
 
