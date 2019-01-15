@@ -78,17 +78,12 @@ void tim3_isr(void)
 
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
     {
-        uint8_t ch = adc_channel_array[n];
-
         adc_start_conversion_regular(ADC1);
         while (!(adc_eoc(ADC1)));
 
         uint32_t adc = adc_read_regular(ADC1);
 
         adc_channel_info_t * channel_info = &adc_channel_info[n];
-
-        if (!count)
-            log_debug_raw("%02u : %02"PRIu8" : %"PRIu32, n, ch, adc);
 
         if (adc > channel_info->max_value)
             channel_info->max_value = adc;
