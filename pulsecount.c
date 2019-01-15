@@ -96,7 +96,7 @@ void tim3_isr(void)
         if (adc < channel_info->min_value)
             channel_info->min_value = adc;
 
-        channel_info->av_value = adc;
+        channel_info->av_value += adc;
     }
 
     timer_clear_flag(TIM3, TIM_SR_CC1IF);
