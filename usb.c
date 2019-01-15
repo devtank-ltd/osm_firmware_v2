@@ -242,7 +242,7 @@ static const struct usb_config_descriptor usb_config =
     .bLength             = USB_DT_CONFIGURATION_SIZE,
     .bDescriptorType     = USB_DT_CONFIGURATION,
     .wTotalLength        = 0,
-    .bNumInterfaces      = 6,
+    .bNumInterfaces      = ARRAY_SIZE(usb_ifaces),
     .bConfigurationValue = 1,
     .iConfiguration      = 0,
     .bmAttributes        = USB_CONFIG_ATTR_DEFAULT,
@@ -318,7 +318,7 @@ void usb_init()
     usbd_dev = usbd_init(&st_usbfs_v2_usb_driver,
                          &usb_dev_desc,
                          &usb_config,
-                         usb_strings, sizeof(usb_strings)/sizeof(char *),
+                         usb_strings, ARRAY_SIZE(usb_strings),
                          usbd_control_buffer, sizeof(usbd_control_buffer));
 
     usbd_register_set_config_callback(usbd_dev, usb_set_config_cb);
