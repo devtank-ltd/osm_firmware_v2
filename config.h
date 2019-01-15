@@ -17,4 +17,7 @@
 #define USB_PRIORITY   5
 
 
+#define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
+
+
 #endif //__CONFIG__
