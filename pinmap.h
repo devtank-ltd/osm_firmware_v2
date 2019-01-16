@@ -1,6 +1,12 @@
 #ifndef __PINMAPS__
 #define __PINMAPS__
 
+typedef struct
+{
+    uint32_t port;
+    uint32_t pins;
+} port_n_pins_t;
+
 #define LED_PORT   GPIOA
 #define LED_PIN    GPIO5
 

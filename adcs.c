@@ -25,11 +25,7 @@ static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_a
 
 void adcs_init()
 {
-    struct
-    {
-        uint32_t port;
-        uint32_t pins;
-    } port_n_pins[] = ADCS_PORT_N_PINS;
+    const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
 
     for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
         gpio_mode_setup(port_n_pins[n].port,
