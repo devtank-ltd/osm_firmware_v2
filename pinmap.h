@@ -1,29 +1,29 @@
 #ifndef __PINMAPS__
 #define __PINMAPS__
 
-#define ADCS_GPIOA  GPIOA
-#define ADCS_A_GPIO4_GPIO6_GPIO7                     (GPIO4 | GPIO6 | GPIO7)
+#define ADCS_A_PORT  GPIOA
+#define ADCS_A_PINS  (GPIO4 | GPIO6 | GPIO7)
 
-#define ADCS_GPIOB  GPIOB
-#define ADCS_B_GPIO0_GPIO1                           (GPIO0 | GPIO1)
+#define ADCS_B_PORT  GPIOB
+#define ADCS_B_PINS  (GPIO0 | GPIO1)
 
-#define ADCS_GPIOC  GPIOC
-#define ADCS_C_GPIO0_GPIO1_GPIO2_GPIO3_GPIO4_GPIO5   (GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4| GPIO5)
+#define ADCS_C_PORT  GPIOC
+#define ADCS_C_PINS  (GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4| GPIO5)
 
 
-#define PPS1_EXTI2_3_ISR        exti2_3_isr
-#define PPS1_NVIC_EXTI2_3_IRQ   NVIC_EXTI2_3_IRQ
-#define PPS1_EXTI3              EXTI3
-#define PPS1_GPIOB_RCC          RCC_GPIOB
-#define PPS1_GPIOB              GPIOB
-#define PPS1_GPIO3              GPIO3
+#define PPS1_EXTI_ISR        exti2_3_isr
+#define PPS1_NVIC_EXTI_IRQ   NVIC_EXTI2_3_IRQ
+#define PPS1_EXTI            EXTI3
+#define PPS1_PORT_RCC        RCC_GPIOB
+#define PPS1_PORT            GPIOB
+#define PPS1_PINS            GPIO3
 
-#define PPS2_EXTI4_15_ISR       exti4_15_isr
-#define PPS2_NVIC_EXTI4_15_IRQ  NVIC_EXTI4_15_IRQ
-#define PPS2_EXTI7              EXTI7
-#define PPS2_GPIOC_RCC          RCC_GPIOC
-#define PPS2_GPIOC              GPIOC
-#define PPS2_GPIO7              GPIO7
+#define PPS2_EXTI_ISR        exti4_15_isr
+#define PPS2_NVIC_EXTI_IRQ   NVIC_EXTI4_15_IRQ
+#define PPS2_EXTI            EXTI7
+#define PPS2_PORT_RCC        RCC_GPIOC
+#define PPS2_PORT            GPIOC
+#define PPS2_PINS            GPIO7
 
 
 #ifdef STM32F0

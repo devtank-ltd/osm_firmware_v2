@@ -16,16 +16,16 @@ static volatile unsigned pulsecount_2_value = 0;
 static volatile unsigned pulsecount_2_psp = 0;
 
 
-void PPS1_EXTI2_3_ISR()
+void PPS1_EXTI_ISR()
 {
-    exti_reset_request(PPS1_EXTI3);
+    exti_reset_request(PPS1_EXTI);
     pulsecount_2_value++;
 }
 
 
-void PPS2_EXTI4_15_ISR()
+void PPS2_EXTI_ISR()
 {
-    exti_reset_request(PPS2_EXTI7);
+    exti_reset_request(PPS2_EXTI);
     pulsecount_1_value++;
 }
 
@@ -57,25 +57,25 @@ void pulsecount_2_get(unsigned * pps)
 
 void pulsecount_init()
 {
-    rcc_periph_clock_enable(PPS1_GPIOB_RCC);
-    rcc_periph_clock_enable(PPS2_GPIOC_RCC);
+    rcc_periph_clock_enable(PPS1_PORT_RCC);
+    rcc_periph_clock_enable(PPS2_PORT_RCC);
     rcc_periph_clock_enable(RCC_SYSCFG_COMP);
 
-    gpio_mode_setup(PPS2_GPIOC, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_GPIO7);
-    gpio_mode_setup(PPS1_GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS1_GPIO3);
+    gpio_mode_setup(PPS2_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_PINS);
+    gpio_mode_setup(PPS1_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS1_PINS);
 
-    exti_select_source(PPS2_EXTI7, PPS2_GPIOC);
-    exti_select_source(PPS1_EXTI3, PPS1_GPIOB);
+    exti_select_source(PPS2_EXTI, PPS2_PORT);
+    exti_select_source(PPS1_EXTI, PPS1_PORT);
 
-    exti_set_trigger(PPS2_EXTI7, EXTI_TRIGGER_FALLING);
-    exti_set_trigger(PPS1_EXTI3, EXTI_TRIGGER_FALLING);
+    exti_set_trigger(PPS2_EXTI, EXTI_TRIGGER_FALLING);
+    exti_set_trigger(PPS1_EXTI, EXTI_TRIGGER_FALLING);
 
-    exti_enable_request(PPS2_EXTI7);
-    exti_enable_request(PPS1_EXTI3);
+    exti_enable_request(PPS2_EXTI);
+    exti_enable_request(PPS1_EXTI);
 
-    nvic_set_priority(PPS2_NVIC_EXTI4_15_IRQ, 2);
-    nvic_enable_irq(PPS2_NVIC_EXTI4_15_IRQ);
+    nvic_set_priority(PPS2_NVIC_EXTI_IRQ, 2);
+    nvic_enable_irq(PPS2_NVIC_EXTI_IRQ);
 
-    nvic_set_priority(PPS1_NVIC_EXTI2_3_IRQ, 2);
-    nvic_enable_irq(PPS1_NVIC_EXTI2_3_IRQ);
+    nvic_set_priority(PPS1_NVIC_EXTI_IRQ, 2);
+    nvic_enable_irq(PPS1_NVIC_EXTI_IRQ);
 }
