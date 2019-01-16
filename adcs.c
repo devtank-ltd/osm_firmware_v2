@@ -6,6 +6,7 @@
 
 #include "log.h"
 #include "adcs.h"
+#include "pinmap.h"
 
 
 static uint8_t adc_channel_array[] = {4,6,7,8,9,10,11,12,13,14,15};
@@ -25,13 +26,13 @@ static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_a
 void adcs_init()
 {
     //ch4, 6, 7
-    gpio_mode_setup(GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO4 | GPIO6 | GPIO7);
+    gpio_mode_setup(ADCS_GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADCS_A_GPIO4_GPIO6_GPIO7);
 
     //ch8, 9
-    gpio_mode_setup(GPIOB, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO0 | GPIO1);
+    gpio_mode_setup(ADCS_GPIOB, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADCS_B_GPIO0_GPIO1);
 
     //ch10,11,12,13,14,15
-    gpio_mode_setup(GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4| GPIO5);
+    gpio_mode_setup(ADCS_GPIOC, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADCS_C_GPIO0_GPIO1_GPIO2_GPIO3_GPIO4_GPIO5);
 
     rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADCEN);
 
