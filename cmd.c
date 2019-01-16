@@ -22,6 +22,10 @@ static unsigned volatile rx_buffer_len = 0;
 static bool     volatile rx_ready      = false;
 
 
+#define PSP_ADC_INDEX 5
+
+
+
 typedef struct
 {
     const char * key;
@@ -66,13 +70,15 @@ void debug_cb()
 
 void pps_cb()
 {
-    unsigned pps, min_v, max_v, ppsB;
+    unsigned pps1, min_v, max_v, pps2;
 
-    pulsecount_A_get(&pps, &min_v, &max_v);
-    pulsecount_B_get(&ppsB);
+    pulsecount_1_get(&pps1);
+    pulsecount_2_get(&pps2);
 
-    log_out("pulsecount : %u  %u %u", pps, max_v, min_v);
-    log_out("pulsecount B : %u", ppsB);
+    adcs_get(PSP_ADC_INDEX, &min_v, &max_v, NULL);
+
+    log_out("pulsecount 1: %u  %u %u", pps1, max_v, min_v);
+    log_out("pulsecount 2 : %u", pps2);
 }
 
 

@@ -7,28 +7,26 @@
 #include <libopencm3/cm3/nvic.h>
 
 #include "log.h"
-#include "adcs.h"
+#include "pinmap.h"
 
-static volatile unsigned pulsecount_A_value = 0;
-static volatile unsigned pulsecount_A_psp = 0;
+static volatile unsigned pulsecount_1_value = 0;
+static volatile unsigned pulsecount_1_psp = 0;
 
-static volatile unsigned pulsecount_B_value = 0;
-static volatile unsigned pulsecount_B_psp = 0;
-
-#define PSP_ADC_INDEX 5
+static volatile unsigned pulsecount_2_value = 0;
+static volatile unsigned pulsecount_2_psp = 0;
 
 
-void exti2_3_isr()
+void PPS1_EXTI2_3_ISR()
 {
-    exti_reset_request(EXTI3);
-    pulsecount_B_value++;
+    exti_reset_request(PPS1_EXTI3);
+    pulsecount_2_value++;
 }
 
 
-void exti4_15_isr()
+void PPS2_EXTI4_15_ISR()
 {
-    exti_reset_request(EXTI7);
-    pulsecount_A_value++;
+    exti_reset_request(PPS2_EXTI7);
+    pulsecount_1_value++;
 }
 
 
@@ -39,46 +37,45 @@ void pulsecount_do_samples()
 
 void pulsecount_second_boardary()
 {
-    pulsecount_A_psp   = pulsecount_A_value;
-    pulsecount_B_psp   = pulsecount_B_value;
-    pulsecount_B_value = pulsecount_A_value = 0;
+    pulsecount_1_psp   = pulsecount_1_value;
+    pulsecount_2_psp   = pulsecount_2_value;
+    pulsecount_2_value = pulsecount_1_value = 0;
 }
 
 
-void pulsecount_A_get(unsigned * pps, unsigned * min_v, unsigned * max_v)
+void pulsecount_1_get(unsigned * pps)
 {
-    *pps = pulsecount_A_psp;
-    adcs_get(PSP_ADC_INDEX, min_v, max_v, NULL);
+    *pps = pulsecount_1_psp;
 }
 
 
-void pulsecount_B_get(unsigned * pps)
+void pulsecount_2_get(unsigned * pps)
 {
-    *pps = pulsecount_B_psp;
+    *pps = pulsecount_2_psp;
 }
 
 
 void pulsecount_init()
 {
-    rcc_periph_clock_enable(RCC_GPIOB);
-    rcc_periph_clock_enable(RCC_GPIOC);
+    rcc_periph_clock_enable(PPS1_GPIOB_RCC);
+    rcc_periph_clock_enable(PPS2_GPIOC_RCC);
     rcc_periph_clock_enable(RCC_SYSCFG_COMP);
 
-    gpio_mode_setup(GPIOC, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO7);
-    gpio_mode_setup(GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO3);
+    gpio_mode_setup(PPS2_GPIOC, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_GPIO7);
+    gpio_mode_setup(PPS1_GPIOB, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS1_GPIO3);
 
-    exti_select_source(EXTI7, GPIOC);
-    exti_select_source(EXTI3, GPIOB);
+    exti_select_source(PPS2_EXTI7, PPS2_GPIOC);
+    exti_select_source(PPS1_EXTI3, PPS1_GPIOB);
 
-    exti_set_trigger(EXTI7, EXTI_TRIGGER_FALLING);
-    exti_set_trigger(EXTI3, EXTI_TRIGGER_FALLING);
+    exti_set_trigger(PPS2_EXTI7, EXTI_TRIGGER_FALLING);
+    exti_set_trigger(PPS1_EXTI3, EXTI_TRIGGER_FALLING);
 
-    exti_enable_request(EXTI7);
-    exti_enable_request(EXTI3);
+    exti_enable_request(PPS2_EXTI7);
+    exti_enable_request(PPS1_EXTI3);
 
-    nvic_set_priority(NVIC_EXTI4_15_IRQ, 2);
-    nvic_enable_irq(NVIC_EXTI4_15_IRQ);
+    nvic_set_priority(PPS2_NVIC_EXTI4_15_IRQ, 2);
+    nvic_enable_irq(PPS2_NVIC_EXTI4_15_IRQ);
 
-    nvic_set_priority(NVIC_EXTI2_3_IRQ, 2);
-    nvic_enable_irq(NVIC_EXTI2_3_IRQ);
+    nvic_set_priority(PPS1_NVIC_EXTI2_3_IRQ, 2);
+    nvic_enable_irq(PPS1_NVIC_EXTI2_3_IRQ);
 }
