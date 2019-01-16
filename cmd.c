@@ -8,6 +8,7 @@
 #include <task.h>
 #include <queue.h>
 
+#include "pinmap.h"
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
@@ -144,10 +145,10 @@ void cmds_process()
 static void cmds_task(void *args __attribute((unused)))
 {
     log_out("cmds_task");
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
+    gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     for (;;)
     {
-        gpio_toggle(GPIOA, GPIO5);
+        gpio_toggle(LED_PORT, LED_PIN);
         ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(500));
         cmds_process();
     }

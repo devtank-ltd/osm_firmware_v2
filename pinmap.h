@@ -1,6 +1,9 @@
 #ifndef __PINMAPS__
 #define __PINMAPS__
 
+#define LED_PORT   GPIOA
+#define LED_PIN    GPIO5
+
 #define ADCS_PORT_N_PINS                                           \
 {                                                                  \
     {GPIOA, (GPIO4 | GPIO6 | GPIO7)},                              \

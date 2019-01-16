@@ -11,7 +11,7 @@
 #include <task.h>
 #include <queue.h>
 
-
+#include "pinmap.h"
 #include "cmd.h"
 #include "log.h"
 #include "usb.h"
@@ -65,8 +65,8 @@ int main(void) {
     pulsecount_init();
     timers_init();
 
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
-    gpio_clear(GPIOA, GPIO5);
+    gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
+    gpio_clear(LED_PORT, LED_PIN);
 
     log_async_log = true;
 
