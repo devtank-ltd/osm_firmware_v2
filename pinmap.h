@@ -1,15 +1,12 @@
 #ifndef __PINMAPS__
 #define __PINMAPS__
 
-#define ADCS_A_PORT  GPIOA
-#define ADCS_A_PINS  (GPIO4 | GPIO6 | GPIO7)
-
-#define ADCS_B_PORT  GPIOB
-#define ADCS_B_PINS  (GPIO0 | GPIO1)
-
-#define ADCS_C_PORT  GPIOC
-#define ADCS_C_PINS  (GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4| GPIO5)
-
+#define ADCS_PORT_N_PINS                                           \
+{                                                                  \
+    {GPIOA, (GPIO4 | GPIO6 | GPIO7)},                              \
+    {GPIOB, (GPIO0 | GPIO1)},                                      \
+    {GPIOC, (GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4| GPIO5)},       \
+}
 
 #define PPS1_EXTI_ISR        exti2_3_isr
 #define PPS1_NVIC_EXTI_IRQ   NVIC_EXTI2_3_IRQ

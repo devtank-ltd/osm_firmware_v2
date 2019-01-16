@@ -25,14 +25,17 @@ static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_a
 
 void adcs_init()
 {
-    //ch4, 6, 7
-    gpio_mode_setup(ADCS_A_PORT, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADCS_A_PINS);
+    struct
+    {
+        uint32_t port;
+        uint32_t pins;
+    } port_n_pins[] = ADCS_PORT_N_PINS;
 
-    //ch8, 9
-    gpio_mode_setup(ADCS_B_PORT, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADCS_B_PINS);
-
-    //ch10,11,12,13,14,15
-    gpio_mode_setup(ADCS_C_PORT, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, ADCS_C_PINS);
+    for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
+        gpio_mode_setup(port_n_pins[n].port,
+                        GPIO_MODE_ANALOG,
+                        GPIO_PUPD_NONE,
+                        port_n_pins[n].pins);
 
     rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADCEN);
 
