@@ -12,6 +12,7 @@
 #include "cmd.h"
 #include "uarts.h"
 #include "usb.h"
+#include "adcs.h"
 #include "pulsecount.h"
 
 static TaskHandle_t h_blinky = 0;
@@ -77,7 +78,7 @@ void pps_cb()
 
 void adc_cb()
 {
-    adc_log();
+    adcs_log();
 }
 
 

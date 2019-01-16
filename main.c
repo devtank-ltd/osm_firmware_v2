@@ -16,8 +16,9 @@
 #include "log.h"
 #include "usb.h"
 #include "uarts.h"
+#include "adcs.h"
 #include "pulsecount.h"
-
+#include "timers.h"
 
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
@@ -60,7 +61,9 @@ int main(void) {
     log_init();
     cmds_init();
     usb_init();
+    adcs_init();
     pulsecount_init();
+    timers_init();
 
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
     gpio_clear(GPIOA, GPIO5);
