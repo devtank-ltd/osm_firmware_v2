@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <libopencm3/stm32/gpio.h>
 
@@ -12,16 +13,18 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-#include "usb.h"
+#include "usb_uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
 #include "inputs.h"
+#include "outputs.h"
 
-static TaskHandle_t h_blinky = 0;
+static TaskHandle_t      h_blinky = 0;
 
 static char              rx_buffer[CMD_LINELEN];
 static unsigned volatile rx_buffer_len = 0;
 static bool     volatile rx_ready      = false;
+static unsigned          rx_pos        = 0;
 
 
 #define PSP_ADC_INDEX 5
@@ -39,6 +42,8 @@ typedef struct
 static void uart_broadcast_cb();
 static void debug_cb();
 static void pps_cb();
+static void set_cb();
+static void clear_cb();
 
 
 static cmd_t cmds[] = {
@@ -47,6 +52,9 @@ static cmd_t cmds[] = {
     { "pps",    "Print pulse info.",       pps_cb},
     { "adc",    "Print all ADCs.",         adcs_log},
     { "inputs", "Print all inputs.",       inputs_log},
+    { "outputs","Print all inputs.",       outputs_log},
+    { "set",    "Turn on output",          set_cb},
+    { "clear",  "Turn off output",         clear_cb},
     { NULL },
 };
 
@@ -84,6 +92,21 @@ void pps_cb()
 }
 
 
+void set_cb()
+{
+    unsigned output = strtoul(rx_buffer + rx_pos, NULL, 10);
+    outputs_set(output, true);
+}
+
+
+void clear_cb()
+{
+    unsigned output = strtoul(rx_buffer + rx_pos, NULL, 10);
+    outputs_set(output, false);
+}
+
+
+
 bool cmds_add_char(char c)
 {
     if (rx_ready)
@@ -116,8 +139,10 @@ void cmds_process()
     bool found = false;
     for(cmd_t * cmd = cmds; cmd->key; cmd++)
     {
-        if(!strcmp(cmd->key, rx_buffer))
+        unsigned keylen = strlen(cmd->key);
+        if(rx_buffer_len >= keylen && !strcmp(cmd->key, rx_buffer))
         {
+            rx_pos = keylen;
             found = true;
             cmd->cb();
             break;

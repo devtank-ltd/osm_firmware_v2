@@ -30,11 +30,12 @@ SOURCES += main.c \
            log.c \
            uarts.c \
            cmd.c \
-           usb.c \
+           usb_uarts.c \
            adcs.c \
            pulsecount.c \
            timers.c \
            inputs.c \
+           outputs.c \
            libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM0/port.c \
            libs/freertos/FreeRTOS/Source/portable/MemMang/heap_1.c \
            libs/freertos/FreeRTOS/Source/list.c \
@@ -65,6 +66,9 @@ $(OBJECTS): $(BUILD_DIR)%.o: %.c
 
 $(LIBOPENCM3) :
 	$(MAKE) -C libs/libopencm3 TARGETS=stm32/f0
+
+size: $(TARGET_ELF)
+	$(SIZE) $(TARGET_ELF)
 
 flash: $(TARGET_ELF)
 

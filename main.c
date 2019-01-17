@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
@@ -14,12 +15,13 @@
 #include "pinmap.h"
 #include "cmd.h"
 #include "log.h"
-#include "usb.h"
+#include "usb_uarts.h"
 #include "uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
 #include "timers.h"
 #include "inputs.h"
+#include "outputs.h"
 
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
@@ -66,6 +68,7 @@ int main(void) {
     pulsecount_init();
     timers_init();
     inputs_init();
+    outputs_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);

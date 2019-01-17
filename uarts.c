@@ -5,7 +5,7 @@
 
 #include "cmd.h"
 #include "log.h"
-#include "usb.h"
+#include "usb_uarts.h"
 #include "pinmap.h"
 
 
@@ -24,16 +24,8 @@ typedef struct
 static const uart_channel_t uart_channels[] = UART_CHANNELS;
 
 
-#ifdef STM32F0
 #define UART_1_ISR  usart1_isr
 #define UART_2_ISR  usart2_isr
-#else
-#define UART_1_ISR  usart1_exti25_isr
-#define UART_2_ISR  usart2_exti26_isr
-#define UART_3_ISR  usart3_exti28_isr
-#define UART_4_ISR  uart4_exti34_isr
-#endif
-
 
 
 static void uart_setup(const uart_channel_t * channel)
@@ -110,8 +102,7 @@ void usart3_4_isr(void)
     process_serial(3);
 }
 #else
-void UART_3_ISR(void) { process_serial(2); }
-void UART_4_ISR(void) { process_serial(3); }
+#error Requires handling for UART 3 and 4.
 #endif
 
 void uarts_setup(void)
