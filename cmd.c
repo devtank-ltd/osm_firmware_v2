@@ -95,6 +95,7 @@ void pps_cb()
 void set_cb()
 {
     unsigned output = strtoul(rx_buffer + rx_pos, NULL, 10);
+    log_out("Set output %u to ON", output);
     outputs_set(output, true);
 }
 
@@ -102,6 +103,7 @@ void set_cb()
 void clear_cb()
 {
     unsigned output = strtoul(rx_buffer + rx_pos, NULL, 10);
+    log_out("Set output %u to OFF", output);
     outputs_set(output, false);
 }
 
@@ -140,7 +142,7 @@ void cmds_process()
     for(cmd_t * cmd = cmds; cmd->key; cmd++)
     {
         unsigned keylen = strlen(cmd->key);
-        if(rx_buffer_len >= keylen && !strcmp(cmd->key, rx_buffer))
+        if(rx_buffer_len >= keylen && !strncmp(cmd->key, rx_buffer, keylen))
         {
             rx_pos = keylen;
             found = true;

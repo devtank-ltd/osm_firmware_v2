@@ -17,7 +17,7 @@ void     outputs_init()
     {
         const port_n_pins_t * output = &outputs[n];
         rcc_periph_clock_enable(PORT_TO_RCC(output->port));
-        gpio_mode_setup(output->port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, output->pins);
+        gpio_mode_setup(output->port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLDOWN, output->pins);
     }
 }
 
