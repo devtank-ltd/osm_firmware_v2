@@ -57,26 +57,26 @@ void pulsecount_2_get(unsigned * pps)
 
 void pulsecount_init()
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(PPS2_PORT));
     rcc_periph_clock_enable(PORT_TO_RCC(PPS1_PORT));
+    rcc_periph_clock_enable(PORT_TO_RCC(PPS2_PORT));
 
     rcc_periph_clock_enable(RCC_SYSCFG_COMP);
 
-    gpio_mode_setup(PPS2_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_PINS);
     gpio_mode_setup(PPS1_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS1_PINS);
+    gpio_mode_setup(PPS2_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_PINS);
 
-    exti_select_source(PPS2_EXTI, PPS2_PORT);
     exti_select_source(PPS1_EXTI, PPS1_PORT);
+    exti_select_source(PPS2_EXTI, PPS2_PORT);
 
-    exti_set_trigger(PPS2_EXTI, EXTI_TRIGGER_FALLING);
     exti_set_trigger(PPS1_EXTI, EXTI_TRIGGER_FALLING);
+    exti_set_trigger(PPS2_EXTI, EXTI_TRIGGER_FALLING);
 
-    exti_enable_request(PPS2_EXTI);
     exti_enable_request(PPS1_EXTI);
-
-    nvic_set_priority(PPS2_NVIC_EXTI_IRQ, 2);
-    nvic_enable_irq(PPS2_NVIC_EXTI_IRQ);
+    exti_enable_request(PPS2_EXTI);
 
     nvic_set_priority(PPS1_NVIC_EXTI_IRQ, 2);
     nvic_enable_irq(PPS1_NVIC_EXTI_IRQ);
+
+    nvic_set_priority(PPS2_NVIC_EXTI_IRQ, 2);
+    nvic_enable_irq(PPS2_NVIC_EXTI_IRQ);
 }
