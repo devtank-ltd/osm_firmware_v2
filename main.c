@@ -19,6 +19,7 @@
 #include "adcs.h"
 #include "pulsecount.h"
 #include "timers.h"
+#include "inputs.h"
 
 extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
 extern void xPortSysTickHandler( void );
@@ -64,6 +65,7 @@ int main(void) {
     adcs_init();
     pulsecount_init();
     timers_init();
+    inputs_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);

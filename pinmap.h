@@ -51,5 +51,17 @@ typedef struct
 #endif
 
 
+#define INPUTS_PORT_N_PINS        \
+{                                 \
+    {GPIOC, GPIO12},              \
+    {GPIOA, GPIO13},              \
+    {GPIOA, GPIO14},              \
+    {GPIOA, GPIO15},              \
+    {GPIOB, GPIO7},               \
+    {GPIOC, GPIO13},              \
+    {GPIOC, GPIO14},              \
+    {GPIOC, GPIO15},              \
+    {GPIOF, GPIO0},               \
+}
 
 #endif //__PINMAPS__

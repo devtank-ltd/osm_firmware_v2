@@ -5,6 +5,7 @@
 
 #include "adcs.h"
 #include "pulsecount.h"
+#include "inputs.h"
 
 
 void tim3_isr(void)
@@ -17,11 +18,13 @@ void tim3_isr(void)
     {
         pulsecount_second_boardary();
         adcs_second_boardary();
+        inputs_second_boardary();
         count = 0;
     }
 
     pulsecount_do_samples();
     adcs_do_samples();
+    inputs_do_sample();
 
     timer_clear_flag(TIM3, TIM_SR_CC1IF);
 }

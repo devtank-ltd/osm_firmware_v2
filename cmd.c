@@ -15,6 +15,7 @@
 #include "usb.h"
 #include "adcs.h"
 #include "pulsecount.h"
+#include "inputs.h"
 
 static TaskHandle_t h_blinky = 0;
 
@@ -38,14 +39,14 @@ typedef struct
 static void uart_broadcast_cb();
 static void debug_cb();
 static void pps_cb();
-static void adc_cb();
 
 
 static cmd_t cmds[] = {
-    { "uarts", "Broad message to uarts.", uart_broadcast_cb},
-    { "debug", "Toggle debug",            debug_cb},
-    { "pps",   "Print pulse info.",       pps_cb},
-    { "adc",   "Print all ADCs.",         adc_cb},
+    { "uarts",  "Broad message to uarts.", uart_broadcast_cb},
+    { "debug",  "Toggle debug",            debug_cb},
+    { "pps",    "Print pulse info.",       pps_cb},
+    { "adc",    "Print all ADCs.",         adcs_log},
+    { "inputs", "Print all inputs.",       inputs_log},
     { NULL },
 };
 
@@ -81,13 +82,6 @@ void pps_cb()
     log_out("pulsecount 1: %u  %u %u", pps1, max_v, min_v);
     log_out("pulsecount 2 : %u", pps2);
 }
-
-
-void adc_cb()
-{
-    adcs_log();
-}
-
 
 
 bool cmds_add_char(char c)
