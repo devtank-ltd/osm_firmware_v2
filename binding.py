@@ -95,7 +95,7 @@ class io_board_py_t(object):
                   b"outputs" : output_t,
                   b"adcs" : adc_t}
     __READTIME = 2
-    __WRITEDELAY = 0.0005 # Stop flooding STM32 faster than it can deal with
+    __WRITEDELAY = 0.001 # Stop flooding STM32 faster than it can deal with
 
     def __init__(self, dev):
         self.pps = []
