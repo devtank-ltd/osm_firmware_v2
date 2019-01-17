@@ -45,7 +45,7 @@ void     output_output_log(unsigned output)
 {
     const port_n_pins_t * gpio = &outputs[output];
     uint16_t on_off = gpio_get(gpio->port, gpio->pins);
-    log_out("Output %02u : %s", output, (on_off)?"on":"off");
+    log_out("Output %02u : %s", output, (on_off)?"ON":"OFF");
 }
 
 
