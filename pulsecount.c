@@ -57,8 +57,9 @@ void pulsecount_2_get(unsigned * pps)
 
 void pulsecount_init()
 {
-    rcc_periph_clock_enable(PPS1_PORT_RCC);
-    rcc_periph_clock_enable(PPS2_PORT_RCC);
+    rcc_periph_clock_enable(PORT_TO_RCC(PPS2_PORT));
+    rcc_periph_clock_enable(PORT_TO_RCC(PPS1_PORT));
+
     rcc_periph_clock_enable(RCC_SYSCFG_COMP);
 
     gpio_mode_setup(PPS2_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_PINS);

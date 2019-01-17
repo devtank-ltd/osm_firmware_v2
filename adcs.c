@@ -28,10 +28,13 @@ void adcs_init()
     const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
 
     for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
+    {
+        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pins[n].port));
         gpio_mode_setup(port_n_pins[n].port,
                         GPIO_MODE_ANALOG,
                         GPIO_PUPD_NONE,
                         port_n_pins[n].pins);
+    }
 
     rcc_peripheral_enable_clock(&RCC_APB2ENR, RCC_APB2ENR_ADCEN);
 

@@ -13,7 +13,6 @@ typedef struct
 {
     uint32_t              usart;
     enum rcc_periph_clken uart_clk;
-    enum rcc_periph_clken gpio_clk;
     uint32_t              gpioport;
     uint16_t              pins;
     uint8_t               alt_func_num;
@@ -39,7 +38,7 @@ static const uart_channel_t uart_channels[] = UART_CHANNELS;
 
 static void uart_setup(const uart_channel_t * channel)
 {
-    rcc_periph_clock_enable(channel->gpio_clk);
+    rcc_periph_clock_enable(PORT_TO_RCC(channel->gpioport));
     rcc_periph_clock_enable(channel->uart_clk);
 
     gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
