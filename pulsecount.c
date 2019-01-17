@@ -43,15 +43,20 @@ void pulsecount_second_boardary()
 }
 
 
-void pulsecount_1_get(unsigned * pps)
+unsigned pulsecount_get_count()
 {
-    *pps = pulsecount_1_psp;
+    return 2;
 }
 
 
-void pulsecount_2_get(unsigned * pps)
+void pulsecount_get(unsigned pps, unsigned * count)
 {
-    *pps = pulsecount_2_psp;
+    if (pps == 0)
+        *count = pulsecount_1_psp;
+    else if (pps == 1)
+        *count = pulsecount_2_psp;
+    else
+        *count = 0;
 }
 
 
@@ -79,4 +84,21 @@ void pulsecount_init()
 
     nvic_set_priority(PPS2_NVIC_EXTI_IRQ, 2);
     nvic_enable_irq(PPS2_NVIC_EXTI_IRQ);
+}
+
+
+void pulsecount_pps_log(unsigned pps)
+{
+    if (pps == 0)
+        log_out("pulsecount 0 : %u", pulsecount_1_psp);
+    else if (pps == 1)
+        log_out("pulsecount 1 : %u", pulsecount_2_psp);
+
+}
+
+
+void pulsecount_log()
+{
+    pulsecount_pps_log(0);
+    pulsecount_pps_log(1);
 }

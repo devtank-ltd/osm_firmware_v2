@@ -17,21 +17,37 @@ void tim3_isr(void)
     if (count == 1000)
     {
         pulsecount_second_boardary();
-        adcs_second_boardary();
-        inputs_second_boardary();
         count = 0;
     }
 
     pulsecount_do_samples();
-    adcs_do_samples();
-    inputs_do_sample();
 
     timer_clear_flag(TIM3, TIM_SR_CC1IF);
 }
 
 
+void tim2_isr(void)
+{
+    static unsigned count = 999;
+
+    count++;
+
+    if (count == 1000)
+    {
+        adcs_second_boardary();
+        count = 0;
+    }
+
+    adcs_do_samples();
+    timer_clear_flag(TIM2, TIM_SR_CC1IF);
+}
+
+
+
+
 void timers_init()
 {
+    rcc_periph_clock_enable(RCC_TIM2);
     rcc_periph_clock_enable(RCC_TIM3);
 
     timer_disable_counter(TIM3);
@@ -53,4 +69,26 @@ void timers_init()
     timer_set_counter(TIM3, 0);
     nvic_enable_irq(NVIC_TIM3_IRQ);
     nvic_set_priority(NVIC_TIM3_IRQ, 1);
+
+
+
+    timer_disable_counter(TIM2);
+
+    timer_set_mode(TIM2,
+                   TIM_CR1_CKD_CK_INT,
+                   TIM_CR1_CMS_EDGE,
+                   TIM_CR1_DIR_UP);
+    //-1 because it starts at zero, and interrupts on the overflow
+    timer_set_prescaler(TIM2, rcc_ahb_frequency / 1000000-1);
+    timer_set_period(TIM2, 1000-1);
+
+    timer_enable_preload(TIM2);
+    timer_continuous_mode(TIM2);
+
+    timer_enable_counter(TIM2);
+    timer_enable_irq(TIM2, TIM_DIER_CC1IE);
+
+    timer_set_counter(TIM2, 0);
+    nvic_enable_irq(NVIC_TIM2_IRQ);
+    nvic_set_priority(NVIC_TIM2_IRQ, 2);
 }

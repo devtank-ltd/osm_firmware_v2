@@ -35,12 +35,22 @@ void     outputs_set(unsigned index, bool on_off)
 }
 
 
+unsigned outputs_get_count()
+{
+    return ARRAY_SIZE(outputs);
+}
+
+
+void     output_output_log(unsigned output)
+{
+    const port_n_pins_t * gpio = &outputs[output];
+    uint16_t on_off = gpio_get(gpio->port, gpio->pins);
+    log_out("Output %02u : %s", output, (on_off)?"on":"off");
+}
+
+
 void     outputs_log()
 {
     for(unsigned n = 0; n < ARRAY_SIZE(outputs); n++)
-    {
-        const port_n_pins_t * output = &outputs[n];
-        uint16_t on_off = gpio_get(output->port, output->pins);
-        log_out("Output %02u : %s", n, (on_off)?"on":"off");
-    }
+        output_output_log(n);
 }

@@ -123,17 +123,22 @@ unsigned adcs_get_count()
 }
 
 
+void adcs_adc_log(unsigned adc)
+{
+    if (adc >= ARRAY_SIZE(adc_channel_array))
+        return;
+
+    volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
+
+    log_out("ADC : %u (Channel : %u)", adc, adc_channel_array[adc]);
+    log_out("Min : %u", channel_info->min_value);
+    log_out("Max : %u", channel_info->max_value);
+    log_out("Avg : %f", channel_info->av_value);
+}
+
+
 void adcs_log()
 {
-    log_out(LOG_SPACER);
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_info_cur); n++)
-    {
-        volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[n];
-
-        log_out("Channel : %u", adc_channel_array[n]);
-        log_out("Min     : %u", channel_info->min_value);
-        log_out("Max     : %u", channel_info->max_value);
-        log_out("Avg     : %f", channel_info->av_value);
-    }
-    log_out(LOG_SPACER);
+        adcs_adc_log(n);
 }

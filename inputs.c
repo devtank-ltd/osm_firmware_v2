@@ -8,16 +8,7 @@
 #include "inputs.h"
 #include "log.h"
 
-typedef struct
-{
-    unsigned on_count;
-    unsigned off_count;
-} __attribute__((packed)) input_count_t;
-
-
-static const port_n_pins_t    inputs[] = INPUTS_PORT_N_PINS;
-static input_count_t          inputs_count[ARRAY_SIZE(inputs)]     = {0};
-static volatile input_count_t inputs_cur_count[ARRAY_SIZE(inputs)] = {0};
+static const port_n_pins_t inputs[] = INPUTS_PORT_N_PINS;
 
 
 void     inputs_init()
@@ -32,57 +23,25 @@ void     inputs_init()
 }
 
 
-void     inputs_do_sample()
-{
-    for(unsigned n = 0; n < ARRAY_SIZE(inputs); n++)
-    {
-        const port_n_pins_t * input = &inputs[n];
-        if (gpio_get(input->port, input->pins))
-            inputs_count[n].on_count++;
-        else
-            inputs_count[n].off_count++;
-    }
-}
-
-
-void     inputs_second_boardary()
-{
-    memcpy((input_count_t*)inputs_cur_count, inputs_count, sizeof(inputs_count));
-    memset(inputs_count, 0, sizeof(inputs_count));
-}
-
-
 unsigned inputs_get_count()
 {
     return ARRAY_SIZE(inputs);
 }
 
 
-void     inputs_get_input_counts(unsigned input, unsigned * on_count, unsigned * off_count)
+void     inputs_input_log(unsigned input)
 {
     if (input >= ARRAY_SIZE(inputs))
-    {
-        *on_count  = 0;
-        *off_count = 0;
         return;
-    }
 
-    volatile input_count_t * input_cur_count = &inputs_cur_count[input];
-
-    *on_count  = input_cur_count->on_count;
-    *off_count = input_cur_count->off_count;
+    const port_n_pins_t * input_gpio = &inputs[input];
+    log_out("Input %02u : %s", input,
+        (gpio_get(input_gpio->port, input_gpio->pins))?"ON":"OFF");
 }
 
 
 void     inputs_log()
 {
-    log_out(LOG_SPACER);
     for(unsigned n = 0; n < ARRAY_SIZE(inputs); n++)
-    {
-        volatile input_count_t * input_cur_count = &inputs_cur_count[n];
-        log_out("Input %02u : %04u %04u", n,
-                                          input_cur_count->on_count,
-                                          input_cur_count->off_count);
-    }
-    log_out(LOG_SPACER);
+        inputs_input_log(n);
 }
