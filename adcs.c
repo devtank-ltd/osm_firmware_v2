@@ -22,7 +22,7 @@ static adc_channel_info_t adc_channel_info[ARRAY_SIZE(adc_channel_array)] = {{0}
 
 static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_array)] = {{0}};
 
-static volatile unsigned call_count = 1;
+static unsigned call_count = 0;
 
 void adcs_init()
 {
@@ -90,7 +90,7 @@ void adcs_second_boardary()
         adc_channel_info_cur[n].av_value /= call_count;
     }
 
-    call_count = 1;
+    call_count = 0;
 }
 
 

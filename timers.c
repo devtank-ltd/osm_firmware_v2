@@ -18,11 +18,11 @@ void tim3_isr(void)
 
 void tim2_isr(void)
 {
-    static unsigned count = 99;
+    static unsigned count = 999;
 
     count++;
 
-    if (count == 100)
+    if (count == 1000)
     {
         adcs_second_boardary();
         count = 0;
@@ -69,7 +69,7 @@ void timers_init()
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
     //-1 because it starts at zero, and interrupts on the overflow
-    timer_set_prescaler(TIM2, rcc_ahb_frequency / 100000-1);
+    timer_set_prescaler(TIM2, rcc_ahb_frequency / 1000000-1);
     timer_set_period(TIM2, 1000-1);
 
     timer_enable_preload(TIM2);
