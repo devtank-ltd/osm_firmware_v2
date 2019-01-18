@@ -43,15 +43,17 @@ typedef struct
 #define INPUTS_PORT_N_PINS        \
 {                                 \
     {GPIOC, GPIO12},              \
-    {GPIOA, GPIO13},              \
-    {GPIOA, GPIO14},              \
     {GPIOA, GPIO15},              \
     {GPIOB, GPIO7},               \
     {GPIOC, GPIO13},              \
     {GPIOC, GPIO14},              \
     {GPIOC, GPIO15},              \
+    {GPIOD, GPIO2},               \
     {GPIOF, GPIO0},               \
+    {GPIOF, GPIO1},               \
 }
+
+
 
 #define OUTPUTS_PORT_N_PINS       \
 {                                 \
