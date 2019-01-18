@@ -1,8 +1,10 @@
 #! /usr/bin/python3
 import os
+import sys
 import time
 import serial
 import weakref
+import serial.tools.list_ports
 
 
 _DEBUG = True if "DEBUG" in os.environ else False
@@ -154,9 +156,19 @@ class io_board_py_t(object):
         return self.read_response()
 
 
+devpath = None
 
+for p in serial.tools.list_ports.comports():
+    if p.product == "STM32 STLink":
+        devpath = p.device
 
-comm = io_board_py_t('/dev/serial/by-id/usb-STMicroelectronics_STM32_STLink_066AFF575550897767154140-if02')
+if devpath:
+    print("Found device :", devpath)
+else:
+    print("Not STM32 STLink found.")
+    sys.exit(-1)
+
+comm = io_board_py_t(devpath)
 
 for pps in comm.pps:
     print("PPS", pps.index, pps.value)
@@ -169,4 +181,3 @@ for gpio_out in comm.outputs:
 
 for adc in comm.adcs:
     print("ADC", adc.index, adc.min_value, adc.max_value, adc.avg_value)
-
