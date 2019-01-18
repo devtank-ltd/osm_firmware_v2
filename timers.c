@@ -20,8 +20,6 @@ void tim3_isr(void)
         count = 0;
     }
 
-    pulsecount_do_samples();
-
     timer_clear_flag(TIM3, TIM_SR_CC1IF);
 }
 

@@ -30,11 +30,6 @@ void PPS2_EXTI_ISR()
 }
 
 
-void pulsecount_do_samples()
-{}
-
-
-
 void pulsecount_second_boardary()
 {
     pulsecount_1_psp   = pulsecount_1_value;

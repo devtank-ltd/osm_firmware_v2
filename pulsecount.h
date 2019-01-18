@@ -2,7 +2,6 @@
 
 extern void     pulsecount_init();
 
-extern void     pulsecount_do_samples();
 extern void     pulsecount_second_boardary();
 
 extern unsigned pulsecount_get_count();
