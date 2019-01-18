@@ -22,6 +22,7 @@ static adc_channel_info_t adc_channel_info[ARRAY_SIZE(adc_channel_array)] = {{0}
 
 static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_array)] = {{0}};
 
+static volatile unsigned call_count = 1;
 
 void adcs_init()
 {
@@ -53,6 +54,7 @@ void adcs_init()
 
 void adcs_do_samples()
 {
+    call_count++;
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
     {
         adc_start_conversion_regular(ADC1);
@@ -85,8 +87,10 @@ void adcs_second_boardary()
         channel_info->min_value = 0xFFFFFFFF;
         channel_info->av_value  = 0;
 
-        adc_channel_info_cur[n].av_value /= 1000.0;
+        adc_channel_info_cur[n].av_value /= call_count;
     }
+
+    call_count = 1;
 }
 
 
