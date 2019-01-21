@@ -56,8 +56,7 @@ typedef struct
     {GPIOC, GPIO14},   /* Input 4 */    \
     {GPIOC, GPIO15},   /* Input 5 */    \
     {GPIOD, GPIO2},    /* Input 6 */    \
-    {GPIOF, GPIO0},    /* Input 7 */    \
-    {GPIOF, GPIO1},    /* Input 8 */    \
+    {GPIOF, GPIO1},    /* Input 7 */    \
 }
 
 
@@ -71,6 +70,7 @@ typedef struct
     {GPIOB, GPIO2},     /* Output 4 */   \
     {GPIOB, GPIO14},    /* Output 5 */   \
     {GPIOB, GPIO15},    /* Output 6 */   \
+    {GPIOF, GPIO0},     /* Output 7 */    \
 }
 
 #endif //__PINMAPS__
