@@ -12,12 +12,19 @@ typedef struct
 #define LED_PORT   GPIOA
 #define LED_PIN    GPIO5
 
-//Channels 4,6,7,8,9,10,11,12,13,14,15
-#define ADCS_PORT_N_PINS                                           \
-{                                                                  \
-    {GPIOA, (GPIO4 | GPIO6 | GPIO7)},                              \
-    {GPIOB, (GPIO0 | GPIO1)},                                      \
-    {GPIOC, (GPIO0 | GPIO1 | GPIO2 | GPIO3 | GPIO4| GPIO5)},       \
+#define ADCS_PORT_N_PINS                            \
+{                                                   \
+    {GPIOA, GPIO4},      /* ADC 0  = Channel 4  */  \
+    {GPIOA, GPIO6},      /* ADC 1  = Channel 6  */  \
+    {GPIOA, GPIO7},      /* ADC 2  = Channel 7  */  \
+    {GPIOB, GPIO0},      /* ADC 3  = Channel 8  */  \
+    {GPIOB, GPIO1},      /* ADC 4  = Channel 9  */  \
+    {GPIOC, GPIO0},      /* ADC 5  = Channel 10 */  \
+    {GPIOC, GPIO1},      /* ADC 6  = Channel 11 */  \
+    {GPIOC, GPIO2},      /* ADC 7  = Channel 12 */  \
+    {GPIOC, GPIO3},      /* ADC 8  = Channel 13 */  \
+    {GPIOC, GPIO4},      /* ADC 9  = Channel 14 */  \
+    {GPIOC, GPIO5},      /* ADC 10 = Channel 15 */  \
 }
 
 #define PPS1_EXTI_ISR        exti2_3_isr
@@ -40,32 +47,30 @@ typedef struct
     { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY },\
 }
 
-#define INPUTS_PORT_N_PINS        \
-{                                 \
-    {GPIOC, GPIO12},              \
-    {GPIOA, GPIO15},              \
-    {GPIOB, GPIO7},               \
-    {GPIOC, GPIO13},              \
-    {GPIOC, GPIO14},              \
-    {GPIOC, GPIO15},              \
-    {GPIOD, GPIO2},               \
-    {GPIOF, GPIO0},               \
-    {GPIOF, GPIO1},               \
+#define INPUTS_PORT_N_PINS              \
+{                                       \
+    {GPIOC, GPIO12},   /* Input 0 */    \
+    {GPIOA, GPIO15},   /* Input 1 */    \
+    {GPIOB, GPIO7},    /* Input 2 */    \
+    {GPIOC, GPIO13},   /* Input 3 */    \
+    {GPIOC, GPIO14},   /* Input 4 */    \
+    {GPIOC, GPIO15},   /* Input 5 */    \
+    {GPIOD, GPIO2},    /* Input 6 */    \
+    {GPIOF, GPIO0},    /* Input 7 */    \
+    {GPIOF, GPIO1},    /* Input 8 */    \
 }
 
 
 
-#define OUTPUTS_PORT_N_PINS       \
-{                                 \
-    {GPIOC, GPIO8},               \
-    {GPIOC, GPIO6},               \
-    {GPIOB, GPIO12},              \
-    {GPIOB, GPIO11},              \
-    {GPIOB, GPIO2},               \
-    {GPIOB, GPIO14},              \
-    {GPIOB, GPIO15},              \
+#define OUTPUTS_PORT_N_PINS              \
+{                                        \
+    {GPIOC, GPIO8},     /* Output 0 */   \
+    {GPIOC, GPIO6},     /* Output 1 */   \
+    {GPIOB, GPIO12},    /* Output 2 */   \
+    {GPIOB, GPIO11},    /* Output 3 */   \
+    {GPIOB, GPIO2},     /* Output 4 */   \
+    {GPIOB, GPIO14},    /* Output 5 */   \
+    {GPIOB, GPIO15},    /* Output 6 */   \
 }
-
-
 
 #endif //__PINMAPS__
