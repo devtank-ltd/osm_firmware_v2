@@ -186,11 +186,17 @@ def lookup_gpio(connector, pin):
     sys.exit(0)
 
 
-if len(sys.argv) < 2:
+def print_help():
+    print("2 arguments:")
     print("<connector> <pin>")
     print("connector = CN7 or CN10")
     print("pin = number")
+    print("1 argument:")
     print("<GPIO Name>")
+
+
+if len(sys.argv) < 2:
+    print_help()
     sys.exit(-1)
 
 
