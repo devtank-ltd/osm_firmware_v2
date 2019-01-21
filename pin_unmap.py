@@ -187,11 +187,15 @@ def lookup_gpio(connector, pin):
 
 
 def print_help():
+    print("="*72)
     print("2 arguments:")
+    print("="*72)
     print("<connector> <pin>")
     print("connector = CN7 or CN10")
     print("pin = number")
+    print("="*72)
     print("1 argument:")
+    print("="*72)
     print("<GPIO Name>")
 
 
