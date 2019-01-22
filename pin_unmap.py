@@ -124,7 +124,7 @@ def lookup_connector(gpio_name, connector):
         if connector[p] == gpio_name:
             print("%s %u = %s" % (connector_name, p, gpio_name))
             print_io_board(gpio_name)
-            sys.exit(0)
+            return True
 
 
 def lookup_gpio(connector, pin):
@@ -135,7 +135,24 @@ def lookup_gpio(connector, pin):
     sys.exit(0)
 
 
+def print_connect(connector):
+    pins = [ pin for pin in connector ]
+    pins.remove("name")
+    pins.sort()
+
+    for pin in pins:
+        gpio = connector[pin]
+        if gpio.startswith("P"):
+            role = lookup_io_board(gpio)
+            if role:
+                print("%4s %2u %4s = %s %u" % (connector["name"], pin, gpio, role["name"], role[gpio]))
+
+
 def print_help():
+
+    print_connect(CN7)
+    print_connect(CN10)
+
     print("="*72)
     print("2 arguments:")
     print("="*72)
@@ -194,8 +211,9 @@ def main():
 
     if len(sys.argv) == 2:
         gpio_name = sys.argv[1]
-        lookup_connector(gpio_name, CN7)
-        lookup_connector(gpio_name, CN10)
+        if lookup_connector(gpio_name, CN7) and \
+          lookup_connector(gpio_name, CN10):
+              sys.exit(0)
         print("GPIO %s not found" % gpio_name)
         sys.exit(-1)
 
