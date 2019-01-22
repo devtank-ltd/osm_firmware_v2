@@ -78,6 +78,8 @@ typedef struct
     {GPIOA, GPIO8},     /* Output 5 */   \
     {GPIOB, GPIO10},    /* Output 6 */   \
     {GPIOB, GPIO6},     /* Output 7 */   \
+    {GPIOB, GPIO14},    /* Output 8 */   \
+    {GPIOB, GPIO15},    /* Output 9 */   \
 }
 
 #define OUTPUT_PULL                      \
@@ -89,6 +91,8 @@ typedef struct
     GPIO_PUPD_PULLDOWN,                  \
     GPIO_PUPD_PULLDOWN,                  \
     GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLUP,                    \
+    GPIO_PUPD_PULLUP,                    \
     GPIO_PUPD_PULLUP,                    \
 }
 
