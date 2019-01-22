@@ -62,7 +62,7 @@ typedef struct
     {GPIOA, GPIO8},    /* Input 3 */    \
     {GPIOB, GPIO10},   /* Input 4 */    \
     {GPIOB, GPIO4},    /* Input 5 */    \
-    {GPIOB, GPIO5},    /* Input 6 */    \
+    {GPIOD, GPIO2},    /* Input 6 */    \
     {GPIOF, GPIO1},    /* Input 7 */    \
 }
 
