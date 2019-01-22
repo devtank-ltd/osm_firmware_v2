@@ -125,7 +125,7 @@ void output_cb()
 
 void count_cb()
 {
-    log_out("PPS     : %u", pulsecount_get_count());
+    log_out("PPSS    : %u", pulsecount_get_count());
     log_out("Inputs  : %u", inputs_get_count());
     log_out("Outputs : %u", outputs_get_count());
     log_out("ADCs    : %u", adcs_get_count());
