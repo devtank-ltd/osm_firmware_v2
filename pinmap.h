@@ -75,17 +75,13 @@ typedef struct
     {GPIOB, GPIO12},    /* Output 2 */   \
     {GPIOB, GPIO11},    /* Output 3 */   \
     {GPIOB, GPIO2},     /* Output 4 */   \
-    {GPIOA, GPIO8},     /* Output 5 */   \
-    {GPIOB, GPIO10},    /* Output 6 */   \
-    {GPIOB, GPIO6},     /* Output 7 */   \
-    {GPIOB, GPIO14},    /* Output 8 */   \
-    {GPIOB, GPIO15},    /* Output 9 */   \
+    {GPIOB, GPIO6},     /* Output 5 */   \
+    {GPIOB, GPIO14},    /* Output 6 */   \
+    {GPIOB, GPIO15},    /* Output 7 */   \
 }
 
 #define OUTPUT_PULL                      \
 {                                        \
-    GPIO_PUPD_PULLDOWN,                  \
-    GPIO_PUPD_PULLDOWN,                  \
     GPIO_PUPD_PULLDOWN,                  \
     GPIO_PUPD_PULLDOWN,                  \
     GPIO_PUPD_PULLDOWN,                  \
