@@ -43,6 +43,7 @@ static void adc_cb();
 static void input_cb();
 static void output_cb();
 static void count_cb();
+static void all_cb();
 
 
 static cmd_t cmds[] = {
@@ -57,6 +58,7 @@ static cmd_t cmds[] = {
     { "input",  "Print input.",            input_cb},
     { "output", "Get/set output on/off.",  output_cb},
     { "count",  "Counts of controls.",     count_cb},
+    { "all",    "Print everything.",       all_cb},
     { NULL },
 };
 
@@ -127,6 +129,15 @@ void count_cb()
     log_out("Inputs  : %u", inputs_get_count());
     log_out("Outputs : %u", outputs_get_count());
     log_out("ADCs    : %u", adcs_get_count());
+}
+
+
+void all_cb()
+{
+    pulsecount_log();
+    inputs_log();
+    outputs_log();
+    adcs_log();
 }
 
 
