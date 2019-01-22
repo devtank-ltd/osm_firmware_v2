@@ -208,7 +208,7 @@ def main():
 
     if len(sys.argv) < 2:
         print_help()
-        sys.exit(-1)
+        sys.exit(0)
 
     if len(sys.argv) == 2:
         gpio_name = sys.argv[1]
