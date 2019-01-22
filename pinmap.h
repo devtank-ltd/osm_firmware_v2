@@ -30,8 +30,8 @@ typedef struct
 
 #define PPS_PORT_N_PINS             \
 {                                   \
-    {GPIOB, GPIO3},     /* PPS 1 */ \
-    {GPIOC, GPIO7},     /* PPS 2 */ \
+    {GPIOB, GPIO3},     /* PPS 0 */ \
+    {GPIOC, GPIO7},     /* PPS 1 */ \
 }
 
 
