@@ -192,7 +192,8 @@ def load_uart_line(line):
 
 def main():
 
-    with open("pinmap.h") as f:
+    own_dir = os.path.dirname(sys.argv[0])
+    with open(own_dir + "/pinmap.h") as f:
         for line in f:
             if line.find("/* ADC") != -1:
                 load_line(ADCs, line)
