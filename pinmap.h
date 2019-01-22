@@ -27,24 +27,31 @@ typedef struct
     {GPIOC, GPIO5},      /* ADC 10 = Channel 15 */  \
 }
 
-#define PPS1_EXTI_ISR        exti2_3_isr
-#define PPS1_NVIC_EXTI_IRQ   NVIC_EXTI2_3_IRQ
-#define PPS1_EXTI            EXTI3
-#define PPS1_PORT            GPIOB
-#define PPS1_PINS            GPIO3
 
-#define PPS2_EXTI_ISR        exti4_15_isr
-#define PPS2_NVIC_EXTI_IRQ   NVIC_EXTI4_15_IRQ
-#define PPS2_EXTI            EXTI7
-#define PPS2_PORT            GPIOC
-#define PPS2_PINS            GPIO7
+#define PPS_PORT_N_PINS             \
+{                                   \
+    {GPIOB, GPIO3},     /* PPS 1 */ \
+    {GPIOC, GPIO7},     /* PPS 2 */ \
+}
 
-#define UART_CHANNELS                                                                                   \
-{                                                                                                       \
-    { USART2, RCC_USART2, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ,   115200, UART1_PRIORITY },\
-    { USART1, RCC_USART1, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ,   115200, UART2_PRIORITY },\
-    { USART3, RCC_USART3, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY },\
-    { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY },\
+
+#define PPS_EXTI                \
+{                               \
+    {EXTI3, NVIC_EXTI2_3_IRQ},  \
+    {EXTI7, NVIC_EXTI4_15_IRQ}, \
+}
+
+
+#define PPS0_EXTI_ISR        exti2_3_isr
+#define PPS1_EXTI_ISR        exti4_15_isr
+
+
+#define UART_CHANNELS                                                                                                 \
+{                                                                                                                     \
+    { USART2, RCC_USART2, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ,   115200, UART1_PRIORITY }, /* UART 0 */ \
+    { USART1, RCC_USART1, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ,   115200, UART2_PRIORITY }, /* UART 1 */ \
+    { USART3, RCC_USART3, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY }, /* UART 2 */ \
+    { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY }, /* UART 3 */ \
 }
 
 #define INPUTS_PORT_N_PINS              \
@@ -68,9 +75,21 @@ typedef struct
     {GPIOB, GPIO12},    /* Output 2 */   \
     {GPIOB, GPIO11},    /* Output 3 */   \
     {GPIOB, GPIO2},     /* Output 4 */   \
-    {GPIOB, GPIO14},    /* Output 5 */   \
-    {GPIOB, GPIO15},    /* Output 6 */   \
-    {GPIOF, GPIO0},     /* Output 7 */    \
+    {GPIOA, GPIO8},     /* Output 5 */   \
+    {GPIOB, GPIO10},    /* Output 6 */   \
+    {GPIOF, GPIO0},     /* Output 7 */   \
+}
+
+#define OUTPUT_PULL                      \
+{                                        \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLDOWN,                  \
+    GPIO_PUPD_PULLUP,                    \
 }
 
 #endif //__PINMAPS__

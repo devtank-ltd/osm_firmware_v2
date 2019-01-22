@@ -4,62 +4,11 @@ import sys
 import json
 
 
-ADCs={
-    "name":"ADC",
-    "PA4":0 ,
-    "PA6":1 ,
-    "PA7":2 ,
-    "PB0":3 ,
-    "PB1":4 ,
-    "PC0":5 ,
-    "PC1":6 ,
-    "PC2":7 ,
-    "PC3":8 ,
-    "PC4":9 ,
-    "PC5":10,
-}
-
-INPUTS={
-    "name":"INPUT",
-    "PC12": 0,
-    "PA15": 1,
-    "PB7" : 2,
-    "PC13": 3,
-    "PC14": 4,
-    "PC15": 5,
-    "PD2" : 6,
-    "PF0" : 7,
-    "PF1" : 8,
-}
-
-OUTPUTS={
-    "name":"OUTPUT",
-    "PC8"  : 0,
-    "PC6"  : 1,
-    "PB12" : 2,
-    "PB11" : 3,
-    "PB2"  : 4,
-    "PB14" : 5,
-    "PB15" : 6,
-}
-
-UARTS={
-    "name":"UART",
-    "PA2" : 1,
-    "PA3" : 1,
-    "PA9" : 2,
-    "PA10" : 2,
-    "PC10" : 3,
-    "PC11" : 3,
-    "PA1" : 4,
-    "PA0" : 4,
-}
-
-PPS={
-    "name":"PPS",
-    "PB3" : 0,
-    "PC7" : 1,
-}
+ADCs={"name":"ADC"}
+INPUTS={"name":"INPUT"}
+OUTPUTS={"name":"OUTPUT"}
+PPS={"name":"PPS"}
+UARTS={"name":"UART"}
 
 
 CN7={
@@ -199,23 +148,67 @@ def print_help():
     print("<GPIO Name>")
 
 
-if len(sys.argv) < 2:
-    print_help()
-    sys.exit(-1)
+
+def load_line(subject_map, line):
+    parts = line.split(',')
+    port = parts[0].strip().replace("{","").replace("GPIO","P")
+    pin = parts[1].strip().replace("}","")[4:]
+    name = parts[2].strip().replace("/", "").replace("\\","")
+    name = name.replace("*","").strip()
+    name = name.split("=")[0].strip()
+    type_num = name.split(" ")[1]
+    subject_map[port + pin] = int(type_num)
 
 
-if len(sys.argv) == 2:
-    gpio_name = sys.argv[1]
-    lookup_connector(gpio_name, CN7)
-    lookup_connector(gpio_name, CN10)
-    print("GPIO %s not found" % gpio_name)
-    sys.exit(-1)
+def load_uart_line(line):
+    parts = line.split(',')
+    port = parts[2].strip().replace("GPIO","P")
+    pins = [pin.strip()[4:] for pin in parts[3].split('|')]
+    name = parts[-1].strip().replace("/", "").replace("\\","")
+    name = name.replace("*","").strip()
+    name = name.split("=")[0].strip()
+    type_num = name.split(" ")[1]
+    for pin in pins:
+        UARTS[port + pin] = int(type_num)
 
-connector = sys.argv[1]
-pin = int(sys.argv[2])
 
-if connector not in connectors:
-    print("%s is not CN7 or CN10" % connector)
-    sys.exit(-1)
 
-lookup_gpio(connectors[connector], pin)
+def main():
+
+    with open("pinmap.h") as f:
+        for line in f:
+            if line.find("/* ADC") != -1:
+                load_line(ADCs, line)
+            elif line.find("/* Input") != -1:
+                load_line(INPUTS, line)
+            elif line.find("/* Output") != -1:
+                load_line(OUTPUTS, line)
+            elif line.find("/* PPS") != -1:
+                load_line(OUTPUTS, line)
+            elif line.find("/* UART") != -1:
+                load_uart_line(line)
+
+    if len(sys.argv) < 2:
+        print_help()
+        sys.exit(-1)
+
+    if len(sys.argv) == 2:
+        gpio_name = sys.argv[1]
+        lookup_connector(gpio_name, CN7)
+        lookup_connector(gpio_name, CN10)
+        print("GPIO %s not found" % gpio_name)
+        sys.exit(-1)
+
+    connector = sys.argv[1]
+    pin = int(sys.argv[2])
+
+    if connector not in connectors:
+        print("%s is not CN7 or CN10" % connector)
+        sys.exit(-1)
+
+    lookup_gpio(connectors[connector], pin)
+
+
+
+if __name__ == "__main__":
+    main()

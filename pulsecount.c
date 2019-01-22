@@ -9,91 +9,90 @@
 #include "log.h"
 #include "pinmap.h"
 
-static volatile unsigned pulsecount_1_value = 0;
-static volatile unsigned pulsecount_1_psp = 0;
-
-static volatile unsigned pulsecount_2_value = 0;
-static volatile unsigned pulsecount_2_psp = 0;
-
-
-void PPS1_EXTI_ISR()
+typedef struct
 {
-    exti_reset_request(PPS1_EXTI);
-    pulsecount_2_value++;
+    uint32_t exti;
+    uint32_t exti_irq;
+} pulsecount_exti_t;
+
+
+typedef struct
+{
+    unsigned value;
+    unsigned psp;
+} pulsecount_values_t;
+
+static const port_n_pins_t     pps_pins[] = PPS_PORT_N_PINS;
+static const pulsecount_exti_t pulsecount_extis[] = PPS_EXTI;
+
+static volatile pulsecount_values_t pulsecount_values[ARRAY_SIZE(pps_pins)] = {{0}};
+
+
+static void pulsecount_isr(unsigned ppss)
+{
+    exti_reset_request(pulsecount_extis[ppss].exti);
+    pulsecount_values[ppss].value++;
 }
 
 
-void PPS2_EXTI_ISR()
-{
-    exti_reset_request(PPS2_EXTI);
-    pulsecount_1_value++;
-}
+void PPS0_EXTI_ISR() { pulsecount_isr(0); }
+void PPS1_EXTI_ISR() { pulsecount_isr(1); }
 
 
 void pulsecount_second_boardary()
 {
-    pulsecount_1_psp   = pulsecount_1_value;
-    pulsecount_2_psp   = pulsecount_2_value;
-    pulsecount_2_value = pulsecount_1_value = 0;
+    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
+    {
+        pulsecount_values[n].psp   = pulsecount_values[n].value;
+        pulsecount_values[n].value = 0;
+    }
 }
 
 
 unsigned pulsecount_get_count()
 {
-    return 2;
+    return ARRAY_SIZE(pps_pins);
 }
 
 
 void pulsecount_get(unsigned pps, unsigned * count)
 {
-    if (pps == 0)
-        *count = pulsecount_1_psp;
-    else if (pps == 1)
-        *count = pulsecount_2_psp;
-    else
+    if (pps >= ARRAY_SIZE(pps_pins))
         *count = 0;
+    else
+        *count = pulsecount_values[pps].psp;
 }
 
 
 void pulsecount_init()
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(PPS1_PORT));
-    rcc_periph_clock_enable(PORT_TO_RCC(PPS2_PORT));
+    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
+    {
+        rcc_periph_clock_enable(PORT_TO_RCC(pps_pins[n].port));
+        gpio_mode_setup(pps_pins[n].port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, pps_pins[n].pins);
 
-    rcc_periph_clock_enable(RCC_SYSCFG_COMP);
+        rcc_periph_clock_enable(RCC_SYSCFG_COMP);
 
-    gpio_mode_setup(PPS1_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS1_PINS);
-    gpio_mode_setup(PPS2_PORT, GPIO_MODE_INPUT, GPIO_PUPD_NONE, PPS2_PINS);
+        exti_select_source(pulsecount_extis[n].exti, pps_pins[n].port);
+        exti_set_trigger(pulsecount_extis[n].exti, EXTI_TRIGGER_FALLING);
+        exti_enable_request(pulsecount_extis[n].exti);
 
-    exti_select_source(PPS1_EXTI, PPS1_PORT);
-    exti_select_source(PPS2_EXTI, PPS2_PORT);
-
-    exti_set_trigger(PPS1_EXTI, EXTI_TRIGGER_FALLING);
-    exti_set_trigger(PPS2_EXTI, EXTI_TRIGGER_FALLING);
-
-    exti_enable_request(PPS1_EXTI);
-    exti_enable_request(PPS2_EXTI);
-
-    nvic_set_priority(PPS1_NVIC_EXTI_IRQ, 2);
-    nvic_enable_irq(PPS1_NVIC_EXTI_IRQ);
-
-    nvic_set_priority(PPS2_NVIC_EXTI_IRQ, 2);
-    nvic_enable_irq(PPS2_NVIC_EXTI_IRQ);
+        nvic_set_priority(pulsecount_extis[n].exti_irq, 2);
+        nvic_enable_irq(pulsecount_extis[n].exti_irq);
+    }
 }
 
 
 void pulsecount_pps_log(unsigned pps)
 {
-    if (pps == 0)
-        log_out("pulsecount 0 : %u", pulsecount_1_psp);
-    else if (pps == 1)
-        log_out("pulsecount 1 : %u", pulsecount_2_psp);
+    if (pps < ARRAY_SIZE(pps_pins))
+        log_out("pulsecount %u : %u", pps, pulsecount_values[pps].psp);
 
 }
 
 
 void pulsecount_log()
 {
-    pulsecount_pps_log(0);
-    pulsecount_pps_log(1);
+    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
+        pulsecount_pps_log(n);
 }
