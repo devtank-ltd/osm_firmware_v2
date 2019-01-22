@@ -202,7 +202,7 @@ def main():
             elif line.find("/* Output") != -1:
                 load_line(OUTPUTS, line)
             elif line.find("/* PPS") != -1:
-                load_line(OUTPUTS, line)
+                load_line(PPS, line)
             elif line.find("/* UART") != -1:
                 load_uart_line(line)
 
