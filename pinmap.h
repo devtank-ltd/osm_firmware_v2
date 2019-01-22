@@ -59,10 +59,10 @@ typedef struct
     {GPIOC, GPIO12},   /* Input 0 */    \
     {GPIOA, GPIO15},   /* Input 1 */    \
     {GPIOB, GPIO7},    /* Input 2 */    \
-    {GPIOC, GPIO13},   /* Input 3 */    \
-    {GPIOC, GPIO14},   /* Input 4 */    \
-    {GPIOC, GPIO15},   /* Input 5 */    \
-    {GPIOD, GPIO2},    /* Input 6 */    \
+    {GPIOA, GPIO8},    /* Input 3 */    \
+    {GPIOB, GPIO10},   /* Input 4 */    \
+    {GPIOB, GPIO4},    /* Input 5 */    \
+    {GPIOB, GPIO5},    /* Input 6 */    \
     {GPIOF, GPIO1},    /* Input 7 */    \
 }
 
@@ -77,7 +77,7 @@ typedef struct
     {GPIOB, GPIO2},     /* Output 4 */   \
     {GPIOA, GPIO8},     /* Output 5 */   \
     {GPIOB, GPIO10},    /* Output 6 */   \
-    {GPIOF, GPIO0},     /* Output 7 */   \
+    {GPIOB, GPIO6},     /* Output 7 */   \
 }
 
 #define OUTPUT_PULL                      \
