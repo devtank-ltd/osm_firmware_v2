@@ -49,9 +49,9 @@ typedef struct
 #define UART_CHANNELS                                                                                                 \
 {                                                                                                                     \
     { USART2, RCC_USART2, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ,   115200, UART1_PRIORITY }, /* UART 0 */ \
-    { USART1, RCC_USART1, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ,   115200, UART2_PRIORITY }, /* UART 1 */ \
+    { USART1, RCC_USART1, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ,   9600,   UART2_PRIORITY }, /* UART 1 */ \
     { USART3, RCC_USART3, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY }, /* UART 2 */ \
-    { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY }, /* UART 3 */ \
+    { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 115200, UART3_PRIORITY }, /* UART 3 */ \
 }
 
 #define INPUTS_PORT_N_PINS              \
