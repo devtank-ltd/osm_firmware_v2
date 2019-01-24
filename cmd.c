@@ -72,6 +72,11 @@ static cmd_t cmds[] = {
 };
 
 
+static bool cmd_has_arg()
+{
+    return (rx_buffer[rx_pos] == ' ');
+}
+
 
 void uart_broadcast_cb()
 {
@@ -150,9 +155,10 @@ void all_cb()
 }
 
 
+
 void adc_sps_cb()
 {
-    if (isdigit(rx_buffer[rx_pos]))
+    if (cmd_has_arg())
     {
         unsigned sps = strtoul(rx_buffer + rx_pos, NULL, 10);
         timers_fast_set_rate(sps);
