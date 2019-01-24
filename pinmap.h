@@ -35,12 +35,17 @@ typedef struct
 }
 
 
-#define PPS_EXTI                \
-{                               \
-    {EXTI3, NVIC_EXTI2_3_IRQ},  \
-    {EXTI7, NVIC_EXTI4_15_IRQ}, \
+#define PPS_EXTI    \
+{                   \
+    {TIM1, EXTI3},  \
+    {TIM14, EXTI7}, \
 }
 
+#define PPS_INIT                    \
+{                                   \
+    {RCC_TIM1, NVIC_EXTI2_3_IRQ},   \
+    {RCC_TIM14, NVIC_EXTI4_15_IRQ}, \
+}
 
 #define PPS0_EXTI_ISR        exti2_3_isr
 #define PPS1_EXTI_ISR        exti4_15_isr
