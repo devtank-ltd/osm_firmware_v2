@@ -49,6 +49,9 @@ static void adc_sps_cb();
 static void adc_start_cb();
 static void adc_stop_cb();
 static void adc_is_on_cb();
+static void pps_start_cb();
+static void pps_stop_cb();
+static void pps_is_on_cb();
 
 
 static cmd_t cmds[] = {
@@ -68,6 +71,9 @@ static cmd_t cmds[] = {
     { "adc_start","Start ADC sampling.",     adc_start_cb},
     { "adc_stop", "Stop ADC sampling.",      adc_stop_cb},
     { "adc_is_on","Is ADCs sampling.",       adc_is_on_cb},
+    { "pps_start","Start PPS sampling.",     pps_start_cb},
+    { "pps_stop", "Stop PPS sampling.",      pps_stop_cb},
+    { "pps_is_on","Is PPS sampling.",        pps_is_on_cb},
     { NULL },
 };
 
@@ -190,6 +196,28 @@ void adc_is_on_cb()
         log_out("ADCs not sampling.");
 }
 
+
+void pps_start_cb()
+{
+    pulsecount_start();
+    log_out("PPS started");
+}
+
+
+void pps_stop_cb()
+{
+    pulsecount_start();
+    log_out("PPS stopped");
+}
+
+
+void pps_is_on_cb()
+{
+    if (pulsecount_is_running())
+        log_out("PPS sampling.");
+    else
+        log_out("PPS not sampling.");
+}
 
 
 bool cmds_add_char(char c)

@@ -127,6 +127,24 @@ unsigned adcs_get_count()
 }
 
 
+unsigned adcs_read(unsigned adc)
+{
+    if (adc >= ARRAY_SIZE(adc_channel_array))
+        return 0;
+
+    adc_set_regular_sequence(ADC1, 1, adc_channel_array + adc);
+
+    adc_start_conversion_regular(ADC1);
+    while (!(adc_eoc(ADC1)));
+
+    unsigned r = adc_read_regular(ADC1);
+
+    adc_set_regular_sequence(ADC1, ARRAY_SIZE(adc_channel_array), adc_channel_array);
+
+    return r;
+}
+
+
 void adcs_adc_log(unsigned adc)
 {
     if (adc >= ARRAY_SIZE(adc_channel_array))

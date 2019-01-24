@@ -35,10 +35,10 @@ typedef struct
 }
 
 
-#define PPS_EXTI    \
-{                   \
-    {TIM1, EXTI3},  \
-    {TIM14, EXTI7}, \
+#define PPS_EXTI        \
+{                       \
+    {TIM1, EXTI3,  0},  \
+    {TIM14, EXTI7, -1}, \
 }
 
 #define PPS_INIT                    \

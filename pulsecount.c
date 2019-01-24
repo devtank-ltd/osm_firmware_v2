@@ -10,11 +10,13 @@
 #include "log.h"
 #include "pinmap.h"
 #include "timers.h"
+#include "adcs.h"
 
 typedef struct
 {
     uint32_t timer;
     uint32_t exti;
+    unsigned adc;
 } pulsecount_exti_t;
 
 
@@ -25,6 +27,8 @@ typedef struct
     bool     is_high;
     unsigned high_timer_count;
     unsigned low_timer_count;
+    unsigned high;
+    unsigned low;
 } pulsecount_values_t;
 
 static const port_n_pins_t     pps_pins[]         = PPS_PORT_N_PINS;
@@ -32,18 +36,27 @@ static const pulsecount_exti_t pulsecount_extis[] = PPS_EXTI;
 
 static volatile pulsecount_values_t pulsecount_values[ARRAY_SIZE(pps_pins)] = {{0}};
 
+static bool pulse_enabled = false;
+
 
 static void pulsecount_isr(unsigned pps)
 {
     const pulsecount_exti_t      * exti   = &pulsecount_extis[pps];
     volatile pulsecount_values_t * values = &pulsecount_values[pps];
 
+    unsigned adc = adcs_read(exti->adc);
+
     if (values->is_high)
     {
+        values->high = adc;
         values->value++;
         exti_set_trigger(exti->exti, EXTI_TRIGGER_FALLING);
     }
-    else exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
+    else
+    {
+        values->low = adc;
+        exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
+    }
 
     values->is_high = !values->is_high;
 
@@ -115,7 +128,6 @@ void pulsecount_init()
         timer_enable_preload(exti->timer);
         timer_continuous_mode(exti->timer);
 
-        timer_enable_counter(exti->timer);
         timer_set_counter(exti->timer, 0);
 
         /* -------------------------------------------------------- */
@@ -129,11 +141,48 @@ void pulsecount_init()
 
         exti_select_source(exti->exti, pins->port);
         exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-        exti_enable_request(exti->exti);
 
         nvic_set_priority(pps_init[n].irq, 2);
         nvic_enable_irq(pps_init[n].irq);
     }
+}
+
+
+void     pulsecount_start()
+{
+    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
+    {
+        volatile pulsecount_values_t * values = &pulsecount_values[n];
+        const pulsecount_exti_t      * exti   = &pulsecount_extis[n];
+
+        values->value   = 0;
+        values->psp   = 0;
+        values->is_high = false;
+
+        timer_enable_counter(exti->timer);
+        timer_set_counter(exti->timer, 0);
+        exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
+        exti_enable_request(exti->exti);
+    }
+    pulse_enabled = true;
+}
+
+
+void     pulsecount_stop()
+{
+    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
+    {
+        const pulsecount_exti_t      * exti   = &pulsecount_extis[n];
+        timer_disable_counter(exti->timer);
+        exti_disable_request(exti->exti);
+    }
+    pulse_enabled = false;
+}
+
+
+bool     pulsecount_is_running()
+{
+    return pulse_enabled;
 }
 
 
@@ -144,7 +193,7 @@ void pulsecount_pps_log(unsigned pps)
         volatile pulsecount_values_t * values = &pulsecount_values[pps];
         unsigned duty =  (values->high_timer_count * 1000) / 
                 (values->high_timer_count + values->low_timer_count);
-        log_out("pulsecount %u : %u : %u", pps, values->psp, duty);
+        log_out("pulsecount %u : %u : %u %u %u", pps, values->psp, duty, values->low, values->high);
     }
 }
 
