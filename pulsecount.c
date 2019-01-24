@@ -142,7 +142,7 @@ void pulsecount_init()
         exti_select_source(exti->exti, pins->port);
         exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
 
-        nvic_set_priority(pps_init[n].irq, 2);
+        nvic_set_priority(pps_init[n].irq, 0);
         nvic_enable_irq(pps_init[n].irq);
     }
 }
