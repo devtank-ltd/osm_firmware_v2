@@ -46,7 +46,7 @@ void adcs_init()
     adc_set_continuous_conversion_mode(ADC1);
     adc_set_right_aligned(ADC1);
     adc_set_regular_sequence(ADC1, ARRAY_SIZE(adc_channel_array), adc_channel_array);
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_001DOT5);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_071DOT5);
     adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
     adc_power_on(ADC1);
 }
