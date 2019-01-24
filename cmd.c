@@ -18,6 +18,7 @@
 #include "pulsecount.h"
 #include "inputs.h"
 #include "outputs.h"
+#include "timers.h"
 
 static TaskHandle_t      h_blinky = 0;
 
@@ -44,21 +45,29 @@ static void input_cb();
 static void output_cb();
 static void count_cb();
 static void all_cb();
+static void adc_sps_cb();
+static void adc_start_cb();
+static void adc_stop_cb();
+static void adc_is_on_cb();
 
 
 static cmd_t cmds[] = {
-    { "uarts",  "Broad message to uarts.", uart_broadcast_cb},
-    { "debug",  "Toggle debug",            debug_cb},
-    { "ppss",   "Print all pulse info.",   pulsecount_log},
-    { "pps",    "Print pulse info.",       pps_cb},
-    { "adc",    "Print ADC.",              adc_cb},
-    { "adcs",   "Print all ADCs.",         adcs_log},
-    { "inputs", "Print all inputs.",       inputs_log},
-    { "outputs","Print all outputs.",      outputs_log},
-    { "input",  "Print input.",            input_cb},
-    { "output", "Get/set output on/off.",  output_cb},
-    { "count",  "Counts of controls.",     count_cb},
-    { "all",    "Print everything.",       all_cb},
+    { "uarts",    "Broad message to uarts.", uart_broadcast_cb},
+    { "debug",    "Toggle debug",            debug_cb},
+    { "ppss",     "Print all pulse info.",   pulsecount_log},
+    { "pps",      "Print pulse info.",       pps_cb},
+    { "adc",      "Print ADC.",              adc_cb},
+    { "adcs",     "Print all ADCs.",         adcs_log},
+    { "inputs",   "Print all inputs.",       inputs_log},
+    { "outputs",  "Print all outputs.",      outputs_log},
+    { "input",    "Print input.",            input_cb},
+    { "output",   "Get/set output on/off.",  output_cb},
+    { "count",    "Counts of controls.",     count_cb},
+    { "all",      "Print everything.",       all_cb},
+    { "adc_sps",  "Get/Set ADC SPS",         adc_sps_cb},
+    { "adc_start","Start ADC sampling.",     adc_start_cb},
+    { "adc_stop", "Stop ADC sampling.",      adc_stop_cb},
+    { "adc_is_on","Is ADCs sampling.",       adc_is_on_cb},
     { NULL },
 };
 
@@ -139,6 +148,42 @@ void all_cb()
     outputs_log();
     adcs_log();
 }
+
+
+void adc_sps_cb()
+{
+    if (isdigit(rx_buffer[rx_pos]))
+    {
+        unsigned sps = strtoul(rx_buffer + rx_pos, NULL, 10);
+        timers_fast_set_rate(sps);
+        log_out("Sample rate now : %u", sps);
+    }
+    else log_out("Sample rate : %u", timers_fast_get_rate());
+}
+
+
+void adc_start_cb()
+{
+    timers_fast_start();
+    log_out("ADC started with SPS %u", timers_fast_get_rate());
+}
+
+
+void adc_stop_cb()
+{
+    timers_fast_stop();
+    log_out("ADC stopped.");
+}
+
+
+void adc_is_on_cb()
+{
+    if (timers_fast_is_running())
+        log_out("ADCs sampling.");
+    else
+        log_out("ADCs not sampling.");
+}
+
 
 
 bool cmds_add_char(char c)

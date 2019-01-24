@@ -23,4 +23,7 @@
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
 
+#define DEFAULT_SPS 8000
+
+
 #endif //__CONFIG__
