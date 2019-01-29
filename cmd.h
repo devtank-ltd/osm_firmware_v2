@@ -3,7 +3,7 @@
 
 extern bool cmds_add_char(char c);
 
-extern void cmds_process();
+extern void cmds_process(char * command, unsigned len);
 
 extern void cmds_init();
 

@@ -10,11 +10,11 @@
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
-#define UART1_PRIORITY 2
+#define UART1_PRIORITY 3
 #define UART2_PRIORITY 2
-#define UART3_PRIORITY 2
-#define UART4_PRIORITY 1
-#define USB_PRIORITY   2
+#define UART3_PRIORITY 3
+#define UART4_PRIORITY 0
+#define USB_PRIORITY   1
 
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
@@ -25,5 +25,8 @@
 
 #define DEFAULT_SPS 8000
 
+#define RING_BUF_SIZE 256
+
+#define USB_DATA_PCK_SZ    32
 
 #endif //__CONFIG__

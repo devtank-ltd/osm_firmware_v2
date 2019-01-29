@@ -30,7 +30,6 @@ Bits 7 Direction 0 = In, 1 = Out
 #define USB_DATA2_END_ADDR 0x04 // write addr is OR 0x80
 #define USB_DATA3_END_ADDR 0x06 // write addr is OR 0x80
 
-#define USB_DATA_PCK_SZ    32
 #define USB_COM_PCK_SZ     16
 
 
@@ -344,22 +343,23 @@ void usb_uart_send(unsigned uart, void * data, unsigned len)
             unsigned bytes_left = ((uintptr_t)end) - ((uintptr_t)pos);
             if (bytes_left > USB_DATA_PCK_SZ)
             {
-                while( usbd_ep_write_packet(usbd_dev, w_addr, pos, USB_DATA_PCK_SZ) == 0)
-                    usbd_poll(usbd_dev);
+                usb_uart_send(uart, pos, USB_DATA_PCK_SZ);
                 pos += USB_DATA_PCK_SZ;
             }
             else
             {
-                while( usbd_ep_write_packet(usbd_dev, w_addr, pos, bytes_left) == 0)
-                    usbd_poll(usbd_dev);
+                usb_uart_send(uart, pos, bytes_left);
                 break;
             }
-            usbd_poll(usbd_dev);
         }
     }
     else
     {
-        usbd_ep_write_packet(usbd_dev, w_addr, data, len);
-        usbd_poll(usbd_dev);
+        unsigned sent = usbd_ep_write_packet(usbd_dev, w_addr, data, len);
+        while((len - sent))
+        {
+            usbd_poll(usbd_dev);
+            sent += usbd_ep_write_packet(usbd_dev, w_addr, ((uint8_t*)data) + sent, len - sent);
+        }
     }
 }

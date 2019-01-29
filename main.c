@@ -8,10 +8,6 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/usart.h>
 
-#include <FreeRTOS.h>
-#include <task.h>
-#include <queue.h>
-
 #include "pinmap.h"
 #include "cmd.h"
 #include "log.h"
@@ -22,35 +18,13 @@
 #include "timers.h"
 #include "inputs.h"
 #include "outputs.h"
-
-extern void xPortPendSVHandler( void ) __attribute__ (( naked ));
-extern void xPortSysTickHandler( void );
-
-
-void
-vApplicationStackOverflowHook(xTaskHandle *pxTask,signed portCHAR *pcTaskName) {
-    (void)pxTask;
-    (void)pcTaskName;
-    platform_raw_msg("----big fat FreeRTOS crash -----");
-    while(true);
-}
+#include "uart_rings.h"
 
 
 void hard_fault_handler(void)
 {
     platform_raw_msg("----big fat libopen3 crash -----");
     while(true);
-}
-
-
-void pend_sv_handler(void)
-{
-    xPortPendSVHandler();
-}
-
-void sys_tick_handler(void)
-{
-    xPortSysTickHandler();
 }
 
 
@@ -75,7 +49,12 @@ int main(void) {
 
     log_async_log = true;
 
-    vTaskStartScheduler();
+    while(true)
+    {
+        for(unsigned n = 0; n < rcc_ahb_frequency / 1000; n++)
+            uart_rings_drain();
+        gpio_toggle(LED_PORT, LED_PIN);
+    }
 
     return 0;
 }

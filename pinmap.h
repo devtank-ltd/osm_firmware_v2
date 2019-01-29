@@ -1,6 +1,8 @@
 #ifndef __PINMAPS__
 #define __PINMAPS__
 
+#include <stdint.h>
+
 typedef struct
 {
     uint32_t port;

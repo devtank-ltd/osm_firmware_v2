@@ -16,7 +16,7 @@ CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES)
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -Ilibs/freertos/FreeRTOS/Source/include/ -I. -I./libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM0/
+INCLUDE_PATHS += -Ilibs/libopencm3/include -I.
 
 LINK_SCRIPT = libs/libopencm3/lib/stm32/f0/stm32f07xzb.ld
 
@@ -29,6 +29,7 @@ LINK_FLAGS += $(CPU_DEFINES)
 SOURCES += main.c \
            log.c \
            uarts.c \
+           uart_rings.c \
            cmd.c \
            usb_uarts.c \
            adcs.c \
@@ -36,11 +37,7 @@ SOURCES += main.c \
            timers.c \
            inputs.c \
            outputs.c \
-           libs/freertos/FreeRTOS/Source/portable/GCC/ARM_CM0/port.c \
-           libs/freertos/FreeRTOS/Source/portable/MemMang/heap_1.c \
-           libs/freertos/FreeRTOS/Source/list.c \
-           libs/freertos/FreeRTOS/Source/queue.c \
-           libs/freertos/FreeRTOS/Source/tasks.c
+           ring.c
 
 BUILD_DIR := build/
 PROJECT_NAME := test

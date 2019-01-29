@@ -7,6 +7,8 @@
 #include "log.h"
 #include "usb_uarts.h"
 #include "pinmap.h"
+#include "ring.h"
+#include "uart_rings.h"
 
 
 typedef struct
@@ -69,13 +71,6 @@ static bool uart_getc(uint32_t uart, char* c)
 }
 
 
-void UART_2_ISR(void)
-{
-    char c;
-    if (uart_getc(USART2, &c))
-        cmds_add_char(c);
-}
-
 
 static void process_serial(unsigned uart)
 {
@@ -89,7 +84,13 @@ static void process_serial(unsigned uart)
         return;
     }
 
-    usb_uart_send(uart - 1, &c, 1);
+    uart_ring_in(uart, &c, 1);
+}
+
+
+void UART_2_ISR(void)
+{
+    process_serial(0);
 }
 
 
@@ -119,6 +120,21 @@ void uart_out(unsigned uart, const char* s, unsigned len)
 
     uart = uart_channels[uart].usart;
 
-    for (unsigned n = 0; n < len; n++)
-        usart_send_blocking(uart, s[n]);
+    for(unsigned i = 0; i < len; i++)
+        usart_send_blocking(uart, s[i]);
+}
+
+
+bool uart_out_async(unsigned uart, char c)
+{
+    if (uart > 3)
+        return false;
+
+    uart = uart_channels[uart].usart;
+
+    if (!(USART_ISR(uart) & USART_ISR_TXE))
+        return false;
+
+    usart_send(uart, c);
+    return true;
 }
