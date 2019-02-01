@@ -332,34 +332,14 @@ void usb_isr()
 }
 
 
-void usb_uart_send(unsigned uart, void * data, unsigned len)
+unsigned usb_uart_send(unsigned uart, void * data, unsigned len)
 {
     uint8_t w_addr = end_addrs[uart].data_addr | 0x80;
 
     if (len > USB_DATA_PCK_SZ)
-    {
-        for(uint8_t * pos = (uint8_t*)data, * end = pos + len; pos < end;)
-        {
-            unsigned bytes_left = ((uintptr_t)end) - ((uintptr_t)pos);
-            if (bytes_left > USB_DATA_PCK_SZ)
-            {
-                usb_uart_send(uart, pos, USB_DATA_PCK_SZ);
-                pos += USB_DATA_PCK_SZ;
-            }
-            else
-            {
-                usb_uart_send(uart, pos, bytes_left);
-                break;
-            }
-        }
-    }
-    else
-    {
-        unsigned sent = usbd_ep_write_packet(usbd_dev, w_addr, data, len);
-        while((len - sent))
-        {
-            usbd_poll(usbd_dev);
-            sent += usbd_ep_write_packet(usbd_dev, w_addr, ((uint8_t*)data) + sent, len - sent);
-        }
-    }
+        len = USB_DATA_PCK_SZ;
+
+    usbd_poll(usbd_dev);
+
+    return usbd_ep_write_packet(usbd_dev, w_addr, data, len);
 }

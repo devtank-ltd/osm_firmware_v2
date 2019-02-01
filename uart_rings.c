@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdint.h>
 
 #include "uart_rings.h"
@@ -47,10 +48,18 @@ void uart_ring_out(unsigned uart, const char* s, unsigned len)
 }
 
 
-static bool _uart_out_async(char c, void * puart)
+static unsigned _uart_out_async(char * c, unsigned len __attribute((unused)), void * puart)
 {
     unsigned uart = *(unsigned*)puart;
-    return uart_out_async(uart, c);
+    return uart_out_async(uart, *c)?1:0;
+}
+
+
+static unsigned _usb_out_async(char * tmp, unsigned len, void * puart)
+{
+    unsigned uart = *(unsigned*)puart;
+
+    return usb_uart_send(uart-1, tmp, len);
 }
 
 
@@ -70,9 +79,7 @@ void uart_rings_drain()
 
             len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
 
-            ring_buf_read(ring, tmp, len);
-
-            usb_uart_send(n-1, tmp, len);
+            ring_buf_consume(ring, _usb_out_async, tmp, len, &n);
         }
         else
         {
@@ -92,6 +99,22 @@ void uart_rings_drain()
         if (!len)
             continue;
 
-        ring_buf_do_char(ring, _uart_out_async, &n);
+        char c;
+        ring_buf_consume(ring, _uart_out_async, &c, 1, &n);
+    }
+}
+
+
+void uart_rings_check()
+{
+    for(unsigned n = 0; n < 4; n++)
+    {
+        ring_buf_t * in_ring  = &ring_in_bufs[n];
+        ring_buf_t * out_ring = &ring_out_bufs[n];
+
+        if (ring_buf_is_full(in_ring))
+            log_error("UART %u in ring buffer filled.", n);
+        else if (ring_buf_is_full(out_ring))
+            log_error("UART %u out ring buffer filled.", n);
     }
 }

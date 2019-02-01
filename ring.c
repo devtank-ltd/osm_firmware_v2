@@ -1,26 +1,23 @@
+#include <stdlib.h>
 #include <string.h>
 
 #include "ring.h"
 #include "log.h"
 
 
+
 bool ring_buf_add(ring_buf_t * ring_buf, char c)
 {
-    if (ring_buf->full)
-    {
-        platform_raw_msg("ERROR : Ring full!");
-        return false;
-    }
-
+    /* So we know it's got data, we never let write pos catch read pos*/
     unsigned w_pos = ring_buf->w_pos;
+    unsigned w_next = (w_pos + 1) % RING_BUF_SIZE;
 
-    ring_buf->buf[w_pos++] = c;
-    w_pos %= RING_BUF_SIZE;
+    if (w_next == ring_buf->r_pos)
+        return false;
 
-    ring_buf->w_pos = w_pos;
+    ring_buf->buf[w_pos] = c;
 
-    if (ring_buf->w_pos == ring_buf->r_pos)
-        ring_buf->full = true;
+    ring_buf->w_pos = w_next;
 
     return true;
 }
@@ -31,6 +28,7 @@ void ring_buf_add_str(ring_buf_t * ring_buf, char * s)
     while(*s)
         ring_buf_add(ring_buf, *s++);
 }
+
 
 
 unsigned ring_buf_get_pending(ring_buf_t * ring_buf)
@@ -44,17 +42,27 @@ unsigned ring_buf_get_pending(ring_buf_t * ring_buf)
 }
 
 
-void     ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
+bool      ring_buf_is_full(ring_buf_t * ring_buf)
+{
+    /* So we know it's got data, we never let write pos catch read pos*/
+    unsigned w_next = (ring_buf->w_pos + 1) % RING_BUF_SIZE;
+    return (w_next == ring_buf->r_pos);
+}
+
+
+unsigned  ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
 {
     for(unsigned n = 0; n < len; n++)
     {
         unsigned r_pos = ring_buf->r_pos;
         buf[n] = ring_buf->buf[r_pos];
+        if (r_pos == ring_buf->w_pos)
+            return n;
         r_pos++;
         r_pos %= RING_BUF_SIZE;
         ring_buf->r_pos = r_pos;
-        ring_buf->full  = false;
     }
+    return len;
 }
 
 
@@ -86,9 +94,8 @@ unsigned  ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
                 r_pos %= RING_BUF_SIZE;
             }
 
-            buf[n] = 0;
+            buf[n]          = 0;
             ring_buf->r_pos = r_pos;
-            ring_buf->full  = false;
             return n;
         }
         else buf[n] = c;
@@ -96,9 +103,8 @@ unsigned  ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
 
     if (len == toread)
     {
-        buf[len] = 0;
+        buf[len]        = 0;
         ring_buf->r_pos = r_pos;
-        ring_buf->full  = false;
         return len;
     }
 
@@ -106,17 +112,38 @@ unsigned  ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
 }
 
 
-void     ring_buf_do_char(ring_buf_t * ring_buf, ring_buf_char_cb cb, void * data)
+unsigned     ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, char * tmp_buf, unsigned len, void * data)
 {
     unsigned r_pos = ring_buf->r_pos;
 
-    char c = ring_buf->buf[r_pos];
-    r_pos++;
-    r_pos %= RING_BUF_SIZE;
-
-    if (cb(c, data))
+    for(unsigned n = 0; n < len; n++)
     {
-        ring_buf->r_pos = r_pos;
-        ring_buf->full  = false;
+        if (r_pos == ring_buf->w_pos)
+        {
+            len = n;
+            break;
+        }
+        tmp_buf[n] = ring_buf->buf[r_pos];
+        r_pos++;
+        r_pos %= RING_BUF_SIZE;
     }
+
+    if (!len)
+        return 0;
+
+    unsigned consumed = cb(tmp_buf, len, data);
+
+    if (consumed < len)
+    {
+        unsigned unconsumed = len - consumed;
+        while(unconsumed--)
+        {
+            if (r_pos)
+                r_pos--;
+            else
+                r_pos = RING_BUF_SIZE-1;
+        }
+    }
+    ring_buf->r_pos = r_pos;
+    return consumed;
 }
