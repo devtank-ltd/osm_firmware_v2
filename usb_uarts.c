@@ -32,6 +32,7 @@ Bits 7 Direction 0 = In, 1 = Out
 
 #define USB_COM_PCK_SZ     16
 
+static bool connected = false;
 
 
 static const char *usb_strings[] = {
@@ -292,6 +293,9 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
 static void usb_set_config_cb(usbd_device *usb_dev,
                               uint16_t     wValue __attribute((unused)))
 {
+    log_debug("USB connected");
+    connected = true;
+
     for(unsigned n = 0; n < 3; n++)
     {
         usbd_ep_setup(usb_dev, end_addrs[n].com_addr,         USB_ENDPOINT_ATTR_INTERRUPT, USB_COM_PCK_SZ,  NULL);
@@ -338,6 +342,9 @@ unsigned usb_uart_send(unsigned uart, void * data, unsigned len)
 
     if (len > USB_DATA_PCK_SZ)
         len = USB_DATA_PCK_SZ;
+
+    if (!connected)
+        return 0;
 
     usbd_poll(usbd_dev);
 
