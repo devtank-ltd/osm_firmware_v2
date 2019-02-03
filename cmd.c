@@ -89,6 +89,7 @@ void uart_broadcast_cb()
 void debug_cb()
 {
     log_show_debug = !log_show_debug;
+    log_out("Debug %s", (log_show_debug)?"ON":"OFF");
 }
 
 
