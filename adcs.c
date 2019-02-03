@@ -127,21 +127,28 @@ unsigned adcs_get_count()
 }
 
 
-unsigned adcs_read(unsigned adc)
+void     adcs_start_read(unsigned adc)
 {
     if (adc >= ARRAY_SIZE(adc_channel_array))
-        return 0;
+        return;
 
     adc_set_regular_sequence(ADC1, 1, adc_channel_array + adc);
 
     adc_start_conversion_regular(ADC1);
-    while (!(adc_eoc(ADC1)));
+}
 
-    unsigned r = adc_read_regular(ADC1);
+
+bool     adcs_async_read_complete(unsigned *value)
+{
+    if (!adc_eoc(ADC1))
+        return false;
+
+    (*value) = adc_read_regular(ADC1);
 
     adc_set_regular_sequence(ADC1, ARRAY_SIZE(adc_channel_array), adc_channel_array);
 
-    return r;
+    return true;
+
 }
 
 

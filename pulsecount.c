@@ -17,6 +17,7 @@ typedef struct
     uint32_t timer;
     uint32_t exti;
     unsigned adc;
+    uint32_t adc_timer;
 } pulsecount_exti_t;
 
 
@@ -25,11 +26,21 @@ typedef struct
     unsigned value;
     unsigned psp;
     bool     is_high;
+    bool     is_started;
     unsigned high_timer_count;
     unsigned low_timer_count;
     unsigned high;
     unsigned low;
 } pulsecount_values_t;
+
+typedef struct
+{
+    uint32_t timer_clk;
+    uint32_t irq;
+    uint32_t adc_timer_clk;
+    uint32_t adc_timer_irq;
+} pps_init_t;
+
 
 static const port_n_pins_t     pps_pins[]         = PPS_PORT_N_PINS;
 static const pulsecount_exti_t pulsecount_extis[] = PPS_EXTI;
@@ -44,19 +55,14 @@ static void pulsecount_isr(unsigned pps)
     const pulsecount_exti_t      * exti   = &pulsecount_extis[pps];
     volatile pulsecount_values_t * values = &pulsecount_values[pps];
 
-    unsigned adc = adcs_read(exti->adc);
+    exti_reset_request(exti->exti);
 
     if (values->is_high)
     {
-        values->high = adc;
         values->value++;
         exti_set_trigger(exti->exti, EXTI_TRIGGER_FALLING);
     }
-    else
-    {
-        values->low = adc;
-        exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-    }
+    else exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
 
     values->is_high = !values->is_high;
 
@@ -68,12 +74,46 @@ static void pulsecount_isr(unsigned pps)
     else
         values->low_timer_count  = timer_count;
 
-    exti_reset_request(exti->exti);
+    if (exti->adc_timer != 0xFFFFFFFF)
+    {
+        values->is_started = false;
+        timer_set_counter(exti->adc_timer, 0);
+        timer_enable_counter(exti->adc_timer);
+    }
+}
+
+
+static void pulsecount_adc_timer_isr(unsigned pps)
+{
+    const pulsecount_exti_t      * exti   = &pulsecount_extis[pps];
+    volatile pulsecount_values_t * values = &pulsecount_values[pps];
+
+    timer_clear_flag(exti->adc_timer, TIM_SR_CC1IF);
+
+    unsigned value;
+
+    if (!values->is_started)
+    {
+        adcs_start_read(exti->adc);
+        values->is_started = true;
+    }
+    else if (adcs_async_read_complete(&value))
+    {
+        //Inversed now
+        if (!values->is_high)
+            values->high = value;
+        else
+            values->low = value;
+        timer_disable_counter(exti->adc_timer);
+    }
 }
 
 
 void PPS0_EXTI_ISR() { pulsecount_isr(0); }
 void PPS1_EXTI_ISR() { pulsecount_isr(1); }
+
+void PPS0_ADC_TIMER_ISR() { pulsecount_adc_timer_isr(0); }
+void PPS1_ADC_TIMER_ISR() { pulsecount_adc_timer_isr(1); }
 
 
 void pulsecount_second_boardary()
@@ -103,17 +143,14 @@ void pulsecount_get(unsigned pps, unsigned * count)
 
 void pulsecount_init()
 {
-    struct
-    {
-        uint32_t timer_clk;
-        uint32_t irq;
-    } pps_init[] = PPS_INIT;
+    const pps_init_t ppss_init[] = PPS_INIT;
 
     for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
     {
+        const pps_init_t        * pps_init = &ppss_init[n];
         const pulsecount_exti_t * exti = &pulsecount_extis[n];
 
-        rcc_periph_clock_enable(pps_init[n].timer_clk);
+        rcc_periph_clock_enable(pps_init->timer_clk);
 
         timer_disable_counter(exti->timer);
 
@@ -132,6 +169,33 @@ void pulsecount_init()
 
         /* -------------------------------------------------------- */
 
+        if (pps_init->adc_timer_clk != 0xFFFFFFFF)
+        {
+            rcc_periph_clock_enable(pps_init->adc_timer_clk);
+
+            timer_disable_counter(exti->adc_timer);
+
+            timer_set_mode(exti->adc_timer,
+                           TIM_CR1_CKD_CK_INT,
+                           TIM_CR1_CMS_EDGE,
+                           TIM_CR1_DIR_UP);
+            //-1 because it starts at zero, and interrupts on the overflow
+            timer_set_prescaler(exti->adc_timer, rcc_ahb_frequency / 1000000-1);
+            timer_set_period(exti->adc_timer, 5-1);
+
+            timer_enable_preload(exti->adc_timer);
+            timer_continuous_mode(exti->adc_timer);
+
+            timer_set_counter(exti->adc_timer, 0);
+
+            timer_enable_irq(exti->adc_timer, TIM_DIER_CC1IE);
+            nvic_set_priority(pps_init->adc_timer_irq, 0);
+            nvic_enable_irq(pps_init->adc_timer_irq);
+        }
+
+        /* -------------------------------------------------------- */
+
+
         const port_n_pins_t     * pins = &pps_pins[n];
 
         rcc_periph_clock_enable(PORT_TO_RCC(pins->port));
@@ -142,8 +206,8 @@ void pulsecount_init()
         exti_select_source(exti->exti, pins->port);
         exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
 
-        nvic_set_priority(pps_init[n].irq, 0);
-        nvic_enable_irq(pps_init[n].irq);
+        nvic_set_priority(pps_init->irq, 0);
+        nvic_enable_irq(pps_init->irq);
     }
 }
 
@@ -191,7 +255,7 @@ void pulsecount_pps_log(unsigned pps)
     if (pps < ARRAY_SIZE(pps_pins))
     {
         volatile pulsecount_values_t * values = &pulsecount_values[pps];
-        unsigned duty =  (values->high_timer_count * 1000) / 
+        unsigned duty =  (values->high_timer_count * 1000) /
                 (values->high_timer_count + values->low_timer_count);
         log_out("pulsecount %u : %u : %u %u %u", pps, values->psp, duty, values->low, values->high);
     }

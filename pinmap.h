@@ -37,21 +37,21 @@ typedef struct
 }
 
 
-#define PPS_EXTI        \
-{                       \
-    {TIM1, EXTI3,  0},  \
-    {TIM14, EXTI7, -1}, \
+#define PPS_EXTI               \
+{                              \
+    {TIM1, EXTI3,   0, TIM15}, \
+    {TIM14, EXTI7, -1,  -1},   \
 }
 
-#define PPS_INIT                    \
-{                                   \
-    {RCC_TIM1, NVIC_EXTI2_3_IRQ},   \
-    {RCC_TIM14, NVIC_EXTI4_15_IRQ}, \
+#define PPS_INIT                                               \
+{                                                              \
+    {RCC_TIM1, NVIC_EXTI2_3_IRQ, RCC_TIM15, NVIC_TIM15_IRQ},   \
+    {RCC_TIM14, NVIC_EXTI4_15_IRQ, -1, -1},                    \
 }
 
 #define PPS0_EXTI_ISR        exti2_3_isr
 #define PPS1_EXTI_ISR        exti4_15_isr
-
+#define PPS0_ADC_TIMER_ISR   tim15_isr
 
 #define UART_CHANNELS                                                                                                 \
 {                                                                                                                     \

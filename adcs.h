@@ -13,7 +13,8 @@ extern void     adcs_get(unsigned   adc,
 
 extern unsigned adcs_get_count();
 
-extern unsigned adcs_read(unsigned adc);
+extern void     adcs_start_read(unsigned adc);
+extern bool     adcs_async_read_complete(unsigned *value);
 
 extern void     adcs_adc_log(unsigned adc);
 extern void     adcs_log();
