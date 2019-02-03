@@ -113,8 +113,8 @@ void uart_rings_check()
         ring_buf_t * out_ring = &ring_out_bufs[n];
 
         if (ring_buf_is_full(in_ring))
-            log_error("UART %u in ring buffer filled.", n);
+            log_debug("UART %u in ring buffer filled.", n);
         else if (ring_buf_is_full(out_ring))
-            log_error("UART %u out ring buffer filled.", n);
+            log_debug("UART %u out ring buffer filled.", n);
     }
 }
