@@ -167,21 +167,21 @@ void adc_sps_cb()
 
 void adc_start_cb()
 {
-    timers_fast_start();
+    adcs_enable_sampling(true);
     log_out("ADC started with SPS %u", timers_fast_get_rate());
 }
 
 
 void adc_stop_cb()
 {
-    timers_fast_stop();
+    adcs_enable_sampling(false);
     log_out("ADC stopped.");
 }
 
 
 void adc_is_on_cb()
 {
-    if (timers_fast_is_running())
+    if (adcs_is_enabled())
         log_out("ADCs sampling.");
     else
         log_out("ADCs not sampling.");

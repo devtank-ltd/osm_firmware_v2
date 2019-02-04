@@ -24,6 +24,8 @@ static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_a
 
 static unsigned call_count = 0;
 
+static volatile bool do_adcs = false;
+
 void adcs_init()
 {
     const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
@@ -54,6 +56,8 @@ void adcs_init()
 
 void adcs_do_samples()
 {
+    if (!do_adcs)
+        return;
     call_count++;
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
     {
@@ -77,6 +81,8 @@ void adcs_do_samples()
 
 void adcs_second_boardary()
 {
+    if (!do_adcs)
+        return;
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
     {
         adc_channel_info_t * channel_info = &adc_channel_info[n];
@@ -149,6 +155,18 @@ bool     adcs_async_read_complete(unsigned *value)
 
     return true;
 
+}
+
+
+void     adcs_enable_sampling(bool enabled)
+{
+    do_adcs = enabled;
+}
+
+
+bool     adcs_is_enabled()
+{
+    return do_adcs;
 }
 
 

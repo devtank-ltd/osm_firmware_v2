@@ -6,7 +6,7 @@
 
 
 #include "log.h"
-#include "uarts.h"
+#include "uart_rings.h"
 
 bool log_show_debug = false;
 bool log_async_log  = false;
@@ -30,8 +30,8 @@ static void log_msgv(const char *s, va_list ap)
 
     if (log_async_log)
     {
-        uart_out(0, log_buffer, strlen(log_buffer));
-        uart_out(0, "\n\r", 2);
+        uart_ring_out(0, log_buffer, strlen(log_buffer));
+        uart_ring_out(0, "\n\r", 2);
     }
     else platform_raw_msg(log_buffer);
 }

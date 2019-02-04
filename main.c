@@ -52,9 +52,9 @@ int main(void) {
     while(true)
     {
         for(unsigned n = 0; n < rcc_ahb_frequency / 1000; n++)
-            uart_rings_drain();
+            uart_rings_in_drain();
+
         gpio_toggle(LED_PORT, LED_PIN);
-        uart_rings_check();
     }
 
     return 0;

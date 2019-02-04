@@ -25,7 +25,10 @@
 
 #define DEFAULT_SPS 8000
 
-#define RING_BUF_SIZE 256
+#define CMD_IN_BUF_SIZE  CMD_LINELEN
+#define CMD_OUT_BUF_SIZE 1024
+
+#define STD_UART_BUF_SIZE 256
 
 #define USB_DATA_PCK_SZ    32
 

@@ -8,15 +8,26 @@
 #include "uarts.h"
 #include "usb_uarts.h"
 
-static ring_buf_t ring_in_bufs[4] = {RING_BUF_INIT,
-                                     RING_BUF_INIT,
-                                     RING_BUF_INIT,
-                                     RING_BUF_INIT};
 
-static ring_buf_t ring_out_bufs[4] = {RING_BUF_INIT,
-                                      RING_BUF_INIT,
-                                      RING_BUF_INIT,
-                                      RING_BUF_INIT};
+typedef char std_uart_buf_t[STD_UART_BUF_SIZE];
+
+static char cmd_uart_buf_in[CMD_IN_BUF_SIZE];
+static char cmd_uart_buf_out[CMD_OUT_BUF_SIZE];
+
+static std_uart_buf_t std_uart_in_bufs[3];
+static std_uart_buf_t std_uart_out_bufs[3];
+
+static ring_buf_t ring_in_bufs[4] = {
+    RING_BUF_INIT(cmd_uart_buf_in, sizeof(cmd_uart_buf_in)),
+    RING_BUF_INIT(std_uart_in_bufs[0], STD_UART_BUF_SIZE),
+    RING_BUF_INIT(std_uart_in_bufs[1], STD_UART_BUF_SIZE),
+    RING_BUF_INIT(std_uart_in_bufs[2], STD_UART_BUF_SIZE)};
+
+static ring_buf_t ring_out_bufs[4] = {
+    RING_BUF_INIT(cmd_uart_buf_out, sizeof(cmd_uart_buf_out)),
+    RING_BUF_INIT(std_uart_out_bufs[0], STD_UART_BUF_SIZE),
+    RING_BUF_INIT(std_uart_out_bufs[1], STD_UART_BUF_SIZE),
+    RING_BUF_INIT(std_uart_out_bufs[2], STD_UART_BUF_SIZE)};
 
 typedef char usb_packet_t[USB_DATA_PCK_SZ];
 static usb_packet_t usb_out_packets[3];
@@ -24,27 +35,31 @@ static usb_packet_t usb_out_packets[3];
 static char command[CMD_LINELEN];
 
 
-void uart_ring_in(unsigned uart, const char* s, unsigned len)
+unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 {
     if (uart > 3)
-        return;
+        return 0;
 
     ring_buf_t * ring = &ring_in_bufs[uart];
 
     for (unsigned n = 0; n < len; n++)
-        ring_buf_add(ring, s[n]);
+        if (!ring_buf_add(ring, s[n]))
+            return n;
+    return len;
 }
 
 
-void uart_ring_out(unsigned uart, const char* s, unsigned len)
+unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 {
     if (uart > 3)
-        return;
+        return 0;
 
     ring_buf_t * ring = &ring_out_bufs[uart];
 
     for (unsigned n = 0; n < len; n++)
-        ring_buf_add(ring, s[n]);
+        if (!ring_buf_add(ring, s[n]))
+            return n;
+    return len;
 }
 
 
@@ -63,45 +78,63 @@ static unsigned _usb_out_async(char * tmp, unsigned len, void * puart)
 }
 
 
-void uart_rings_drain()
+static void uart_ring_in_drain(unsigned uart)
+{
+    if (uart > 3)
+        return;
+
+    ring_buf_t * ring = &ring_in_bufs[uart];
+    unsigned len = ring_buf_get_pending(ring);
+
+    if (!len)
+        return;
+
+    if (uart)
+    {
+        char * tmp = usb_out_packets[uart-1];
+
+        len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
+
+        ring_buf_consume(ring, _usb_out_async, tmp, len, &uart);
+    }
+    else
+    {
+        unsigned len = ring_buf_readline(ring, command, CMD_LINELEN);
+
+        if (len)
+            cmds_process(command, len);
+    }
+}
+
+
+static void uart_ring_out_drain(unsigned uart)
+{
+    if (uart > 3)
+        return;
+
+    ring_buf_t * ring = &ring_out_bufs[uart];
+
+    unsigned len = ring_buf_get_pending(ring);
+
+    if (!len)
+        return;
+
+    char c;
+    ring_buf_consume(ring, _uart_out_async, &c, 1, &uart);
+}
+
+
+void uart_rings_in_drain()
 {
     for(unsigned n = 0; n < 4; n++)
-    {
-        ring_buf_t * ring = &ring_in_bufs[n];
-        unsigned len = ring_buf_get_pending(ring);
+        uart_ring_in_drain(n);
+}
 
-        if (!len)
-            continue;
 
-        if (n)
-        {
-            char * tmp = usb_out_packets[n-1];
-
-            len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
-
-            ring_buf_consume(ring, _usb_out_async, tmp, len, &n);
-        }
-        else
-        {
-            unsigned len = ring_buf_readline(ring, command, CMD_LINELEN);
-
-            if (len)
-                cmds_process(command, len);
-        }
-    }
-
+void uart_rings_out_drain()
+{
     for(unsigned n = 0; n < 4; n++)
-    {
-        ring_buf_t * ring = &ring_out_bufs[n];
-
-        unsigned len = ring_buf_get_pending(ring);
-
-        if (!len)
-            continue;
-
-        char c;
-        ring_buf_consume(ring, _uart_out_async, &c, 1, &n);
-    }
+        uart_ring_out_drain(n);
 }
 
 

@@ -8,10 +8,11 @@
 #include "pulsecount.h"
 #include "inputs.h"
 #include "timers.h"
+#include "uart_rings.h"
 
 static volatile unsigned fast_rate_sps     = DEFAULT_SPS;
 static volatile unsigned fast_sample_count = DEFAULT_SPS-1;
-static volatile bool     fast_is_running   = false;
+
 
 void tim3_isr(void)
 {
@@ -32,6 +33,7 @@ void tim2_isr(void)
     }
 
     adcs_do_samples();
+    uart_rings_out_drain();
     timer_clear_flag(TIM2, TIM_SR_CC1IF);
 }
 
@@ -73,10 +75,14 @@ void     timers_init()
                    TIM_CR1_DIR_UP);
     //-1 because it starts at zero, and interrupts on the overflow
     timer_set_prescaler(TIM2, rcc_ahb_frequency / 1000000-1);
-
+    timer_set_period(TIM2, 1000 * 1000 / fast_rate_sps - 1);
+    timer_enable_preload(TIM2);
     timer_continuous_mode(TIM2);
 
+    timer_enable_counter(TIM2);
     timer_enable_irq(TIM2, TIM_DIER_CC1IE);
+
+    timer_set_counter(TIM2, 0);
     nvic_enable_irq(NVIC_TIM2_IRQ);
     nvic_set_priority(NVIC_TIM2_IRQ, 2);
 }
@@ -85,34 +91,15 @@ void     timers_init()
 void     timers_fast_set_rate(unsigned count)
 {
     fast_rate_sps = count;
+    fast_sample_count = 0;
+    timer_disable_counter(TIM2);
+    timer_set_period(TIM2, 1000 * 1000 / fast_rate_sps - 1);
+    timer_set_counter(TIM2, 0);
+    timer_enable_counter(TIM2);
 }
 
 
 unsigned timers_fast_get_rate()
 {
     return fast_rate_sps;
-}
-
-
-void     timers_fast_start()
-{
-    fast_sample_count = fast_rate_sps-1;
-    timer_set_period(TIM2, 1000 * 1000 / fast_rate_sps - 1);
-    timer_enable_preload(TIM2);
-    timer_set_counter(TIM2, 0);
-    timer_enable_counter(TIM2);
-    fast_is_running = true;
-}
-
-
-bool     timers_fast_is_running()
-{
-    return fast_is_running;
-}
-
-
-void     timers_fast_stop()
-{
-    timer_disable_counter(TIM2);
-    fast_is_running = false;
 }

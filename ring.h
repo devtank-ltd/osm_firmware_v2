@@ -6,12 +6,13 @@
 
 typedef struct
 {
-    volatile char     buf[RING_BUF_SIZE];
+    volatile char *   buf;
+    unsigned          size;
     volatile unsigned r_pos;
     volatile unsigned w_pos;
 } ring_buf_t;
 
-#define RING_BUF_INIT { {0}, 0, 0}
+#define RING_BUF_INIT(_buf_, _size_) {_buf_, _size_, 0, 0}
 
 
 extern bool     ring_buf_add(ring_buf_t * ring_buf, char c);

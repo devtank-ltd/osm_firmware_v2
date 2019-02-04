@@ -16,6 +16,9 @@ extern unsigned adcs_get_count();
 extern void     adcs_start_read(unsigned adc);
 extern bool     adcs_async_read_complete(unsigned *value);
 
+extern void     adcs_enable_sampling(bool enabled);
+extern bool     adcs_is_enabled();
+
 extern void     adcs_adc_log(unsigned adc);
 extern void     adcs_log();
 

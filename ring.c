@@ -10,7 +10,7 @@ bool ring_buf_add(ring_buf_t * ring_buf, char c)
 {
     /* So we know it's got data, we never let write pos catch read pos*/
     unsigned w_pos = ring_buf->w_pos;
-    unsigned w_next = (w_pos + 1) % RING_BUF_SIZE;
+    unsigned w_next = (w_pos + 1) % ring_buf->size;
 
     if (w_next == ring_buf->r_pos)
         return false;
@@ -37,7 +37,7 @@ unsigned ring_buf_get_pending(ring_buf_t * ring_buf)
     unsigned w_pos = ring_buf->w_pos;
     if (r_pos == w_pos)
         return 0;
-    unsigned sec_size = (r_pos < w_pos)?(w_pos - r_pos):(RING_BUF_SIZE - r_pos + w_pos);
+    unsigned sec_size = (r_pos < w_pos)?(w_pos - r_pos):(ring_buf->size - r_pos + w_pos);
     return sec_size;
 }
 
@@ -45,7 +45,7 @@ unsigned ring_buf_get_pending(ring_buf_t * ring_buf)
 bool      ring_buf_is_full(ring_buf_t * ring_buf)
 {
     /* So we know it's got data, we never let write pos catch read pos*/
-    unsigned w_next = (ring_buf->w_pos + 1) % RING_BUF_SIZE;
+    unsigned w_next = (ring_buf->w_pos + 1) % ring_buf->size;
     return (w_next == ring_buf->r_pos);
 }
 
@@ -59,7 +59,7 @@ unsigned  ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
         if (r_pos == ring_buf->w_pos)
             return n;
         r_pos++;
-        r_pos %= RING_BUF_SIZE;
+        r_pos %= ring_buf->size;
         ring_buf->r_pos = r_pos;
     }
     return len;
@@ -83,15 +83,18 @@ unsigned  ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
     {
         char c = ring_buf->buf[r_pos];
         r_pos++;
-        r_pos %= RING_BUF_SIZE;
+        r_pos %= ring_buf->size;
 
         if (c == '\n' || c == '\r')
         {
-            char c = ring_buf->buf[r_pos];
-            if (c == '\r' || c == '\n')
+            if ((n + 1) < toread)
             {
-                r_pos++;
-                r_pos %= RING_BUF_SIZE;
+                char c = ring_buf->buf[r_pos];
+                if (c == '\r' || c == '\n')
+                {
+                    r_pos++;
+                    r_pos %= ring_buf->size;
+                }
             }
 
             buf[n]          = 0;
@@ -125,7 +128,7 @@ unsigned     ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, cha
         }
         tmp_buf[n] = ring_buf->buf[r_pos];
         r_pos++;
-        r_pos %= RING_BUF_SIZE;
+        r_pos %= ring_buf->size;
     }
 
     if (!len)
@@ -141,7 +144,7 @@ unsigned     ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, cha
             if (r_pos)
                 r_pos--;
             else
-                r_pos = RING_BUF_SIZE-1;
+                r_pos = ring_buf->size-1;
         }
     }
     ring_buf->r_pos = r_pos;
