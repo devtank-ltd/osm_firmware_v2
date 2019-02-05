@@ -69,6 +69,9 @@ void adcs_do_samples()
         case 0: adc_start_conversion_regular(ADC1); break;
         case 1:
         {
+            if (!adc_eoc(ADC1))
+                log_debug("ADC sampling not complete!");
+
             uint32_t adc = adc_read_regular(ADC1);
 
             adc_channel_info_t * channel_info = &adc_channel_info[adc_index];
@@ -92,6 +95,8 @@ void adcs_do_samples()
 void adcs_second_boardary()
 {
     unsigned sample_count = call_count / ARRAY_SIZE(adc_channel_array) / 2;
+
+    log_debug("ADCS SPS %u", sample_count);
 
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
     {
