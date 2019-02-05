@@ -26,7 +26,7 @@ void tim2_isr(void)
 {
     fast_sample_count++;
 
-    if (fast_sample_count == fast_rate_sps)
+    if (fast_sample_count == DEFAULT_SPS)
     {
         adcs_second_boardary();
         fast_sample_count = 0;
@@ -75,7 +75,7 @@ void     timers_init()
                    TIM_CR1_DIR_UP);
     //-1 because it starts at zero, and interrupts on the overflow
     timer_set_prescaler(TIM2, rcc_ahb_frequency / 1000000-1);
-    timer_set_period(TIM2, 1000 * 1000 / fast_rate_sps - 1);
+    timer_set_period(TIM2, 1000 * 1000 / DEFAULT_SPS - 1);
     timer_enable_preload(TIM2);
     timer_continuous_mode(TIM2);
 
@@ -85,21 +85,4 @@ void     timers_init()
     timer_set_counter(TIM2, 0);
     nvic_enable_irq(NVIC_TIM2_IRQ);
     nvic_set_priority(NVIC_TIM2_IRQ, 2);
-}
-
-
-void     timers_fast_set_rate(unsigned count)
-{
-    fast_rate_sps = count;
-    fast_sample_count = 0;
-    timer_disable_counter(TIM2);
-    timer_set_period(TIM2, 1000 * 1000 / fast_rate_sps - 1);
-    timer_set_counter(TIM2, 0);
-    timer_enable_counter(TIM2);
-}
-
-
-unsigned timers_fast_get_rate()
-{
-    return fast_rate_sps;
 }

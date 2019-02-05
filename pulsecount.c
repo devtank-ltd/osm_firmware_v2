@@ -10,14 +10,11 @@
 #include "log.h"
 #include "pinmap.h"
 #include "timers.h"
-#include "adcs.h"
 
 typedef struct
 {
     uint32_t timer;
     uint32_t exti;
-    unsigned adc;
-    uint32_t adc_timer;
 } pulsecount_exti_t;
 
 
@@ -29,16 +26,12 @@ typedef struct
     bool     is_high;
     unsigned high_timer_count;
     unsigned low_timer_count;
-    unsigned high;
-    unsigned low;
 } pulsecount_values_t;
 
 typedef struct
 {
     uint32_t timer_clk;
     uint32_t irq;
-    uint32_t adc_timer_clk;
-    uint32_t adc_timer_irq;
 } pps_init_t;
 
 
@@ -71,42 +64,11 @@ static void pulsecount_isr(unsigned pps)
         values->high_timer_count = timer_count;
     else
         values->low_timer_count  = timer_count;
-
-    if (exti->adc_timer != 0xFFFFFFFF)
-    {
-        values->tick = adcs_get_tick(exti->adc);
-        timer_set_counter(exti->adc_timer, 0);
-        timer_enable_counter(exti->adc_timer);
-    }
-}
-
-
-static void pulsecount_adc_timer_isr(unsigned pps)
-{
-    const pulsecount_exti_t      * exti   = &pulsecount_extis[pps];
-    volatile pulsecount_values_t * values = &pulsecount_values[pps];
-
-    timer_clear_flag(exti->adc_timer, TIM_SR_CC1IF);
-
-    if (values->tick != adcs_get_tick(exti->adc))
-    {
-        unsigned value = adcs_get_last(exti->adc);
-
-        //Inversed now
-        if (!values->is_high)
-            values->high = value;
-        else
-            values->low = value;
-        timer_disable_counter(exti->adc_timer);
-    }
 }
 
 
 void PPS0_EXTI_ISR() { pulsecount_isr(0); }
 void PPS1_EXTI_ISR() { pulsecount_isr(1); }
-
-void PPS0_ADC_TIMER_ISR() { pulsecount_adc_timer_isr(0); }
-void PPS1_ADC_TIMER_ISR() { pulsecount_adc_timer_isr(1); }
 
 
 void pulsecount_second_boardary()
@@ -162,32 +124,6 @@ void pulsecount_init()
 
         /* -------------------------------------------------------- */
 
-        if (pps_init->adc_timer_clk != 0xFFFFFFFF)
-        {
-            rcc_periph_clock_enable(pps_init->adc_timer_clk);
-
-            timer_disable_counter(exti->adc_timer);
-
-            timer_set_mode(exti->adc_timer,
-                           TIM_CR1_CKD_CK_INT,
-                           TIM_CR1_CMS_EDGE,
-                           TIM_CR1_DIR_UP);
-            //-1 because it starts at zero, and interrupts on the overflow
-            timer_set_prescaler(exti->adc_timer, rcc_ahb_frequency / 1000000-1);
-            timer_set_period(exti->adc_timer, 100);
-
-            timer_enable_preload(exti->adc_timer);
-            timer_continuous_mode(exti->adc_timer);
-
-            timer_set_counter(exti->adc_timer, 0);
-
-            timer_enable_irq(exti->adc_timer, TIM_DIER_CC1IE);
-            nvic_set_priority(pps_init->adc_timer_irq, 0);
-            nvic_enable_irq(pps_init->adc_timer_irq);
-        }
-
-        /* -------------------------------------------------------- */
-
 
         const port_n_pins_t     * pins = &pps_pins[n];
 
@@ -227,7 +163,7 @@ void pulsecount_pps_log(unsigned pps)
         volatile pulsecount_values_t * values = &pulsecount_values[pps];
         unsigned duty =  (values->high_timer_count * 1000) /
                 (values->high_timer_count + values->low_timer_count);
-        log_out("pulsecount %u : %u : %u %u %u", pps, values->psp, duty, values->low, values->high);
+        log_out("pulsecount %u : %u : %u", pps, values->psp, duty);
     }
 }
 
