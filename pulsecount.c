@@ -174,7 +174,7 @@ void pulsecount_init()
                            TIM_CR1_DIR_UP);
             //-1 because it starts at zero, and interrupts on the overflow
             timer_set_prescaler(exti->adc_timer, rcc_ahb_frequency / 1000000-1);
-            timer_set_period(exti->adc_timer, 1000000 / (DEFAULT_SPS / ADC_COUNT / 2));
+            timer_set_period(exti->adc_timer, 100);
 
             timer_enable_preload(exti->adc_timer);
             timer_continuous_mode(exti->adc_timer);
