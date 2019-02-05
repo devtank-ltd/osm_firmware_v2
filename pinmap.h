@@ -23,10 +23,9 @@ typedef struct
     {GPIOB, GPIO1},      /* ADC 4  = Channel 9  */  \
     {GPIOC, GPIO0},      /* ADC 5  = Channel 10 */  \
     {GPIOC, GPIO1},      /* ADC 6  = Channel 11 */  \
-    {GPIOC, GPIO2},      /* ADC 7  = Channel 12 */  \
-    {GPIOC, GPIO3},      /* ADC 8  = Channel 13 */  \
-    {GPIOC, GPIO4},      /* ADC 9  = Channel 14 */  \
-    {GPIOC, GPIO5},      /* ADC 10 = Channel 15 */  \
+    {GPIOC, GPIO3},      /* ADC 7  = Channel 13 */  \
+    {GPIOC, GPIO4},      /* ADC 8  = Channel 14 */  \
+    {GPIOC, GPIO5},      /* ADC 9  = Channel 15 */  \
 }
 
 

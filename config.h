@@ -23,7 +23,7 @@
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
 
-#define DEFAULT_SPS 8000
+#define DEFAULT_SPS 100000
 
 #define CMD_IN_BUF_SIZE  CMD_LINELEN
 #define CMD_OUT_BUF_SIZE 1024
