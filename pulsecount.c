@@ -25,8 +25,8 @@ typedef struct
 {
     unsigned value;
     unsigned psp;
+    unsigned tick;
     bool     is_high;
-    bool     is_started;
     unsigned high_timer_count;
     unsigned low_timer_count;
     unsigned high;
@@ -46,8 +46,6 @@ static const port_n_pins_t     pps_pins[]         = PPS_PORT_N_PINS;
 static const pulsecount_exti_t pulsecount_extis[] = PPS_EXTI;
 
 static volatile pulsecount_values_t pulsecount_values[ARRAY_SIZE(pps_pins)] = {{0}};
-
-static bool pulse_enabled = false;
 
 
 static void pulsecount_isr(unsigned pps)
@@ -76,7 +74,7 @@ static void pulsecount_isr(unsigned pps)
 
     if (exti->adc_timer != 0xFFFFFFFF)
     {
-        values->is_started = false;
+        values->tick = adcs_get_tick(exti->adc);
         timer_set_counter(exti->adc_timer, 0);
         timer_enable_counter(exti->adc_timer);
     }
@@ -90,15 +88,10 @@ static void pulsecount_adc_timer_isr(unsigned pps)
 
     timer_clear_flag(exti->adc_timer, TIM_SR_CC1IF);
 
-    unsigned value;
+    if (values->tick != adcs_get_tick(exti->adc))
+    {
+        unsigned value = adcs_get_last(exti->adc);
 
-    if (!values->is_started)
-    {
-        adcs_start_read(exti->adc);
-        values->is_started = true;
-    }
-    else if (adcs_async_read_complete(&value))
-    {
         //Inversed now
         if (!values->is_high)
             values->high = value;
@@ -181,7 +174,7 @@ void pulsecount_init()
                            TIM_CR1_DIR_UP);
             //-1 because it starts at zero, and interrupts on the overflow
             timer_set_prescaler(exti->adc_timer, rcc_ahb_frequency / 1000000-1);
-            timer_set_period(exti->adc_timer, 5-1);
+            timer_set_period(exti->adc_timer, 1000000 / (DEFAULT_SPS / ADC_COUNT / 2));
 
             timer_enable_preload(exti->adc_timer);
             timer_continuous_mode(exti->adc_timer);
@@ -209,11 +202,7 @@ void pulsecount_init()
         nvic_set_priority(pps_init->irq, 0);
         nvic_enable_irq(pps_init->irq);
     }
-}
 
-
-void     pulsecount_start()
-{
     for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
     {
         volatile pulsecount_values_t * values = &pulsecount_values[n];
@@ -228,25 +217,6 @@ void     pulsecount_start()
         exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
         exti_enable_request(exti->exti);
     }
-    pulse_enabled = true;
-}
-
-
-void     pulsecount_stop()
-{
-    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
-    {
-        const pulsecount_exti_t      * exti   = &pulsecount_extis[n];
-        timer_disable_counter(exti->timer);
-        exti_disable_request(exti->exti);
-    }
-    pulse_enabled = false;
-}
-
-
-bool     pulsecount_is_running()
-{
-    return pulse_enabled;
 }
 
 

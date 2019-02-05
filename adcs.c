@@ -16,16 +16,19 @@ typedef struct
     unsigned max_value;
     unsigned min_value;
     double   av_value;
-}  __attribute__((packed)) adc_channel_info_t;
+} adc_channel_info_t;
+
 
 static adc_channel_info_t adc_channel_info[ARRAY_SIZE(adc_channel_array)] = {{0}};
 
 static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_array)] = {{0}};
 
+static volatile uint16_t last_value[ARRAY_SIZE(adc_channel_array)] = {0};
+static volatile uint16_t ch_tick[ARRAY_SIZE(adc_channel_array)] = {0};
+
 static unsigned call_count = 0;
 static unsigned adc_index = 0;
 
-static volatile bool do_adcs = false;
 
 void adcs_init()
 {
@@ -57,8 +60,6 @@ void adcs_init()
 
 void adcs_do_samples()
 {
-    if (!do_adcs)
-        return;
     call_count++;
 
     unsigned state = call_count % 2;
@@ -70,7 +71,7 @@ void adcs_do_samples()
         {
             uint32_t adc = adc_read_regular(ADC1);
 
-            adc_channel_info_t * channel_info = &adc_channel_info[adc_index++];
+            adc_channel_info_t * channel_info = &adc_channel_info[adc_index];
 
             if (adc > channel_info->max_value)
                 channel_info->max_value = adc;
@@ -79,7 +80,10 @@ void adcs_do_samples()
                 channel_info->min_value = adc;
 
             channel_info->av_value += adc;
+            last_value[adc_index]   = adc;
+            ch_tick[adc_index]++;
 
+            adc_index++;
             adc_index %= ARRAY_SIZE(adc_channel_array);
         }
     }
@@ -88,9 +92,6 @@ void adcs_do_samples()
 
 void adcs_second_boardary()
 {
-    if (!do_adcs)
-        return;
-
     unsigned sample_count = call_count / ARRAY_SIZE(adc_channel_array) / 2;
 
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
@@ -104,6 +105,7 @@ void adcs_second_boardary()
         channel_info->av_value  = 0;
 
         adc_channel_info_cur[n].av_value /= sample_count;
+        ch_tick[n] = 0;
     }
 
     call_count = 0;
@@ -143,40 +145,21 @@ unsigned adcs_get_count()
 }
 
 
-void     adcs_start_read(unsigned adc)
+unsigned  adcs_get_last(unsigned adc)
 {
     if (adc >= ARRAY_SIZE(adc_channel_array))
-        return;
+        return 0;
 
-    adc_set_regular_sequence(ADC1, 1, adc_channel_array + adc);
-
-    adc_start_conversion_regular(ADC1);
+    return last_value[adc];
 }
 
 
-bool     adcs_async_read_complete(unsigned *value)
+unsigned  adcs_get_tick(unsigned adc)
 {
-    if (!adc_eoc(ADC1))
-        return false;
+    if (adc >= ARRAY_SIZE(adc_channel_array))
+        return 0;
 
-    (*value) = adc_read_regular(ADC1);
-
-    adc_set_regular_sequence(ADC1, ARRAY_SIZE(adc_channel_array), adc_channel_array);
-
-    return true;
-
-}
-
-
-void     adcs_enable_sampling(bool enabled)
-{
-    do_adcs = enabled;
-}
-
-
-bool     adcs_is_enabled()
-{
-    return do_adcs;
+    return ch_tick[adc];
 }
 
 

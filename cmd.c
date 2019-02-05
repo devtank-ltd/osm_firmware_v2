@@ -35,13 +35,6 @@ static void input_cb();
 static void output_cb();
 static void count_cb();
 static void all_cb();
-static void adc_sps_cb();
-static void adc_start_cb();
-static void adc_stop_cb();
-static void adc_is_on_cb();
-static void pps_start_cb();
-static void pps_stop_cb();
-static void pps_is_on_cb();
 
 
 static cmd_t cmds[] = {
@@ -57,21 +50,8 @@ static cmd_t cmds[] = {
     { "output",   "Get/set output on/off.",  output_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "all",      "Print everything.",       all_cb},
-    { "adc_sps",  "Get/Set ADC SPS",         adc_sps_cb},
-    { "adc_start","Start ADC sampling.",     adc_start_cb},
-    { "adc_stop", "Stop ADC sampling.",      adc_stop_cb},
-    { "adc_is_on","Is ADCs sampling.",       adc_is_on_cb},
-    { "pps_start","Start PPS sampling.",     pps_start_cb},
-    { "pps_stop", "Stop PPS sampling.",      pps_stop_cb},
-    { "pps_is_on","Is PPS sampling.",        pps_is_on_cb},
     { NULL },
 };
-
-
-static bool cmd_has_arg()
-{
-    return (rx_buffer[rx_pos] == ' ');
-}
 
 
 void uart_broadcast_cb()
@@ -149,65 +129,6 @@ void all_cb()
     inputs_log();
     outputs_log();
     adcs_log();
-}
-
-
-
-void adc_sps_cb()
-{
-    if (cmd_has_arg())
-    {
-        unsigned sps = strtoul(rx_buffer + rx_pos, NULL, 10);
-        timers_fast_set_rate(sps);
-        log_out("Sample rate now : %u", sps);
-    }
-    else log_out("Sample rate : %u", timers_fast_get_rate());
-}
-
-
-void adc_start_cb()
-{
-    adcs_enable_sampling(true);
-    log_out("ADC started with SPS %u", timers_fast_get_rate());
-}
-
-
-void adc_stop_cb()
-{
-    adcs_enable_sampling(false);
-    log_out("ADC stopped.");
-}
-
-
-void adc_is_on_cb()
-{
-    if (adcs_is_enabled())
-        log_out("ADCs sampling.");
-    else
-        log_out("ADCs not sampling.");
-}
-
-
-void pps_start_cb()
-{
-    pulsecount_start();
-    log_out("PPS started");
-}
-
-
-void pps_stop_cb()
-{
-    pulsecount_start();
-    log_out("PPS stopped");
-}
-
-
-void pps_is_on_cb()
-{
-    if (pulsecount_is_running())
-        log_out("PPS sampling.");
-    else
-        log_out("PPS not sampling.");
 }
 
 
