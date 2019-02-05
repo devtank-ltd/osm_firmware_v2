@@ -28,6 +28,8 @@ typedef struct
     {GPIOC, GPIO5},      /* ADC 9  = Channel 15 */  \
 }
 
+#define ADC_CHANNELS  {4,6,7,8,9,10,11,13,14,15};
+
 #define ADC_COUNT 10
 
 #define PPS_PORT_N_PINS             \

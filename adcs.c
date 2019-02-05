@@ -9,7 +9,7 @@
 #include "pinmap.h"
 
 
-static uint8_t adc_channel_array[] = {4,6,7,8,9,10,11,13,14,15};
+static uint8_t adc_channel_array[] = ADC_CHANNELS;
 
 typedef struct
 {
@@ -27,7 +27,7 @@ static volatile uint16_t last_value[ARRAY_SIZE(adc_channel_array)] = {0};
 static volatile uint16_t ch_tick[ARRAY_SIZE(adc_channel_array)] = {0};
 
 static unsigned call_count = 0;
-static unsigned adc_index = 0;
+static unsigned adc_index = ARRAY_SIZE(adc_channel_array) - 1;
 
 
 void adcs_init()
@@ -83,8 +83,7 @@ void adcs_do_samples()
             last_value[adc_index]   = adc;
             ch_tick[adc_index]++;
 
-            adc_index++;
-            adc_index %= ARRAY_SIZE(adc_channel_array);
+            adc_index = (adc_index + 1) % ARRAY_SIZE(adc_channel_array);
         }
     }
 }
