@@ -135,7 +135,7 @@ void pulsecount_init()
         exti_select_source(exti->exti, pins->port);
         exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
 
-        nvic_set_priority(pps_init->irq, 0);
+        nvic_set_priority(pps_init->irq, 1);
         nvic_enable_irq(pps_init->irq);
     }
 
