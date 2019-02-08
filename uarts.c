@@ -63,8 +63,6 @@ static bool uart_getc(uint32_t uart, char* c)
         return false;
     }
 
-    usart_wait_recv_ready(uart);
-
     *c = usart_recv(uart);
 
     return ((*c) != 0);
