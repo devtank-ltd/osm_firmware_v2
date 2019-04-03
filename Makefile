@@ -46,6 +46,8 @@ OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)%.o)
 DEPS = $(SOURCES:%.c=$(BUILD_DIR)%.d)
 TARGET_ELF = $(BUILD_DIR)$(PROJECT_NAME).elf
 TARGET_HEX = $(TARGET_ELF:%.elf=%.hex)
+TARGET_BIN = $(TARGET_ELF:%.elf=%.bin)
+
 
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32f0.a
 
@@ -56,6 +58,9 @@ $(BUILD_DIR)main.o : $(LIBOPENCM3)
 
 $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
 	$(CC) $(OBJECTS) $(LINK_FLAGS) -o $(TARGET_ELF)
+
+$(TARGET_BIN): $(TARGET_ELF)
+	$(OBJCOPY) -O binary $< $@
 
 $(OBJECTS): $(BUILD_DIR)%.o: %.c
 	mkdir -p `dirname $@`
@@ -75,6 +80,10 @@ flash: $(TARGET_ELF)
 		    -c "flash write_image erase $(TARGET_ELF)" \
 		    -c "reset" \
 		    -c "shutdown"
+
+dfu : $(TARGET_BIN)
+	dfu-util -D $(TARGET_BIN) -a 0 -s 0x08000000:leave
+
 
 clean:
 	rm -rf $(BUILD_DIR)
