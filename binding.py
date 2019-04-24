@@ -18,7 +18,7 @@ class pps_t(io_board_prop_t):
     @property
     def value(self):
         parent = self.parent()
-        r = parent.command("PPS %u" % self.index)
+        r = parent.command("pps %u" % self.index)
         v = r[0].split(b':')[1].strip()
         return int(v)
 
@@ -91,7 +91,7 @@ class adc_t(io_board_prop_t):
 class io_board_py_t(object):
     __LOG_START_SPACER = b"============{"
     __LOG_END_SPACER   = b"}============"
-    __PROP_MAP = {b"pps" : pps_t,
+    __PROP_MAP = {b"ppss" : pps_t,
                   b"inputs" : input_t,
                   b"outputs" : output_t,
                   b"adcs" : adc_t}
@@ -99,7 +99,7 @@ class io_board_py_t(object):
     __WRITEDELAY = 0.001 # Stop flooding STM32 faster than it can deal with
 
     def __init__(self, dev):
-        self.pps = []
+        self.ppss = []
         self.inputs = []
         self.outputs = []
         self.adcs = []
@@ -111,6 +111,7 @@ class io_board_py_t(object):
                 bytesize=serial.EIGHTBITS,
                 timeout=1)
         r = self.command("count")
+        print("")
         m = {}
         for line in r:
             parts = line.split(b':')

@@ -16,7 +16,7 @@ else:
 
 comm = binding.io_board_py_t(devpath)
 
-for pps in comm.pps:
+for pps in comm.ppss:
     print("PPS", pps.index, pps.value)
 
 for gpio_in in comm.inputs:
