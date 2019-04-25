@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import binding
 import serial
+import sys
 
 devpath = None
 
