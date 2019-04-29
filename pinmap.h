@@ -58,9 +58,8 @@ typedef struct
 #define UART_CHANNELS                                                                                                 \
 {                                                                                                                     \
     { USART2, RCC_USART2, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART1_IRQ,   115200, UART1_PRIORITY }, /* UART 0 */ \
-    { USART1, RCC_USART1, GPIOA, GPIO9  | GPIO10, GPIO_AF1, NVIC_USART2_IRQ,   9600,   UART2_PRIORITY }, /* UART 1 */ \
-    { USART3, RCC_USART3, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY }, /* UART 2 */ \
-    { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 115200, UART3_PRIORITY }, /* UART 3 */ \
+    { USART3, RCC_USART3, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, 9600,   UART3_PRIORITY }, /* UART 1 */ \
+    { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 115200, UART3_PRIORITY }, /* UART 2 */ \
 }
 
 #define INPUTS_PORT_N_PINS              \
@@ -88,6 +87,14 @@ typedef struct
     {GPIOB, GPIO6},     /* Output 5 */   \
     {GPIOB, GPIO14},    /* Output 6 */   \
     {GPIOB, GPIO15},    /* Output 7 */   \
+    {GPIOA, GPIO9},     /* Output 8 */   \
+    {GPIOA, GPIO10},    /* Output 9 */   \
+    {GPIOA, GPIO13},    /* Output 10 */  \
+    {GPIOA, GPIO14},    /* Output 11 */  \
+    {GPIOC, GPIO13},    /* Output 12 */  \
+    {GPIOB, GPIO5},     /* Output 13 */  \
+    {GPIOB, GPIO8},     /* Output 14 */  \
+    {GPIOB, GPIO9},     /* Output 15 */  \
 }
 
 #define OUTPUT_PULL                      \
