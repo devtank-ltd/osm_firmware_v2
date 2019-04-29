@@ -77,6 +77,7 @@ void log_debug(const char *s, ...)
         len = LOG_LINELEN;
     va_end(ap);
     uart_ring_out(0, log_buffer, len);
+    uart_ring_out(0, "\r\n", 2);
 }
 
 

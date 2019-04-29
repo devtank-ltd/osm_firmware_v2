@@ -62,6 +62,10 @@ typedef struct
     { USART4, RCC_USART4, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, 115200, UART3_PRIORITY }, /* UART 2 */ \
 }
 
+#define UART_CHANNELS_COUNT 3
+
+
+
 #define INPUTS_PORT_N_PINS              \
 {                                       \
     {GPIOC, GPIO12},   /* Input 0 */    \
