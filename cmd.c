@@ -34,6 +34,7 @@ static void input_cb();
 static void output_cb();
 static void count_cb();
 static void all_cb();
+static void version_cb();
 
 
 static cmd_t cmds[] = {
@@ -48,6 +49,7 @@ static cmd_t cmds[] = {
     { "output",   "Get/set output on/off.",  output_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "all",      "Print everything.",       all_cb},
+    { "version",  "Print version.",          version_cb},
     { NULL },
 };
 
@@ -117,6 +119,12 @@ void all_cb()
     inputs_log();
     outputs_log();
     adcs_log();
+}
+
+
+void version_cb()
+{
+    log_out("Version : %s", GIT_VERSION);
 }
 
 

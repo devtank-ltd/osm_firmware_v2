@@ -9,12 +9,16 @@ SIZE = $(TOOLCHAIN)-size
 #Target CPU options
 CPU_DEFINES = -mthumb -mcpu=cortex-m0 -msoft-float -DSTM32F0
 
+GIT_COMMITS := $(shell git rev-list --count HEAD)
+GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
+
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu99
 CFLAGS		+= -Wall -Wextra -Werror 
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES)
+CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\"
 
 INCLUDE_PATHS += -Ilibs/libopencm3/include -I.
 
@@ -54,6 +58,11 @@ LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32f0.a
 
 default: $(TARGET_ELF)
 
+$(BUILD_DIR).git.$(GIT_COMMIT):
+	mkdir -p `dirname $@`
+	rm -f $(BUILD_DIR).git.*
+	touch $@
+
 $(BUILD_DIR)main.o : $(LIBOPENCM3)
 
 $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
@@ -62,7 +71,7 @@ $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
 $(TARGET_BIN): $(TARGET_ELF)
 	$(OBJCOPY) -O binary $< $@
 
-$(OBJECTS): $(BUILD_DIR)%.o: %.c
+$(OBJECTS): $(BUILD_DIR)%.o: %.c $(BUILD_DIR).git.$(GIT_COMMIT)
 	mkdir -p `dirname $@`
 	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
 
