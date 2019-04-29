@@ -26,7 +26,6 @@ typedef struct
 static const uart_channel_t uart_channels[] = UART_CHANNELS;
 
 
-#define UART_1_ISR  usart1_isr
 #define UART_2_ISR  usart2_isr
 
 
@@ -72,7 +71,7 @@ static bool uart_getc(uint32_t uart, char* c)
 
 static void process_serial(unsigned uart)
 {
-    if (uart > 3)
+    if (uart >= ARRAY_SIZE(uart_channels))
         return;
 
     char c;
@@ -92,13 +91,11 @@ void UART_2_ISR(void)
 }
 
 
-void UART_1_ISR(void) { process_serial(1); }
-
 #ifdef STM32F0
 void usart3_4_isr(void)
 {
+    process_serial(1);
     process_serial(2);
-    process_serial(3);
 }
 #else
 #error Requires handling for UART 3 and 4.
@@ -106,14 +103,14 @@ void usart3_4_isr(void)
 
 void uarts_setup(void)
 {
-    for(unsigned n = 0; n < 4; n++)
+    for(unsigned n = 0; n < ARRAY_SIZE(uart_channels); n++)
         uart_setup(&uart_channels[n]);
 }
 
 
 void uart_out(unsigned uart, const char* s, unsigned len)
 {
-    if (uart > 3)
+    if (uart >= ARRAY_SIZE(uart_channels))
         return;
 
     uart = uart_channels[uart].usart;
@@ -125,7 +122,7 @@ void uart_out(unsigned uart, const char* s, unsigned len)
 
 bool uart_out_async(unsigned uart, char c)
 {
-    if (uart > 3)
+    if (uart >= ARRAY_SIZE(uart_channels))
         return false;
 
     uart = uart_channels[uart].usart;

@@ -13,6 +13,7 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
+#include "uart_rings.h"
 
 
 /*
@@ -283,7 +284,10 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
     {
         if (end_addrs[n].data_addr == end_point)
         {
-            uart_out(n+1, buf, len);
+            if (n) // UART 1+ pass straight through.
+                uart_ring_out(n, buf, len);
+            else // UART 0 is command.
+                uart_ring_in(0, buf, len);
             break;
         }
     }

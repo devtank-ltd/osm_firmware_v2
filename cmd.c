@@ -27,7 +27,6 @@ typedef struct
 } cmd_t;
 
 
-static void uart_broadcast_cb();
 static void debug_cb();
 static void pps_cb();
 static void adc_cb();
@@ -38,7 +37,6 @@ static void all_cb();
 
 
 static cmd_t cmds[] = {
-    { "uarts",    "Broad message to uarts.", uart_broadcast_cb},
     { "debug",    "Toggle debug",            debug_cb},
     { "ppss",     "Print all pulse info.",   pulsecount_log},
     { "pps",      "Print pulse info.",       pps_cb},
@@ -54,16 +52,6 @@ static cmd_t cmds[] = {
 };
 
 
-void uart_broadcast_cb()
-{
-    uart_out(1, "High\n\r", 6);
-    uart_out(2, "Low1\n\r", 6);
-    uart_out(3, "Low2\n\r", 6);
-
-    usb_uart_send(0, "High\n\r", 6);
-    usb_uart_send(1, "Low1\n\r", 6);
-    usb_uart_send(2, "Low2\n\r", 6);
-}
 
 
 void debug_cb()
@@ -136,6 +124,8 @@ void cmds_process(char * command, unsigned len)
 {
     if (!len)
         return;
+
+    log_debug("Command \"%s\"", command);
 
     rx_buffer = command;
     rx_buffer_len = len;

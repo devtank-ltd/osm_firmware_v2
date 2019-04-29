@@ -49,6 +49,8 @@ int main(void) {
 
     log_async_log = true;
 
+    log_out("Starting main loop.");
+
     while(true)
     {
         for(unsigned n = 0; n < rcc_ahb_frequency / 1000; n++)
