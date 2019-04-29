@@ -1,6 +1,9 @@
+#include <stdlib.h>
+
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/dma.h>
 #include <libopencm3/cm3/nvic.h>
 
 #include "cmd.h"
@@ -9,6 +12,7 @@
 #include "pinmap.h"
 #include "ring.h"
 #include "uart_rings.h"
+#include "uarts.h"
 
 
 typedef struct
@@ -21,6 +25,7 @@ typedef struct
     uint8_t               irqn;
     uint32_t              baud;
     uint8_t               priority;
+    uint8_t               dma_irqn;
 } uart_channel_t;
 
 static const uart_channel_t uart_channels[] = UART_CHANNELS;
@@ -44,10 +49,16 @@ static void uart_setup(const uart_channel_t * channel)
     usart_set_parity( channel->usart, USART_PARITY_NONE );
     usart_set_flow_control( channel->usart, USART_FLOWCONTROL_NONE );
 
-    nvic_enable_irq(channel->irqn);
     nvic_set_priority(channel->irqn, channel->priority);
+    nvic_enable_irq(channel->irqn);
     usart_enable(channel->usart);
     usart_enable_rx_interrupt(channel->usart);
+
+    if (channel->dma_irqn)
+    {
+        nvic_set_priority(channel->dma_irqn, channel->priority);
+        nvic_enable_irq(channel->dma_irqn);
+    }
 }
 
 
@@ -103,6 +114,7 @@ void usart3_4_isr(void)
 
 void uarts_setup(void)
 {
+    rcc_periph_clock_enable(RCC_DMA);
     for(unsigned n = 0; n < ARRAY_SIZE(uart_channels); n++)
         uart_setup(&uart_channels[n]);
 }
@@ -132,4 +144,45 @@ bool uart_out_async(unsigned uart, char c)
 
     usart_send(uart, c);
     return true;
+}
+
+
+void uart2_dma_out(char *data, int size)
+{
+    if (!(USART_ISR(uart_channels[0].usart) & USART_ISR_TXE))
+        return;
+
+    dma_channel_reset(DMA1, DMA_CHANNEL4);
+
+    dma_set_peripheral_address(DMA1, DMA_CHANNEL4, (uint32_t)&USART2_TDR);
+    dma_set_memory_address(DMA1, DMA_CHANNEL4, (uint32_t)data);
+    dma_set_number_of_data(DMA1, DMA_CHANNEL4, size);
+    dma_set_read_from_memory(DMA1, DMA_CHANNEL4);
+    dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL4);
+    dma_set_peripheral_size(DMA1, DMA_CHANNEL4, DMA_CCR_PSIZE_8BIT);
+    dma_set_memory_size(DMA1, DMA_CHANNEL4, DMA_CCR_MSIZE_8BIT);
+    dma_set_priority(DMA1, DMA_CHANNEL4, DMA_CCR_PL_VERY_HIGH);
+
+    dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL4);
+
+    dma_enable_channel(DMA1, DMA_CHANNEL4);
+
+    usart_enable_tx_dma(USART2);
+}
+
+
+void dma1_channel4_7_dma2_channel3_5_isr(void)
+{
+    if ((DMA1_ISR &DMA_ISR_TCIF4) != 0)
+    {
+        DMA1_IFCR |= DMA_IFCR_CTCIF4;
+
+        uart2_dma_out_complete();
+    }
+
+    dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL4);
+
+    usart_disable_tx_dma(USART2);
+
+    dma_disable_channel(DMA1, DMA_CHANNEL4);
 }

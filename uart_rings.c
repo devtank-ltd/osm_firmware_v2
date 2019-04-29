@@ -35,6 +35,8 @@ static usb_packet_t usb_out_packets[UART_CHANNELS_COUNT];
 
 static char command[CMD_LINELEN];
 
+static char dma_buf[USB_DATA_PCK_SZ];
+
 
 unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 {
@@ -118,6 +120,25 @@ static void uart_ring_in_drain(unsigned uart)
 }
 
 
+static volatile unsigned dma_transfered = 0;
+static volatile unsigned dma_transfer_state = 0;
+
+
+static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
+{
+    unsigned uart = *(unsigned*)puart;
+
+    if (uart)
+        return 0;
+
+    dma_transfered = len;
+    dma_transfer_state = 1;
+    uart2_dma_out(c, len);
+
+    return 0;
+}
+
+
 static void uart_ring_out_drain(unsigned uart)
 {
     if (uart >= UART_CHANNELS_COUNT)
@@ -130,8 +151,39 @@ static void uart_ring_out_drain(unsigned uart)
     if (!len)
         return;
 
-    char c;
-    ring_buf_consume(ring, _uart_out_async, &c, 1, &uart);
+    if (uart)
+    {
+        char c;
+        ring_buf_consume(ring, _uart_out_async, &c, 1, &uart);
+    }
+    else
+    {
+        len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
+
+        if (!dma_transfer_state)
+        {
+            ring_buf_consume(ring, _uart_out_dma, dma_buf, len, &uart);
+        }
+    }
+}
+
+
+void uart2_dma_out_complete()
+{
+    ring_buf_t * ring = &ring_out_bufs[0];
+
+    ring_buf_discard(ring, dma_transfered);
+
+    unsigned len = ring_buf_get_pending(ring);
+
+    len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
+
+    unsigned uart = 0;
+
+    if (!len || !ring_buf_consume(ring, _uart_out_dma, dma_buf, len, &uart))
+    {
+        dma_transfer_state = 0;
+    }
 }
 
 

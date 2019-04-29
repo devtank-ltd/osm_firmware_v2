@@ -27,6 +27,6 @@ extern unsigned ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned le
 typedef unsigned (*ring_buf_consume_cb)(char * buf, unsigned len, void *data);
 
 extern unsigned ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, char * tmp_buf, unsigned len, void * data);
-
+extern void     ring_buf_discard(ring_buf_t * ring_buf, unsigned len);
 
 #endif //__RING__
