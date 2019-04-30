@@ -48,19 +48,13 @@ void log_out(const char *s, ...)
 }
 
 
-void log_debug(const char *s, ...)
+void log_errorv(const char *s, va_list ap)
 {
-    if (!log_show_debug)
-        return;
-    
-    va_list ap;
-    va_start(ap, s);
     char log_buffer[LOG_LINELEN];
     unsigned len = vsnprintf(log_buffer, LOG_LINELEN, s, ap);
     log_buffer[LOG_LINELEN-1] = 0;
     if (len > LOG_LINELEN)
         len = LOG_LINELEN;
-    va_end(ap);
 
     if (log_async_log)
     {
@@ -75,7 +69,19 @@ void log_error(const char *s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(s, ap);
+    log_errorv(s, ap);
+    va_end(ap);
+}
+
+
+void log_debug(const char *s, ...)
+{
+    if (!log_show_debug)
+        return;
+
+    va_list ap;
+    va_start(ap, s);
+    log_errorv(s, ap);
     va_end(ap);
 }
 

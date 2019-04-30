@@ -49,7 +49,7 @@ unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(ring, s[n]))
         {
-            log_debug("UART-in %u full", uart);
+            log_error("UART-in %u full", uart);
             return n;
         }
     return len;
@@ -66,7 +66,8 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(ring, s[n]))
         {
-            log_debug("UART-out %u full", uart);
+            if (uart)
+                log_error("UART-out %u full", uart);
             return n;
         }
     return len;
@@ -77,7 +78,10 @@ unsigned cmd_ring_out(const char* s, unsigned len)
 {
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(&cmd_ring_out_buf, s[n]))
+        {
+            log_error("UART-CMD full");
             return n;
+        }
     return len;
 
 }
@@ -187,8 +191,8 @@ void uart_rings_check()
         ring_buf_t * out_ring = &ring_out_bufs[n];
 
         if (ring_buf_is_full(in_ring))
-            log_debug("UART %u in ring buffer filled.", n);
+            log_error("UART %u in ring buffer filled.", n);
         else if (ring_buf_is_full(out_ring))
-            log_debug("UART %u out ring buffer filled.", n);
+            log_error("UART %u out ring buffer filled.", n);
     }
 }
