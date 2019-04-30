@@ -101,7 +101,25 @@ static void process_serial(unsigned uart)
 
 void UART_2_ISR(void)
 {
-    process_serial(0);
+    char c;
+
+    if (!uart_getc(uart_channels[0].usart, &c))
+    {
+        return;
+    }
+
+    bool enabled = (c == 'D');
+
+    if (enabled != log_show_debug)
+    {
+        if (!enabled)
+            log_debug("Disabling Debug via debug comms");
+
+        log_show_debug = enabled;
+
+        if (enabled)
+            log_debug("Enabling Debug via debug comms");
+    }
 }
 
 

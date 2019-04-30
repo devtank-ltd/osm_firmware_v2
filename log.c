@@ -8,7 +8,7 @@
 #include "log.h"
 #include "uart_rings.h"
 
-bool log_show_debug = true;
+bool log_show_debug = false;
 bool log_async_log  = false;
 
 
