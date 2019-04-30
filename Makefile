@@ -111,8 +111,11 @@ debug: $(TARGET_ELF)
 	kill -9 $$pid
 
 
-output:
+debug:
 	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
+
+cmd:
+	screen $$(ls /dev/serial/by-id/usb-Devtank_Ltd_IO_Board_Prototype-if00* -1 | head -n 1) 115200 8n1
 
 
 -include $(DEPS)
