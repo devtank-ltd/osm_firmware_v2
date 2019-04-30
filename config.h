@@ -11,10 +11,12 @@
 #endif
 
 #define UART1_PRIORITY 3
-#define UART2_PRIORITY 2
+#define UART2_PRIORITY 1
 #define UART3_PRIORITY 3
 #define UART4_PRIORITY 0
-#define USB_PRIORITY   1
+#define USB_PRIORITY   2
+#define TIMER1_PRIORITY 1
+#define TIMER2_PRIORITY 2
 
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
@@ -25,10 +27,20 @@
 
 #define DEFAULT_SPS 100000
 
-#define CMD_IN_BUF_SIZE  CMD_LINELEN
 #define CMD_OUT_BUF_SIZE 1024
 
-#define STD_UART_BUF_SIZE 256
+#define UART_0_IN_BUF_SIZE  CMD_LINELEN
+#define UART_0_OUT_BUF_SIZE 1024
+
+#define UART_1_IN_BUF_SIZE  512
+#define UART_1_OUT_BUF_SIZE 256
+
+#define UART_2_IN_BUF_SIZE  256
+#define UART_2_OUT_BUF_SIZE 256
+
+#define UART_2_SPEED 115200
+#define UART_3_SPEED 9600
+#define UART_4_SPEED 115200
 
 #define USB_DATA_PCK_SZ    32
 

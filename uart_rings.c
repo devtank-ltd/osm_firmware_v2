@@ -10,32 +10,36 @@
 #include "pinmap.h"
 
 
-typedef char std_uart_buf_t[STD_UART_BUF_SIZE];
+typedef char usb_packet_t[USB_DATA_PCK_SZ];
+typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 
-static char cmd_uart_buf_in[CMD_IN_BUF_SIZE];
-static char cmd_uart_buf_out[CMD_OUT_BUF_SIZE];
+char uart_0_in_buf[UART_0_IN_BUF_SIZE];
+char uart_0_out_buf[UART_0_OUT_BUF_SIZE];
 
-static std_uart_buf_t std_uart_in_bufs[2];
-static std_uart_buf_t std_uart_out_bufs[UART_CHANNELS_COUNT];
+char uart_1_in_buf[UART_1_IN_BUF_SIZE];
+char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
+
+char uart_2_in_buf[UART_2_IN_BUF_SIZE];
+char uart_2_out_buf[UART_2_OUT_BUF_SIZE];
+
+char cmd_uart_buf_out[CMD_OUT_BUF_SIZE];
 
 static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(cmd_uart_buf_in, CMD_IN_BUF_SIZE),
-    RING_BUF_INIT(std_uart_in_bufs[0], STD_UART_BUF_SIZE),
-    RING_BUF_INIT(std_uart_in_bufs[1], STD_UART_BUF_SIZE)};
+    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),
+    RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),
+    RING_BUF_INIT(uart_2_in_buf, sizeof(uart_2_in_buf))};
 
 static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(std_uart_out_bufs[0], STD_UART_BUF_SIZE),
-    RING_BUF_INIT(std_uart_out_bufs[1], STD_UART_BUF_SIZE),
-    RING_BUF_INIT(std_uart_out_bufs[2], STD_UART_BUF_SIZE)};
+    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),
+    RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),
+    RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf))};
 
-static ring_buf_t cmd_ring_out_buf = RING_BUF_INIT(cmd_uart_buf_out, CMD_OUT_BUF_SIZE);
+static ring_buf_t cmd_ring_out_buf = RING_BUF_INIT(cmd_uart_buf_out, sizeof(cmd_uart_buf_out));
 
-typedef char usb_packet_t[USB_DATA_PCK_SZ];
 static usb_packet_t usb_out_packets[UART_CHANNELS_COUNT];
 
 static char command[CMD_LINELEN];
 
-typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
 

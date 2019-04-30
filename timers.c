@@ -63,7 +63,7 @@ void     timers_init()
 
     timer_set_counter(TIM3, 0);
     nvic_enable_irq(NVIC_TIM3_IRQ);
-    nvic_set_priority(NVIC_TIM3_IRQ, 1);
+    nvic_set_priority(NVIC_TIM3_IRQ, TIMER1_PRIORITY);
 
 
 
@@ -84,5 +84,5 @@ void     timers_init()
 
     timer_set_counter(TIM2, 0);
     nvic_enable_irq(NVIC_TIM2_IRQ);
-    nvic_set_priority(NVIC_TIM2_IRQ, 2);
+    nvic_set_priority(NVIC_TIM2_IRQ, TIMER2_PRIORITY);
 }
