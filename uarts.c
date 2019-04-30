@@ -119,8 +119,6 @@ void uarts_setup(void)
 {
     rcc_periph_clock_enable(RCC_DMA);
 
-    SYSCFG_CFGR1 |= SYSCFG_CFGR1_USART3_DMA_RMP;
-
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
 }
@@ -182,7 +180,18 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
         return false;
 
+    if (size == 1)
+    {
+        usart_send(channel->usart, *data);
+        return true;
+    }
+
+    if (uart)
+        log_debug("UART %u %u out on DMA channel %u", uart, size, channel->dma_channel);
+
     uart_doing_dma[uart] = true;
+
+    SYSCFG_CFGR1 |= SYSCFG_CFGR1_USART3_DMA_RMP;
 
     dma_channel_reset(DMA1, channel->dma_channel);
 
@@ -199,27 +208,50 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 
     dma_enable_channel(DMA1, channel->dma_channel);
 
-    usart_enable_tx_dma(USART2);
+    usart_enable_tx_dma(channel->usart);
 
     return true;
 }
 
 
+static void process_complete_dma(void)
+{
+    unsigned found = 0;
+
+    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    {
+        const uart_channel_t * channel = &uart_channels[n];
+
+        if ((DMA1_ISR & DMA_ISR_TCIF(channel->dma_channel)) != 0)
+        {
+            if (n)
+                log_debug("UART %u DMA channel %u complete", n, channel->dma_channel);
+
+            DMA1_IFCR |= DMA_IFCR_CTCIF(channel->dma_channel);
+
+            uart_doing_dma[n] = false;
+
+            dma_disable_transfer_complete_interrupt(DMA1, channel->dma_channel);
+
+            usart_disable_tx_dma(channel->usart);
+
+            dma_disable_channel(DMA1, channel->dma_channel);
+            found++;
+        }
+    }
+
+    if (!found)
+        log_debug("No DMA complete in ISR");
+}
+
+
 void dma1_channel4_7_dma2_channel3_5_isr(void)
 {
-    const uart_channel_t * channel = &uart_channels[0];
+    process_complete_dma();
+}
 
-    if ((DMA1_ISR & DMA_ISR_TCIF(channel->dma_channel)) != 0)
-    {
-        DMA1_IFCR |= DMA_IFCR_CTCIF(channel->dma_channel);
 
-        uart_dma_out_complete(0);
-        uart_doing_dma[0] = false;
-
-        dma_disable_transfer_complete_interrupt(DMA1, channel->dma_channel);
-
-        usart_disable_tx_dma(channel->usart);
-
-        dma_disable_channel(DMA1, channel->dma_channel);
-    }
+void dma1_channel2_3_dma2_channel1_2_isr(void)
+{
+    process_complete_dma();
 }

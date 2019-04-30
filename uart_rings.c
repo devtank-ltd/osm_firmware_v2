@@ -19,7 +19,7 @@ static std_uart_buf_t std_uart_in_bufs[2];
 static std_uart_buf_t std_uart_out_bufs[UART_CHANNELS_COUNT];
 
 static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(cmd_uart_buf_in, sizeof(cmd_uart_buf_in)),
+    RING_BUF_INIT(cmd_uart_buf_in, CMD_IN_BUF_SIZE),
     RING_BUF_INIT(std_uart_in_bufs[0], STD_UART_BUF_SIZE),
     RING_BUF_INIT(std_uart_in_bufs[1], STD_UART_BUF_SIZE)};
 
@@ -48,7 +48,10 @@ unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(ring, s[n]))
+        {
+            log_debug("UART-in %u full", uart);
             return n;
+        }
     return len;
 }
 
@@ -62,7 +65,10 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(ring, s[n]))
+        {
+            log_debug("UART-out %u full", uart);
             return n;
+        }
     return len;
 }
 
@@ -74,13 +80,6 @@ unsigned cmd_ring_out(const char* s, unsigned len)
             return n;
     return len;
 
-}
-
-
-static unsigned _uart_out_async(char * c, unsigned len __attribute((unused)), void * puart)
-{
-    unsigned uart = *(unsigned*)puart;
-    return uart_out_async(uart, *c)?1:0;
 }
 
 
@@ -143,22 +142,12 @@ static void uart_ring_out_drain(unsigned uart)
     if (!len)
         return;
 
-    if (uart)
-    {
-        char c;
-        ring_buf_consume(ring, _uart_out_async, &c, 1, &uart);
-    }
-    else if (uart_is_tx_empty(uart))
+    if (uart_is_tx_empty(uart))
     {
         len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
 
         ring_buf_consume(ring, _uart_out_dma, uart_dma_buf[uart], len, &uart);
     }
-}
-
-
-void uart_dma_out_complete(unsigned uart __attribute((unused)))
-{
 }
 
 
