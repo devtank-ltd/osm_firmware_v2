@@ -39,22 +39,6 @@ static void log_msgv(const char *s, va_list ap)
 }
 
 
-void log_debug_raw(const char *s, ...)
-{
-    if (!log_show_debug)
-        return;
-    va_list ap;
-    va_start(ap, s);
-    char log_buffer[LOG_LINELEN];
-    vsnprintf(log_buffer, LOG_LINELEN, s, ap);
-    va_end(ap);
-    log_buffer[LOG_LINELEN-1] = 0;
-
-    platform_raw_msg(log_buffer);
-}
-
-
-
 void log_out(const char *s, ...)
 {
     va_list ap;
@@ -68,6 +52,7 @@ void log_debug(const char *s, ...)
 {
     if (!log_show_debug)
         return;
+    
     va_list ap;
     va_start(ap, s);
     char log_buffer[LOG_LINELEN];
@@ -76,8 +61,13 @@ void log_debug(const char *s, ...)
     if (len > LOG_LINELEN)
         len = LOG_LINELEN;
     va_end(ap);
-    uart_ring_out(0, log_buffer, len);
-    uart_ring_out(0, "\r\n", 2);
+
+    if (log_async_log)
+    {
+        uart_ring_out(0, log_buffer, len);
+        uart_ring_out(0, "\r\n", 2);
+    }
+    else platform_raw_msg(log_buffer);
 }
 
 

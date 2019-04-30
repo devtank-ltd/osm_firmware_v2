@@ -47,7 +47,7 @@ int main(void) {
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
-    log_out("Starting main loop.");
+    log_debug("Starting main loop.");
     log_async_log = true;
 
     while(true)

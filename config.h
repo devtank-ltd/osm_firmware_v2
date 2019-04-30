@@ -32,4 +32,6 @@
 
 #define USB_DATA_PCK_SZ    32
 
+#define DMA_DATA_PCK_SZ    16
+
 #endif //__CONFIG__

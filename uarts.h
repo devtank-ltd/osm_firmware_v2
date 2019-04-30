@@ -7,8 +7,10 @@ extern void uart_out(unsigned uart, const char* s, unsigned len);
 
 extern bool uart_out_async(unsigned uart, char c);
 
-extern void uart2_dma_out(char *data, int size);
+extern bool uart_is_tx_empty(unsigned uart);
 
-extern void uart2_dma_out_complete(); // Defined by caller.
+extern bool uart_dma_out(unsigned uart, char *data, int size);
+
+extern void uart_dma_out_complete(unsigned uart); // Defined by caller.
 
 #endif //__UARTS__

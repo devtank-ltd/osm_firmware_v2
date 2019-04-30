@@ -150,14 +150,3 @@ unsigned     ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, cha
     ring_buf->r_pos = r_pos;
     return consumed;
 }
-
-
-void ring_buf_discard(ring_buf_t * ring_buf, unsigned len)
-{
-    unsigned r_pos = ring_buf->r_pos;
-
-    r_pos += len;
-    r_pos %= ring_buf->size;
-
-    ring_buf->r_pos = r_pos;
-}
