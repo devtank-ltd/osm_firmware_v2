@@ -22,7 +22,7 @@ extern void platform_raw_msg(const char * s)
 }
 
 
-static void log_msgv(const char *s, va_list ap)
+static void log_msgv(bool is_error, const char *s, va_list ap)
 {
     char log_buffer[LOG_LINELEN];
     unsigned len = vsnprintf(log_buffer, LOG_LINELEN, s, ap);
@@ -34,6 +34,11 @@ static void log_msgv(const char *s, va_list ap)
     {
         cmd_ring_out(log_buffer, len);
         cmd_ring_out("\n\r", 2);
+        if (is_error)
+        {
+            uart_ring_out(0, log_buffer, len);
+            uart_ring_out(0, "\r\n", 2);
+        }
     }
     else platform_raw_msg(log_buffer);
 }
@@ -43,7 +48,7 @@ void log_out(const char *s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(s, ap);
+    log_msgv(false, s, ap);
     va_end(ap);
 }
 
@@ -75,7 +80,7 @@ void log_error(const char *s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(s, ap);
+    log_msgv(true, s, ap);
     va_end(ap);
 }
 

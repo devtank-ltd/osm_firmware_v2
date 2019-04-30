@@ -155,7 +155,7 @@ void cmds_process(char * command, unsigned len)
     }
     if (!found)
     {
-        log_out("Unknown command \"%s\"", rx_buffer);
+        log_error("Unknown command \"%s\"", rx_buffer);
         log_out(LOG_SPACER);
         for(cmd_t * cmd = cmds; cmd->key; cmd++)
             log_out("%10s : %s", cmd->key, cmd->desc);
