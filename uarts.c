@@ -33,6 +33,7 @@ typedef struct
 
 static const uart_channel_t uart_channels[] = UART_CHANNELS;
 
+static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
 #define UART_2_ISR  usart2_isr
 
@@ -142,36 +143,6 @@ void uarts_setup(void)
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
 }
-
-
-void uart_out(unsigned uart, const char* s, unsigned len)
-{
-    if (uart >= UART_CHANNELS_COUNT)
-        return;
-
-    uart = uart_channels[uart].usart;
-
-    for(unsigned i = 0; i < len; i++)
-        usart_send_blocking(uart, s[i]);
-}
-
-
-bool uart_out_async(unsigned uart, char c)
-{
-    if (uart >= UART_CHANNELS_COUNT)
-        return false;
-
-    uart = uart_channels[uart].usart;
-
-    if (!(USART_ISR(uart) & USART_ISR_TXE))
-        return false;
-
-    usart_send(uart, c);
-    return true;
-}
-
-static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
-
 
 bool uart_is_tx_empty(unsigned uart)
 {
