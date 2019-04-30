@@ -95,6 +95,8 @@ static void process_serial(unsigned uart)
         return;
     }
 
+    log_debug("UART %u IN", uart);
+
     uart_ring_in(uart, &c, 1);
 }
 
@@ -200,6 +202,8 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 
     if (size == 1)
     {
+        if (uart)
+            log_debug("UART %u single out.", uart);
         usart_send(channel->usart, *data);
         return true;
     }

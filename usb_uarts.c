@@ -284,6 +284,7 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
     {
         if (end_addrs[n].data_addr == end_point)
         {
+            log_debug("UART-USB %u IN %u", n, len);
             if (n) // UART 1+ pass straight through.
                 uart_ring_out(n, buf, len);
             else // UART 0 is command.
