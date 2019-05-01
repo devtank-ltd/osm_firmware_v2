@@ -27,7 +27,6 @@ typedef struct
 } cmd_t;
 
 
-static void debug_cb();
 static void pps_cb();
 static void adc_cb();
 static void input_cb();
@@ -38,7 +37,6 @@ static void version_cb();
 
 
 static cmd_t cmds[] = {
-    { "debug",    "Toggle debug",            debug_cb},
     { "ppss",     "Print all pulse info.",   pulsecount_log},
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
@@ -54,13 +52,6 @@ static cmd_t cmds[] = {
 };
 
 
-
-
-void debug_cb()
-{
-    log_show_debug = !log_show_debug;
-    log_out("Debug %s", (log_show_debug)?"ON":"OFF");
-}
 
 
 void pps_cb()
@@ -133,7 +124,7 @@ void cmds_process(char * command, unsigned len)
     if (!len)
         return;
 
-    log_debug("Command \"%s\"", command);
+    log_debug(DEBUG_SYS, "Command \"%s\"", command);
 
     rx_buffer = command;
     rx_buffer_len = len;

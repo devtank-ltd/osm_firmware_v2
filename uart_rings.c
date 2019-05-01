@@ -72,6 +72,8 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
         {
             if (uart)
                 log_error("UART-out %u full", uart);
+            else
+                platform_raw_msg("Debug UART ring full!");
             return n;
         }
     return len;
@@ -95,6 +97,8 @@ static unsigned _usb_out_async(char * tmp, unsigned len, void * puart)
 {
     unsigned uart = (puart)?(*(unsigned*)puart):0;
 
+    log_debug(DEBUG_UART, "UART %u -> USB %u.", uart, len);
+
     return usb_uart_send(uart, tmp, len);
 }
 
@@ -109,6 +113,9 @@ static void uart_ring_in_drain(unsigned uart)
 
     if (!len)
         return;
+
+    if (uart)
+        log_debug(DEBUG_UART, "UART %u IN %u", uart, len);
 
     if (uart)
     {
@@ -150,6 +157,9 @@ static void uart_ring_out_drain(unsigned uart)
     if (!len)
         return;
 
+    if (uart)
+        log_debug(DEBUG_UART, "UART %u OUT %u", uart, len);
+
     if (uart_is_tx_empty(uart))
     {
         len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
@@ -165,6 +175,8 @@ static void cmd_ring_out_drain()
 
     if (!len)
         return;
+
+    log_debug(DEBUG_UART, "CMD UART %u", len);
 
     len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
 

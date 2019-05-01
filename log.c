@@ -8,8 +8,8 @@
 #include "log.h"
 #include "uart_rings.h"
 
-bool log_show_debug = false;
-bool log_async_log  = false;
+uint32_t log_debug_mask = 0;
+bool     log_async_log  = false;
 
 
 extern void platform_raw_msg(const char * s)
@@ -74,9 +74,9 @@ void log_error(const char *s, ...)
 }
 
 
-void log_debug(const char *s, ...)
+void log_debug(uint32_t flag, const char *s, ...)
 {
-    if (!log_show_debug)
+    if (!(flag & log_debug_mask))
         return;
 
     va_list ap;

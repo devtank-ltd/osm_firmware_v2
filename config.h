@@ -46,4 +46,8 @@
 
 #define DMA_DATA_PCK_SZ    16
 
+#define DEBUG_SYS   0x1
+#define DEBUG_ADC   0x2
+#define DEBUG_UART  0x4
+
 #endif //__CONFIG__

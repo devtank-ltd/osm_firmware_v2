@@ -96,8 +96,6 @@ static void process_serial(unsigned uart)
         return;
     }
 
-    log_debug("UART %u IN", uart);
-
     uart_ring_in(uart, &c, 1);
 }
 
@@ -111,17 +109,31 @@ void UART_2_ISR(void)
         return;
     }
 
-    bool enabled = (c == 'D');
-
-    if (enabled != log_show_debug)
+    switch(c)
     {
-        if (!enabled)
-            log_debug("Disabling Debug via debug comms");
-
-        log_show_debug = enabled;
-
-        if (enabled)
-            log_debug("Enabling Debug via debug comms");
+        case 'D':
+            log_debug_mask = DEBUG_SYS;
+            log_debug(DEBUG_SYS, "Enabling Debug via debug comms");
+            log_debug(DEBUG_SYS, "U = enable UART debug");
+            log_debug(DEBUG_SYS, "A = enable ADC debug");
+            break;
+        case 'A':
+            if (log_debug_mask)
+            {
+                log_debug(DEBUG_SYS, "Enabled ADC debug");
+                log_debug_mask |= DEBUG_ADC;
+            }
+            break;
+        case 'U':
+            if (log_debug_mask)
+            {
+                log_debug(DEBUG_SYS, "Enabled UART debug");
+                log_debug_mask |= DEBUG_UART;
+            }
+            break;
+        default:
+            log_debug(DEBUG_SYS, "Disabling Debug via debug comms");
+            log_debug_mask = 0;
     }
 }
 
@@ -174,13 +186,13 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (size == 1)
     {
         if (uart)
-            log_debug("UART %u single out.", uart);
+            log_debug(DEBUG_UART, "UART %u single out.", uart);
         usart_send(channel->usart, *data);
         return true;
     }
 
     if (uart)
-        log_debug("UART %u %u out on DMA channel %u", uart, size, channel->dma_channel);
+        log_debug(DEBUG_UART, "UART %u %u out on DMA channel %u", uart, size, channel->dma_channel);
 
     uart_doing_dma[uart] = true;
 
@@ -217,9 +229,6 @@ static void process_complete_dma(void)
 
         if ((DMA1_ISR & DMA_ISR_TCIF(channel->dma_channel)) != 0)
         {
-            if (n)
-                log_debug("UART %u DMA channel %u complete", n, channel->dma_channel);
-
             DMA1_IFCR |= DMA_IFCR_CTCIF(channel->dma_channel);
 
             uart_doing_dma[n] = false;
@@ -234,7 +243,7 @@ static void process_complete_dma(void)
     }
 
     if (!found)
-        log_debug("No DMA complete in ISR");
+        log_error("No DMA complete in ISR");
 }
 
 
