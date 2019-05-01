@@ -157,11 +157,11 @@ static void uart_ring_out_drain(unsigned uart)
     if (!len)
         return;
 
-    if (uart)
-        log_debug(DEBUG_UART, "UART %u OUT %u", uart, len);
-
     if (uart_is_tx_empty(uart))
     {
+        if (uart)
+            log_debug(DEBUG_UART, "UART %u OUT %u", uart, len);
+
         len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
 
         ring_buf_consume(ring, _uart_out_dma, uart_dma_buf[uart], len, &uart);
