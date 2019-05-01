@@ -93,8 +93,8 @@ typedef struct
     {GPIOB, GPIO15},    /* Output 7 */   \
     {GPIOA, GPIO9},     /* Output 8 */   \
     {GPIOA, GPIO10},    /* Output 9 */   \
-    {GPIOA, GPIO13},    /* Output 10 */  \
-    {GPIOA, GPIO14},    /* Output 11 */  \
+    {GPIOA, GPIO13},    /* Output 10 */  \ /*BAD for Nucleo64's SWD*/
+    {GPIOA, GPIO14},    /* Output 11 */  \ /*BAD for Nucleo64's SWD*/
     {GPIOC, GPIO13},    /* Output 12 */  \
     {GPIOB, GPIO5},     /* Output 13 */  \
     {GPIOB, GPIO8},     /* Output 14 */  \
