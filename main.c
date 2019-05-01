@@ -34,6 +34,7 @@ int main(void) {
 
     platform_raw_msg("----start----");
     log_out("Frequency : %lu", rcc_ahb_frequency);
+    log_out("Version : %s", GIT_VERSION);
 
     log_init();
     cmds_init();
