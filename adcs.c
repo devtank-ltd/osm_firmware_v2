@@ -15,16 +15,16 @@ typedef struct
 {
     unsigned max_value;
     unsigned min_value;
-    double   av_value;
+    uint64_t total_value;
+    unsigned count;
 } adc_channel_info_t;
 
 
-static adc_channel_info_t adc_channel_info[ARRAY_SIZE(adc_channel_array)] = {{0}};
+static volatile adc_channel_info_t adc_channel_info[ARRAY_SIZE(adc_channel_array)] = {{0}};
 
 static volatile adc_channel_info_t adc_channel_info_cur[ARRAY_SIZE(adc_channel_array)] = {{0}};
 
 static volatile uint16_t last_value[ARRAY_SIZE(adc_channel_array)] = {0};
-static volatile uint16_t ch_tick[ARRAY_SIZE(adc_channel_array)] = {0};
 
 static unsigned call_count = 0;
 static unsigned adc_index = ARRAY_SIZE(adc_channel_array) - 1;
@@ -70,11 +70,11 @@ void adcs_do_samples()
         case 1:
         {
             if (!adc_eoc(ADC1))
-                log_debug("ADC sampling not complete!");
+                log_error("ADC sampling not complete!");
 
             uint32_t adc = adc_read_regular(ADC1);
 
-            adc_channel_info_t * channel_info = &adc_channel_info[adc_index];
+            volatile adc_channel_info_t * channel_info = &adc_channel_info[adc_index];
 
             if (adc > channel_info->max_value)
                 channel_info->max_value = adc;
@@ -82,9 +82,9 @@ void adcs_do_samples()
             if (adc < channel_info->min_value)
                 channel_info->min_value = adc;
 
-            channel_info->av_value += adc;
+            channel_info->total_value += adc;
+            channel_info->count ++;
             last_value[adc_index]   = adc;
-            ch_tick[adc_index]++;
 
             adc_index = (adc_index + 1) % ARRAY_SIZE(adc_channel_array);
         }
@@ -100,16 +100,14 @@ void adcs_second_boardary()
 
     for(unsigned n = 0; n < ARRAY_SIZE(adc_channel_array); n++)
     {
-        adc_channel_info_t * channel_info = &adc_channel_info[n];
+        volatile adc_channel_info_t * channel_info = &adc_channel_info[n];
 
         adc_channel_info_cur[n] = *channel_info;
 
         channel_info->max_value = 0;
         channel_info->min_value = 0xFFFFFFFF;
-        channel_info->av_value  = 0;
-
-        adc_channel_info_cur[n].av_value /= sample_count;
-        ch_tick[n] = 0;
+        channel_info->total_value  = 0;
+        channel_info->count = 0;
     }
 
     call_count = 0;
@@ -139,7 +137,7 @@ void adcs_get(unsigned   adc,
     if (min_value)
         *min_value = channel_info->min_value;
     if (av_value)
-        *av_value = channel_info->av_value;
+        *av_value = ((double)channel_info->total_value) / channel_info->count;
 }
 
 
@@ -163,7 +161,7 @@ unsigned  adcs_get_tick(unsigned adc)
     if (adc >= ARRAY_SIZE(adc_channel_array))
         return 0;
 
-    return ch_tick[adc];
+    return adc_channel_info[adc].count;
 }
 
 
@@ -177,7 +175,7 @@ void adcs_adc_log(unsigned adc)
     log_out("ADC : %u (Channel : %u)", adc, adc_channel_array[adc]);
     log_out("Min : %u", channel_info->min_value);
     log_out("Max : %u", channel_info->max_value);
-    log_out("Avg : %f", channel_info->av_value);
+    log_out("Avg : %f", ((double)channel_info->total_value) / channel_info->count );
 }
 
 

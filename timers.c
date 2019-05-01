@@ -33,7 +33,6 @@ void tim2_isr(void)
     }
 
     adcs_do_samples();
-    uart_rings_out_drain();
     timer_clear_flag(TIM2, TIM_SR_CC1IF);
 }
 

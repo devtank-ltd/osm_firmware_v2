@@ -12,11 +12,11 @@
 
 #define UART1_PRIORITY 3
 #define UART2_PRIORITY 1
-#define UART3_PRIORITY 3
+#define UART3_PRIORITY 0
 #define UART4_PRIORITY 0
 #define USB_PRIORITY   2
-#define TIMER1_PRIORITY 1
-#define TIMER2_PRIORITY 2
+#define TIMER1_PRIORITY 2
+#define TIMER2_PRIORITY 1
 
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
