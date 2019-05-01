@@ -44,7 +44,7 @@
 
 #define USB_DATA_PCK_SZ    32
 
-#define DMA_DATA_PCK_SZ    16
+#define DMA_DATA_PCK_SZ    128
 
 #define DEBUG_SYS   0x1
 #define DEBUG_ADC   0x2
