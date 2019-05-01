@@ -79,7 +79,9 @@ typedef struct
     {GPIOB, GPIO13},   /* Input 8 */    \
 }
 
-
+/*
+ * NOTE: A13 and A14 will cause SWD problems.
+ */
 
 #define OUTPUTS_PORT_N_PINS              \
 {                                        \
@@ -93,8 +95,8 @@ typedef struct
     {GPIOB, GPIO15},    /* Output 7 */   \
     {GPIOA, GPIO9},     /* Output 8 */   \
     {GPIOA, GPIO10},    /* Output 9 */   \
-    {GPIOA, GPIO13},    /* Output 10 */  \ /*BAD for Nucleo64's SWD*/
-    {GPIOA, GPIO14},    /* Output 11 */  \ /*BAD for Nucleo64's SWD*/
+    {GPIOA, GPIO13},    /* Output 10 */  \
+    {GPIOA, GPIO14},    /* Output 11 */  \
     {GPIOC, GPIO13},    /* Output 12 */  \
     {GPIOB, GPIO5},     /* Output 13 */  \
     {GPIOB, GPIO8},     /* Output 14 */  \
