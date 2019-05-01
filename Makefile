@@ -104,13 +104,6 @@ debug_mon: $(TARGET_ELF)
 debug_gdb: $(TARGET_ELF)
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF);
 
-debug: $(TARGET_ELF)
-	xterm -e openocd -f board/st_nucleo_f0.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init" & \
-	pid=$$!; \
-	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF); \
-	kill -9 $$pid
-
-
 debug:
 	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
 
