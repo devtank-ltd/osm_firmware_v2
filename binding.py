@@ -43,8 +43,8 @@ class output_t(io_board_prop_t):
     @value.setter
     def value(self, v):
         parent = self.parent()
-        r = parent.command("output %u %u" % self.index, int(v))
-        assert r[0] == b'Set output %02u to %s' % (self.index, "ON" if v else "OFF")
+        r = parent.command("output %u %u" % (self.index, int(v)))
+        assert r[0] == b'Set output %02u to %s' % (self.index, b"ON" if v else b"OFF")
 
 
 class adc_t(io_board_prop_t):
