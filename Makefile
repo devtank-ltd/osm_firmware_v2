@@ -52,6 +52,7 @@ DEPS = $(SOURCES:%.c=$(BUILD_DIR)%.d)
 TARGET_ELF = $(BUILD_DIR)$(PROJECT_NAME).elf
 TARGET_HEX = $(TARGET_ELF:%.elf=%.hex)
 TARGET_BIN = $(TARGET_ELF:%.elf=%.bin)
+TARGET_DFU = $(TARGET_ELF:%.elf=%.dfu)
 
 
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32f0.a
@@ -91,8 +92,12 @@ flash: $(TARGET_ELF)
 		    -c "reset" \
 		    -c "shutdown"
 
-dfu : $(TARGET_BIN)
-	dfu-util -D $(TARGET_BIN) -a 0 -s 0x08000000:leave
+$(TARGET_DFU): $(TARGET_BIN)
+	cp $(TARGET_BIN) $(TARGET_DFU)
+	dfu-suffix -a $(TARGET_DFU)
+
+dfu : $(TARGET_DFU)
+	dfu-util -D $(TARGET_DFU) -a 0 -s 0x08000000:leave
 
 
 clean:
