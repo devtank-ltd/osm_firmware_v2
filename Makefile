@@ -14,7 +14,8 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu99
-CFLAGS		+= -Wall -Wextra -Werror 
+CFLAGS		+= -Wall -Wextra -Werror
+CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES)
@@ -110,5 +111,10 @@ debug:
 cmd:
 	screen $$(ls /dev/serial/by-id/usb-Devtank_Ltd_IO_Board_Prototype-if00* -1 | head -n 1) 115200 8n1
 
+$(BUILD_DIR)stack_info : $(TARGET_ELF)
+	./avstack.pl $(OBJECTS) > $@
+
+stack_info: $(BUILD_DIR)stack_info
+	cat $(BUILD_DIR)stack_info
 
 -include $(DEPS)
