@@ -79,17 +79,17 @@ typedef struct
     {GPIOB, GPIO13},   /* Input 8 */    \
 }
 
-#define INPUT_PULL                      \
-{                                       \
-    GPIO_PUPD_PULLUP,    /* Input 0 */  \
-    GPIO_PUPD_PULLUP,    /* Input 1 */  \
-    GPIO_PUPD_PULLUP,    /* Input 2 */  \
-    GPIO_PUPD_PULLUP,    /* Input 3 */  \
-    GPIO_PUPD_PULLUP,    /* Input 4 */  \
-    GPIO_PUPD_PULLUP,    /* Input 5 */  \
-    GPIO_PUPD_PULLUP,    /* Input 6 */  \
-    GPIO_PUPD_PULLUP,    /* Input 7 */  \
-    GPIO_PUPD_PULLUP,    /* Input 8 */  \
+#define INPUT_PULL                \
+{                                 \
+    GPIO_PUPD_PULLUP,    /* 0 */  \
+    GPIO_PUPD_PULLUP,    /* 1 */  \
+    GPIO_PUPD_PULLUP,    /* 2 */  \
+    GPIO_PUPD_PULLUP,    /* 3 */  \
+    GPIO_PUPD_PULLUP,    /* 4 */  \
+    GPIO_PUPD_PULLUP,    /* 5 */  \
+    GPIO_PUPD_PULLUP,    /* 6 */  \
+    GPIO_PUPD_PULLUP,    /* 7 */  \
+    GPIO_PUPD_PULLUP,    /* 8 */  \
 }
 /*
  * NOTE: A13 and A14 will cause SWD problems.
@@ -117,14 +117,22 @@ typedef struct
 
 #define OUTPUT_PULL                      \
 {                                        \
-    GPIO_PUPD_PULLDOWN,                  \
-    GPIO_PUPD_PULLDOWN,                  \
-    GPIO_PUPD_PULLDOWN,                  \
-    GPIO_PUPD_PULLDOWN,                  \
-    GPIO_PUPD_PULLDOWN,                  \
-    GPIO_PUPD_PULLUP,                    \
-    GPIO_PUPD_PULLUP,                    \
-    GPIO_PUPD_PULLUP,                    \
+    GPIO_PUPD_PULLDOWN,      /* 0  */    \
+    GPIO_PUPD_PULLDOWN,      /* 1  */    \
+    GPIO_PUPD_PULLDOWN,      /* 2  */    \
+    GPIO_PUPD_PULLDOWN,      /* 3  */    \
+    GPIO_PUPD_PULLDOWN,      /* 4  */    \
+    GPIO_PUPD_PULLUP,        /* 5  */    \
+    GPIO_PUPD_PULLUP,        /* 6  */    \
+    GPIO_PUPD_PULLUP,        /* 7  */    \
+    GPIO_PUPD_PULLDOWN,      /* 8  */    \
+    GPIO_PUPD_PULLDOWN,      /* 9  */    \
+    GPIO_PUPD_PULLDOWN,      /* 10 */    \
+    GPIO_PUPD_PULLDOWN,      /* 11 */    \
+    GPIO_PUPD_PULLDOWN,      /* 12 */    \
+    GPIO_PUPD_PULLDOWN,      /* 13 */    \
+    GPIO_PUPD_PULLDOWN,      /* 14 */    \
+    GPIO_PUPD_PULLDOWN,      /* 15 */    \
 }
 
 #endif //__PINMAPS__
