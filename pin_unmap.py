@@ -179,8 +179,8 @@ def load_line(subject_map, line):
 
 def load_uart_line(line):
     parts = line.split(',')
-    port = parts[2].strip().replace("GPIO","P")
-    pins = [pin.strip()[4:] for pin in parts[3].split('|')]
+    port = parts[3].strip().replace("GPIO","P")
+    pins = [pin.strip()[4:] for pin in parts[4].split('|')]
     name = parts[-1].strip().replace("/", "").replace("\\","")
     name = name.replace("*","").strip()
     name = name.split("=")[0].strip()
