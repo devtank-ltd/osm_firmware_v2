@@ -45,7 +45,7 @@ SOURCES += main.c \
            ring.c
 
 BUILD_DIR := build/
-PROJECT_NAME := test
+PROJECT_NAME := firmware
 
 OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)%.o)
 DEPS = $(SOURCES:%.c=$(BUILD_DIR)%.d)
