@@ -13,12 +13,13 @@ static const port_n_pins_t inputs[] = INPUTS_PORT_N_PINS;
 
 void     inputs_init()
 {
+    const uint8_t pulls[ARRAY_SIZE(inputs)] = INPUT_PULL;
 
     for(unsigned n = 0; n < ARRAY_SIZE(inputs); n++)
     {
         const port_n_pins_t * input = &inputs[n];
         rcc_periph_clock_enable(PORT_TO_RCC(input->port));
-        gpio_mode_setup(input->port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, input->pins);
+        gpio_mode_setup(input->port, GPIO_MODE_INPUT, pulls[n], input->pins);
     }
 }
 
