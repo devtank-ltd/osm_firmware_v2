@@ -42,7 +42,7 @@
 #define UART_3_SPEED 9600
 #define UART_4_SPEED 115200
 
-#define USB_DATA_PCK_SZ    32
+#define USB_DATA_PCK_SZ    64
 
 #define DMA_DATA_PCK_SZ    32
 
