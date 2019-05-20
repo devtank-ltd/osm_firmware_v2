@@ -274,7 +274,7 @@ static enum usbd_request_return_codes usb_control_request(usbd_device           
 
 static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_point)
 {
-    char buf[USB_DATA_PCK_SZ+1];
+    char buf[USB_DATA_PCK_SZ];
     int len = usbd_ep_read_packet(usbd_dev, end_point, buf, USB_DATA_PCK_SZ);
 
     if (!len)
