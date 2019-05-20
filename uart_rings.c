@@ -96,10 +96,11 @@ unsigned cmd_ring_out(const char* s, unsigned len)
 static unsigned _usb_out_async(char * tmp, unsigned len, void * puart)
 {
     unsigned uart = (puart)?(*(unsigned*)puart):0;
+    unsigned r = usb_uart_send(uart, tmp, len);
 
-    log_debug(DEBUG_UART, "UART %u -> USB %u.", uart, len);
+    log_debug(DEBUG_UART, "UART %u -> USB %u (%u).", uart, len, r);
 
-    return usb_uart_send(uart, tmp, len);
+    return r;
 }
 
 
@@ -199,6 +200,17 @@ void uart_rings_out_drain()
 }
 
 
+void uart_ring_check(ring_buf_t * ring, char * name, unsigned index)
+{
+    log_debug(DEBUG_UART, "UART %u %s r_pos %u", index, name, ring->r_pos);
+    log_debug(DEBUG_UART, "UART %u %s w_pos %u", index, name, ring->w_pos);
+    log_debug(DEBUG_UART, "UART %u %s pending %u", index, name, ring_buf_get_pending(ring));
+
+    if (ring_buf_is_full(ring))
+        log_error("UART %u %s ring buffer filled.", index, name);
+}
+
+
 void uart_rings_check()
 {
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
@@ -206,9 +218,9 @@ void uart_rings_check()
         ring_buf_t * in_ring  = &ring_in_bufs[n];
         ring_buf_t * out_ring = &ring_out_bufs[n];
 
-        if (ring_buf_is_full(in_ring))
-            log_error("UART %u in ring buffer filled.", n);
-        else if (ring_buf_is_full(out_ring))
-            log_error("UART %u out ring buffer filled.", n);
+        uart_ring_check(in_ring, "in", n);
+        uart_ring_check(out_ring, "out", n);
     }
+
+    uart_ring_check(&cmd_ring_out_buf, "CMD", 0);
 }

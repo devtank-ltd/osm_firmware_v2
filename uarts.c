@@ -116,6 +116,7 @@ void UART_2_ISR(void)
             log_debug(DEBUG_SYS, "Enabling Debug via debug comms");
             log_debug(DEBUG_SYS, "U = enable UART debug");
             log_debug(DEBUG_SYS, "A = enable ADC debug");
+            log_debug(DEBUG_SYS, "R = show UART ring buffers");
             break;
         case 'A':
             if (log_debug_mask)
@@ -129,6 +130,15 @@ void UART_2_ISR(void)
             {
                 log_debug(DEBUG_SYS, "Enabled UART debug");
                 log_debug_mask |= DEBUG_UART;
+            }
+            break;
+        case 'R':
+            if (log_debug_mask)
+            {
+                if (!(log_debug_mask & DEBUG_UART))
+                    log_debug(DEBUG_SYS, "Enabled UART debug");
+                log_debug_mask |= DEBUG_UART;
+                uart_rings_check();
             }
             break;
         default:
