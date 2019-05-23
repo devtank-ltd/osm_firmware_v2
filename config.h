@@ -17,6 +17,7 @@
 #define USB_PRIORITY   2
 #define TIMER1_PRIORITY 2
 #define TIMER2_PRIORITY 1
+#define PPS_PRIORITY 1
 
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
