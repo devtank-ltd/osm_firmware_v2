@@ -114,33 +114,6 @@ void adcs_second_boardary()
 }
 
 
-void adcs_get(unsigned   adc,
-              unsigned * min_value,
-              unsigned * max_value,
-              double *   av_value)
-{
-    if (adc >= ARRAY_SIZE(adc_channel_array))
-    {
-        if (max_value)
-            *max_value = 0;
-        if (min_value)
-            *min_value = 0;
-        if (av_value)
-            *av_value = 0;
-        return;
-    }
-
-    volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
-
-    if (max_value)
-        *max_value = channel_info->max_value;
-    if (min_value)
-        *min_value = channel_info->min_value;
-    if (av_value)
-        *av_value = ((double)channel_info->total_value) / channel_info->count;
-}
-
-
 unsigned adcs_get_count()
 {
     return ARRAY_SIZE(adc_channel_array);

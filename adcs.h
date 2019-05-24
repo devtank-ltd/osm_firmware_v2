@@ -6,11 +6,6 @@ extern void     adcs_init();
 extern void     adcs_do_samples();
 extern void     adcs_second_boardary();
 
-extern void     adcs_get(unsigned   adc,
-                         unsigned * min_value,
-                         unsigned * max_value,
-                         double *   av_value);
-
 extern unsigned adcs_get_count();
 
 extern unsigned adcs_get_last(unsigned adc);
