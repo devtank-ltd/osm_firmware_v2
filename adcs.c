@@ -148,7 +148,7 @@ void adcs_adc_log(unsigned adc)
     log_out("ADC : %u (Channel : %u)", adc, adc_channel_array[adc]);
     log_out("Min : %u", channel_info->min_value);
     log_out("Max : %u", channel_info->max_value);
-    log_out("Avg : %f", ((double)channel_info->total_value) / channel_info->count );
+    log_out("Avg : %"PRIu64" / %u", channel_info->total_value, channel_info->count);
 }
 
 

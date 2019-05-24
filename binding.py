@@ -64,7 +64,8 @@ class adc_t(io_board_prop_t):
         assert int(parts[1].split(b' ')[0]) == self.index
         self._min_value = int(r[1].split(b':')[1].strip())
         self._max_value = int(r[2].split(b':')[1].strip())
-        self._avg_value = float(r[3].split(b':')[1].strip())
+        parts = r[3].split(b':')[1].split(b'/')
+        self._avg_value = float(parts[0].strip()) / int(parts[1].strip())
         self._age = time.time()
 
     def _refresh(self):
