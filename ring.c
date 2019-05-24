@@ -89,7 +89,7 @@ unsigned  ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
         {
             if ((n + 1) < toread)
             {
-                char c = ring_buf->buf[r_pos];
+                c = ring_buf->buf[r_pos];
                 if (c == '\r' || c == '\n')
                 {
                     r_pos++;

@@ -128,7 +128,7 @@ static void uart_ring_in_drain(unsigned uart)
     }
     else
     {
-        unsigned len = ring_buf_readline(ring, command, CMD_LINELEN);
+        len = ring_buf_readline(ring, command, CMD_LINELEN);
 
         if (len)
             cmds_process(command, len);

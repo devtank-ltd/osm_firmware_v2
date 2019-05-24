@@ -104,6 +104,10 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 
+cppcheck:
+	cppcheck --enable=all --std=c99 $(SOURCES)
+
+
 debug_mon: $(TARGET_ELF)
 	openocd -f board/st_nucleo_f0.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
