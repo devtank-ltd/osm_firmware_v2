@@ -7,7 +7,7 @@ OBJDUMP = $(TOOLCHAIN)-objdump
 SIZE = $(TOOLCHAIN)-size
 
 #Target CPU options
-CPU_DEFINES = -mthumb -mcpu=cortex-m0 -DSTM32F0
+CPU_DEFINES = -mthumb -mcpu=cortex-m0 -DSTM32F0 -pedantic
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
