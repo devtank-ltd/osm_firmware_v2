@@ -52,7 +52,7 @@ void adcs_init()
     adc_set_continuous_conversion_mode(ADC1);
     adc_set_right_aligned(ADC1);
     adc_set_regular_sequence(ADC1, ARRAY_SIZE(adc_channel_array), adc_channel_array);
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_071DOT5);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_013DOT5);
     adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
     adc_power_on(ADC1);
 }
@@ -69,23 +69,24 @@ void adcs_do_samples()
         case 0: adc_start_conversion_regular(ADC1); break;
         case 1:
         {
-            if (!adc_eoc(ADC1))
-                log_debug(DEBUG_ADC, "ADC sampling not complete!");
+            if (adc_eoc(ADC1))
+            {
+                uint32_t adc = adc_read_regular(ADC1);
 
-            uint32_t adc = adc_read_regular(ADC1);
+                volatile adc_channel_info_t * channel_info = &adc_channel_info[adc_index];
 
-            volatile adc_channel_info_t * channel_info = &adc_channel_info[adc_index];
+                if (adc > channel_info->max_value)
+                    channel_info->max_value = adc;
 
-            if (adc > channel_info->max_value)
-                channel_info->max_value = adc;
+                if (adc < channel_info->min_value)
+                    channel_info->min_value = adc;
 
-            if (adc < channel_info->min_value)
-                channel_info->min_value = adc;
+                channel_info->total_value += adc;
+                channel_info->count ++;
+                last_value[adc_index]   = adc;
 
-            channel_info->total_value += adc;
-            channel_info->count ++;
-            last_value[adc_index]   = adc;
-
+            }
+	    else log_debug(DEBUG_ADC, "ADC sampling not complete!");
             adc_index = (adc_index + 1) % ARRAY_SIZE(adc_channel_array);
         }
     }
@@ -108,6 +109,9 @@ void adcs_second_boardary()
         channel_info->min_value = 0xFFFFFFFF;
         channel_info->total_value  = 0;
         channel_info->count = 0;
+
+	if (adc_channel_info_cur[n].count != sample_count)
+	    log_debug(DEBUG_ADC, "ADC %u %u != %u", n, adc_channel_info_cur[n].count, sample_count);
     }
 
     call_count = 0;
