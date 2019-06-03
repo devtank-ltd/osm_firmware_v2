@@ -53,7 +53,7 @@ static struct
 {
     uint8_t data_addr;
     uint8_t com_addr;
-} end_addrs[3] =
+} end_addrs[] =
 {
     {
         USB_DATA1_END_ADDR,
@@ -280,7 +280,7 @@ static void usb_data_rx_cb(usbd_device *_ __attribute((unused)), uint8_t end_poi
     if (!len)
         return;
 
-    for(unsigned n = 0; n < 3; n++)
+    for(unsigned n = 0; n < ARRAY_SIZE(end_addrs); n++)
     {
         if (end_addrs[n].data_addr == end_point)
         {
@@ -300,7 +300,7 @@ static void usb_set_config_cb(usbd_device *usb_dev,
     log_debug(DEBUG_SYS, "USB connected");
     connected = true;
 
-    for(unsigned n = 0; n < 3; n++)
+    for(unsigned n = 0; n < ARRAY_SIZE(end_addrs); n++)
     {
         usbd_ep_setup(usb_dev, end_addrs[n].com_addr,         USB_ENDPOINT_ATTR_INTERRUPT, USB_COM_PCK_SZ,  NULL);
         usbd_ep_setup(usb_dev, end_addrs[n].data_addr,        USB_ENDPOINT_ATTR_BULK,      USB_DATA_PCK_SZ, usb_data_rx_cb);
@@ -342,6 +342,9 @@ void usb_isr()
 
 unsigned usb_uart_send(unsigned uart, void * data, unsigned len)
 {
+    if (uart >= ARRAY_SIZE(end_addrs))
+        return 0;
+
     uint8_t w_addr = end_addrs[uart].data_addr | 0x80;
 
     if (len > USB_DATA_PCK_SZ)
