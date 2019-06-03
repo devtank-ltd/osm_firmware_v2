@@ -86,8 +86,8 @@ void adcs_do_samples()
                 last_value[adc_index]   = adc;
 
             }
-	    else log_debug(DEBUG_ADC, "ADC sampling not complete!");
-            adc_index = (adc_index + 1) % ARRAY_SIZE(adc_channel_array);
+            else log_debug(DEBUG_ADC, "ADC sampling not complete!");
+                adc_index = (adc_index + 1) % ARRAY_SIZE(adc_channel_array);
         }
     }
 }
@@ -110,8 +110,8 @@ void adcs_second_boardary()
         channel_info->total_value  = 0;
         channel_info->count = 0;
 
-	if (adc_channel_info_cur[n].count != sample_count)
-	    log_debug(DEBUG_ADC, "ADC %u %u != %u", n, adc_channel_info_cur[n].count, sample_count);
+        if (adc_channel_info_cur[n].count != sample_count)
+            log_debug(DEBUG_ADC, "ADC %u %u != %u", n, adc_channel_info_cur[n].count, sample_count);
     }
 
     call_count = 0;
