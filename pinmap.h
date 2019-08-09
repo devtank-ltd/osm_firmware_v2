@@ -77,6 +77,7 @@ typedef struct
     {GPIOD, GPIO2},    /* Input 6 */    \
     {GPIOC, GPIO2},    /* Input 7 */    \
     {GPIOB, GPIO13},   /* Input 8 */    \
+    {GPIOC, GPIO9},    /* Input 9 */    \
 }
 
 #define INPUT_PULL                \
@@ -90,6 +91,7 @@ typedef struct
     GPIO_PUPD_PULLUP,    /* 6 */  \
     GPIO_PUPD_PULLUP,    /* 7 */  \
     GPIO_PUPD_PULLUP,    /* 8 */  \
+    GPIO_PUPD_PULLUP,    /* 9 */  \
 }
 /*
  * NOTE: A13 and A14 will cause SWD problems.
