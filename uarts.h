@@ -14,6 +14,10 @@ extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, 
 
 extern bool uart_is_tx_empty(unsigned uart);
 
+extern bool uart_single_out(unsigned uart, char c);
+
+extern void uart_blocking(unsigned uart, const char *data, int size);
+
 extern bool uart_dma_out(unsigned uart, char *data, int size);
 
 static inline char    uart_parity_as_char(uart_parity_t parity)    { return (parity == uart_parity_even)?'E':(parity == uart_parity_odd)?'O':'N'; }

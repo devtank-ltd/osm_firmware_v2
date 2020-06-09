@@ -72,7 +72,8 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
         {
             if (uart)
                 log_error("UART-out %u full", uart);
-
+            else
+                platform_raw_msg("Debug UART ring full!");
             return n;
         }
     return len;

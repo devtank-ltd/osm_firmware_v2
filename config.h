@@ -20,6 +20,9 @@
 #define PPS_PRIORITY 1
 
 
+#define UART_OUT_NU 0
+#define UART_ERR_NU 0
+
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
 #define LOG_START_SPACER  "============{"

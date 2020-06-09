@@ -332,6 +332,34 @@ bool uart_is_tx_empty(unsigned uart)
 }
 
 
+bool uart_single_out(unsigned uart, char c)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return false;
+
+    const uart_channel_t * channel = &uart_channels[uart];
+
+    if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
+        return false;
+
+    usart_send(channel->usart, c);
+
+    return true;
+}
+
+
+void uart_blocking(unsigned uart, const char *data, int size)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return;
+
+    const uart_channel_t * channel = &uart_channels[uart];
+
+    while(size--)
+        usart_send_blocking(channel->usart, *data++);
+}
+
+
 bool uart_dma_out(unsigned uart, char *data, int size)
 {
     if (uart >= UART_CHANNELS_COUNT)
