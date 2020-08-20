@@ -8,6 +8,10 @@
 #include "adcs.h"
 #include "pinmap.h"
 
+/* On some versions of gcc this header isn't defining it. Quick fix. */
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
 
 static uint8_t adc_channel_array[] = ADC_CHANNELS;
 
