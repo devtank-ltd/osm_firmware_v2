@@ -93,12 +93,19 @@ unsigned cmd_ring_out(const char* s, unsigned len)
 }
 
 
-static unsigned _usb_out_async(char * tmp, unsigned len, void * puart)
+struct _usb_out_async_packet
 {
-    unsigned uart = (puart)?(*(unsigned*)puart):0;
-    unsigned r = usb_uart_send(uart, tmp, len);
+    unsigned uart;
+    bool complete;
+};
 
-    log_debug(DEBUG_UART, "UART %u -> USB %u (%u).", uart, len, r);
+
+static unsigned _usb_out_async(char * tmp, unsigned len, void * data)
+{
+    struct _usb_out_async_packet * packet = (struct _usb_out_async_packet*)data;
+    unsigned r = usb_uart_send(packet->uart, tmp, len, packet->complete);
+
+    log_debug(DEBUG_UART, "UART %u -> USB %u (%u).", packet->uart, len, r);
 
     return r;
 }
@@ -120,11 +127,16 @@ static void uart_ring_in_drain(unsigned uart)
 
     if (uart)
     {
+        struct _usb_out_async_packet packet = {.uart = uart, .complete=true};
         char * tmp = usb_out_packets[uart];
 
-        len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
+        if (len > USB_DATA_PCK_SZ)
+        {
+            len = USB_DATA_PCK_SZ;
+            packet.complete = false;
+        }
 
-        ring_buf_consume(ring, _usb_out_async, tmp, len, &uart);
+        ring_buf_consume(ring, _usb_out_async, tmp, len, &packet);
     }
     else
     {
@@ -179,9 +191,15 @@ static void cmd_ring_out_drain()
 
     log_debug(DEBUG_UART, "CMD UART %u", len);
 
-    len = (len > USB_DATA_PCK_SZ)?USB_DATA_PCK_SZ:len;
+    struct _usb_out_async_packet packet = {.uart = 0, .complete=true};
 
-    ring_buf_consume(&cmd_ring_out_buf, _usb_out_async, usb_out_packets[0], len, NULL);
+    if (len > USB_DATA_PCK_SZ)
+    {
+        len = USB_DATA_PCK_SZ;
+        packet.complete = false;
+    }
+
+    ring_buf_consume(&cmd_ring_out_buf, _usb_out_async, usb_out_packets[0], len, &packet);
 }
 
 
