@@ -10,8 +10,7 @@
 #include "usb_uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "gpio.h"
 #include "timers.h"
 
 static char   * rx_buffer;
@@ -31,6 +30,7 @@ static void pps_cb();
 static void adc_cb();
 static void input_cb();
 static void output_cb();
+static void gpio_cb();
 static void count_cb();
 static void all_cb();
 static void version_cb();
@@ -43,8 +43,10 @@ static cmd_t cmds[] = {
     { "adcs",     "Print all ADCs.",         adcs_log},
     { "inputs",   "Print all inputs.",       inputs_log},
     { "outputs",  "Print all outputs.",      outputs_log},
+    { "gpios",    "Print all gpios.",        gpios_log},
     { "input",    "Print input.",            input_cb},
     { "output",   "Get/set output on/off.",  output_cb},
+    { "gpio",     "Get/set GPIO set.",       gpio_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "all",      "Print everything.",       all_cb},
     { "version",  "Print version.",          version_cb},
@@ -76,14 +78,28 @@ void input_cb()
 }
 
 
+static char * skip_space(char * pos)
+{
+    while(*pos == ' ')
+        pos++;
+    return pos;
+}
+
+static char * skip_to_space(char * pos)
+{
+    while(*pos && *pos != ' ')
+        pos++;
+    return pos;
+}
+
+
+
 void output_cb()
 {
     char * pos = NULL;
     unsigned output = strtoul(rx_buffer + rx_pos, &pos, 10);
 
-    while(*pos == ' ')
-        pos++;
-
+    pos = skip_space(pos);
     if (*pos)
     {
         bool on_off = (strtoul(pos, NULL, 10))?true:false;
@@ -95,12 +111,105 @@ void output_cb()
 }
 
 
+void gpio_cb()
+{
+    char * pos = NULL;
+    unsigned gpio = strtoul(rx_buffer + rx_pos, &pos, 10);
+    pos = skip_space(pos);
+    bool do_read = true;
+
+    if (*pos == ':')
+    {
+        bool as_input;
+        pos = skip_space(pos + 1);
+        if (strncmp(pos, "IN", 2) == 0 || *pos == 'I')
+        {
+            pos = skip_to_space(pos);
+            as_input = true;
+        }
+        else if (strncmp(pos, "OUT", 3) == 0 || *pos == 'O')
+        {
+            pos = skip_to_space(pos);
+            as_input = false;
+        }
+        else
+        {
+            log_error("Malformed gpio type command");
+            return;
+        }
+
+        int pull;
+        pos = skip_space(pos);
+        if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
+        {
+            pos = skip_to_space(pos);
+            pull = 1;
+        }
+        else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
+        {
+            pos = skip_to_space(pos);
+            pull = -1;
+        }
+        else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
+        {
+            pos = skip_to_space(pos);
+            pull = 0;
+        }
+        else
+        {
+            log_error("Malformed gpio pull command");
+            return;
+        }
+
+        gpio_configure(gpio, as_input, pull);
+        pos = skip_space(pos);
+    }
+
+    if (*pos == '=')
+    {
+        pos = skip_space(pos + 1);
+        log_error("POS : %s", pos);
+        if (strncmp(pos, "ON", 2) == 0 || *pos == '1')
+        {
+            pos = skip_to_space(pos);
+            if (!gpio_is_input(gpio))
+            {
+                gpio_on(gpio, true);
+                log_out("GPIO %02u = ON", gpio);
+                do_read = false;
+            }
+            else log_error("GPIO %02u is input but output command.", gpio);
+        }
+        else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
+        {
+            pos = skip_to_space(pos);
+            if (!gpio_is_input(gpio))
+            {
+                gpio_on(gpio, false);
+                log_out("GPIO %02u = OFF", gpio);
+                do_read = false;
+            }
+            else log_error("GPIO %02u is input but output command.", gpio);
+        }
+        else
+        {
+            log_error("Malformed gpio on/off command");
+            return;
+        }
+    }
+
+    if (do_read)
+        gpio_log(gpio);
+}
+
+
 void count_cb()
 {
     log_out("PPSS    : %u", pulsecount_get_count());
     log_out("Inputs  : %u", inputs_get_count());
     log_out("Outputs : %u", outputs_get_count());
     log_out("ADCs    : %u", adcs_get_count());
+    log_out("GPIOs   : %u", gpios_get_count());
 }
 
 
@@ -110,6 +219,7 @@ void all_cb()
     inputs_log();
     outputs_log();
     adcs_log();
+    gpios_log();
 }
 
 
