@@ -63,7 +63,7 @@ typedef struct
 }
 
 #define UART_CHANNELS_COUNT 3
-
+#define UART_DEBUG USART2
 
 
 #define INPUTS_PORT_N_PINS              \
