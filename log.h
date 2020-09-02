@@ -2,6 +2,7 @@
 #define __LOG__
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "config.h"
 
 extern bool log_async_log;
