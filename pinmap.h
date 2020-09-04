@@ -99,8 +99,9 @@ typedef struct
 }
 
 
-#define GPIO_AS_INPUT  0x100
-#define GPIO_PULL_MASK 0xFF
+#define GPIO_AS_INPUT   0x100
+#define GPIO_DIR_LOCKED 0x200
+#define GPIO_PULL_MASK  0x0FF
 
 #define GPIOS_STATE               \
 {                                 \
@@ -114,22 +115,22 @@ typedef struct
     GPIO_AS_INPUT | GPIO_PUPD_PULLUP,    /* 7 */  \
     GPIO_AS_INPUT | GPIO_PUPD_PULLUP,    /* 8 */  \
     GPIO_AS_INPUT | GPIO_PUPD_PULLUP,    /* 9 */  \
-    GPIO_PUPD_PULLDOWN,  /* 0  */ \
-    GPIO_PUPD_PULLDOWN,  /* 1  */ \
-    GPIO_PUPD_PULLDOWN,  /* 2  */ \
-    GPIO_PUPD_PULLDOWN,  /* 3  */ \
-    GPIO_PUPD_PULLDOWN,  /* 4  */ \
-    GPIO_PUPD_PULLUP,    /* 5  */ \
-    GPIO_PUPD_PULLUP,    /* 6  */ \
-    GPIO_PUPD_PULLUP,    /* 7  */ \
-    GPIO_PUPD_PULLDOWN,  /* 8  */ \
-    GPIO_PUPD_PULLDOWN,  /* 9  */ \
-    GPIO_PUPD_PULLDOWN,  /* 10 */ \
-    GPIO_PUPD_PULLDOWN,  /* 11 */ \
-    GPIO_PUPD_PULLDOWN,  /* 12 */ \
-    GPIO_PUPD_PULLDOWN,  /* 13 */ \
-    GPIO_PUPD_PULLDOWN,  /* 14 */ \
-    GPIO_PUPD_PULLDOWN,  /* 15 */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 0  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 1  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 2  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 3  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 4  */ \
+    GPIO_PUPD_PULLUP,                      /* 5  */ \
+    GPIO_PUPD_PULLUP,                      /* 6  */ \
+    GPIO_PUPD_PULLUP,                      /* 7  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 8  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 9  */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 10 */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 11 */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 12 */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 13 */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 14 */ \
+    GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN,  /* 15 */ \
 }
 
 

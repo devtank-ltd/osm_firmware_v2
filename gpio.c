@@ -9,7 +9,7 @@
 #include "log.h"
 
 static const port_n_pins_t gpios_pins[] = GPIOS_PORT_N_PINS;
-static uint16_t gpios_state[] = GPIOS_STATE;
+static uint16_t gpios_state[ARRAY_SIZE(gpios_pins)] = {0};
 
 
 static char* _gpios_get_pull_str(uint16_t gpio_state)
@@ -29,6 +29,12 @@ static void _gpios_setup_gpio(unsigned gpio, uint16_t gpio_state)
     if (gpio >= ARRAY_SIZE(gpios_pins))
         return;
 
+    if (gpios_state[gpio] & GPIO_DIR_LOCKED)
+    {
+        log_debug(DEBUG_GPIO, "GPIO %02u locked but change attempted.", gpio);
+        return;
+    }
+
     const port_n_pins_t * gpio_pin = &gpios_pins[gpio];
 
     gpio_mode_setup(gpio_pin->port,
@@ -47,11 +53,13 @@ static void _gpios_setup_gpio(unsigned gpio, uint16_t gpio_state)
 
 void     gpios_init()
 {
+    const uint16_t gpios_init_state[] = GPIOS_STATE;
+
     for(unsigned n = 0; n < ARRAY_SIZE(gpios_pins); n++)
     {
         rcc_periph_clock_enable(PORT_TO_RCC(gpios_pins[n].port));
 
-        _gpios_setup_gpio(n, gpios_state[n]);
+        _gpios_setup_gpio(n, gpios_init_state[n]);
     }
 }
 
