@@ -106,7 +106,7 @@ void        persistent_set_name(const char * name[32])
 }
 
 
-bool        persistent_get_cal(unsigned adc, int32_t * scale, int32_t * offset)
+bool        persistent_get_cal(unsigned adc, uint64_t * scale, uint64_t * offset)
 {
     if (adc >= ADC_COUNT || !config_data ||  !offset || !scale)
         return false;
@@ -117,7 +117,7 @@ bool        persistent_get_cal(unsigned adc, int32_t * scale, int32_t * offset)
 }
 
 
-bool        persistent_set_cal(unsigned adc, int32_t scale, int32_t offset)
+bool        persistent_set_cal(unsigned adc, uint64_t scale, uint64_t offset)
 {
     if (adc >= ADC_COUNT || !config_data)
         return false;
