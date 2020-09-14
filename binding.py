@@ -124,11 +124,11 @@ class gpio_t(io_board_prop_t):
     def __init__(self, index, parent):
         io_board_prop_t.__init__(self, index, parent)
 
-    OUT = "OUT"
-    IN = "IN"
-    PULLDOWN = "DOWN"
-    PULLUP = "UP"
-    PULLNONE = "NONE"
+    OUT = b"OUT"
+    IN = b"IN"
+    PULLDOWN = b"DOWN"
+    PULLUP = b"UP"
+    PULLNONE = b"NONE"
 
     @property
     def value(self):
