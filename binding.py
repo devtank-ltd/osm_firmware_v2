@@ -153,8 +153,8 @@ class gpio_t(io_board_prop_t):
         parts = r.split(b"=")
         r = parts[0].strip()
         value = parts[1].strip()
-        info = r.split(b":")[1]
-        return *info.split(), value
+        info = r.split(b":")[1].split()
+        return info[0], info[1], value
 
     def setup(self, direction, bias, value=None):
         assert direction in [gpio_t.IN, gpio_t.OUT]
@@ -225,6 +225,12 @@ class uart_t(io_board_prop_t):
     def readline(self):
         return self.io.readline()
 
+    def drain(self):
+        line = self.readline()
+        while len(line):
+            line = self.readline()
+        debug_print("Drained")
+
 
 
 
@@ -239,6 +245,7 @@ class io_board_py_t(object):
                   b"uarts" : uart_t}
     __READTIME = 2
     __WRITEDELAY = 0.001 # Stop flooding STM32 faster than it can deal with
+    NAME_MAP = {}
 
     def __init__(self, dev):
         self.ppss = []
@@ -247,6 +254,7 @@ class io_board_py_t(object):
         self.uarts   = []
         self.adcs = []
         self.gpios = []
+        self.NAME_MAP = type(self).NAME_MAP
         self.comm_port = dev
         self.comm = serial.Serial(
                 port=dev,
@@ -255,16 +263,48 @@ class io_board_py_t(object):
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS,
                 timeout=1)
+        line = self.comm.readline()
+        while len(line):
+            line = self.comm.readline()
+        debug_print("Drained")
         r = self.command(b"count")
-        m = {}
         for line in r:
             parts = line.split(b':')
             name  = parts[0].lower().strip()
             count = int(parts[1])
             for n in range(0, count):
-                child = io_board_py_t.__PROP_MAP[name](n, self)
+                child = type(self).__PROP_MAP[name](n, self)
                 children = getattr(self, name.decode())
                 children += [child]
+
+    def load_cal_map(self, cal_map):
+        for adc_name, adc_adj in cal_map.items():
+            if adc_name in self.NAME_MAP:
+                adc = getattr(self, adc_name)
+                adc.name = adc_name
+                adc.adc_scale  = adc_adj[0]
+                adc.adc_offset = adc_adj[1]
+
+    def use_gpios_map(self, gpios):
+        for n in range(0, len(gpios)):
+            self.gpios[n].setup(*gpios[n])
+        r = self.command("count")
+        m = {}
+        for line in r:
+            parts = line.split(b':')
+            name  = parts[0].lower().strip()
+            if name in ["inputs", "outputs"]:
+                count = int(parts[1])
+                for n in range(0, count):
+                    child = type(self).__PROP_MAP[name](n, self)
+                    children = getattr(self, name.decode())
+                    children += [child]
+
+    def __getattr__(self, item):
+        debug_print(b"Binding name lookup " + item)
+        if item in self.NAME_MAP:
+            return self.NAME_MAP[item](self)
+        raise AttributeError("Attribute %s not found" % item)
 
     def _read_line(self):
         line = self.comm.readline().strip()
@@ -278,7 +318,7 @@ class io_board_py_t(object):
             if (time.time() - start) > type(self).__READTIME:
                 raise ValueError("Comms read took too long.")
             line = self._read_line()
-            assert time.time() - start < io_board_py_t.__READTIME
+            assert time.time() - start < type(self).__READTIME
 
         line = self._read_line()
         data_lines = []
@@ -288,7 +328,7 @@ class io_board_py_t(object):
                 raise ValueError("Comms read took too long.")
             data_lines += [line]
             line = self._read_line()
-            assert time.time() - start < io_board_py_t.__READTIME
+            assert time.time() - start < type(self).__READTIME
 
         return data_lines
 
