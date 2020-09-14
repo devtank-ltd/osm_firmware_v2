@@ -14,6 +14,7 @@
 #include "pulsecount.h"
 #include "io.h"
 #include "timers.h"
+#include "persist_config.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -35,6 +36,7 @@ static void special_cb();
 static void count_cb();
 static void uart_cb();
 static void uarts_cb();
+static void persist_cb();
 static void version_cb();
 
 
@@ -49,6 +51,7 @@ static cmd_t cmds[] = {
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
+    { "persist",  "Name to persist.",        persist_cb},
     { "version",  "Print version.",          version_cb},
     { NULL },
 };
@@ -278,6 +281,18 @@ void uarts_cb()
         log_out("UART %u : %u %"PRIu8"%c%"PRIu8, n,
             speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
     }
+}
+
+
+void persist_cb()
+{
+    char * pos = rx_buffer + rx_pos;
+
+    while(*pos && *pos == ' ')
+        pos++;
+
+    if (pos)
+        persistent_set_name(pos);
 }
 
 

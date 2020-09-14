@@ -91,7 +91,7 @@ static void _persistent_update_crc()
 }
 
 
-void        persistent_set_name(const char * name[32])
+void        persistent_set_name(const char * name)
 {
     if (!config_data)
     {
@@ -99,8 +99,16 @@ void        persistent_set_name(const char * name[32])
         memset(RAW_PERSIST_DATA, 0, RAW_PERSIST_SIZE);
     }
 
+    unsigned len = strlen(name);
+
+    if (len > 31)
+    {
+        log_error("Persistent name too long.");
+        len = 31;
+    }
+
     memset(config_data->config_name, 0, 32);
-    memcpy(config_data->config_name, name, strlen((char*)name));
+    memcpy(config_data->config_name, name, len);
 
     _persistent_update_crc();
 }

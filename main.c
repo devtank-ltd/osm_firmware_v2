@@ -18,6 +18,7 @@
 #include "timers.h"
 #include "io.h"
 #include "uart_rings.h"
+#include "persist_config.h"
 
 
 void hard_fault_handler(void)
@@ -36,6 +37,7 @@ int main(void) {
     log_out("Version : %s", GIT_VERSION);
 
     log_init();
+    init_persistent();
     cmds_init();
     usb_init();
     adcs_init();
