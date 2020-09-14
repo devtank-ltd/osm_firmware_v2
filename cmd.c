@@ -32,7 +32,8 @@ static void input_cb();
 static void output_cb();
 static void gpio_cb();
 static void count_cb();
-static void all_cb();
+static void uart_cb();
+static void uarts_cb();
 static void version_cb();
 
 
@@ -48,7 +49,8 @@ static cmd_t cmds[] = {
     { "output",   "Get/set output on/off.",  output_cb},
     { "gpio",     "Get/set GPIO set.",       gpio_cb},
     { "count",    "Counts of controls.",     count_cb},
-    { "all",      "Print everything.",       all_cb},
+    { "uart",     "Change UART speed.",      uart_cb},
+    { "uarts",    "Show UART speed.",        uarts_cb},
     { "version",  "Print version.",          version_cb},
     { NULL },
 };
@@ -210,16 +212,30 @@ void count_cb()
     log_out("Outputs : %u", outputs_get_count());
     log_out("ADCs    : %u", adcs_get_count());
     log_out("GPIOs   : %u", gpios_get_count());
+    log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 
 
-void all_cb()
+void uart_cb()
 {
-    pulsecount_log();
-    inputs_log();
-    outputs_log();
-    adcs_log();
-    gpios_log();
+    char * pos = NULL;
+    unsigned uart = strtoul(rx_buffer + rx_pos, &pos, 10);
+
+    pos = skip_space(pos);
+    if (*pos)
+    {
+        unsigned baud = strtoul(pos, NULL, 10);
+        uart_set_baudrate(uart + 1, baud);
+    }
+
+    log_out("UART %u : %u", uart, uart_get_baudrate(uart + 1));
+}
+
+
+void uarts_cb()
+{
+    for(unsigned n = 0; n < (UART_CHANNELS_COUNT - 1); n++)
+        log_out("UART %u : %u", n, uart_get_baudrate(n + 1));
 }
 
 

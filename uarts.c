@@ -31,7 +31,7 @@ typedef struct
     uint8_t               priority;
 } uart_channel_t;
 
-static const uart_channel_t uart_channels[] = UART_CHANNELS;
+static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
@@ -65,6 +65,26 @@ static void uart_setup(const uart_channel_t * channel)
     }
 }
 
+
+void uart_set_baudrate(unsigned uart, unsigned speed)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return;
+
+    uart_channel_t * channel = &uart_channels[uart];
+
+    channel->baud = speed;
+    usart_set_baudrate( channel->usart, channel->baud );
+}
+
+
+unsigned uart_get_baudrate(unsigned uart)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return 0;
+
+    return uart_channels[uart].baud;
+}
 
 
 static bool uart_getc(uint32_t uart, char* c)
