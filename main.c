@@ -16,8 +16,7 @@
 #include "adcs.h"
 #include "pulsecount.h"
 #include "timers.h"
-#include "inputs.h"
-#include "outputs.h"
+#include "gpio.h"
 #include "uart_rings.h"
 
 
@@ -42,8 +41,7 @@ int main(void) {
     adcs_init();
     pulsecount_init();
     timers_init();
-    inputs_init();
-    outputs_init();
+    gpios_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);

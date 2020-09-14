@@ -40,8 +40,7 @@ SOURCES += main.c \
            adcs.c \
            pulsecount.c \
            timers.c \
-           inputs.c \
-           outputs.c \
+           gpio.c \
            ring.c
 
 BUILD_DIR := build/

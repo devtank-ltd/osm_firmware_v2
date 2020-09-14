@@ -6,7 +6,6 @@
 #include "config.h"
 #include "adcs.h"
 #include "pulsecount.h"
-#include "inputs.h"
 #include "timers.h"
 #include "uart_rings.h"
 
