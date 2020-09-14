@@ -33,7 +33,7 @@ class pps_t(io_board_prop_t):
     @property
     def values(self):
         parent = self.parent()
-        r = parent.command("pps %u" % self.index)
+        r = parent.command(b"pps %u" % self.index)
         parts = r[0].split(b':')
         pps = int(parts[1].strip())
         parts = parts[2].split()
@@ -45,7 +45,7 @@ class input_t(io_board_prop_t):
     @property
     def value(self):
         parent = self.parent()
-        r = parent.command("input %u" % self.index)
+        r = parent.command(b"input %u" % self.index)
         v = r[0].split(b':')[1].strip()
         return False if v == b"OFF" else True if v == b"ON" else None
 
@@ -54,14 +54,14 @@ class output_t(io_board_prop_t):
     @property
     def value(self):
         parent = self.parent()
-        r = parent.command("output %u" % self.index)
+        r = parent.command(b"output %u" % self.index)
         v = r[0].split(b':')[1].strip()
         return False if v == b"OFF" else True if v == b"ON" else None
 
     @value.setter
     def value(self, v):
         parent = self.parent()
-        r = parent.command("output %u %u" % (self.index, int(v)))
+        r = parent.command(b"output %u %u" % (self.index, int(v)))
         assert r[0] == b'Set output %02u to %s' % (self.index, b"ON" if v else b"OFF")
 
 
@@ -79,9 +79,9 @@ class adc_t(io_board_prop_t):
     def _raw_to_voltage(self, v):
         return 3.3 * (v / 4095.0) * self.adc_scale + self.adc_offset
 
-    def update_values(self):
+    def refresh(self):
         parent = self.parent()
-        r = parent.command("adc %u" % self.index)
+        r = parent.command(b"adc %u" % self.index)
         assert len(r) == 4
         parts = [part.strip() for part in r[0].split(b':') ]
         assert parts[0] == b"ADC"
@@ -97,7 +97,7 @@ class adc_t(io_board_prop_t):
 
     def _refresh(self):
         if not self._age or (time.time() - self._age) > 1:
-            self.update_values()
+            self.refresh()
 
     @property
     def min_value(self):
@@ -133,25 +133,37 @@ class gpio_t(io_board_prop_t):
     @property
     def value(self):
         parent = self.parent()
-        r = parent.command("gpio %u" % self.index)
+        r = parent.command(b"gpio %u" % self.index)
         v = r[0].split(b'=')[1].strip()
         return False if v == b"OFF" else True if v == b"ON" else None
 
     @value.setter
     def value(self, v):
         parent = self.parent()
-        r = parent.command("gpio %u = %u" % (self.index, int(v)))
+        r = parent.command(b"gpio %u = %u" % (self.index, int(v)))
         r = r[0].split(b'=')[1].strip()
         assert r[0] == b'GPIO %02u = %s' % (self.index, b"ON" if v else b"OFF")
+
+    @property
+    def info(self):
+        parent = self.parent()
+        r = parent.command(b"gpio %02u"% self.index)
+        assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
+        r = r[0]
+        parts = r.split(b"=")
+        r = parts[0].strip()
+        value = parts[1].strip()
+        info = r.split(b":")[1]
+        return *info.split(), value
 
     def setup(self, direction, bias, value=None):
         assert direction in [gpio_t.IN, gpio_t.OUT]
         assert bias in [gpio_t.PULLDOWN, gpio_t.PULLUP, gpio_t.PULLNONE, None]
         parent = self.parent()
         bias = gpio_t.PULLNONE if bias is None else bias
-        cmd = "gpio %02u : %s %s" % (self.index, direction, bias)
+        cmd = b"gpio %02u : %s %s" % (self.index, direction, bias)
         if value is not None:
-            cmd += " = %s"  b"ON" if v else b"OFF"
+            cmd += b" = %s"  b"ON" if v else b"OFF"
         r = parent.command(cmd)
         cmd = cmd.upper()
         assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
@@ -243,7 +255,7 @@ class io_board_py_t(object):
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS,
                 timeout=1)
-        r = self.command("count")
+        r = self.command(b"count")
         m = {}
         for line in r:
             parts = line.split(b':')
@@ -281,10 +293,8 @@ class io_board_py_t(object):
         return data_lines
 
     def command(self, cmd):
-        for c in cmd:
-            self.comm.write(c.encode())
-            time.sleep(type(self).__WRITEDELAY)
+        self.comm.write(cmd)
         self.comm.write(b'\n')
         self.comm.flush()
         debug_print(b"<< " + cmd)
-        return self._read_response()
+        return self.read_response()
