@@ -3,13 +3,16 @@
 #include <ctype.h>
 
 #include <libopencm3/stm32/crc.h>
+#include <libopencm3/stm32/flash.h>
 
 #include "log.h"
 #include "persist_config.h"
 #include "config.h"
 #include "pinmap.h"
 
-#define RAW_PERSIST_DATA ((void*)0x801f800)
+#define FLASH_ADDRESS 0x8000000
+#define FLASH_PAGE_SIZE 2048
+#define RAW_PERSIST_DATA ((void*)0x801F800)
 #define RAW_PERSIST_SIZE 2048
 
 typedef struct
@@ -87,30 +90,49 @@ const char* persistent_get_name()
 
 static void _persistent_update_crc()
 {
-    config_data->crc = _persistent_get_crc();
+    flash_program_half_word((uintptr_t)&config_data->crc, _persistent_get_crc());
 }
 
 
 void        persistent_set_name(const char * name)
 {
-    if (!config_data)
-    {
-        config_data = (config_data_t*)RAW_PERSIST_DATA;
-        memset(RAW_PERSIST_DATA, 0, RAW_PERSIST_SIZE);
-    }
+    flash_unlock();
 
-    unsigned len = strlen(name);
+    unsigned len = strlen(name) + 1;
 
-    if (len > 31)
+    if (len > 32)
     {
         log_error("Persistent name too long.");
-        len = 31;
+        len = 32;
     }
 
-    memset(config_data->config_name, 0, 32);
-    memcpy(config_data->config_name, name, len);
+    flash_erase_page((uintptr_t)RAW_PERSIST_DATA);
+
+    if (!config_data)
+        config_data = (config_data_t*)RAW_PERSIST_DATA;
+
+    const uint8_t * raw = (const uint8_t*)name;
+    for(unsigned n = 0; n < len; n+=2)
+    {
+        uint16_t v;
+        if (n == 31 || (n + 1) == len) /* Make sure we don't copy too much.*/
+            v = raw[n];
+        else
+            v = raw[n] | (raw[n + 1] << 8);
+
+        flash_program_half_word((uintptr_t)(config_data->config_name + n), v);
+    }
+
+    if (len % 2)
+        len--;
+
+    /*Zero fill any unused space.*/
+    for(unsigned n = len; n < 32; n+=2)
+        flash_program_half_word((uintptr_t)(config_data->config_name + n), 0);
 
     _persistent_update_crc();
+
+    flash_lock();
 }
 
 

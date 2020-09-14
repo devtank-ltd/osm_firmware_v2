@@ -51,7 +51,7 @@ static cmd_t cmds[] = {
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
-    { "persist",  "Name to persist.",        persist_cb},
+    { "persist",  "Start persist of name.",  persist_cb},
     { "version",  "Print version.",          version_cb},
     { NULL },
 };
@@ -293,6 +293,8 @@ void persist_cb()
 
     if (pos)
         persistent_set_name(pos);
+
+    log_out("New persistent data started.");
 }
 
 
