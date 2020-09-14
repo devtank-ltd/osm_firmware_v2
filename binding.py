@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import time
@@ -6,7 +7,21 @@ import weakref
 import serial.tools.list_ports
 
 
-_DEBUG = True if "DEBUG" in os.environ else False
+_debug_fnc = print if "DEBUG" in os.environ else None
+
+
+def debug_print(msg):
+    if _debug_fnc:
+        _debug_fnc(msg)
+
+def set_debug_print(_func):
+    global _debug_fnc
+    _debug_fnc = _func
+
+def get_debug_print():
+    return _debug_fnc
+
+
 
 class io_board_prop_t(object):
     def __init__(self, index, parent):
@@ -16,11 +31,14 @@ class io_board_prop_t(object):
 
 class pps_t(io_board_prop_t):
     @property
-    def value(self):
+    def values(self):
         parent = self.parent()
         r = parent.command("pps %u" % self.index)
-        v = r[0].split(b':')[1].strip()
-        return int(v)
+        parts = r[0].split(b':')
+        pps = int(parts[1].strip())
+        parts = parts[2].split()
+        duty = int(parts[0]) / 10.0
+        return (pps, duty)
 
 
 class input_t(io_board_prop_t):
@@ -54,6 +72,12 @@ class adc_t(io_board_prop_t):
         self._max_value = 0
         self._avg_value = 0
         self._age = 0
+        self.adc_scale  = 1
+        self.adc_offset = 0
+        self.name       = None
+
+    def _raw_to_voltage(self, v):
+        return 3.3 * (v / 4095.0) * self.adc_scale + self.adc_offset
 
     def update_values(self):
         parent = self.parent()
@@ -62,11 +86,14 @@ class adc_t(io_board_prop_t):
         parts = [part.strip() for part in r[0].split(b':') ]
         assert parts[0] == b"ADC"
         assert int(parts[1].split(b' ')[0]) == self.index
-        self._min_value = int(r[1].split(b':')[1].strip())
-        self._max_value = int(r[2].split(b':')[1].strip())
+        raw_min_value = int(r[1].split(b':')[1].strip())
+        raw_max_value = int(r[2].split(b':')[1].strip())
         parts = r[3].split(b':')[1].split(b'/')
-        self._avg_value = float(parts[0].strip()) / int(parts[1].strip())
+        raw_avg_value = float(parts[0].strip()) / int(parts[1].strip())
         self._age = time.time()
+        self._avg_value = raw_avg_value * self.adc_scale + self.adc_offset
+        self._min_value = raw_min_value * self.adc_scale + self.adc_offset
+        self._max_value = raw_max_value * self.adc_scale + self.adc_offset
 
     def _refresh(self):
         if not self._age or (time.time() - self._age) > 1:
@@ -87,6 +114,106 @@ class adc_t(io_board_prop_t):
         self._refresh()
         return self._avg_value
 
+    @property
+    def values(self):
+        self.refresh()
+        return (self._raw_to_voltage(self._avg_value), self._raw_to_voltage(self._min_value), self._raw_to_voltage(self._max_value))
+
+
+class gpio_t(io_board_prop_t):
+    def __init__(self, index, parent):
+        io_board_prop_t.__init__(self, index, parent)
+
+    OUT = "OUT"
+    IN = "IN"
+    PULLDOWN = "DOWN"
+    PULLUP = "UP"
+    PULLNONE = "NONE"
+
+    @property
+    def value(self):
+        parent = self.parent()
+        r = parent.command("gpio %u" % self.index)
+        v = r[0].split(b'=')[1].strip()
+        return False if v == b"OFF" else True if v == b"ON" else None
+
+    @value.setter
+    def value(self, v):
+        parent = self.parent()
+        r = parent.command("gpio %u = %u" % (self.index, int(v)))
+        r = r[0].split(b'=')[1].strip()
+        assert r[0] == b'GPIO %02u = %s' % (self.index, b"ON" if v else b"OFF")
+
+    def setup(self, direction, bias, value=None):
+        assert direction in [gpio_t.IN, gpio_t.OUT]
+        assert bias in [gpio_t.PULLDOWN, gpio_t.PULLUP, gpio_t.PULLNONE, None]
+        parent = self.parent()
+        bias = gpio_t.PULLNONE if bias is None else bias
+        cmd = "gpio %02u : %s %s" % (self.index, direction, bias)
+        if value is not None:
+            cmd += " = %s"  b"ON" if v else b"OFF"
+        r = parent.command(cmd)
+        cmd = cmd.upper()
+        assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
+        assert r[0].startswith(cmd), "GPIO new set as expected."
+
+
+class uart_t(io_board_prop_t):
+    def __init__(self, index, parent):
+        io_board_prop_t.__init__(self, index, parent)
+        self._io = None
+        self._speed = None
+
+    @property
+    def speed(self):
+        if self._speed is not None:
+            return self._speed
+
+        parent = self.parent()
+
+        r = parent.command(b"uart %u" % self.index)
+        assert r
+        self._speed = int(r[0].split(b":")[1].strip())
+        return self._speed
+
+    @speed.setter
+    def speed(self, speed):
+        parent = self.parent()
+        parent.command(b"uart %u %u" % (self.index, speed))
+        self._speed = speed
+
+    def io(self):
+        if self._io:
+            return self._io
+
+        parent = self.parent()
+
+        info = os.lstat(parent.comm_port)
+        major_dnum = os.major(info.st_dev)
+        minor_dnum = os.minor(info.st_dev)
+
+        sys_fs = b"/sys/dev/char/%u:%u" % (major_dnum, minor_dnum + 1 + self.index)
+        own_port = b"/dev/" + os.path.basename(os.readlink(sys_fs))
+
+        # Doesn't matter what speed it is because of the USB indirection
+        self._io = serial.Serial(port=own_port,
+                          baudrate=115200,
+                          parity=serial.PARITY_NONE,
+                          stopbits=serial.STOPBITS_ONE,
+                          bytesize=serial.EIGHTBITS,
+                          timeout=1)
+        return self._io
+
+    def read(self, num):
+        return self.io.read(num)
+
+    def write(self, s):
+        self.io.write(s)
+
+    def readline(self):
+        return self.io.readline()
+
+
 
 
 class io_board_py_t(object):
@@ -95,7 +222,9 @@ class io_board_py_t(object):
     __PROP_MAP = {b"ppss" : pps_t,
                   b"inputs" : input_t,
                   b"outputs" : output_t,
-                  b"adcs" : adc_t}
+                  b"adcs" : adc_t,
+                  b"gpios" : gpio_t,
+                  b"uarts" : uart_t}
     __READTIME = 2
     __WRITEDELAY = 0.001 # Stop flooding STM32 faster than it can deal with
 
@@ -103,7 +232,10 @@ class io_board_py_t(object):
         self.ppss = []
         self.inputs = []
         self.outputs = []
+        self.uarts   = []
         self.adcs = []
+        self.gpios = []
+        self.comm_port = dev
         self.comm = serial.Serial(
                 port=dev,
                 baudrate=115200,
@@ -112,7 +244,6 @@ class io_board_py_t(object):
                 bytesize=serial.EIGHTBITS,
                 timeout=1)
         r = self.command("count")
-        print("")
         m = {}
         for line in r:
             parts = line.split(b':')
@@ -125,21 +256,24 @@ class io_board_py_t(object):
 
     def _read_line(self):
         line = self.comm.readline().strip()
-        if _DEBUG:
-            print("<<", line)
+        debug_print(b">> : %s" % line)
         return line
 
     def read_response(self):
         line = self._read_line()
         start = time.time()
-        while line != io_board_py_t.__LOG_START_SPACER:
+        while line != type(self).__LOG_START_SPACER:
+            if (time.time() - start) > type(self).__READTIME:
+                raise ValueError("Comms read took too long.")
             line = self._read_line()
             assert time.time() - start < io_board_py_t.__READTIME
 
         line = self._read_line()
         data_lines = []
 
-        while line != io_board_py_t.__LOG_END_SPACER:
+        while line != type(self).__LOG_END_SPACER:
+            if (time.time() - start) > type(self).__READTIME:
+                raise ValueError("Comms read took too long.")
             data_lines += [line]
             line = self._read_line()
             assert time.time() - start < io_board_py_t.__READTIME
@@ -149,9 +283,8 @@ class io_board_py_t(object):
     def command(self, cmd):
         for c in cmd:
             self.comm.write(c.encode())
-            time.sleep(io_board_py_t.__WRITEDELAY)
+            time.sleep(type(self).__WRITEDELAY)
         self.comm.write(b'\n')
         self.comm.flush()
-        if _DEBUG:
-            print(">>", cmd)
-        return self.read_response()
+        debug_print(b"<< " + cmd)
+        return self._read_response()
