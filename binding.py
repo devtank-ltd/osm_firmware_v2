@@ -307,8 +307,9 @@ class io_board_py_t(object):
 
     def __getattr__(self, item):
         debug_print(b"Binding name lookup " + item)
-        if item in self.NAME_MAP:
-            return self.NAME_MAP[item](self)
+        getter = self.NAME_MAP.get(item, None)
+        if getter:
+            return getter(self)
         raise AttributeError("Attribute %s not found" % item)
 
     def _read_line(self):
