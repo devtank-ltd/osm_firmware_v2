@@ -217,19 +217,24 @@ class uart_t(io_board_prop_t):
         return self._io
 
     def read(self, num):
-        return self.io.read(num)
+        r = self.io.read(num)
+        debug_print("UART%u >> %s" % (self.index, r))
+        return r
 
     def write(self, s):
+        debug_print("UART%u << %s" % (self.index, s))
         self.io.write(s)
 
     def readline(self):
-        return self.io.readline()
+        line = self.io.readline()
+        debug_print("UART%u >> %s" % (self.index, line))
+        return line
 
     def drain(self):
         line = self.readline()
         while len(line):
             line = self.readline()
-        debug_print("Drained")
+        debug_print("UART%u Drained" % self.index)
 
 
 
