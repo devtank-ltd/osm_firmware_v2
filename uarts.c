@@ -265,14 +265,14 @@ void UART_2_ISR(void)
         case 'A':
             if (log_debug_mask)
             {
-                log_debug(DEBUG_SYS, "Enabled ADC debug");
+                log_sys_debug("Enabled ADC debug");
                 log_debug_mask |= DEBUG_ADC;
             }
             break;
         case 'U':
             if (log_debug_mask)
             {
-                log_debug(DEBUG_SYS, "Enabled UART debug");
+                log_sys_debug("Enabled UART debug");
                 log_debug_mask |= DEBUG_UART;
             }
             break;
@@ -288,14 +288,14 @@ void UART_2_ISR(void)
             if (log_debug_mask)
             {
                 if (!(log_debug_mask & DEBUG_UART))
-                    log_debug(DEBUG_SYS, "Enabled UART debug");
+                    log_sys_debug("Enabled UART debug");
                 log_debug_mask |= DEBUG_UART;
                 uart_rings_check();
             }
             break;
         default:
-            log_debug(DEBUG_SYS, "Disabling Debug via debug comms");
-            log_debug_mask = 0;
+            log_sys_debug("Disabling Debug via debug comms");
+            log_debug_mask = DEBUG_SYS;
     }
 }
 

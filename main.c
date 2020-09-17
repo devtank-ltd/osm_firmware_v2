@@ -33,8 +33,8 @@ int main(void) {
     uarts_setup();
 
     platform_raw_msg("----start----");
-    log_out("Frequency : %lu", rcc_ahb_frequency);
-    log_out("Version : %s", GIT_VERSION);
+    log_sys_debug("Frequency : %lu", rcc_ahb_frequency);
+    log_sys_debug("Version : %s", GIT_VERSION);
 
     log_init();
     init_persistent();
@@ -48,7 +48,7 @@ int main(void) {
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
-    log_out("Press 'D' for debug.");
+    log_sys_debug("Press 'D' for debug.");
     log_async_log = true;
 
     while(true)

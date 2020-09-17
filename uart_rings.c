@@ -45,6 +45,8 @@ static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
 unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 {
+    if (uart == CMD_VUART)
+        uart = 0;
     if (uart >= UART_CHANNELS_COUNT)
         return 0;
 
@@ -62,10 +64,21 @@ unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 
 unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart != CMD_VUART && uart >= UART_CHANNELS_COUNT)
         return 0;
 
-    ring_buf_t * ring = &ring_out_bufs[uart];
+    ring_buf_t * ring;
+
+    if (uart == CMD_VUART)
+    {
+        ring = &cmd_ring_out_buf;
+        log_debug(DEBUG_UART, "Putting %u to CMD output.", len);
+    }
+    else
+    {
+        ring = &ring_out_bufs[uart];
+        log_debug(DEBUG_UART, "UART %u out %u", uart, len);
+    }
 
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(ring, s[n]))
@@ -77,19 +90,6 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
             return n;
         }
     return len;
-}
-
-
-unsigned cmd_ring_out(const char* s, unsigned len)
-{
-    for (unsigned n = 0; n < len; n++)
-        if (!ring_buf_add(&cmd_ring_out_buf, s[n]))
-        {
-            log_error("UART-CMD full");
-            return n;
-        }
-    return len;
-
 }
 
 
@@ -113,6 +113,9 @@ static unsigned _usb_out_async(char * tmp, unsigned len, void * data)
 
 static void uart_ring_in_drain(unsigned uart)
 {
+    if (uart == CMD_VUART)
+        uart = 0;
+
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
@@ -158,8 +161,35 @@ static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 }
 
 
+static void cmd_ring_out_drain()
+{
+    unsigned len = ring_buf_get_pending(&cmd_ring_out_buf);
+
+    if (!len)
+        return;
+
+    log_debug(DEBUG_UART, "CMD UART %u", len);
+
+    struct _usb_out_async_packet packet = {.uart = 0, .complete=true};
+
+    if (len > USB_DATA_PCK_SZ)
+    {
+        len = USB_DATA_PCK_SZ;
+        packet.complete = false;
+    }
+
+    ring_buf_consume(&cmd_ring_out_buf, _usb_out_async, usb_out_packets[0], len, &packet);
+}
+
+
 static void uart_ring_out_drain(unsigned uart)
 {
+    if (uart == CMD_VUART)
+    {
+        cmd_ring_out_drain();
+        return;
+    }
+
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
@@ -179,27 +209,6 @@ static void uart_ring_out_drain(unsigned uart)
 
         ring_buf_consume(ring, _uart_out_dma, uart_dma_buf[uart], len, &uart);
     }
-}
-
-
-static void cmd_ring_out_drain()
-{
-    unsigned len = ring_buf_get_pending(&cmd_ring_out_buf);
-
-    if (!len)
-        return;
-
-    log_debug(DEBUG_UART, "CMD UART %u", len);
-
-    struct _usb_out_async_packet packet = {.uart = 0, .complete=true};
-
-    if (len > USB_DATA_PCK_SZ)
-    {
-        len = USB_DATA_PCK_SZ;
-        packet.complete = false;
-    }
-
-    ring_buf_consume(&cmd_ring_out_buf, _usb_out_async, usb_out_packets[0], len, &packet);
 }
 
 

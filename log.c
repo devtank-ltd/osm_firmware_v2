@@ -9,14 +9,14 @@
 #include "uarts.h"
 #include "uart_rings.h"
 
-uint32_t log_debug_mask = 0;
+uint32_t log_debug_mask = DEBUG_SYS;
 bool     log_async_log  = false;
 
 
 extern void platform_raw_msg(const char * s)
 {
-    uart_blocking(UART_OUT_NU, s, strlen(s));
-    uart_blocking(UART_OUT_NU, "\n\r", 2);
+    uart_blocking(UART_ERR_NU, s, strlen(s));
+    uart_blocking(UART_ERR_NU, "\n\r", 2);
 }
 
 
@@ -41,25 +41,6 @@ static void log_msgv(unsigned uart, bool blocking, const char *s, va_list ap)
 }
 
 
-void log_out(const char *s, ...)
-{
-    va_list ap;
-    va_start(ap, s);
-    log_msgv(UART_OUT_NU, log_async_log, s, ap);
-    va_end(ap);
-}
-
-
-
-void log_error(const char *s, ...)
-{
-    va_list ap;
-    va_start(ap, s);
-    log_msgv(UART_ERR_NU, true, s, ap);
-    va_end(ap);
-}
-
-
 void log_debug(uint32_t flag, const char *s, ...)
 {
     if (!(flag & log_debug_mask))
@@ -78,9 +59,4 @@ void log_uart(unsigned uart, bool blocking, const char * s, ...)
     va_start(ap, s);
     log_msgv(uart, blocking, s, ap);
     va_end(ap);
-}
-
-
-void log_init()
-{
 }
