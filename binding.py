@@ -200,12 +200,13 @@ class uart_t(io_board_prop_t):
 
         parent = self.parent()
 
-        info = os.lstat(parent.comm_port)
-        major_dnum = os.major(info.st_dev)
-        minor_dnum = os.minor(info.st_dev)
+        comm_port = parent.comm_port
 
-        sys_fs = b"/sys/dev/char/%u:%u" % (major_dnum, minor_dnum + 1 + self.index)
-        own_port = b"/dev/" + os.path.basename(os.readlink(sys_fs))
+        num = "".join([ c if c in "0123456789" else "" for c in comm_port ])
+
+        base_name = comm_port[:-len(num)]
+
+        own_port = base_name + str(int(num) + self.index)
 
         # Doesn't matter what speed it is because of the USB indirection
         self._io = serial.Serial(port=own_port,
