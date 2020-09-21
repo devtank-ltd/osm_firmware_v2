@@ -110,7 +110,7 @@ class adc_t(io_board_prop_t):
         return self._max_value
 
     @property
-    def avg_value(self):
+    def value(self):
         self._refresh()
         return self._avg_value
 
