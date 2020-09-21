@@ -72,12 +72,9 @@ class adc_t(io_board_prop_t):
         self._max_value = 0
         self._avg_value = 0
         self._age = 0
-        self.adc_scale  = 1
+        self.adc_scale  = 3.3/4095
         self.adc_offset = 0
         self.name       = None
-
-    def _raw_to_voltage(self, v):
-        return 3.3 * (v / 4095.0) * self.adc_scale + self.adc_offset
 
     def refresh(self):
         parent = self.parent()
@@ -117,7 +114,7 @@ class adc_t(io_board_prop_t):
     @property
     def values(self):
         self.refresh()
-        return (self._raw_to_voltage(self._avg_value), self._raw_to_voltage(self._min_value), self._raw_to_voltage(self._max_value))
+        return self._avg_value, self._min_value, self._max_value
 
 
 class gpio_t(io_board_prop_t):
