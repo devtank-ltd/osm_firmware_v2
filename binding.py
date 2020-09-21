@@ -206,7 +206,7 @@ class uart_t(io_board_prop_t):
 
         base_name = comm_port[:-len(num)]
 
-        own_port = base_name + str(int(num) + self.index)
+        own_port = base_name + str(int(num) + self.index + 1)
 
         # Doesn't matter what speed it is because of the USB indirection
         self._io = serial.Serial(port=own_port,
