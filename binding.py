@@ -187,7 +187,7 @@ class uart_t(io_board_prop_t):
         self.bytesize = bytesize
         self.stopbits = stopbits
         if self._io:
-            self._io.close():
+            self._io.close()
             self._io = None
 
     def io(self):
