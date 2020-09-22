@@ -55,19 +55,20 @@ typedef struct
 #define PPS0_EXTI_ISR        exti2_3_isr
 #define PPS1_EXTI_ISR        exti4_15_isr
 
-
+/*subset of usb_cdc_line_coding_bParityType*/
 typedef enum
 {
     uart_parity_none = 0,
-    uart_parity_odd = 1,
+    uart_parity_odd  = 1,
     uart_parity_even = 2,
 } uart_parity_t;
 
+/*matches usb_cdc_line_coding_bCharFormat*/
 typedef enum
 {
-    uart_stop_bits_1 = 0,
+    uart_stop_bits_1   = 0,
     uart_stop_bits_1_5 = 1,
-    uart_stop_bits_2 = 2,
+    uart_stop_bits_2   = 2,
 } uart_stop_bits_t;
 
 typedef struct
