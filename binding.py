@@ -141,17 +141,21 @@ class gpio_t(io_board_prop_t):
         r = r[0].split(b'=')[1].strip()
         assert r[0] == b'GPIO %02u = %s' % (self.index, b"ON" if v else b"OFF")
 
+
+    @staticmethod
+    def break_gpio_line(line):
+        parts = line.split(b"=")
+        line = parts[0].strip()
+        value = parts[1].strip()
+        info = line.split(b":")[1].split()
+        return info[0], info[1], value
+
     @property
     def info(self):
         parent = self.parent()
         r = parent.command(b"gpio %02u"% self.index)
         assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
-        r = r[0]
-        parts = r.split(b"=")
-        r = parts[0].strip()
-        value = parts[1].strip()
-        info = r.split(b":")[1].split()
-        return info[0], info[1], value
+        return self.break_gpio_line(r[0])
 
     def setup(self, direction, bias, value=None):
         assert direction in [gpio_t.IN, gpio_t.OUT]
