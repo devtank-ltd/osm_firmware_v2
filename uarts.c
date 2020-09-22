@@ -25,7 +25,7 @@ static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
 
 
-static unsigned _uart_get_parity(uart_parity_t parity)
+static uint32_t _uart_get_parity(uart_parity_t parity)
 {
     switch(parity)
     {
@@ -35,7 +35,7 @@ static unsigned _uart_get_parity(uart_parity_t parity)
     }
 }
 
-static unsigned _uart_get_stop(uart_stop_bits_t stop)
+static uint32_t _uart_get_stop(uart_stop_bits_t stop)
 {
     switch(stop)
     {
