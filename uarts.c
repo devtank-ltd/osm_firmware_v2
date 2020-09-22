@@ -48,10 +48,11 @@ static uint32_t _uart_get_stop(uart_stop_bits_t stop)
 
 static void uart_up(const uart_channel_t * channel)
 {
+    uint32_t parity = _uart_get_parity(channel->parity);
     usart_set_baudrate( channel->usart, channel->baud );
-    usart_set_databits( channel->usart, channel->databits + (channel->parity)?1:0 );
+    usart_set_databits( channel->usart, (parity == USART_PARITY_NONE)?8:9);
     usart_set_stopbits( channel->usart, _uart_get_stop(channel->stop) );
-    usart_set_parity( channel->usart, _uart_get_parity(channel->parity) );
+    usart_set_parity( channel->usart, parity);
 }
 
 
