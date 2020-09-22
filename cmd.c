@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "pinmap.h"
 #include "log.h"
@@ -221,21 +222,75 @@ void uart_cb()
     char * pos = NULL;
     unsigned uart = strtoul(rx_buffer + rx_pos, &pos, 10);
 
+    unsigned         speed;
+    uint8_t          databits;
+    uart_parity_t    parity;
+    uart_stop_bits_t stop;
+
+    uart++;
+
+    if (!uart_get_setup(uart, &speed, &databits, &parity, &stop))
+    {
+        log_error("INVALID UART GIVEN");
+        return;
+    }
+
     pos = skip_space(pos);
     if (*pos)
     {
-        unsigned baud = strtoul(pos, NULL, 10);
-        uart_set_baudrate(uart + 1, baud);
+        speed = strtoul(pos, NULL, 10);
+        pos = skip_space(++pos);
+        if (*pos)
+        {
+            if (isdigit(*pos))
+            {
+                databits = (uint8_t)(*pos) - (uint8_t)'0';
+                pos = skip_space(++pos);
+            }
+
+            switch(*pos)
+            {
+                case 'N' : parity = uart_parity_none; break;
+                case 'E' : parity = uart_parity_even; break;
+                case 'O' : parity = uart_parity_odd; break;
+                default: break;
+            }
+            pos = skip_space(++pos);
+
+            switch(*pos)
+            {
+                case '1' : stop = uart_stop_bits_1; break;
+                case '2' : stop = uart_stop_bits_2; break;
+                default: break;
+            }
+        }
+
+        uart_resetup(uart, speed, databits, parity, stop);
     }
 
-    log_out("UART %u : %u", uart, uart_get_baudrate(uart + 1));
+    log_out("UART %u : %u %"PRIu8"%c%"PRIu8, uart - 1,
+        speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
 }
 
 
 void uarts_cb()
 {
     for(unsigned n = 0; n < (UART_CHANNELS_COUNT - 1); n++)
-        log_out("UART %u : %u", n, uart_get_baudrate(n + 1));
+    {
+        unsigned         speed;
+        uint8_t          databits;
+        uart_parity_t    parity;
+        uart_stop_bits_t stop;
+
+        if (!uart_get_setup(n + 1, &speed, &databits, &parity, &stop))
+        {
+            log_error("INVALID UART GIVEN");
+            return;
+        }
+
+        log_out("UART %u : %u %"PRIu8"%c%"PRIu8, n,
+            speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
+    }
 }
 
 

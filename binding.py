@@ -175,25 +175,20 @@ class uart_t(io_board_prop_t):
     def __init__(self, index, parent):
         io_board_prop_t.__init__(self, index, parent)
         self._io = None
-        self._speed = None
+        self.baud = 115200
+        self.parity = serial.PARITY_NONE
+        self.bytesize = serial.EIGHTBITS
+        self.stopbits = serial.STOPBITS_ONE
+        self.timeout = 1
 
-    @property
-    def speed(self):
-        if self._speed is not None:
-            return self._speed
-
-        parent = self.parent()
-
-        r = parent.command(b"uart %u" % self.index)
-        assert r
-        self._speed = int(r[0].split(b":")[1].strip())
-        return self._speed
-
-    @speed.setter
-    def speed(self, speed):
-        parent = self.parent()
-        parent.command(b"uart %u %u" % (self.index, speed))
-        self._speed = speed
+    def configure(self, baud, parity, bytesize, stopbits):
+        self.baud = baud
+        self.parity = parity
+        self.bytesize = bytesize
+        self.stopbits = stopbits
+        if self._io:
+            self._io.close():
+            self._io = None
 
     def io(self):
         if self._io:
@@ -207,15 +202,15 @@ class uart_t(io_board_prop_t):
 
         base_name = comm_port[:-len(num)]
 
+        # We skip 0 as it's control, thus the +1
         own_port = base_name + str(int(num) + self.index + 1)
 
-        # Doesn't matter what speed it is because of the USB indirection
         self._io = serial.Serial(port=own_port,
-                          baudrate=115200,
-                          parity=serial.PARITY_NONE,
-                          stopbits=serial.STOPBITS_ONE,
-                          bytesize=serial.EIGHTBITS,
-                          timeout=1)
+                          baudrate=self.baud,
+                          parity=self.parity,
+                          stopbits=self.stopbits,
+                          bytesize=self.bytesize,
+                          timeout=self.timeout)
         return self._io
 
     def read(self, num):

@@ -1,6 +1,7 @@
 #ifndef __PINMAPS__
 #define __PINMAPS__
 
+#include <libopencm3/stm32/rcc.h>
 #include <stdint.h>
 
 typedef struct
@@ -55,11 +56,43 @@ typedef struct
 #define PPS1_EXTI_ISR        exti4_15_isr
 
 
+typedef enum
+{
+    uart_parity_none = 0,
+    uart_parity_odd = 1,
+    uart_parity_even = 2,
+} uart_parity_t;
+
+typedef enum
+{
+    uart_stop_bits_1 = 0,
+    uart_stop_bits_1_5 = 1,
+    uart_stop_bits_2 = 2,
+} uart_stop_bits_t;
+
+typedef struct
+{
+    uint32_t              usart;
+    enum rcc_periph_clken uart_clk;
+    uint32_t              baud;
+    uint8_t               databits:4;
+    uint8_t               parity:2 /*uart_parity_t*/;
+    uint8_t               stop:2 /*uart_stop_bits_t*/;
+    uint32_t              gpioport;
+    uint16_t              pins;
+    uint8_t               alt_func_num;
+    uint8_t               irqn;
+    uint32_t              dma_addr;
+    uint8_t               dma_irqn;
+    uint8_t               dma_channel;
+    uint8_t               priority;
+} uart_channel_t;
+
 #define UART_CHANNELS                                                                                                   \
 {                                                                                                                       \
-    { USART2, RCC_USART2, UART_2_SPEED, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART2_IRQ,   (uint32_t)&USART2_TDR, NVIC_DMA1_CHANNEL4_7_DMA2_CHANNEL3_5_IRQ, DMA_CHANNEL4, UART2_PRIORITY }, /* UART 0 */ \
-    { USART3, RCC_USART3, UART_3_SPEED, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, (uint32_t)&USART3_TDR, NVIC_DMA1_CHANNEL2_3_DMA2_CHANNEL1_2_IRQ, DMA_CHANNEL2, UART3_PRIORITY }, /* UART 1 */ \
-    { USART4, RCC_USART4, UART_4_SPEED, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, (uint32_t)&USART4_TDR, NVIC_DMA1_CHANNEL4_7_DMA2_CHANNEL3_5_IRQ, DMA_CHANNEL7, UART4_PRIORITY }, /* UART 2 */ \
+    { USART2, RCC_USART2, UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2  | GPIO3,  GPIO_AF1, NVIC_USART2_IRQ,   (uint32_t)&USART2_TDR, NVIC_DMA1_CHANNEL4_7_DMA2_CHANNEL3_5_IRQ, DMA_CHANNEL4, UART2_PRIORITY }, /* UART 0 */ \
+    { USART3, RCC_USART3, UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO10 | GPIO11, GPIO_AF1, NVIC_USART3_4_IRQ, (uint32_t)&USART3_TDR, NVIC_DMA1_CHANNEL2_3_DMA2_CHANNEL1_2_IRQ, DMA_CHANNEL2, UART3_PRIORITY }, /* UART 1 */ \
+    { USART4, RCC_USART4, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOA, GPIO1  | GPIO0,  GPIO_AF4, NVIC_USART3_4_IRQ, (uint32_t)&USART4_TDR, NVIC_DMA1_CHANNEL4_7_DMA2_CHANNEL3_5_IRQ, DMA_CHANNEL7, UART4_PRIORITY }, /* UART 2 */ \
 }
 
 #define UART_CHANNELS_COUNT 3

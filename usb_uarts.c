@@ -255,7 +255,7 @@ static const struct usb_config_descriptor usb_config =
 
 static enum usbd_request_return_codes usb_control_request(usbd_device                    *_   __attribute((unused)),
                                                           struct usb_setup_data          *req,
-                                                          uint8_t                       **__  __attribute((unused)),
+                                                          uint8_t                       **buf,
                                                           uint16_t                       *len,
                                                           usbd_control_complete_callback *___ __attribute((unused)))
 {
@@ -266,6 +266,17 @@ static enum usbd_request_return_codes usb_control_request(usbd_device           
         case USB_CDC_REQ_SET_LINE_CODING:
             if (*len < sizeof(struct usb_cdc_line_coding))
                 return USBD_REQ_NOTSUPP;
+
+            struct usb_cdc_line_coding* coding = *(struct usb_cdc_line_coding**)buf;
+
+            log_debug(DEBUG_UART, "USB UART Connect %u %"PRIu32" %"PRIu8" %"PRIu8" %"PRIu8, (unsigned)req->wIndex, coding->dwDTERate, coding->bDataBits, coding->bParityType, coding->bCharFormat);
+
+            switch(req->wIndex)
+            {
+                case 2: uart_resetup(1, coding->dwDTERate, coding->bDataBits, coding->bParityType, coding->bCharFormat); break;
+                case 4: uart_resetup(2, coding->dwDTERate, coding->bDataBits, coding->bParityType, coding->bCharFormat); break;
+                default: break;
+            }
             return USBD_REQ_HANDLED;
     }
 

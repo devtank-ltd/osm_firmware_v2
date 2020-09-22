@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/gpio.h>
@@ -16,26 +17,42 @@
 #include "uarts.h"
 
 
-typedef struct
-{
-    uint32_t              usart;
-    enum rcc_periph_clken uart_clk;
-    uint32_t              baud;
-    uint32_t              gpioport;
-    uint16_t              pins;
-    uint8_t               alt_func_num;
-    uint8_t               irqn;
-    uint32_t              dma_addr;
-    uint8_t               dma_irqn;
-    uint8_t               dma_channel;
-    uint8_t               priority;
-} uart_channel_t;
-
 static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
 #define UART_2_ISR  usart2_isr
+
+
+
+static unsigned _uart_get_parity(uart_parity_t parity)
+{
+    switch(parity)
+    {
+        case uart_parity_odd  : return USART_PARITY_ODD;
+        case uart_parity_even : return USART_PARITY_EVEN;
+        default : return USART_PARITY_NONE;
+    }
+}
+
+static unsigned _uart_get_stop(uart_stop_bits_t stop)
+{
+    switch(stop)
+    {
+        case uart_stop_bits_1_5: return USART_STOPBITS_1_5;
+        case uart_stop_bits_2  : return USART_STOPBITS_2;
+        default : return USART_CR2_STOPBITS_1;
+    }
+}
+
+
+static void uart_up(const uart_channel_t * channel)
+{
+    usart_set_baudrate( channel->usart, channel->baud );
+    usart_set_databits( channel->usart, channel->databits + (channel->parity)?1:0 );
+    usart_set_stopbits( channel->usart, _uart_get_stop(channel->stop) );
+    usart_set_parity( channel->usart, _uart_get_parity(channel->parity) );
+}
 
 
 static void uart_setup(const uart_channel_t * channel)
@@ -46,12 +63,9 @@ static void uart_setup(const uart_channel_t * channel)
     gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
     gpio_set_af( channel->gpioport, channel->alt_func_num, channel->pins );
 
-    usart_set_baudrate( channel->usart, channel->baud );
-    usart_set_databits( channel->usart, 8 );
-    usart_set_stopbits( channel->usart, USART_CR2_STOPBITS_1 );
     usart_set_mode( channel->usart, USART_MODE_TX_RX );
-    usart_set_parity( channel->usart, USART_PARITY_NONE );
     usart_set_flow_control( channel->usart, USART_FLOWCONTROL_NONE );
+    uart_up(channel);
 
     nvic_set_priority(channel->irqn, channel->priority);
     nvic_enable_irq(channel->irqn);
@@ -66,24 +80,45 @@ static void uart_setup(const uart_channel_t * channel)
 }
 
 
-void uart_set_baudrate(unsigned uart, unsigned speed)
+void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= UART_CHANNELS_COUNT || !uart)
         return;
 
     uart_channel_t * channel = &uart_channels[uart];
 
     channel->baud = speed;
-    usart_set_baudrate( channel->usart, channel->baud );
+    channel->databits = databits;
+    channel->parity = parity;
+    channel->stop = stop;
+
+    uart_up(channel);
+
+    log_debug(DEBUG_UART, "UART %u : %u %"PRIu8"%c%"PRIu8, uart,
+            (unsigned)channel->baud, channel->databits, uart_parity_as_char(channel->parity), uart_stop_bits_as_int(channel->stop));
 }
 
 
-unsigned uart_get_baudrate(unsigned uart)
+extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_parity_t * parity, uart_stop_bits_t * stop)
 {
-    if (uart >= UART_CHANNELS_COUNT)
-        return 0;
+    if (uart >= UART_CHANNELS_COUNT )
+        return false;
 
-    return uart_channels[uart].baud;
+    const uart_channel_t * channel = &uart_channels[uart];
+
+    if (speed)
+        *speed = channel->baud;
+
+    if (databits)
+        *databits = channel->databits;
+
+    if (parity)
+        *parity = channel->parity;
+
+    if (stop)
+        *stop = channel->stop;
+
+    return true;
 }
 
 

@@ -1,13 +1,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "pinmap.h"
 #include "uart_rings.h"
 #include "ring.h"
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
 #include "usb_uarts.h"
-#include "pinmap.h"
 
 
 typedef char usb_packet_t[USB_DATA_PCK_SZ];
