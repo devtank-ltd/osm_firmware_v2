@@ -181,7 +181,7 @@ class uart_t(io_board_prop_t):
         self.stopbits = serial.STOPBITS_ONE
         self.timeout = 1
 
-    def configure(self, baud, parity, bytesize, stopbits):
+    def configure(self, baud, parity=serial.PARITY_NONE, bytesize=serial.EIGHTBITS, stopbits=serial.STOPBITS_ONE):
         self.baud = baud
         self.parity = parity
         self.bytesize = bytesize
