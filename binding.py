@@ -222,8 +222,8 @@ class uart_t(io_board_prop_t):
         return r
 
     def write(self, s):
-        debug_print("UART%u << %s" % (self.index, s))
         self.io.write(s)
+        debug_print("UART%u << %s" % (self.index, s))
 
     def readline(self):
         line = self.io.readline()
