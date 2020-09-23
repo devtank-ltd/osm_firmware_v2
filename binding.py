@@ -206,6 +206,8 @@ class uart_t(io_board_prop_t):
         # We skip 0 as it's control, thus the +1
         own_port = base_name + str(int(num) + self.index + 1)
 
+        debug_print("UART%u : %s" % (self.index, own_port))
+
         self._io = serial.Serial(port=own_port,
                           baudrate=self.baud,
                           parity=self.parity,
