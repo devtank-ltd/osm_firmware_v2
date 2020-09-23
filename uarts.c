@@ -127,12 +127,12 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
 
     if (databits < 7)
     {
-        log_error("Invalid UART databits too low, using 7");
+        log_error("Invalid low UART databits, using 7");
         databits = 7;
     }
     else if (databits > 9)
     {
-        log_error("Invalid UART databits too high, using 9");
+        log_error("Invalid high UART databits, using 9");
         databits = 9;
     }
 
