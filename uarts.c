@@ -49,10 +49,43 @@ static uint32_t _uart_get_stop(uart_stop_bits_t stop)
 static void uart_up(const uart_channel_t * channel)
 {
     uint32_t parity = _uart_get_parity(channel->parity);
-    usart_set_baudrate( channel->usart, channel->baud );
-    usart_set_databits( channel->usart, (parity == USART_PARITY_NONE)?8:9);
-    usart_set_stopbits( channel->usart, _uart_get_stop(channel->stop) );
-    usart_set_parity( channel->usart, parity);
+
+    uint32_t usart = channel->usart;
+
+    usart_set_baudrate( usart, channel->baud );
+
+    uint8_t databits = channel->databits;
+    if (parity != USART_PARITY_NONE)
+        databits++;
+
+    /*
+     * Bits M1 and M0 make 2 bits for this.
+     *
+     * OpenCM3's usart_set_databits doesn't set both
+     *
+     */
+
+    switch(databits)
+    {
+        case 7:
+            // 7-bit character length: M[1:0] = 10
+            USART_CR1(usart) |=  USART_CR1_M0;
+            USART_CR1(usart) &= ~USART_CR1_M1;
+            break;
+        case 9:
+            // 9-bit character length: M[1:0] = 01
+            USART_CR1(usart) &= ~USART_CR1_M0;
+            USART_CR1(usart) |=  USART_CR1_M1;
+            break;
+        default :
+            // 8-bit character length: M[1:0] = 00
+            USART_CR1(usart) &= ~USART_CR1_M0;
+            USART_CR1(usart) &= ~USART_CR1_M1;
+            break;
+    }
+
+    usart_set_stopbits( usart, _uart_get_stop(channel->stop) );
+    usart_set_parity( usart, parity);
 }
 
 
