@@ -190,6 +190,7 @@ class uart_t(io_board_prop_t):
             self._io.close()
             self._io = None
 
+    @property
     def io(self):
         if self._io:
             return self._io
