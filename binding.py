@@ -168,7 +168,7 @@ class gpio_t(io_board_prop_t):
         r = parent.command(cmd)
         cmd = cmd.upper()
         assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
-        assert r[0].startswith(cmd), "GPIO new set as expected."
+        assert r[0].startswith(cmd), "GPIO not set as expected."
 
 
 class uart_t(io_board_prop_t):
