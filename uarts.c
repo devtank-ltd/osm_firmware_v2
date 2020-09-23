@@ -72,15 +72,19 @@ static void uart_up(const uart_channel_t * channel)
             USART_CR1(usart) |=  USART_CR1_M0;
             USART_CR1(usart) &= ~USART_CR1_M1;
             break;
+        default :
+            // Should happen, but revert to 8N when it does
+            parity = USART_PARITY_NONE;
+             // fall through
+        case 8:
+            // 8-bit character length: M[1:0] = 00
+            USART_CR1(usart) &= ~USART_CR1_M0;
+            USART_CR1(usart) &= ~USART_CR1_M1;
+            break;
         case 9:
             // 9-bit character length: M[1:0] = 01
             USART_CR1(usart) &= ~USART_CR1_M0;
             USART_CR1(usart) |=  USART_CR1_M1;
-            break;
-        default :
-            // 8-bit character length: M[1:0] = 00
-            USART_CR1(usart) &= ~USART_CR1_M0;
-            USART_CR1(usart) &= ~USART_CR1_M1;
             break;
     }
 
@@ -120,6 +124,23 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
         return;
 
     uart_channel_t * channel = &uart_channels[uart];
+
+    if (databits < 7)
+    {
+        log_error("Invalid UART databits too low, using 7");
+        databits = 7;
+    }
+    else if (databits > 9)
+    {
+        log_error("Invalid UART databits too high, using 9");
+        databits = 9;
+    }
+
+    if (parity && databits == 9)
+    {
+        log_error("Invalid UART databits:9 + parity, using 9N");
+        parity = uart_parity_none;
+    }
 
     channel->baud = speed;
     channel->databits = databits;
