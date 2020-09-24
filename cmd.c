@@ -29,8 +29,6 @@ typedef struct
 
 static void pps_cb();
 static void adc_cb();
-static void input_cb();
-static void output_cb();
 static void gpio_cb();
 static void count_cb();
 static void uart_cb();
@@ -43,11 +41,7 @@ static cmd_t cmds[] = {
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
     { "adcs",     "Print all ADCs.",         adcs_log},
-    { "inputs",   "Print all inputs.",       inputs_log},
-    { "outputs",  "Print all outputs.",      outputs_log},
     { "gpios",    "Print all gpios.",        gpios_log},
-    { "input",    "Print input.",            input_cb},
-    { "output",   "Get/set output on/off.",  output_cb},
     { "gpio",     "Get/set GPIO set.",       gpio_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
@@ -74,13 +68,6 @@ void adc_cb()
 }
 
 
-void input_cb()
-{
-    unsigned input = strtoul(rx_buffer + rx_pos, NULL, 10);
-    inputs_input_log(input);
-}
-
-
 static char * skip_space(char * pos)
 {
     while(*pos == ' ')
@@ -93,24 +80,6 @@ static char * skip_to_space(char * pos)
     while(*pos && *pos != ' ')
         pos++;
     return pos;
-}
-
-
-
-void output_cb()
-{
-    char * pos = NULL;
-    unsigned output = strtoul(rx_buffer + rx_pos, &pos, 10);
-
-    pos = skip_space(pos);
-    if (*pos)
-    {
-        bool on_off = (strtoul(pos, NULL, 10))?true:false;
-
-        log_out("Set output %02u to %s", output, (on_off)?"ON":"OFF");
-        outputs_set(output, on_off);
-    }
-    else output_output_log(output);
 }
 
 
@@ -209,8 +178,6 @@ void gpio_cb()
 void count_cb()
 {
     log_out("PPSS    : %u", pulsecount_get_count());
-    log_out("Inputs  : %u", inputs_get_count());
-    log_out("Outputs : %u", outputs_get_count());
     log_out("ADCs    : %u", adcs_get_count());
     log_out("GPIOs   : %u", gpios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */

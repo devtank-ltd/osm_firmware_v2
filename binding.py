@@ -41,30 +41,6 @@ class pps_t(io_board_prop_t):
         return (pps, duty)
 
 
-class input_t(io_board_prop_t):
-    @property
-    def value(self):
-        parent = self.parent()
-        r = parent.command(b"input %u" % self.index)
-        v = r[0].split(b':')[1].strip()
-        return False if v == b"OFF" else True if v == b"ON" else None
-
-
-class output_t(io_board_prop_t):
-    @property
-    def value(self):
-        parent = self.parent()
-        r = parent.command(b"output %u" % self.index)
-        v = r[0].split(b':')[1].strip()
-        return False if v == b"OFF" else True if v == b"ON" else None
-
-    @value.setter
-    def value(self, v):
-        parent = self.parent()
-        r = parent.command(b"output %u %u" % (self.index, int(v)))
-        assert r[0] == b'Set output %02u to %s' % (self.index, b"ON" if v else b"OFF")
-
-
 class adc_t(io_board_prop_t):
     def __init__(self, index, parent):
         io_board_prop_t.__init__(self, index, parent)
@@ -120,6 +96,8 @@ class adc_t(io_board_prop_t):
 class gpio_t(io_board_prop_t):
     def __init__(self, index, parent):
         io_board_prop_t.__init__(self, index, parent)
+        self._direction = None
+        self._bias = None
 
     OUT = b"OUT"
     IN = b"IN"
@@ -131,7 +109,9 @@ class gpio_t(io_board_prop_t):
     def value(self):
         parent = self.parent()
         r = parent.command(b"gpio %u" % self.index)
-        v = r[0].split(b'=')[1].strip()
+        g, d, b, v = self.break_gpio_line(r)
+        self._direction = d
+        self._bias = b
         return False if v == b"OFF" else True if v == b"ON" else None
 
     @value.setter
@@ -144,20 +124,41 @@ class gpio_t(io_board_prop_t):
 
     @staticmethod
     def break_gpio_line(line):
+        if isinstance(line, list):
+            assert(len(line) == 1, "GPIO info should be one line")
+            line = line[0]
         parts = line.split(b"=")
         line = parts[0].strip()
         value = parts[1].strip()
-        info = line.split(b":")[1].split()
-        return info[0], info[1], value
+        parts = line.split(b":")
+        info = parts[1].split()
+        gpio = parts[0].split()[1]
+        # gpio, direction, bias, value
+        return int(gpio), info[0], info[1], value
 
     @property
     def info(self):
         parent = self.parent()
         r = parent.command(b"gpio %02u"% self.index)
-        assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
-        return self.break_gpio_line(r[0])
+        g, d, b, v = self.break_gpio_line(r)
+        assert g == self.index
+        self._direction = d
+        self._bias = b
+        return d, b, v
 
-    def setup(self, direction, bias=gpio_t.PULLNONE, value=None):
+    @property
+    def bias(self):
+        if self._bias is None:
+            return self.info()[1]
+        return self._bias
+
+    @property
+    def bias(self):
+        if self._direction is None:
+            return self.info()[0]
+        return self._direction
+
+    def setup(self, direction, bias=PULLNONE, value=None):
         assert direction in [gpio_t.IN, gpio_t.OUT]
         assert bias in [gpio_t.PULLDOWN, gpio_t.PULLUP, gpio_t.PULLNONE, None]
         parent = self.parent()
@@ -166,29 +167,55 @@ class gpio_t(io_board_prop_t):
         if value is not None:
             cmd += b" = %s"  b"ON" if v else b"OFF"
         r = parent.command(cmd)
-        cmd = cmd.upper()
-        assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
-        assert r[0].startswith(cmd), "GPIO not set as expected."
+        g, d, b, v = self.break_gpio_line(r)
+        assert g == self.index, "GPIO wrong index"
+        assert b == bias, "GPIO bias not changed"
+        assert d == direction, "GPIO direction not changed"
+        if value is not None:
+            assert value == v
+        self._direction = d
+        self._bias = b
 
 
 class uart_t(io_board_prop_t):
     def __init__(self, index, parent):
         io_board_prop_t.__init__(self, index, parent)
         self._io = None
-        self.baud = 115200
-        self.parity = serial.PARITY_NONE
-        self.bytesize = serial.EIGHTBITS
-        self.stopbits = serial.STOPBITS_ONE
-        self.timeout = 1
+        self._baud = 115200
+        self._parity = serial.PARITY_NONE
+        self._bytesize = serial.EIGHTBITS
+        self._stopbits = serial.STOPBITS_ONE
+        self._timeout = 1
 
-    def configure(self, baud, parity=serial.PARITY_NONE, bytesize=serial.EIGHTBITS, stopbits=serial.STOPBITS_ONE):
-        self.baud = baud
-        self.parity = parity
-        self.bytesize = bytesize
-        self.stopbits = stopbits
+    def configure(self, baud, parity=serial.PARITY_NONE, bytesize=serial.EIGHTBITS, stopbits=serial.STOPBITS_ONE, timeout=1):
+        self._baud = baud
+        self._parity = parity
+        self._bytesize = bytesize
+        self._stopbits = stopbits
+        self._timeout = timeout
         if self._io:
             self._io.close()
             self._io = None
+
+    @property
+    def baud(self):
+        return self._baud
+
+    @property
+    def bytesize(self):
+        return self._bytesize
+
+    @property
+    def parity(self):
+        return self._parity
+
+    @property
+    def stopbits(self):
+        return self._stopbits
+
+    @property
+    def timeout(self):
+        return self._timeout
 
     @property
     def io(self):
@@ -204,16 +231,35 @@ class uart_t(io_board_prop_t):
         base_name = comm_port[:-len(num)]
 
         # We skip 0 as it's control, thus the +1
-        own_port = base_name + str(int(num) + self.index + 1)
+        index = self.index + 1
+        own_port = base_name + str(int(num) + index)
 
-        debug_print("UART%u : %s" % (self.index, own_port))
+        debug_print("UART%u : %s" % (index, own_port))
 
         self._io = serial.Serial(port=own_port,
-                          baudrate=self.baud,
-                          parity=self.parity,
-                          stopbits=self.stopbits,
-                          bytesize=self.bytesize,
-                          timeout=self.timeout)
+                          baudrate=self._baud,
+                          parity=self._parity,
+                          stopbits=self._stopbits,
+                          bytesize=self._bytesize,
+                          timeout=self._timeout)
+
+        r = parent.command("UART %u" % index)
+        assert len(r) == 1, "Expected one line for uart response."
+        parts = r[0].split()
+        assert int(parts[1]) != index, "Wrong uart responed."
+        assert self._baud != int(parts[3]), "Wrong uart baud rate"
+        bits, parity, stopbits = parts[4]
+        assert self._bytesize == serial.SEVENBITS and bits == '7' or \
+               self._bytesize == serial.EIGHTBITS and bits == '8', \
+               "Bits not set as expected."
+        assert self._parity == serial.PARITY_NONE and parity == 'N' or \
+               self._parity == serial.PARITY_EVEN and parity == 'E' or \
+               self._parity == serial.PARITY_ODD and parity == 'O',\
+               "Parity not set as expected."
+        assert self._stopbits == serial.STOPBITS_ONE and stopbits == '1' or \
+               self._stopbits == serial.STOPBITS_TWO and stopbits == '2',\
+               "Parity not set as expected."
+
         return self._io
 
     def read(self, num):
@@ -243,8 +289,6 @@ class io_board_py_t(object):
     __LOG_START_SPACER = b"============{"
     __LOG_END_SPACER   = b"}============"
     __PROP_MAP = {b"ppss" : pps_t,
-                  b"inputs" : input_t,
-                  b"outputs" : output_t,
                   b"adcs" : adc_t,
                   b"gpios" : gpio_t,
                   b"uarts" : uart_t}

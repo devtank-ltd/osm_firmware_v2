@@ -20,12 +20,6 @@ comm = binding.io_board_py_t(devpath)
 for pps in comm.ppss:
     print("PPS", pps.index, pps.values)
 
-for gpio_in in comm.inputs:
-    print("Input", gpio_in.index, gpio_in.value)
-
-for gpio_out in comm.outputs:
-    print("Output", gpio_out.index, gpio_out.value)
-
 for adc in comm.adcs:
     print("ADC", adc.index, adc.values)
 
@@ -33,4 +27,4 @@ for gpio in comm.gpios:
     print("GPIO", gpio.index, gpio.info)
 
 for uart in comm.uarts:
-    print("UART", uart.index, uart.speed)
+    print("UART", uart.index, uart.baud, uart.bytesize, uart.parity, uart.stopbits)
