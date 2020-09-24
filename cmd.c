@@ -41,8 +41,8 @@ static cmd_t cmds[] = {
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
     { "adcs",     "Print all ADCs.",         adcs_log},
-    { "gpios",    "Print all gpios.",        gpios_log},
-    { "gpio",     "Get/set GPIO set.",       gpio_cb},
+    { "ios",      "Print all IOs.",          gpios_log},
+    { "io",       "Get/set IO set.",         gpio_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
@@ -179,7 +179,7 @@ void count_cb()
 {
     log_out("PPSS    : %u", pulsecount_get_count());
     log_out("ADCs    : %u", adcs_get_count());
-    log_out("GPIOs   : %u", gpios_get_count());
+    log_out("IOs     : %u", gpios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 
