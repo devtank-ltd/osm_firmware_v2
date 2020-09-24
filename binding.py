@@ -157,7 +157,7 @@ class gpio_t(io_board_prop_t):
         assert len(r) == 1, "Incorrect number of lines returned by GPIO command."
         return self.break_gpio_line(r[0])
 
-    def setup(self, direction, bias, value=None):
+    def setup(self, direction, bias=gpio_t.PULLNONE, value=None):
         assert direction in [gpio_t.IN, gpio_t.OUT]
         assert bias in [gpio_t.PULLDOWN, gpio_t.PULLUP, gpio_t.PULLNONE, None]
         parent = self.parent()
