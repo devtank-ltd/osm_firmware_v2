@@ -8,20 +8,6 @@
 #include "basic_fixed.h"
 
 
-static void basic_fixed_print(basic_fixed_t * v, const char * prefix)
-{
-    char buffer[32];
-    
-    if (basic_fixed_to_str(v, buffer, sizeof(buffer)) < 0)
-    {
-        fprintf(stderr, "Bugger result\n");
-        return;
-    }
-
-    printf("%s%s\n", prefix, buffer);
-}
-
-
 int main(int argc, char * argv[])
 {
     if (argc < 2)
@@ -29,6 +15,8 @@ int main(int argc, char * argv[])
         printf("Requires <num> (<op> <num> .....)\n");
         return -1;
     }
+
+    char buffer[32];
 
     basic_fixed_t v;
 
@@ -48,10 +36,6 @@ int main(int argc, char * argv[])
             return -1;
         }
 
-        basic_fixed_print(&a, "A:");
-        printf("op:%s\n", argv[n]);
-        basic_fixed_print(&b, "B:");
-
         switch(argv[n][0])
         {
             case '+' : basic_fixed_add(&v, &a, &b); break;
@@ -62,9 +46,40 @@ int main(int argc, char * argv[])
                 fprintf(stderr, "Bugger opp\n");
                 return -1;
         }
+
+        if (getenv("DEBUG"))
+        {
+            if (basic_fixed_to_str(&a, buffer, sizeof(buffer)) < 0)
+            {
+                fprintf(stderr, "Bugger printing A\n");
+                return -1;
+            }
+
+            fprintf(stderr, "A:%s\n", buffer);
+            fprintf(stderr, "op:%s\n", argv[n]);
+            if (basic_fixed_to_str(&b, buffer, sizeof(buffer)) < 0)
+            {
+                fprintf(stderr, "Bugger printing B\n");
+                return -1;
+            }
+
+            fprintf(stderr, "B:%s\n", buffer);
+            if (basic_fixed_to_str(&v, buffer, sizeof(buffer)) < 0)
+            {
+                fprintf(stderr, "Bugger printing B\n");
+                return -1;
+            }
+            fprintf(stderr, "Result:%s\n", buffer);
+        }
     }
 
-    basic_fixed_print(&v, "Result:");
+    if (basic_fixed_to_str(&v, buffer, sizeof(buffer)) < 0)
+    {
+        fprintf(stderr, "Bugger result\n");
+        return -1;
+    }
+
+    printf("%s\n", buffer);
 
     return 0;
 }
