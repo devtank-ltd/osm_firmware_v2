@@ -30,6 +30,7 @@ typedef struct
 static void pps_cb();
 static void adc_cb();
 static void gpio_cb();
+static void special_cb();
 static void count_cb();
 static void uart_cb();
 static void uarts_cb();
@@ -43,6 +44,7 @@ static cmd_t cmds[] = {
     { "adcs",     "Print all ADCs.",         adcs_log},
     { "ios",      "Print all IOs.",          gpios_log},
     { "io",       "Get/set IO set.",         gpio_cb},
+    { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
@@ -110,31 +112,35 @@ void gpio_cb()
             return;
         }
 
-        int pull;
+        int pull = 0;
+
         pos = skip_space(pos);
-        if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
+
+        if (*pos != '=')
         {
-            pos = skip_to_space(pos);
-            pull = 1;
-        }
-        else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
-        {
-            pos = skip_to_space(pos);
-            pull = -1;
-        }
-        else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
-        {
-            pos = skip_to_space(pos);
-            pull = 0;
-        }
-        else
-        {
-            log_error("Malformed gpio pull command");
-            return;
+            if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
+            {
+                pos = skip_to_space(pos);
+                pull = 1;
+            }
+            else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
+            {
+                pos = skip_to_space(pos);
+                pull = -1;
+            }
+            else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
+            {
+                pos = skip_to_space(pos);
+            }
+            else
+            {
+                log_error("Malformed gpio pull command");
+                return;
+            }
+            pos = skip_space(pos);
         }
 
         gpio_configure(gpio, as_input, pull);
-        pos = skip_space(pos);
     }
 
     if (*pos == '=')
@@ -147,10 +153,10 @@ void gpio_cb()
             if (!gpio_is_input(gpio))
             {
                 gpio_on(gpio, true);
-                log_out("GPIO %02u = ON", gpio);
+                log_out("IO %02u = ON", gpio);
                 do_read = false;
             }
-            else log_error("GPIO %02u is input but output command.", gpio);
+            else log_error("IO %02u is input but output command.", gpio);
         }
         else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
         {
@@ -158,10 +164,10 @@ void gpio_cb()
             if (!gpio_is_input(gpio))
             {
                 gpio_on(gpio, false);
-                log_out("GPIO %02u = OFF", gpio);
+                log_out("IO %02u = OFF", gpio);
                 do_read = false;
             }
-            else log_error("GPIO %02u is input but output command.", gpio);
+            else log_error("IO %02u is input but output command.", gpio);
         }
         else
         {
@@ -172,6 +178,18 @@ void gpio_cb()
 
     if (do_read)
         gpio_log(gpio);
+}
+
+
+void special_cb()
+{
+    char * pos = NULL;
+    unsigned gpio = strtoul(rx_buffer + rx_pos, &pos, 10);
+
+    if (gpio_enable_special(gpio))
+        log_out("IO %02u special enabled", gpio);
+    else
+        log_out("IO %02u has no special", gpio);
 }
 
 

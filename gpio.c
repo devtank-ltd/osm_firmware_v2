@@ -7,6 +7,7 @@
 #include "pinmap.h"
 #include "gpio.h"
 #include "log.h"
+#include "pulsecount.h"
 
 static const port_n_pins_t gpios_pins[] = GPIOS_PORT_N_PINS;
 static uint16_t gpios_state[ARRAY_SIZE(gpios_pins)] = GPIOS_STATE;
@@ -36,20 +37,20 @@ static char* _gpios_get_type(uint16_t gpio_state)
 
     switch(gpio_type)
     {
+        case GPIO_PPS0: return "PPS0";
         case GPIO_PPS1: return "PPS1";
-        case GPIO_PPS2: return "PPS2";
         case GPIO_RELAY : return "RL";
         case GPIO_HIGHSIDE : return "HS";
+        case GPIO_UART0 :
+            if (gpio_state & GPIO_UART_TX)
+                return "UART0_TX";
+            else
+                return "UART0_RX";
         case GPIO_UART1 :
             if (gpio_state & GPIO_UART_TX)
                 return "UART1_TX";
             else
                 return "UART1_RX";
-        case GPIO_UART2 :
-            if (gpio_state & GPIO_UART_TX)
-                return "UART2_TX";
-            else
-                return "UART2_RX";
         default : return "";
     }
 }
@@ -73,7 +74,7 @@ static void _gpios_setup_gpio(unsigned gpio, uint16_t gpio_state)
         gpio_state & GPIO_PULL_MASK,
         gpio_pin->pins);
 
-    gpios_state[gpio] = gpio_state;
+    gpios_state[gpio] = (gpios_state[gpio] & (GPIO_TYPE_MASK | GPIO_UART_TX)) | gpio_state;
 
     log_debug(DEBUG_GPIO, "IO %02u set to %s %s",
             gpio,
@@ -113,8 +114,25 @@ void     gpio_configure(unsigned gpio, bool as_input, int pull)
 
     if (gpio_state & GPIO_SPECIAL_EN)
     {
-        log_debug(DEBUG_GPIO, "IO %02u : USED %s", gpio, _gpios_get_type(gpio_state));
-        return;
+        uint16_t gpio_type = gpio_state & GPIO_TYPE_MASK;
+
+        if (gpio_type == GPIO_PPS0)
+        {
+            pulsecount_enable(0, false);
+            gpios_state[gpio] &= ~GPIO_SPECIAL_EN;
+            log_debug(DEBUG_GPIO, "IO %02u : PPS0 NO LONGER", gpio);
+        }
+        else if (gpio_type == GPIO_PPS1)
+        {
+            pulsecount_enable(1, false);
+            gpios_state[gpio] &= ~GPIO_SPECIAL_EN;
+            log_debug(DEBUG_GPIO, "IO %02u : PPS1 NO LONGER", gpio);
+        }
+        else
+        {
+            log_debug(DEBUG_GPIO, "IO %02u : USED %s", gpio, _gpios_get_type(gpio_state));
+            return;
+        }
     }
 
     gpio_state = (as_input)?GPIO_AS_INPUT:0;
@@ -125,6 +143,36 @@ void     gpio_configure(unsigned gpio, bool as_input, int pull)
         gpio_state |= GPIO_PUPD_PULLDOWN;
 
     _gpios_setup_gpio(gpio, gpio_state);
+}
+
+
+bool     gpio_enable_special(unsigned gpio)
+{
+    if (gpio >= ARRAY_SIZE(gpios_pins))
+        return false;
+
+    uint16_t gpio_state = gpios_state[gpio];
+
+    if (gpio_state & GPIO_SPECIAL_EN)
+        return true;
+
+    uint16_t gpio_type = gpio_state & GPIO_TYPE_MASK;
+
+    if (gpio_type == GPIO_PPS0)
+    {
+        pulsecount_enable(0, true);
+        gpios_state[gpio] |= GPIO_SPECIAL_EN;
+        log_debug(DEBUG_GPIO, "IO %02u : USED PPS0", gpio);
+        return true;
+    }
+    else if (gpio_type == GPIO_PPS1)
+    {
+        pulsecount_enable(1, true);
+        gpios_state[gpio] |= GPIO_SPECIAL_EN;
+        log_debug(DEBUG_GPIO, "IO %02u : USED PPS0", gpio);
+        return true;
+    }
+    return false;
 }
 
 

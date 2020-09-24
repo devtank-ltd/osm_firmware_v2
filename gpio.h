@@ -7,6 +7,7 @@
 extern void     gpios_init();
 extern unsigned gpios_get_count();
 extern void     gpio_configure(unsigned gpio, bool as_input, int pull);
+extern bool     gpio_enable_special(unsigned gpio);
 extern bool     gpio_is_input(unsigned gpio);
 extern void     gpio_on(unsigned gpio, bool on_off);
 extern void     gpio_log(unsigned gpio);

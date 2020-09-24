@@ -2,6 +2,8 @@
 
 extern void     pulsecount_init();
 
+extern void     pulsecount_enable(unsigned pps, bool enable);
+
 extern void     pulsecount_second_boardary();
 
 extern unsigned pulsecount_get_count();

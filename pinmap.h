@@ -145,10 +145,10 @@ typedef struct
 #define GPIO_UART_TX      0x0800
 #define GPIO_RELAY        0x1000
 #define GPIO_HIGHSIDE     0x2000
-#define GPIO_PPS1         0x3000
-#define GPIO_PPS2         0x4000
-#define GPIO_UART1        0x5000
-#define GPIO_UART2        0x6000
+#define GPIO_PPS0         0x3000
+#define GPIO_PPS1         0x4000
+#define GPIO_UART0        0x5000
+#define GPIO_UART1        0x6000
 #define GPIO_TYPE_MASK    0xF000
 #define GPIO_PULL_MASK    0x00FF
 
@@ -180,11 +180,11 @@ typedef struct
     GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | GPIO_HIGHSIDE, /* GPIO 23  */         \
     GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | GPIO_HIGHSIDE, /* GPIO 24  */         \
     GPIO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | GPIO_HIGHSIDE, /* GPIO 25  */         \
-    GPIO_AS_INPUT | GPIO_PPS1 | GPIO_SPECIAL_EN,          /* GPIO 26 - PPS 0 */     \
-    GPIO_AS_INPUT | GPIO_PPS2 | GPIO_SPECIAL_EN,          /* GPIO 27 - PPS 1 */     \
-    GPIO_UART1 | GPIO_SPECIAL_EN,                         /* GPIO 28 - UART_1_RX */ \
-    GPIO_UART1 | GPIO_UART_TX | GPIO_SPECIAL_EN,          /* GPIO 29 - UART_1_TX */ \
-    GPIO_UART2 | GPIO_SPECIAL_EN,                         /* GPIO 30 - UART_2_RX */ \
-    GPIO_UART2 | GPIO_UART_TX | GPIO_SPECIAL_EN,          /* GPIO 31 - UART_2_TX */ \
+    GPIO_AS_INPUT | GPIO_PPS0 | GPIO_SPECIAL_EN,          /* GPIO 26 - PPS 0 */     \
+    GPIO_AS_INPUT | GPIO_PPS1 | GPIO_SPECIAL_EN,          /* GPIO 27 - PPS 1 */     \
+    GPIO_UART0 | GPIO_SPECIAL_EN,                         /* GPIO 28 - UART_0_RX */ \
+    GPIO_UART0 | GPIO_UART_TX | GPIO_SPECIAL_EN,          /* GPIO 29 - UART_0_TX */ \
+    GPIO_UART1 | GPIO_SPECIAL_EN,                         /* GPIO 30 - UART_1_RX */ \
+    GPIO_UART1 | GPIO_UART_TX | GPIO_SPECIAL_EN,          /* GPIO 31 - UART_1_TX */ \
 }
 #endif //__PINMAPS__

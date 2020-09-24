@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -35,6 +36,7 @@ typedef struct
 } pps_init_t;
 
 
+static const pps_init_t        ppss_init[]        = PPS_INIT;
 static const port_n_pins_t     pps_pins[]         = PPS_PORT_N_PINS;
 static const pulsecount_exti_t pulsecount_extis[] = PPS_EXTI;
 
@@ -96,63 +98,90 @@ void pulsecount_get(unsigned pps, unsigned * count)
 }
 
 
+static void _pulsecount_init(unsigned pps)
+{
+    const pps_init_t        * pps_init = &ppss_init[pps];
+    const pulsecount_exti_t * exti = &pulsecount_extis[pps];
+
+    rcc_periph_clock_enable(pps_init->timer_clk);
+
+    timer_disable_counter(exti->timer);
+
+    timer_set_mode(exti->timer,
+                   TIM_CR1_CKD_CK_INT,
+                   TIM_CR1_CMS_EDGE,
+                   TIM_CR1_DIR_UP);
+    //-1 because it starts at zero, and interrupts on the overflow
+    timer_set_prescaler(exti->timer, rcc_ahb_frequency / 1000000-1);
+    timer_set_period(exti->timer, 10000000-1);
+
+    timer_enable_preload(exti->timer);
+    timer_continuous_mode(exti->timer);
+
+    timer_set_counter(exti->timer, 0);
+
+    /* -------------------------------------------------------- */
+
+
+    const port_n_pins_t     * pins = &pps_pins[pps];
+
+    rcc_periph_clock_enable(PORT_TO_RCC(pins->port));
+    gpio_mode_setup(pins->port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, pins->pins);
+
+    rcc_periph_clock_enable(RCC_SYSCFG_COMP);
+
+    exti_select_source(exti->exti, pins->port);
+    exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
+
+    nvic_set_priority(pps_init->irq, PPS_PRIORITY);
+    nvic_enable_irq(pps_init->irq);
+
+
+    volatile pulsecount_values_t * values = &pulsecount_values[pps];
+
+    values->value   = 0;
+    values->psp   = 0;
+    values->is_high = false;
+
+    timer_enable_counter(exti->timer);
+    timer_set_counter(exti->timer, 0);
+    exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
+    exti_enable_request(exti->exti);
+}
+
+
+static void _pulsecount_shutdown(unsigned pps)
+{
+    const pps_init_t        * pps_init = &ppss_init[pps];
+    const pulsecount_exti_t * exti = &pulsecount_extis[pps];
+
+    rcc_periph_clock_enable(pps_init->timer_clk);
+
+    timer_disable_counter(exti->timer);
+    exti_disable_request(exti->exti);
+
+    nvic_disable_irq(pps_init->irq);
+
+    memset((pulsecount_values_t*)&pulsecount_values[pps], 0, sizeof(pulsecount_values_t));
+}
+
+
 void pulsecount_init()
 {
-    const pps_init_t ppss_init[] = PPS_INIT;
-
     for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
-    {
-        const pps_init_t        * pps_init = &ppss_init[n];
-        const pulsecount_exti_t * exti = &pulsecount_extis[n];
-
-        rcc_periph_clock_enable(pps_init->timer_clk);
-
-        timer_disable_counter(exti->timer);
-
-        timer_set_mode(exti->timer,
-                       TIM_CR1_CKD_CK_INT,
-                       TIM_CR1_CMS_EDGE,
-                       TIM_CR1_DIR_UP);
-        //-1 because it starts at zero, and interrupts on the overflow
-        timer_set_prescaler(exti->timer, rcc_ahb_frequency / 1000000-1);
-        timer_set_period(exti->timer, 10000000-1);
-
-        timer_enable_preload(exti->timer);
-        timer_continuous_mode(exti->timer);
-
-        timer_set_counter(exti->timer, 0);
-
-        /* -------------------------------------------------------- */
+        _pulsecount_init(n);
+}
 
 
-        const port_n_pins_t     * pins = &pps_pins[n];
+void     pulsecount_enable(unsigned pps, bool enable)
+{
+    if (pps >= ARRAY_SIZE(pps_pins))
+        return;
 
-        rcc_periph_clock_enable(PORT_TO_RCC(pins->port));
-        gpio_mode_setup(pins->port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, pins->pins);
-
-        rcc_periph_clock_enable(RCC_SYSCFG_COMP);
-
-        exti_select_source(exti->exti, pins->port);
-        exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-
-        nvic_set_priority(pps_init->irq, PPS_PRIORITY);
-        nvic_enable_irq(pps_init->irq);
-    }
-
-    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
-    {
-        volatile pulsecount_values_t * values = &pulsecount_values[n];
-        const pulsecount_exti_t      * exti   = &pulsecount_extis[n];
-
-        values->value   = 0;
-        values->psp   = 0;
-        values->is_high = false;
-
-        timer_enable_counter(exti->timer);
-        timer_set_counter(exti->timer, 0);
-        exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-        exti_enable_request(exti->exti);
-    }
+    if (enable)
+        _pulsecount_init(pps);
+    else
+        _pulsecount_shutdown(pps);
 }
 
 
