@@ -62,10 +62,7 @@ bool basic_fixed_read(char * str, basic_fixed_t * r, char ** endpos)
     uint64_t upper = strtoull(str, &frac, 10);
 
     if (upper > BFP_UPPERMAX)
-    {
-        printf("Upper %"PRIu64" > %"PRIu64"\n", upper, BFP_UPPERMAX);
         return false;
-    }
 
     r->upper = llabs(upper);
 
