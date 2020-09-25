@@ -23,8 +23,8 @@ for pps in comm.ppss:
 for adc in comm.adcs:
     print("ADC", adc.index, adc.values)
 
-for gpio in comm.gpios:
-    print("GPIO", gpio.index, gpio.info)
+for io in comm.ios:
+    print("IO %u label:%s is_locked:%s has_special:%s is_special:%s dir:%s bias:%s value:%s" % (io.index, io.label, io.is_locked, io.has_special, io.special, io.direction, io.bias, io.value))
 
 for uart in comm.uarts:
     print("UART", uart.index, uart.baud, uart.bytesize, uart.parity, uart.stopbits)

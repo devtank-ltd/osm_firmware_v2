@@ -93,11 +93,15 @@ class adc_t(io_board_prop_t):
         return self._avg_value, self._min_value, self._max_value
 
 
-class gpio_t(io_board_prop_t):
+class io_t(io_board_prop_t):
     def __init__(self, index, parent):
         io_board_prop_t.__init__(self, index, parent)
         self._direction = None
         self._bias = None
+        self._locked = None
+        self._has_special = None
+        self._as_special = None
+        self._label = None
 
     OUT = b"OUT"
     IN = b"IN"
@@ -108,73 +112,149 @@ class gpio_t(io_board_prop_t):
     @property
     def value(self):
         parent = self.parent()
-        r = parent.command(b"gpio %u" % self.index)
-        g, d, b, v = self.break_gpio_line(r)
-        self._direction = d
-        self._bias = b
+        r = parent.command(b"io %u" % self.index)
+        v = self.load_from_line(r)
         return False if v == b"OFF" else True if v == b"ON" else None
 
     @value.setter
     def value(self, v):
         parent = self.parent()
-        r = parent.command(b"gpio %u = %u" % (self.index, int(v)))
-        r = r[0].split(b'=')[1].strip()
-        assert r[0] == b'GPIO %02u = %s' % (self.index, b"ON" if v else b"OFF")
+        r = parent.command(b"io %u = %u" % (self.index, 1 if v else 0))
+        assert len(r) == 1, "Unexpected IO set return."
+        r = r[0].strip()
+        assert r == b'IO %02u = %s' % (self.index, b"ON" if v else b"OFF"), "Unexpected IO set return."
 
-
-    @staticmethod
-    def break_gpio_line(line):
+    def load_from_line(self, line):
         if isinstance(line, list):
-            assert(len(line) == 1, "GPIO info should be one line")
+            assert len(line) == 1, "IO info should be one line"
             line = line[0]
         parts = line.split(b"=")
         line = parts[0].strip()
-        value = parts[1].strip()
+        if len(parts) > 1:
+            value = parts[1].strip()
+        else:
+            value = None
         parts = line.split(b":")
-        info = parts[1].split()
-        gpio = parts[0].split()[1]
-        # gpio, direction, bias, value
-        return int(gpio), info[0], info[1], value
+        assert len(parts) == 2, "Unexpected IO line."
+        io = parts[0].split()[1]
+        assert int(io) == self.index, "IO line not for this IO."
+        parts = parts[1].split()
+
+        if parts[0] == b"USED":
+            self._label = parts[1]
+            self._bias = io_t.PULLNONE
+            self._direction = io_t.IN
+            self._has_special = True
+            self._as_special = True
+            self._locked = False
+            return None
+        elif parts[0].startswith(b"["):
+            self._has_special = True
+            self._locked = False
+            self._as_special = False
+            self._locked = False
+            self._label = parts[0]
+            parts = parts[1:]
+        elif parts[0] == b"HS" or parts[0] == b"RL":
+            self._has_special = False
+            self._locked = True
+            self._as_special = False
+            self._label = parts[0]
+            parts = parts[1:]
+        else:
+            self._has_special = False
+            self._as_special = False
+            self._locked = False
+            self._label = ""
+
+        if parts[0] == io_t.OUT:
+            self._bias = io_t.PULLNONE
+            self._direction = io_t.OUT
+        elif parts[0] == io_t.IN:
+            assert parts[1] in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE, None], "Invalid IO in line"
+            self._bias = parts[1]
+            self._direction = io_t.IN
+        else:
+            assert False, "Invalid IO in line"
+        return value
+
+    def _get_info(self):
+        parent = self.parent()
+        r = parent.command(b"io %02u"% self.index)
+        self.load_from_line(r)
 
     @property
-    def info(self):
-        parent = self.parent()
-        r = parent.command(b"gpio %02u"% self.index)
-        g, d, b, v = self.break_gpio_line(r)
-        assert g == self.index
-        self._direction = d
-        self._bias = b
-        return d, b, v
+    def label(self):
+        if self._label is None:
+            self._get_info()
+        return self._label
 
     @property
     def bias(self):
+        if self.special:
+            return None
         if self._bias is None:
-            return self.info()[1]
+            self._get_info()
         return self._bias
 
     @property
-    def bias(self):
+    def direction(self):
+        if self.special:
+            return None
         if self._direction is None:
-            return self.info()[0]
+            self._get_info()
         return self._direction
 
+    @property
+    def has_special(self):
+        if self._has_special is None:
+            self._get_info()
+        return self._has_special
+
+    @property
+    def special(self):
+        if self._as_special is None:
+            self._get_info()
+        return self._as_special
+
+    @special.setter
+    def special(self, value):
+        if value:
+            parent = self.parent()
+            cmd = b"sio %u" % self.index
+            r = parent.command(cmd)
+            assert len(r), "Not expected special IO line."
+            assert r[0] == b"IO %02u special enabled" % self.index
+            self._as_special = True
+        else:
+            self.setup(io_t.IN)
+
+    @property
+    def is_locked(self):
+        if self._locked is None:
+            self._get_info()
+        return self._locked
+
     def setup(self, direction, bias=PULLNONE, value=None):
-        assert direction in [gpio_t.IN, gpio_t.OUT]
-        assert bias in [gpio_t.PULLDOWN, gpio_t.PULLUP, gpio_t.PULLNONE, None]
+        if direction is None:
+            self.special = True
+            return
+        assert direction in [io_t.IN, io_t.OUT], "Invalid IO setup argument"
+        assert bias in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE, None], "Invalid IO setup argument"
+        if self.is_locked:
+            assert direction == self.direction, "Locked IO can't change direction"
+
         parent = self.parent()
-        bias = gpio_t.PULLNONE if bias is None else bias
-        cmd = b"gpio %02u : %s %s" % (self.index, direction, bias)
+        bias = io_t.PULLNONE if bias is None else bias
+        cmd = b"io %02u : %s %s" % (self.index, direction, bias)
         if value is not None:
             cmd += b" = %s"  b"ON" if v else b"OFF"
         r = parent.command(cmd)
-        g, d, b, v = self.break_gpio_line(r)
-        assert g == self.index, "GPIO wrong index"
-        assert b == bias, "GPIO bias not changed"
-        assert d == direction, "GPIO direction not changed"
+        v = self.load_from_line(r)
+        assert self._direction == direction, "IO direction not changed"
+        assert self._direction != io_t.IN or self._bias == bias, "IO bias not changed"
         if value is not None:
             assert value == v
-        self._direction = d
-        self._bias = b
 
 
 class uart_t(io_board_prop_t):
@@ -290,7 +370,7 @@ class io_board_py_t(object):
     __LOG_END_SPACER   = b"}============"
     __PROP_MAP = {b"ppss" : pps_t,
                   b"adcs" : adc_t,
-                  b"gpios" : gpio_t,
+                  b"ios"   : io_t,
                   b"uarts" : uart_t}
     __READTIME = 2
     __WRITEDELAY = 0.001 # Stop flooding STM32 faster than it can deal with
@@ -302,7 +382,7 @@ class io_board_py_t(object):
         self.outputs = []
         self.uarts   = []
         self.adcs = []
-        self.gpios = []
+        self.ios = []
         self.NAME_MAP = type(self).NAME_MAP
         self.comm_port = dev
         self.comm = serial.Serial(
@@ -334,9 +414,9 @@ class io_board_py_t(object):
                 adc.adc_scale  = adc_adj[0]
                 adc.adc_offset = adc_adj[1]
 
-    def use_gpios_map(self, gpios):
-        for n in range(0, len(gpios)):
-            self.gpios[n].setup(*gpios[n])
+    def use_ios_map(self, ios):
+        for n in range(0, len(ios)):
+            self.ios[n].setup(*ios[n])
         r = self.command("count")
         m = {}
         for line in r:
