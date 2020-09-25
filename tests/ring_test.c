@@ -23,6 +23,15 @@ static void basic_test(char * test, unsigned expected, unsigned got)
 }
 
 
+static unsigned test_consume_cb(char * buf, unsigned len, void *data)
+{
+    unsigned r = *(unsigned*)data;
+    if (r < len)
+        return r;
+    return len;
+}
+
+
 int main(int argc, char * argv)
 {
     char buf[512];
@@ -86,6 +95,24 @@ int main(int argc, char * argv)
         line[total] = 0;
         basic_test("Data Diff", 0, strncmp(org_line, line, org_line_len));
     }
-    
+
+    for(unsigned n = 0; n < sizeof(buf); n++)
+        ring_buf_add(&ring, 'X');
+
+    basic_test("Full", 1, ring_buf_is_full(&ring));
+    basic_test("Fill", sizeof(buf) - 1,  ring_buf_get_pending(&ring));
+
+    char temp[128] = {0};
+
+    while(ring_buf_get_pending(&ring))
+    {
+        unsigned left = ring_buf_get_pending(&ring);
+        unsigned chunk = 100;
+
+        unsigned consumed = ring_buf_consume(&ring, test_consume_cb, temp, sizeof(temp), &chunk);
+
+        basic_test("Consumed", left - consumed, ring_buf_get_pending(&ring));
+    }
+
     return 0;
 }
