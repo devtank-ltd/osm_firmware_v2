@@ -121,5 +121,17 @@ int main(int argc, char * argv)
         basic_test("Consumed", left - consumed, ring_buf_get_pending(&ring));
     }
 
+    for(unsigned n = 0; n < 100; n++)
+        ring_buf_add(&ring, 'X');
+
+    while(ring_buf_get_pending(&ring))
+    {
+        unsigned chunk = ring_buf_get_pending(&ring);
+        if (chunk > 64)
+            chunk = 64;
+        unsigned got = ring_buf_read(&ring, temp, 64);
+        basic_test("Overread", chunk, got);
+    }
+
     return 0;
 }
