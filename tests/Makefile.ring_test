@@ -1,0 +1,10 @@
+
+CFLAGS := -g -O0
+CFLAGS += -MMD -MP
+
+ring_test : ring_test.o ring.o
+	$(CC) $(CFLAGS) -o ring_test $^
+
+%.o : Makefile.ring_test
+
+-include *.d
