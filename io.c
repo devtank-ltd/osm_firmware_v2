@@ -33,9 +33,7 @@ static char* _ios_get_pull_str(uint16_t io_state)
 
 static char* _ios_get_type(uint16_t io_state)
 {
-    uint16_t io_type  = io_state & IO_TYPE_MASK;
-
-    switch(io_type)
+    switch(io_state & IO_TYPE_MASK)
     {
         case IO_PPS0: return "PPS0";
         case IO_PPS1: return "PPS1";
@@ -52,6 +50,20 @@ static char* _ios_get_type(uint16_t io_state)
             else
                 return "UART1_RX";
         default : return "";
+    }
+}
+
+
+static bool _io_is_special(uint16_t io_state)
+{
+    switch(io_state & IO_TYPE_MASK)
+    {
+        case IO_PPS0:
+        case IO_PPS1:
+        case IO_UART0:
+        case IO_UART1:
+            return true;
+        default : return false;
     }
 }
 
@@ -218,8 +230,16 @@ void     io_log(unsigned io)
 
         if (type[0])
         {
-            pretype = "[";
-            posttype = "]";
+            if (_io_is_special(io_state))
+            {
+                pretype = "[";
+                posttype = "] ";
+            }
+            else
+            {
+                pretype = "";
+                posttype = " ";
+            }
         }
 
         if (io_state & IO_AS_INPUT)
