@@ -1,0 +1,4 @@
+SRC:=basic_fixed_test.c ../basic_fixed.c
+PROGRAM:=basic_fixed
+
+include Makefile.test

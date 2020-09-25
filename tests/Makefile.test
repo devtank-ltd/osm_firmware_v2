@@ -1,0 +1,8 @@
+CFLAGS:=-Os -I../
+LDFLAGS:=
+
+$(PROGRAM): $(SRC)
+	$(CC) $(SRC) $(CFLAGS) $(LDFLAGS) -o $@
+
+clean:
+	rm -f $(PROGRAM)

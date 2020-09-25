@@ -1,10 +1,4 @@
+SRC:=ring_test.c ../ring.c
+PROGRAM:=ring_test
 
-CFLAGS := -g -O0
-CFLAGS += -MMD -MP
-
-ring_test : ring_test.o ring.o
-	$(CC) $(CFLAGS) -o ring_test $^
-
-%.o : Makefile.ring_test
-
--include *.d
+include Makefile.test
