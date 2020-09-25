@@ -1,8 +1,18 @@
 CFLAGS:=-Os -I../
-LDFLAGS:=
+LDFLAGS:= -lgcov --coverage
 
 $(PROGRAM): $(SRC)
 	$(CC) $(SRC) $(CFLAGS) $(LDFLAGS) -o $@
 
 clean:
 	rm -f $(PROGRAM)
+
+.PHONY: coverage
+coverage: $(PROGRAM)
+	lcov --zerocounters -d .
+	lcov --capture --initial -d . --output-file coverage.info
+	./$(PROGRAM)
+	lcov --capture -d . --output-file coverage.info
+	mkdir -p coverage
+	cd coverage && genhtml ../coverage.info
+	sensible-browser coverage/index.html
