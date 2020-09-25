@@ -1,4 +1,5 @@
 SRC:=basic_fixed_test.c ../basic_fixed.c
 PROGRAM:=basic_fixed
+TEST:=basic_fixed_test.py $(PROGRAM)
 
 include Makefile.test

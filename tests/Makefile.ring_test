@@ -1,4 +1,5 @@
 SRC:=ring_test.c ../ring.c
 PROGRAM:=ring_test
+TEST:=$(PROGRAM)
 
 include Makefile.test
