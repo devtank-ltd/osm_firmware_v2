@@ -16,7 +16,7 @@
 #include "adcs.h"
 #include "pulsecount.h"
 #include "timers.h"
-#include "gpio.h"
+#include "io.h"
 #include "uart_rings.h"
 
 

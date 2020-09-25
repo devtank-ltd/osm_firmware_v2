@@ -5,7 +5,7 @@
 
 #include "config.h"
 #include "pinmap.h"
-#include "gpio.h"
+#include "io.h"
 #include "log.h"
 #include "pulsecount.h"
 

@@ -11,7 +11,7 @@
 #include "usb_uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
-#include "gpio.h"
+#include "io.h"
 #include "timers.h"
 
 static char   * rx_buffer;
