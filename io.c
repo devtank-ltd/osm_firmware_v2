@@ -74,12 +74,6 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     if (io >= ARRAY_SIZE(ios_pins))
         return;
 
-    if (ios_state[io] & IO_DIR_LOCKED)
-    {
-        log_debug(DEBUG_IO, "GPIO %02u locked but change attempted.", io);
-        return;
-    }
-
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
     gpio_mode_setup(gpio_pin->port,
@@ -176,7 +170,18 @@ void     io_configure(unsigned io, bool as_input, int pull)
         }
     }
 
-    io_state = (as_input)?IO_AS_INPUT:0;
+    if (io_state & IO_DIR_LOCKED)
+    {
+        log_debug(DEBUG_IO, "GPIO %02u locked but change attempted.", io);
+        return;
+    }
+
+    if (as_input)
+        io_state |= IO_AS_INPUT;
+    else
+        io_state &= ~IO_AS_INPUT;
+
+    io_state &= ~IO_PULL_MASK;
 
     if (pull > 0)
         io_state |= GPIO_PUPD_PULLUP;

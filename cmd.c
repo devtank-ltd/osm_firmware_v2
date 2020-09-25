@@ -146,7 +146,6 @@ void io_cb()
     if (*pos == '=')
     {
         pos = skip_space(pos + 1);
-        log_error("POS : %s", pos);
         if (strncmp(pos, "ON", 2) == 0 || *pos == '1')
         {
             pos = skip_to_space(pos);
