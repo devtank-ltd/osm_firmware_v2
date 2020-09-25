@@ -4,13 +4,13 @@
 #include <stdbool.h>
 
 
-extern void     gpios_init();
-extern unsigned gpios_get_count();
-extern void     gpio_configure(unsigned gpio, bool as_input, int pull);
-extern bool     gpio_enable_special(unsigned gpio);
-extern bool     gpio_is_input(unsigned gpio);
-extern void     gpio_on(unsigned gpio, bool on_off);
-extern void     gpio_log(unsigned gpio);
-extern void     gpios_log();
+extern void     ios_init();
+extern unsigned ios_get_count();
+extern void     io_configure(unsigned io, bool as_input, int pull);
+extern bool     io_enable_special(unsigned io);
+extern bool     io_is_input(unsigned io);
+extern void     io_on(unsigned io, bool on_off);
+extern void     io_log(unsigned io);
+extern void     ios_log();
 
 #endif //__GPIOS_IN_OUT__

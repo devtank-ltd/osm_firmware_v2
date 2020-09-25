@@ -29,7 +29,7 @@ typedef struct
 
 static void pps_cb();
 static void adc_cb();
-static void gpio_cb();
+static void io_cb();
 static void special_cb();
 static void count_cb();
 static void uart_cb();
@@ -42,8 +42,8 @@ static cmd_t cmds[] = {
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
     { "adcs",     "Print all ADCs.",         adcs_log},
-    { "ios",      "Print all IOs.",          gpios_log},
-    { "io",       "Get/set IO set.",         gpio_cb},
+    { "ios",      "Print all IOs.",          ios_log},
+    { "io",       "Get/set IO set.",         io_cb},
     { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
@@ -85,10 +85,10 @@ static char * skip_to_space(char * pos)
 }
 
 
-void gpio_cb()
+void io_cb()
 {
     char * pos = NULL;
-    unsigned gpio = strtoul(rx_buffer + rx_pos, &pos, 10);
+    unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
     pos = skip_space(pos);
     bool do_read = true;
 
@@ -140,7 +140,7 @@ void gpio_cb()
             pos = skip_space(pos);
         }
 
-        gpio_configure(gpio, as_input, pull);
+        io_configure(io, as_input, pull);
     }
 
     if (*pos == '=')
@@ -150,24 +150,24 @@ void gpio_cb()
         if (strncmp(pos, "ON", 2) == 0 || *pos == '1')
         {
             pos = skip_to_space(pos);
-            if (!gpio_is_input(gpio))
+            if (!io_is_input(io))
             {
-                gpio_on(gpio, true);
-                log_out("IO %02u = ON", gpio);
+                io_on(io, true);
+                log_out("IO %02u = ON", io);
                 do_read = false;
             }
-            else log_error("IO %02u is input but output command.", gpio);
+            else log_error("IO %02u is input but output command.", io);
         }
         else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
         {
             pos = skip_to_space(pos);
-            if (!gpio_is_input(gpio))
+            if (!io_is_input(io))
             {
-                gpio_on(gpio, false);
-                log_out("IO %02u = OFF", gpio);
+                io_on(io, false);
+                log_out("IO %02u = OFF", io);
                 do_read = false;
             }
-            else log_error("IO %02u is input but output command.", gpio);
+            else log_error("IO %02u is input but output command.", io);
         }
         else
         {
@@ -177,19 +177,19 @@ void gpio_cb()
     }
 
     if (do_read)
-        gpio_log(gpio);
+        io_log(io);
 }
 
 
 void special_cb()
 {
     char * pos = NULL;
-    unsigned gpio = strtoul(rx_buffer + rx_pos, &pos, 10);
+    unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
 
-    if (gpio_enable_special(gpio))
-        log_out("IO %02u special enabled", gpio);
+    if (io_enable_special(io))
+        log_out("IO %02u special enabled", io);
     else
-        log_out("IO %02u has no special", gpio);
+        log_out("IO %02u has no special", io);
 }
 
 
@@ -197,7 +197,7 @@ void count_cb()
 {
     log_out("PPSS    : %u", pulsecount_get_count());
     log_out("ADCs    : %u", adcs_get_count());
-    log_out("IOs     : %u", gpios_get_count());
+    log_out("IOs     : %u", ios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 

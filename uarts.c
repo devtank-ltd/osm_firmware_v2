@@ -246,9 +246,9 @@ void UART_2_ISR(void)
         case 'G':
             if (log_debug_mask)
             {
-                if (!(log_debug_mask & DEBUG_GPIO))
+                if (!(log_debug_mask & DEBUG_IO))
                     log_debug(DEBUG_SYS, "Enabled GPIO debug");
-                log_debug_mask |= DEBUG_GPIO;
+                log_debug_mask |= DEBUG_IO;
             }
             break;
         case 'R':
