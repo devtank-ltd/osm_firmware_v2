@@ -118,6 +118,25 @@ static void uart_setup(const uart_channel_t * channel)
 }
 
 
+void uart_enable(unsigned uart, bool enable)
+{
+    if (uart >= UART_CHANNELS_COUNT || !uart)
+        return;
+
+    uart_channel_t * channel = &uart_channels[uart];
+
+    if (!enable)
+    {
+        nvic_disable_irq(channel->irqn);
+        usart_disable(channel->usart);
+        usart_disable_rx_interrupt(channel->usart);
+        usart_disable(channel->usart);
+        rcc_periph_clock_disable(channel->uart_clk);
+    }
+    else uart_setup(channel);
+}
+
+
 void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
     if (uart >= UART_CHANNELS_COUNT || !uart)

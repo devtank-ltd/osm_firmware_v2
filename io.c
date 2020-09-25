@@ -8,6 +8,7 @@
 #include "io.h"
 #include "log.h"
 #include "pulsecount.h"
+#include "uarts.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t ios_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
@@ -140,6 +141,34 @@ void     io_configure(unsigned io, bool as_input, int pull)
             ios_state[io] &= ~IO_SPECIAL_EN;
             log_debug(DEBUG_IO, "IO %02u : PPS1 NO LONGER", io);
         }
+        else if (io_type == IO_UART0)
+        {
+            /* Public uart 0, but is really uart 1 */
+            uart_enable(1, false);
+
+            unsigned io_twin = (io_state & IO_UART_TX)?io-1:io+1;
+
+            ios_state[io] &= ~IO_SPECIAL_EN;
+            ios_state[io_twin] &= ~IO_SPECIAL_EN;
+
+            io_configure(io_twin, true, 0);
+            log_debug(DEBUG_IO, "IO %02u : UART0 NO LONGER", io);
+            log_debug(DEBUG_IO, "IO %02u : UART0 NO LONGER", io_twin);
+        }
+        else if (io_type == IO_UART1)
+        {
+            /* Public uart 1, but is really uart 2 */
+            uart_enable(2, false);
+
+            unsigned io_twin = (io_state & IO_UART_TX)?io-1:io+1;
+
+            ios_state[io] &= ~IO_SPECIAL_EN;
+            ios_state[io_twin] &= ~IO_SPECIAL_EN;
+
+            io_configure(io_twin, true, 0);
+            log_debug(DEBUG_IO, "IO %02u : UART1 NO LONGER", io);
+            log_debug(DEBUG_IO, "IO %02u : UART1 NO LONGER", io_twin);
+        }
         else
         {
             log_debug(DEBUG_IO, "IO %02u : USED %s", io, _ios_get_type(io_state));
@@ -184,6 +213,29 @@ bool     io_enable_special(unsigned io)
         log_debug(DEBUG_IO, "IO %02u : USED PPS0", io);
         return true;
     }
+    else if (io_type == IO_UART0)
+    {
+        unsigned io_twin = (io_state & IO_UART_TX)?io-1:io+1;
+        /* Public uart 0, but is really uart 1 */
+        uart_enable(1, true);
+        ios_state[io] |= IO_SPECIAL_EN;
+        ios_state[io_twin] |= IO_SPECIAL_EN;
+        log_debug(DEBUG_IO, "IO %02u : USED UART0", io);
+        log_debug(DEBUG_IO, "IO %02u : USED UART0", io_twin);
+        return true;
+    }
+    else if (io_type == IO_UART1)
+    {
+        unsigned io_twin = (io_state & IO_UART_TX)?io-1:io+1;
+        /* Public uart 1, but is really uart 2 */
+        uart_enable(2, true);
+        ios_state[io] |= IO_SPECIAL_EN;
+        ios_state[io_twin] |= IO_SPECIAL_EN;
+        log_debug(DEBUG_IO, "IO %02u : USED UART1", io);
+        log_debug(DEBUG_IO, "IO %02u : USED UART1", io_twin);
+        return true;
+    }
+
     return false;
 }
 

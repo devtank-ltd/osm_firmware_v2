@@ -6,6 +6,8 @@
 
 extern void uarts_setup();
 
+extern void uart_enable(unsigned uart, bool enable);
+
 extern void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop);
 extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_parity_t * parity, uart_stop_bits_t * stop);
 
