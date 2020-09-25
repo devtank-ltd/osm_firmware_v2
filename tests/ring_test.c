@@ -10,7 +10,7 @@
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
 static char * test_lines[] = {"The rain in Spain stays\n",
-                              "on the plane. Yes, plane.\n",
+                              "on the plane. Yes, plane.\n\r",
                               "It's a hot country.\n"};
 
 
@@ -53,6 +53,13 @@ int main(int argc, char * argv)
     {
         char * org_line = test_lines[n];
         unsigned org_line_len = strlen(org_line) - 1;
+        unsigned eol = 1;
+
+        if (org_line[org_line_len] == '\r')
+        {
+            org_line_len--;
+            eol++;
+        }
 
         char line[128];
 
@@ -61,7 +68,7 @@ int main(int argc, char * argv)
         ring_buf_readline(&ring, line, sizeof(line));
 
         basic_test("Read line", org_line_len, strlen(line));
-        basic_test("Removed", before - org_line_len - 1, ring_buf_get_pending(&ring));
+        basic_test("Removed", before - org_line_len - eol, ring_buf_get_pending(&ring));
         basic_test("Data Diff", 0, strncmp(org_line, line, org_line_len));
     }
 
