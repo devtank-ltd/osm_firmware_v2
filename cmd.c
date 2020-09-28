@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <libopencm3/stm32/gpio.h>
 
 #include "pinmap.h"
 #include "log.h"
@@ -112,7 +113,7 @@ void io_cb()
             return;
         }
 
-        int pull = 0;
+        unsigned pull = GPIO_PUPD_NONE;
 
         pos = skip_space(pos);
 
@@ -121,12 +122,12 @@ void io_cb()
             if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
             {
                 pos = skip_to_space(pos);
-                pull = 1;
+                pull = GPIO_PUPD_PULLUP;
             }
             else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
             {
                 pos = skip_to_space(pos);
-                pull = -1;
+                pull = GPIO_PUPD_PULLDOWN;
             }
             else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
             {

@@ -11,6 +11,7 @@
 #include "log.h"
 #include "pinmap.h"
 #include "timers.h"
+#include "io.h"
 
 typedef struct
 {
@@ -126,7 +127,10 @@ static void _pulsecount_init(unsigned pps)
     const port_n_pins_t     * pins = &pps_pins[pps];
 
     rcc_periph_clock_enable(PORT_TO_RCC(pins->port));
-    gpio_mode_setup(pins->port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, pins->pins);
+
+    unsigned pull = io_get_bias((pps == 0)?PPS0_IO_NUM:PPS1_IO_NUM);
+
+    gpio_mode_setup(pins->port, GPIO_MODE_INPUT, pull, pins->pins);
 
     rcc_periph_clock_enable(RCC_SYSCFG_COMP);
 

@@ -150,7 +150,7 @@ typedef struct
 #define IO_UART0        0x5000
 #define IO_UART1        0x6000
 #define IO_TYPE_MASK    0xF000
-#define IO_PULL_MASK    0x00FF
+#define IO_PULL_MASK    0x0003
 
 #define IOS_STATE                                                            \
 {                                                                            \
@@ -187,4 +187,8 @@ typedef struct
     IO_UART1 | IO_SPECIAL_EN,                         /* GPIO 30 - UART_1_RX */ \
     IO_UART1 | IO_UART_TX | IO_SPECIAL_EN,            /* GPIO 31 - UART_1_TX */ \
 }
+
+#define PPS0_IO_NUM          26
+#define PPS1_IO_NUM          27
+
 #endif //__PINMAPS__

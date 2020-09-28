@@ -112,7 +112,7 @@ unsigned ios_get_count()
 }
 
 
-void     io_configure(unsigned io, bool as_input, int pull)
+void     io_configure(unsigned io, bool as_input, unsigned pull)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
@@ -182,11 +182,7 @@ void     io_configure(unsigned io, bool as_input, int pull)
         io_state &= ~IO_AS_INPUT;
 
     io_state &= ~IO_PULL_MASK;
-
-    if (pull > 0)
-        io_state |= GPIO_PUPD_PULLUP;
-    else if (pull < 0)
-        io_state |= GPIO_PUPD_PULLDOWN;
+    io_state |= (pull & IO_PULL_MASK);
 
     _ios_setup_gpio(io, io_state);
 }
@@ -251,6 +247,15 @@ bool     io_is_input(unsigned io)
         return false;
 
     return (ios_state[io] & IO_AS_INPUT)?true:false;
+}
+
+
+unsigned io_get_bias(unsigned io)
+{
+    if (io >= ARRAY_SIZE(ios_pins))
+        return false;
+
+    return (ios_state[io] & IO_PULL_MASK);
 }
 
 
