@@ -313,11 +313,9 @@ class uart_t(io_board_prop_t):
 
         base_name = comm_port[:-len(num)]
 
-        # We skip 0 as it's control, thus the +1
-        index = self.index + 1
-        own_port = base_name + str(int(num) + index)
+        own_port = base_name + str(int(num) + self.index + 1)
 
-        debug_print("UART%u : %s" % (index, own_port))
+        debug_print("UART%u : %s" % (self.index, own_port))
 
         self._io = serial.Serial(port=own_port,
                           baudrate=self._baud,
@@ -326,11 +324,11 @@ class uart_t(io_board_prop_t):
                           bytesize=self._bytesize,
                           timeout=self._timeout)
 
-        r = parent.command("uart %u" % index)
+        r = parent.command("uart %u" % self.index)
         assert len(r) == 1, "Expected one line for uart response."
         parts = r[0].split()
-        assert int(parts[1]) != index, "Wrong uart responed."
-        assert self._baud != int(parts[3]), "Wrong uart baud rate"
+        assert int(parts[1]) == self.index, "Wrong uart responed."
+        assert self._baud == int(parts[3]), "Wrong uart baud rate"
         bits, parity, stopbits = parts[4]
         assert self._bytesize == serial.SEVENBITS and bits == '7' or \
                self._bytesize == serial.EIGHTBITS and bits == '8', \
