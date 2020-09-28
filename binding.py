@@ -368,12 +368,11 @@ class uart_t(io_board_prop_t):
 class io_board_py_t(object):
     __LOG_START_SPACER = b"============{"
     __LOG_END_SPACER   = b"}============"
-    __PROP_MAP = {b"ppss" : pps_t,
-                  b"adcs" : adc_t,
-                  b"ios"   : io_t,
-                  b"uarts" : uart_t}
-    __READTIME = 2
-    __WRITEDELAY = 0.001 # Stop flooding STM32 faster than it can deal with
+    PROP_MAP = {b"ppss" : pps_t,
+                b"adcs" : adc_t,
+                b"ios"   : io_t,
+                b"uarts" : uart_t}
+    READTIME = 2
     NAME_MAP = {}
 
     def __init__(self, dev):
@@ -402,7 +401,7 @@ class io_board_py_t(object):
             name  = parts[0].lower().strip()
             count = int(parts[1])
             for n in range(0, count):
-                child = type(self).__PROP_MAP[name](n, self)
+                child = type(self).PROP_MAP[name](n, self)
                 children = getattr(self, name.decode())
                 children += [child]
 
@@ -425,7 +424,7 @@ class io_board_py_t(object):
             if name in ["inputs", "outputs"]:
                 count = int(parts[1])
                 for n in range(0, count):
-                    child = type(self).__PROP_MAP[name](n, self)
+                    child = type(self).PROP_MAP[name](n, self)
                     children = getattr(self, name.decode())
                     children += [child]
 
@@ -445,20 +444,20 @@ class io_board_py_t(object):
         line = self._read_line()
         start = time.time()
         while line != type(self).__LOG_START_SPACER:
-            if (time.time() - start) > type(self).__READTIME:
+            if (time.time() - start) > type(self).READTIME:
                 raise ValueError("Comms read took too long.")
             line = self._read_line()
-            assert time.time() - start < type(self).__READTIME
+            assert time.time() - start < type(self).READTIME
 
         line = self._read_line()
         data_lines = []
 
         while line != type(self).__LOG_END_SPACER:
-            if (time.time() - start) > type(self).__READTIME:
+            if (time.time() - start) > type(self).READTIME:
                 raise ValueError("Comms read took too long.")
             data_lines += [line]
             line = self._read_line()
-            assert time.time() - start < type(self).__READTIME
+            assert time.time() - start < type(self).READTIME
 
         return data_lines
 
