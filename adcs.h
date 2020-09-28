@@ -1,6 +1,8 @@
 #ifndef __ADCS__
 #define __ADCS__
 
+extern char adc_temp_buffer[24];
+
 extern void     adcs_init();
 
 extern void     adcs_do_samples();

@@ -23,12 +23,25 @@ typedef struct
     uint64_t scale;
 } __attribute__((packed)) cal_data_t;
 
+typedef char cal_unit_t[4];
+
+typedef union
+{
+    struct
+    {
+        uint32_t  use_adc_cals:1;
+    };
+    uint32_t flags;
+} __attribute__((packed)) config_flags_t;
+
 
 typedef struct
 {
     char       config_name[CONFIG_NAME_MAX_LEN];
     cal_data_t cals[ADC_COUNT];
-    uint16_t   crc;
+    cal_unit_t units[ADC_COUNT];
+    config_flags_t flags;
+    uint16_t       crc;
 } __attribute__((packed)) config_data_t;
 
 
@@ -101,6 +114,9 @@ static void persistent_set_data(const void * addr, const void * data, unsigned u
     const uint8_t * p = (const uint8_t*)data;
     uintptr_t _addr = (uintptr_t)addr;
 
+    if (used_size > full_size)
+        used_size = full_size;
+
     for(unsigned n = 0; n < used_size; n+=2)
     {
         uint16_t v;
@@ -111,6 +127,13 @@ static void persistent_set_data(const void * addr, const void * data, unsigned u
 
         flash_program_half_word(_addr + n, v);
     }
+}
+
+
+static void persistent_zero(const void * addr, unsigned size)
+{
+    for(unsigned n = 0; n < size; n+=2)
+        flash_program_half_word(((uintptr_t)addr) + n, 0);
 }
 
 
@@ -139,8 +162,7 @@ void        persistent_set_name(const char * name)
         len--;
 
     /*Zero fill any unused space.*/
-    for(unsigned n = len; n < CONFIG_NAME_MAX_LEN; n+=2)
-        flash_program_half_word((uintptr_t)(config_data->config_name + n), 0);
+    persistent_zero(config_data->config_name + len, CONFIG_NAME_MAX_LEN - len);
 
 
     /* Default calibration values are just 3.3v */
@@ -161,7 +183,10 @@ void        persistent_set_name(const char * name)
         cal_data_t * cal = &config_data->cals[n];
         persistent_set_data(&cal->scale, &v3_3, sizeof(uint64_t), sizeof(uint64_t));
         persistent_set_data(&cal->offset, &temp, sizeof(uint64_t), sizeof(uint64_t)); 
+        persistent_set_data(&config_data->units[n], "V", 2, sizeof(cal_unit_t));
     }
+
+    persistent_zero(&config_data->flags, sizeof(config_flags_t));
 
     _persistent_update_crc();
 
@@ -169,18 +194,19 @@ void        persistent_set_name(const char * name)
 }
 
 
-bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset)
+bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char ** unit)
 {
-    if (adc >= ADC_COUNT || !config_data ||  !offset || !scale)
+    if (adc >= ADC_COUNT || !config_data ||  !offset || !scale || !unit)
         return false;
 
     offset->raw = config_data->cals[adc].offset;
     scale->raw = config_data->cals[adc].scale;
+    *unit = config_data->units[adc];
     return true;
 }
 
 
-bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset)
+bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char * unit)
 {
     if (adc >= ADC_COUNT || !config_data)
         return false;
@@ -188,6 +214,20 @@ bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
     flash_unlock();
 
     cal_data_t * cal = &config_data->cals[adc];
+
+    if (unit)
+    {
+        unsigned len = strlen(unit) + 1;
+        if (len > sizeof(cal_unit_t))
+            persistent_set_data(&config_data->units[adc],
+                                unit,
+                                sizeof(cal_unit_t) - 1,
+                                sizeof(cal_unit_t));
+        else
+            persistent_set_data(&config_data->units[adc],
+                                unit, len,
+                                sizeof(cal_unit_t));
+    }
 
     if (scale)
         persistent_set_data(&cal->scale, scale,
@@ -197,9 +237,37 @@ bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
         persistent_set_data(&cal->offset, offset,
                             sizeof(uint64_t), sizeof(uint64_t));
 
+
     _persistent_update_crc();
 
     flash_lock();
 
    return true;
+}
+
+
+bool        persistent_set_use_cal(bool enable)
+{
+    if (!config_data)
+        return false;
+
+    flash_unlock();
+
+    config_flags_t flags = config_data->flags;
+    flags.use_adc_cals = (enable)?1:0;
+
+    persistent_set_data(&config_data->flags, &flags,
+                        sizeof(config_flags_t), sizeof(config_flags_t));
+    flash_lock();
+
+    return true;
+}
+
+
+bool        persistent_get_use_cal()
+{
+    if (!config_data)
+        return false;
+
+    return config_data->flags.use_adc_cals;
 }

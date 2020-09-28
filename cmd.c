@@ -37,6 +37,9 @@ static void count_cb();
 static void uart_cb();
 static void uarts_cb();
 static void persist_cb();
+static void en_cal_cb();
+static void cal_name_cb();
+static void adc_cal_cb();
 static void version_cb();
 
 
@@ -52,6 +55,9 @@ static cmd_t cmds[] = {
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
     { "persist",  "Start persist of name.",  persist_cb},
+    { "en_cal",   "Enable ADC Calibration.", en_cal_cb},
+    { "cal_name", "Get Calibration Name",    cal_name_cb},
+    { "cal",      "Get/Set ADC callibration",adc_cal_cb},
     { "version",  "Print version.",          version_cb},
     { NULL },
 };
@@ -286,15 +292,86 @@ void uarts_cb()
 
 void persist_cb()
 {
-    char * pos = rx_buffer + rx_pos;
+    char * pos = skip_to_space(rx_buffer + rx_pos);
 
-    while(*pos && *pos == ' ')
-        pos++;
-
-    if (pos)
+    if (*pos)
         persistent_set_name(pos);
 
     log_out("New persistent data started.");
+}
+
+
+void en_cal_cb()
+{
+    if (strncmp(rx_buffer + rx_pos, "ON", 2))
+        persistent_set_use_cal(true);
+    else
+        persistent_set_use_cal(false);
+}
+
+
+void cal_name_cb()
+{
+    const char * name = persistent_get_name();
+    log_out("N:%s", name);
+}
+
+
+void adc_cal_cb()
+{
+    static basic_fixed_t scale, offset;
+    char * pos = NULL;
+
+    unsigned adc = strtoul(rx_buffer + rx_pos, &pos, 10);
+
+    if (strncmp(pos,"S:",2) == 0)
+    {
+        if (basic_fixed_read(pos+2, &scale, NULL))
+            log_out("Cal scale pending");
+        else
+            log_debug(DEBUG_ADC, "ADC %u Scale Cal set failed", adc);
+    }
+    else if (strncmp(pos,"O:",2) == 0)
+    {
+        if (basic_fixed_read(pos+2, &offset, NULL))
+            log_out("Cal offset pending");
+        else
+            log_debug(DEBUG_ADC, "ADC %u Offset Cal read failed", adc);
+    }
+    else if (strncmp(pos,"U:",2) == 0)
+    {
+        pos +=2;
+        if (persistent_set_cal(adc, &scale, &offset, pos))
+            log_out("Cal set");
+        else
+            log_debug(DEBUG_ADC, "ADC %u Cal set failed", adc);
+    }
+    else
+    {
+        log_out("ADC : %u Cal", adc);
+
+        const char * unit = NULL;
+        if (persistent_get_cal(adc, &scale, &offset, &unit))
+        {
+            if (basic_fixed_to_str(&scale, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                log_out("S: %s", adc_temp_buffer);
+            else
+                log_out("S: BAD");
+
+            if (basic_fixed_to_str(&offset, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                log_out("O: %s", adc_temp_buffer);
+            else
+                log_out("O: BAD");
+
+            log_out("Unit: %s", unit);
+        }
+        else
+        {
+            log_out("S: BAD");
+            log_out("O: BAD");
+            log_out("Unit: BAD");
+        }
+    }
 }
 
 

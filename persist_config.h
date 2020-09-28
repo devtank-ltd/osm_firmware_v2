@@ -10,9 +10,10 @@ extern void        init_persistent();
 extern const char* persistent_get_name();
 extern void        persistent_set_name(const char * name);
 
-extern bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset);
-extern bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset);
+extern bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char ** unit);
+extern bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char * unit);
 
-
+extern bool        persistent_set_use_cal(bool enable);
+extern bool        persistent_get_use_cal();
 
 #endif //__PERSISTENT_CONIFG__
