@@ -21,6 +21,8 @@ int basic_fixed_to_str(basic_fixed_t * v, char * buffer, unsigned size);
 
 bool basic_fixed_read(char * str, basic_fixed_t * r, char ** endpos);
 
+bool basic_fixed_set_whole(basic_fixed_t * v, int64_t value);
+
 bool basic_fixed_add(basic_fixed_t * v, basic_fixed_t * a,  basic_fixed_t * b);
 
 bool basic_fixed_sub(basic_fixed_t * v, basic_fixed_t * a,  basic_fixed_t * b);

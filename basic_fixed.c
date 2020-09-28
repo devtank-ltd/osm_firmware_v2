@@ -97,6 +97,19 @@ bool basic_fixed_read(char * str, basic_fixed_t * r, char ** endpos)
 }
 
 
+bool basic_fixed_set_whole(basic_fixed_t * v, int64_t value)
+{
+    if (value > BFP_UPPERMAX || value < -BFP_UPPERMAX)
+        return false;
+
+    v->sign = (value < 0)?1:0;
+    v->upper = llabs(value);
+    v->lower = 0;
+
+    return true;
+}
+
+
 bool basic_fixed_add(basic_fixed_t * v, basic_fixed_t * a,  basic_fixed_t * b)
 {
     if (!v || !a || !b)
