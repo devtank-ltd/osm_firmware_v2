@@ -315,7 +315,7 @@ class uart_t(io_board_prop_t):
 
         own_port = base_name + str(int(num) + self.index + 1)
 
-        debug_print("UART%u : %s" % (self.index, own_port))
+        debug_print("%sUART%u : %s" % (parent.log_prefix, self.index, own_port))
 
         self._io = serial.Serial(port=own_port,
                           baudrate=self._baud,
@@ -345,23 +345,23 @@ class uart_t(io_board_prop_t):
 
     def read(self, num):
         r = self.io.read(num)
-        debug_print("UART%u >> %s" % (self.index, r))
+        debug_print("%sUART%u >> %s" % (self.parent.log_prefix, self.index, r))
         return r
 
     def write(self, s):
         self.io.write(s)
-        debug_print("UART%u << %s" % (self.index, s))
+        debug_print("%sUART%u << %s" % (self.parent.log_prefix, self.index, s))
 
     def readline(self):
         line = self.io.readline()
-        debug_print("UART%u >> %s" % (self.index, line))
+        debug_print("%sUART%u >> %s" % (self.parent.log_prefix, self.index, line))
         return line
 
     def drain(self):
         line = self.readline()
         while len(line):
             line = self.readline()
-        debug_print("UART%u Drained" % self.index)
+        debug_print("%sUART%u Drained" % (self.parent.log_prefix, self.index))
 
 
 
@@ -376,7 +376,7 @@ class io_board_py_t(object):
     READTIME = 2
     NAME_MAP = {}
 
-    def __init__(self, dev):
+    def __init__(self, dev, loti_label = None):
         self.ppss = []
         self.inputs = []
         self.outputs = []
@@ -395,7 +395,8 @@ class io_board_py_t(object):
         line = self.comm.readline()
         while len(line):
             line = self.comm.readline()
-        debug_print("Drained")
+        self.log_prefix = "%s: " % loti_label if loti_label else ""
+        debug_print("%sDrained" % self.log_prefix)
         r = self.command(b"count")
         for line in r:
             parts = line.split(b':')
@@ -448,7 +449,7 @@ class io_board_py_t(object):
                     children += [child]
 
     def __getattr__(self, item):
-        debug_print(b"Binding name lookup " + item)
+        debug_print("%sBinding name lookup %s" %(self.log_prefix, item))
         getter = self.NAME_MAP.get(item, None)
         if getter:
             return getter(self)
@@ -456,7 +457,7 @@ class io_board_py_t(object):
 
     def _read_line(self):
         line = self.comm.readline().strip()
-        debug_print(b">> : %s" % line)
+        debug_print("%s>> : %s" % (self.log_prefix, line))
         return line
 
     def read_response(self):
@@ -484,5 +485,5 @@ class io_board_py_t(object):
         self.comm.write(cmd)
         self.comm.write(b'\n')
         self.comm.flush()
-        debug_print(b"<< " + cmd)
+        debug_print("%s<< %s" % (self.log_prefix, cmd))
         return self.read_response()
