@@ -132,6 +132,7 @@ class io_t(io_board_prop_t):
         line = parts[0].strip()
         if len(parts) > 1:
             value = parts[1].strip()
+            value = False if value == b"OFF" else True if value == b"ON" else None
         else:
             value = None
         parts = line.split(b":")
@@ -250,6 +251,7 @@ class io_t(io_board_prop_t):
         bias = io_t.PULLNONE if bias is None else bias
         cmd = b"io %02u : %s %s" % (self.index, direction, bias)
         if value is not None:
+            value = bool(value)
             cmd += b" = %s" % (b"ON" if value else b"OFF")
         r = parent.command(cmd)
         v = self.load_from_line(r)
