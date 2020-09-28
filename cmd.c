@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include "pinmap.h"
 #include "log.h"
@@ -10,7 +11,7 @@
 #include "usb_uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
-#include "gpio.h"
+#include "io.h"
 #include "timers.h"
 
 static char   * rx_buffer;
@@ -28,9 +29,8 @@ typedef struct
 
 static void pps_cb();
 static void adc_cb();
-static void input_cb();
-static void output_cb();
-static void gpio_cb();
+static void io_cb();
+static void special_cb();
 static void count_cb();
 static void uart_cb();
 static void uarts_cb();
@@ -42,12 +42,9 @@ static cmd_t cmds[] = {
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
     { "adcs",     "Print all ADCs.",         adcs_log},
-    { "inputs",   "Print all inputs.",       inputs_log},
-    { "outputs",  "Print all outputs.",      outputs_log},
-    { "gpios",    "Print all gpios.",        gpios_log},
-    { "input",    "Print input.",            input_cb},
-    { "output",   "Get/set output on/off.",  output_cb},
-    { "gpio",     "Get/set GPIO set.",       gpio_cb},
+    { "ios",      "Print all IOs.",          ios_log},
+    { "io",       "Get/set IO set.",         io_cb},
+    { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
@@ -73,13 +70,6 @@ void adc_cb()
 }
 
 
-void input_cb()
-{
-    unsigned input = strtoul(rx_buffer + rx_pos, NULL, 10);
-    inputs_input_log(input);
-}
-
-
 static char * skip_space(char * pos)
 {
     while(*pos == ' ')
@@ -95,28 +85,10 @@ static char * skip_to_space(char * pos)
 }
 
 
-
-void output_cb()
+void io_cb()
 {
     char * pos = NULL;
-    unsigned output = strtoul(rx_buffer + rx_pos, &pos, 10);
-
-    pos = skip_space(pos);
-    if (*pos)
-    {
-        bool on_off = (strtoul(pos, NULL, 10))?true:false;
-
-        log_out("Set output %02u to %s", output, (on_off)?"ON":"OFF");
-        outputs_set(output, on_off);
-    }
-    else output_output_log(output);
-}
-
-
-void gpio_cb()
-{
-    char * pos = NULL;
-    unsigned gpio = strtoul(rx_buffer + rx_pos, &pos, 10);
+    unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
     pos = skip_space(pos);
     bool do_read = true;
 
@@ -140,58 +112,61 @@ void gpio_cb()
             return;
         }
 
-        int pull;
+        int pull = 0;
+
         pos = skip_space(pos);
-        if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
+
+        if (*pos != '=')
         {
-            pos = skip_to_space(pos);
-            pull = 1;
-        }
-        else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
-        {
-            pos = skip_to_space(pos);
-            pull = -1;
-        }
-        else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
-        {
-            pos = skip_to_space(pos);
-            pull = 0;
-        }
-        else
-        {
-            log_error("Malformed gpio pull command");
-            return;
+            if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
+            {
+                pos = skip_to_space(pos);
+                pull = 1;
+            }
+            else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
+            {
+                pos = skip_to_space(pos);
+                pull = -1;
+            }
+            else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
+            {
+                pos = skip_to_space(pos);
+            }
+            else
+            {
+                log_error("Malformed gpio pull command");
+                return;
+            }
+            pos = skip_space(pos);
         }
 
-        gpio_configure(gpio, as_input, pull);
-        pos = skip_space(pos);
+        io_configure(io, as_input, pull);
     }
 
     if (*pos == '=')
     {
         pos = skip_space(pos + 1);
-        log_error("POS : %s", pos);
         if (strncmp(pos, "ON", 2) == 0 || *pos == '1')
         {
             pos = skip_to_space(pos);
-            if (!gpio_is_input(gpio))
+            if (!io_is_input(io))
             {
-                gpio_on(gpio, true);
-                log_out("GPIO %02u = ON", gpio);
+                io_on(io, true);
+                log_out("IO %02u = ON", io);
                 do_read = false;
             }
-            else log_error("GPIO %02u is input but output command.", gpio);
+            else log_error("IO %02u is input but output command.", io);
         }
         else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
         {
             pos = skip_to_space(pos);
-            if (!gpio_is_input(gpio))
+            if (!io_is_input(io))
             {
-                gpio_on(gpio, false);
-                log_out("GPIO %02u = OFF", gpio);
+                io_on(io, false);
+                log_out("IO %02u = OFF", io);
                 do_read = false;
             }
-            else log_error("GPIO %02u is input but output command.", gpio);
+            else log_error("IO %02u is input but output command.", io);
         }
         else
         {
@@ -201,17 +176,27 @@ void gpio_cb()
     }
 
     if (do_read)
-        gpio_log(gpio);
+        io_log(io);
+}
+
+
+void special_cb()
+{
+    char * pos = NULL;
+    unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
+
+    if (io_enable_special(io))
+        log_out("IO %02u special enabled", io);
+    else
+        log_out("IO %02u has no special", io);
 }
 
 
 void count_cb()
 {
     log_out("PPSS    : %u", pulsecount_get_count());
-    log_out("Inputs  : %u", inputs_get_count());
-    log_out("Outputs : %u", outputs_get_count());
     log_out("ADCs    : %u", adcs_get_count());
-    log_out("GPIOs   : %u", gpios_get_count());
+    log_out("IOs     : %u", ios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 
@@ -221,21 +206,75 @@ void uart_cb()
     char * pos = NULL;
     unsigned uart = strtoul(rx_buffer + rx_pos, &pos, 10);
 
+    unsigned         speed;
+    uint8_t          databits;
+    uart_parity_t    parity;
+    uart_stop_bits_t stop;
+
+    uart++;
+
+    if (!uart_get_setup(uart, &speed, &databits, &parity, &stop))
+    {
+        log_error("INVALID UART GIVEN");
+        return;
+    }
+
     pos = skip_space(pos);
     if (*pos)
     {
-        unsigned baud = strtoul(pos, NULL, 10);
-        uart_set_baudrate(uart + 1, baud);
+        speed = strtoul(pos, NULL, 10);
+        pos = skip_space(++pos);
+        if (*pos)
+        {
+            if (isdigit(*pos))
+            {
+                databits = (uint8_t)(*pos) - (uint8_t)'0';
+                pos = skip_space(++pos);
+            }
+
+            switch(*pos)
+            {
+                case 'N' : parity = uart_parity_none; break;
+                case 'E' : parity = uart_parity_even; break;
+                case 'O' : parity = uart_parity_odd; break;
+                default: break;
+            }
+            pos = skip_space(++pos);
+
+            switch(*pos)
+            {
+                case '1' : stop = uart_stop_bits_1; break;
+                case '2' : stop = uart_stop_bits_2; break;
+                default: break;
+            }
+        }
+
+        uart_resetup(uart, speed, databits, parity, stop);
     }
 
-    log_out("UART %u : %u", uart, uart_get_baudrate(uart + 1));
+    log_out("UART %u : %u %"PRIu8"%c%"PRIu8, uart - 1,
+        speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
 }
 
 
 void uarts_cb()
 {
     for(unsigned n = 0; n < (UART_CHANNELS_COUNT - 1); n++)
-        log_out("UART %u : %u", n, uart_get_baudrate(n + 1));
+    {
+        unsigned         speed;
+        uint8_t          databits;
+        uart_parity_t    parity;
+        uart_stop_bits_t stop;
+
+        if (!uart_get_setup(n + 1, &speed, &databits, &parity, &stop))
+        {
+            log_error("INVALID UART GIVEN");
+            return;
+        }
+
+        log_out("UART %u : %u %"PRIu8"%c%"PRIu8, n,
+            speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
+    }
 }
 
 

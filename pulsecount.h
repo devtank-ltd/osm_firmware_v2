@@ -2,9 +2,7 @@
 
 extern void     pulsecount_init();
 
-extern void     pulsecount_start();
-extern void     pulsecount_stop();
-extern bool     pulsecount_is_running();
+extern void     pulsecount_enable(unsigned pps, bool enable);
 
 extern void     pulsecount_second_boardary();
 
