@@ -13,7 +13,7 @@ GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 
 #Compiler options
-CFLAGS		+= -Os -g -c -std=gnu99
+CFLAGS		+= -Os -g -c -std=gnu11
 CFLAGS		+= -Wall -Wextra -Werror
 CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
@@ -39,6 +39,7 @@ SOURCES += main.c \
            usb_uarts.c \
            adcs.c \
            pulsecount.c \
+           basic_fixed.c \
            timers.c \
            io.c \
            ring.c \

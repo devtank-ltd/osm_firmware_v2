@@ -136,23 +136,25 @@ void        persistent_set_name(const char * name)
 }
 
 
-bool        persistent_get_cal(unsigned adc, uint64_t * scale, uint64_t * offset)
+bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset)
 {
     if (adc >= ADC_COUNT || !config_data ||  !offset || !scale)
         return false;
 
-    *offset = config_data->cals[adc].offset;
-    *scale = config_data->cals[adc].scale;
+    offset->raw = config_data->cals[adc].offset;
+    scale->raw = config_data->cals[adc].scale;
     return true;
 }
 
 
-bool        persistent_set_cal(unsigned adc, uint64_t scale, uint64_t offset)
+bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset)
 {
     if (adc >= ADC_COUNT || !config_data)
         return false;
 
-    config_data->cals[adc].offset = offset;
-    config_data->cals[adc].scale  = scale;
-    return true;
+    if (scale)
+        config_data->cals[adc].scale  = scale->raw;
+    if (offset)
+        config_data->cals[adc].offset = offset->raw;
+   return true;
 }

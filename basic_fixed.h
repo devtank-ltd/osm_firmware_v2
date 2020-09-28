@@ -12,9 +12,9 @@ typedef union
         uint64_t lower:20;
         uint64_t upper:43;
         uint64_t sign;
-    };
+    }__attribute__((packed));
     uint64_t raw;
-} basic_fixed_t;
+} __attribute__((packed)) basic_fixed_t;
 
 
 int basic_fixed_to_str(basic_fixed_t * v, char * buffer, unsigned size);

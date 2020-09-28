@@ -42,7 +42,7 @@ int basic_fixed_to_str(basic_fixed_t * v, char * buffer, unsigned size)
     int64_t major = v->upper;
     unsigned minor = v->lower;
 
-    return snprintf(buffer, size, "%s%"PRId64".%0"STR(BFP_LOWERLEN)"u", (v->sign && major || minor)?"-":"", major, minor);
+    return snprintf(buffer, size, "%s%"PRId64".%0"STR(BFP_LOWERLEN)"u", (v->sign && (major || minor))?"-":"", major, minor);
 }
 
 
