@@ -405,6 +405,13 @@ class io_board_py_t(object):
                 children = getattr(self, name.decode())
                 children += [child]
 
+        lines = self.command(b"ios")
+        for line in lines:
+            parts = line.split()
+            io_index = int(parts[1])
+            io_obj = self.ios[io_index]
+            io_obj.load_from_line(line)
+
         for io_obj in self.ios:
             if io_obj.label == "PPS0":
                 if io_obj.label.startswith("PPS"):
