@@ -176,6 +176,7 @@ void io_cb()
             return;
         }
     }
+    else do_read = true;
 
     if (do_read)
         io_log(io);
