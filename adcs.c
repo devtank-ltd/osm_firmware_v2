@@ -7,6 +7,7 @@
 #include "log.h"
 #include "adcs.h"
 #include "pinmap.h"
+#include "persist_config.h"
 
 /* On some versions of gcc this header isn't defining it. Quick fix. */
 #ifndef PRIu64
@@ -14,6 +15,8 @@
 #endif
 
 static uint8_t adc_channel_array[] = ADC_CHANNELS;
+
+static char adc_buffer[24];
 
 typedef struct
 {
@@ -157,6 +160,56 @@ void adcs_adc_log(unsigned adc)
     log_out("Min : %u", channel_info->min_value);
     log_out("Max : %u", channel_info->max_value);
     log_out("Avg : %"PRIu64" / %u", channel_info->total_value, channel_info->count);
+}
+
+
+void adcs_cal_adc_log(unsigned adc)
+{
+    if (adc >= ARRAY_SIZE(adc_channel_array))
+        return;
+
+    log_out("ADC : %u (Channel : %u)", adc, adc_channel_array[adc]);
+
+    basic_fixed_t scale, offset;
+
+    if (persistent_get_cal(adc, &scale, &offset))
+    {
+        volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
+
+        basic_fixed_t adc_value, temp;
+
+        if (basic_fixed_set_whole(&adc_value, channel_info->min_value) &&
+            basic_fixed_mul(&adc_value, &adc_value, &scale) &&
+            basic_fixed_add(&adc_value, &adc_value, &offset) &&
+            basic_fixed_to_str(&adc_value, adc_buffer, sizeof(adc_buffer)))
+            log_out("Min : %s", adc_buffer);
+        else
+            log_out("Min : BAD MATH");
+
+        if (basic_fixed_set_whole(&adc_value, channel_info->max_value) &&
+            basic_fixed_mul(&adc_value, &adc_value, &scale) &&
+            basic_fixed_add(&adc_value, &adc_value, &offset) &&
+            basic_fixed_to_str(&adc_value, adc_buffer, sizeof(adc_buffer)))
+            log_out("Max : %s", adc_buffer);
+        else
+            log_out("Max : BAD MATH");
+
+        if (basic_fixed_set_whole(&adc_value, channel_info->total_value) &&
+            basic_fixed_set_whole(&temp, channel_info->count) &&
+            basic_fixed_div(&adc_value, &adc_value, &temp) &&
+            basic_fixed_mul(&adc_value, &adc_value, &scale) &&
+            basic_fixed_add(&adc_value, &adc_value, &offset) &&
+            basic_fixed_to_str(&adc_value, adc_buffer, sizeof(adc_buffer)))
+            log_out("Avg : %s", adc_buffer);
+        else
+            log_out("Avg : BAD MATH");
+    }
+    else
+    {
+        log_out("Min : BAD CAL");
+        log_out("Max : BAD CAL");
+        log_out("Avg : BAD CAL");
+    }
 }
 
 
