@@ -326,7 +326,7 @@ class uart_t(io_board_prop_t):
                           bytesize=self._bytesize,
                           timeout=self._timeout)
 
-        r = parent.command("UART %u" % index)
+        r = parent.command("uart %u" % index)
         assert len(r) == 1, "Expected one line for uart response."
         parts = r[0].split()
         assert int(parts[1]) != index, "Wrong uart responed."
