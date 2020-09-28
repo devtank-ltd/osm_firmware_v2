@@ -91,10 +91,11 @@ void io_cb()
     char * pos = NULL;
     unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
     pos = skip_space(pos);
-    bool do_read = true;
+    bool do_read = false;
 
     if (*pos == ':')
     {
+        do_read = true;
         bool as_input;
         pos = skip_space(pos + 1);
         if (strncmp(pos, "IN", 2) == 0 || *pos == 'I')
@@ -153,8 +154,8 @@ void io_cb()
             if (!io_is_input(io))
             {
                 io_on(io, true);
-                log_out("IO %02u = ON", io);
-                do_read = false;
+                if (!do_read)
+                    log_out("IO %02u = ON", io);
             }
             else log_error("IO %02u is input but output command.", io);
         }
@@ -164,8 +165,8 @@ void io_cb()
             if (!io_is_input(io))
             {
                 io_on(io, false);
-                log_out("IO %02u = OFF", io);
-                do_read = false;
+                if (!do_read)
+                    log_out("IO %02u = OFF", io);
             }
             else log_error("IO %02u is input but output command.", io);
         }
