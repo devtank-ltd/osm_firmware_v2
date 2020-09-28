@@ -153,7 +153,7 @@ class io_t(io_board_prop_t):
             self._locked = False
             self._as_special = False
             self._locked = False
-            self._label = parts[0]
+            self._label = parts[0].strip(b"[]")
             parts = parts[1:]
         elif parts[0] == b"HS" or parts[0] == b"RL":
             self._has_special = False
@@ -219,6 +219,8 @@ class io_t(io_board_prop_t):
 
     @special.setter
     def special(self, value):
+        if not self._has_special:
+            return
         if value:
             parent = self.parent()
             cmd = b"sio %u" % self.index
