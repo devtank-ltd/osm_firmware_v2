@@ -248,7 +248,7 @@ class io_t(io_board_prop_t):
         bias = io_t.PULLNONE if bias is None else bias
         cmd = b"io %02u : %s %s" % (self.index, direction, bias)
         if value is not None:
-            cmd += b" = %s"  b"ON" if v else b"OFF"
+            cmd += b" = %s"  b"ON" if value else b"OFF"
         r = parent.command(cmd)
         v = self.load_from_line(r)
         assert self._direction == direction, "IO direction not changed"
