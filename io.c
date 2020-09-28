@@ -126,13 +126,13 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
         if (io_type == IO_PPS0)
         {
             pulsecount_enable(0, false);
-            ios_state[io] &= ~IO_SPECIAL_EN;
+            io_state &= ~IO_SPECIAL_EN;
             log_debug(DEBUG_IO, "IO %02u : PPS0 NO LONGER", io);
         }
         else if (io_type == IO_PPS1)
         {
             pulsecount_enable(1, false);
-            ios_state[io] &= ~IO_SPECIAL_EN;
+            io_state &= ~IO_SPECIAL_EN;
             log_debug(DEBUG_IO, "IO %02u : PPS1 NO LONGER", io);
         }
         else if (io_type == IO_UART0)
@@ -142,8 +142,7 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
             unsigned io_twin = (io_state & IO_UART_TX)?io-1:io+1;
 
-            ios_state[io] &= ~IO_SPECIAL_EN;
-            ios_state[io_twin] &= ~IO_SPECIAL_EN;
+            io_state &= ~IO_SPECIAL_EN;
 
             io_configure(io_twin, true, 0);
             log_debug(DEBUG_IO, "IO %02u : UART0 NO LONGER", io);
@@ -156,8 +155,7 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
             unsigned io_twin = (io_state & IO_UART_TX)?io-1:io+1;
 
-            ios_state[io] &= ~IO_SPECIAL_EN;
-            ios_state[io_twin] &= ~IO_SPECIAL_EN;
+            io_state &= ~IO_SPECIAL_EN;
 
             io_configure(io_twin, true, 0);
             log_debug(DEBUG_IO, "IO %02u : UART1 NO LONGER", io);
