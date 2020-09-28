@@ -25,15 +25,17 @@ def get_debug_print():
 
 class io_board_prop_t(object):
     def __init__(self, index, parent):
-        self.parent = weakref.ref(parent)
+        self._parent = weakref.ref(parent)
         self.index  = index
+    @property
+    def parent(self):
+        return self._parent()
 
 
 class pps_t(io_board_prop_t):
     @property
     def values(self):
-        parent = self.parent()
-        r = parent.command(b"pps %u" % self.index)
+        r = self.parent.command(b"pps %u" % self.index)
         parts = r[0].split(b':')
         pps = int(parts[1].strip())
         parts = parts[2].split()
@@ -53,8 +55,7 @@ class adc_t(io_board_prop_t):
         self.name       = None
 
     def refresh(self):
-        parent = self.parent()
-        r = parent.command(b"adc %u" % self.index)
+        r = self.parent.command(b"adc %u" % self.index)
         assert len(r) == 4
         parts = [part.strip() for part in r[0].split(b':') ]
         assert parts[0] == b"ADC"
@@ -111,14 +112,12 @@ class io_t(io_board_prop_t):
 
     @property
     def value(self):
-        parent = self.parent()
-        r = parent.command(b"io %u" % self.index)
+        r = self.parent.command(b"io %u" % self.index)
         return self.load_from_line(r)
 
     @value.setter
     def value(self, v):
-        parent = self.parent()
-        r = parent.command(b"io %u = %u" % (self.index, 1 if v else 0))
+        r = self.parent.command(b"io %u = %u" % (self.index, 1 if v else 0))
         assert len(r) == 1, "Unexpected IO set return."
         r = r[0].strip()
         assert r == b'IO %02u = %s' % (self.index, b"ON" if v else b"OFF"), "Unexpected IO set return."
@@ -179,8 +178,7 @@ class io_t(io_board_prop_t):
         return value
 
     def _get_info(self):
-        parent = self.parent()
-        r = parent.command(b"io %02u"% self.index)
+        r = self.parent.command(b"io %02u"% self.index)
         self.load_from_line(r)
 
     @property
@@ -222,9 +220,8 @@ class io_t(io_board_prop_t):
         if not self._has_special:
             return
         if value:
-            parent = self.parent()
             cmd = b"sio %u" % self.index
-            r = parent.command(cmd)
+            r = self.parent.command(cmd)
             assert len(r), "Not expected special IO line."
             assert r[0] == b"IO %02u special enabled" % self.index
             self._as_special = True
@@ -246,13 +243,12 @@ class io_t(io_board_prop_t):
         if self.is_locked:
             assert direction == self.direction, "Locked IO can't change direction"
 
-        parent = self.parent()
         bias = io_t.PULLNONE if bias is None else bias
         cmd = b"io %02u : %s %s" % (self.index, direction, bias)
         if value is not None:
             value = bool(value)
             cmd += b" = %s" % (b"ON" if value else b"OFF")
-        r = parent.command(cmd)
+        r = self.parent.command(cmd)
         v = self.load_from_line(r)
         assert self._direction == direction, "IO direction not changed"
         assert self._direction != io_t.IN or self._bias == bias, "IO bias not changed"
@@ -305,7 +301,7 @@ class uart_t(io_board_prop_t):
         if self._io:
             return self._io
 
-        parent = self.parent()
+        parent = self.parent
 
         comm_port = parent.comm_port
 
