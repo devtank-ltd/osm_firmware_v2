@@ -113,8 +113,7 @@ class io_t(io_board_prop_t):
     def value(self):
         parent = self.parent()
         r = parent.command(b"io %u" % self.index)
-        v = self.load_from_line(r)
-        return False if v == b"OFF" else True if v == b"ON" else None
+        return self.load_from_line(r)
 
     @value.setter
     def value(self, v):
