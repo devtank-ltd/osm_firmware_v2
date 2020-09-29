@@ -6,12 +6,6 @@
 #include "basic_fixed.h"
 
 
-#define BFP_UPPERMAX   ((1LL << 43) - 1)
-#define BFP_LOWERMAX   999999LL
-#define BFP_LOWEROVER  (BFP_LOWERMAX + 1)
-#define BFP_LOWERLEN   6
-#define BFP_LOWERMUL   (BFP_LOWERLEN + 1)
-
 #define BFP_BIG_ONE    10000000000000000000ULL
 
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.

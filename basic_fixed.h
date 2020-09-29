@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define BFP_UPPERMAX   ((1LL << 43) - 1)
+#define BFP_LOWERMAX   999999LL
+#define BFP_LOWEROVER  (BFP_LOWERMAX + 1)
+#define BFP_LOWERLEN   6
 
 typedef union
 {
