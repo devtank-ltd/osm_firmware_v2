@@ -164,7 +164,7 @@ class io_t(io_board_prop_t):
             self._has_special = False
             self._as_special = False
             self._locked = False
-            self._label = ""
+            self._label = b""
 
         assert parts[0] in [io_t.OUT, io_t.IN]
         assert parts[1] in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE], "Invalid IO in line"
