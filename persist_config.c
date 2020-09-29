@@ -14,6 +14,7 @@
 #define FLASH_PAGE_SIZE 2048
 #define RAW_PERSIST_DATA ((void*)0x801F800)
 #define RAW_PERSIST_SIZE 2048
+#define PERSIST_VERSION 1
 
 #define CONFIG_NAME_MAX_LEN 32
 
@@ -31,27 +32,29 @@ typedef union
     {
         uint32_t  use_adc_cals:1;
     };
-    uint32_t flags;
+    uint32_t raw;
 } __attribute__((packed)) config_flags_t;
 
 
 typedef struct
 {
-    char       config_name[CONFIG_NAME_MAX_LEN];
-    cal_data_t cals[ADC_COUNT];
-    cal_unit_t units[ADC_COUNT];
+    uint32_t       version;
     config_flags_t flags;
+    char           config_name[CONFIG_NAME_MAX_LEN];
+    cal_data_t     cals[ADC_COUNT];
+    cal_unit_t     units[ADC_COUNT];
     uint16_t       crc;
 } __attribute__((packed)) config_data_t;
 
 
-static config_data_t * config_data = NULL;
+static bool          config_data_valid = false;
+static config_data_t config_data;
 
 
-static uint16_t _persistent_get_crc()
+static uint16_t _persistent_get_crc(config_data_t * _config_data)
 {
     crc_set_initial(0xBEEFBEEF);
-    return crc_calculate_block(RAW_PERSIST_DATA, sizeof(config_data_t) - sizeof(uint16_t));
+    return crc_calculate_block((uint32_t*)_config_data, sizeof(config_data_t) - sizeof(uint16_t));
 }
 
 
@@ -60,67 +63,63 @@ void        init_persistent()
     crc_set_polysize(16);
     crc_set_polynomial(0x4C11DB7);
 
-    config_data = (config_data_t*)RAW_PERSIST_DATA;
+    config_data_t * config_data_raw = (config_data_t*)RAW_PERSIST_DATA;
 
-    if (!config_data->config_name[0])
+    if (config_data_raw->version != PERSIST_VERSION)
+    {
+        log_error("Persistent data version unknown.");
+        return;
+    }
+
+    if (!config_data_raw->config_name[0])
     {
         log_error("Persistent data empty.");
-        config_data = NULL;
         return;
     }
 
     for(unsigned n = 0; n < 32; n++)
     {
-        if (!isascii(config_data->config_name[n]))
+        if (!isascii(config_data_raw->config_name[n]))
         {
             log_error("Persistent data not valid");
-            config_data = NULL;
             return;
         }
 
-        if (!config_data->config_name[n])
+        if (!config_data_raw->config_name[n])
         {
-            log_out("Found named persistent data : %s", config_data->config_name);
+            log_out("Found named persistent data : %s", config_data_raw->config_name);
             break;
         }
     }
 
-    uint16_t crc = _persistent_get_crc();
+    uint16_t crc = _persistent_get_crc(config_data_raw);
 
-    if (config_data->crc != crc)
+    if (config_data_raw->crc == crc)
     {
-        log_error("Persistent data CRC failed");
-        config_data = NULL;
+        memcpy(&config_data, config_data_raw, sizeof(config_data));
+        config_data_valid = true;
     }
+    else log_error("Persistent data CRC failed");
 }
 
 
 const char* persistent_get_name()
 {
-    if (config_data)
-        return config_data->config_name;
+    if (config_data_valid)
+        return config_data.config_name;
     return NULL;
 }
 
 
-static void _persistent_update_crc()
-{
-    flash_program_half_word((uintptr_t)&config_data->crc, _persistent_get_crc());
-}
-
-
-static void persistent_set_data(const void * addr, const void * data, unsigned used_size, unsigned full_size)
+static void persistent_set_data(const void * addr, const void * data, unsigned size)
 {
     const uint8_t * p = (const uint8_t*)data;
     uintptr_t _addr = (uintptr_t)addr;
 
-    if (used_size > full_size)
-        used_size = full_size;
-
-    for(unsigned n = 0; n < used_size; n+=2)
+    for(unsigned n = 0; n < size; n+=2)
     {
         uint16_t v;
-        if (n == (full_size - 1) || (n + 1) == used_size) /* Make sure we don't copy too much.*/
+        if ((n + 1) == size) /* Make sure we don't copy too much.*/
             v = p[n];
         else
             v = p[n] | (p[n + 1] << 8);
@@ -130,17 +129,24 @@ static void persistent_set_data(const void * addr, const void * data, unsigned u
 }
 
 
-static void persistent_zero(const void * addr, unsigned size)
+static void _persistent_commit()
 {
-    for(unsigned n = 0; n < size; n+=2)
-        flash_program_half_word(((uintptr_t)addr) + n, 0);
+    flash_unlock();
+
+    flash_erase_page((uintptr_t)RAW_PERSIST_DATA);
+
+    config_data.crc = _persistent_get_crc(&config_data);
+
+    config_data_valid = true;
+
+    persistent_set_data(RAW_PERSIST_DATA, &config_data, sizeof(config_data));
+
+    flash_lock();
 }
 
 
 void        persistent_set_name(const char * name)
 {
-    flash_unlock();
-
     unsigned len = strlen(name) + 1;
 
     if (len > CONFIG_NAME_MAX_LEN)
@@ -149,21 +155,17 @@ void        persistent_set_name(const char * name)
         len = CONFIG_NAME_MAX_LEN;
     }
 
-    flash_erase_page((uintptr_t)RAW_PERSIST_DATA);
+    config_data.version = PERSIST_VERSION;
+    config_data.flags.raw = 0;
+    config_data.flags.use_adc_cals = 1;
 
-    if (!config_data)
-        config_data = (config_data_t*)RAW_PERSIST_DATA;
-
-    persistent_set_data(config_data->config_name,
-                        (const uint8_t*)name,
-                        len, CONFIG_NAME_MAX_LEN);
-
-    if (len % 2)
-        len--;
-
-    /*Zero fill any unused space.*/
-    persistent_zero(config_data->config_name + len, CONFIG_NAME_MAX_LEN - len);
-
+    for(unsigned n = 0; n < CONFIG_NAME_MAX_LEN; n++)
+    {
+        if (n < len)
+            config_data.config_name[n] = name[n];
+        else
+            config_data.config_name[n] = 0;
+    }
 
     /* Default calibration values are just 3.3v */
     basic_fixed_t temp;
@@ -180,67 +182,50 @@ void        persistent_set_name(const char * name)
 
     for(unsigned n = 0; n < ADC_COUNT; n++)
     {
-        cal_data_t * cal = &config_data->cals[n];
-        persistent_set_data(&cal->scale, &v3_3, sizeof(uint64_t), sizeof(uint64_t));
-        persistent_set_data(&cal->offset, &temp, sizeof(uint64_t), sizeof(uint64_t)); 
-        persistent_set_data(&config_data->units[n], "V", 2, sizeof(cal_unit_t));
+        cal_data_t * cal = &config_data.cals[n];
+        cal->scale = v3_3.raw;
+        cal->offset = temp.raw;
+        memcpy(&config_data.units[n], "V", 2);
     }
 
-    persistent_zero(&config_data->flags, sizeof(config_flags_t));
-
-    _persistent_update_crc();
-
-    flash_lock();
+    _persistent_commit();
 }
 
 
 bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char ** unit)
 {
-    if (adc >= ADC_COUNT || !config_data ||  !offset || !scale || !unit)
+    if (adc >= ADC_COUNT || !config_data_valid ||  !offset || !scale || !unit)
         return false;
 
-    offset->raw = config_data->cals[adc].offset;
-    scale->raw = config_data->cals[adc].scale;
-    *unit = config_data->units[adc];
+    offset->raw = config_data.cals[adc].offset;
+    scale->raw = config_data.cals[adc].scale;
+    *unit = config_data.units[adc];
     return true;
 }
 
 
 bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char * unit)
 {
-    if (adc >= ADC_COUNT || !config_data)
+    if (adc >= ADC_COUNT || !config_data_valid)
         return false;
 
-    flash_unlock();
-
-    cal_data_t * cal = &config_data->cals[adc];
+    cal_data_t * cal = &config_data.cals[adc];
 
     if (unit)
     {
         unsigned len = strlen(unit) + 1;
-        if (len > sizeof(cal_unit_t))
-            persistent_set_data(&config_data->units[adc],
-                                unit,
-                                sizeof(cal_unit_t) - 1,
-                                sizeof(cal_unit_t));
-        else
-            persistent_set_data(&config_data->units[adc],
-                                unit, len,
-                                sizeof(cal_unit_t));
+
+        memcpy(&config_data.units[adc], unit, (len < sizeof(cal_unit_t))?len:sizeof(cal_unit_t));
+        config_data.units[adc][sizeof(cal_unit_t)-1] = 0;
     }
 
     if (scale)
-        persistent_set_data(&cal->scale, scale,
-                            sizeof(uint64_t), sizeof(uint64_t));
+        cal->scale = scale->raw;
 
     if (offset)
-        persistent_set_data(&cal->offset, offset,
-                            sizeof(uint64_t), sizeof(uint64_t));
+        cal->offset = offset->raw;
 
-
-    _persistent_update_crc();
-
-    flash_lock();
+    _persistent_commit();
 
    return true;
 }
@@ -248,17 +233,12 @@ bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
 
 bool        persistent_set_use_cal(bool enable)
 {
-    if (!config_data)
+    if (!config_data_valid)
         return false;
 
-    flash_unlock();
+    config_data.flags.use_adc_cals = (enable)?1:0;
 
-    config_flags_t flags = config_data->flags;
-    flags.use_adc_cals = (enable)?1:0;
-
-    persistent_set_data(&config_data->flags, &flags,
-                        sizeof(config_flags_t), sizeof(config_flags_t));
-    flash_lock();
+    _persistent_commit();
 
     return true;
 }
@@ -266,8 +246,8 @@ bool        persistent_set_use_cal(bool enable)
 
 bool        persistent_get_use_cal()
 {
-    if (!config_data)
+    if (!config_data_valid)
         return false;
 
-    return config_data->flags.use_adc_cals;
+    return config_data.flags.use_adc_cals;
 }
