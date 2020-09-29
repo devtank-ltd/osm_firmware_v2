@@ -118,7 +118,7 @@ void io_cb()
 
         pos = skip_space(pos);
 
-        if (*pos != '=')
+        if (*pos && *pos != '=')
         {
             if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
             {
