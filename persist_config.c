@@ -173,8 +173,8 @@ void        persistent_set_name(const char * name)
     basic_fixed_set_whole(&temp, 10);
     basic_fixed_div(&v3_3, &v3_3, &temp); /* 3.3v */
 
-    basic_fixed_set_whole(&temp, 1024);
-    basic_fixed_div(&v3_3, &v3_3, &temp); /* 3.3v / 1024 */
+    basic_fixed_set_whole(&temp, 4095);
+    basic_fixed_div(&v3_3, &v3_3, &temp); /* 3.3v / 4095 */
 
     basic_fixed_set_whole(&temp, 0);
 
