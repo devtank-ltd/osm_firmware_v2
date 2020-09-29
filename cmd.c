@@ -292,7 +292,7 @@ void uarts_cb()
 
 void persist_cb()
 {
-    char * pos = skip_to_space(rx_buffer + rx_pos);
+    char * pos = skip_space(rx_buffer + rx_pos);
 
     if (*pos)
         persistent_set_name(pos);
@@ -303,10 +303,32 @@ void persist_cb()
 
 void en_cal_cb()
 {
-    if (strncmp(rx_buffer + rx_pos, "ON", 2))
-        persistent_set_use_cal(true);
+    char * pos = skip_space(rx_buffer + rx_pos);
+
+    if (*pos)
+    {
+        if (strncmp(pos, "ON", 2) == 0 || pos[0] == '1')
+        {
+            if (persistent_set_use_cal(true))
+                log_out("Enabled ADC Cals");
+            else
+                log_debug(DEBUG_SYS, "Failed to enable ADC Cals");
+        }
+        else
+        {
+            if (persistent_set_use_cal(false))
+                log_out("Disabled ADC Cals");
+            else
+                log_debug(DEBUG_SYS, "Failed to disable ADC Cals");
+        }
+    }
     else
-        persistent_set_use_cal(false);
+    {
+        if (persistent_get_use_cal())
+            log_out("ADC Cals Enabled");
+        else
+            log_out("ADC Cals Disabled");
+    }
 }
 
 
@@ -320,9 +342,9 @@ void cal_name_cb()
 void adc_cal_cb()
 {
     static basic_fixed_t scale, offset;
-    char * pos = NULL;
 
-    unsigned adc = strtoul(rx_buffer + rx_pos, &pos, 10);
+    char * pos = skip_space(rx_buffer + rx_pos);
+    unsigned adc = strtoul(pos, &pos, 10);
 
     if (strncmp(pos,"S:",2) == 0)
     {
