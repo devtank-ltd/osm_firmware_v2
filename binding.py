@@ -408,14 +408,14 @@ class io_board_py_t(object):
             io_obj.load_from_line(line)
 
         for io_obj in self.ios:
-            if io_obj.label.startswith("PPS"):
+            if io_obj.label.startswith(b"PPS"):
                 index = int(io_obj.label[3:])
                 self.ppss[index].io_obj = io_obj
-            elif io_obj.label.startswith("UART"):
+            elif io_obj.label.startswith(b"UART"):
                 index = int(io_obj.label[4:-3])
-                if io_obj.label.endswith("RX"):
+                if io_obj.label.endswith(b"RX"):
                     self.uarts[index].rx_io_obj = io_obj
-                elif io_obj.label.endswith("TX"):
+                elif io_obj.label.endswith(b"TX"):
                     self.uarts[index].tx_io_obj = io_obj
 
     def load_cal_map(self, cal_map):
