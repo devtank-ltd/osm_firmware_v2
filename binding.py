@@ -166,15 +166,12 @@ class io_t(io_board_prop_t):
             self._locked = False
             self._label = ""
 
-        if parts[0] == io_t.OUT:
-            self._bias = io_t.PULLNONE
-            self._direction = io_t.OUT
-        elif parts[0] == io_t.IN:
-            assert parts[1] in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE, None], "Invalid IO in line"
-            self._bias = parts[1]
-            self._direction = io_t.IN
-        else:
-            assert False, "Invalid IO in line"
+        assert parts[0] in [io_t.OUT, io_t.IN]
+        assert parts[1] in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE], "Invalid IO in line"
+
+        self._direction = parts[0]
+        self._bias = parts[1]
+
         return value
 
     def _get_info(self):

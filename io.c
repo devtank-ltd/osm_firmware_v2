@@ -308,8 +308,9 @@ void     io_log(unsigned io)
                     _ios_get_pull_str(io_state),
                     (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
         else
-            log_out("IO %02u : %s%s%sOUT = %s",
+            log_out("IO %02u : %s%s%sOUT %s = %s",
                     io, pretype, type, posttype,
+                    _ios_get_pull_str(io_state),
                     (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
     }
     else log_out("IO %02u : USED %s", io, type);
