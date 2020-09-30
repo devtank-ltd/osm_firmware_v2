@@ -159,7 +159,7 @@ void adcs_adc_log(unsigned adc)
 
     volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
 
-    log_out("ADC : %u (Channel : %u)", adc, adc_channel_array[adc]);
+    log_out("ADC : %u", adc);
 
     if (persistent_get_use_cal())
     {
