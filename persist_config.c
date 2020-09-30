@@ -171,10 +171,7 @@ void        persistent_set_name(const char * name)
     basic_fixed_t temp;
     basic_fixed_t v3_3;
 
-    basic_fixed_set_whole(&v3_3, 33);
-    basic_fixed_set_whole(&temp, 10);
-    basic_fixed_div(&v3_3, &v3_3, &temp); /* 3.3v */
-
+    basic_fixed_set_whole(&v3_3, 3300);
     basic_fixed_set_whole(&temp, 4095);
     basic_fixed_div(&v3_3, &v3_3, &temp); /* 3.3v / 4095 */
 
@@ -185,7 +182,7 @@ void        persistent_set_name(const char * name)
         cal_data_t * cal = &config_data.cals[n];
         cal->scale = v3_3.raw;
         cal->offset = temp.raw;
-        memcpy(&config_data.units[n], "V", 2);
+        memcpy(&config_data.units[n], "mV", 3);
     }
 
     _persistent_commit();
