@@ -27,13 +27,13 @@ def test():
         print(BADRED + "Integer" + NORMAL)
 
     r = run_it("10.10000001")
-    if r != "10.100000":
+    if r == "10.100000":
         print(OKGREEN + "Float over long" + NORMAL)
     else:
         print(BADRED + "Float over long" + NORMAL)
 
     r = run_it("10.1")
-    if r != "10.100000":
+    if r == "10.100000":
         print(OKGREEN + "Float short" + NORMAL)
     else:
         print(BADRED + "Float short" + NORMAL)
