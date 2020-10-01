@@ -7,7 +7,7 @@ import weakref
 import serial.tools.list_ports
 
 
-_debug_fnc = print if "DEBUG" in os.environ else None
+_debug_fnc = lambda *args : print(*args, file=sys.stderr) if "DEBUG" in os.environ else None
 
 
 def debug_print(msg):
