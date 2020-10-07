@@ -13,11 +13,36 @@ def run_it(cmd):
         return f.readline().strip()
 
 
+def do_test(a,op,b):
+
+    r = run_it("%s \\%s %s" % (a,op,b))
+    r_n = float(r)
+    s = "%s %s %s" % (a,op,b)
+    r_n2 = eval(s)
+    if r_n and r_n2:
+        e = abs(r_n / r_n2 * 100)
+    else:
+        e = 100
+    status = ""
+    if e > 99 and e < 99.5:
+        status = OKGREEN + "<<<< OK" + NORMAL
+    elif e < 95:
+        if r.find("0.00000") != -1:
+            status = OKGREEN + "<<<< SMALL OK " + NORMAL
+        else:
+            status = BADRED + "<<<< BAD" + NORMAL
+            if e < 90:
+                status = BADRED + "<<<< TERRIBLE" + NORMAL
+                assert e > 70, s
+    return s, r, r_n2, e, status
+
+
 def test():
     u = (random.randint(1, 10000), 0, -random.randint(1, 10000))
     l = (random.randint(1, 1000000), 0)
     o = "-+/*"
 
+    global good
     good = 0
 
     r = run_it("500")
@@ -38,6 +63,12 @@ def test():
     else:
         print(BADRED + "Float short" + NORMAL)
 
+    s, r, r_n2, e, status = do_test(str(4095 * 6000),"/","6000")
+    if r == "4095.000000":
+        print(OKGREEN + "ADC worst cast" + NORMAL)
+    else:
+        print(BADRED + "ADC worst cast" + NORMAL)
+
     for n in range(0, len(o)):
       for i in range(0, len(u)):
         for j in range(0, len(l)):
@@ -47,30 +78,11 @@ def test():
               b = "%d.%06u" % (u[x], l[y])
               op = o[n]
               if op != '/' or b != "0.000000":
-                r = run_it("%s \\%s %s" % (a,op,b))
-                r_n = float(r)
-                s = "%s %s %s" % (a,op,b)
-                r_n2 = eval(s)
-                if r_n and r_n2:
-                    e = abs(r_n / r_n2 * 100)
-                else:
-                    e = 100
-                status = ""
-                if e > 99 and e < 99.5:
-                    status = OKGREEN + "<<<< OK" + NORMAL
-                elif e < 95:
-                    if r.find("0.00000") != -1:
-                        status = OKGREEN + "<<<< SMALL OK " + NORMAL
-                    else:
-                        status = BADRED + "<<<< BAD" + NORMAL
-                        if e < 90:
-                            status = BADRED + "<<<< TERRIBLE" + NORMAL
-                            assert e > 70, s
-
+                s, r, r_n2, e, status = do_test(a,op,b)
                 if status:
-                    print(s, "=", r, ",", r_n2, ": %G%%" % e, status, "After %u Good" % good)
+                  print(s, "=", r, ",", r_n2, ": %G%%" % e, status, "After %u Good" % good)
                 else:
-                    good += 1
+                  good += 1
 
     print("Done after %u Good" % good)
 
