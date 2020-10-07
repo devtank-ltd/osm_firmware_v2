@@ -87,7 +87,7 @@ bool basic_fixed_read(char * str, basic_fixed_t * r, char ** endpos)
     }
 
     r->lower = lower;
-    
+
     return true;
 }
 
@@ -196,7 +196,7 @@ bool basic_fixed_div(basic_fixed_t * v, basic_fixed_t * a,  basic_fixed_t * b)
                                  .upper = big_reci_frac / BFP_LOWEROVER,
                                  .lower = big_reci_frac % BFP_LOWEROVER,
                                 };
-        
+
         if (!basic_fixed_mul(v, a, &bf_reci))
             return false;
     }
