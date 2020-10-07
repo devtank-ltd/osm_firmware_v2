@@ -6,7 +6,8 @@
 #include "basic_fixed.h"
 
 
-#define BFP_BIG_ONE    1000000000000000000ULL
+#define BFP_BIG_ONE    10000000000000000000ULL
+#define BFP_BIG_ONE_MUL 10000000UL
 
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
@@ -189,7 +190,7 @@ bool basic_fixed_div(basic_fixed_t * v, basic_fixed_t * a,  basic_fixed_t * b)
     {
         uint64_t whole = (b->upper * BFP_LOWEROVER) + b->lower;
         uint64_t big_reciprocal = BFP_BIG_ONE / whole;
-        uint64_t big_reci_frac = big_reciprocal / BFP_LOWEROVER;
+        uint64_t big_reci_frac = big_reciprocal / BFP_BIG_ONE_MUL;
 
         basic_fixed_t bf_reci = {.sign  = 0,
                                  .upper = big_reci_frac / BFP_LOWEROVER,
