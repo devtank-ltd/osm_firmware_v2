@@ -356,8 +356,11 @@ class uart_t(io_board_prop_t):
         return line
 
     def drain(self):
+        # Give enough time for it to be reasonable to expect a character
+        time.sleep(1 / (self._baud / 10) * 10)
         while self.io.in_waiting:
             self.io.read(self.io.in_waiting)
+            time.sleep(1 / (self._baud / 10) * 10)
         debug_print("%sUART%u Drained" % (self.parent.log_prefix, self.index))
 
 
