@@ -390,9 +390,8 @@ class io_board_py_t(object):
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS,
                 timeout=1)
-        line = self.comm.readline()
-        while len(line):
-            line = self.comm.readline()
+        while self.comm.in_waiting:
+            self.comm.readline(self.comm.in_waiting)
         self.log_prefix = "%s: " % loti_label if loti_label else ""
         debug_print("%sDrained" % self.log_prefix)
         r = self.command(b"count")
