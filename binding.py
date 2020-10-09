@@ -54,6 +54,11 @@ class adc_t(io_board_prop_t):
         self.adc_offset = 0
         self.name       = None
 
+    def _raw_to_voltage(self, v):
+        r = v * self.adc_scale + self.adc_offset
+        debug_print("%sADC %u%s : raw %u : calibrated : %G" % (self.parent.log_prefix, self.index, "(%s)" % self.name if self.name else "", v, r))
+        return r
+
     def refresh(self):
         r = self.parent.command(b"adc %u" % self.index)
         assert len(r) == 4
@@ -65,9 +70,9 @@ class adc_t(io_board_prop_t):
         parts = r[3].split(b':')[1].split(b'/')
         raw_avg_value = float(parts[0].strip()) / int(parts[1].strip())
         self._age = time.time()
-        self._avg_value = raw_avg_value * self.adc_scale + self.adc_offset
-        self._min_value = raw_min_value * self.adc_scale + self.adc_offset
-        self._max_value = raw_max_value * self.adc_scale + self.adc_offset
+        self._min_value = self._raw_to_voltage(raw_min_value)
+        self._max_value = self._raw_to_voltage(raw_max_value)
+        self._avg_value = self._raw_to_voltage(raw_avg_value)
 
     def _refresh(self):
         if not self._age or (time.time() - self._age) > 1:
@@ -418,13 +423,27 @@ class io_board_py_t(object):
                 elif io_obj.label.endswith(b"TX"):
                     self.uarts[index].tx_io_obj = io_obj
 
-    def load_cal_map(self, cal_map):
+    def load_cal_map(self, cal_map, default_scale=3.3/4095, default_offset=0):
+        mapped_adcs = {}
+
         for adc_name, adc_adj in cal_map.items():
             if adc_name in self.NAME_MAP:
                 adc = getattr(self, adc_name)
                 adc.name = adc_name
                 adc.adc_scale  = adc_adj[0]
                 adc.adc_offset = adc_adj[1]
+                debug_print("%sADC %u : %s : Cal %G %G" % (self.log_prefix, adc.index, adc_name, adc_adj[0], adc_adj[1]))
+                if adc.index in mapped_adcs:
+                    debug_print("%sADC name %s double mapped in calibration." % (self.log_prefix, adc_name))
+                mapped_adcs[adc.index] = True
+
+        for adc in self.adcs:
+            if adc.index in mapped_adcs:
+                continue
+            adc.name = None
+            adc.adc_scale = default_scale
+            adc.adc_offset = default_offset
+            debug_print("%sADC %u : Cal %G %G" % (self.log_prefix, adc.index, default_scale, default_offset))
 
     def use_ios_map(self, ios):
         for n in range(0, len(ios)):
