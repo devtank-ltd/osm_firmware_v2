@@ -22,7 +22,7 @@
 
 void hard_fault_handler(void)
 {
-    platform_raw_msg("----big fat libopen3 crash -----");
+    platform_raw_msg("----big fat crash -----");
     while(true);
 }
 
