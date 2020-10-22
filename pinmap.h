@@ -132,10 +132,10 @@ typedef struct
     {GPIOB, GPIO9},    /* IO 25 */ \
     {GPIOB, GPIO3},    /* IO 26 - PPS 0 */ \
     {GPIOC, GPIO7},    /* IO 27 - PPS 1 */ \
-    {GPIOC, GPIO10},   /* IO 28 - UART_1_RX */ \
-    {GPIOC, GPIO11},   /* IO 29 - UART_1_TX */ \
-    {GPIOA, GPIO0},    /* IO 30 - UART_2_RX  */ \
-    {GPIOA, GPIO1},    /* IO 31 - UART_2_TX */ \
+    {GPIOC, GPIO10},   /* IO 28 - UART_0_RX */ \
+    {GPIOC, GPIO11},   /* IO 29 - UART_0_TX */ \
+    {GPIOA, GPIO0},    /* IO 30 - UART_1_RX  */ \
+    {GPIOA, GPIO1},    /* IO 31 - UART_1_TX */ \
 }
 
 
