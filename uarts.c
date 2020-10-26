@@ -124,6 +124,8 @@ void uart_enable(unsigned uart, bool enable)
     if (uart >= UART_CHANNELS_COUNT || !uart)
         return;
 
+    log_debug(DEBUG_UART, "UART %u : %s", uart, (enable)?"Enable":"Disable");
+
     uart_channel_t * channel = &uart_channels[uart];
 
     if (!enable)
