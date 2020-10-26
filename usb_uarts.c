@@ -357,6 +357,9 @@ unsigned usb_uart_send(unsigned uart, void * data, unsigned len, bool flush)
     if (uart >= ARRAY_SIZE(end_addrs))
         return 0;
 
+    if (!uart_is_enabled(uart))
+        return len; /* Drop data */
+
     uint8_t w_addr = end_addrs[uart].data_addr | 0x80;
 
     if (len > USB_DATA_PCK_SZ)
