@@ -144,7 +144,12 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
             io_state &= ~IO_SPECIAL_EN;
 
-            io_configure(io_twin, true, 0);
+            if (ios_state[io_twin] & IO_SPECIAL_EN)
+            {
+                ios_state[io_twin] &= ~IO_SPECIAL_EN;
+                io_configure(io_twin, true, 0);
+            }
+
             log_debug(DEBUG_IO, "IO %02u : UART0 NO LONGER", io);
             log_debug(DEBUG_IO, "IO %02u : UART0 NO LONGER", io_twin);
         }
@@ -157,7 +162,12 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
             io_state &= ~IO_SPECIAL_EN;
 
-            io_configure(io_twin, true, 0);
+            if (ios_state[io_twin] & IO_SPECIAL_EN)
+            {
+                ios_state[io_twin] &= ~IO_SPECIAL_EN;
+                io_configure(io_twin, true, 0);
+            }
+
             log_debug(DEBUG_IO, "IO %02u : UART1 NO LONGER", io);
             log_debug(DEBUG_IO, "IO %02u : UART1 NO LONGER", io_twin);
         }
