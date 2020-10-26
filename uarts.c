@@ -93,7 +93,7 @@ static void uart_up(const uart_channel_t * channel)
 }
 
 
-static void uart_setup(const uart_channel_t * channel)
+static void uart_setup(uart_channel_t * channel)
 {
     rcc_periph_clock_enable(PORT_TO_RCC(channel->gpioport));
     rcc_periph_clock_enable(channel->uart_clk);
@@ -115,6 +115,7 @@ static void uart_setup(const uart_channel_t * channel)
         nvic_set_priority(channel->dma_irqn, channel->priority);
         nvic_enable_irq(channel->dma_irqn);
     }
+    channel->enabled = 1;
 }
 
 
@@ -131,6 +132,7 @@ void uart_enable(unsigned uart, bool enable)
         usart_disable_rx_interrupt(channel->usart);
         usart_disable(channel->usart);
         rcc_periph_clock_disable(channel->uart_clk);
+        channel->enabled = 0;
     }
     else uart_setup(channel);
 }
@@ -217,12 +219,15 @@ static void process_serial(unsigned uart)
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
+    uart_channel_t * channel = &uart_channels[uart];
+
+    if (!channel->enabled)
+        return;
+
     char c;
 
-    if (!uart_getc(uart_channels[uart].usart, &c))
-    {
+    if (!uart_getc(channel->usart, &c))
         return;
-    }
 
     uart_ring_in(uart, &c, 1);
 }
@@ -326,6 +331,9 @@ bool uart_dma_out(unsigned uart, char *data, int size)
         return false;
 
     const uart_channel_t * channel = &uart_channels[uart];
+
+    if (!channel->enabled)
+        return true; /* Drop the data */
 
     if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
         return false;
