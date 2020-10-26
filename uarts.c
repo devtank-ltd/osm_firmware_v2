@@ -128,7 +128,6 @@ void uart_enable(unsigned uart, bool enable)
     if (!enable)
     {
         nvic_disable_irq(channel->irqn);
-        usart_disable(channel->usart);
         usart_disable_rx_interrupt(channel->usart);
         usart_disable(channel->usart);
         rcc_periph_clock_disable(channel->uart_clk);
