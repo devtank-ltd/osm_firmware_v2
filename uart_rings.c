@@ -77,7 +77,8 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
     else
     {
         ring = &ring_out_bufs[uart];
-        log_debug(DEBUG_UART, "UART %u out %u", uart, len);
+        if (uart) // Add debug messages to debug ring buffer is a loop.
+            log_debug(DEBUG_UART, "UART %u out < %u", uart, len);
     }
 
     for (unsigned n = 0; n < len; n++)
@@ -203,7 +204,7 @@ static void uart_ring_out_drain(unsigned uart)
     if (uart_is_tx_empty(uart))
     {
         if (uart)
-            log_debug(DEBUG_UART, "UART %u OUT %u", uart, len);
+            log_debug(DEBUG_UART, "UART %u OUT > %u", uart, len);
 
         len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
 
