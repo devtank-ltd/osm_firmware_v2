@@ -49,7 +49,6 @@ class adc_t(io_board_prop_t):
         self._min_value = 0
         self._max_value = 0
         self._avg_value = 0
-        self._age = 0
         self.adc_scale  = 3.3/4095
         self.adc_offset = 0
         self.name       = None
@@ -69,28 +68,13 @@ class adc_t(io_board_prop_t):
         raw_max_value = int(r[2].split(b':')[1].strip())
         parts = r[3].split(b':')[1].split(b'/')
         raw_avg_value = float(parts[0].strip()) / int(parts[1].strip())
-        self._age = time.time()
         self._min_value = self._raw_to_voltage(raw_min_value)
         self._max_value = self._raw_to_voltage(raw_max_value)
         self._avg_value = self._raw_to_voltage(raw_avg_value)
 
-    def _refresh(self):
-        if not self._age or (time.time() - self._age) > 1:
-            self.refresh()
-
-    @property
-    def min_value(self):
-        self._refresh()
-        return self._min_value
-
-    @property
-    def max_value(self):
-        self._refresh()
-        return self._max_value
-
     @property
     def value(self):
-        self._refresh()
+        self.refresh()
         return self._avg_value
 
     @property
