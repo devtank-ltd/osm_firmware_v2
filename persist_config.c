@@ -87,7 +87,7 @@ void        init_persistent()
 
         if (!config_data_raw->config_name[n])
         {
-            log_out("Found named persistent data : %s", config_data_raw->config_name);
+            log_sys_debug("Found named persistent data : %s", config_data_raw->config_name);
             break;
         }
     }
