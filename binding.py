@@ -369,7 +369,7 @@ class io_board_py_t(object):
     READTIME = 2
     NAME_MAP = {}
 
-    def __init__(self, dev, loti_label = None):
+    def __init__(self, dev, dev_label = None):
         self.ppss = []
         self.inputs = []
         self.outputs = []
@@ -387,7 +387,7 @@ class io_board_py_t(object):
                 timeout=1)
         while self.comm.in_waiting:
             self.comm.readline(self.comm.in_waiting)
-        self.log_prefix = "%s: " % loti_label if loti_label else ""
+        self.log_prefix = "%s: " % dev_label if dev_label else ""
         debug_print("%sDrained" % self.log_prefix)
         r = self.command(b"count")
         for line in r:
