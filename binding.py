@@ -49,14 +49,12 @@ class adc_t(io_board_prop_t):
         self._min_value = 0
         self._max_value = 0
         self._avg_value = 0
-        self.adc_scale  = 3.3/4095
-        self.adc_offset = 0
+        self.unit       = None
         self.name       = None
 
     def _raw_to_voltage(self, v):
-        r = v * self.adc_scale + self.adc_offset
-        debug_print("%sADC %u%s : raw %u : calibrated : %G" % (self.parent.log_prefix, self.index, "(%s)" % self.name if self.name else "", v, r))
-        return r
+        debug_print("%sADC %u%s : %G" % (self.parent.log_prefix, self.index, "(%s)" % self.name if self.name else "", v))
+        return v
 
     def refresh(self):
         r = self.parent.command(b"adc %u" % self.index)
@@ -64,13 +62,18 @@ class adc_t(io_board_prop_t):
         parts = [part.strip() for part in r[0].split(b':') ]
         assert parts[0] == b"ADC"
         assert int(parts[1].split(b' ')[0]) == self.index
-        raw_min_value = int(r[1].split(b':')[1].strip())
-        raw_max_value = int(r[2].split(b':')[1].strip())
-        parts = r[3].split(b':')[1].split(b'/')
-        raw_avg_value = float(parts[0].strip()) / int(parts[1].strip())
+        min_str = r[1].split(b':')[1].strip()
+        dot = min_str.find(b".") + 1
+        while chr(min_str[dot]).isdecimal():
+            dot+=1
+        unit = min_str[dot:]
+        raw_min_value = float(min_str.replace(unit,b""))
+        raw_max_value = float(r[2].split(b':')[1].strip().replace(unit,b""))
+        raw_avg_value = float(r[3].split(b':')[1].strip().replace(unit,b""))
         self._min_value = self._raw_to_voltage(raw_min_value)
         self._max_value = self._raw_to_voltage(raw_max_value)
         self._avg_value = self._raw_to_voltage(raw_avg_value)
+        self.unit = unit.decode()
 
     @property
     def value(self):
