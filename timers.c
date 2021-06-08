@@ -36,6 +36,11 @@ void tim2_isr(void)
 }
 
 
+void     timer_wait()
+{
+    unsigned cur = fast_sample_count;
+    while(cur < fast_sample_count);
+}
 
 
 void     timers_init()

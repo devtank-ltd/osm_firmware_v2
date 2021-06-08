@@ -31,6 +31,7 @@ typedef struct
 
 static void pps_cb();
 static void adc_cb();
+static void adcsw_cb();
 static void io_cb();
 static void special_cb();
 static void count_cb();
@@ -48,6 +49,7 @@ static cmd_t cmds[] = {
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
     { "adcs",     "Print all ADCs.",         adcs_log},
+    { "adcsw",    "Wait to print all ADCs.", adcsw_cb},
     { "ios",      "Print all IOs.",          ios_log},
     { "io",       "Get/set IO set.",         io_cb},
     { "sio",      "Enable Special IO.",      special_cb},
@@ -77,6 +79,13 @@ void adc_cb()
 {
     unsigned adc = strtoul(rx_buffer + rx_pos, NULL, 10);
     adcs_adc_log(adc);
+}
+
+
+void adcsw_cb()
+{
+    timer_wait();
+    adcs_log();
 }
 
 

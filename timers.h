@@ -3,4 +3,6 @@
 
 extern void     timers_init();
 
+extern void     timer_wait();
+
 #endif //__TIMERS__
