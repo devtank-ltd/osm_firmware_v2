@@ -51,13 +51,19 @@ class adc_t(io_board_prop_t):
         self._avg_value = 0
         self.unit       = None
         self.name       = None
+        self.auto_refresh = True
 
     def _raw_to_voltage(self, v):
         debug_print("%sADC %u%s : %G" % (self.parent.log_prefix, self.index, "(%s)" % self.name if self.name else "", v))
         return v
 
     def refresh(self):
+        if not self.auto_refresh:
+            return
         r = self.parent.command(b"adc %u" % self.index)
+        self.update_from_line(r)
+
+    def update_from_line(self, r):
         assert len(r) == 4
         parts = [part.strip() for part in r[0].split(b':') ]
         assert parts[0] == b"ADC"
@@ -454,6 +460,14 @@ class io_board_py_t(object):
         if getter:
             return getter(self)
         raise AttributeError("Attribute %s not found" % item)
+
+    def sync_all_adcs(self):
+        r = self.command(b"adcsw")
+        pos = 0
+        for adc in self.adcs:
+            adc.auto_refresh = False
+            adc.update_from_line(r[pos:pos+4])
+            pos += 4
 
     def _read_line(self):
         line = self.comm.readline().strip()
