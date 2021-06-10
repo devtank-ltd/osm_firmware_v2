@@ -354,6 +354,7 @@ void adc_cal_cb()
 
     char * pos = skip_space(rx_buffer + rx_pos);
     unsigned adc = strtoul(pos, &pos, 10);
+    pos = skip_space(pos);
 
     if (strncmp(pos,"S:",2) == 0)
     {
