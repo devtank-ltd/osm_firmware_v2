@@ -26,3 +26,8 @@ for uart in comm.uarts:
 comm.sync_all_adcs()
 for adc in comm.adcs:
     print("ADC", adc.index, adc.values, adc.unit)
+
+print("Get calibration")
+d = comm.adcs_calibration
+print("Set calibration")
+comm.adcs_calibration = d

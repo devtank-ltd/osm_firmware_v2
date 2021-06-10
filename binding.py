@@ -21,6 +21,11 @@ def set_debug_print(_func):
 def get_debug_print():
     return _debug_fnc
 
+def _to_bytes(s):
+    if isinstance(s, bytes):
+        return s
+    return s.encode()
+
 
 
 class io_board_prop_t(object):
@@ -90,6 +95,28 @@ class adc_t(io_board_prop_t):
     def values(self):
         self.refresh()
         return self._avg_value, self._min_value, self._max_value
+
+    @property
+    def calibration(self):
+        r = self.parent.command(b"cal %u" % self.index)
+        assert len(r) == 4
+        parts = [part.strip() for part in r[0].split(b':') ]
+        assert parts[0] == b"ADC"
+        assert int(parts[1].split(b' ')[0]) == self.index
+        scale = float(r[1].split(b':')[1].strip())
+        offset = float(r[2].split(b':')[1].strip())
+        unit = r[3].split(b':')[1].strip()
+        return scale, offset, unit.decode()
+
+    @calibration.setter
+    def calibration(self, v):
+        scale, offset, unit = v
+        r = self.parent.command(b"cal %uS:%0.06f" % (self.index, scale))
+        assert r[0] == b"Cal scale pending"
+        r = self.parent.command(b"cal %uO:%0.06f" % (self.index, offset))
+        assert r[0] == b"Cal offset pending"
+        r = self.parent.command(b"cal %uU:%s" % (self.index, _to_bytes(unit)))
+        assert r[0] == b"Cal set"
 
 
 class io_t(io_board_prop_t):
@@ -468,6 +495,29 @@ class io_board_py_t(object):
             adc.auto_refresh = False
             adc.update_from_line(r[pos:pos+4])
             pos += 4
+
+    @property
+    def cal_name(self):
+        r = self.command(b"cal_name")
+        assert len(r) == 1 and r[0][:2] == b"N:", "Invalid cal_name response."
+        return r[0][2:].decode()
+
+    @property
+    def adcs_calibration(self):
+        r = {"name" : self.cal_name}
+        for adc in self.adcs:
+            r[adc.index] = list(adc.calibration)
+        return r
+
+    @adcs_calibration.setter
+    def adcs_calibration(self, cal):
+        for k, v in cal.items():
+            if k == "name":
+                name = cal["name"]
+                r = self.command(b"persist %s" % _to_bytes(name))
+                assert (len(r) == 1 and r[0] == b"New persistent data started."), "Invalid persist response."
+            else:
+                self.adcs[k].calibration = tuple(v)
 
     def _read_line(self):
         line = self.comm.readline().strip()
