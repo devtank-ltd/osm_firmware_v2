@@ -75,16 +75,28 @@ class adc_t(io_board_prop_t):
         assert int(parts[1].split(b' ')[0]) == self.index
         min_str = r[1].split(b':')[1].strip()
         dot = min_str.find(b".") + 1
-        while chr(min_str[dot]).isdecimal():
-            dot+=1
-        unit = min_str[dot:]
-        raw_min_value = float(min_str.replace(unit,b""))
-        raw_max_value = float(r[2].split(b':')[1].strip().replace(unit,b""))
-        raw_avg_value = float(r[3].split(b':')[1].strip().replace(unit,b""))
-        self._min_value = self._raw_to_voltage(raw_min_value)
-        self._max_value = self._raw_to_voltage(raw_max_value)
-        self._avg_value = self._raw_to_voltage(raw_avg_value)
-        self.unit = unit.decode()
+        if dot > 0:
+            while chr(min_str[dot]).isdecimal():
+                dot+=1
+            unit = min_str[dot:]
+            raw_min_value = float(min_str.replace(unit,b""))
+            raw_max_value = float(r[2].split(b':')[1].strip().replace(unit,b""))
+            raw_avg_value = float(r[3].split(b':')[1].strip().replace(unit,b""))
+            self._min_value = self._raw_to_voltage(raw_min_value)
+            self._max_value = self._raw_to_voltage(raw_max_value)
+            self._avg_value = self._raw_to_voltage(raw_avg_value)
+            self.unit = unit.decode()
+        else:
+            raw_min_value = int(min_str)
+            raw_max_value = int(r[2].split(b':')[1].strip())
+            avg_line = r[3].split(b':')[1].strip()
+            parts = avg_line.split(b"/")
+            assert len(parts) == 2
+            raw_avg_value = int(parts[0]) / float(parts[1])
+            self._min_value = self._raw_to_voltage(raw_min_value)
+            self._max_value = self._raw_to_voltage(raw_max_value)
+            self._avg_value = self._raw_to_voltage(raw_avg_value)
+            self.unit = None
 
     @property
     def value(self):
@@ -443,28 +455,6 @@ class io_board_py_t(object):
                     self.uarts[index].rx_io_obj = io_obj
                 elif io_obj.label.endswith(b"TX"):
                     self.uarts[index].tx_io_obj = io_obj
-
-    def load_cal_map(self, cal_map, default_scale=3.3/4095, default_offset=0):
-        mapped_adcs = {}
-
-        for adc_name, adc_adj in cal_map.items():
-            if adc_name in self.NAME_MAP:
-                adc = getattr(self, adc_name)
-                adc.name = adc_name
-                adc.adc_scale  = adc_adj[0]
-                adc.adc_offset = adc_adj[1]
-                debug_print("%sADC %u : %s : Cal %G %G" % (self.log_prefix, adc.index, adc_name, adc_adj[0], adc_adj[1]))
-                if adc.index in mapped_adcs:
-                    debug_print("%sADC name %s double mapped in calibration." % (self.log_prefix, adc_name))
-                mapped_adcs[adc.index] = True
-
-        for adc in self.adcs:
-            if adc.index in mapped_adcs:
-                continue
-            adc.name = None
-            adc.adc_scale = default_scale
-            adc.adc_offset = default_offset
-            debug_print("%sADC %u : Cal %G %G" % (self.log_prefix, adc.index, default_scale, default_offset))
 
     def use_ios_map(self, ios):
         for n in range(0, len(ios)):
