@@ -459,7 +459,7 @@ class io_board_py_t(object):
     def use_ios_map(self, ios):
         for n in range(0, len(ios)):
             self.ios[n].setup(*ios[n])
-        r = self.command("count")
+        r = self.command(b"count")
         m = {}
         for line in r:
             parts = line.split(b':')
@@ -470,6 +470,30 @@ class io_board_py_t(object):
                     child = type(self).PROP_MAP[name](n, self)
                     children = getattr(self, name.decode())
                     children += [child]
+
+    @property
+    def enable_calibdation(self):
+        r = self.command(b"en_cal")
+        assert len(r) == 1, "Invalid return count from en_cal command."
+        line = r[0]
+        assert line.startswith(b"ADC Cals "), "Invalid response from en_cal command."
+        if line.endswith(b"Enabled"):
+            return True
+        if line.endswith(b"Disabled"):
+            return False
+        assert False, "Invalid state in response from en_cal command."
+
+    @enable_calibdation.setter
+    def enable_calibdation(self, v):
+        v = int(bool(v))
+        r = self.command(b"en_cal %u" % v)
+        assert len(r) == 1, "Invalid return count set with en_cal command."
+        line = r[0]
+        if line == b"Enabled ADC Cals":
+            return True
+        if line == b"Disabled ADC Cals":
+            return False
+        assert False, "Invalid state in response set with en_cal command."
 
     def __getattr__(self, item):
         debug_print("%sBinding name lookup %s" %(self.log_prefix, item))

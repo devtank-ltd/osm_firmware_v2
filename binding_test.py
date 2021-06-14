@@ -23,6 +23,9 @@ for io in comm.ios:
 for uart in comm.uarts:
     print("UART", uart.index, uart.baud, uart.bytesize, uart.parity, uart.stopbits)
 
+comm.enable_calibdation = True
+assert comm.enable_calibdation
+
 comm.sync_all_adcs()
 for adc in comm.adcs:
     print("ADC", adc.index, adc.values, adc.unit)
