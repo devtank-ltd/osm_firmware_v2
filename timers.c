@@ -8,9 +8,38 @@
 #include "pulsecount.h"
 #include "timers.h"
 #include "uart_rings.h"
+#include "log.h"
 
 static volatile unsigned fast_rate_sps     = DEFAULT_SPS;
 static volatile unsigned fast_sample_count = DEFAULT_SPS-1;
+
+static volatile unsigned adc_timer_boardary = DEFAULT_SPS;
+
+
+extern bool     timer_set_adc_boardary(unsigned ms)
+{
+    uint64_t t = DEFAULT_SPS;
+    t *= ms;
+    t /= 1000;
+
+    uint64_t t2 = t * 1000ULL;
+
+    unsigned check = t2 / DEFAULT_SPS;
+
+    if (check != ms)
+        return true;
+
+    log_debug(DEBUG_SYS, "Unable to set ADC boardary to %u", ms);
+    log_debug(DEBUG_SYS, "Closest was %u ms", check);
+    return false;
+}
+
+
+extern unsigned timer_get_adc_boardary()
+{
+    uint64_t sps = adc_timer_boardary * 1000ULL;
+    return sps / DEFAULT_SPS;
+}
 
 
 void tim3_isr(void)
@@ -25,9 +54,9 @@ void tim2_isr(void)
 {
     fast_sample_count++;
 
-    if (fast_sample_count == DEFAULT_SPS)
+    if (fast_sample_count >= adc_timer_boardary)
     {
-        adcs_second_boardary();
+        adcs_collect_boardary();
         fast_sample_count = 0;
     }
 

@@ -6,7 +6,7 @@ extern char adc_temp_buffer[24];
 extern void     adcs_init();
 
 extern void     adcs_do_samples();
-extern void     adcs_second_boardary();
+extern void     adcs_collect_boardary();
 
 extern unsigned adcs_get_count();
 
