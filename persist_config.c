@@ -21,8 +21,16 @@
 
 typedef struct
 {
-    uint64_t offset;
-    uint64_t scale;
+    union
+    {
+        struct
+        {
+            uint64_t offset;
+            uint64_t scale;
+        };
+        uint64_t cals[MAX_ADC_CAL_POLY_NUM];
+    };
+    uint8_t poly_len;
 } __attribute__((packed)) cal_data_t;
 
 typedef char cal_unit_t[4];
@@ -196,13 +204,36 @@ void        persistent_set_name(const char * name)
 }
 
 
+bool        persistent_get_cal_type(unsigned adc, cal_type_t * type)
+{
+    if (adc >= ADC_COUNT || !type)
+        return false;
+
+    if (!config_data_valid)
+    {
+        *type = ADC_NO_CAL;
+        return true;
+    }
+
+    cal_data_t * cal = &config_data.cals[adc];
+
+    *type = (cal->poly_len)?ADC_POLY_CAL:ADC_LIN_CAL;
+    return true;
+}
+
+
 bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char ** unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid ||  !offset || !scale || !unit)
         return false;
 
-    offset->raw = config_data.cals[adc].offset;
-    scale->raw = config_data.cals[adc].scale;
+    cal_data_t * cal = &config_data.cals[adc];
+
+    if (cal->poly_len)
+        return false;
+
+    offset->raw = cal->offset;
+    scale->raw = cal->scale;
     *unit = config_data.units[adc];
     return true;
 }
@@ -229,9 +260,59 @@ bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
     if (offset)
         cal->offset = offset->raw;
 
+    cal->poly_len = 0;
+
     _persistent_commit();
 
    return true;
+}
+
+
+bool        persistent_get_exp_cal(unsigned adc, basic_fixed_t ** cals, unsigned * count, const char ** unit)
+{
+    if (adc >= ADC_COUNT || !config_data_valid ||  !cals || !count || !unit)
+        return false;
+
+    cal_data_t * cal = &config_data.cals[adc];
+
+    if (!cal->poly_len)
+        return false;
+
+    *cals = (basic_fixed_t*)cal->cals;
+
+    *count = cal->poly_len;
+    *unit = config_data.units[adc];
+    return true;
+}
+
+
+bool        persistent_set_exp_cal(unsigned adc, basic_fixed_t * cals, unsigned count, const char * unit)
+{
+    if (adc >= ADC_COUNT || !config_data_valid)
+        return false;
+
+    if (count >= MAX_ADC_CAL_POLY_NUM)
+    {
+        log_error("Polynomial count over limit.");
+        return false;
+    }
+
+    cal_data_t * cal = &config_data.cals[adc];
+
+    for(unsigned n = 0; n < count; n++)
+        cal->cals[n] = cals[n].raw;
+
+    cal->poly_len = count;
+
+    if (unit)
+    {
+        unsigned len = strlen(unit) + 1;
+
+        memcpy(&config_data.units[adc], unit, (len < sizeof(cal_unit_t))?len:sizeof(cal_unit_t));
+        config_data.units[adc][sizeof(cal_unit_t)-1] = 0;
+    }
+
+    return true;
 }
 
 

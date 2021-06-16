@@ -372,7 +372,8 @@ void cal_name_cb()
 
 void adc_cal_cb()
 {
-    static basic_fixed_t scale, offset;
+    static basic_fixed_t cals[MAX_ADC_CAL_POLY_NUM];
+    static unsigned count = 0;
 
     char * pos = skip_space(rx_buffer + rx_pos);
     unsigned adc = strtoul(pos, &pos, 10);
@@ -380,51 +381,102 @@ void adc_cal_cb()
 
     if (strncmp(pos,"S:",2) == 0)
     {
-        if (basic_fixed_read(pos+2, &scale, NULL))
+        count = 0;
+        if (basic_fixed_read(pos+2, &cals[0], NULL))
             log_out("Cal scale pending");
         else
             log_debug(DEBUG_ADC, "ADC %u Scale Cal set failed", adc);
     }
     else if (strncmp(pos,"O:",2) == 0)
     {
-        if (basic_fixed_read(pos+2, &offset, NULL))
+        count = 0;
+        if (basic_fixed_read(pos+2, &cals[1], NULL))
             log_out("Cal offset pending");
         else
             log_debug(DEBUG_ADC, "ADC %u Offset Cal read failed", adc);
     }
+    else if (isdigit(*pos) && pos[1] == ':')
+    {
+        unsigned index = *pos - '0';
+        if (index < MAX_ADC_CAL_POLY_NUM)
+        {
+            if (basic_fixed_read(pos+2, &cals[index], NULL))
+                log_out("Cal poly %u pending", index);
+            count = index+1;
+        }
+        else log_out("Invalid cal poly");
+    }
     else if (strncmp(pos,"U:",2) == 0)
     {
         pos +=2;
-        if (persistent_set_cal(adc, &scale, &offset, pos))
+        if ((!count && persistent_set_cal(adc, &cals[0], &cals[1], pos)) ||
+            (count && persistent_set_exp_cal(adc, cals, count, pos)))
             log_out("Cal set");
         else
             log_debug(DEBUG_ADC, "ADC %u Cal set failed", adc);
     }
     else
     {
+        cal_type_t type;
+
+        if (!persistent_get_cal_type(adc, &type))
+        {
+            log_out("Invalid Cal request");
+            log_error("Invalid Cal request");
+            return;
+        }
+
         log_out("ADC : %u Cal", adc);
 
-        const char * unit = NULL;
-        if (persistent_get_cal(adc, &scale, &offset, &unit))
+        switch(type)
         {
-            if (basic_fixed_to_str(&scale, adc_temp_buffer, sizeof(adc_temp_buffer)))
-                log_out("S: %s", adc_temp_buffer);
-            else
-                log_out("S: BAD");
+            case ADC_LIN_CAL:
+            {
+                const char * unit = NULL;
+                if (persistent_get_cal(adc, &cals[0], &cals[1], &unit))
+                {
+                    if (basic_fixed_to_str(&cals[0], adc_temp_buffer, sizeof(adc_temp_buffer)))
+                        log_out("S: %s", adc_temp_buffer);
+                    else
+                        log_out("S: BAD");
 
-            if (basic_fixed_to_str(&offset, adc_temp_buffer, sizeof(adc_temp_buffer)))
-                log_out("O: %s", adc_temp_buffer);
-            else
-                log_out("O: BAD");
+                    if (basic_fixed_to_str(&cals[1], adc_temp_buffer, sizeof(adc_temp_buffer)))
+                        log_out("O: %s", adc_temp_buffer);
+                    else
+                        log_out("O: BAD");
 
-            log_out("Unit: %s", unit);
+                    log_out("Unit: %s", unit);
+                }
+                else
+                {
+                    log_out("S: BAD");
+                    log_out("O: BAD");
+                    log_out("Unit: BAD");
+                }
+                break;
+            }
+            case ADC_POLY_CAL:
+            {
+                const char * unit = NULL;
+                basic_fixed_t * read_cals;
+
+                if (persistent_get_exp_cal(adc, &read_cals, &count, &unit))
+                {
+                    log_out("POLY");
+                    for(unsigned n = 0; n < count; n++)
+                    {
+                        if (basic_fixed_to_str(&read_cals[n], adc_temp_buffer, sizeof(adc_temp_buffer)))
+                            log_out("%u: %s", n, adc_temp_buffer);
+                        else
+                            log_out("%u: BAD", n);
+                    }
+                }
+                else log_out("POLY: BAD");
+                break;
+            }
+            default: break;
         }
-        else
-        {
-            log_out("S: BAD");
-            log_out("O: BAD");
-            log_out("Unit: BAD");
-        }
+
     }
 }
 

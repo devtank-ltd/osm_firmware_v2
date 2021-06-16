@@ -152,6 +152,49 @@ unsigned  adcs_get_tick(unsigned adc)
 }
 
 
+static bool _process_poly(basic_fixed_t * cals, unsigned count)
+{
+    /*
+     * Polynomial calibration is an array of constants.
+     *
+     * f(x) = -0.308909161295055 x³ + 11.4453457522623 x² + 38.6754604611234 x + 313.076878223555
+     * A = -0.30890916129505
+     * B = 11.4453457522623
+     * C = 38.6754604611234
+     * D = 313.076878223555
+     * f(x) = Ax³ + Bx² + Cx + D
+     * */
+    basic_fixed_t result = {.raw = 0};
+    for(unsigned n = 0; n < count ; n++)
+    {
+        unsigned pwr = count-1-n;
+
+        if (pwr)
+        {
+            temp.raw = adc_value.raw;
+            pwr--;
+            while(pwr--)
+                if (!basic_fixed_mul(&temp, &temp, &adc_value))
+                    return false;
+
+            if (!basic_fixed_mul(&temp, &temp, &cals[n]))
+                return false;
+
+            if (!basic_fixed_add(&result, &result, &temp))
+                return false;
+        }
+        else
+        {
+            if (!basic_fixed_add(&result, &result, &cals[n]))
+                return false;
+        }
+    }
+
+    adc_value.raw = result.raw;
+    return true;
+}
+
+
 void adcs_adc_log(unsigned adc)
 {
     if (adc >= ARRAY_SIZE(adc_channel_array))
@@ -161,39 +204,88 @@ void adcs_adc_log(unsigned adc)
 
     log_out("ADC : %u", adc);
 
-    if (persistent_get_use_cal())
+    cal_type_t type;
+
+    if (persistent_get_cal_type(adc, &type) && type != ADC_NO_CAL)
     {
         const char * unit = NULL;
 
-        if (persistent_get_cal(adc, &scale, &offset, &unit))
+        if (type == ADC_LIN_CAL)
         {
-            volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
+            if (persistent_get_cal(adc, &scale, &offset, &unit))
+            {
+                volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
 
-            if (basic_fixed_set_whole(&adc_value, channel_info->min_value) &&
-                basic_fixed_mul(&adc_value, &adc_value, &scale) &&
-                basic_fixed_add(&adc_value, &adc_value, &offset) &&
-                basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
-                log_out("Min : %s%s", adc_temp_buffer, unit);
-            else
-                log_out("Min : BAD MATH");
+                if (basic_fixed_set_whole(&adc_value, channel_info->min_value) &&
+                    basic_fixed_mul(&adc_value, &adc_value, &scale) &&
+                    basic_fixed_add(&adc_value, &adc_value, &offset) &&
+                    basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                    log_out("Min : %s%s", adc_temp_buffer, unit);
+                else
+                    log_out("Min : BAD MATH");
 
-            if (basic_fixed_set_whole(&adc_value, channel_info->max_value) &&
-                basic_fixed_mul(&adc_value, &adc_value, &scale) &&
-                basic_fixed_add(&adc_value, &adc_value, &offset) &&
-                basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
-                log_out("Max : %s%s", adc_temp_buffer, unit);
-            else
-                log_out("Max : BAD MATH");
+                if (basic_fixed_set_whole(&adc_value, channel_info->max_value) &&
+                    basic_fixed_mul(&adc_value, &adc_value, &scale) &&
+                    basic_fixed_add(&adc_value, &adc_value, &offset) &&
+                    basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                    log_out("Max : %s%s", adc_temp_buffer, unit);
+                else
+                    log_out("Max : BAD MATH");
 
-            if (basic_fixed_set_whole(&adc_value, channel_info->total_value) &&
-                basic_fixed_set_whole(&temp, channel_info->count) &&
-                basic_fixed_div(&adc_value, &adc_value, &temp) &&
-                basic_fixed_mul(&adc_value, &adc_value, &scale) &&
-                basic_fixed_add(&adc_value, &adc_value, &offset) &&
-                basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
-                log_out("Avg : %s%s", adc_temp_buffer, unit);
+                if (basic_fixed_set_whole(&adc_value, channel_info->total_value) &&
+                    basic_fixed_set_whole(&temp, channel_info->count) &&
+                    basic_fixed_div(&adc_value, &adc_value, &temp) &&
+                    basic_fixed_mul(&adc_value, &adc_value, &scale) &&
+                    basic_fixed_add(&adc_value, &adc_value, &offset) &&
+                    basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                    log_out("Avg : %s%s", adc_temp_buffer, unit);
+                else
+                    log_out("Avg : BAD MATH");
+            }
             else
-                log_out("Avg : BAD MATH");
+            {
+                log_out("Min : BAD CAL");
+                log_out("Max : BAD CAL");
+                log_out("Avg : BAD CAL");
+            }
+        }
+        else if (type == ADC_POLY_CAL)
+        {
+            basic_fixed_t * cals = NULL;
+            unsigned count = 0;
+            if (persistent_get_exp_cal(adc, &cals, &count, &unit))
+            {
+                volatile adc_channel_info_t * channel_info = &adc_channel_info_cur[adc];
+
+                if (basic_fixed_set_whole(&adc_value, channel_info->min_value) &&
+                    _process_poly(cals, count) &&
+                    basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                    log_out("Min : %s%s", adc_temp_buffer, unit);
+                else
+                    log_out("Min : BAD MATH");
+
+                if (basic_fixed_set_whole(&adc_value, channel_info->max_value) &&
+                    _process_poly(cals, count) &&
+                    basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                    log_out("Max : %s%s", adc_temp_buffer, unit);
+                else
+                    log_out("Max : BAD MATH");
+
+                if (basic_fixed_set_whole(&adc_value, channel_info->total_value) &&
+                    basic_fixed_set_whole(&temp, channel_info->count) &&
+                    basic_fixed_div(&adc_value, &adc_value, &temp) &&
+                    _process_poly(cals, count) &&
+                    basic_fixed_to_str(&adc_value, adc_temp_buffer, sizeof(adc_temp_buffer)))
+                    log_out("Avg : %s%s", adc_temp_buffer, unit);
+                else
+                    log_out("Avg : BAD MATH");
+            }
+            else
+            {
+                log_out("Min : BAD CAL");
+                log_out("Max : BAD CAL");
+                log_out("Avg : BAD CAL");
+            }
         }
         else
         {
