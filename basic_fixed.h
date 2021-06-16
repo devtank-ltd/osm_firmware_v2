@@ -15,7 +15,7 @@ typedef union
     {
         uint64_t lower:20;
         uint64_t upper:43;
-        uint64_t sign;
+        uint64_t sign:1;
     }__attribute__((packed));
     uint64_t raw;
 } __attribute__((packed)) basic_fixed_t;
