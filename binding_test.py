@@ -26,6 +26,9 @@ for uart in comm.uarts:
 comm.enable_calibdation = True
 assert comm.enable_calibdation
 
+comm.adc_rate_ms = 500
+assert comm.adc_rate_ms == 500
+
 comm.sync_all_adcs()
 for adc in comm.adcs:
     print("ADC", adc.index, adc.values, adc.unit)

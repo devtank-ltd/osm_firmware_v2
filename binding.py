@@ -511,6 +511,23 @@ class io_board_py_t(object):
             pos += 4
 
     @property
+    def adc_rate_ms(self):
+        r = self.command(b"adc_ms")
+        assert len(r) == 1, "Wrong ADC rate response."
+        parts = [ part.strip() for part in r[0].split(b':') ]
+        assert parts[0] == b"ADC sampling interval" and parts[1].endswith(b"ms"), "Wrong ADC rate response."
+        return int(parts[1][:-2])
+
+    @adc_rate_ms.setter
+    def adc_rate_ms(self, v):
+        r = self.command(b"adc_ms %u" % v)
+        assert len(r) == 1, "Wrong ADC rate response."
+        parts = [ part.strip() for part in r[0].split(b':') ]
+        assert parts[0] == b"ADC sampling interval" and parts[1].endswith(b"ms"), "Wrong ADC rate response."
+        check = int(parts[1][:-2])
+        assert check == v, "Unable to set ADC rate as requested."
+
+    @property
     def cal_name(self):
         r = self.command(b"cal_name")
         assert len(r) == 1 and r[0][:2] == b"N:", "Invalid cal_name response."
