@@ -72,6 +72,13 @@ bool basic_fixed_read(char * str, basic_fixed_t * r, char ** endpos)
     frac++;
 
     unsigned len = strlen(frac);
+
+    if (len > BFP_LOWERLEN)
+    {
+        len = BFP_LOWERLEN;
+        frac[BFP_LOWERLEN] = 0;
+    }
+
     unsigned lower = strtoul(frac, endpos, 10);
 
     while(len > BFP_LOWERLEN)
