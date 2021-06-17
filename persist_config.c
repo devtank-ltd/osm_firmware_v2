@@ -9,6 +9,7 @@
 #include "persist_config.h"
 #include "config.h"
 #include "pinmap.h"
+#include "timers.h"
 
 #define FLASH_ADDRESS 0x8000000
 #define FLASH_PAGE_SIZE 2048
@@ -40,6 +41,8 @@ typedef struct
 {
     uint32_t       version;
     config_flags_t flags;
+    uint32_t       _;
+    uint32_t       adc_sample_rate;
     char           config_name[CONFIG_NAME_MAX_LEN];
     cal_data_t     cals[ADC_COUNT];
     cal_unit_t     units[ADC_COUNT];
@@ -97,6 +100,8 @@ void        init_persistent()
     if (config_data_raw->crc == crc)
     {
         memcpy(&config_data, config_data_raw, sizeof(config_data));
+        if (!timer_set_adc_boardary(config_data.adc_sample_rate))
+            log_error("Failed to set ADC sample rate from config.");
         config_data_valid = true;
     }
     else log_error("Persistent data CRC failed");
@@ -184,6 +189,8 @@ void        persistent_set_name(const char * name)
         cal->offset = temp.raw;
         memcpy(&config_data.units[n], "mV", 3);
     }
+
+    config_data.adc_sample_rate = timer_get_adc_boardary();
 
     _persistent_commit();
 }

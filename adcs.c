@@ -103,7 +103,7 @@ void adcs_do_samples()
 }
 
 
-void adcs_second_boardary()
+void adcs_collect_boardary()
 {
     unsigned sample_count = call_count / ARRAY_SIZE(adc_channel_array) / 2;
 

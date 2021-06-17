@@ -35,6 +35,7 @@ static void adcsw_cb();
 static void io_cb();
 static void special_cb();
 static void count_cb();
+static void adc_rate_cb();
 static void uart_cb();
 static void uarts_cb();
 static void persist_cb();
@@ -54,6 +55,7 @@ static cmd_t cmds[] = {
     { "io",       "Get/set IO set.",         io_cb},
     { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
+    { "adc_ms",   "Get/Set ADC rate in ms.", adc_rate_cb},
     { "uart",     "Change UART speed.",      uart_cb},
     { "uarts",    "Show UART speed.",        uarts_cb},
     { "persist",  "Start persist of name.",  persist_cb},
@@ -219,6 +221,27 @@ void count_cb()
     log_out("ADCs    : %u", adcs_get_count());
     log_out("IOs     : %u", ios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
+}
+
+
+void adc_rate_cb()
+{
+    char * pos = skip_space(rx_buffer + rx_pos);
+
+    if (*pos)
+    {
+        unsigned ms = strtoul(pos, NULL, 10);
+
+        if (!timer_set_adc_boardary(ms))
+        {
+            log_out("Invalid ADC sampling interval.");
+            return;
+        }
+    }
+
+    unsigned ms = timer_get_adc_boardary();
+
+    log_out("ADC sampling interval : %ums", ms);
 }
 
 
