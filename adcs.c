@@ -206,7 +206,7 @@ void adcs_adc_log(unsigned adc)
 
     cal_type_t type;
 
-    if (persistent_get_cal_type(adc, &type) && type != ADC_NO_CAL)
+    if (persistent_get_use_cal() && persistent_get_cal_type(adc, &type) && type != ADC_NO_CAL)
     {
         const char * unit = NULL;
 
