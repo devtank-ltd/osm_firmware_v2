@@ -348,9 +348,8 @@ void en_cal_cb()
         }
         else
         {
-            if (persistent_set_use_cal(false))
-                log_out("Disabled ADC Cals");
-            else
+            log_out("Disabled ADC Cals");
+            if (!persistent_set_use_cal(false))
                 log_debug(DEBUG_SYS, "Failed to disable ADC Cals");
         }
     }
