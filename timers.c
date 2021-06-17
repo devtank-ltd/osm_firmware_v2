@@ -26,8 +26,11 @@ extern bool     timer_set_adc_boardary(unsigned ms)
 
     unsigned check = t2 / DEFAULT_SPS;
 
-    if (check != ms)
+    if (check == ms)
+    {
+        adc_timer_boardary = t;
         return true;
+    }
 
     log_debug(DEBUG_SYS, "Unable to set ADC boardary to %u", ms);
     log_debug(DEBUG_SYS, "Closest was %u ms", check);
