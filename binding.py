@@ -535,7 +535,7 @@ class io_board_py_t(object):
 
     @property
     def adcs_calibration(self):
-        r = {"name" : self.cal_name}
+        r = {"name" : self.cal_name, "adc_rate_ms" : self.adc_rate_ms}
         for adc in self.adcs:
             r[adc.index] = list(adc.calibration)
         return r
@@ -544,9 +544,10 @@ class io_board_py_t(object):
     def adcs_calibration(self, cal):
         for k, v in cal.items():
             if k == "name":
-                name = cal["name"]
-                r = self.command(b"persist %s" % _to_bytes(name))
+                r = self.command(b"persist %s" % _to_bytes(v))
                 assert (len(r) == 1 and r[0] == b"New persistent data started."), "Invalid persist response."
+            elif k == "adc_rate_ms":
+                self.adc_rate_ms = v
             else:
                 self.adcs[k].calibration = tuple(v)
 
