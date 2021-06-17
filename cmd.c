@@ -470,6 +470,7 @@ void adc_cal_cb()
                         else
                             log_out("%u: BAD", n);
                     }
+                    log_out("Unit: %s", unit);
                 }
                 else log_out("POLY: BAD");
                 break;
