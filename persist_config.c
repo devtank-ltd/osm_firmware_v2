@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <libopencm3/stm32/crc.h>
 #include <libopencm3/stm32/flash.h>
 
 #include "log.h"
@@ -15,7 +14,7 @@
 #define FLASH_PAGE_SIZE 2048
 #define RAW_PERSIST_DATA ((void*)0x801F800)
 #define RAW_PERSIST_SIZE 2048
-#define PERSIST_VERSION 2
+#define PERSIST_VERSION 3
 
 #define CONFIG_NAME_MAX_LEN 32
 
@@ -54,7 +53,6 @@ typedef struct
     char           config_name[CONFIG_NAME_MAX_LEN];
     cal_data_t     cals[ADC_COUNT];
     cal_unit_t     units[ADC_COUNT];
-    uint16_t       crc;
 } __attribute__((packed)) config_data_t;
 
 
@@ -62,18 +60,10 @@ static bool          config_data_valid = false;
 static config_data_t config_data;
 
 
-static uint16_t _persistent_get_crc(config_data_t * _config_data)
-{
-    crc_set_initial(0xBEEFBEEF);
-    return crc_calculate_block((uint32_t*)_config_data, sizeof(config_data_t) - sizeof(uint16_t));
-}
 
 
 void        init_persistent()
 {
-    crc_set_polysize(16);
-    crc_set_polynomial(0x4C11DB7);
-
     config_data_t * config_data_raw = (config_data_t*)RAW_PERSIST_DATA;
 
     if (config_data_raw->version != PERSIST_VERSION)
@@ -103,16 +93,10 @@ void        init_persistent()
         }
     }
 
-    uint16_t crc = _persistent_get_crc(config_data_raw);
-
-    if (config_data_raw->crc == crc)
-    {
-        memcpy(&config_data, config_data_raw, sizeof(config_data));
-        if (!timer_set_adc_boardary(config_data.adc_sample_rate))
-            log_error("Failed to set ADC sample rate from config.");
-        config_data_valid = true;
-    }
-    else log_error("Persistent data CRC failed");
+    memcpy(&config_data, config_data_raw, sizeof(config_data));
+    if (!timer_set_adc_boardary(config_data.adc_sample_rate))
+        log_error("Failed to set ADC sample rate from config.");
+    config_data_valid = true;
 }
 
 
@@ -147,8 +131,6 @@ static void _persistent_commit()
     flash_unlock();
 
     flash_erase_page((uintptr_t)RAW_PERSIST_DATA);
-
-    config_data.crc = _persistent_get_crc(&config_data);
 
     config_data_valid = true;
 
