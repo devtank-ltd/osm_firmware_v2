@@ -111,24 +111,49 @@ class adc_t(io_board_prop_t):
     @property
     def calibration(self):
         r = self.parent.command(b"cal %u" % self.index)
-        assert len(r) == 4
+        assert len(r) > 1
         parts = [part.strip() for part in r[0].split(b':') ]
         assert parts[0] == b"ADC"
         assert int(parts[1].split(b' ')[0]) == self.index
-        scale = float(r[1].split(b':')[1].strip())
-        offset = float(r[2].split(b':')[1].strip())
-        unit = r[3].split(b':')[1].strip()
-        return scale, offset, unit.decode()
+
+        if len(r) == 4:
+            scale = float(r[1].split(b':')[1].strip())
+            offset = float(r[2].split(b':')[1].strip())
+            unit = r[3].split(b':')[1].strip()
+            return [scale, offset, unit.decode()]
+        else:
+            assert r[1] == b"POLY"
+            count = len(r) - 3
+            end_line = r[-1]
+            assert end_line.startswith(b"Unit:")
+            unit = end_line[5:].strip()
+            polys = []
+            for n in range(0, count):
+                line = r[n + 2]
+                assert line.startswith(str(n).encode())
+                parts = line.split()
+                polys += [ float(parts[1].strip()) ]
+            return [polys, unit.decode()]
 
     @calibration.setter
     def calibration(self, v):
-        scale, offset, unit = v
-        r = self.parent.command(b"cal %uS:%0.06f" % (self.index, scale))
-        assert r[0] == b"Cal scale pending"
-        r = self.parent.command(b"cal %uO:%0.06f" % (self.index, offset))
-        assert r[0] == b"Cal offset pending"
-        r = self.parent.command(b"cal %uU:%s" % (self.index, _to_bytes(unit)))
-        assert r[0] == b"Cal set"
+        if len(v) == 3:
+            scale, offset, unit = v
+            r = self.parent.command(b"cal %uS:%0.06f" % (self.index, scale))
+            assert r[0] == b"Cal scale pending"
+            r = self.parent.command(b"cal %uO:%0.06f" % (self.index, offset))
+            assert r[0] == b"Cal offset pending"
+            r = self.parent.command(b"cal %uU:%s" % (self.index, _to_bytes(unit)))
+            assert r[0] == b"Cal set"
+        else:
+            assert len(v) == 2
+            polys = v[0]
+            unit = v[1]
+            for n in range(0, len(polys)):
+                r = self.parent.command(b"cal %u %u:%0.06f" % (self.index, n, polys[n]))
+                assert r[0] == b"Cal poly %u pending" % n
+            r = self.parent.command(b"cal %uU:%s" % (self.index, _to_bytes(unit)))
+            assert r[0] == b"Cal set"
 
 
 class io_t(io_board_prop_t):
@@ -537,7 +562,7 @@ class io_board_py_t(object):
     def adcs_calibration(self):
         r = {"name" : self.cal_name, "adc_rate_ms" : self.adc_rate_ms}
         for adc in self.adcs:
-            r[adc.index] = list(adc.calibration)
+            r[adc.index] = adc.calibration
         return r
 
     @adcs_calibration.setter
@@ -549,7 +574,7 @@ class io_board_py_t(object):
             elif k == "adc_rate_ms":
                 self.adc_rate_ms = v
             else:
-                self.adcs[k].calibration = tuple(v)
+                self.adcs[k].calibration = v
 
     def _read_line(self):
         line = self.comm.readline().strip()
