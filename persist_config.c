@@ -291,7 +291,7 @@ bool        persistent_set_exp_cal(unsigned adc, basic_fixed_t * cals, unsigned 
     if (adc >= ADC_COUNT || !config_data_valid)
         return false;
 
-    if (count >= MAX_ADC_CAL_POLY_NUM)
+    if (count > MAX_ADC_CAL_POLY_NUM)
     {
         log_error("Polynomial count over limit.");
         return false;
