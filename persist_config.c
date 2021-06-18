@@ -294,6 +294,8 @@ bool        persistent_set_exp_cal(unsigned adc, basic_fixed_t * cals, unsigned 
         config_data.units[adc][sizeof(cal_unit_t)-1] = 0;
     }
 
+    _persistent_commit();
+
     return true;
 }
 
