@@ -59,7 +59,7 @@ class adc_t(io_board_prop_t):
         self.auto_refresh = True
 
     def _raw_to_voltage(self, v):
-        debug_print("%sADC %u%s : %G" % (self.parent.log_prefix, self.index, "(%s)" % self.name if self.name else "", v))
+        debug_print("%sADC %u%s : %G%s" % (self.parent.log_prefix, self.index, "(%s)" % self.name if self.name else "", v, self.unit if self.unit else ""))
         return v
 
     def refresh(self):
