@@ -28,21 +28,45 @@ void hard_fault_handler(void)
 }
 
 
-int main(void)
+
+static void clock_setup(void)
 {
-    rcc_osc_on(RCC_MSI);
-    rcc_set_msi_range(RCC_CR_MSIRANGE_800KHZ);
-    rcc_set_hpre(RCC_CFGR_HPRE_NODIV);
-    rcc_set_ppre1(RCC_CFGR_PPRE1_NODIV);
-    rcc_set_ppre2(RCC_CFGR_PPRE2_NODIV);
+    /* FIXME - this should eventually become a clock struct helper setup */
+    rcc_osc_on(RCC_HSI16);
 
     flash_prefetch_enable();
-    flash_set_ws(FLASH_ACR_LATENCY_1WS);
+    flash_set_ws(4);
+    flash_dcache_enable();
+    flash_icache_enable();
+    /* 16MHz / 4 = > 4 * 40 = 160MHz VCO => 80MHz main pll  */
+    rcc_set_main_pll(RCC_PLLCFGR_PLLSRC_HSI16, 4, 40,
+            0, 0, RCC_PLLCFGR_PLLR_DIV2);
+    rcc_osc_on(RCC_PLL);
+    /* either rcc_wait_for_osc_ready() or do other things */
 
-    rcc_set_sysclk_source(RCC_MSI);
+    /* Enable clocks for the ports we need */
+    rcc_periph_clock_enable(RCC_GPIOA);
+    rcc_periph_clock_enable(RCC_GPIOB);
+    rcc_periph_clock_enable(RCC_GPIOD);
+    rcc_periph_clock_enable(RCC_GPIOE);
 
-    rcc_apb1_frequency = 80000000;
-    rcc_ahb_frequency = 80000000;
+    /* Enable clocks for peripherals we need */
+    rcc_periph_clock_enable(RCC_USART2);
+        rcc_periph_clock_enable(RCC_TIM7);
+    rcc_periph_clock_enable(RCC_SYSCFG);
+
+    rcc_set_sysclk_source(RCC_CFGR_SW_PLL); /* careful with the param here! */
+    rcc_wait_for_sysclk_status(RCC_PLL);
+    /* FIXME - eventually handled internally */
+    rcc_ahb_frequency = 80e6;
+    rcc_apb1_frequency = 80e6;
+    rcc_apb2_frequency = 80e6;
+}
+
+
+int main(void)
+{
+    clock_setup();
 
     uarts_setup();
 
