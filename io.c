@@ -125,13 +125,13 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
         if (io_type == IO_PPS0)
         {
-            pulsecount_enable(0, false);
+           // pulsecount_enable(0, false);
             io_state &= ~IO_SPECIAL_EN;
             log_debug(DEBUG_IO, "IO %02u : PPS0 NO LONGER", io);
         }
         else if (io_type == IO_PPS1)
         {
-            pulsecount_enable(1, false);
+            //pulsecount_enable(1, false);
             io_state &= ~IO_SPECIAL_EN;
             log_debug(DEBUG_IO, "IO %02u : PPS1 NO LONGER", io);
         }
@@ -210,14 +210,14 @@ bool     io_enable_special(unsigned io)
 
     if (io_type == IO_PPS0)
     {
-        pulsecount_enable(0, true);
+        //pulsecount_enable(0, true);
         ios_state[io] |= IO_SPECIAL_EN;
         log_debug(DEBUG_IO, "IO %02u : USED PPS0", io);
         return true;
     }
     else if (io_type == IO_PPS1)
     {
-        pulsecount_enable(1, true);
+        //pulsecount_enable(1, true);
         ios_state[io] |= IO_SPECIAL_EN;
         log_debug(DEBUG_IO, "IO %02u : USED PPS0", io);
         return true;

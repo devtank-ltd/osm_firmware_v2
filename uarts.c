@@ -10,7 +10,6 @@
 
 #include "cmd.h"
 #include "log.h"
-#include "usb_uarts.h"
 #include "pinmap.h"
 #include "ring.h"
 #include "uart_rings.h"
@@ -243,76 +242,14 @@ static void process_serial(unsigned uart)
 }
 
 
-void UART_2_ISR(void)
+void usart2_isr(void)
 {
-    char c;
-
-    if (!uart_getc(uart_channels[0].usart, &c))
-    {
-        return;
-    }
-
-    switch(c)
-    {
-        case 'D':
-            log_debug_mask = DEBUG_SYS;
-            log_debug(DEBUG_SYS, "Enabling Debug via debug comms");
-            log_debug(DEBUG_SYS, "U = enable UART debug");
-            log_debug(DEBUG_SYS, "A = enable ADC debug");
-            log_debug(DEBUG_SYS, "I = enable IO debug");
-            log_debug(DEBUG_SYS, "R = show UART ring buffers");
-            break;
-        case 'A':
-            if (log_debug_mask)
-            {
-                log_sys_debug("Enabled ADC debug");
-                log_debug_mask |= DEBUG_ADC;
-            }
-            break;
-        case 'U':
-            if (log_debug_mask)
-            {
-                log_sys_debug("Enabled UART debug");
-                log_debug_mask |= DEBUG_UART;
-            }
-            break;
-        case 'I':
-            if (log_debug_mask)
-            {
-                if (!(log_debug_mask & DEBUG_IO))
-                    log_debug(DEBUG_SYS, "Enabled IO debug");
-                log_debug_mask |= DEBUG_IO;
-            }
-            break;
-        case 'R':
-            if (log_debug_mask)
-            {
-                if (!(log_debug_mask & DEBUG_UART))
-                    log_sys_debug("Enabled UART debug");
-                log_debug_mask |= DEBUG_UART;
-                uart_rings_check();
-            }
-            break;
-        default:
-            log_sys_debug("Disabling Debug via debug comms");
-            log_debug_mask = DEBUG_SYS;
-    }
+    process_serial(0);
 }
-
-
-#ifdef STM32F0
-void usart3_4_isr(void)
-{
-    process_serial(1);
-    process_serial(2);
-}
-#else
-#error Requires handling for UART 3 and 4.
-#endif
 
 void uarts_setup(void)
 {
-    rcc_periph_clock_enable(RCC_DMA);
+    rcc_periph_clock_enable(RCC_DMA1);
 
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
@@ -389,8 +326,6 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 
     uart_doing_dma[uart] = true;
 
-    SYSCFG_CFGR1 |= SYSCFG_CFGR1_USART3_DMA_RMP;
-
     dma_channel_reset(DMA1, channel->dma_channel);
 
     dma_set_peripheral_address(DMA1, channel->dma_channel, channel->dma_addr);
@@ -440,13 +375,8 @@ static void process_complete_dma(void)
 }
 
 
-void dma1_channel4_7_dma2_channel3_5_isr(void)
+void dma1_channel_7_isr(void)
 {
     process_complete_dma();
 }
 
-
-void dma1_channel2_3_dma2_channel1_2_isr(void)
-{
-    process_complete_dma();
-}

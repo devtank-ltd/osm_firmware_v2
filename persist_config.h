@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "basic_fixed.h"
 
 extern void        init_persistent();
 
@@ -21,11 +20,11 @@ typedef enum
 
 extern bool        persistent_get_cal_type(unsigned adc, cal_type_t * type);
 
-extern bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char ** unit);
-extern bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char * unit);
+extern bool        persistent_get_cal(unsigned adc, float * scale, float * offset, const char ** unit);
+extern bool        persistent_set_cal(unsigned adc, float scale, float offset, const char * unit);
 
-extern bool        persistent_get_exp_cal(unsigned adc, basic_fixed_t ** cals, unsigned * count, const char ** unit);
-extern bool        persistent_set_exp_cal(unsigned adc, basic_fixed_t * cals, unsigned count, const char * unit);
+extern bool        persistent_get_exp_cal(unsigned adc, float ** cals, unsigned * count, const char ** unit);
+extern bool        persistent_set_exp_cal(unsigned adc, float * cals, unsigned count, const char * unit);
 
 extern bool        persistent_set_use_cal(bool enable);
 extern bool        persistent_get_use_cal();

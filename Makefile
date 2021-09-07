@@ -7,7 +7,7 @@ OBJDUMP = $(TOOLCHAIN)-objdump
 SIZE = $(TOOLCHAIN)-size
 
 #Target CPU options
-CPU_DEFINES = -mthumb -mcpu=cortex-m0 -DSTM32F0 -pedantic
+CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
@@ -23,11 +23,11 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\"
 
 INCLUDE_PATHS += -Ilibs/libopencm3/include -I.
 
-LINK_SCRIPT = stm32f07xzb_loti.ld
+LINK_SCRIPT = stm32l452.ld
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
-LINK_FLAGS += -Llibs/libopencm3/lib/stm32/f0
-LINK_FLAGS += -T$(LINK_SCRIPT) -lopencm3_stm32f0
+LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4
+LINK_FLAGS += -T$(LINK_SCRIPT) -lopencm3_stm32l4
 LINK_FLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-sections
 LINK_FLAGS += $(CPU_DEFINES)
 
@@ -36,11 +36,6 @@ SOURCES += main.c \
            uarts.c \
            uart_rings.c \
            cmd.c \
-           usb_uarts.c \
-           adcs.c \
-           pulsecount.c \
-           basic_fixed.c \
-           timers.c \
            io.c \
            ring.c \
            persist_config.c
@@ -56,7 +51,7 @@ TARGET_BIN = $(TARGET_ELF:%.elf=%.bin)
 TARGET_DFU = $(TARGET_ELF:%.elf=%.dfu)
 
 
-LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32f0.a
+LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32l4.a
 
 
 default: $(TARGET_ELF)
@@ -79,15 +74,15 @@ $(OBJECTS): $(BUILD_DIR)%.o: %.c $(BUILD_DIR).git.$(GIT_COMMIT)
 	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
 
 $(LIBOPENCM3) :
-	$(MAKE) -C libs/libopencm3 TARGETS=stm32/f0
+	$(MAKE) -C libs/libopencm3 TARGETS=stm32/l4
 
 size: $(TARGET_ELF)
 	$(SIZE) $(TARGET_ELF)
 
 flash: $(TARGET_ELF)
 
-	openocd -f interface/stlink.cfg \
-		    -f target/stm32f0x.cfg \
+	openocd -f interface/stlink-v2-1.cfg \
+		    -f target/stm32l4x.cfg \
 		    -c "init" -c "reset init" \
 		    -c "flash write_image erase $(TARGET_ELF)" \
 		    -c "reset" \
@@ -102,6 +97,7 @@ dfu : $(TARGET_DFU)
 
 
 clean:
+	make -C libs/libopencm3 $@
 	rm -rf $(BUILD_DIR)
 
 
@@ -110,16 +106,13 @@ cppcheck:
 
 
 debug_mon: $(TARGET_ELF)
-	openocd -f board/st_nucleo_f0.cfg -f interface/stlink.cfg -c "init" -c "reset init"
+	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
 debug_gdb: $(TARGET_ELF)
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF);
 
-debug:
-	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
-
 cmd:
-	screen $$(ls /dev/serial/by-id/usb-Devtank_Ltd_IO_Board_Prototype-if00* -1 | head -n 1) 115200 8n1
+	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
 
 desktop_boot:
 	sudo gpioset --mode=signal --background 0 3=0

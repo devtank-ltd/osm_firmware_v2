@@ -24,10 +24,10 @@ typedef struct
     {
         struct
         {
-            uint64_t offset;
-            uint64_t scale;
+            float offset;
+            float scale;
         };
-        uint64_t cals[MAX_ADC_CAL_POLY_NUM];
+        float cals[MAX_ADC_CAL_POLY_NUM];
     };
     uint8_t poly_len;
 } __attribute__((packed)) cal_data_t;
@@ -93,9 +93,9 @@ void        init_persistent()
         }
     }
 
-    memcpy(&config_data, config_data_raw, sizeof(config_data));
+    memcpy(&config_data, config_data_raw, sizeof(config_data));/*
     if (!timer_set_adc_boardary(config_data.adc_sample_rate))
-        log_error("Failed to set ADC sample rate from config.");
+        log_error("Failed to set ADC sample rate from config.");*/
     config_data_valid = true;
 }
 
@@ -110,18 +110,24 @@ const char* persistent_get_name()
 
 static void persistent_set_data(const void * addr, const void * data, unsigned size)
 {
-    const uint8_t * p = (const uint8_t*)data;
     uintptr_t _addr = (uintptr_t)addr;
 
-    for(unsigned n = 0; n < size; n+=2)
-    {
-        uint16_t v;
-        if ((n + 1) == size) /* Make sure we don't copy too much.*/
-            v = p[n];
-        else
-            v = p[n] | (p[n + 1] << 8);
+    unsigned left_over = size % 8;
+    unsigned easy_size = size - left_over;
 
-        flash_program_half_word(_addr + n, v);
+    if (easy_size)
+        flash_program(_addr, (void*)data, easy_size);
+
+    if (size > easy_size)
+    {
+        const uint8_t * p = (const uint8_t*)data;
+
+        uint64_t v = 0;
+
+        for(unsigned n = 0; n < left_over; n+=1)
+             v |= (p[easy_size + n]) << (8*n);
+
+        flash_program_double_word(_addr + easy_size, v);
     }
 }
 
@@ -163,24 +169,18 @@ void        persistent_set_name(const char * name)
     }
 
     /* Default calibration values are just 3.3v */
-    basic_fixed_t temp;
-    basic_fixed_t v3_3;
-
-    basic_fixed_set_whole(&v3_3, 3300);
-    basic_fixed_set_whole(&temp, 4095);
-    basic_fixed_div(&v3_3, &v3_3, &temp); /* 3.3v / 4095 */
-
-    basic_fixed_set_whole(&temp, 0);
+    
+    float v3_3 = 3300 / 4095; /* 3.3v / 4095 */
 
     for(unsigned n = 0; n < ADC_COUNT; n++)
     {
         cal_data_t * cal = &config_data.cals[n];
-        cal->scale = v3_3.raw;
-        cal->offset = temp.raw;
+        cal->scale = v3_3;
+        cal->offset = 0;
         memcpy(&config_data.units[n], "mV", 3);
     }
 
-    config_data.adc_sample_rate = timer_get_adc_boardary();
+    //config_data.adc_sample_rate = timer_get_adc_boardary();
 
     _persistent_commit();
 }
@@ -204,7 +204,7 @@ bool        persistent_get_cal_type(unsigned adc, cal_type_t * type)
 }
 
 
-bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char ** unit)
+bool        persistent_get_cal(unsigned adc, float * scale, float * offset, const char ** unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid ||  !offset || !scale || !unit)
         return false;
@@ -214,14 +214,14 @@ bool        persistent_get_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
     if (cal->poly_len)
         return false;
 
-    offset->raw = cal->offset;
-    scale->raw = cal->scale;
+    *offset = cal->offset;
+    *scale = cal->scale;
     *unit = config_data.units[adc];
     return true;
 }
 
 
-bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_t * offset, const char * unit)
+bool        persistent_set_cal(unsigned adc, float scale, float offset, const char * unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid)
         return false;
@@ -237,10 +237,10 @@ bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
     }
 
     if (scale)
-        cal->scale = scale->raw;
+        cal->scale = scale;
 
     if (offset)
-        cal->offset = offset->raw;
+        cal->offset = offset;
 
     cal->poly_len = 0;
 
@@ -250,7 +250,7 @@ bool        persistent_set_cal(unsigned adc, basic_fixed_t * scale, basic_fixed_
 }
 
 
-bool        persistent_get_exp_cal(unsigned adc, basic_fixed_t ** cals, unsigned * count, const char ** unit)
+bool        persistent_get_exp_cal(unsigned adc, float ** cals, unsigned * count, const char ** unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid ||  !cals || !count || !unit)
         return false;
@@ -260,7 +260,7 @@ bool        persistent_get_exp_cal(unsigned adc, basic_fixed_t ** cals, unsigned
     if (!cal->poly_len)
         return false;
 
-    *cals = (basic_fixed_t*)cal->cals;
+    *cals = cal->cals;
 
     *count = cal->poly_len;
     *unit = config_data.units[adc];
@@ -268,7 +268,7 @@ bool        persistent_get_exp_cal(unsigned adc, basic_fixed_t ** cals, unsigned
 }
 
 
-bool        persistent_set_exp_cal(unsigned adc, basic_fixed_t * cals, unsigned count, const char * unit)
+bool        persistent_set_exp_cal(unsigned adc, float * cals, unsigned count, const char * unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid)
         return false;
@@ -282,7 +282,7 @@ bool        persistent_set_exp_cal(unsigned adc, basic_fixed_t * cals, unsigned 
     cal_data_t * cal = &config_data.cals[adc];
 
     for(unsigned n = 0; n < count; n++)
-        cal->cals[n] = cals[n].raw;
+        cal->cals[n] = cals[n];
 
     cal->poly_len = count;
 

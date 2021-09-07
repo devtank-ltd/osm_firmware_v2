@@ -7,7 +7,6 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-#include "usb_uarts.h"
 
 
 typedef char usb_packet_t[USB_DATA_PCK_SZ];
@@ -16,27 +15,15 @@ typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 char uart_0_in_buf[UART_0_IN_BUF_SIZE];
 char uart_0_out_buf[UART_0_OUT_BUF_SIZE];
 
-char uart_1_in_buf[UART_1_IN_BUF_SIZE];
-char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
-
-char uart_2_in_buf[UART_2_IN_BUF_SIZE];
-char uart_2_out_buf[UART_2_OUT_BUF_SIZE];
-
 char cmd_uart_buf_out[CMD_OUT_BUF_SIZE];
 
 static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),
-    RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),
-    RING_BUF_INIT(uart_2_in_buf, sizeof(uart_2_in_buf))};
+    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf))};
 
 static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),
-    RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),
-    RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf))};
+    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf))};
 
 static ring_buf_t cmd_ring_out_buf = RING_BUF_INIT(cmd_uart_buf_out, sizeof(cmd_uart_buf_out));
-
-static usb_packet_t usb_out_packets[UART_CHANNELS_COUNT];
 
 static char command[CMD_LINELEN];
 
@@ -94,24 +81,6 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 }
 
 
-struct _usb_out_async_packet
-{
-    unsigned uart;
-    bool complete;
-};
-
-
-static unsigned _usb_out_async(char * tmp, unsigned len, void * data)
-{
-    struct _usb_out_async_packet * packet = (struct _usb_out_async_packet*)data;
-    unsigned r = usb_uart_send(packet->uart, tmp, len, packet->complete);
-
-    log_debug(DEBUG_UART, "UART %u -> USB %u (%u).", packet->uart, len, r);
-
-    return r;
-}
-
-
 static void uart_ring_in_drain(unsigned uart)
 {
     if (uart == CMD_VUART)
@@ -129,20 +98,7 @@ static void uart_ring_in_drain(unsigned uart)
     if (uart)
         log_debug(DEBUG_UART, "UART %u IN %u", uart, len);
 
-    if (uart)
-    {
-        struct _usb_out_async_packet packet = {.uart = uart, .complete=true};
-        char * tmp = usb_out_packets[uart];
-
-        if (len > USB_DATA_PCK_SZ)
-        {
-            len = USB_DATA_PCK_SZ;
-            packet.complete = false;
-        }
-
-        ring_buf_consume(ring, _usb_out_async, tmp, len, &packet);
-    }
-    else
+    if (!uart)
     {
         len = ring_buf_readline(ring, command, CMD_LINELEN);
 
@@ -162,35 +118,10 @@ static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 }
 
 
-static void cmd_ring_out_drain()
-{
-    unsigned len = ring_buf_get_pending(&cmd_ring_out_buf);
-
-    if (!len)
-        return;
-
-    log_debug(DEBUG_UART, "CMD UART %u", len);
-
-    struct _usb_out_async_packet packet = {.uart = 0, .complete=true};
-
-    if (len > USB_DATA_PCK_SZ)
-    {
-        len = USB_DATA_PCK_SZ;
-        packet.complete = false;
-    }
-
-    ring_buf_consume(&cmd_ring_out_buf, _usb_out_async, usb_out_packets[0], len, &packet);
-}
 
 
 static void uart_ring_out_drain(unsigned uart)
 {
-    if (uart == CMD_VUART)
-    {
-        cmd_ring_out_drain();
-        return;
-    }
-
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
@@ -224,7 +155,6 @@ void uart_rings_out_drain()
 {
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_ring_out_drain(n);
-    cmd_ring_out_drain();
 }
 
 

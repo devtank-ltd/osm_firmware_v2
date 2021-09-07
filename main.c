@@ -7,11 +7,11 @@
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/usart.h>
+#include <libopencm3/stm32/flash.h>
 
 #include "pinmap.h"
 #include "cmd.h"
 #include "log.h"
-#include "usb_uarts.h"
 #include "uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
@@ -28,8 +28,22 @@ void hard_fault_handler(void)
 }
 
 
-int main(void) {
-    rcc_clock_setup_in_hsi48_out_48mhz();
+int main(void)
+{
+    rcc_osc_on(RCC_MSI);
+    rcc_set_msi_range(RCC_CR_MSIRANGE_800KHZ);
+    rcc_set_hpre(RCC_CFGR_HPRE_NODIV);
+    rcc_set_ppre1(RCC_CFGR_PPRE1_NODIV);
+    rcc_set_ppre2(RCC_CFGR_PPRE2_NODIV);
+
+    flash_prefetch_enable();
+    flash_set_ws(FLASH_ACR_LATENCY_1WS);
+
+    rcc_set_sysclk_source(RCC_MSI);
+
+    rcc_apb1_frequency = 80000000;
+    rcc_ahb_frequency = 80000000;
+
     uarts_setup();
 
     platform_raw_msg("----start----");
@@ -39,10 +53,6 @@ int main(void) {
     log_init();
     init_persistent();
     cmds_init();
-    usb_init();
-    adcs_init();
-    pulsecount_init();
-    timers_init();
     ios_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);

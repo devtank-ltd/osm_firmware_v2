@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <inttypes.h>
 #include <libopencm3/stm32/gpio.h>
 
@@ -9,7 +10,6 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-#include "usb_uarts.h"
 #include "adcs.h"
 #include "pulsecount.h"
 #include "io.h"
@@ -28,46 +28,42 @@ typedef struct
     void (*cb)(void);
 } cmd_t;
 
-
+/*
 static void pps_cb();
 static void adc_cb();
-static void adcsw_cb();
+static void adcsw_cb();*/
 static void io_cb();
 static void special_cb();
 static void count_cb();
-static void adc_rate_cb();
-static void uart_cb();
-static void uarts_cb();
+//static void adc_rate_cb();
 static void persist_cb();
 static void en_cal_cb();
 static void cal_name_cb();
-static void adc_cal_cb();
+//static void adc_cal_cb();
 static void version_cb();
 
 
-static cmd_t cmds[] = {
+static cmd_t cmds[] = {/*
     { "ppss",     "Print all pulse info.",   pulsecount_log},
     { "pps",      "Print pulse info.",       pps_cb},
     { "adc",      "Print ADC.",              adc_cb},
     { "adcs",     "Print all ADCs.",         adcs_log},
-    { "adcsw",    "Wait to print all ADCs.", adcsw_cb},
+    { "adcsw",    "Wait to print all ADCs.", adcsw_cb},*/
     { "ios",      "Print all IOs.",          ios_log},
     { "io",       "Get/set IO set.",         io_cb},
     { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
-    { "adc_ms",   "Get/Set ADC rate in ms.", adc_rate_cb},
-    { "uart",     "Change UART speed.",      uart_cb},
-    { "uarts",    "Show UART speed.",        uarts_cb},
+//    { "adc_ms",   "Get/Set ADC rate in ms.", adc_rate_cb},
     { "persist",  "Start persist of name.",  persist_cb},
     { "en_cal",   "Enable ADC Calibration.", en_cal_cb},
     { "cal_name", "Get Calibration Name",    cal_name_cb},
-    { "cal",      "Get/Set ADC callibration",adc_cal_cb},
+//    { "cal",      "Get/Set ADC callibration",adc_cal_cb},
     { "version",  "Print version.",          version_cb},
     { NULL },
 };
 
 
-
+/*
 
 void pps_cb()
 {
@@ -89,7 +85,7 @@ void adcsw_cb()
     timer_wait();
     adcs_log();
 }
-
+*/
 
 static char * skip_space(char * pos)
 {
@@ -216,13 +212,13 @@ void special_cb()
 
 
 void count_cb()
-{
+{/*
     log_out("PPSS    : %u", pulsecount_get_count());
-    log_out("ADCs    : %u", adcs_get_count());
+    log_out("ADCs    : %u", adcs_get_count());*/
     log_out("IOs     : %u", ios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
-
+/*
 
 void adc_rate_cb()
 {
@@ -243,7 +239,7 @@ void adc_rate_cb()
 
     log_out("ADC sampling interval : %ums", ms);
 }
-
+*/
 
 void uart_cb()
 {
@@ -301,27 +297,6 @@ void uart_cb()
 }
 
 
-void uarts_cb()
-{
-    for(unsigned n = 0; n < (UART_CHANNELS_COUNT - 1); n++)
-    {
-        unsigned         speed;
-        uint8_t          databits;
-        uart_parity_t    parity;
-        uart_stop_bits_t stop;
-
-        if (!uart_get_setup(n + 1, &speed, &databits, &parity, &stop))
-        {
-            log_error("INVALID UART GIVEN");
-            return;
-        }
-
-        log_out("UART %u : %u %"PRIu8"%c%"PRIu8, n,
-            speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
-    }
-}
-
-
 void persist_cb()
 {
     char * pos = skip_space(rx_buffer + rx_pos);
@@ -369,10 +344,10 @@ void cal_name_cb()
     log_out("N:%s", name);
 }
 
-
+/*
 void adc_cal_cb()
 {
-    static basic_fixed_t cals[MAX_ADC_CAL_POLY_NUM];
+    static float cals[MAX_ADC_CAL_POLY_NUM];
     static unsigned count = 0;
 
     char * pos = skip_space(rx_buffer + rx_pos);
@@ -382,16 +357,23 @@ void adc_cal_cb()
     if (strncmp(pos,"S:",2) == 0)
     {
         count = 0;
-        if (basic_fixed_read(pos+2, &cals[0], NULL))
+
+        if (isdigit(*(pos + 2)))
+        {
+            cals[0] = strtof(pos + 2, &pos);
             log_out("Cal scale pending");
+        }
         else
             log_debug(DEBUG_ADC, "ADC %u Scale Cal set failed", adc);
     }
     else if (strncmp(pos,"O:",2) == 0)
     {
         count = 0;
-        if (basic_fixed_read(pos+2, &cals[1], NULL))
+        if (isdigit(*(pos + 2)))
+        {
+            cals[1] = strtof(pos + 2, &pos);
             log_out("Cal offset pending");
+        }
         else
             log_debug(DEBUG_ADC, "ADC %u Offset Cal read failed", adc);
     }
@@ -400,8 +382,11 @@ void adc_cal_cb()
         unsigned index = *pos - '0';
         if (index < MAX_ADC_CAL_POLY_NUM)
         {
-            if (basic_fixed_read(pos+2, &cals[index], NULL))
+            if (isdigit(*(pos + 2)))
+            {
+                cals[index] = strtof(pos + 2, &pos);
                 log_out("Cal poly %u pending", index);
+            }
             count = index+1;
         }
         else log_out("Invalid cal poly");
@@ -409,7 +394,7 @@ void adc_cal_cb()
     else if (strncmp(pos,"U:",2) == 0)
     {
         pos +=2;
-        if ((!count && persistent_set_cal(adc, &cals[0], &cals[1], pos)) ||
+        if ((!count && persistent_set_cal(adc, cals[0], cals[1], pos)) ||
             (count && persistent_set_exp_cal(adc, cals, count, pos)))
             log_out("Cal set");
         else
@@ -435,15 +420,15 @@ void adc_cal_cb()
                 const char * unit = NULL;
                 if (persistent_get_cal(adc, &cals[0], &cals[1], &unit))
                 {
-                    if (basic_fixed_to_str(&cals[0], adc_temp_buffer, sizeof(adc_temp_buffer)))
-                        log_out("S: %s", adc_temp_buffer);
-                    else
-                        log_out("S: BAD");
+                    snprintf(adc_temp_buffer, sizeof(adc_temp_buffer), "%G", cals[0]);
+                    adc_temp_buffer[sizeof(adc_temp_buffer)-1] = 0;
 
-                    if (basic_fixed_to_str(&cals[1], adc_temp_buffer, sizeof(adc_temp_buffer)))
-                        log_out("O: %s", adc_temp_buffer);
-                    else
-                        log_out("O: BAD");
+                    log_out("S: %s", adc_temp_buffer);
+
+                    snprintf(adc_temp_buffer, sizeof(adc_temp_buffer), "%G", cals[1]);
+                    adc_temp_buffer[sizeof(adc_temp_buffer)-1] = 0;
+
+                    log_out("O: %s", adc_temp_buffer);
 
                     log_out("Unit: %s", unit);
                 }
@@ -458,17 +443,16 @@ void adc_cal_cb()
             case ADC_POLY_CAL:
             {
                 const char * unit = NULL;
-                basic_fixed_t * read_cals;
+                float * read_cals;
 
                 if (persistent_get_exp_cal(adc, &read_cals, &count, &unit))
                 {
                     log_out("POLY");
                     for(unsigned n = 0; n < count; n++)
                     {
-                        if (basic_fixed_to_str(&read_cals[n], adc_temp_buffer, sizeof(adc_temp_buffer)))
-                            log_out("%u: %s", n, adc_temp_buffer);
-                        else
-                            log_out("%u: BAD", n);
+                        snprintf(adc_temp_buffer, sizeof(adc_temp_buffer), "%G", read_cals[n]);
+                        adc_temp_buffer[sizeof(adc_temp_buffer)-1] = 0;
+                        log_out("%u: %s", n, adc_temp_buffer);
                     }
                     log_out("Unit: %s", unit);
                 }
@@ -479,7 +463,7 @@ void adc_cal_cb()
         }
 
     }
-}
+}*/
 
 
 void version_cb()
