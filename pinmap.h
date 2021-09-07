@@ -98,9 +98,6 @@ typedef struct
 #define UART_CHANNELS_COUNT 1
 #define UART_DEBUG USART2
 
-/*
- * NOTE: A13 and A14 will cause SWD problems.
- */
 #define IOS_PORT_N_PINS            \
 {                                  \
     {GPIOC, GPIO12},   /* IO 0  */ \
@@ -123,18 +120,6 @@ typedef struct
     {GPIOB, GPIO15},   /* IO 17 */ \
     {GPIOA, GPIO9},    /* IO 18 */ \
     {GPIOA, GPIO10},   /* IO 19 */ \
-    {GPIOA, GPIO13},   /* IO 20 */ \
-    {GPIOA, GPIO14},   /* IO 21 */ \
-    {GPIOC, GPIO13},   /* IO 22 */ \
-    {GPIOB, GPIO5},    /* IO 23 */ \
-    {GPIOB, GPIO8},    /* IO 24 */ \
-    {GPIOB, GPIO9},    /* IO 25 */ \
-    {GPIOB, GPIO3},    /* IO 26 - PPS 0 */ \
-    {GPIOC, GPIO7},    /* IO 27 - PPS 1 */ \
-    {GPIOC, GPIO10},   /* IO 28 - UART_0_RX */ \
-    {GPIOC, GPIO11},   /* IO 29 - UART_0_TX */ \
-    {GPIOA, GPIO0},    /* IO 30 - UART_1_RX  */ \
-    {GPIOA, GPIO1},    /* IO 31 - UART_1_TX */ \
 }
 
 
@@ -173,18 +158,6 @@ typedef struct
     GPIO_PUPD_PULLUP,                                 /* GPIO 17  */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 18  */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 19  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 20  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 21  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 22  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 23  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 24  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 25  */         \
-    IO_AS_INPUT | IO_PPS0 | IO_SPECIAL_EN,            /* GPIO 26 - PPS 0 */     \
-    IO_AS_INPUT | IO_PPS1 | IO_SPECIAL_EN,            /* GPIO 27 - PPS 1 */     \
-    IO_UART0 | IO_SPECIAL_EN,                         /* GPIO 28 - UART_0_RX */ \
-    IO_UART0 | IO_UART_TX | IO_SPECIAL_EN,            /* GPIO 29 - UART_0_TX */ \
-    IO_UART1 | IO_SPECIAL_EN,                         /* GPIO 30 - UART_1_RX */ \
-    IO_UART1 | IO_UART_TX | IO_SPECIAL_EN,            /* GPIO 31 - UART_1_TX */ \
 }
 
 #define PPS0_IO_NUM          26
