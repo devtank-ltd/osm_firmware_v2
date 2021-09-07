@@ -20,7 +20,7 @@ extern void platform_raw_msg(const char * s)
 }
 
 
-static void log_msgv(unsigned uart, bool blocking, const char *s, va_list ap)
+static void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
 {
     char log_buffer[LOG_LINELEN];
     unsigned len = vsnprintf(log_buffer, LOG_LINELEN, s, ap);
@@ -30,11 +30,15 @@ static void log_msgv(unsigned uart, bool blocking, const char *s, va_list ap)
 
     if (!blocking)
     {
+        if (prefix)
+            uart_ring_out(uart, prefix, strlen(prefix));
         uart_ring_out(uart, log_buffer, len);
         uart_ring_out(uart, "\n\r", 2);
     }
     else
     {
+        if (prefix)
+            uart_blocking(uart, prefix, strlen(prefix));
         uart_blocking(uart, log_buffer, len);
         uart_blocking(uart, "\n\r", 2);
     }
@@ -48,7 +52,7 @@ void log_debug(uint32_t flag, const char *s, ...)
 
     va_list ap;
     va_start(ap, s);
-    log_msgv(UART_ERR_NU, true, s, ap);
+    log_msgv(UART_ERR_NU, true, "DEBUG:", s, ap);
     va_end(ap);
 }
 
@@ -57,6 +61,6 @@ void log_uart(unsigned uart, bool blocking, const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(uart, blocking, s, ap);
+    log_msgv(uart, blocking, NULL, s, ap);
     va_end(ap);
 }
