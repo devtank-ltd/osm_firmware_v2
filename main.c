@@ -38,9 +38,9 @@ static void clock_setup(void)
     flash_set_ws(4);
     flash_dcache_enable();
     flash_icache_enable();
-    /* 16MHz / 4 = > 4 * 40 = 160MHz VCO => 80MHz main pll  */
-    rcc_set_main_pll(RCC_PLLCFGR_PLLSRC_HSI16, 4, 40,
-            0, 0, RCC_PLLCFGR_PLLR_DIV2);
+    /* 16MHz / 1 = > 16 * 10 = 160MHz VCO => 80MHz main pll  */
+    rcc_set_main_pll(RCC_PLLCFGR_PLLSRC_HSI16, 1, 10,
+            RCC_PLLCFGR_PLLP_DIV7, RCC_PLLCFGR_PLLQ_DIV2, RCC_PLLCFGR_PLLR_DIV2);
     rcc_osc_on(RCC_PLL);
     /* either rcc_wait_for_osc_ready() or do other things */
 
@@ -51,8 +51,6 @@ static void clock_setup(void)
     rcc_periph_clock_enable(RCC_GPIOE);
 
     /* Enable clocks for peripherals we need */
-    rcc_periph_clock_enable(RCC_USART2);
-        rcc_periph_clock_enable(RCC_TIM7);
     rcc_periph_clock_enable(RCC_SYSCFG);
 
     rcc_set_sysclk_source(RCC_CFGR_SW_PLL); /* careful with the param here! */
