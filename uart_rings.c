@@ -23,8 +23,6 @@ static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT] = {
 static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT] = {
     RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf))};
 
-static ring_buf_t cmd_ring_out_buf = RING_BUF_INIT(cmd_uart_buf_out, sizeof(cmd_uart_buf_out));
-
 static char command[CMD_LINELEN];
 
 static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
@@ -32,8 +30,6 @@ static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
 unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 {
-    if (uart == CMD_VUART)
-        uart = 0;
     if (uart >= UART_CHANNELS_COUNT)
         return 0;
 
@@ -51,22 +47,14 @@ unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 
 unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 {
-    if (uart != CMD_VUART && uart >= UART_CHANNELS_COUNT)
+    if (uart >= UART_CHANNELS_COUNT)
         return 0;
 
     ring_buf_t * ring;
 
-    if (uart == CMD_VUART)
-    {
-        ring = &cmd_ring_out_buf;
-        log_debug(DEBUG_UART, "Putting %u to CMD output.", len);
-    }
-    else
-    {
-        ring = &ring_out_bufs[uart];
-        if (uart) // Add debug messages to debug ring buffer is a loop.
-            log_debug(DEBUG_UART, "UART %u out < %u", uart, len);
-    }
+    ring = &ring_out_bufs[uart];
+    if (uart) // Add debug messages to debug ring buffer is a loop.
+        log_debug(DEBUG_UART, "UART %u out < %u", uart, len);
 
     for (unsigned n = 0; n < len; n++)
         if (!ring_buf_add(ring, s[n]))
@@ -83,9 +71,6 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 
 static void uart_ring_in_drain(unsigned uart)
 {
-    if (uart == CMD_VUART)
-        uart = 0;
-
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
@@ -179,6 +164,4 @@ void uart_rings_check()
         uart_ring_check(in_ring, "in", n);
         uart_ring_check(out_ring, "out", n);
     }
-
-    uart_ring_check(&cmd_ring_out_buf, "CMD", 0);
 }

@@ -113,6 +113,7 @@ static void uart_setup(uart_channel_t * channel)
     {
         nvic_set_priority(channel->dma_irqn, channel->priority);
         nvic_enable_irq(channel->dma_irqn);
+        dma_set_channel_request(DMA1, channel->dma_channel, 2);
     }
     channel->enabled = 1;
 }
@@ -335,7 +336,7 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     dma_enable_memory_increment_mode(DMA1, channel->dma_channel);
     dma_set_peripheral_size(DMA1, channel->dma_channel, DMA_CCR_PSIZE_8BIT);
     dma_set_memory_size(DMA1, channel->dma_channel, DMA_CCR_MSIZE_8BIT);
-    dma_set_priority(DMA1, channel->dma_channel, DMA_CCR_PL_VERY_HIGH);
+    dma_set_priority(DMA1, channel->dma_channel, DMA_CCR_PL_LOW);
 
     dma_enable_transfer_complete_interrupt(DMA1, channel->dma_channel);
 
@@ -375,7 +376,7 @@ static void process_complete_dma(void)
 }
 
 
-void dma1_channel_7_isr(void)
+void dma1_channel7_isr(void)
 {
     process_complete_dma();
 }

@@ -22,7 +22,7 @@
 #define PPS_PRIORITY 1
 
 
-#define CMD_VUART 0xFFFFF
+#define CMD_VUART 0
 #define UART_ERR_NU 0
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
