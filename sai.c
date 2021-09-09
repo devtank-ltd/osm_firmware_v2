@@ -7,12 +7,12 @@
 
 #define SAI_CR1(sai, block)    MMIO32(sai + 0x04 + 0x20 * block)
 #define SAI_CR2(sai, block)    MMIO32(sai + 0x04 + 0x20 * block)
-#define SAI_AFRCR(sai, block)  MMIO32(sai + 0x0C + 0x20 * block)
-#define SAI_ASLOTR(sai, block) MMIO32(sai + 0x10 + 0x20 * block)
-#define SAI_AIM(sai, block)    MMIO32(sai + 0x14 + 0x20 * block)
-#define SAI_ASR(sai, block)    MMIO32(sai + 0x18 + 0x20 * block)
-#define SAI_ACLRFR(sai, block) MMIO32(sai + 0x1C + 0x20 * block)
-#define SAI_ADR(sai, block)    MMIO32(sai + 0x20 + 0x20 * block)
+#define SAI_FRCR(sai, block)   MMIO32(sai + 0x0C + 0x20 * block)
+#define SAI_SLOTR(sai, block)  MMIO32(sai + 0x10 + 0x20 * block)
+#define SAI_IM(sai, block)     MMIO32(sai + 0x14 + 0x20 * block)
+#define SAI_SR(sai, block)     MMIO32(sai + 0x18 + 0x20 * block)
+#define SAI_CLRFR(sai, block)  MMIO32(sai + 0x1C + 0x20 * block)
+#define SAI_DR(sai, block)     MMIO32(sai + 0x20 + 0x20 * block)
 
 #define SAI1_ACR1   SAI_CR1(SAI1, 0)
 #define SAI1_ACR2   SAI_CR2(SAI1, 0)
@@ -33,6 +33,7 @@
 #define SAI1_BDR    SAI_DR(SAI1, 1)
 
 
+/* SAI_CR1 Values -----------------------------------------------------------*/
 #define SAI_CR1_MCKDIV_SHIFT   20
 #define SAI_CR1_MCKDIV_MASK    0xF
 #define SAI_CR1_NODIV          (1 << 19)
@@ -80,6 +81,7 @@ enum sai_cr1_mode {
 };
 
 
+/* SAI_CR2 Values -----------------------------------------------------------*/
 #define SAI_CR2_COMP_MASK     0x3
 #define SAI_CR2_COMP_SHIFT    14
 #define SAI_CR2_CPL           (1 << 13)
@@ -99,6 +101,21 @@ enum sai_cr2_fth {
     SAI_CR2_FTH_FIFO_3_4   = 3,
     SAI_CR2_FTH_FIFO_FULL  = 4,
 };
+
+
+
+/* SAI_FRCR Values -----------------------------------------------------------*/
+
+#define SAI_FRCR_FSOFF       (1 << 18)
+#define SAI_FRCR_FSPOL       (1 << 17)
+#define SAI_FRCR_FSDEF       (1 << 16)
+#define SAI_FRCR_FSALL_MASK  0x3f
+#define SAI_FRCR_FSALL_SHIFT 8
+#define SAI_FRCR_FRL_MASK    0xff
+#define SAI_FRCR_FRL_SHIFT   0
+
+
+
 
 
 
@@ -135,6 +152,17 @@ void sai_cr2_set(uint32_t sai, uint8_t block, uint8_t comp, bool cpl,
                           ((fflush)?SAI_CR2_FFLUSH:0) |
                           ((((uint8_t)fth) & SAI_CR2_FTH_MASK) << SAI_CR2_FTH_SHIFT);
 }
+
+
+void sai_frcr_set(uint32_t sai, uint8_t block, bool fsoff, bool fspol, bool fsdef, uint8_t fsall, uint8_t frl)
+{
+    SAI_FRCR(sai, block) = ((fsoff)?SAI_FRCR_FSOFF:0) |
+                           ((fspol)?SAI_FRCR_FSPOL:0) |
+                           ((fsdef)?SAI_FRCR_FSDEF:0) |
+                           ((fsall & SAI_FRCR_FSALL_MASK) << SAI_FRCR_FSALL_SHIFT) |
+                           ((frl & SAI_FRCR_FRL_MASK) << SAI_FRCR_FRL_SHIFT);
+}
+
 
 
 
