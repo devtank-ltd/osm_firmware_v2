@@ -17,21 +17,15 @@ typedef struct
 
 #define ADCS_PORT_N_PINS                            \
 {                                                   \
-    {GPIOA, GPIO4},      /* ADC 0  = Channel 4  */  \
-    {GPIOA, GPIO6},      /* ADC 1  = Channel 6  */  \
-    {GPIOA, GPIO7},      /* ADC 2  = Channel 7  */  \
-    {GPIOB, GPIO0},      /* ADC 3  = Channel 8  */  \
-    {GPIOB, GPIO1},      /* ADC 4  = Channel 9  */  \
-    {GPIOC, GPIO0},      /* ADC 5  = Channel 10 */  \
-    {GPIOC, GPIO1},      /* ADC 6  = Channel 11 */  \
-    {GPIOC, GPIO3},      /* ADC 7  = Channel 13 */  \
-    {GPIOC, GPIO4},      /* ADC 8  = Channel 14 */  \
-    {GPIOC, GPIO5},      /* ADC 9  = Channel 15 */  \
+    {GPIOC, GPIO0},      /* ADC 0  = Channel 1  */  \
+    {GPIOC, GPIO1},      /* ADC 1  = Channel 2  */  \
+    {GPIOC, GPIO2},      /* ADC 2  = Channel 3  */  \
+    {GPIOC, GPIO3},      /* ADC 3  = Channel 4  */  \
 }
 
-#define ADC_CHANNELS  {4,6,7,8,9,10,11,13,14,15}
+#define ADC_CHANNELS  {1,2,3,4}
 
-#define ADC_COUNT 10
+#define ADC_COUNT 4
 
 #define PPS_PORT_N_PINS             \
 {                                   \
