@@ -85,7 +85,7 @@ enum sai_cr1_mode {
 #define SAI_CR2_COMP_MASK     0x3
 #define SAI_CR2_COMP_SHIFT    14
 #define SAI_CR2_CPL           (1 << 13)
-#define SAI_CR2_MUTECNT_MASK  0x3f
+#define SAI_CR2_MUTECNT_MASK  0x3F
 #define SAI_CR2_MUTECNT_SHIFT 7
 #define SAI_CR2_MUTEVAL       (1 << 6)
 #define SAI_CR2_MUTE          (1 << 5)
@@ -109,11 +109,70 @@ enum sai_cr2_fth {
 #define SAI_FRCR_FSOFF       (1 << 18)
 #define SAI_FRCR_FSPOL       (1 << 17)
 #define SAI_FRCR_FSDEF       (1 << 16)
-#define SAI_FRCR_FSALL_MASK  0x3f
+#define SAI_FRCR_FSALL_MASK  0x3F
 #define SAI_FRCR_FSALL_SHIFT 8
-#define SAI_FRCR_FRL_MASK    0xff
+#define SAI_FRCR_FRL_MASK    0xFF
 #define SAI_FRCR_FRL_SHIFT   0
 
+
+/* SAI_SLOTR Values -----------------------------------------------------------*/
+
+#define SAI_SLOTR_SLOTEN_MASK    0xFFFF
+#define SAI_SLOTR_SLOTEN_SHIFT   16
+#define SAI_SLOTR_NBSLOT_MASK    0xF
+#define SAI_SLOTR_NBSLOT_SHIFT   8
+#define SAI_SLOTR_SLOTSZ_MASK    0x3
+#define SAI_SLOTR_SLOTSZ_SHIFT   6
+#define SAI_SLOTR_FBOFF_MASK     0x1F
+#define SAI_SLOTR_FBOFF_SHIFT    0
+
+enum sai_slotr_slotsz {
+    SAI_SLOTR_SLOTSZ_SLOTSIZE = 0,
+    SAI_SLOTR_SLOTSZ_16BIT    = 1,
+    SAI_SLOTR_SLOTSZ_32BIT    = 2,
+};
+
+
+/* SAI_IM Values -----------------------------------------------------------*/
+
+#define SAI_IM_LFSDETIE    (1 << 6)
+#define SAI_IM_AFSDETIE    (1 << 5)
+#define SAI_IM_CNRDYIE     (1 << 4)
+#define SAI_IM_FREQIE      (1 << 3)
+#define SAI_IM_WCKCFGIE    (1 << 2)
+#define SAI_IM_MUTEDETIE   (1 << 1)
+#define SAI_IM_OVRUDRIE    (1 << 0)
+
+/* SAI_SR Values -----------------------------------------------------------*/
+
+#define SAI_SR_FLVL_MASK  0x7
+#define SAI_SR_FLVL_SHIFT 16
+
+#define SAI_SR_LFSDET     (1 << 6)
+#define SAI_SR_AFSDET     (1 << 5)
+#define SAI_SR_CNRDY      (1 << 4)
+#define SAI_SR_FREQ       (1 << 3)
+#define SAI_SR_WCKCFG     (1 << 2)
+#define SAI_SR_MUTEDET    (1 << 1)
+#define SAI_SR_OVRUDR     (1 << 0)
+
+enum sai_sr_flvl {
+    SAI_SR_FLVL_EMPTY          = 0,
+    SAI_SR_FLVL_LTE_1_4        = 1,
+    SAI_SR_FLVL_GTE_1_4_LT_1_2 = 2,
+    SAI_SR_FLVL_GTE_1_2_LT_3_4 = 3,
+    SAI_SR_FLVL_GTE_3_4        = 4,
+    SAI_SR_FLVL_FULL           = 5,
+};
+
+/* SAI_CLRFR Values -----------------------------------------------------------*/
+
+#define SAI_CLRFR_CLFSDET  (1 << 6)
+#define SAI_CLRFR_CAFSDET  (1 << 5)
+#define SAI_CLRFR_CCNRDY   (1 << 4)
+#define SAI_CLRFR_CWCKCFG  (1 << 2)
+#define SAI_CLRFR_CMUTEDET (1 << 1)
+#define SAI_CLRFR_COVRUDR  (1 << 0)
 
 
 
