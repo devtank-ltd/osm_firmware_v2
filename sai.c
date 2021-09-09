@@ -52,6 +52,34 @@
 #define SAI_CR1_MODE_MASK      0x3
 
 
+enum sai_cr1_syncen {
+    SAI_CR1_SYNCEN_ASYNC = 0,
+    SAI_CR1_SYNCEN_SYNC  = 1,
+};
+
+enum sai_cr1_ds {
+    SAI_CR1_DS_8BIT  = 2,
+    SAI_CR1_DS_10BIT = 3,
+    SAI_CR1_DS_16BIT = 4,
+    SAI_CR1_DS_20BIT = 5,
+    SAI_CR1_DS_24BIT = 6,
+    SAI_CR1_DS_32BIT = 7,
+};
+
+enum sai_cr1_prtcfg {
+    SAI_CR1_PRTCFG_FREE  = 0,
+    SAI_CR1_PRTCFG_SPDIF = 1,
+    SAI_CR1_PRTCFG_AC97  = 2,
+};
+
+enum sai_cr1_mode {
+    SAI_CR1_MODE_MASTER_TRANS = 0,
+    SAI_CR1_MODE_MASTER_RECV = 1,
+    SAI_CR1_MODE_SLAVE_TRANS = 2,
+    SAI_CR1_MODE_SLAVE_RECV = 3,
+};
+
+
 #define SAI_CR2_COMP_MASK     0x3
 #define SAI_CR2_COMP_SHIFT    14
 #define SAI_CR2_CPL           (1 << 13)
@@ -64,15 +92,20 @@
 #define SAI_CR2_FTH_MASK      (0x3)
 #define SAI_CR2_FTH_SHIFT     0
 
-
-
+enum sai_cr2_fth {
+    SAI_CR2_FTH_FIFO_EMPTY = 0,
+    SAI_CR2_FTH_FIFO_1_4   = 1,
+    SAI_CR2_FTH_FIFO_1_2   = 2,
+    SAI_CR2_FTH_FIFO_3_4   = 3,
+    SAI_CR2_FTH_FIFO_FULL  = 4,
+};
 
 
 
 void sai_cr1_set(uint32_t sai, uint8_t block, uint8_t mckdiv, bool nodiv,
                  bool dmaen, bool saien, bool outdriv, bool mono,
-                 uint8_t syncen, bool ckstr, bool lsbfirst, uint8_t ds,
-                 uint8_t prtcfg, uint8_t mode)
+                 enum sai_cr1_syncen syncen, bool ckstr, bool lsbfirst, enum sai_cr1_ds ds,
+                 enum sai_cr1_prtcfg prtcfg, enum sai_cr1_mode mode)
 {
     SAI_CR1(sai, block) = ((mckdiv & SAI_CR1_MCKDIV_MASK) << SAI_CR1_MCKDIV_SHIFT) |
                           ((nodiv)?SAI_CR1_NODIV:0) |
@@ -80,27 +113,27 @@ void sai_cr1_set(uint32_t sai, uint8_t block, uint8_t mckdiv, bool nodiv,
                           ((saien)?SAI_CR1_SAIEN:0) |
                           ((outdriv)?SAI_CR1_OUTDRIV:0) |
                           ((mono)?SAI_CR1_MONO:0) |
-                          ((syncen & SAI_CR1_SYNCEN_MASK) << SAI_CR1_SYNCEN_SHIFT) |
+                          ((((uint8_t)syncen) & SAI_CR1_SYNCEN_MASK) << SAI_CR1_SYNCEN_SHIFT) |
                           ((ckstr)?SAI_CR1_CKSTR:0) |
                           ((lsbfirst)?SAI_CR1_LSBFIRST:0) |
-                          ((ds & SAI_CR1_DS_MASK) << SAI_CR1_DS_SHIFT) |
-                          ((prtcfg & SAI_CR1_PRTCFG_MASK) << SAI_CR1_PRTCFG_SHIFT) |
-                          ((mode & SAI_CR1_MODE_MASK) << SAI_CR1_MODE_SHIFT);
+                          ((((uint8_t)ds) & SAI_CR1_DS_MASK) << SAI_CR1_DS_SHIFT) |
+                          ((((uint8_t)prtcfg) & SAI_CR1_PRTCFG_MASK) << SAI_CR1_PRTCFG_SHIFT) |
+                          ((((uint8_t)mode) & SAI_CR1_MODE_MASK) << SAI_CR1_MODE_SHIFT);
 }
 
 
 void sai_cr2_set(uint32_t sai, uint8_t block, uint8_t comp, bool cpl,
                  uint8_t mutecnt, bool muteval, bool mute, bool tris,
-                 bool fflush, uint8_t fth);
+                 bool fflush, enum sai_cr2_fth fth)
 {
     SAI_CR2(sai, block) = ((comp & SAI_CR2_COMP_MASK) << SAI_CR2_COMP_SHIFT) |
                           ((cpl)?SAI_CR2_CPL:0) |
                           ((mutecnt & SAI_CR2_MUTECNT_MASK) << SAI_CR2_MUTECNT_SHIFT) |
-                          ((muteval)?SAI_CR2_MUTEVAL) |
-                          ((mute)?SAI_CR2_MUTE) |
-                          ((tris)?SAI_CR2_TRIS) |
-                          ((fflush)?SAI_CR2_FFLUSH) |
-                          ((fth & SAI_CR2_FTH_MASK) << SAI_CR2_FTH_SHIFT);
+                          ((muteval)?SAI_CR2_MUTEVAL:0) |
+                          ((mute)?SAI_CR2_MUTE:0) |
+                          ((tris)?SAI_CR2_TRIS:0) |
+                          ((fflush)?SAI_CR2_FFLUSH:0) |
+                          ((((uint8_t)fth) & SAI_CR2_FTH_MASK) << SAI_CR2_FTH_SHIFT);
 }
 
 
