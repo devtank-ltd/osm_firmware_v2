@@ -97,23 +97,20 @@ typedef struct
     {GPIOC, GPIO12},   /* IO 0  */ \
     {GPIOA, GPIO15},   /* IO 1  */ \
     {GPIOB, GPIO7},    /* IO 2  */ \
-    {GPIOA, GPIO8},    /* IO 3  */ \
-    {GPIOB, GPIO10},   /* IO 4  */ \
-    {GPIOB, GPIO4},    /* IO 5  */ \
-    {GPIOD, GPIO2},    /* IO 6  */ \
-    {GPIOC, GPIO2},    /* IO 7  */ \
-    {GPIOB, GPIO13},   /* IO 8  */ \
-    {GPIOC, GPIO9},    /* IO 9  */ \
-    {GPIOC, GPIO8},    /* IO 10 */ \
-    {GPIOC, GPIO6},    /* IO 11 */ \
-    {GPIOB, GPIO12},   /* IO 12 */ \
-    {GPIOB, GPIO11},   /* IO 13 */ \
-    {GPIOB, GPIO2},    /* IO 14 */ \
-    {GPIOB, GPIO6},    /* IO 15 */ \
-    {GPIOB, GPIO14},   /* IO 16 */ \
-    {GPIOB, GPIO15},   /* IO 17 */ \
-    {GPIOA, GPIO9},    /* IO 18 */ \
-    {GPIOA, GPIO10},   /* IO 19 */ \
+    {GPIOB, GPIO10},   /* IO 3  */ \
+    {GPIOB, GPIO4},    /* IO 4  */ \
+    {GPIOD, GPIO2},    /* IO 5  */ \
+    {GPIOC, GPIO2},    /* IO 6  */ \
+    {GPIOB, GPIO13},   /* IO 7  */ \
+    {GPIOC, GPIO9},    /* IO 8  */ \
+    {GPIOC, GPIO8},    /* IO 9 */ \
+    {GPIOC, GPIO6},    /* IO 10 */ \
+    {GPIOB, GPIO12},   /* IO 11 */ \
+    {GPIOB, GPIO11},   /* IO 12 */ \
+    {GPIOB, GPIO2},    /* IO 13 */ \
+    {GPIOB, GPIO6},    /* IO 14 */ \
+    {GPIOB, GPIO14},   /* IO 15 */ \
+    {GPIOB, GPIO15},   /* IO 16 */ \
 }
 
 
@@ -149,12 +146,19 @@ typedef struct
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 14  */         \
     GPIO_PUPD_PULLUP,                                 /* GPIO 15  */         \
     GPIO_PUPD_PULLUP,                                 /* GPIO 16  */         \
-    GPIO_PUPD_PULLUP,                                 /* GPIO 17  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 18  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_HIGHSIDE, /* GPIO 19  */         \
 }
 
 #define PPS0_IO_NUM          26
 #define PPS1_IO_NUM          27
+
+
+#define SAI_SCK_PIN   {GPIOA, GPIO8}
+#define SAI_FS_PIN    {GPIOA, GPIO9}
+#define SAI_SDA_PIN   {GPIOA, GPI10}
+
+#define SAI_SCK_PIN_AF   GPIO_AF13
+#define SAI_FS_PIN_AF    GPIO_AF13
+#define SAI_SDA_PIN_AF   GPIO_AF13
+
 
 #endif //__PINMAPS__
