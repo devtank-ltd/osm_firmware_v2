@@ -152,13 +152,21 @@ typedef struct
 #define PPS1_IO_NUM          27
 
 
-#define SAI_SCK_PIN   {GPIOA, GPIO8}
-#define SAI_FS_PIN    {GPIOA, GPIO9}
-#define SAI_SDA_PIN   {GPIOA, GPI10}
+#define SAI_PORT_N_PINS \
+{                       \
+    {GPIOA, GPIO8},     \
+    {GPIOA, GPIO9},     \
+    {GPIOA, GPIO10},    \
+}
 
-#define SAI_SCK_PIN_AF   GPIO_AF13
-#define SAI_FS_PIN_AF    GPIO_AF13
-#define SAI_SDA_PIN_AF   GPIO_AF13
+
+#define SAI_PORT_N_PINS_AF \
+{                          \
+    GPIO_AF13,             \
+    GPIO_AF13,             \
+    GPIO_AF13,             \
+}
+
 
 
 #endif //__PINMAPS__

@@ -17,6 +17,7 @@
 #include "pulsecount.h"
 #include "timers.h"
 #include "io.h"
+#include "sai.h"
 #include "uart_rings.h"
 #include "persist_config.h"
 
@@ -76,6 +77,7 @@ int main(void)
     init_persistent();
     cmds_init();
     ios_init();
+    sai_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);

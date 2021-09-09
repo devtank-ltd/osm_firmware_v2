@@ -33,6 +33,7 @@ LINK_FLAGS += $(CPU_DEFINES)
 
 SOURCES += main.c \
            log.c \
+           sai.c \
            uarts.c \
            uart_rings.c \
            cmd.c \
