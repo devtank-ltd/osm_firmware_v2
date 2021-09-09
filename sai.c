@@ -32,6 +32,7 @@
 #define SAI1_BCLRFR SAI_CLRFR(SAI1, 1)
 #define SAI1_BDR    SAI_DR(SAI1, 1)
 
+
 #define SAI_CR1_MCKDIV_SHIFT   20
 #define SAI_CR1_MCKDIV_MASK    0xF
 #define SAI_CR1_NODIV          (1 << 19)
@@ -49,6 +50,23 @@
 #define SAI_CR1_PRTCFG_MASK    0x3
 #define SAI_CR1_MODE_SHIFT     0
 #define SAI_CR1_MODE_MASK      0x3
+
+
+#define SAI_CR2_COMP_MASK     0x3
+#define SAI_CR2_COMP_SHIFT    14
+#define SAI_CR2_CPL           (1 << 13)
+#define SAI_CR2_MUTECNT_MASK  0x3f
+#define SAI_CR2_MUTECNT_SHIFT 7
+#define SAI_CR2_MUTEVAL       (1 << 6)
+#define SAI_CR2_MUTE          (1 << 5)
+#define SAI_CR2_TRIS          (1 << 4)
+#define SAI_CR2_FFLUSH        (1 << 3)
+#define SAI_CR2_FTH_MASK      (0x3)
+#define SAI_CR2_FTH_SHIFT     0
+
+
+
+
 
 
 void sai_cr1_set(uint32_t sai, uint8_t block, uint8_t mckdiv, bool nodiv,
@@ -71,6 +89,19 @@ void sai_cr1_set(uint32_t sai, uint8_t block, uint8_t mckdiv, bool nodiv,
 }
 
 
+void sai_cr2_set(uint32_t sai, uint8_t block, uint8_t comp, bool cpl,
+                 uint8_t mutecnt, bool muteval, bool mute, bool tris,
+                 bool fflush, uint8_t fth);
+{
+    SAI_CR2(sai, block) = ((comp & SAI_CR2_COMP_MASK) << SAI_CR2_COMP_SHIFT) |
+                          ((cpl)?SAI_CR2_CPL:0) |
+                          ((mutecnt & SAI_CR2_MUTECNT_MASK) << SAI_CR2_MUTECNT_SHIFT) |
+                          ((muteval)?SAI_CR2_MUTEVAL) |
+                          ((mute)?SAI_CR2_MUTE) |
+                          ((tris)?SAI_CR2_TRIS) |
+                          ((fflush)?SAI_CR2_FFLUSH) |
+                          ((fth & SAI_CR2_FTH_MASK) << SAI_CR2_FTH_SHIFT);
+}
 
 
 
