@@ -5,31 +5,45 @@
 
 #define SAI1   SAI1_BASE
 
+
+/** Configuration register 1 (SAI_CR1) */
 #define SAI_CR1(sai, block)    MMIO32(sai + 0x04 + 0x20 * block)
-#define SAI_CR2(sai, block)    MMIO32(sai + 0x04 + 0x20 * block)
-#define SAI_FRCR(sai, block)   MMIO32(sai + 0x0C + 0x20 * block)
-#define SAI_SLOTR(sai, block)  MMIO32(sai + 0x10 + 0x20 * block)
-#define SAI_IM(sai, block)     MMIO32(sai + 0x14 + 0x20 * block)
-#define SAI_SR(sai, block)     MMIO32(sai + 0x18 + 0x20 * block)
-#define SAI_CLRFR(sai, block)  MMIO32(sai + 0x1C + 0x20 * block)
-#define SAI_DR(sai, block)     MMIO32(sai + 0x20 + 0x20 * block)
-
 #define SAI1_ACR1   SAI_CR1(SAI1, 0)
-#define SAI1_ACR2   SAI_CR2(SAI1, 0)
-#define SAI1_AFRCR  SAI_FRCR(SAI1, 0)
-#define SAI1_ASLOTR SAI_SLOTR(SAI1, 0)
-#define SAI1_AIM    SAI_IM(SAI1, 0)
-#define SAI1_ASR    SAI_SR(SAI1, 0)
-#define SAI1_ACLRFR SAI_CLRFR(SAI1, 0)
-#define SAI1_ADR    SAI_DR(SAI1, 0)
-
 #define SAI1_BCR1   SAI_CR1(SAI1, 1)
+
+/** Configuration register 2 (SAI_CR2)*/
+#define SAI_CR2(sai, block)    MMIO32(sai + 0x04 + 0x20 * block)
+#define SAI1_ACR2   SAI_CR2(SAI1, 0)
 #define SAI1_BCR2   SAI_CR2(SAI1, 1)
+
+/** Frame configuration register (SAI_FRCR)*/
+#define SAI_FRCR(sai, block)   MMIO32(sai + 0x0C + 0x20 * block)
+#define SAI1_AFRCR  SAI_FRCR(SAI1, 0)
 #define SAI1_BFRCR  SAI_FRCR(SAI1, 1)
+
+/** Slot register (SAI_SLOTR)*/
+#define SAI_SLOTR(sai, block)  MMIO32(sai + 0x10 + 0x20 * block)
+#define SAI1_ASLOTR SAI_SLOTR(SAI1, 0)
 #define SAI1_BSLOTR SAI_SLOTR(SAI1, 1)
+
+/** Interrupt mask register (SAI_IM)*/
+#define SAI_IM(sai, block)     MMIO32(sai + 0x14 + 0x20 * block)
+#define SAI1_AIM    SAI_IM(SAI1, 0)
 #define SAI1_BIM    SAI_IM(SAI1, 1)
+
+/** Status register (SAI_SR)*/
+#define SAI_SR(sai, block)     MMIO32(sai + 0x18 + 0x20 * block)
+#define SAI1_ASR    SAI_SR(SAI1, 0)
 #define SAI1_BSR    SAI_SR(SAI1, 1)
+
+/** Clear flag register (SAI_CLRFR)*/
+#define SAI_CLRFR(sai, block)  MMIO32(sai + 0x1C + 0x20 * block)
+#define SAI1_ACLRFR SAI_CLRFR(SAI1, 0)
 #define SAI1_BCLRFR SAI_CLRFR(SAI1, 1)
+
+/** Data register (SAI_DR)*/
+#define SAI_DR(sai, block)     MMIO32(sai + 0x20 + 0x20 * block)
+#define SAI1_ADR    SAI_DR(SAI1, 0)
 #define SAI1_BDR    SAI_DR(SAI1, 1)
 
 
