@@ -264,6 +264,8 @@ void sai_init(void)
     const port_n_pins_t sai_pins[]  = SAI_PORT_N_PINS;
     const uint32_t      sai_pin_funcs[] = SAI_PORT_N_PINS_AF;
 
+    rcc_periph_clock_enable(SCC_SAI1);
+
     for(unsigned n = 0; n < ARRAY_SIZE(sai_pins); n++)
     {
         port_n_pins_t sai_pin = sai_pins[n];
