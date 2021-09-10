@@ -269,8 +269,6 @@ void sai_init(void)
     for(unsigned n = 0; n < ARRAY_SIZE(sai_pins); n++)
     {
         port_n_pins_t sai_pin = sai_pins[n];
-
-        rcc_periph_clock_enable(PORT_TO_RCC(sai_pin.port));
     
         rcc_periph_clock_enable(PORT_TO_RCC(sai_pin.port));
         gpio_mode_setup(sai_pins[n].port,
