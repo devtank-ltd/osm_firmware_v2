@@ -154,9 +154,9 @@ typedef struct
 
 #define SAI_PORT_N_PINS \
 {                       \
-    {GPIOA, GPIO8},     \
-    {GPIOA, GPIO9},     \
-    {GPIOA, GPIO10},    \
+    {GPIOA, GPIO8},     \ // SCK_A
+    {GPIOA, GPIO9},     \ // FS_A (fs=ws)
+    {GPIOA, GPIO10},    \ // SD_A
 }
 
 
