@@ -1,5 +1,7 @@
 
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/dma.h>
+#include <libopencm3/cm3/nvic.h>
 #include <inttypes.h>
 #include "config.h"
 #include "pinmap.h"
@@ -207,7 +209,7 @@ enum sai_xsr_flvl {
 #define SAI_xCLRFR_COVRUDR  (1 << 0)
 
 
-
+static uint32_t sai_frames[16];
 
 
 void sai_init(void)
@@ -228,13 +230,13 @@ void sai_init(void)
                 SAI_xCR1_MONO | SAI_xCR1_LSBFIRST | SAI_xCR1_CKSTR |
                 SAI_xCR1_SAIEN | (2 << SAI_xCR1_MCKDIV_SHIFT);
 
-    SAI1_AFRCR = (63 << SAI_xFRCR_FRL_SHIFT) | 
-                 (31 << SAI_xFRCR_FSALL_SHIFT) | 
-                 SAI_xFRCR_FSOFF | SAI_xFRCR_FSDEF;
+    SAI1_AFRCR = (63 << SAI_xFRCR_FRL_SHIFT) |
+                 (31 << SAI_xFRCR_FSALL_SHIFT) |
+                 SAI_xFRCR_FSOFF;
 
-    SAI1_ASLOTR = (1 << SAI_xSLOTR_NBSLOT_SHIFT) |
-                  (3 << SAI_xSLOTR_SLOTEN_SHIFT) |
-                  (SAI_xSLOTR_SLOTSZ_16BIT << SAI_xSLOTR_SLOTSZ_SHIFT);
+    SAI1_ASLOTR = (0xFF << SAI_xSLOTR_NBSLOT_SHIFT) |
+                  (7 << SAI_xSLOTR_SLOTEN_SHIFT) |
+                  (SAI_xSLOTR_SLOTSZ_32BIT << SAI_xSLOTR_SLOTSZ_SHIFT);
 
 /*
 • f(VCOSAI1 clock) = f(PLL clock input) × (PLLSAI1N / PLLM)    (VCOSAI1 clock) = 16Mhz * (4 / 4) = 16Mhz
@@ -250,7 +252,7 @@ void sai_init(void)
     for(unsigned n = 0; n < ARRAY_SIZE(sai_pins); n++)
     {
         port_n_pins_t sai_pin = sai_pins[n];
-    
+
         rcc_periph_clock_enable(PORT_TO_RCC(sai_pin.port));
         gpio_mode_setup(sai_pins[n].port,
                         GPIO_MODE_AF,
@@ -260,5 +262,31 @@ void sai_init(void)
         gpio_set_af( sai_pin.port, sai_pin_funcs[n], sai_pin.pins );
     }
 
-    platform_raw_msg("SAI init done");
+    rcc_periph_clock_enable(RCC_DMA2);
+    nvic_enable_irq(NVIC_DMA2_CHANNEL1_IRQ);
+    dma_set_channel_request(DMA2, DMA_CHANNEL1, 1); /*SAI1_A*/
+
+    dma_channel_reset(DMA2, DMA_CHANNEL1);
+
+    dma_set_peripheral_address(DMA2, DMA_CHANNEL1, SAI1_ADR);
+    dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)sai_frames);
+    dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(sai_frames));
+    dma_set_read_from_memory(DMA2, DMA_CHANNEL1);
+    dma_enable_memory_increment_mode(DMA2, DMA_CHANNEL1);
+    dma_set_peripheral_size(DMA2, DMA_CHANNEL1, DMA_CCR_PSIZE_32BIT);
+    dma_set_memory_size(DMA2, DMA_CHANNEL1, DMA_CCR_MSIZE_32BIT);
+    dma_set_priority(DMA2, DMA_CHANNEL1, DMA_CCR_PL_LOW);
+
+    dma_enable_transfer_complete_interrupt(DMA2, DMA_CHANNEL1);
+
+    dma_enable_channel(DMA2, DMA_CHANNEL1);
+
+    SAI1_ACR1 |= SAI_xCR1_DMAEN;
+}
+
+
+void dma2_channel1_isr(void)
+{
+    DMA2_IFCR |= DMA_IFCR_CTCIF(DMA_CHANNEL1);
+    log_error("-");
 }
