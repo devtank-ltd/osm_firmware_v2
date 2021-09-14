@@ -16,7 +16,7 @@
 #define SAI1_BCR1   SAI_xCR1(SAI1, 1)
 
 /** Configuration register 2 (SAI_xCR2)*/
-#define SAI_xCR2(sai, block)    MMIO32(sai + 0x04 + 0x20 * block)
+#define SAI_xCR2(sai, block)    MMIO32(sai + 0x08 + 0x20 * block)
 #define SAI1_ACR2   SAI_xCR2(SAI1, 0)
 #define SAI1_BCR2   SAI_xCR2(SAI1, 1)
 
@@ -209,7 +209,15 @@ enum sai_xsr_flvl {
 #define SAI_xCLRFR_COVRUDR  (1 << 0)
 
 
-static uint32_t sai_frames[16];
+
+
+
+
+#define USED_SLOTS 8
+
+
+
+static uint32_t sai_slots[USED_SLOTS/2];
 
 
 void sai_init(void)
@@ -235,7 +243,7 @@ void sai_init(void)
                  SAI_xFRCR_FSOFF;
 
     SAI1_ASLOTR = (0xFF << SAI_xSLOTR_NBSLOT_SHIFT) |
-                  (7 << SAI_xSLOTR_SLOTEN_SHIFT) |
+                  ((USED_SLOTS-1) << SAI_xSLOTR_SLOTEN_SHIFT) |
                   (SAI_xSLOTR_SLOTSZ_32BIT << SAI_xSLOTR_SLOTSZ_SHIFT);
 
 /*
@@ -269,9 +277,9 @@ void sai_init(void)
     dma_channel_reset(DMA2, DMA_CHANNEL1);
 
     dma_set_peripheral_address(DMA2, DMA_CHANNEL1, SAI1_ADR);
-    dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)sai_frames);
-    dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(sai_frames));
-    dma_set_read_from_memory(DMA2, DMA_CHANNEL1);
+    dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)sai_slots);
+    dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(sai_slots));
+    dma_set_read_from_peripheral(DMA2, DMA_CHANNEL1);
     dma_enable_memory_increment_mode(DMA2, DMA_CHANNEL1);
     dma_set_peripheral_size(DMA2, DMA_CHANNEL1, DMA_CCR_PSIZE_32BIT);
     dma_set_memory_size(DMA2, DMA_CHANNEL1, DMA_CCR_MSIZE_32BIT);
@@ -281,7 +289,10 @@ void sai_init(void)
 
     dma_enable_channel(DMA2, DMA_CHANNEL1);
 
-    SAI1_ACR1 |= SAI_xCR1_DMAEN;
+    nvic_enable_irq(NVIC_SAI1_IRQ);
+    SAI1_ACR2 = (SAI_xCR2_FTH_FIFO_1_2 << SAI_xCR2_FTH_SHIFT) | SAI_xCR2_FFLUSH;
+    SAI1_AIM  = SAI_xIM_FREQIE;
+    //SAI1_ACR1 |= SAI_xCR1_DMAEN;
 }
 
 
@@ -289,4 +300,10 @@ void dma2_channel1_isr(void)
 {
     DMA2_IFCR |= DMA_IFCR_CTCIF(DMA_CHANNEL1);
     log_error("-");
+}
+
+
+void sai1_isr(void)
+{
+    log_error("+");
 }
