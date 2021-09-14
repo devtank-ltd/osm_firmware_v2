@@ -4,6 +4,11 @@
 #define CMD_LINELEN 32
 #define LOG_LINELEN 64
 
+/* On some versions of gcc this header isn't defining it. Quick fix. */
+#ifndef PRIu64
+#define PRIu64 "llu"
+#endif
+
 #ifndef DOXYGEN
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)  __attribute__ ((format (printf, _fmt_arg, _el_arg)))
 #else
