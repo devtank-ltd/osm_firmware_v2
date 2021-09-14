@@ -51,7 +51,7 @@
 #define SAI1_BDR    SAI_xDR(SAI1, 1)
 
 
-/* RCC_PLLSAI1 Values -----------------------------------------------------------*/
+/* RCC_PLLSAI1_CFGR Values -------------------------------------------*/
 #define RCC_PLLSAIx_CFGR_PLLSAI1PDIV_MASK  0x1F
 #define RCC_PLLSAIx_CFGR_PLLSAI1PDIV_SHIFT 27
 #define RCC_PLLSAIx_CFGR_PLLSAI1R_MASK     0x3
@@ -68,7 +68,7 @@
 
 
 
-/* SAI_xCR1 Values -----------------------------------------------------------*/
+/* SAI_xCR1 Values ---------------------------------------------------*/
 #define SAI_xCR1_MCKDIV_SHIFT   20
 #define SAI_xCR1_MCKDIV_MASK    0xF
 #define SAI_xCR1_NODIV          (1 << 19)
@@ -116,7 +116,7 @@ enum sai_xcr1_mode {
 };
 
 
-/* SAI_xCR2 Values -----------------------------------------------------------*/
+/* SAI_xCR2 Values ---------------------------------------------------*/
 #define SAI_xCR2_COMP_MASK     0x3
 #define SAI_xCR2_COMP_SHIFT    14
 #define SAI_xCR2_CPL           (1 << 13)
@@ -139,7 +139,7 @@ enum sai_xcr2_fth {
 
 
 
-/* SAI_FRCR Values -----------------------------------------------------------*/
+/* SAI_xFRCR Values --------------------------------------------------*/
 
 #define SAI_xFRCR_FSOFF       (1 << 18)
 #define SAI_xFRCR_FSPOL       (1 << 17)
@@ -150,7 +150,7 @@ enum sai_xcr2_fth {
 #define SAI_xFRCR_FRL_SHIFT   0
 
 
-/* SAI_SLOTR Values -----------------------------------------------------------*/
+/* SAI_xSLOTR Values -------------------------------------------------*/
 
 #define SAI_xSLOTR_SLOTEN_MASK    0xFFFF
 #define SAI_xSLOTR_SLOTEN_SHIFT   16
@@ -168,7 +168,7 @@ enum sai_xslotr_slotsz {
 };
 
 
-/* SAI_IM Values -----------------------------------------------------------*/
+/* SAI_xIM Values ----------------------------------------------------*/
 
 #define SAI_xIM_LFSDETIE    (1 << 6)
 #define SAI_xIM_AFSDETIE    (1 << 5)
@@ -178,7 +178,7 @@ enum sai_xslotr_slotsz {
 #define SAI_xIM_MUTEDETIE   (1 << 1)
 #define SAI_xIM_OVRUDRIE    (1 << 0)
 
-/* SAI_SR Values -----------------------------------------------------------*/
+/* SAI_xSR Values ----------------------------------------------------*/
 
 #define SAI_xSR_FLVL_MASK  0x7
 #define SAI_xSR_FLVL_SHIFT 16
@@ -199,7 +199,7 @@ enum sai_xsr_flvl {
     SAI_xSR_FLVL_FULL           = 5,
 };
 
-/* SAI_CLRFR Values -----------------------------------------------------------*/
+/* SAI_CLRFR Values --------------------------------------------------*/
 
 #define SAI_xCLRFR_CLFSDET  (1 << 6)
 #define SAI_xCLRFR_CAFSDET  (1 << 5)
