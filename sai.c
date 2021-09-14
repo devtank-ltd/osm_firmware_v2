@@ -217,7 +217,7 @@ enum sai_xsr_flvl {
 
 
 
-static uint32_t sai_slots[USED_SLOTS/2];
+static uint32_t sai_slots[USED_SLOTS/2] = {0};
 
 
 static void _sai_dma_init(void)
