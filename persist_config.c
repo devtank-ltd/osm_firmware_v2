@@ -27,9 +27,10 @@ typedef struct
             float offset;
             float scale;
         };
-        float cals[MAX_ADC_CAL_POLY_NUM];
+        double cals[MAX_ADC_CAL_POLY_NUM];
     };
-    uint8_t poly_len;
+    uint64_t poly_len:8;
+    uint64_t _:56;
 } __attribute__((packed)) cal_data_t;
 
 typedef char cal_unit_t[4];
@@ -250,7 +251,7 @@ bool        persistent_set_cal(unsigned adc, float scale, float offset, const ch
 }
 
 
-bool        persistent_get_exp_cal(unsigned adc, float ** cals, unsigned * count, const char ** unit)
+bool        persistent_get_exp_cal(unsigned adc, double ** cals, unsigned * count, const char ** unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid ||  !cals || !count || !unit)
         return false;
@@ -268,7 +269,7 @@ bool        persistent_get_exp_cal(unsigned adc, float ** cals, unsigned * count
 }
 
 
-bool        persistent_set_exp_cal(unsigned adc, float * cals, unsigned count, const char * unit)
+bool        persistent_set_exp_cal(unsigned adc, double * cals, unsigned count, const char * unit)
 {
     if (adc >= ADC_COUNT || !config_data_valid)
         return false;
