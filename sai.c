@@ -220,6 +220,26 @@ enum sai_xsr_flvl {
 static uint32_t sai_slots[USED_SLOTS/2];
 
 
+static void _sai_dma_init(void)
+{
+    dma_channel_reset(DMA2, DMA_CHANNEL1);
+
+    dma_set_peripheral_address(DMA2, DMA_CHANNEL1, (uint32_t)&SAI1_ADR);
+    dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)sai_slots);
+    dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(sai_slots));
+    dma_set_read_from_peripheral(DMA2, DMA_CHANNEL1);
+    dma_enable_memory_increment_mode(DMA2, DMA_CHANNEL1);
+    dma_set_peripheral_size(DMA2, DMA_CHANNEL1, DMA_CCR_PSIZE_32BIT);
+    dma_set_memory_size(DMA2, DMA_CHANNEL1, DMA_CCR_MSIZE_32BIT);
+    dma_set_priority(DMA2, DMA_CHANNEL1, DMA_CCR_PL_LOW);
+
+    dma_enable_transfer_complete_interrupt(DMA2, DMA_CHANNEL1);
+
+    dma_enable_channel(DMA2, DMA_CHANNEL1);
+}
+
+
+
 void sai_init(void)
 {
     const port_n_pins_t sai_pins[]  = SAI_PORT_N_PINS;
@@ -276,7 +296,7 @@ void sai_init(void)
 
     dma_channel_reset(DMA2, DMA_CHANNEL1);
 
-    dma_set_peripheral_address(DMA2, DMA_CHANNEL1, SAI1_ADR);
+    dma_set_peripheral_address(DMA2, DMA_CHANNEL1, (uint32_t)&SAI1_ADR);
     dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)sai_slots);
     dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(sai_slots));
     dma_set_read_from_peripheral(DMA2, DMA_CHANNEL1);
@@ -289,21 +309,17 @@ void sai_init(void)
 
     dma_enable_channel(DMA2, DMA_CHANNEL1);
 
-    nvic_enable_irq(NVIC_SAI1_IRQ);
+    _sai_dma_init();
+
     SAI1_ACR2 = (SAI_xCR2_FTH_FIFO_1_2 << SAI_xCR2_FTH_SHIFT) | SAI_xCR2_FFLUSH;
     SAI1_AIM  = SAI_xIM_FREQIE;
-    //SAI1_ACR1 |= SAI_xCR1_DMAEN;
+    SAI1_ACR1 |= SAI_xCR1_DMAEN;
 }
 
 
 void dma2_channel1_isr(void)
 {
     DMA2_IFCR |= DMA_IFCR_CTCIF(DMA_CHANNEL1);
-    log_error("-");
+    _sai_dma_init();
 }
 
-
-void sai1_isr(void)
-{
-    log_error("+");
-}
