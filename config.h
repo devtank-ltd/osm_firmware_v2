@@ -19,7 +19,7 @@
 
 #define UART1_PRIORITY 3
 #define UART2_PRIORITY 1
-#define UART3_PRIORITY 0
+#define UART3_PRIORITY 1
 #define UART4_PRIORITY 0
 #define USB_PRIORITY   2
 #define TIMER1_PRIORITY 2
@@ -49,8 +49,11 @@
 #define UART_2_IN_BUF_SIZE  512
 #define UART_2_OUT_BUF_SIZE 512
 
-#define UART_2_SPEED 115200
-#define UART_3_SPEED 9600
+#define UART_3_IN_BUF_SIZE  512
+#define UART_3_OUT_BUF_SIZE 512
+
+#define UART_2_SPEED 921600
+#define UART_3_SPEED 115200
 #define UART_4_SPEED 115200
 
 #define UART_2_PARITY uart_parity_none

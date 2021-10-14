@@ -248,6 +248,11 @@ void usart2_isr(void)
     process_serial(0);
 }
 
+void usart3_isr(void)
+{
+    process_serial(1);
+}
+
 void uarts_setup(void)
 {
     rcc_periph_clock_enable(RCC_DMA1);
@@ -381,3 +386,8 @@ void dma1_channel7_isr(void)
     process_complete_dma();
 }
 
+
+void dma1_channel2_isr(void)
+{
+    process_complete_dma();
+}

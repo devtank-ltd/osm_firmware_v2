@@ -83,12 +83,20 @@ static void uart_ring_in_drain(unsigned uart)
     if (uart)
         log_debug(DEBUG_UART, "UART %u IN %u", uart, len);
 
-    if (!uart)
+    if (uart == CMD_UART)
     {
         len = ring_buf_readline(ring, command, CMD_LINELEN);
 
         if (len)
             cmds_process(command, len);
+    }
+    else if (uart == LW_UART)
+    {
+        len = ring_buf_readline(ring, command, CMD_LINELEN);
+        if (len)
+        {
+            log_out("%s", command);
+        }
     }
 }
 

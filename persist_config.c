@@ -261,7 +261,7 @@ bool        persistent_get_exp_cal(unsigned adc, double ** cals, unsigned * coun
     if (!cal->poly_len)
         return false;
 
-    *cals = cal->cals;
+    *cals = NULL;//cal->cals; // FIXME: ew.
 
     *count = cal->poly_len;
     *unit = config_data.units[adc];
