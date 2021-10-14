@@ -87,10 +87,12 @@ typedef struct
 #define UART_CHANNELS                                                                                                   \
 {                                                                                                                       \
     { USART2, RCC_USART2, UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2|GPIO3,  GPIO_AF7, NVIC_USART2_IRQ,   (uint32_t)&USART2_TDR, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, UART2_PRIORITY, true }, /* UART 0 */ \
+    { USART3, RCC_USART3, UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4|GPIO5,  GPIO_AF7, NVIC_USART3_IRQ,   (uint32_t)&USART3_TDR, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, UART3_PRIORITY, true }, /* UART 2 */ \
 }
 
-#define UART_CHANNELS_COUNT 1
+#define UART_CHANNELS_COUNT 2
 #define UART_DEBUG USART2
+//#define UART_LORAWAN USART3
 
 #define IOS_PORT_N_PINS            \
 {                                  \

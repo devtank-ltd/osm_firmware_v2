@@ -6,6 +6,7 @@
 #include "config.h"
 #include "pinmap.h"
 #include "log.h"
+#include "uart_rings.h"
 
 #define SAI1   SAI1_BASE
 
@@ -216,6 +217,8 @@ enum sai_xsr_flvl {
 #define USED_SLOTS 8
 
 
+volatile bool audio_dumping = false;
+volatile bool start_audio_dumping = false;
 
 static uint32_t sai_slots[USED_SLOTS/2] = {0};
 
@@ -262,7 +265,7 @@ void sai_init(void)
                  (31 << SAI_xFRCR_FSALL_SHIFT) |
                  SAI_xFRCR_FSOFF;
 
-    SAI1_ASLOTR = (0xFF << SAI_xSLOTR_NBSLOT_SHIFT) |
+    SAI1_ASLOTR = ((0xF << SAI_xSLOTR_NBSLOT_SHIFT) & SAI_xSLOTR_NBSLOT_SHIFT) |
                   ((USED_SLOTS-1) << SAI_xSLOTR_SLOTEN_SHIFT) |
                   (SAI_xSLOTR_SLOTSZ_32BIT << SAI_xSLOTR_SLOTSZ_SHIFT);
 
@@ -320,6 +323,12 @@ void sai_init(void)
 void dma2_channel1_isr(void)
 {
     DMA2_IFCR |= DMA_IFCR_CTCIF(DMA_CHANNEL1);
+
+    if (audio_dumping)
+    {
+        uart_ring_out(CMD_VUART, (char *)sai_slots, sizeof(sai_slots)/sizeof(char));
+    }
+
     _sai_dma_init();
 }
 

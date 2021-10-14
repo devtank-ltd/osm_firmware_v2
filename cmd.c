@@ -15,6 +15,8 @@
 #include "io.h"
 #include "timers.h"
 #include "persist_config.h"
+#include "sai.h"
+#include "lorawan.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -41,6 +43,8 @@ static void en_cal_cb();
 static void cal_name_cb();
 //static void adc_cal_cb();
 static void version_cb();
+static void audio_dump_cb();
+static void lora_cb();
 
 
 static cmd_t cmds[] = {/*
@@ -59,6 +63,8 @@ static cmd_t cmds[] = {/*
     { "cal_name", "Get Calibration Name",    cal_name_cb},
 //    { "cal",      "Get/Set ADC callibration",adc_cal_cb},
     { "version",  "Print version.",          version_cb},
+    { "audio_dump", "Do audiodump",          audio_dump_cb},
+    { "lora",      "Send lora message",      lora_cb},
     { NULL },
 };
 
@@ -266,7 +272,7 @@ void uart_cb()
         pos = skip_space(++pos);
         if (*pos)
         {
-            if (isdigit(*pos))
+            if (isdigit((unsigned char)*pos))
             {
                 databits = (uint8_t)(*pos) - (uint8_t)'0';
                 pos = skip_space(++pos);
@@ -469,6 +475,18 @@ void adc_cal_cb()
 void version_cb()
 {
     log_out("Version : %s", GIT_VERSION);
+}
+
+
+void audio_dump_cb(void)
+{
+    start_audio_dumping = true;
+}
+
+
+static void lora_cb(void)
+{
+    lw_main();
 }
 
 

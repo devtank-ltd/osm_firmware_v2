@@ -20,6 +20,7 @@
 #include "sai.h"
 #include "uart_rings.h"
 #include "persist_config.h"
+#include "lorawan.h"
 
 
 void hard_fault_handler(void)
@@ -28,7 +29,12 @@ void hard_fault_handler(void)
     while(true);
 }
 
+volatile uint32_t ms_ticks = 0;
 
+void SysTick_Handler(void)
+{
+    ms_ticks++;
+}
 
 static void clock_setup(void)
 {
@@ -62,6 +68,9 @@ int main(void)
 
     uarts_setup();
 
+    systick_set_frequency(10, rcc_ahb_frequency);
+    systick_counter_enable();
+
     platform_raw_msg("----start----");
     log_sys_debug("Frequency : %lu", rcc_ahb_frequency);
     log_sys_debug("Version : %s", GIT_VERSION);
@@ -71,18 +80,32 @@ int main(void)
     cmds_init();
     ios_init();
     sai_init();
+    lorawan_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
     log_async_log = true;
 
+    uint32_t finish_tick = 0;
     while(true)
     {
         for(unsigned n = 0; n < rcc_ahb_frequency / 1000; n++)
         {
             uart_rings_in_drain();
             uart_rings_out_drain();
+        }
+
+        if (audio_dumping && (finish_tick < ms_ticks))
+        {
+            audio_dumping = false;
+        }
+
+        if (start_audio_dumping)
+        {
+            start_audio_dumping = false;
+            audio_dumping = true;
+            finish_tick = ms_ticks + 5 * 1000;
         }
 
         gpio_toggle(LED_PORT, LED_PIN);
