@@ -9,19 +9,34 @@
 #include "uarts.h"
 
 
-typedef char usb_packet_t[USB_DATA_PCK_SZ];
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 
 char uart_0_in_buf[UART_0_IN_BUF_SIZE];
 char uart_0_out_buf[UART_0_OUT_BUF_SIZE];
 
-char cmd_uart_buf_out[CMD_OUT_BUF_SIZE];
+char uart_1_in_buf[UART_1_IN_BUF_SIZE];
+char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
+
+char uart_2_in_buf[UART_2_IN_BUF_SIZE];
+char uart_2_out_buf[UART_2_OUT_BUF_SIZE];
+
+char uart_3_in_buf[UART_3_IN_BUF_SIZE];
+char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
+
 
 static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf))};
+    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),
+    RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),
+    RING_BUF_INIT(uart_2_in_buf, sizeof(uart_2_in_buf)),
+    RING_BUF_INIT(uart_3_in_buf, sizeof(uart_3_in_buf)),
+    };
 
 static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf))};
+    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),
+    RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),
+    RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf)),
+    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),
+    };
 
 static char command[CMD_LINELEN];
 

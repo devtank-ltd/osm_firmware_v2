@@ -20,8 +20,6 @@ static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
-#define UART_2_ISR  usart2_isr
-
 
 
 static uint32_t _uart_get_parity(uart_parity_t parity)
@@ -96,6 +94,8 @@ static void uart_setup(uart_channel_t * channel)
 {
     rcc_periph_clock_enable(PORT_TO_RCC(channel->gpioport));
     rcc_periph_clock_enable(channel->uart_clk);
+    if (channel->dma_unit)
+        rcc_periph_clock_enable(channel->dma_unit);
 
     gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
     gpio_set_af( channel->gpioport, channel->alt_func_num, channel->pins );
@@ -113,7 +113,7 @@ static void uart_setup(uart_channel_t * channel)
     {
         nvic_set_priority(channel->dma_irqn, channel->priority);
         nvic_enable_irq(channel->dma_irqn);
-        dma_set_channel_request(DMA1, channel->dma_channel, 2);
+        dma_set_channel_request(channel->dma_unit, channel->dma_channel, 2); /*They are all 0b0010*/
     }
     channel->enabled = 1;
 }
@@ -243,20 +243,8 @@ static void process_serial(unsigned uart)
 }
 
 
-void usart2_isr(void)
-{
-    process_serial(0);
-}
-
-void usart3_isr(void)
-{
-    process_serial(1);
-}
-
 void uarts_setup(void)
 {
-    rcc_periph_clock_enable(RCC_DMA1);
-
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
 }
@@ -332,20 +320,20 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 
     uart_doing_dma[uart] = true;
 
-    dma_channel_reset(DMA1, channel->dma_channel);
+    dma_channel_reset(channel->dma_unit, channel->dma_channel);
 
-    dma_set_peripheral_address(DMA1, channel->dma_channel, channel->dma_addr);
-    dma_set_memory_address(DMA1, channel->dma_channel, (uint32_t)data);
-    dma_set_number_of_data(DMA1, channel->dma_channel, size);
-    dma_set_read_from_memory(DMA1, channel->dma_channel);
-    dma_enable_memory_increment_mode(DMA1, channel->dma_channel);
-    dma_set_peripheral_size(DMA1, channel->dma_channel, DMA_CCR_PSIZE_8BIT);
-    dma_set_memory_size(DMA1, channel->dma_channel, DMA_CCR_MSIZE_8BIT);
-    dma_set_priority(DMA1, channel->dma_channel, DMA_CCR_PL_LOW);
+    dma_set_peripheral_address(channel->dma_unit, channel->dma_channel, channel->dma_addr);
+    dma_set_memory_address(channel->dma_unit, channel->dma_channel, (uint32_t)data);
+    dma_set_number_of_data(channel->dma_unit, channel->dma_channel, size);
+    dma_set_read_from_memory(channel->dma_unit, channel->dma_channel);
+    dma_enable_memory_increment_mode(channel->dma_unit, channel->dma_channel);
+    dma_set_peripheral_size(channel->dma_unit, channel->dma_channel, DMA_CCR_PSIZE_8BIT);
+    dma_set_memory_size(channel->dma_unit, channel->dma_channel, DMA_CCR_MSIZE_8BIT);
+    dma_set_priority(channel->dma_unit, channel->dma_channel, DMA_CCR_PL_LOW);
 
-    dma_enable_transfer_complete_interrupt(DMA1, channel->dma_channel);
+    dma_enable_transfer_complete_interrupt(channel->dma_unit, channel->dma_channel);
 
-    dma_enable_channel(DMA1, channel->dma_channel);
+    dma_enable_channel(channel->dma_unit, channel->dma_channel);
 
     usart_enable_tx_dma(channel->usart);
 
@@ -353,41 +341,67 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 }
 
 
-static void process_complete_dma(void)
+static void process_complete_dma(unsigned index)
 {
-    unsigned found = 0;
+    if (index >= UART_CHANNELS_COUNT)
+        return;
 
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    const uart_channel_t * channel = &uart_channels[index];
+
+    if ((DMA_ISR(channel->dma_unit) & DMA_ISR_TCIF(channel->dma_channel)) != 0)
     {
-        const uart_channel_t * channel = &uart_channels[n];
+        DMA_ISR(channel->dma_unit) |= DMA_IFCR_CTCIF(channel->dma_channel);
 
-        if ((DMA1_ISR & DMA_ISR_TCIF(channel->dma_channel)) != 0)
-        {
-            DMA1_IFCR |= DMA_IFCR_CTCIF(channel->dma_channel);
+        uart_doing_dma[index] = false;
 
-            uart_doing_dma[n] = false;
+        dma_disable_transfer_complete_interrupt(channel->dma_unit, channel->dma_channel);
 
-            dma_disable_transfer_complete_interrupt(DMA1, channel->dma_channel);
+        usart_disable_tx_dma(channel->usart);
 
-            usart_disable_tx_dma(channel->usart);
-
-            dma_disable_channel(DMA1, channel->dma_channel);
-            found++;
-        }
+        dma_disable_channel(channel->dma_unit, channel->dma_channel);
     }
-
-    if (!found)
+    else
         log_error("No DMA complete in ISR");
 }
 
 
-void dma1_channel7_isr(void)
+void usart2_isr(void)
 {
-    process_complete_dma();
+    process_serial(0);
 }
 
+void usart3_isr(void)
+{
+    process_serial(1);
+}
+
+void usart1_isr(void)
+{
+    process_serial(2);
+}
+
+void uart4_isr(void)
+{
+    process_serial(3);
+}
+
+void dma1_channel7_isr(void)
+{
+    process_complete_dma(0);
+}
 
 void dma1_channel2_isr(void)
 {
-    process_complete_dma();
+    process_complete_dma(1);
 }
+
+void dma1_channel5_isr(void)
+{
+    process_complete_dma(2);
+}
+
+void dma2_channel3_isr(void)
+{
+    process_complete_dma(3);
+}
+

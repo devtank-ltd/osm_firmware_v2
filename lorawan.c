@@ -108,7 +108,7 @@ bool lw_send_packet(lw_packet_t* packet)
 
 
 void lw_main(void)
-{
+{/*
     lw_packet_t packet;
     packet.confirm = true;
     lw_measurement_t measurements[] =
@@ -117,5 +117,5 @@ void lw_main(void)
         { 2, 5, LW_ID__TEMPERATURE, 2 , 255},
     };
     *packet.measurements = *measurements;
-    lw_send_packet(&packet);
+    lw_send_packet(&packet);*/
 }
