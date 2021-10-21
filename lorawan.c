@@ -43,6 +43,7 @@ static void lw_write_to_uart(char* cmd_fmt, ...)
     len = strlen(lw_buffer);
     lw_buffer[len] = '\r';
     lw_buffer[len+1] = '\n';
+    log_sys_debug("LoRaWAN out to %u", LW_UART);
     uart_ring_out(LW_UART, lw_buffer, LW_BUFFER_SIZE);
     log_out(lw_buffer);
     memset(lw_buffer, 0, LW_BUFFER_SIZE);

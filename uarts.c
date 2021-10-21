@@ -95,7 +95,7 @@ static void uart_setup(uart_channel_t * channel)
     rcc_periph_clock_enable(PORT_TO_RCC(channel->gpioport));
     rcc_periph_clock_enable(channel->uart_clk);
     if (channel->dma_unit)
-        rcc_periph_clock_enable(channel->dma_unit);
+        rcc_periph_clock_enable(channel->dma_rcc);
 
     gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
     gpio_set_af( channel->gpioport, channel->alt_func_num, channel->pins );
