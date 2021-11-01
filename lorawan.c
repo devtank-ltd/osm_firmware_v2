@@ -18,6 +18,7 @@
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 
 #define LW_BUFFER_SIZE 64
+#define LW_MESSAGE_DELAY 3000
 
 #define LW_JOIN_MODE_OTAA   0
 #define LW_JOIN_MODE_ABP    1
@@ -185,6 +186,7 @@ bool lw_send_packet(lw_packet_t* packet)
         }
     }
     lw_write("at+send=lora:%u:%s", port, payload);
+    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     return true;
 }
 
@@ -236,18 +238,18 @@ void lw_process(char* message)
         }
         lw_state_machine.state = LW_STATE_IDLE;
     }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step < 7))
+    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step < 8))
     {
         log_out("HACK 5");
         if (lw_msg_is_ok(message))
         {
             log_out("HACK 5.1");
             lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
-            lw_spin_us(1000);
+            lw_spin_us(LW_MESSAGE_DELAY);
         }
         /*else error*/
     }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 7)) /*Restart*/
+    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 8)) /*Restart*/
     {
         log_out("HACK 6");
         if (strstr(message, "UART1") == message ||
@@ -265,7 +267,7 @@ void lw_process(char* message)
              /*HANDLE ERROR!*/
         }
     }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 8)) /*Join*/
+    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 9)) /*Join*/
     {
         log_out("HACK 7");
         if (strcmp(message, "OK Join Success") == 0)
@@ -300,14 +302,14 @@ static bool lw_msg_is_unsoclitied(char* message)
 
 static bool lw_msg_is_ok(char* message)
 {
-    return (bool)(strncmp(message, "OK ", sizeof(char)*strlen(message)) == 0);
+    return (bool)(strncmp(message, "OK ", sizeof(char) * strlen(message)) == 0);
 }
 
 
 static bool lw_msg_is_error(char* message)
 {
-    char err_msg[] = "ERROR";
-    return (bool)(strncmp(message, err_msg, strlen(err_msg)) == 0);
+    char err_msg[] = "ERROR: ";
+    return (bool)(strncmp(message, err_msg, sizeof(char) * strlen(err_msg)) == 0);
 }
 
 
@@ -320,7 +322,6 @@ static bool lw_msg_is_ack(char* message)
 
 void lw_main(void)
 {
-    /*
     lw_packet_t packet;
     packet.confirm = true;
     lw_measurement_t measurements[] =
@@ -331,6 +332,4 @@ void lw_main(void)
     };
     *packet.measurements = *measurements;
     lw_send_packet(&packet);
-    */
-    lw_write("at+set_config=lora:region:"LW_REGION);
 }
