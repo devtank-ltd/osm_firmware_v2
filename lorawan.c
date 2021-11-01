@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <libopencm3/stm32/rcc.h>
+
 #include "uart_rings.h"
 #include "uarts.h"
 #include "config.h"
@@ -37,6 +39,17 @@
 
 static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
 volatile bool ready = true;
+
+
+static void lw_spin_us(uint32_t time_us)
+{
+    uint64_t num_loops = (rcc_ahb_frequency / 1e6) * time_us;
+    for (uint64_t i = 0; i < num_loops; i++)
+    {
+        asm("nop");
+    }
+}
+
 
 
 static void lw_write_to_uart(char* fmt, va_list args)
@@ -230,6 +243,7 @@ void lw_process(char* message)
         {
             log_out("HACK 5.1");
             lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
+            lw_spin_us(1000);
         }
         /*else error*/
     }
