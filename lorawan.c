@@ -430,7 +430,7 @@ enum
     LW__ERROR__JOIN_FAIL     =  99, // reconnect
     LW__ERROR__DUP_DOWNLINK  = 100, // probably nothing
     LW__ERROR__PAYLOAD_SIZE  = 101, // throw away message
-}
+};
 
 
 static void lw_error_handle(char* message)
