@@ -80,5 +80,6 @@
 #define DEBUG_ADC   0x2
 #define DEBUG_UART  0x4
 #define DEBUG_IO    0x8
+#define DEBUG_LW    0x10
 
 #endif //__CONFIG__

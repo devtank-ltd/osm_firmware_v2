@@ -74,11 +74,11 @@
 
 typedef struct
 {
-    uint8_t id;
-    uint8_t channel;
-    uint8_t type_id;
-    uint8_t data_size;
-    uint32_t data;
+    uint8_t     id;
+    uint8_t     channel;
+    uint8_t     type_id;
+    char*       format;
+    uint32_t    data;
 } lw_measurement_t;
 
 /*
@@ -101,3 +101,4 @@ typedef struct
 extern void lorawan_init(void);
 extern bool lw_send_packet(lw_packet_t* packet);
 extern void lw_main(void);
+extern void lw_process(char* message);

@@ -108,6 +108,8 @@ int main(void)
             finish_tick = ms_ticks + 5 * 1000;
         }
 
+        lw_loop();
+
         gpio_toggle(LED_PORT, LED_PIN);
     }
 
