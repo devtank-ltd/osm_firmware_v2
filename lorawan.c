@@ -43,6 +43,23 @@ static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
 volatile bool ready = true;
 
 
+typedef struct
+{
+    union
+    {
+        struct
+        {
+            int16_t port;
+            int16_t rssi;
+            int16_t snr;
+            int16_t datalen;
+        };
+        int16_t raw[4];
+    };
+    char* data;
+} lw_header_t;
+
+
 static void lw_spin_us(uint32_t time_us)
 {
     uint64_t num_loops = (rcc_ahb_frequency / 1e6) * time_us;
@@ -51,7 +68,6 @@ static void lw_spin_us(uint32_t time_us)
         asm("nop");
     }
 }
-
 
 
 static void lw_write_to_uart(char* fmt, va_list args)
@@ -218,9 +234,15 @@ void lw_process(char* message)
         if (lw_msg_is_ok(message))
             return;
         if (lw_msg_is_error(message))
+        {
+            //lw_error_handle(message);
             return; /* Logged in check */
+        }
         if (lw_msg_is_ack(message))
+        {
+            lw_state_machine.state = LW_STATE_IDLE;
             return;
+        }
 
         /*ERROR*/
     }
@@ -248,7 +270,12 @@ void lw_process(char* message)
             lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
             lw_spin_us(LW_MESSAGE_DELAY);
         }
-        /*else error*/
+        else
+        {
+            log_out("Setting not OKed. Retrying.");
+            lw_set_config(init_msgs[lw_state_machine.data.init_step]);
+            lw_spin_us(LW_MESSAGE_DELAY);
+        }
     }
     else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 8)) /*Restart*/
     {
@@ -278,11 +305,11 @@ void lw_process(char* message)
         }
         /*else error*/
     }
-    else if ((lw_state_machine.state == LW_STATE_WAITING_LW_ACK) && (lw_msg_is_unsoclitied(message)))
+    else if ((lw_state_machine.state != LW_STATE_WAITING_LW_ACK) && (lw_msg_is_unsoclitied(message)))
     {
         /*Done?*/
-        log_out("HACK 1");
         log_out("LORA >> (UNSOL) %s", message);
+        // lw_command_handle(message);
         return;
     }
     else
@@ -295,21 +322,9 @@ void lw_process(char* message)
 }
 
 
-typedef union
-{
-    struct
-    {
-        int16_t port;
-        int16_t rssi;
-        int16_t snr;
-        int16_t datalen;
-    };
-    int16_t raw[4];
-} lw_header_t;
-
-
 static bool lw_parse_recv(char* message, lw_header_t* header)
 {
+    // at+recv=PORT,RSSI,SNR,DATALEN:DATA
     char recv_msg[] = "at+recv=";
     char* pos = NULL;
     char* next_pos = NULL;
@@ -320,8 +335,6 @@ static bool lw_parse_recv(char* message, lw_header_t* header)
     }
 
     pos = message + strlen(recv_msg);
-
-    // at+recv=PORT,RSSI,SNR,DATALEN
     for (int i = 0; i < 3; i++)
     {
         header->raw[i] = strtol(pos, &next_pos, 10);
@@ -331,8 +344,21 @@ static bool lw_parse_recv(char* message, lw_header_t* header)
         }
         pos = next_pos + 1;
     }
-    header->raw[3] = strtol(pos, &next_pos, 10);
-    return (strncmp(next_pos, "", strlen(next_pos)) == 0);
+    header->datalen = strtol(pos, &next_pos, 10);
+    if (*next_pos == '\0')
+    {
+        header->data = NULL;
+        return (header->datalen == 0);
+    }
+    if (*next_pos == ':')
+    {
+        header->data = next_pos + 1;
+        log_out("string length = %u", strlen(header->data)/2);
+        log_out("datalen = %u", (size_t)header->datalen);
+        log_out("data = %s", header->data);
+        return (strlen(header->data)/2 == (size_t)header->datalen);
+    }
+    return false;
 }
 
 
@@ -371,13 +397,16 @@ static bool lw_msg_is_ack(char* message)
     if (!lw_parse_recv(message, &header))
     {
         // Message does not fit the format
+        log_out("Fail 1");
         return false;
     }
     if (header.datalen != 0)
     {
         // Data length not zero so not ack.
+        log_out("Fail 2");
         return false;
     }
+    log_out("Success");
     return true;
 }
 
