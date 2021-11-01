@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <libopencm3/stm32/rcc.h>
 
@@ -313,10 +314,54 @@ static bool lw_msg_is_error(char* message)
 }
 
 
+static bool lw_parse_packet(char* message, int16_t* packet)
+{
+    char recv_msg[] = "at+recv=";
+    char* pos = NULL;
+    char* next_pos = NULL;
+
+    if (strncmp(message, recv_msg, strlen(recv_msg)) != 0)
+    {
+        return false;
+    }
+
+    pos = message + strlen(recv_msg);
+
+    // at+recv=PORT,RSSI,SNR,DATALEN
+    for (int i = 0; i < 3; i++)
+    {
+        packet[i] = strtol(pos, &next_pos, 10);
+        if ((*next_pos) != ',')
+        {
+            log_out("EARLY EXIT 1.2");
+            return false;
+        }
+        pos = next_pos + 1;
+        log_out("packet[%u] = %d", i, packet[i]);
+    }
+    log_out("FULL EXIT 1");
+    packet[3] = strtol(pos, &next_pos, 10);
+    return (strncmp(next_pos, "", strlen(next_pos)) == 0);
+}
+
+
 static bool lw_msg_is_ack(char* message)
 {
-    char recv_msg[] = "recv";
-    return (bool)(strncmp(message, recv_msg, strlen(recv_msg)) == 0);
+    int16_t packet[4] = {0};
+    if (!lw_parse_packet(message, packet))
+    {
+        // Message does not fit the format
+        log_out("EARLY EXIT 1");
+        return false;
+    }
+    if (packet[3] != 0)
+    {
+        // Data length not zero so not ack.
+        log_out("EARLY EXIT 2");
+        return false;
+    }
+    log_out("FULL EXIT");
+    return true;
 }
 
 
