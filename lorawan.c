@@ -181,6 +181,14 @@ void lorawan_init(void)
 }
 
 
+static void lw_reconnect(void)
+{
+    lw_state_machine.state = LW_STATE_INIT;
+    lw_state_machine.data.init_step = 0;
+    lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
+}
+
+
 static bool lw_payload_add(lw_measurement_t* m, char* payload)
 {
     char p[32] = {0};
@@ -212,6 +220,7 @@ static bool lw_msg_is_unsoclitied(char* message);
 static bool lw_msg_is_ok(char* message);
 static bool lw_msg_is_error(char* message);
 static bool lw_msg_is_ack(char* message);
+static void lw_error_handle(char* message);
 
 
 void lw_process(char* message)
@@ -235,7 +244,7 @@ void lw_process(char* message)
             return;
         if (lw_msg_is_error(message))
         {
-            //lw_error_handle(message);
+            lw_error_handle(message);
             return; /* Logged in check */
         }
         if (lw_msg_is_ack(message))
@@ -408,6 +417,53 @@ static bool lw_msg_is_ack(char* message)
     }
     log_out("Success");
     return true;
+}
+
+enum
+{
+    LW__ERROR__NOT_CONNECTED =  86, // reconnect
+    LW__ERROR__PACKET_SIZE   =  87, // throw away message
+    LW__ERROR__TIMEOUT_RX1   =  95, // resend
+    LW__ERROR__TIMEOUT_RX2   =  96, // resend
+    LW__ERROR__RECV_RX1      =  97, // to be decided
+    LW__ERROR__RECV_RX2      =  98, // to be decided
+    LW__ERROR__JOIN_FAIL     =  99, // reconnect
+    LW__ERROR__DUP_DOWNLINK  = 100, // probably nothing
+    LW__ERROR__PAYLOAD_SIZE  = 101, // throw away message
+}
+
+
+static void lw_error_handle(char* message)
+{
+    char* pos = NULL;
+    char* next_pos = NULL;
+    char err_msg[] = "ERROR: ";
+    uint8_t err_no = 0;
+
+    pos = message + strlen(err_msg);
+    err_no = strtol(pos, &next_pos, 10);
+    switch (err_no)
+    {
+        case LW__ERROR__NOT_CONNECTED:
+            lw_reconnect();
+            log_out("Not connected to a network.");
+            break;
+        case LW__ERROR__JOIN_FAIL:
+            lw_reconnect();
+            log_out("Failed to join network.");
+            break;
+        case LW__ERROR__TIMEOUT_RX1:
+            // resend
+            log_out("RX1 Window timed out.");
+            break;
+        case LW__ERROR__TIMEOUT_RX2:
+            // resend
+            log_out("RX1 Window timed out.");
+            break;
+        default:
+            log_out("Error: %"PRIu8, err_no);
+            break;
+    }
 }
 
 
