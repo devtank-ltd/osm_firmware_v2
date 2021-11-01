@@ -278,7 +278,7 @@ void lw_process(char* message)
         }
         /*else error*/
     }
-    else if (lw_msg_is_unsoclitied(message))
+    else if ((lw_state_machine.state == LW_STATE_WAITING_LW_ACK) && (lw_msg_is_unsoclitied(message)))
     {
         /*Done?*/
         log_out("HACK 1");
@@ -295,26 +295,20 @@ void lw_process(char* message)
 }
 
 
-static bool lw_msg_is_unsoclitied(char* message)
+typedef union
 {
-    return (bool)(strncmp(message, "at+recv=", sizeof(char) * strlen("at+recv=")) == 0);
-}
+    struct
+    {
+        int16_t port;
+        int16_t rssi;
+        int16_t snr;
+        int16_t datalen;
+    };
+    int16_t raw[4];
+} lw_header_t;
 
 
-static bool lw_msg_is_ok(char* message)
-{
-    return (bool)(strncmp(message, "OK ", sizeof(char) * strlen(message)) == 0);
-}
-
-
-static bool lw_msg_is_error(char* message)
-{
-    char err_msg[] = "ERROR: ";
-    return (bool)(strncmp(message, err_msg, sizeof(char) * strlen(err_msg)) == 0);
-}
-
-
-static bool lw_parse_packet(char* message, int16_t* packet)
+static bool lw_parse_recv(char* message, lw_header_t* header)
 {
     char recv_msg[] = "at+recv=";
     char* pos = NULL;
@@ -330,37 +324,60 @@ static bool lw_parse_packet(char* message, int16_t* packet)
     // at+recv=PORT,RSSI,SNR,DATALEN
     for (int i = 0; i < 3; i++)
     {
-        packet[i] = strtol(pos, &next_pos, 10);
+        header->raw[i] = strtol(pos, &next_pos, 10);
         if ((*next_pos) != ',')
         {
-            log_out("EARLY EXIT 1.2");
             return false;
         }
         pos = next_pos + 1;
-        log_out("packet[%u] = %d", i, packet[i]);
     }
-    log_out("FULL EXIT 1");
-    packet[3] = strtol(pos, &next_pos, 10);
+    header->raw[3] = strtol(pos, &next_pos, 10);
     return (strncmp(next_pos, "", strlen(next_pos)) == 0);
+}
+
+
+static bool lw_msg_is_unsoclitied(char* message)
+{
+    lw_header_t header;
+    if (!lw_parse_recv(message, &header))
+    {
+        return false;
+    }
+    if (header.datalen == 0)
+    {
+        // Ack?
+        return false;
+    }
+    return true;
+}
+
+
+static bool lw_msg_is_ok(char* message)
+{
+    return (bool)(strncmp(message, "OK ", strlen(message)) == 0);
+}
+
+
+static bool lw_msg_is_error(char* message)
+{
+    char err_msg[] = "ERROR: ";
+    return (bool)(strncmp(message, err_msg, strlen(err_msg)) == 0);
 }
 
 
 static bool lw_msg_is_ack(char* message)
 {
-    int16_t packet[4] = {0};
-    if (!lw_parse_packet(message, packet))
+    lw_header_t header;
+    if (!lw_parse_recv(message, &header))
     {
         // Message does not fit the format
-        log_out("EARLY EXIT 1");
         return false;
     }
-    if (packet[3] != 0)
+    if (header.datalen != 0)
     {
         // Data length not zero so not ack.
-        log_out("EARLY EXIT 2");
         return false;
     }
-    log_out("FULL EXIT");
     return true;
 }
 
