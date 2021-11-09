@@ -55,9 +55,9 @@ typedef struct
             int16_t datalen;
         };
         int16_t raw[4];
-    };
+    } header;
     char* data;
-} lw_header_t;
+} lw_payload_t;
 
 
 static void lw_spin_us(uint32_t time_us)
@@ -103,16 +103,6 @@ static void lw_set_config(const char* config_fmt, ...)
     va_end(args);
 }
 
-/*
-static void lw_set_confirmation(bool conf)
-{
-    uint8_t val = 0;
-    if (conf)
-    {
-        val = 1;
-    }
-    lw_set_config("at+set_config=lora:confirm:%u", val);
-}*/
 
 typedef enum 
 {
@@ -152,24 +142,6 @@ const char init_msgs[][64] = { "at+set_config=lora:default_parameters",
                                "at+join" };
 
 
-bool lw_send_with_rsp(lw_packet_t* packet, lw_response_cb cb)
-{
-    if (lw_state_machine.state != LW_STATE_INIT)
-    {
-        log_error("LW not in state to send query");
-        return false;
-    }
-    
-    if (lw_send_packet(packet))
-    {
-        lw_state_machine.data.response_cb = cb;
-        return true;
-    }
-
-    return false;
-}
-
-
 void lorawan_init(void)
 {
     if (lw_state_machine.state != LW_STATE_INIT || lw_state_machine.data.init_step != 0)
@@ -186,33 +158,6 @@ static void lw_reconnect(void)
     lw_state_machine.state = LW_STATE_INIT;
     lw_state_machine.data.init_step = 0;
     lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
-}
-
-
-static bool lw_payload_add(lw_measurement_t* m, char* payload)
-{
-    char p[32] = {0};
-    snprintf(p, 32*sizeof(char), m->format, m->channel, m->type_id, m->data);
-    printf("%s\n", p);
-    strncat(payload, p, strlen(p));
-    return true;
-}
-
-
-bool lw_send_packet(lw_packet_t* packet)
-{
-    char payload[64] = {0};
-    uint8_t port = 5;
-    for(lw_measurement_t* m = packet->measurements; m->id; m++)
-    {
-        if (!lw_payload_add(m, payload))
-        {
-            return false;
-        }
-    }
-    lw_write("at+send=lora:%u:%s", port, payload);
-    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
-    return true;
 }
 
 
@@ -331,7 +276,7 @@ void lw_process(char* message)
 }
 
 
-static bool lw_parse_recv(char* message, lw_header_t* header)
+static bool lw_parse_recv(char* message, lw_payload_t* payload)
 {
     // at+recv=PORT,RSSI,SNR,DATALEN:DATA
     char recv_msg[] = "at+recv=";
@@ -346,26 +291,26 @@ static bool lw_parse_recv(char* message, lw_header_t* header)
     pos = message + strlen(recv_msg);
     for (int i = 0; i < 3; i++)
     {
-        header->raw[i] = strtol(pos, &next_pos, 10);
+        payload->header.raw[i] = strtol(pos, &next_pos, 10);
         if ((*next_pos) != ',')
         {
             return false;
         }
         pos = next_pos + 1;
     }
-    header->datalen = strtol(pos, &next_pos, 10);
+    payload->header.datalen = strtol(pos, &next_pos, 10);
     if (*next_pos == '\0')
     {
-        header->data = NULL;
-        return (header->datalen == 0);
+        payload->data = NULL;
+        return (payload->header.datalen == 0);
     }
     if (*next_pos == ':')
     {
-        header->data = next_pos + 1;
-        log_out("string length = %u", strlen(header->data)/2);
-        log_out("datalen = %u", (size_t)header->datalen);
-        log_out("data = %s", header->data);
-        return (strlen(header->data)/2 == (size_t)header->datalen);
+        payload->data = next_pos + 1;
+        log_out("string length = %u", strlen(payload->data)/2);
+        log_out("datalen = %u", (size_t)payload->header.datalen);
+        log_out("data = %s", payload->data);
+        return (strlen(payload->data)/2 == (size_t)payload->header.datalen);
     }
     return false;
 }
@@ -373,12 +318,12 @@ static bool lw_parse_recv(char* message, lw_header_t* header)
 
 static bool lw_msg_is_unsoclitied(char* message)
 {
-    lw_header_t header;
-    if (!lw_parse_recv(message, &header))
+    lw_payload_t payload;
+    if (!lw_parse_recv(message, &payload))
     {
         return false;
     }
-    if (header.datalen == 0)
+    if (payload.header.datalen == 0)
     {
         // Ack?
         return false;
@@ -402,14 +347,14 @@ static bool lw_msg_is_error(char* message)
 
 static bool lw_msg_is_ack(char* message)
 {
-    lw_header_t header;
-    if (!lw_parse_recv(message, &header))
+    lw_payload_t payload;
+    if (!lw_parse_recv(message, &payload))
     {
         // Message does not fit the format
         log_out("Fail 1");
         return false;
     }
-    if (header.datalen != 0)
+    if (payload.header.datalen != 0)
     {
         // Data length not zero so not ack.
         log_out("Fail 2");
@@ -469,14 +414,5 @@ static void lw_error_handle(char* message)
 
 void lw_main(void)
 {
-    lw_packet_t packet;
-    packet.confirm = true;
-    lw_measurement_t measurements[] =
-    {
-        { 1, 3, LW_ID__TEMPERATURE, LW_FMT__TEMPERATURE , 272},
-        { 2, 5, LW_ID__TEMPERATURE, LW_FMT__TEMPERATURE , 255},
-        { (long int)NULL },
-    };
-    *packet.measurements = *measurements;
-    lw_send_packet(&packet);
+    lw_write("at+version");
 }

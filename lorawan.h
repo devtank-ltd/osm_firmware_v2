@@ -72,33 +72,23 @@
 #define LW_ID__AIR_QUALITY                  228     //                     | uCIFI
 
 
+#define LW__MAX_MEASUREMENTS                128
+
+
 typedef struct
 {
-    uint8_t     id;
-    uint8_t     channel;
-    uint8_t     type_id;
-    char*       format;
+    uint8_t     data_id;
     uint32_t    data;
 } lw_measurement_t;
 
-/*
 typedef struct
 {
-    lw_measurement_t mean;
-    lw_measurement_t stddev;
-    //lw_measurment_t skew;
-    lw_measurement_t range;
-} lw_batch_t;
-*/
-
-typedef struct
-{
-    bool confirm;
-    lw_measurement_t measurements[];
+    lw_measurement_t    measurements[LW__MAX_MEASUREMENTS];
+    uint32_t            read_pos;
+    uint32_t            write_pos;
 } lw_packet_t;
 
 
 extern void lorawan_init(void);
-extern bool lw_send_packet(lw_packet_t* packet);
 extern void lw_main(void);
 extern void lw_process(char* message);
