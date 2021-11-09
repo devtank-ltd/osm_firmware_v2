@@ -73,6 +73,8 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
         log_debug(DEBUG_UART, "UART %u out < %u", uart, len);
 
     for (unsigned n = 0; n < len; n++)
+    {
+        log_error("val = %d\r\nlen = %u", (int)s[n], len);
         if (!ring_buf_add(ring, s[n]))
         {
             if (uart)
@@ -81,6 +83,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
                 platform_raw_msg("Debug UART ring full!");
             return n;
         }
+    }
     return len;
 }
 
