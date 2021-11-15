@@ -74,7 +74,6 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 
     for (unsigned n = 0; n < len; n++)
     {
-        log_error("val = %d\r\nlen = %u", (int)s[n], len);
         if (!ring_buf_add(ring, s[n]))
         {
             if (uart)

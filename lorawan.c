@@ -13,6 +13,7 @@
 #include "config.h"
 #include "lorawan.h"
 #include "log.h"
+#include "cmd.h"
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
@@ -40,6 +41,7 @@
 
 
 static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
+static char lw_leftover[LW_BUFFER_SIZE] = {0};
 volatile bool ready = true;
 
 
@@ -161,11 +163,22 @@ static void lw_reconnect(void)
 }
 
 
+enum
+{
+    LW__RECV__ACK,
+    LW__RECV__DATA,
+    LW__RECV_ERR__NOT_START,
+    LW__RECV_ERR__BAD_FMT,
+    LW__RECV_ERR__UNFIN,
+};
+
+
 static bool lw_msg_is_unsoclitied(char* message);
 static bool lw_msg_is_ok(char* message);
 static bool lw_msg_is_error(char* message);
 static bool lw_msg_is_ack(char* message);
 static void lw_error_handle(char* message);
+static void lw_handle_unsol(char* message);
 
 
 void lw_process(char* message)
@@ -259,12 +272,15 @@ void lw_process(char* message)
         }
         /*else error*/
     }
-    else if ((lw_state_machine.state != LW_STATE_WAITING_LW_ACK) && (lw_msg_is_unsoclitied(message)))
+    else if (lw_state_machine.state != LW_STATE_WAITING_LW_ACK)
     {
-        /*Done?*/
-        log_out("LORA >> (UNSOL) %s", message);
-        // lw_command_handle(message);
-        return;
+        if (lw_msg_is_unsoclitied(message))
+        {
+            /*Done?*/
+            log_out("LORA >> (UNSOL) %s", message);
+            lw_handle_unsol(message);
+            return;
+        }
     }
     else
     {
@@ -276,25 +292,36 @@ void lw_process(char* message)
 }
 
 
-static bool lw_parse_recv(char* message, lw_payload_t* payload)
+static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
 {
     // at+recv=PORT,RSSI,SNR,DATALEN:DATA
     char recv_msg[] = "at+recv=";
     char* pos = NULL;
     char* next_pos = NULL;
+    char proc_str[LW_BUFFER_SIZE] = "";
 
     if (strncmp(message, recv_msg, strlen(recv_msg)) != 0)
     {
-        return false;
+        if (strncmp(lw_leftover, recv_msg, strlen(recv_msg)) != 0)
+        {
+            return LW__RECV_ERR__NOT_START;
+        }
+        strncat(proc_str, lw_leftover, strlen(lw_leftover));
+        strncat(proc_str, message, strlen(message));
+    }
+    else
+    {
+        memset(lw_leftover, 0, LW_BUFFER_SIZE);
+        strncpy(proc_str, message, strlen(message));
     }
 
-    pos = message + strlen(recv_msg);
+    pos = proc_str + strlen(recv_msg);
     for (int i = 0; i < 3; i++)
     {
         payload->header.raw[i] = strtol(pos, &next_pos, 10);
         if ((*next_pos) != ',')
         {
-            return false;
+            return LW__RECV_ERR__BAD_FMT;
         }
         pos = next_pos + 1;
     }
@@ -302,7 +329,11 @@ static bool lw_parse_recv(char* message, lw_payload_t* payload)
     if (*next_pos == '\0')
     {
         payload->data = NULL;
-        return (payload->header.datalen == 0);
+        if (payload->header.datalen == 0)
+        {
+            return LW__RECV__ACK;
+        }
+        return LW__RECV_ERR__BAD_FMT;
     }
     if (*next_pos == ':')
     {
@@ -310,9 +341,19 @@ static bool lw_parse_recv(char* message, lw_payload_t* payload)
         log_out("string length = %u", strlen(payload->data)/2);
         log_out("datalen = %u", (size_t)payload->header.datalen);
         log_out("data = %s", payload->data);
-        return (strlen(payload->data)/2 == (size_t)payload->header.datalen);
+        ssize_t size_diff = strlen(payload->data)/2 - (size_t)payload->header.datalen;
+        if (size_diff < 0)
+        {
+            strncat(lw_leftover, proc_str, strlen(proc_str));
+            return LW__RECV_ERR__UNFIN;
+        }
+        if (size_diff > 0)
+        {
+            return LW__RECV_ERR__BAD_FMT;
+        }
+        return LW__RECV__DATA;
     }
-    return false;
+    return LW__RECV_ERR__BAD_FMT;
 }
 
 
@@ -348,20 +389,7 @@ static bool lw_msg_is_error(char* message)
 static bool lw_msg_is_ack(char* message)
 {
     lw_payload_t payload;
-    if (!lw_parse_recv(message, &payload))
-    {
-        // Message does not fit the format
-        log_out("Fail 1");
-        return false;
-    }
-    if (payload.header.datalen != 0)
-    {
-        // Data length not zero so not ack.
-        log_out("Fail 2");
-        return false;
-    }
-    log_out("Success");
-    return true;
+    return (lw_parse_recv(message, &payload) == LW__RECV__ACK);
 }
 
 enum
@@ -412,7 +440,34 @@ static void lw_error_handle(char* message)
 }
 
 
+static void lw_handle_unsol(char* message)
+{
+    lw_payload_t incoming_pl;
+    if (lw_parse_recv(message, &incoming_pl) != LW__RECV__DATA)
+    {
+        return;
+    }
+
+    char pl_id_s[3] = {0};
+
+    strncpy(pl_id_s, incoming_pl.data, 2);
+    uint8_t pl_id = strtoul(pl_id_s, NULL, 16);
+
+    char* cmd = message + 2;
+
+    switch (pl_id)
+    {
+        case LW_ID__ADDRESSABLE_TEXT_DISPLAY:
+            cmds_process(cmd, strlen(cmd));
+            break;
+        default:
+            break;
+    }
+}
+
+
 void lw_main(void)
 {
-    lw_write("at+version");
+    lw_write("at+send=lora:1:5A00");
+    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
 }
