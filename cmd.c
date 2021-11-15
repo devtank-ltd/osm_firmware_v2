@@ -47,51 +47,20 @@ static void audio_dump_cb();
 static void lora_cb();
 
 
-static cmd_t cmds[] = {/*
-    { "ppss",     "Print all pulse info.",   pulsecount_log},
-    { "pps",      "Print pulse info.",       pps_cb},
-    { "adc",      "Print ADC.",              adc_cb},
-    { "adcs",     "Print all ADCs.",         adcs_log},
-    { "adcsw",    "Wait to print all ADCs.", adcsw_cb},*/
+static cmd_t cmds[] = {
     { "ios",      "Print all IOs.",          ios_log},
     { "io",       "Get/set IO set.",         io_cb},
     { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
-//    { "adc_ms",   "Get/Set ADC rate in ms.", adc_rate_cb},
     { "persist",  "Start persist of name.",  persist_cb},
     { "en_cal",   "Enable ADC Calibration.", en_cal_cb},
     { "cal_name", "Get Calibration Name",    cal_name_cb},
-//    { "cal",      "Get/Set ADC callibration",adc_cal_cb},
     { "version",  "Print version.",          version_cb},
     { "audio_dump", "Do audiodump",          audio_dump_cb},
     { "lora",      "Send lora message",      lora_cb},
     { NULL },
 };
 
-
-/*
-
-void pps_cb()
-{
-    unsigned pps = strtoul(rx_buffer + rx_pos, NULL, 10);
-
-    pulsecount_pps_log(pps);
-}
-
-
-void adc_cb()
-{
-    unsigned adc = strtoul(rx_buffer + rx_pos, NULL, 10);
-    adcs_adc_log(adc);
-}
-
-
-void adcsw_cb()
-{
-    timer_wait();
-    adcs_log();
-}
-*/
 
 static char * skip_space(char * pos)
 {
@@ -218,34 +187,11 @@ void special_cb()
 
 
 void count_cb()
-{/*
-    log_out("PPSS    : %u", pulsecount_get_count());
-    log_out("ADCs    : %u", adcs_get_count());*/
+{
     log_out("IOs     : %u", ios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
-/*
 
-void adc_rate_cb()
-{
-    char * pos = skip_space(rx_buffer + rx_pos);
-
-    if (*pos)
-    {
-        unsigned ms = strtoul(pos, NULL, 10);
-
-        if (!timer_set_adc_boardary(ms))
-        {
-            log_out("Invalid ADC sampling interval.");
-            return;
-        }
-    }
-
-    unsigned ms = timer_get_adc_boardary();
-
-    log_out("ADC sampling interval : %ums", ms);
-}
-*/
 
 void uart_cb()
 {
@@ -350,127 +296,6 @@ void cal_name_cb()
     log_out("N:%s", name);
 }
 
-/*
-void adc_cal_cb()
-{
-    static float cals[MAX_ADC_CAL_POLY_NUM];
-    static unsigned count = 0;
-
-    char * pos = skip_space(rx_buffer + rx_pos);
-    unsigned adc = strtoul(pos, &pos, 10);
-    pos = skip_space(pos);
-
-    if (strncmp(pos,"S:",2) == 0)
-    {
-        count = 0;
-
-        if (isdigit(*(pos + 2)))
-        {
-            cals[0] = strtof(pos + 2, &pos);
-            log_out("Cal scale pending");
-        }
-        else
-            log_debug(DEBUG_ADC, "ADC %u Scale Cal set failed", adc);
-    }
-    else if (strncmp(pos,"O:",2) == 0)
-    {
-        count = 0;
-        if (isdigit(*(pos + 2)))
-        {
-            cals[1] = strtof(pos + 2, &pos);
-            log_out("Cal offset pending");
-        }
-        else
-            log_debug(DEBUG_ADC, "ADC %u Offset Cal read failed", adc);
-    }
-    else if (isdigit(*pos) && pos[1] == ':')
-    {
-        unsigned index = *pos - '0';
-        if (index < MAX_ADC_CAL_POLY_NUM)
-        {
-            if (isdigit(*(pos + 2)))
-            {
-                cals[index] = strtof(pos + 2, &pos);
-                log_out("Cal poly %u pending", index);
-            }
-            count = index+1;
-        }
-        else log_out("Invalid cal poly");
-    }
-    else if (strncmp(pos,"U:",2) == 0)
-    {
-        pos +=2;
-        if ((!count && persistent_set_cal(adc, cals[0], cals[1], pos)) ||
-            (count && persistent_set_exp_cal(adc, cals, count, pos)))
-            log_out("Cal set");
-        else
-            log_debug(DEBUG_ADC, "ADC %u Cal set failed", adc);
-    }
-    else
-    {
-        cal_type_t type;
-
-        if (!persistent_get_cal_type(adc, &type))
-        {
-            log_out("Invalid Cal request");
-            log_error("Invalid Cal request");
-            return;
-        }
-
-        log_out("ADC : %u Cal", adc);
-
-        switch(type)
-        {
-            case ADC_LIN_CAL:
-            {
-                const char * unit = NULL;
-                if (persistent_get_cal(adc, &cals[0], &cals[1], &unit))
-                {
-                    snprintf(adc_temp_buffer, sizeof(adc_temp_buffer), "%G", cals[0]);
-                    adc_temp_buffer[sizeof(adc_temp_buffer)-1] = 0;
-
-                    log_out("S: %s", adc_temp_buffer);
-
-                    snprintf(adc_temp_buffer, sizeof(adc_temp_buffer), "%G", cals[1]);
-                    adc_temp_buffer[sizeof(adc_temp_buffer)-1] = 0;
-
-                    log_out("O: %s", adc_temp_buffer);
-
-                    log_out("Unit: %s", unit);
-                }
-                else
-                {
-                    log_out("S: BAD");
-                    log_out("O: BAD");
-                    log_out("Unit: BAD");
-                }
-                break;
-            }
-            case ADC_POLY_CAL:
-            {
-                const char * unit = NULL;
-                float * read_cals;
-
-                if (persistent_get_exp_cal(adc, &read_cals, &count, &unit))
-                {
-                    log_out("POLY");
-                    for(unsigned n = 0; n < count; n++)
-                    {
-                        snprintf(adc_temp_buffer, sizeof(adc_temp_buffer), "%G", read_cals[n]);
-                        adc_temp_buffer[sizeof(adc_temp_buffer)-1] = 0;
-                        log_out("%u: %s", n, adc_temp_buffer);
-                    }
-                    log_out("Unit: %s", unit);
-                }
-                else log_out("POLY: BAD");
-                break;
-            }
-            default: break;
-        }
-
-    }
-}*/
-
 
 void version_cb()
 {
@@ -486,7 +311,8 @@ void audio_dump_cb(void)
 
 static void lora_cb(void)
 {
-    lw_main();
+    char * pos = skip_space(rx_buffer + rx_pos);
+    lw_send(pos);
 }
 
 

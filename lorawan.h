@@ -90,5 +90,5 @@ typedef struct
 
 
 extern void lorawan_init(void);
-extern void lw_main(void);
+extern void lw_send(char* message);
 extern void lw_process(char* message);

@@ -342,9 +342,6 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
     if (*next_pos == ':')
     {
         payload->data = next_pos + 1;
-        log_out("string length = %u", strlen(payload->data)/2);
-        log_out("datalen = %u", (size_t)payload->header.datalen);
-        log_out("data = %s", payload->data);
         ssize_t size_diff = strlen(payload->data)/2 - (size_t)payload->header.datalen;
         if (size_diff < 0)
         {
@@ -452,7 +449,7 @@ static void lw_handle_unsol(char* message)
         return;
     }
 
-    char pl_id_s[3] = {0};
+    char pl_id_s[3] = "";
 
     strncpy(pl_id_s, incoming_pl.data, 2);
     uint8_t pl_id = strtoul(pl_id_s, NULL, 16);
@@ -468,8 +465,6 @@ static void lw_handle_unsol(char* message)
         strncat(cmd_ascii, (char* )&val, 1);
     }
 
-    log_out("cmd : %s", cmd_ascii);
-
     switch (pl_id)
     {
         case LW_ID__ADDRESSABLE_TEXT_DISPLAY:
@@ -481,8 +476,8 @@ static void lw_handle_unsol(char* message)
 }
 
 
-void lw_main(void)
+void lw_send(char* message)
 {
-    lw_write("at+send=lora:1:5A00");
+    lw_write("at+send=lora:1:%s", message);
     lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
 }
