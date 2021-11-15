@@ -270,7 +270,11 @@ void lw_process(char* message)
             log_out("HACK 7.1");
             lw_state_machine.state = LW_STATE_IDLE;
         }
-        /*else error*/
+        else if (lw_msg_is_error(message))
+        {
+            lw_error_handle(message);
+            /*else error*/
+        }
     }
     else if (lw_state_machine.state != LW_STATE_WAITING_LW_ACK)
     {
@@ -453,12 +457,23 @@ static void lw_handle_unsol(char* message)
     strncpy(pl_id_s, incoming_pl.data, 2);
     uint8_t pl_id = strtoul(pl_id_s, NULL, 16);
 
-    char* cmd = message + 2;
+    char* cmd_hex = incoming_pl.data + 2;
+    char cmd_ascii[LW_BUFFER_SIZE] = "";
+    char val_str[3] = "";
+    uint8_t val;
+    for (size_t i = 0; i < strlen(cmd_hex) / 2; i++)
+    {
+        strncpy(val_str, cmd_hex + 2*i, 2);
+        val = strtoul(val_str, NULL, 16);
+        strncat(cmd_ascii, (char* )&val, 1);
+    }
+
+    log_out("cmd : %s", cmd_ascii);
 
     switch (pl_id)
     {
         case LW_ID__ADDRESSABLE_TEXT_DISPLAY:
-            cmds_process(cmd, strlen(cmd));
+            cmds_process(cmd_ascii, strlen(cmd_ascii));
             break;
         default:
             break;
