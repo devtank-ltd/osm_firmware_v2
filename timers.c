@@ -9,6 +9,11 @@
 #include "timers.h"
 #include "uart_rings.h"
 #include "log.h"
+#include "measurements.h"
+
+
+#define LW_TRANSMIT__MINIMUM_INTERVAL_US   5 * 60 * 1000 * 1000 // 5 mins
+
 
 static volatile unsigned fast_rate_sps     = DEFAULT_SPS;
 static volatile unsigned fast_sample_count = DEFAULT_SPS-1;
@@ -57,13 +62,12 @@ void tim2_isr(void)
 {
     fast_sample_count++;
 
-    if (fast_sample_count >= adc_timer_boardary)
+    if (fast_sample_count >= LW_TRANSMIT__MINIMUM_INTERVAL)
     {
-        adcs_collect_boardary();
+        measurement_trigger = true;
         fast_sample_count = 0;
     }
 
-    adcs_do_samples();
     timer_clear_flag(TIM2, TIM_SR_CC1IF);
 }
 

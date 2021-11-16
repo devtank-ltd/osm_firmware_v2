@@ -21,6 +21,7 @@
 #include "uart_rings.h"
 #include "persist_config.h"
 #include "lorawan.h"
+#include "measurements.h"
 
 
 void hard_fault_handler(void)
@@ -29,12 +30,6 @@ void hard_fault_handler(void)
     while(true);
 }
 
-volatile uint32_t ms_ticks = 0;
-
-void SysTick_Handler(void)
-{
-    ms_ticks++;
-}
 
 static void clock_setup(void)
 {
@@ -87,7 +82,6 @@ int main(void)
 
     log_async_log = true;
 
-    uint32_t finish_tick = 0;
     while(true)
     {
         for(unsigned n = 0; n < rcc_ahb_frequency / 1000; n++)
@@ -96,19 +90,7 @@ int main(void)
             uart_rings_out_drain();
         }
 
-        if (audio_dumping && (finish_tick < ms_ticks))
-        {
-            audio_dumping = false;
-        }
-
-        if (start_audio_dumping)
-        {
-            start_audio_dumping = false;
-            audio_dumping = true;
-            finish_tick = ms_ticks + 5 * 1000;
-        }
-
-        //lw_loop();
+        measurement_loop();
 
         gpio_toggle(LED_PORT, LED_PIN);
     }
