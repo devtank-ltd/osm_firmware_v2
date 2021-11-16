@@ -3,14 +3,12 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+#include "config.h"
 #include "basic_fixed.h"
 
 
 #define BFP_BIG_ONE    10000000000000000000ULL
 #define BFP_BIG_ONE_MUL 10000000UL
-
-#define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
-#define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 
 
 static int64_t basic_fixed_get(basic_fixed_t * v)

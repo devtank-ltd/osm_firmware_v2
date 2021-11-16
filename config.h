@@ -32,6 +32,9 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
+#define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
+#define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
+
 #define LOG_START_SPACER  "============{"
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
