@@ -14,27 +14,26 @@
 #include "lorawan.h"
 #include "log.h"
 #include "cmd.h"
+#include "measurements.h"
+
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
-#define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
-#define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
+#define LW_BUFFER_SIZE          512
+#define LW__MEASUREMENT_SIZE    16
+#define LW_MESSAGE_DELAY        3000
 
-#define LW_BUFFER_SIZE 64
-#define LW_MESSAGE_DELAY 3000
-
-#define LW_JOIN_MODE_OTAA   0
-#define LW_JOIN_MODE_ABP    1
-#define LW_JOIN_MODE        LW_JOIN_MODE_OTAA
-#define LW_CLASS_A          0
-#define LW_CLASS_C          2
-#define LW_CLASS            LW_CLASS_C
-#define LW_REGION           "EU868"
+#define LW_JOIN_MODE_OTAA       0
+#define LW_JOIN_MODE_ABP        1
+#define LW_JOIN_MODE            LW_JOIN_MODE_OTAA
+#define LW_CLASS_A              0
+#define LW_CLASS_C              2
+#define LW_CLASS                LW_CLASS_C
+#define LW_REGION               "EU868"
 // TODO: Dev EUI and App Key should not be baked in.
-#define LW_DEV_EUI          "118f875d6994bbfd"
+#define LW_DEV_EUI              "118f875d6994bbfd"
 // For Chirpstack OTAA the App EUI must match the Dev EUI
-#define LW_APP_EUI          LW_DEV_EUI
-#define LW_APP_KEY          "d9597152b1293bb9c0e220cd04fc973c"
-
+#define LW_APP_EUI              LW_DEV_EUI
+#define LW_APP_KEY              "d9597152b1293bb9c0e220cd04fc973c"
 
 
 #define LW_FMT__TEMPERATURE                 "%02X%02X%04X"
@@ -43,6 +42,7 @@
 static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
 static char lw_leftover[LW_BUFFER_SIZE] = {0};
 volatile bool ready = true;
+static uint8_t lw_port = 0;
 
 
 typedef struct
@@ -449,18 +449,27 @@ static void lw_handle_unsol(char* message)
         return;
     }
 
-    char pl_id_s[3] = "";
+    char* p = incoming_pl.data;
 
-    strncpy(pl_id_s, incoming_pl.data, 2);
+    char pl_loc_s[3] = "";
+    strncpy(pl_loc_s, p, 2);
+    uint8_t pl_loc = strtoul(pl_loc_s, NULL, 16);
+    pl_loc++;
+
+    p += 2;
+
+    char pl_id_s[3] = "";
+    strncpy(pl_id_s, p, 2);
     uint8_t pl_id = strtoul(pl_id_s, NULL, 16);
 
-    char* cmd_hex = incoming_pl.data + 2;
+    p += 2;
+
     char cmd_ascii[LW_BUFFER_SIZE] = "";
     char val_str[3] = "";
     uint8_t val;
-    for (size_t i = 0; i < strlen(cmd_hex) / 2; i++)
+    for (size_t i = 0; i < strlen(p) / 2; i++)
     {
-        strncpy(val_str, cmd_hex + 2*i, 2);
+        strncpy(val_str, p + 2*i, 2);
         val = strtoul(val_str, NULL, 16);
         strncat(cmd_ascii, (char* )&val, 1);
     }
@@ -478,6 +487,46 @@ static void lw_handle_unsol(char* message)
 
 void lw_send(char* message)
 {
-    lw_write("at+send=lora:1:%s", message);
+    lw_port++;
+    if (lw_port > 223)
+    {
+        lw_port = 0;
+    }
+    lw_write("at+send=lora:%x:%s", lw_port, message);
     lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
+}
+
+
+bool lw_send_packet(lw_packet_t* packet, uint32_t interval_count) // TODO: Maybe use a different type for interval?
+{
+    lw_measurement_t* msmt = NULL;
+
+    uint8_t data_size;
+    char pl[LW__MAX_MEASUREMENTS * LW__MEASUREMENT_SIZE] = "";
+    char meas[LW__MEASUREMENT_SIZE];
+    char fmt[25] = "";
+    uint8_t sensor_id = 0;
+    uint16_t pos_diff = packet->write_pos - packet->read_pos - 1;
+    for (uint16_t i = 0; i < pos_diff; i++)
+    {
+        measurement_consume(msmt);
+        if (interval_count % msmt->interval == 0)
+        {
+            switch (msmt->data_id)
+            {
+                case LW_ID__TEMPERATURE:
+                    data_size = 2;
+                    break;
+                default:
+                    data_size++;
+                    log_out("Unknown ID: %u", msmt->data_id);
+                    return false;
+            }
+            strcpy(fmt, "%02x%02x%0"STR(data_size * 2)"x");
+            snprintf(meas, LW__MEASUREMENT_SIZE, fmt, sensor_id, msmt->data_id, msmt->data);
+            strncat(pl, meas, LW__MEASUREMENT_SIZE);
+        }
+    }
+    lw_send(pl);
+    return true;
 }

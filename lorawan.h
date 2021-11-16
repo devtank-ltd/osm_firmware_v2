@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <inttypes.h>
 
 
 /** IDs are taken from or abide by similar rules to the Cayenne LPP.
@@ -72,13 +73,14 @@
 #define LW_ID__AIR_QUALITY                  228     //                     | uCIFI
 
 
-#define LW__MAX_MEASUREMENTS                128
+#define LW__MAX_MEASUREMENTS                20
 
 
 typedef struct
 {
     uint8_t     data_id;
     uint32_t    data;
+    uint8_t     interval; // multiples of 5 mins
 } lw_measurement_t;
 
 typedef struct
@@ -92,3 +94,4 @@ typedef struct
 extern void lorawan_init(void);
 extern void lw_send(char* message);
 extern void lw_process(char* message);
+extern bool lw_send_packet(lw_packet_t* packet, uint32_t interval_count);
