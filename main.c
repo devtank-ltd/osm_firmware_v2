@@ -74,7 +74,7 @@ int main(void)
     cmds_init();
     ios_init();
     sai_init();
-    lorawan_init();
+    //lorawan_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
