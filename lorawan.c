@@ -14,7 +14,6 @@
 #include "lorawan.h"
 #include "log.h"
 #include "cmd.h"
-#include "measurements.h"
 
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
@@ -509,7 +508,6 @@ bool lw_send_packet(lw_packet_t* packet, uint32_t interval_count) // TODO: Maybe
     uint16_t pos_diff = packet->write_pos - packet->read_pos - 1;
     for (uint16_t i = 0; i < pos_diff; i++)
     {
-        measurement_consume(msmt);
         if (interval_count % msmt->interval == 0)
         {
             switch (msmt->data_id)

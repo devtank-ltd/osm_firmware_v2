@@ -21,7 +21,6 @@
 #include "uart_rings.h"
 #include "persist_config.h"
 #include "lorawan.h"
-#include "measurements.h"
 
 
 void hard_fault_handler(void)
@@ -89,8 +88,6 @@ int main(void)
             uart_rings_in_drain();
             uart_rings_out_drain();
         }
-
-        measurement_loop();
 
         gpio_toggle(LED_PORT, LED_PIN);
     }
