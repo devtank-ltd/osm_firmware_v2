@@ -1,3 +1,6 @@
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
@@ -17,6 +20,7 @@
 #include "persist_config.h"
 #include "sai.h"
 #include "lorawan.h"
+#include "measurements.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -27,24 +31,20 @@ typedef struct
 {
     const char * key;
     const char * desc;
-    void (*cb)(void);
+    void (*cb)(char * args);
 } cmd_t;
 
-/*
-static void pps_cb();
-static void adc_cb();
-static void adcsw_cb();*/
+
 static void io_cb();
 static void special_cb();
 static void count_cb();
-//static void adc_rate_cb();
 static void persist_cb();
 static void en_cal_cb();
 static void cal_name_cb();
-//static void adc_cal_cb();
 static void version_cb();
 static void audio_dump_cb();
 static void lora_cb();
+static void interval_cb();
 
 
 static cmd_t cmds[] = {
@@ -58,6 +58,7 @@ static cmd_t cmds[] = {
     { "version",  "Print version.",          version_cb},
     { "audio_dump", "Do audiodump",          audio_dump_cb},
     { "lora",      "Send lora message",      lora_cb},
+    { "interval", "Set the interval",        interval_cb},
     { NULL },
 };
 
@@ -174,7 +175,7 @@ void io_cb()
 }
 
 
-void special_cb()
+void special_cb(char * args)
 {
     char * pos = NULL;
     unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
@@ -186,14 +187,14 @@ void special_cb()
 }
 
 
-void count_cb()
+void count_cb(char * args)
 {
     log_out("IOs     : %u", ios_get_count());
     log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 
 
-void uart_cb()
+void uart_cb(char * args)
 {
     char * pos = NULL;
     unsigned uart = strtoul(rx_buffer + rx_pos, &pos, 10);
@@ -249,7 +250,7 @@ void uart_cb()
 }
 
 
-void persist_cb()
+void persist_cb(char * args)
 {
     char * pos = skip_space(rx_buffer + rx_pos);
 
@@ -260,7 +261,7 @@ void persist_cb()
 }
 
 
-void en_cal_cb()
+void en_cal_cb(char * args)
 {
     char * pos = skip_space(rx_buffer + rx_pos);
 
@@ -290,26 +291,26 @@ void en_cal_cb()
 }
 
 
-void cal_name_cb()
+void cal_name_cb(char * args)
 {
     const char * name = persistent_get_name();
     log_out("N:%s", name);
 }
 
 
-void version_cb()
+void version_cb(char * args)
 {
     log_out("Version : %s", GIT_VERSION);
 }
 
 
-void audio_dump_cb(void)
+void audio_dump_cb(char * args)
 {
     start_audio_dumping = true;
 }
 
 
-static void lora_cb(void)
+void lora_cb(char * args)
 {
     char * pos = skip_space(rx_buffer + rx_pos);
     lw_send(pos);
@@ -328,6 +329,7 @@ void cmds_process(char * command, unsigned len)
 
     bool found = false;
     log_out(LOG_START_SPACER);
+    char * args;
     for(cmd_t * cmd = cmds; cmd->key; cmd++)
     {
         unsigned keylen = strlen(cmd->key);
@@ -337,7 +339,8 @@ void cmds_process(char * command, unsigned len)
         {
             rx_pos = keylen;
             found = true;
-            cmd->cb();
+            args = skip_space(rx_buffer + rx_pos);
+            cmd->cb(args);
             break;
         }
     }
@@ -351,6 +354,27 @@ void cmds_process(char * command, unsigned len)
     log_out(LOG_END_SPACER);
 }
 
+
+void interval_cb(char * args)
+{
+    // CMD  : "interval temperature 3"
+    // ARGS : "temperature 3"
+
+    char* p = skip_space(args);
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+    uint8_t end_pos_word = p - args + 1;
+    char name[32] = {0};
+    memset(name, 0, end_pos_word);
+    strncpy(name, args, end_pos_word-1);
+    p = skip_space(p);
+    uint8_t new_interval = strtoul(p, NULL, 10);
+
+    measurements_set_interval(name, new_interval);
+}
 
 
 void cmds_init()

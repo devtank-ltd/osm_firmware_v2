@@ -40,7 +40,8 @@ SOURCES += main.c \
            io.c \
            ring.c \
            persist_config.c \
-           lorawan.c
+           lorawan.c \
+           measurements.c
 
 BUILD_DIR := build/
 PROJECT_NAME := firmware

@@ -21,6 +21,7 @@
 #include "uart_rings.h"
 #include "persist_config.h"
 #include "lorawan.h"
+#include "measurements.h"
 
 
 void hard_fault_handler(void)
@@ -74,7 +75,8 @@ int main(void)
     cmds_init();
     ios_init();
     sai_init();
-    //lorawan_init();
+    lorawan_init();
+    measurements_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
@@ -88,6 +90,8 @@ int main(void)
             uart_rings_in_drain();
             uart_rings_out_drain();
         }
+
+        measurements_loop();
 
         gpio_toggle(LED_PORT, LED_PIN);
     }
