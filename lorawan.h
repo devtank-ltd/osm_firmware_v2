@@ -73,7 +73,7 @@
 #define LW_ID__AIR_QUALITY                  228     //                     | uCIFI
 
 
-#define LW__MAX_MEASUREMENTS                20
+#define LW__MAX_MEASUREMENTS                10
 
 
 typedef struct

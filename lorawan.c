@@ -18,7 +18,6 @@
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
 #define LW_BUFFER_SIZE          512
-#define LW__MEASUREMENT_SIZE    16
 #define LW_MESSAGE_DELAY        3000
 
 #define LW_JOIN_MODE_OTAA       0
@@ -493,38 +492,4 @@ void lw_send(char* message)
     }
     lw_write("at+send=lora:%x:%s", lw_port, message);
     lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
-}
-
-
-bool lw_send_packet(lw_packet_t* packet, uint32_t interval_count) // TODO: Maybe use a different type for interval?
-{
-    lw_measurement_t* msmt = NULL;
-
-    uint8_t data_size;
-    char pl[LW__MAX_MEASUREMENTS * LW__MEASUREMENT_SIZE] = "";
-    char meas[LW__MEASUREMENT_SIZE];
-    char fmt[25] = "";
-    uint8_t sensor_id = 0;
-    uint16_t pos_diff = packet->write_pos - packet->read_pos - 1;
-    for (uint16_t i = 0; i < pos_diff; i++)
-    {
-        if (interval_count % msmt->interval == 0)
-        {
-            switch (msmt->data_id)
-            {
-                case LW_ID__TEMPERATURE:
-                    data_size = 2;
-                    break;
-                default:
-                    data_size++;
-                    log_out("Unknown ID: %u", msmt->data_id);
-                    return false;
-            }
-            strcpy(fmt, "%02x%02x%0"STR(data_size * 2)"x");
-            snprintf(meas, LW__MEASUREMENT_SIZE, fmt, sensor_id, msmt->data_id, msmt->data);
-            strncat(pl, meas, LW__MEASUREMENT_SIZE);
-        }
-    }
-    lw_send(pl);
-    return true;
 }

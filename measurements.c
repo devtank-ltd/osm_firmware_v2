@@ -13,6 +13,7 @@
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
+#define MEASUREMENTS__STR_SIZE      16
 
 
 typedef struct
@@ -35,6 +36,7 @@ typedef struct
 
 volatile bool measurement_trigger = false;
 static data_structure_t data;
+static char meas_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
 
 
 void measurements_init(void)
@@ -96,17 +98,47 @@ bool measurements_set_interval(char* name, uint8_t interval)
 }
 
 
+static void measurements_to_hex_str(volatile measurement_list_t* measurement)
+{
+    char fmt[25] = "";
+    char meas[MEASUREMENTS__STR_SIZE];
+    uint8_t sensor_id = 0;
+    uint8_t data_size;
+    switch (measurement->data_id)
+    {
+        case LW_ID__TEMPERATURE:
+            data_size = 2;
+            break;
+        default:
+            data_size++;
+            log_out("Unknown ID: %u", measurement->data_id);
+            return;
+    }
+    strcpy(fmt, "%02x%02x%0"STR(data_size * 2)"x");
+    snprintf(meas, MEASUREMENTS__STR_SIZE, fmt, sensor_id, measurement->data_id, measurement->value);
+    strncat(meas_hex_str, meas, MEASUREMENTS__STR_SIZE);
+}
+
+
+
 static void measurements_send(uint32_t interval_count)
 {
-    volatile measurement_list_t* measurement;
     measurements_copy();
+    volatile measurement_list_t* measurement;
+    memset(meas_hex_str, 0, MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS);
+    uint16_t num_meas_qd = 0;
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.read_data[i];
         if (interval_count % measurement->interval == 0)
         {
-            ; // TODO :: Turn into string of hex to send to chip.
+            num_meas_qd++;
+            measurements_to_hex_str(measurement);
         }
+    }
+    if (num_meas_qd > 0)
+    {
+        lw_send(meas_hex_str);
     }
 }
 
