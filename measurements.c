@@ -57,7 +57,10 @@ void measurements_init(void)
 
 static void measurements_copy(void)
 {
-    __atomic_store(&data.read_data, &data.write_data, __ATOMIC_RELEASE);
+    CM_ATOMIC_BLOCK()
+    {
+        memcpy(&data.read_data, &data.write_data, sizeof(data.write_data));
+    }
 }
 
 
@@ -70,7 +73,6 @@ bool measurements_set_interval_uuid(uint8_t uuid, uint8_t interval)
         if (measurement->uuid == uuid)
         {
             measurement->interval = interval;
-            measurements_copy();
             return true;
         }
     }
@@ -87,7 +89,6 @@ bool measurements_set_interval(char* name, uint8_t interval)
         if (strncmp(measurement->name, name, strlen(measurement->name)) == 0)
         {
             measurement->interval = interval;
-            measurements_copy();
             return true;
         }
     }
@@ -97,10 +98,11 @@ bool measurements_set_interval(char* name, uint8_t interval)
 
 static void measurements_send(uint32_t interval_count)
 {
-    measurement_list_t* measurement = NULL;
+    volatile measurement_list_t* measurement;
+    measurements_copy();
     for (int i = 0; i < data.len; i++)
     {
-        __atomic_load((measurement_list_t*)&data.read_data[i], measurement, __ATOMIC_ACQUIRE);
+        measurement = &data.read_data[i];
         if (interval_count % measurement->interval == 0)
         {
             ; // TODO :: Turn into string of hex to send to chip.
@@ -134,7 +136,6 @@ bool measurements_write_data_value(uint8_t uuid, value_t val)
         if (measurement->uuid == uuid)
         {
             measurement->value = val;
-            measurements_copy();
             return true;
         }
     }
