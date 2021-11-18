@@ -34,10 +34,8 @@ typedef struct
 } data_structure_t;
 
 
-static measurement_list_t data_template[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
-                                              { MEASUREMENT_UUID__HUM  , LW_ID__HUMIDITY     , "humidity"      ,  1, MEASUREMENTS__UNSET_VALUE } };
-static measurement_list_t data_0[ARRAY_SIZE(data_template)];
-static measurement_list_t data_1[ARRAY_SIZE(data_template)];
+static measurement_list_t data_0[LW__MAX_MEASUREMENTS];
+static measurement_list_t data_1[LW__MAX_MEASUREMENTS];
 
 static data_structure_t data;
 
@@ -47,6 +45,8 @@ static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] =
 
 void measurements_init(void)
 {
+    measurement_list_t data_template[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
+                                           { MEASUREMENT_UUID__HUM  , LW_ID__HUMIDITY     , "humidity"      ,  1, MEASUREMENTS__UNSET_VALUE } };
     memcpy((measurement_list_t*)&data_0, &data_template, sizeof(data_template));
     memcpy((measurement_list_t*)&data_1, &data_template, sizeof(data_template));
     data.read_data = (measurement_list_t*)data_0;
