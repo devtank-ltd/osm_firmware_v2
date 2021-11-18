@@ -34,26 +34,24 @@ typedef struct
 } data_structure_t;
 
 
-volatile bool measurement_trigger = false;
+static measurement_list_t data_template[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
+                                              { MEASUREMENT_UUID__HUM  , LW_ID__HUMIDITY     , "humidity"      ,  1, MEASUREMENTS__UNSET_VALUE } };
+static measurement_list_t data_0[ARRAY_SIZE(data_template)];
+static measurement_list_t data_1[ARRAY_SIZE(data_template)];
+
 static data_structure_t data;
-static char meas_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
+
+volatile bool measurement_trigger = false;
+static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
 
 
 void measurements_init(void)
 {
-    measurement_list_t data_template[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
-                                           { MEASUREMENT_UUID__HUM  , LW_ID__HUMIDITY     , "humidity"      ,  1, MEASUREMENTS__UNSET_VALUE } };
-
-    uint16_t len = ARRAY_SIZE(data_template);
-
-    measurement_list_t data_0[len];
-    measurement_list_t data_1[len];
-
     memcpy((measurement_list_t*)&data_0, &data_template, sizeof(data_template));
     memcpy((measurement_list_t*)&data_1, &data_template, sizeof(data_template));
     data.read_data = (measurement_list_t*)data_0;
     data.write_data = (measurement_list_t*)data_1;
-    data.len = len;
+    data.len = ARRAY_SIZE(data_template);
 }
 
 
@@ -98,7 +96,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 }
 
 
-static void measurements_to_hex_str(volatile measurement_list_t* measurement)
+static bool measurements_to_hex_str(volatile measurement_list_t* measurement)
 {
     char fmt[25] = "";
     char meas[MEASUREMENTS__STR_SIZE];
@@ -112,33 +110,35 @@ static void measurements_to_hex_str(volatile measurement_list_t* measurement)
         default:
             data_size++;
             log_out("Unknown ID: %u", measurement->data_id);
-            return;
+            return false;
     }
     strcpy(fmt, "%02x%02x%0"STR(data_size * 2)"x");
     snprintf(meas, MEASUREMENTS__STR_SIZE, fmt, sensor_id, measurement->data_id, measurement->value);
-    strncat(meas_hex_str, meas, MEASUREMENTS__STR_SIZE);
+    strncat(measurement_hex_str, meas, MEASUREMENTS__STR_SIZE);
+    return true;
 }
-
 
 
 static void measurements_send(uint32_t interval_count)
 {
     measurements_copy();
     volatile measurement_list_t* measurement;
-    memset(meas_hex_str, 0, MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS);
+    memset(measurement_hex_str, 0, MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS);
     uint16_t num_meas_qd = 0;
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.read_data[i];
         if (interval_count % measurement->interval == 0)
         {
-            num_meas_qd++;
-            measurements_to_hex_str(measurement);
+            if (measurements_to_hex_str(measurement))
+            {
+                num_meas_qd++;
+            }
         }
     }
     if (num_meas_qd > 0)
     {
-        lw_send(meas_hex_str);
+        lw_send(measurement_hex_str);
     }
 }
 

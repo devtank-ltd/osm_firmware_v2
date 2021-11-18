@@ -39,6 +39,7 @@
 
 static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
 static char lw_leftover[LW_BUFFER_SIZE] = {0};
+static char lw_message_backup[LW_BUFFER_SIZE] = {0};
 volatile bool ready = true;
 static uint8_t lw_port = 0;
 
@@ -405,6 +406,9 @@ enum
 };
 
 
+static void lw_resend_message(void);
+
+
 static void lw_error_handle(char* message)
 {
     char* pos = NULL;
@@ -425,11 +429,11 @@ static void lw_error_handle(char* message)
             log_out("Failed to join network.");
             break;
         case LW__ERROR__TIMEOUT_RX1:
-            // resend
+            lw_resend_message();
             log_out("RX1 Window timed out.");
             break;
         case LW__ERROR__TIMEOUT_RX2:
-            // resend
+            lw_resend_message();
             log_out("RX1 Window timed out.");
             break;
         default:
@@ -485,11 +489,21 @@ static void lw_handle_unsol(char* message)
 
 void lw_send(char* message)
 {
-    lw_port++;
-    if (lw_port > 223)
+    if (lw_state_machine.state == LW_STATE_IDLE)
     {
-        lw_port = 0;
+        lw_port++;
+        if (lw_port > 223)
+        {
+            lw_port = 0;
+        }
+        lw_write("at+send=lora:%x:%s", lw_port, message);
+        memcpy(&lw_message_backup, &message, sizeof(message));
+        lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
-    lw_write("at+send=lora:%x:%s", lw_port, message);
-    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
+}
+
+
+static void lw_resend_message(void)
+{
+    lw_send(lw_message_backup);
 }
