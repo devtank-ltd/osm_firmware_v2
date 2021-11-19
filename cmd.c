@@ -1,6 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
-
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
@@ -24,7 +21,6 @@
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
-static unsigned rx_pos        = 0;
 
 
 typedef struct
@@ -35,16 +31,17 @@ typedef struct
 } cmd_t;
 
 
-static void io_cb();
-static void special_cb();
-static void count_cb();
-static void persist_cb();
-static void en_cal_cb();
-static void cal_name_cb();
-static void version_cb();
-static void audio_dump_cb();
-static void lora_cb();
-static void interval_cb();
+static void io_cb(char *args);
+static void special_cb(char *args);
+static void count_cb(char *args);
+static void persist_cb(char *args);
+static void en_cal_cb(char *args);
+static void cal_name_cb(char *args);
+static void version_cb(char *args);
+static void audio_dump_cb(char *args);
+static void lora_cb(char *args);
+static void interval_cb(char *args);
+static void debug_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -59,6 +56,7 @@ static cmd_t cmds[] = {
     { "audio_dump", "Do audiodump",          audio_dump_cb},
     { "lora",      "Send lora message",      lora_cb},
     { "interval", "Set the interval",        interval_cb},
+    { "debug",     "Set hex debug mask",     debug_cb},
     { NULL },
 };
 
@@ -78,10 +76,10 @@ static char * skip_to_space(char * pos)
 }
 
 
-void io_cb()
+void io_cb(char *args)
 {
     char * pos = NULL;
-    unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
+    unsigned io = strtoul(args, &pos, 10);
     pos = skip_space(pos);
     bool do_read = false;
 
@@ -178,7 +176,7 @@ void io_cb()
 void special_cb(char * args)
 {
     char * pos = NULL;
-    unsigned io = strtoul(rx_buffer + rx_pos, &pos, 10);
+    unsigned io = strtoul(args, &pos, 10);
 
     if (io_enable_special(io))
         log_out("IO %02u special enabled", io);
@@ -197,7 +195,7 @@ void count_cb(char * args)
 void uart_cb(char * args)
 {
     char * pos = NULL;
-    unsigned uart = strtoul(rx_buffer + rx_pos, &pos, 10);
+    unsigned uart = strtoul(args, &pos, 10);
 
     unsigned         speed;
     uint8_t          databits;
@@ -252,7 +250,7 @@ void uart_cb(char * args)
 
 void persist_cb(char * args)
 {
-    char * pos = skip_space(rx_buffer + rx_pos);
+    char * pos = skip_space(args);
 
     if (*pos)
         persistent_set_name(pos);
@@ -263,7 +261,7 @@ void persist_cb(char * args)
 
 void en_cal_cb(char * args)
 {
-    char * pos = skip_space(rx_buffer + rx_pos);
+    char * pos = skip_space(args);
 
     if (*pos)
     {
@@ -312,8 +310,46 @@ void audio_dump_cb(char * args)
 
 void lora_cb(char * args)
 {
-    char * pos = skip_space(rx_buffer + rx_pos);
+    char * pos = skip_space(args);
     lw_send(pos);
+}
+
+
+void interval_cb(char * args)
+{
+    // CMD  : "interval temperature 3"
+    // ARGS : "temperature 3"
+
+    char* p = skip_space(args);
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+    uint8_t end_pos_word = p - args + 1;
+    char name[32] = {0};
+    memset(name, 0, end_pos_word);
+    strncpy(name, args, end_pos_word-1);
+    p = skip_space(p);
+    uint8_t new_interval = strtoul(p, NULL, 10);
+
+    measurements_set_interval(name, new_interval);
+}
+
+
+static void debug_cb(char * args)
+{
+    char * pos = skip_space(args);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    unsigned mask = strtoul(pos, &pos, 16);
+
+    mask |= DEBUG_SYS;
+
+    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    log_debug_mask = mask;
 }
 
 
@@ -337,9 +373,8 @@ void cmds_process(char * command, unsigned len)
            !strncmp(cmd->key, rx_buffer, keylen) &&
            (rx_buffer[keylen] == '\0' || rx_buffer[keylen] == ' '))
         {
-            rx_pos = keylen;
             found = true;
-            args = skip_space(rx_buffer + rx_pos);
+            args = skip_space(rx_buffer + keylen);
             cmd->cb(args);
             break;
         }
@@ -352,28 +387,6 @@ void cmds_process(char * command, unsigned len)
             log_out("%10s : %s", cmd->key, cmd->desc);
     }
     log_out(LOG_END_SPACER);
-}
-
-
-void interval_cb(char * args)
-{
-    // CMD  : "interval temperature 3"
-    // ARGS : "temperature 3"
-
-    char* p = skip_space(args);
-    p = strchr(p, ' ');
-    if (p == NULL)
-    {
-        return;
-    }
-    uint8_t end_pos_word = p - args + 1;
-    char name[32] = {0};
-    memset(name, 0, end_pos_word);
-    strncpy(name, args, end_pos_word-1);
-    p = skip_space(p);
-    uint8_t new_interval = strtoul(p, NULL, 10);
-
-    measurements_set_interval(name, new_interval);
 }
 
 

@@ -113,7 +113,7 @@ static void uart_ring_in_drain(unsigned uart)
         len = ring_buf_readline(ring, command, CMD_LINELEN);
         if (len)
         {
-            log_out("LORA >> %s", command);
+            log_debug(DEBUG_LW, "LORA >> %s", command);
             lw_process(command);
         }
     }
