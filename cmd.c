@@ -1,6 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-
-
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
@@ -45,6 +42,7 @@ static void version_cb();
 static void audio_dump_cb();
 static void lora_cb();
 static void interval_cb();
+static void debug_cb();
 
 
 static cmd_t cmds[] = {
@@ -59,6 +57,7 @@ static cmd_t cmds[] = {
     { "audio_dump", "Do audiodump",          audio_dump_cb},
     { "lora",      "Send lora message",      lora_cb},
     { "interval", "Set the interval",        interval_cb},
+    { "debug",     "Set hex debug mask",     debug_cb},
     { NULL },
 };
 
@@ -314,6 +313,22 @@ void lora_cb(char * args)
 {
     char * pos = skip_space(rx_buffer + rx_pos);
     lw_send(pos);
+}
+
+
+static void debug_cb(void)
+{
+    char * pos = skip_space(rx_buffer + rx_pos);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    unsigned mask = strtoul(pos, &pos, 10);
+
+    mask |= DEBUG_SYS;
+
+    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    log_debug_mask = mask;
 }
 
 
