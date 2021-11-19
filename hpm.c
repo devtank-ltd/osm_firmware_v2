@@ -26,11 +26,15 @@ typedef union
 unit_entry_t pm25_entry = {0};
 unit_entry_t pm10_entry = {0};
 
-
 typedef struct
 {
     uint8_t id;
     uint8_t len;
+} __attribute__((packed)) hmp_packet_header_t;
+
+typedef struct
+{
+    hmp_packet_header_t header;
     int (*cb)(uint8_t *data);
 } hpm_response_t;
 
@@ -43,23 +47,15 @@ static int process_ack_response(uint8_t *data);
 
 static hpm_response_t responses[] =
 {
-    {0x40, 8,  process_part_measure_response},
-    {0x42, 32, process_part_measure_long_response},
-    {0x96, 2,  process_nack_response},
-    {0xA5, 2,  process_ack_response},
-    {0,0, 0}
+    {{0x40, 8},  process_part_measure_response},
+    {{0x42, 32}, process_part_measure_long_response},
+    {{0x96, 2},  process_nack_response},
+    {{0xA5, 2},  process_ack_response},
+    {{0,0}, 0}
 };
 
 
 _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
-
-
-typedef struct
-{
-    uint8_t id;
-    uint8_t len;
-} __attribute__((packed)) hmp_packet_header_t;
-
 
 
 
@@ -164,16 +160,17 @@ void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
     {
         if (len > sizeof(header))
         {
-            ring_buf_read(ring, (char*)&header, sizeof(header));
-            len -= sizeof(header);
-            if (!header.len)
+            char temp;
+            ring_buf_read(ring, &temp, 1);
+            if (temp)
             {
-                if (!header.id)
-                    hpm_error("All zeroes header.....");
-                else
-                    hpm_error("Packet type 0x%02"PRIx8" with no body.", header.id);
+                header.id = temp;
+                char temp;
+                ring_buf_read(ring, &temp, 1);
+                header.id = len;
+                header_active = true;
             }
-            else header_active = true;
+            else hpm_error("Zero pad");
         }
     }
 
@@ -185,10 +182,11 @@ void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
             {
                 ring_buf_read(ring, tmpbuf, header.len);
 
-                for (hpm_response_t * respond = responses; respond->id; respond++)
+                for (hpm_response_t * respond = responses; respond->header.id; respond++)
                 {
-                    if (header.id == respond->id)
+                    if (header.id == respond->header.id)
                     {
+                        hpm_debug("Found 0x%02"PRIx8, header.id);
                         respond->cb((uint8_t*)tmpbuf);
                         header_active = false;
                         break;
@@ -197,7 +195,7 @@ void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 
                 if (header_active)
                 {
-                    hpm_error("Packet type 0x%02"PRIx8" unknown.", header.id);
+                    hpm_error("Packet type 0x%02"PRIx8" len %"PRIu8" unknown.", header.id, header.len);
                     header_active = false;
                 }
             }
