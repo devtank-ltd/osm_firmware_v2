@@ -358,9 +358,24 @@ static void debug_cb(char * args)
 
 static void hmp_cb(char *args)
 {
-    hmp_enable(args[0] != '0');
-}
+    if (args[0] != '0')
+    {
+        hmp_enable(true);
 
+        uint16_t pm25;
+        uint16_t pm10;
+
+        if (hmp_get(&pm25, &pm10))
+            log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
+        else
+            log_out("No HPM data.");
+    }
+    else
+    {
+        hmp_enable(false);
+        log_out("HPM disabled");
+    }
+}
 
 
 void cmds_process(char * command, unsigned len)

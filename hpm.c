@@ -26,6 +26,8 @@ typedef union
 unit_entry_t pm25_entry = {0};
 unit_entry_t pm10_entry = {0};
 
+static bool hpm_valid = false;
+
 typedef struct
 {
     uint8_t id;
@@ -86,6 +88,7 @@ static void process_part_measure_response(uint8_t *data)
     pm25_entry.l = data[4];
     pm10_entry.h = data[5];
     pm10_entry.l = data[6];
+    hpm_valid = true;
 }
 
 
@@ -114,6 +117,7 @@ static void process_part_measure_long_response(uint8_t *data)
     pm25_entry.l = data[7];
     pm10_entry.h = data[8];
     pm10_entry.l = data[9];
+    hpm_valid = true;
 
     hpm_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
 }
@@ -210,14 +214,31 @@ void hmp_enable(bool enable)
 {
     port_n_pins_t port_n_pin = HPM_EN_PIN;
 
-    rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
+    if (enable && !hpm_valid)
+    {
+        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
 
-    gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
+        gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
 
-    if (enable)
         gpio_set(port_n_pin.port, port_n_pin.pins);
-    else
+    }
+
+    if (!enable)
+    {
         gpio_clear(port_n_pin.port, port_n_pin.pins);
+        hpm_valid = false;
+    }
+}
+
+
+bool hmp_get(uint16_t * pm25, uint16_t * pm10)
+{
+    if (!pm25 || !pm10 || !hpm_valid)
+        return false;
+
+    *pm10 = pm10_entry.d;
+    *pm25 = pm25_entry.d;
+    return true;
 }
 
 
