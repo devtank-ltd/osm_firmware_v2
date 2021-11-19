@@ -35,14 +35,14 @@ typedef struct
 typedef struct
 {
     hmp_packet_header_t header;
-    int (*cb)(uint8_t *data);
+    void (*cb)(uint8_t *data);
 } hpm_response_t;
 
 
-static int process_part_measure_response(uint8_t *data);
-static int process_part_measure_long_response(uint8_t *data);
-static int process_nack_response(uint8_t *data);
-static int process_ack_response(uint8_t *data);
+static void process_part_measure_response(uint8_t *data);
+static void process_part_measure_long_response(uint8_t *data);
+static void process_nack_response(uint8_t *data);
+static void process_ack_response(uint8_t *data);
 
 
 static hpm_response_t responses[] =
@@ -59,12 +59,12 @@ _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
 
 
 
-static int process_part_measure_response(uint8_t *data)
+static void process_part_measure_response(uint8_t *data)
 {
     if (data[1] != 5 || data[2] != 0x04)
     {
         hpm_error("Malformed particle measure result.");
-        return -1;
+        return;
     }
 
     uint16_t cs = 0;
@@ -79,25 +79,22 @@ static int process_part_measure_response(uint8_t *data)
     if(checksum != cs)
     {
         hpm_error("hecksum error; got 0x%02x but expected 0x%02x.", checksum, cs);
-        return -1;
+        return;
     }
 
     pm25_entry.h = data[3];
     pm25_entry.l = data[4];
     pm10_entry.h = data[5];
     pm10_entry.l = data[6];
-
-    return 8;
 }
 
 
-static int process_part_measure_long_response(uint8_t *data)
+static void process_part_measure_long_response(uint8_t *data)
 {
-
     if (data[1] != 0x4d || data[2] != 0 || data[3] != 28)
     { /* 13 2byte data entries + 2 for byte checksum*/
         hpm_error("Malformed long particle measure result.");
-        return -1;
+        return;
     }
 
     uint16_t cs = 0;
@@ -110,7 +107,7 @@ static int process_part_measure_long_response(uint8_t *data)
     if (checksum.d != cs)
     {
         hpm_error("checksum error; got 0x%02x but expected 0x%02x.", checksum.d, cs);
-        return -1;
+        return;
     }
 
     pm25_entry.h = data[6];
@@ -119,33 +116,24 @@ static int process_part_measure_long_response(uint8_t *data)
     pm10_entry.l = data[9];
 
     hpm_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
-    return 32;
 }
 
 
-static int process_nack_response(uint8_t *data)
+static void process_nack_response(uint8_t *data)
 {
     if(data[1] == 0x96)
-    {
         hpm_error("Negative ACK");
-        return 2;
-    }
-    else hpm_debug("NACK");
-
-    return -1;
+    else
+        hpm_debug("NACK");
 }
 
 
-static int process_ack_response(uint8_t *data)
+static void process_ack_response(uint8_t *data)
 {
     if (data[1] == 0xA5)
-    {
         hpm_debug("ACK received");
-        return 2;
-    }
-    else hpm_error("ACK broken.");
-
-    return -1;
+    else
+        hpm_error("ACK broken.");
 }
 
 
@@ -158,54 +146,54 @@ void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 
     if (!header_active)
     {
-        if (len > sizeof(header))
+        uint8_t id;
+        ring_buf_read(ring, (char*)&id, 1);
+        len-=1;
+
+        for (hpm_response_t * respond = responses; respond->header.id; respond++)
         {
-            char temp;
-            ring_buf_read(ring, &temp, 1);
-            if (temp)
+            if (id == respond->header.id)
             {
-                header.id = temp;
-                char temp;
-                ring_buf_read(ring, &temp, 1);
-                header.id = len;
+                header = respond->header;
+                header.len -= 1; /*Change to remaining to read, not total length.*/
                 header_active = true;
+                break;
             }
-            else hpm_error("Zero pad");
         }
     }
 
-    if (header_active)
+    if (!header_active)
+        return;
+
+    if (len >= header.len)
     {
-        if (len >= header.len)
+        if (header.len <= tmpbuf_len)
         {
-            if (header.len <= tmpbuf_len)
+            tmpbuf[0] = header.id;
+            ring_buf_read(ring, (tmpbuf + 1), header.len);
+
+            for (hpm_response_t * respond = responses; respond->header.id; respond++)
             {
-                ring_buf_read(ring, tmpbuf, header.len);
-
-                for (hpm_response_t * respond = responses; respond->header.id; respond++)
+                if (header.id == respond->header.id)
                 {
-                    if (header.id == respond->header.id)
-                    {
-                        hpm_debug("Found 0x%02"PRIx8, header.id);
-                        respond->cb((uint8_t*)tmpbuf);
-                        header_active = false;
-                        break;
-                    }
-                }
-
-                if (header_active)
-                {
-                    hpm_error("Packet type 0x%02"PRIx8" len %"PRIu8" unknown.", header.id, header.len);
+                    respond->cb((uint8_t*)tmpbuf);
                     header_active = false;
+                    break;
                 }
             }
-            else
+
+            if (header_active)
             {
-                hpm_error("Packet type 0x%02"PRIx8" too long, dropping.", header.id);
-                while(header.len)
-                    header.len -= ring_buf_read(ring, tmpbuf, (header.len > tmpbuf_len)?tmpbuf_len:header.len);
+                hpm_error("Packet type 0x%02"PRIx8" len %"PRIu8" unknown.", header.id, header.len);
                 header_active = false;
             }
+        }
+        else
+        {
+            hpm_error("Packet type 0x%02"PRIx8" too long, dropping.", header.id);
+            while(header.len)
+                header.len -= ring_buf_read(ring, tmpbuf, (header.len > tmpbuf_len)?tmpbuf_len:header.len);
+            header_active = false;
         }
     }
 }
