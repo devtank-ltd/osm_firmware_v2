@@ -52,15 +52,25 @@ void log_debug(uint32_t flag, const char *s, ...)
 
     va_list ap;
     va_start(ap, s);
-    log_msgv(UART_ERR_NU, true, "DEBUG:", s, ap);
+    log_msgv(UART_ERR_NU, false, "DEBUG:", s, ap);
     va_end(ap);
 }
 
 
-void log_uart(unsigned uart, bool blocking, const char * s, ...)
+extern void log_error(const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(uart, blocking, NULL, s, ap);
+    /*We block write errors as we don't know what is broken at this point.*/
+    log_msgv(UART_ERR_NU, true, "ERROR:", s, ap);
+    va_end(ap);
+}
+
+
+extern void log_out(const char * s, ...)
+{
+    va_list ap;
+    va_start(ap, s);
+    log_msgv(CMD_VUART, false, NULL, s, ap);
     va_end(ap);
 }
