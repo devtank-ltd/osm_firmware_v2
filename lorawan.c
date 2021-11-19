@@ -107,6 +107,7 @@ static void lw_set_config(const char* config_fmt, ...)
 
 typedef enum 
 {
+    LW_STATE_PREINIT       ,
     LW_STATE_INIT          ,
     LW_STATE_IDLE          ,
     LW_STATE_WAITING_RSP   ,
@@ -182,7 +183,6 @@ static void lw_handle_unsol(char* message);
 
 void lw_process(char* message)
 {
-
     if (lw_state_machine.state == LW_STATE_WAITING_RSP)
     {
         if (lw_msg_is_ok(message))
@@ -228,14 +228,13 @@ void lw_process(char* message)
         if (lw_msg_is_ok(message))
         {
             lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
-            lw_spin_us(LW_MESSAGE_DELAY);
         }
         else
         {
             log_debug(DEBUG_LW, "LORA: Setting not OKed. Retrying.");
-            lw_set_config(init_msgs[lw_state_machine.data.init_step]);
-            lw_spin_us(LW_MESSAGE_DELAY);
+            //lw_set_config(init_msgs[lw_state_machine.data.init_step]);
         }
+        lw_spin_us(LW_MESSAGE_DELAY);
     }
     else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 8)) /*Restart*/
     {
