@@ -10,6 +10,7 @@
 #include "lorawan.h"
 #include "log.h"
 #include "config.h"
+#include "persist_config.h"
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
@@ -45,6 +46,9 @@ static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] =
 uint32_t interval_count = 0;
 
 
+measurement_list_t measurement_arr[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
+                                         { MEASUREMENT_UUID__HUM  , LW_ID__HUMIDITY     , "humidity"      ,  1, MEASUREMENTS__UNSET_VALUE } };
+
 void measurements_init(void)
 {
     measurement_list_t data_template[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
@@ -55,7 +59,33 @@ void measurements_init(void)
     memcpy((measurement_list_t*)&data_1, &data_template, sizeof(data_template));
     data.read_data = (measurement_list_t*)data_0;
     data.write_data = (measurement_list_t*)data_1;
-    data.len = ARRAY_SIZE(data_template);
+    data.len = ARRAY_SIZE(measurement_arr);
+
+    measurement_list_t* measurement;
+    uint16_t interval;
+    for (int i = 0; i < data.len; i++)
+    {
+        measurement = (measurement_list_t*)&data.read_data[i];
+        if (persist_get_interval(measurement->uuid, &interval))
+        {
+            measurement->interval = interval;
+        }
+        else
+        {
+            persist_new_interval(measurement->uuid, measurement->interval);
+        }
+    }
+}
+
+uint16_t measurements_num_measurements(void)
+{
+    uint16_t num;
+    if (data.read_data == NULL)
+    {
+        num = ARRAY_SIZE(measurement_arr);
+        return num;
+    }
+    return data.len;
 }
 
 
@@ -65,6 +95,22 @@ static void measurements_copy(void)
     {
         memcpy(&data.read_data, &data.write_data, sizeof(data.write_data));
     }
+}
+
+
+bool measurements_get_uuid(char* name, uint8_t* uuid)
+{
+    volatile measurement_list_t* measurement;
+    for (uint8_t i = 0; i < data.len; i++)
+    {
+        measurement = &data.write_data[i];
+        if (strncmp(measurement->name, name, strlen(measurement->name)) == 0)
+        {
+            *uuid = measurement->uuid;
+            return true;
+        }
+    }
+    return false;
 }
 
 

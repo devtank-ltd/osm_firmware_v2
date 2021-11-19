@@ -75,6 +75,9 @@
 
 #define LW__MAX_MEASUREMENTS                10
 
+#define LW__DEV_EUI_LEN                     16
+#define LW__APP_KEY_LEN                     32
+
 
 typedef struct
 {
