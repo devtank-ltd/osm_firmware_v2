@@ -18,6 +18,7 @@
 #include "sai.h"
 #include "lorawan.h"
 #include "measurements.h"
+#include "hpm.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -42,6 +43,7 @@ static void audio_dump_cb(char *args);
 static void lora_cb(char *args);
 static void interval_cb(char *args);
 static void debug_cb(char *args);
+static void hmp_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -57,6 +59,7 @@ static cmd_t cmds[] = {
     { "lora",      "Send lora message",      lora_cb},
     { "interval", "Set the interval",        interval_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
+    { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { NULL },
 };
 
@@ -350,6 +353,28 @@ static void debug_cb(char * args)
 
     log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
     log_debug_mask = mask;
+}
+
+
+static void hmp_cb(char *args)
+{
+    if (args[0] != '0')
+    {
+        hmp_enable(true);
+
+        uint16_t pm25;
+        uint16_t pm10;
+
+        if (hmp_get(&pm25, &pm10))
+            log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
+        else
+            log_out("No HPM data.");
+    }
+    else
+    {
+        hmp_enable(false);
+        log_out("HPM disabled");
+    }
 }
 
 

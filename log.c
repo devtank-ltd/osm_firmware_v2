@@ -47,7 +47,7 @@ static void log_msgv(unsigned uart, bool blocking, const char * prefix, const ch
 
 void log_debug(uint32_t flag, const char *s, ...)
 {
-    if (!(flag & log_debug_mask))
+    if ((flag & log_debug_mask) != flag)
         return;
 
     va_list ap;

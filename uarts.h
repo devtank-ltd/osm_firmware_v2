@@ -4,12 +4,6 @@
 #include <stdbool.h>
 #include "pinmap.h"
 
-#define CMD_UART   0
-#define LW_UART    1
-#define HPM_UART   2
-#define RS485_UART 3
-
-
 extern void uarts_setup();
 
 extern void uart_enable(unsigned uart, bool enable);

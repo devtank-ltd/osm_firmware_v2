@@ -94,6 +94,11 @@ typedef struct
     { UART4,  RCC_UART4,  UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOC, GPIO10|GPIO11, GPIO_AF8, NVIC_UART4_IRQ,  (uint32_t)&UART4_TDR,  DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL3_IRQ, DMA_CHANNEL3, UART4_PRIORITY, true }, /* UART 3 485 */ \
 }
 
+#define CMD_UART   0
+#define LW_UART    1
+#define HPM_UART   2
+#define RS485_UART 3
+
 #define UART_CHANNELS_COUNT 4
 
 #define IOS_PORT_N_PINS             \
@@ -109,8 +114,7 @@ typedef struct
     {GPIOB, GPIO4 },   /* IO 8  */ \
     {GPIOB, GPIO5 },   /* IO 9  */ \
     {GPIOB, GPIO14 },  /* IO 10 */ \
-    {GPIOB, GPIO15 },  /* IO 11 */ \
-    {GPIOD, GPIO2 },   /* IO 12 */ \
+    {GPIOD, GPIO2 },   /* IO 11 */ \
 }
 
 /*
@@ -126,7 +130,7 @@ GPIO11 C7
 GPIO12 B4
 GPIO13 B5
 GPIO14 B14
-GPIO15 B15
+GPIO15 B15  - HPM_EN
 GPIO16 D2
 */
 
@@ -139,8 +143,6 @@ GPIO16 D2
 #define IO_HIGHSIDE     0x2000
 #define IO_PPS0         0x3000
 #define IO_PPS1         0x4000
-#define IO_UART0        0x5000
-#define IO_UART1        0x6000
 #define IO_TYPE_MASK    0xF000
 #define IO_PULL_MASK    0x0003
 
@@ -158,11 +160,13 @@ GPIO16 D2
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 9   */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 10  */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 11  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 12  */         \
 }
 
 #define PPS0_IO_NUM          26
 #define PPS1_IO_NUM          27
+
+
+#define HPM_EN_PIN  { GPIOB, GPIO15 }
 
 
 #define SAI_PORT_N_PINS                    \
