@@ -162,8 +162,15 @@ void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
         if (len > sizeof(header))
         {
             ring_buf_read(ring, (char*)&header, sizeof(header));
-            header_active = true;
             len -= sizeof(header);
+            if (!header.len)
+            {
+                if (!header.id)
+                    hpm_error("All zeroes header.....");
+                else
+                    hpm_error("Packet type 0x%02"PRIx8" with no body.", header.id);
+            }
+            else header_active = true;
         }
     }
 
