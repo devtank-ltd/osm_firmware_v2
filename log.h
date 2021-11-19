@@ -12,8 +12,8 @@ extern void platform_raw_msg(const char * s);
 
 extern void log_debug(uint32_t flag, const char * s, ...) PRINTF_FMT_CHECK( 2, 3);
 
-extern void log_error(const char * s, ...);
-extern void log_out(const char * s, ...);
+extern void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
+extern void log_out(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
 
 #define log_sys_debug(...) log_debug(DEBUG_SYS,  __VA_ARGS__)
 
