@@ -59,7 +59,7 @@ static cmd_t cmds[] = {
     { "lora",      "Send lora message",      lora_cb},
     { "interval", "Set the interval",        interval_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
-    { "hpm",       "Send HPM request",       hmp_cb},
+    { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { NULL },
 };
 
@@ -358,8 +358,7 @@ static void debug_cb(char * args)
 
 static void hmp_cb(char *args)
 {
-    log_debug_mask |= DEBUG_HPM;
-    hmp_request();
+    hmp_enable(args[0] != '0');
 }
 
 

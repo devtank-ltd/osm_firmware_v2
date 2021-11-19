@@ -114,8 +114,7 @@ typedef struct
     {GPIOB, GPIO4 },   /* IO 8  */ \
     {GPIOB, GPIO5 },   /* IO 9  */ \
     {GPIOB, GPIO14 },  /* IO 10 */ \
-    {GPIOB, GPIO15 },  /* IO 11 */ \
-    {GPIOD, GPIO2 },   /* IO 12 */ \
+    {GPIOD, GPIO2 },   /* IO 11 */ \
 }
 
 /*
@@ -131,7 +130,7 @@ GPIO11 C7
 GPIO12 B4
 GPIO13 B5
 GPIO14 B14
-GPIO15 B15
+GPIO15 B15  - HPM_EN
 GPIO16 D2
 */
 
@@ -160,12 +159,14 @@ GPIO16 D2
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 8   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 9   */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 10  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLUP,                 /* GPIO 11  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 12  */         \
+    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 11  */         \
 }
 
 #define PPS0_IO_NUM          26
 #define PPS1_IO_NUM          27
+
+
+#define HPM_EN_PIN  { GPIOB, GPIO15 }
 
 
 #define SAI_PORT_N_PINS                    \

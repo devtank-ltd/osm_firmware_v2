@@ -1,6 +1,9 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+
 #include "log.h"
 #include "hpm.h"
 #include "pinmap.h"
@@ -214,6 +217,21 @@ void hmp_request(void)
 {
     // Send the request for the measurement, though it does send measurements on power up, and we power it up/down each time.
     uart_ring_out(HPM_UART, (char*)(uint8_t[]){0x68, 0x01, 0x04, 0x93}, 4);
+}
+
+
+void hmp_enable(bool enable)
+{
+    port_n_pins_t port_n_pin = HPM_EN_PIN;
+
+    rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
+
+    gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
+
+    if (enable)
+        gpio_set(port_n_pin.port, port_n_pin.pins);
+    else
+        gpio_clear(port_n_pin.port, port_n_pin.pins);
 }
 
 
