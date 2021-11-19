@@ -8,6 +8,7 @@
 #include "log.h"
 #include "uarts.h"
 #include "uart_rings.h"
+#include "persist_config.h"
 
 uint32_t log_debug_mask = DEBUG_SYS + DEBUG_LW;
 bool     log_async_log  = false;
@@ -82,4 +83,10 @@ void log_out(const char * s, ...)
     va_start(ap, s);
     log_msgv(CMD_VUART, false, NULL, s, ap);
     va_end(ap);
+}
+
+
+extern void log_init(void)
+{
+    log_debug_mask = persist_get_log_debug_mask();
 }

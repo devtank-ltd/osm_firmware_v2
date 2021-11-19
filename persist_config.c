@@ -73,7 +73,7 @@ void init_persistent(void)
         }
     }
 
-    memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
+    memcpy(&persist_data, persist_data_raw, sizeof(*persist_data_raw));
     persist_data_valid = true;
 }
 
@@ -163,7 +163,7 @@ void persist_set_lw_app_key(char* app_key)
     persist_data.version = PERSIST__VERSION;
     if (sizeof(app_key) > LW__APP_KEY_LEN)
     {
-        log_error("LORAWAN DEV EUI too long.");
+        log_error("LORAWAN APP KEY too long.");
         return;
     }
     memcpy(&persist_data.lw_app_key, &app_key, LW__APP_KEY_LEN);
@@ -175,7 +175,7 @@ void persist_get_lw_app_key(char* app_key)
 {
     if (sizeof(app_key) < LW__APP_KEY_LEN + 1)
     {
-        log_error("LORAWAN DEV EUI array too short");
+        log_error("LORAWAN APP KEY array too short");
         return;
     }
     memcpy(&app_key, &persist_data.lw_app_key, LW__APP_KEY_LEN);

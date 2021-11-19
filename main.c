@@ -96,8 +96,8 @@ int main(void)
     log_sys_debug("Frequency : %lu", rcc_ahb_frequency);
     log_sys_debug("Version : %s", GIT_VERSION);
 
-    log_init();
     init_persistent();
+    log_init();
     cmds_init();
     ios_init();
     sai_init();
