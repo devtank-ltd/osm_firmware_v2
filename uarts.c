@@ -124,7 +124,7 @@ void uart_enable(unsigned uart, bool enable)
     if (uart >= UART_CHANNELS_COUNT || !uart)
         return;
 
-    log_debug(DEBUG_UART, "UART %u : %s", uart, (enable)?"Enable":"Disable");
+    log_debug(DEBUG_UART(uart), "UART %u : %s", uart, (enable)?"Enable":"Disable");
 
     uart_channel_t * channel = &uart_channels[uart];
 
@@ -179,7 +179,7 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
 
     uart_up(channel);
 
-    log_debug(DEBUG_UART, "UART %u : %u %"PRIu8"%c%"PRIu8, uart,
+    log_debug(DEBUG_UART(uart), "UART %u : %u %"PRIu8"%c%"PRIu8, uart,
             (unsigned)channel->baud, channel->databits, uart_parity_as_char(channel->parity), uart_stop_bits_as_int(channel->stop));
 }
 
@@ -310,13 +310,13 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (size == 1)
     {
         if (uart)
-            log_debug(DEBUG_UART, "UART %u single out.", uart);
+            log_debug(DEBUG_UART(uart), "UART %u single out.", uart);
         usart_send(channel->usart, *data);
         return true;
     }
 
     if (uart)
-        log_debug(DEBUG_UART, "UART %u %u out on DMA channel %u", uart, size, channel->dma_channel);
+        log_debug(DEBUG_UART(uart), "UART %u %u out on DMA channel %u", uart, size, channel->dma_channel);
 
     uart_doing_dma[uart] = true;
 
@@ -404,4 +404,3 @@ void dma2_channel3_isr(void)
 {
     process_complete_dma(3);
 }
-

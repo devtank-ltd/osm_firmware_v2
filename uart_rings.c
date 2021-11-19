@@ -70,7 +70,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 
     ring = &ring_out_bufs[uart];
     if (uart) // Add debug messages to debug ring buffer is a loop.
-        log_debug(DEBUG_UART, "UART %u out < %u", uart, len);
+        log_debug(DEBUG_UART(uart), "UART %u out < %u", uart, len);
 
     for (unsigned n = 0; n < len; n++)
     {
@@ -99,7 +99,7 @@ static void uart_ring_in_drain(unsigned uart)
         return;
 
     if (uart)
-        log_debug(DEBUG_UART, "UART %u IN %u", uart, len);
+        log_debug(DEBUG_UART(uart), "UART %u IN %u", uart, len);
 
     if (uart == CMD_UART)
     {
@@ -147,7 +147,7 @@ static void uart_ring_out_drain(unsigned uart)
     if (uart_is_tx_empty(uart))
     {
         if (uart)
-            log_debug(DEBUG_UART, "UART %u OUT > %u", uart, len);
+            log_debug(DEBUG_UART(uart), "UART %u OUT > %u", uart, len);
 
         len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
 
@@ -170,11 +170,11 @@ void uart_rings_out_drain()
 }
 
 
-void uart_ring_check(ring_buf_t * ring, char * name, unsigned index)
+static void uart_ring_check(ring_buf_t * ring, char * name, unsigned index)
 {
-    log_debug(DEBUG_UART, "UART %u %s r_pos %u", index, name, ring->r_pos);
-    log_debug(DEBUG_UART, "UART %u %s w_pos %u", index, name, ring->w_pos);
-    log_debug(DEBUG_UART, "UART %u %s pending %u", index, name, ring_buf_get_pending(ring));
+    log_debug(DEBUG_UART(index), "UART %u %s r_pos %u", index, name, ring->r_pos);
+    log_debug(DEBUG_UART(index), "UART %u %s w_pos %u", index, name, ring->w_pos);
+    log_debug(DEBUG_UART(index), "UART %u %s pending %u", index, name, ring_buf_get_pending(ring));
 
     if (ring_buf_is_full(ring))
         log_error("UART %u %s ring buffer filled.", index, name);
