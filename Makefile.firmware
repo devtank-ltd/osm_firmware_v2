@@ -7,6 +7,8 @@ SOURCES += main.c \
            io.c \
            ring.c \
            hpm.c \
+           i2c.c \
+           htu21d.c \
            modbus.c \
            value.c \
            persist_config.c \
