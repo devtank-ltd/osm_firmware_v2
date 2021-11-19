@@ -14,7 +14,7 @@
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
-#define PERSIST__RAW_DATA           ((void*)0x801F800)
+#define PERSIST__RAW_DATA           ((void*)0x807f800)
 #define PERSIST__RAW_SIZE           2048
 #define PERSIST__VERSION            1
 
