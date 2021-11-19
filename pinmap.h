@@ -162,7 +162,7 @@ GPIO16 D2
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 8   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 9   */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 10  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 11  */         \
+    IO_DIR_LOCKED | GPIO_PUPD_PULLUP,                 /* GPIO 11  */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 12  */         \
 }
 

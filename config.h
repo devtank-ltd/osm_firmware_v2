@@ -83,6 +83,7 @@
 #define DEBUG_ADC   0x2
 #define DEBUG_LW    0x4
 #define DEBUG_IO    0x8
-#define DEBUG_UART(_x_)  (0x10 << _x_)
+#define DEBUG_UART(_x_)  (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
+#define DEBUG_HPM   0x100
 
 #endif //__CONFIG__

@@ -8,6 +8,7 @@
 #include "cmd.h"
 #include "uarts.h"
 #include "lorawan.h"
+#include "hpm.h"
 
 
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
@@ -116,6 +117,10 @@ static void uart_ring_in_drain(unsigned uart)
             log_debug(DEBUG_LW, "LORA >> %s", command);
             lw_process(command);
         }
+    }
+    else if (uart == HPM_UART)
+    {
+        hdm_ring_process(ring, command, CMD_LINELEN);
     }
 }
 
