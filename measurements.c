@@ -79,13 +79,11 @@ void measurements_init(void)
 
 uint16_t measurements_num_measurements(void)
 {
-    uint16_t num;
-    if (data.read_data == NULL)
+    if (data.read_data != NULL)
     {
-        num = ARRAY_SIZE(measurement_arr);
-        return num;
+        return data.len;
     }
-    return data.len;
+    return ARRAY_SIZE(measurement_arr);
 }
 
 
