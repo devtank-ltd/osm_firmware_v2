@@ -144,8 +144,6 @@ GPIO16 D2
 #define IO_HIGHSIDE     0x2000
 #define IO_PPS0         0x3000
 #define IO_PPS1         0x4000
-#define IO_UART0        0x5000
-#define IO_UART1        0x6000
 #define IO_TYPE_MASK    0xF000
 #define IO_PULL_MASK    0x0003
 
