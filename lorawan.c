@@ -188,15 +188,12 @@ void lw_process(char* message)
         if (lw_msg_is_ok(message))
         {
             lw_state_machine.state = LW_STATE_IDLE;
-            log_out("HACK 2");
             return;
         }
-        log_out("HACK 2.1");
         /*else error?*/
     }
     else if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
     {
-        log_out("HACK 3");
         if (lw_msg_is_ok(message))
             return;
         if (lw_msg_is_error(message))
@@ -214,7 +211,6 @@ void lw_process(char* message)
     }
     else if (lw_state_machine.state == LW_STATE_WAITING_LW_RSP)
     {
-        log_out("HACK 4");
         if (lw_msg_is_ok(message))
             return;
         if (lw_msg_is_error(message))
@@ -229,10 +225,8 @@ void lw_process(char* message)
     }
     else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step < 8))
     {
-        log_out("HACK 5");
         if (lw_msg_is_ok(message))
         {
-            log_out("HACK 5.1");
             lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
             lw_spin_us(LW_MESSAGE_DELAY);
         }
@@ -245,7 +239,6 @@ void lw_process(char* message)
     }
     else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 8)) /*Restart*/
     {
-        log_out("HACK 6");
         if (strstr(message, "UART1") == message ||
             strstr(message, "Current work") == message)
         {
@@ -254,7 +247,6 @@ void lw_process(char* message)
         else if (strcmp(message, "Initialization OK") == 0)
         {
             lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
-            log_out("HACK 6.2");
         }
         else
         {
@@ -263,10 +255,8 @@ void lw_process(char* message)
     }
     else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 9)) /*Join*/
     {
-        log_out("HACK 7");
         if (strcmp(message, "OK Join Success") == 0)
         {
-            log_out("HACK 7.1");
             lw_state_machine.state = LW_STATE_IDLE;
         }
         else if (lw_msg_is_error(message))
@@ -289,9 +279,6 @@ void lw_process(char* message)
     {
         log_error("Unexpected data for LW state.");
     }
-    log_out("HACK 8");
-    log_out("State: %u", lw_state_machine.state);
-    log_out("Init Step: %u", lw_state_machine.data.init_step);
 }
 
 
