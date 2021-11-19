@@ -80,7 +80,7 @@ static void lw_write_to_uart(char* fmt, va_list args)
     len = strlen(lw_out_buffer);
     lw_out_buffer[len] = '\r';
     lw_out_buffer[len+1] = '\n';
-    uart_ring_out(LW_UART, lw_out_buffer, LW_BUFFER_SIZE);
+    uart_ring_out(LW_UART, lw_out_buffer, strlen(lw_out_buffer));
     memset(lw_out_buffer, 0, LW_BUFFER_SIZE);
 }
 
