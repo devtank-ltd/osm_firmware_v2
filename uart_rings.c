@@ -9,6 +9,7 @@
 #include "uarts.h"
 #include "lorawan.h"
 #include "hpm.h"
+#include "modbus.h"
 
 
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
@@ -122,6 +123,10 @@ static void uart_ring_in_drain(unsigned uart)
     {
         hdm_ring_process(ring, command, CMD_LINELEN);
     }
+    else if (uart == RS485_UART)
+    {
+        modbus_ring_process(ring);
+    }
 }
 
 
@@ -133,8 +138,6 @@ static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
         return len;
     return 0;
 }
-
-
 
 
 static void uart_ring_out_drain(unsigned uart)

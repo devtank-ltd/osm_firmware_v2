@@ -108,13 +108,12 @@ typedef struct
     {GPIOB, GPIO2 },   /* IO 2  */ \
     {GPIOC, GPIO9 },   /* IO 3  */ \
     {GPIOB, GPIO3 },   /* IO 4  */ \
-    {GPIOC, GPIO12 },  /* IO 5  */ \
-    {GPIOA, GPIO11 },  /* IO 6  */ \
-    {GPIOC, GPIO7 },   /* IO 7  */ \
-    {GPIOB, GPIO4 },   /* IO 8  */ \
-    {GPIOB, GPIO5 },   /* IO 9  */ \
-    {GPIOB, GPIO14 },  /* IO 10 */ \
-    {GPIOD, GPIO2 },   /* IO 11 */ \
+    {GPIOA, GPIO11 },  /* IO 5  */ \
+    {GPIOC, GPIO7 },   /* IO 6  */ \
+    {GPIOB, GPIO4 },   /* IO 7  */ \
+    {GPIOB, GPIO5 },   /* IO 8  */ \
+    {GPIOB, GPIO14 },  /* IO 9 */ \
+    {GPIOD, GPIO2 },   /* IO 10 */ \
 }
 
 /*
@@ -124,8 +123,10 @@ GPIO02 C8
 GPIO03 B2
 GPIO04 C9
 GPIO06 B3
-GPIO07 C12
-GPIO08 A11
+GPIO07 C12  - RE_485
+GPIO08 A11  - PULSE2_OUT
+GPIO09 A12  - PULSE1_OUT
+GPIO10 A15  - DE_485
 GPIO11 C7
 GPIO12 B4
 GPIO13 B5
@@ -157,9 +158,8 @@ GPIO16 D2
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 6   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 7   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 8   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 9   */         \
+    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 9   */         \
     IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 10  */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 11  */         \
 }
 
 #define PPS0_IO_NUM          26
@@ -167,6 +167,9 @@ GPIO16 D2
 
 
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
+
+#define RE_485_PIN  { GPIOC, GPIO12 }
+#define DE_485_PIN  { GPIOC, GPIO15 }
 
 
 #define SAI_PORT_N_PINS                    \

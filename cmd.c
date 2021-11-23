@@ -19,6 +19,7 @@
 #include "lorawan.h"
 #include "measurements.h"
 #include "hpm.h"
+#include "modbus.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -44,6 +45,7 @@ static void lora_cb(char *args);
 static void interval_cb(char *args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
+static void modbus_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -60,6 +62,7 @@ static cmd_t cmds[] = {
     { "interval", "Set the interval",        interval_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
+    { "modbus",    "Read modbus reg",        modbus_cb},
     { NULL },
 };
 
@@ -375,6 +378,41 @@ static void hmp_cb(char *args)
         hmp_enable(false);
         log_out("HPM disabled");
     }
+}
+
+
+static void modbus_cmd_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+{
+    for(unsigned n = 0; n < size; n++)
+        log_debug(DEBUG_MODBUS, "0x%"PRIx8, data[n]);
+}
+
+
+static void modbus_cb(char *args)
+{
+    char * pos = skip_space(args);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    static modbus_reg_t cmd_reg = {.name = "CMD"};
+
+    cmd_reg.slave_id = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    cmd_reg.addr = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    cmd_reg.len = strtoul(pos, NULL, 10);
+
+    log_debug_mask |= DEBUG_MODBUS;
+
+    modbus_start_read_holding(&cmd_reg, modbus_cmd_cb);
 }
 
 

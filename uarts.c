@@ -318,6 +318,14 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (uart)
         log_debug(DEBUG_UART(uart), "UART %u %u out on DMA channel %u", uart, size, channel->dma_channel);
 
+    if (uart == RS485_UART)
+    {
+        port_n_pins_t re_port_n_pin = RE_485_PIN;
+        port_n_pins_t de_port_n_pin = DE_485_PIN;
+        gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
+        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
+    }
+
     uart_doing_dma[uart] = true;
 
     dma_channel_reset(channel->dma_unit, channel->dma_channel);
@@ -345,6 +353,14 @@ static void process_complete_dma(unsigned index)
 {
     if (index >= UART_CHANNELS_COUNT)
         return;
+
+    if (index == RS485_UART)
+    {
+        port_n_pins_t re_port_n_pin = RE_485_PIN;
+        port_n_pins_t de_port_n_pin = DE_485_PIN;
+        gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
+        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
+    }
 
     const uart_channel_t * channel = &uart_channels[index];
 
