@@ -395,7 +395,7 @@ static void modbus_cb(char *args)
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    static modbus_reg_t cmd_reg = {.name = "CMD"};
+    static modbus_reg_t cmd_reg = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC};
 
     cmd_reg.slave_id = strtoul(pos, &pos, 16);
 
@@ -412,7 +412,7 @@ static void modbus_cb(char *args)
 
     log_debug_mask |= DEBUG_MODBUS;
 
-    modbus_start_read_holding(&cmd_reg, modbus_cmd_cb);
+    modbus_start_read(&cmd_reg, modbus_cmd_cb);
 }
 
 

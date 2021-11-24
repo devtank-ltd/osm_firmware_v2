@@ -6,7 +6,6 @@
 #include "modbus.h"
 #include "uart_rings.h"
 
-#define READ_HOLDING_FUNC 3
 #define MODBUS_ERROR_MASK 0x80
 
 
@@ -81,9 +80,9 @@ uint16_t modbus_crc(uint8_t * buf, unsigned length)
 }
 
 
-bool modbus_start_read_holding(modbus_reg_t * reg, modbus_reg_cb cb)
+bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
 {
-    if (!reg || !cb || current_reg)
+    if (!reg || !cb || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
         return false;
 
     current_reg = reg;
@@ -93,7 +92,7 @@ bool modbus_start_read_holding(modbus_reg_t * reg, modbus_reg_cb cb)
     modbuspacket[0] = reg->slave_id;
     /* ====================================== */
     /* PDU payload (Protocol Data Unit) */
-    modbuspacket[1] = READ_HOLDING_FUNC; /*Holding*/
+    modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
     modbuspacket[2] = reg->addr >> 8;   /*Register read address */
     modbuspacket[3] = reg->addr & 0xFF;
     modbuspacket[4] = reg->len >> 8; /*Register read count */
@@ -131,12 +130,14 @@ void modbus_ring_process(ring_buf_t * ring)
             if (ring_buf_read(ring, (char*)modbuspacket + 1, 2) != 2)
                 return;
             uint8_t func = modbuspacket[1];
+            if (func != current_reg->func)
+                return;
             len -= 3;
-            if (func == READ_HOLDING_FUNC)
+            if (func == MODBUS_READ_HOLDING_FUNC)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
-            else if (func == (READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
+            else if (func == (current_reg->func | MODBUS_ERROR_MASK))
             {
                 modbuspacket_len = 3; /* Exception code and crc*/
             }
@@ -170,7 +171,7 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    if (modbuspacket[1] == (READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
+    if (modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
     {
         log_debug(DEBUG_MODBUS, "Modbus Exception: %0x"PRIx8, modbuspacket[2]);
         return;
