@@ -298,10 +298,10 @@ static void debug_cb(char * args)
 
     uint32_t prev_mask = persist_get_log_debug_mask();
 
-    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
-    log_out("Previous mask was 0x%"PRIx32, prev_mask);
     log_debug_mask = mask;
     persist_set_log_debug_mask(mask);
+    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    log_debug(DEBUG_SYS, "Previous mask was 0x%"PRIx32, prev_mask);
 }
 
 

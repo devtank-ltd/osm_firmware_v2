@@ -42,9 +42,10 @@ static persist_storage_t    persist_data;
 
 void init_persistent(void)
 {
-    persist_storage_t * persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
 
-    if (persist_data_raw->version != PERSIST__VERSION)
+    uint32_t vs = persist_data_raw->version;
+    if (vs != PERSIST__VERSION)
     {
         log_error("Persistent data version unknown.");
         return;
@@ -56,6 +57,7 @@ void init_persistent(void)
         return;
     }
 
+    /*
     for(unsigned n = 0; n < LW__DEV_EUI_LEN; n++)
     {
         if (!isascii(persist_data_raw->lw_dev_eui[n]))
@@ -72,13 +74,14 @@ void init_persistent(void)
             return;
         }
     }
+    */
 
     memcpy(&persist_data, persist_data_raw, sizeof(*persist_data_raw));
     persist_data_valid = true;
 }
 
 
-static void persistent_set_data(const void * addr, const void * data, unsigned size)
+static bool persistent_set_data(const void * addr, const void * data, unsigned size)
 {
     uintptr_t _addr = (uintptr_t)addr;
 
@@ -86,7 +89,17 @@ static void persistent_set_data(const void * addr, const void * data, unsigned s
     unsigned easy_size = size - left_over;
 
     if (easy_size)
+    {
         flash_program(_addr, (void*)data, easy_size);
+    }
+
+    if(*(uint64_t*)_addr != *(uint64_t*)data)
+    {
+        log_out("Written doesnt match.");
+        log_out("To write: %"PRIu64, *(uint64_t*)data);
+        log_out("Written: %"PRIu64, *(uint64_t*)_addr);
+        return false;
+    }
 
     if (size > easy_size)
     {
@@ -95,22 +108,29 @@ static void persistent_set_data(const void * addr, const void * data, unsigned s
         uint64_t v = 0;
 
         for(unsigned n = 0; n < left_over; n+=1)
+        {
              v |= (p[easy_size + n]) << (8*n);
+        }
 
         flash_program_double_word(_addr + easy_size, v);
+        if(*((uint64_t*)(_addr + easy_size)) != v)
+        {
+            log_out("Written doesnt match.");
+            return false;
+        }
     }
+    log_out("Written successfully.");
+    return true;
 }
 
 
-static void _persistent_commit()
+static void _persistent_commit(void)
 {
     flash_unlock();
 
     flash_erase_page((uintptr_t)PERSIST__RAW_DATA);
 
-    persist_data_valid = true;
-
-    persistent_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
+    persist_data_valid = persistent_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
 
     flash_lock();
 }
@@ -126,11 +146,12 @@ void persist_set_log_debug_mask(uint32_t mask)
 
 uint32_t persist_get_log_debug_mask(void)
 {
-    if (persist_data_valid)
+    if (!persist_data_valid)
     {
-        return persist_data.log_debug_mask;
+        log_out("Invalid data");
+        return 0;
     }
-    return 0;
+    return persist_data.log_debug_mask;
 }
 
 
