@@ -22,3 +22,5 @@ struct modbus_reg_t
 extern bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb);
 
 extern void modbus_ring_process(ring_buf_t * ring);
+
+extern void modbus_init(void);

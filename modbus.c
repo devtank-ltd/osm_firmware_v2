@@ -1,10 +1,15 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include <libopencm3/cm3/systick.h>
+
 #include "log.h"
 #include "pinmap.h"
 #include "modbus.h"
 #include "uart_rings.h"
+#include "sys_time.h"
+
+#define MODBUS_TIMEOUT_MS 2000
 
 #define MODBUS_ERROR_MASK 0x80
 
@@ -29,6 +34,7 @@ static unsigned modbuspacket_len = 0;
 static modbus_reg_t * current_reg = NULL;
 static modbus_reg_cb * current_reg_cb = NULL;
 
+static uint32_t modbus_timing_init = 0;
 
 
 uint16_t modbus_crc(uint8_t * buf, unsigned length)
@@ -80,6 +86,21 @@ uint16_t modbus_crc(uint8_t * buf, unsigned length)
 }
 
 
+static bool _modbus_has_timedout(ring_buf_t * ring)
+{
+    uint32_t delta = since_boot_delta(since_boot_ms, modbus_timing_init);
+    if (delta < MODBUS_TIMEOUT_MS)
+        return false;
+    log_debug(DEBUG_MODBUS, "Modbus message timeout, dumping left overs.");
+    modbuspacket_len = 0;
+    modbus_timing_init = 0;
+    char c;
+    while(ring_buf_get_pending(ring))
+        ring_buf_read(ring, &c, 1);
+    return true;
+}
+
+
 bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
 {
     if (!reg || !cb || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
@@ -121,17 +142,26 @@ void modbus_ring_process(ring_buf_t * ring)
     {
         if (len > 2)
         {
-            if (ring_buf_read(ring, (char*)modbuspacket, 1) != 1)
-                return;
+            modbus_timing_init = 0;
+            ring_buf_read(ring, (char*)modbuspacket, 1);
+
             if (!modbuspacket[0])
+            {
+                log_debug(DEBUG_MODBUS, "Zero start");
                 return;
+            }
             if (!current_reg || (current_reg->slave_id != modbuspacket[0]))
+            {
+                log_debug(DEBUG_MODBUS, "Possible slave ID 0x%"PRIx8" doesn't match slave ID waiting for.", modbuspacket[0]);
                 return;
-            if (ring_buf_read(ring, (char*)modbuspacket + 1, 2) != 2)
-                return;
+            }
+            ring_buf_read(ring, (char*)modbuspacket + 1, 2);
             uint8_t func = modbuspacket[1];
-            if (func != current_reg->func)
+            if ((func & ~MODBUS_ERROR_MASK) != current_reg->func)
+            {
+                log_debug(DEBUG_MODBUS, "Possible func ID doesn't match func ID waiting for.");
                 return;
+            }
             len -= 3;
             if (func == MODBUS_READ_HOLDING_FUNC)
             {
@@ -146,19 +176,37 @@ void modbus_ring_process(ring_buf_t * ring)
                 log_debug(DEBUG_MODBUS, "Bad modbus function.");
                 return;
             }
+            modbus_timing_init = since_boot_ms;
+            log_debug(DEBUG_MODBUS, "Modbus header received, timer started at:%"PRIu32, modbus_timing_init);
+        }
+        else
+        {
+            if (!modbus_timing_init)
+            {
+                // There is some bytes, but not enough to be a header yet
+                modbus_timing_init = since_boot_ms;
+                log_debug(DEBUG_MODBUS, "Modbus bus received, timer started at:%"PRIu32, modbus_timing_init);
+            }
+            else _modbus_has_timedout(ring);
+            return;
         }
     }
 
-    if (len < modbuspacket_len)
+    if (!modbuspacket_len)
         return;
 
-    if (ring_buf_read(ring, (char*)modbuspacket + 3, modbuspacket_len) != modbuspacket_len)
+    if (len < modbuspacket_len)
     {
-        log_debug(DEBUG_MODBUS, "Bad modbus body read.");
-        modbuspacket_len = 0;
+        _modbus_has_timedout(ring);
         return;
     }
 
+    modbus_timing_init = 0;
+    log_debug(DEBUG_MODBUS, "Modbus message bytes (%u) reached.", modbuspacket_len);
+
+    ring_buf_read(ring, (char*)modbuspacket + 3, modbuspacket_len);
+
+    // Now include the header too.
     modbuspacket_len += 3;
 
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
@@ -171,6 +219,8 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
+    log_debug(DEBUG_MODBUS, "Good modbus CRC");
+
     if (modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
     {
         log_debug(DEBUG_MODBUS, "Modbus Exception: %0x"PRIx8, modbuspacket[2]);
@@ -182,4 +232,10 @@ void modbus_ring_process(ring_buf_t * ring)
 
     current_reg = NULL;
     current_reg_cb = NULL;
+    modbuspacket_len = 0;
+}
+
+
+void modbus_init(void)
+{
 }

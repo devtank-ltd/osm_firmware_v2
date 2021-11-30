@@ -169,7 +169,11 @@ GPIO16 D2
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
 #define RE_485_PIN  { GPIOC, GPIO12 }
-#define DE_485_PIN  { GPIOC, GPIO15 }
+#define DE_485_PIN  { GPIOA, GPIO15 }
+
+#define MODBUS_RCC_TIM  RCC_TIM2
+#define MODBUS_TIM      TIM2
+#define MODBUS_RST_TIM  RST_TIM2
 
 
 #define SAI_PORT_N_PINS                    \
