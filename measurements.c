@@ -145,6 +145,11 @@ void measurements_send(uint32_t interval_count)
         measurement = &data.read_data[i];
         if (interval_count % measurement->interval == 0)
         {
+            if (measurement->value == MEASUREMENTS__UNSET_VALUE)
+            {
+                log_error("Measurement requested but value not set.");
+                continue;
+            }
             if (measurements_to_hex_str(measurement))
             {
                 num_meas_qd++;
