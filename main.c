@@ -22,6 +22,9 @@
 #include "persist_config.h"
 #include "lorawan.h"
 #include "measurements.h"
+#include "sys_time.h"
+
+_Atomic uint32_t since_boot_ms = 0;
 
 
 void hard_fault_handler(void)
@@ -43,7 +46,7 @@ static void clock_setup(void)
     rcc_set_main_pll(RCC_PLLCFGR_PLLSRC_HSI16, 4, 40,
                      0, 0, RCC_PLLCFGR_PLLR_DIV2);
     rcc_osc_on(RCC_PLL);
-    /* either rcc_wait_for_osc_ready() or do other things */
+    rcc_wait_for_osc_ready(RCC_PLL);
 
     /* Enable clocks for peripherals we need */
     rcc_periph_clock_enable(RCC_SYSCFG);
@@ -57,14 +60,35 @@ static void clock_setup(void)
 }
 
 
+uint32_t since_boot_delta(uint32_t newer, uint32_t older)
+{
+    if (newer == older)
+        return 0;
+
+    if (newer > older)
+        return newer - older;
+    else
+    {
+        return (0xFFFFFFFF - older) + newer;
+    }
+}
+
+
+void sys_tick_handler(void)
+{
+    since_boot_ms++;
+}
+
+
 int main(void)
 {
     clock_setup();
 
     uarts_setup();
 
-    systick_set_frequency(10, rcc_ahb_frequency);
+    systick_set_frequency(1000, rcc_ahb_frequency);
     systick_counter_enable();
+    systick_interrupt_enable();
 
     platform_raw_msg("----start----");
     log_sys_debug("Frequency : %lu", rcc_ahb_frequency);
@@ -83,9 +107,10 @@ int main(void)
 
     log_async_log = true;
 
+    uint32_t prev_now = 0;
     while(true)
     {
-        for(unsigned n = 0; n < rcc_ahb_frequency / 1000; n++)
+        while(since_boot_delta(since_boot_ms, prev_now) < 1000)
         {
             uart_rings_in_drain();
             uart_rings_out_drain();
@@ -94,6 +119,8 @@ int main(void)
         measurements_loop();
 
         gpio_toggle(LED_PORT, LED_PIN);
+
+        prev_now = since_boot_ms;
     }
 
     return 0;
