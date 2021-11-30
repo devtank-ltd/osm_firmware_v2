@@ -18,7 +18,7 @@
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
 #define LW_BUFFER_SIZE          512
-#define LW_MESSAGE_DELAY        3000
+#define LW_MESSAGE_DELAY        30000
 
 #define LW_JOIN_MODE_OTAA       0
 #define LW_JOIN_MODE_ABP        1
