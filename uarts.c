@@ -38,6 +38,13 @@ static void _set_rs485_mode(bool driver_enable)
      *
      * */
 
+    static bool rs485_transmitting = false;
+
+    if (rs485_transmitting == driver_enable)
+        return;
+
+    rs485_transmitting = driver_enable;
+
     port_n_pins_t re_port_n_pin = RE_485_PIN;
     port_n_pins_t de_port_n_pin = DE_485_PIN;
     if (driver_enable)
@@ -391,13 +398,23 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 }
 
 
+void cleanup_rs485(void)
+{
+    if (uart_doing_dma[RS485_UART])
+        return;
+
+    const uart_channel_t * channel = &uart_channels[RS485_UART];
+
+    /* If not transmitting, make sure rs485 is setup for receiving. */
+    if (USART_ISR(channel->usart) & USART_ISR_TXE)
+        _set_rs485_mode(false);
+}
+
+
 static void process_complete_dma(unsigned index)
 {
     if (index >= UART_CHANNELS_COUNT)
         return;
-
-    if (index == RS485_UART)
-        _set_rs485_mode(false);
 
     const uart_channel_t * channel = &uart_channels[index];
 

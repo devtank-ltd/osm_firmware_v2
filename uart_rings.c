@@ -180,6 +180,7 @@ void uart_rings_out_drain()
 {
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_ring_out_drain(n);
+    cleanup_rs485();
 }
 
 
