@@ -9,7 +9,8 @@
 #include "uart_rings.h"
 #include "sys_time.h"
 
-#define MODBUS_TIMEOUT_MS 2000
+#define MODBUS_RESP_TIMEOUT_MS 2000
+#define MODBUS_SENT_TIMEOUT_MS 2000
 
 #define MODBUS_ERROR_MASK 0x80
 
@@ -34,7 +35,8 @@ static unsigned modbuspacket_len = 0;
 static modbus_reg_t * current_reg = NULL;
 static modbus_reg_cb * current_reg_cb = NULL;
 
-static uint32_t modbus_timing_init = 0;
+static uint32_t modbus_sent_timing_init = 0;
+static uint32_t modbus_read_timing_init = 0;
 
 
 uint16_t modbus_crc(uint8_t * buf, unsigned length)
@@ -88,12 +90,12 @@ uint16_t modbus_crc(uint8_t * buf, unsigned length)
 
 static bool _modbus_has_timedout(ring_buf_t * ring)
 {
-    uint32_t delta = since_boot_delta(since_boot_ms, modbus_timing_init);
-    if (delta < MODBUS_TIMEOUT_MS)
+    uint32_t delta = since_boot_delta(since_boot_ms, modbus_read_timing_init);
+    if (delta < MODBUS_RESP_TIMEOUT_MS)
         return false;
     log_debug(DEBUG_MODBUS, "Modbus message timeout, dumping left overs.");
     modbuspacket_len = 0;
-    modbus_timing_init = 0;
+    modbus_read_timing_init = 0;
     char c;
     while(ring_buf_get_pending(ring))
         ring_buf_read(ring, &c, 1);
@@ -103,11 +105,22 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 
 bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
 {
+    if (modbus_sent_timing_init)
+    {
+        uint32_t delta = since_boot_delta(since_boot_ms, modbus_sent_timing_init);
+        if (delta > MODBUS_SENT_TIMEOUT_MS)
+        {
+            log_debug(DEBUG_MODBUS, "Previous modbus response took timeout.");
+            modbus_sent_timing_init = 0;
+            current_reg = NULL;
+            current_reg_cb = NULL;
+        }
+    }
+
     if (!reg || !cb || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
         return false;
 
-    current_reg = reg;
-    current_reg_cb = cb;
+    log_debug(DEBUG_MODBUS, "Modbus reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->len, reg->slave_id, reg->addr);
 
     /* ADU Header (Application Data Unit) */
     modbuspacket[0] = reg->slave_id;
@@ -130,6 +143,10 @@ bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
         log_debug(DEBUG_MODBUS, "Failed to send all of modbus message.");
         return false;
     }
+
+    current_reg = reg;
+    current_reg_cb = cb;
+    modbus_sent_timing_init = since_boot_ms;
     return true;
 }
 
@@ -138,11 +155,20 @@ void modbus_ring_process(ring_buf_t * ring)
 {
     unsigned len = ring_buf_get_pending(ring);
 
+    if (!modbus_sent_timing_init)
+    {
+        log_debug(DEBUG_MODBUS, "Modbus data not expected.");
+        char c;
+        while(ring_buf_get_pending(ring))
+            ring_buf_read(ring, &c, 1);
+        return;
+    }
+
     if (!modbuspacket_len)
     {
         if (len > 2)
         {
-            modbus_timing_init = 0;
+            modbus_read_timing_init = 0;
             ring_buf_read(ring, (char*)modbuspacket, 1);
 
             if (!modbuspacket[0])
@@ -176,16 +202,16 @@ void modbus_ring_process(ring_buf_t * ring)
                 log_debug(DEBUG_MODBUS, "Bad modbus function.");
                 return;
             }
-            modbus_timing_init = since_boot_ms;
-            log_debug(DEBUG_MODBUS, "Modbus header received, timer started at:%"PRIu32, modbus_timing_init);
+            modbus_read_timing_init = since_boot_ms;
+            log_debug(DEBUG_MODBUS, "Modbus header received, timer started at:%"PRIu32, modbus_read_timing_init);
         }
         else
         {
-            if (!modbus_timing_init)
+            if (!modbus_read_timing_init)
             {
                 // There is some bytes, but not enough to be a header yet
-                modbus_timing_init = since_boot_ms;
-                log_debug(DEBUG_MODBUS, "Modbus bus received, timer started at:%"PRIu32, modbus_timing_init);
+                modbus_read_timing_init = since_boot_ms;
+                log_debug(DEBUG_MODBUS, "Modbus bus received, timer started at:%"PRIu32, modbus_read_timing_init);
             }
             else _modbus_has_timedout(ring);
             return;
@@ -201,7 +227,7 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    modbus_timing_init = 0;
+    modbus_read_timing_init = 0;
     log_debug(DEBUG_MODBUS, "Modbus message bytes (%u) reached.", modbuspacket_len);
 
     ring_buf_read(ring, (char*)modbuspacket + 3, modbuspacket_len);

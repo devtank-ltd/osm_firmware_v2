@@ -23,19 +23,34 @@ static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
 static void _set_rs485_mode(bool driver_enable)
 {
+    /* ST3485E
+     *
+     * 2. RE Receiver output enable. RO is enabled when RE is low; RO is
+     * high impedance when RE is high. If RE is high and DE is low, the
+     * device will enter a low power shutdown mode.
+
+     * 3. DE Driver output enable. The driver outputs are enabled by
+     * bringing DE high. They are high impedance when DE is low. If RE
+     * is high DE is low, the device will enter a low-power shutdown
+     * mode. If the driver outputs are enabled, the part functions as
+     * line driver, while they are high impedance, it functions as line
+     * receivers if RE is low.
+     *
+     * */
+
     port_n_pins_t re_port_n_pin = RE_485_PIN;
     port_n_pins_t de_port_n_pin = DE_485_PIN;
     if (driver_enable)
     {
         log_debug(DEBUG_MODBUS, "Modbus driver:enable receiver:disable");
         gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
-        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
+        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
     }
     else
     {
         log_debug(DEBUG_MODBUS, "Modbus driver:disable receiver:enable");
         gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
-        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
+        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
     }
 }
 

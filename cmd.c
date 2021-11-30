@@ -412,9 +412,10 @@ static void modbus_cb(char *args)
 
     log_debug_mask |= DEBUG_MODBUS;
 
-    log_debug(DEBUG_MODBUS, "Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , cmd_reg.len, cmd_reg.slave_id, cmd_reg.addr);
-
-    modbus_start_read(&cmd_reg, modbus_cmd_cb);
+    if (modbus_start_read(&cmd_reg, modbus_cmd_cb))
+        log_out("Modbus read sent");
+    else
+        log_out("Modbus read not sent");
 }
 
 
