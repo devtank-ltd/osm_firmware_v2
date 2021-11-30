@@ -42,6 +42,7 @@ static data_structure_t data;
 
 volatile bool measurement_trigger = false;
 static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
+uint32_t interval_count = 0;
 
 
 void measurements_init(void)
@@ -191,7 +192,6 @@ bool measurements_write_data_value(uint8_t uuid, value_t val)
 
 void measurements_loop(void)
 {
-    uint32_t interval_count = 0;
     if (measurement_trigger)
     {
         if (interval_count > UINT32_MAX - 1)
