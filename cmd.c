@@ -366,9 +366,16 @@ static void hmp_cb(char *args)
         uint16_t pm10;
 
         if (hmp_get(&pm25, &pm10))
+        {
             log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
+            measurements_write_data_value(MEASUREMENT_UUID__PM10, (value_t)pm10);
+            measurements_write_data_value(MEASUREMENT_UUID__PM25, (value_t)pm25);
+            measurements_send(1);
+        }
         else
+        {
             log_out("No HPM data.");
+        }
     }
     else
     {
