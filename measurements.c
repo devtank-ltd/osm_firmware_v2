@@ -40,7 +40,7 @@ static measurement_list_t data_1[LW__MAX_MEASUREMENTS];
 
 static data_structure_t data;
 
-volatile bool measurement_trigger = false;
+volatile bool measurement_trigger = true;
 static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
 uint32_t interval_count = 0;
 
@@ -205,5 +205,6 @@ void measurements_loop(void)
         }
         interval_count++;
         measurements_send(interval_count);
+        measurement_trigger = false;
     }
 }
