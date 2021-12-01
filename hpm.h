@@ -6,10 +6,10 @@
 
 extern void hpm_init(void);
 
-extern void hmp_request(void);
+extern void hpm_request(void);
 
-extern void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len);
+extern void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len);
 
-extern void hmp_enable(bool enable);
+extern void hpm_enable(bool enable);
 
-extern bool hmp_get(uint16_t * pm25, uint16_t * pm10);
+extern bool hpm_get(uint16_t * pm25, uint16_t * pm10);

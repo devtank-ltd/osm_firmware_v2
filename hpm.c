@@ -141,7 +141,7 @@ static void process_ack_response(uint8_t *data)
 }
 
 
-void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
+void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 {
     static hmp_packet_header_t header;
     static bool header_active = false;
@@ -203,14 +203,14 @@ void hdm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 }
 
 
-void hmp_request(void)
+void hpm_request(void)
 {
     // Send the request for the measurement, though it does send measurements on power up, and we power it up/down each time.
     uart_ring_out(HPM_UART, (char*)(uint8_t[]){0x68, 0x01, 0x04, 0x93}, 4);
 }
 
 
-void hmp_enable(bool enable)
+void hpm_enable(bool enable)
 {
     port_n_pins_t port_n_pin = HPM_EN_PIN;
 
@@ -231,7 +231,7 @@ void hmp_enable(bool enable)
 }
 
 
-bool hmp_get(uint16_t * pm25, uint16_t * pm10)
+bool hpm_get(uint16_t * pm25, uint16_t * pm10)
 {
     if (!pm25 || !pm10 || !hpm_valid)
         return false;
