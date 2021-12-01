@@ -5,7 +5,7 @@
 #include "lorawan.h"
 
 
-typedef uint32_t value_t;
+typedef uint64_t value_t;
 
 
 enum

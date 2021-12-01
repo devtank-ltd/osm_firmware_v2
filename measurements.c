@@ -14,16 +14,24 @@
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
 #define MEASUREMENTS__STR_SIZE      16
-#define MEASUREMENTS__FMT_SIZE       5
 
+#define MEASUREMENTS__PAYLOAD_VERSION       0x01
+#define MEASUREMENTS__DATATYPE_SINGLE       0x01
+#define MEASUREMENTS__DATATYPE_AVERAGED     0x02
+
+
+#define MEASUREMENTS__EXPONENT_TEMPERATURE      -3
+#define MEASUREMENTS__EXPONENT_HUMIDITY         -1
+#define MEASUREMENTS__EXPONENT_PM10              0
+#define MEASUREMENTS__EXPONENT_PM25              0
 
 typedef struct
 {
     const uint8_t   uuid;
-    const uint8_t   data_id;
+    const uint16_t  data_id;
     const char*     name;
     uint8_t         interval;           // multiples of 5 mins
-    uint8_t         sample_interval;    // multiples of 1 minute
+    uint8_t         sample_rate;        // multiples of 1 minute
     bool            (*cb)(value_t* value);
     value_t         value;
     value_t         max;
@@ -122,39 +130,49 @@ bool measurements_set_interval(char* name, uint8_t interval)
 }
 
 
-static bool measurements_to_hex_str(volatile measurement_list_t* measurement)
+
+static bool measurement_get_exponent(uint16_t data_id, int16_t* exponent)
 {
-    char fmt_tmp[MEASUREMENTS__FMT_SIZE] = {0};
-    char meas[MEASUREMENTS__STR_SIZE] = {0};
-    value_t value;
-    uint8_t sensor_id = 3;
-
-    snprintf(meas, MEASUREMENTS__STR_SIZE, "%02x%02x", sensor_id, measurement->data_id);
-
-    switch (measurement->data_id)
+    switch (data_id)
     {
         case LW_ID__TEMPERATURE:
-            // All individual stuff done here. Including formatting and scaling.
-            value = = measurement->value / measurement->num_samples;
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%04"PRIx16, (uint16_t)value);
-            strncat(meas, fmt_tmp, strlen(fmt_tmp));
+            exponent = MEASUREMENTS__EXPONENT_TEMPERATURE;
             break;
         case LW_ID__HUMIDITY:
-            value = = measurement->value / measurement->num_samples;
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%02"PRIx8, (uint8_t)value);
-            strncat(meas, fmt_tmp, strlen(fmt_tmp));
+            exponent = MEASUREMENTS__EXPONENT_HUMIDITY;
             break;
-        case LW_ID__AIR_QUALITY:
-            value = = measurement->value / measurement->num_samples;
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%02"PRIx8, (uint8_t)measurement->uuid);
-            strncat(meas, fmt_tmp, strlen(fmt_tmp));
-            memset(fmt_tmp, 0, MEASUREMENTS__FMT_SIZE);
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%04"PRIx16, (uint16_t)value);
-            strncat(meas, fmt_tmp, strlen(fmt_tmp));
+        case LW_ID__PM10:
+            exponent = MEASUREMENTS__EXPONENT_PM10;
+            break;
+        case LW_ID__PM25:
+            exponent = MEASUREMENTS__EXPONENT_PM25;
             break;
         default:
-            printf("Unknown ID: %u", measurement->data_id);
             return false;
+    }
+    return true;
+}
+
+
+static bool measurements_to_hex_str(volatile measurement_list_t* measurement)
+{
+    char meas[MEASUREMENTS__STR_SIZE] = {0};
+    bool single = measurement->sample_interval == 1;
+    uint32_t mean = measurement->sum / measurement->num_samples;
+    int16_t exponent;
+
+    if (!measurement_get_exponent(measurement->data_id, &exponent))
+    {
+        log_error("Cannot find exponent for %s.", measurement->name);
+        return false;
+    }
+    if (single)
+    {
+        snprintf(meas, "%02x%02x%02x%04x", measurement->data_id, MEASUREMENTS__DATATYPE_SINGLE, exponent, mean);
+    }
+    else
+    {
+        snprintf(meas, "%02x%02x%02x%04x%04x%04x", measurement->data_id, MEASUREMENTS__DATATYPE_AVERAGED, exponent, mean, measurement->min, measurement->max);
     }
     strncat(measurement_hex_str, meas, MEASUREMENTS__STR_SIZE);
     return true;
@@ -172,7 +190,7 @@ void measurements_send(uint32_t interval_count)
         measurement = &data.read_data[i];
         if (measurement->interval && (interval_count % measurement->interval == 0))
         {
-            if (measurement->value == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
+            if (measurement->sum == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
             {
                 log_error("Measurement requested but value not set.");
                 continue;
@@ -185,40 +203,8 @@ void measurements_send(uint32_t interval_count)
     }
     if (num_meas_qd > 0)
     {
-        lw_send(measurement_hex_str);
+        lw_send(measurement_hex_str); // TODO: Make this be an array of uint16_ts instead of string.
     }
-}
-
-
-bool measurements_read_data_value(uint8_t uuid, value_t* val)
-{
-    volatile measurement_list_t* measurement;
-    for (int i = 0; i < data.len; i++)
-    {
-        measurement = &data.write_data[i];
-        if (measurement->uuid == uuid)
-        {
-            *val = measurement->value;
-            return true;
-        }
-    }
-    return false;
-}
-
-
-bool measurements_write_data_value(uint8_t uuid, value_t val)
-{
-    volatile measurement_list_t* measurement;
-    for (int i = 0; i < data.len; i++)
-    {
-        measurement = &data.write_data[i];
-        if (measurement->uuid == uuid)
-        {
-            measurement->value = val;
-            return true;
-        }
-    }
-    return false;
 }
 
 
@@ -228,17 +214,16 @@ void measurements_update(void)
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.write_data[i];
-        if (measurement->value == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
+        if (measurement->sum == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
         {
-            value_t 
-            if (!measurement->cb(measurement->value))
+            value_t value;
+            if (!measurement->cb(&value))
             {
                 log_error("Could not get the %s value.", measurement->name);
                 return;
             }
+            measurement->sum = value;
             measurement->num_samples++;
-            measurement->max = measurement->value;
-            measurement->min = measurement->value;
         }
         else if (measurement->sample_interval && (interval % measurement->sample_interval == 0))
         {
@@ -248,15 +233,15 @@ void measurements_update(void)
                 log_error("Could not get the %s value.", measurement->name);
                 return;
             }
-            measurement->value += new_value;
+            measurement->sum += new_value;
             measurement->num_samples++;
             if (new_value > measurement->max)
             {
-                measurement->max = measurement->value;
+                measurement->max = measurement->sum;
             }
             else if (new_value < measurement->min)
             {
-                measurement->min = measurement->value;
+                measurement->min = measurement->sum;
             }
         }
     }

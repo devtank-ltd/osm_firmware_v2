@@ -78,7 +78,7 @@
 
 typedef struct
 {
-    uint8_t     data_id;
+    uint16_t    data_id;
     uint32_t    data;
     uint8_t     interval; // multiples of 5 mins
 } lw_measurement_t;
