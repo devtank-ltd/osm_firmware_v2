@@ -22,8 +22,13 @@ typedef struct
     const uint8_t   uuid;
     const uint8_t   data_id;
     const char*     name;
-    uint8_t         interval; // multiples of 5 mins
+    uint8_t         interval;           // multiples of 5 mins
+    uint8_t         sample_interval;    // multiples of 1 minute
+    bool            (*cb)(value_t* value);
     value_t         value;
+    value_t         max;
+    value_t         min;
+    uint8_t         num_samples;
 } measurement_list_t;
 
 
@@ -42,15 +47,31 @@ static data_structure_t data;
 
 volatile bool measurement_trigger = true;
 static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
+uint32_t last_sent_ms = 0;
+uint32_t last_sampled_ms = 0;
 uint32_t interval_count = 0;
+
+
+measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__AIR_QUALITY  , "pm10"          ,  1, 1, hpm_get_pm10, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE } ,
+                                       { MEASUREMENT_UUID__PM25 , LW_ID__AIR_QUALITY  , "pm25"          ,  1, 1, hpm_get_pm25, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE } };
+
+
+bool hpm_get_pm10(value_t* value)
+{
+    uint16_t dummy;
+    return hpm_get(value, &dummy);
+}
+
+
+bool hpm_get_pm25(value_t* value)
+{
+    uint16_t dummy;
+    return hpm_get(&dummy, value);
+}
 
 
 void measurements_init(void)
 {
-    measurement_list_t data_template[] = { { MEASUREMENT_UUID__TEMP , LW_ID__TEMPERATURE  , "temperature"   ,  1, MEASUREMENTS__UNSET_VALUE } ,
-                                           { MEASUREMENT_UUID__HUM  , LW_ID__HUMIDITY     , "humidity"      ,  1, MEASUREMENTS__UNSET_VALUE } ,
-                                           { MEASUREMENT_UUID__PM10 , LW_ID__AIR_QUALITY  , "pm10"          ,  1, MEASUREMENTS__UNSET_VALUE } ,
-                                           { MEASUREMENT_UUID__PM25 , LW_ID__AIR_QUALITY  , "pm25"          ,  1, MEASUREMENTS__UNSET_VALUE } };
     memcpy((measurement_list_t*)&data_0, &data_template, sizeof(data_template));
     memcpy((measurement_list_t*)&data_1, &data_template, sizeof(data_template));
     data.read_data = (measurement_list_t*)data_0;
@@ -64,6 +85,7 @@ static void measurements_copy(void)
     CM_ATOMIC_BLOCK()
     {
         memcpy(&data.read_data, &data.write_data, sizeof(data.write_data));
+        memcpy(&data.write_data, &data_template, sizeof(data_template));
     }
 }
 
@@ -104,6 +126,7 @@ static bool measurements_to_hex_str(volatile measurement_list_t* measurement)
 {
     char fmt_tmp[MEASUREMENTS__FMT_SIZE] = {0};
     char meas[MEASUREMENTS__STR_SIZE] = {0};
+    value_t value;
     uint8_t sensor_id = 3;
 
     snprintf(meas, MEASUREMENTS__STR_SIZE, "%02x%02x", sensor_id, measurement->data_id);
@@ -111,18 +134,22 @@ static bool measurements_to_hex_str(volatile measurement_list_t* measurement)
     switch (measurement->data_id)
     {
         case LW_ID__TEMPERATURE:
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%04"PRIx16, (uint16_t)measurement->value);
+            // All individual stuff done here. Including formatting and scaling.
+            value = = measurement->value / measurement->num_samples;
+            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%04"PRIx16, (uint16_t)value);
             strncat(meas, fmt_tmp, strlen(fmt_tmp));
             break;
         case LW_ID__HUMIDITY:
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%02"PRIx8, (uint8_t)measurement->value);
+            value = = measurement->value / measurement->num_samples;
+            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%02"PRIx8, (uint8_t)value);
             strncat(meas, fmt_tmp, strlen(fmt_tmp));
             break;
         case LW_ID__AIR_QUALITY:
+            value = = measurement->value / measurement->num_samples;
             snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%02"PRIx8, (uint8_t)measurement->uuid);
             strncat(meas, fmt_tmp, strlen(fmt_tmp));
             memset(fmt_tmp, 0, MEASUREMENTS__FMT_SIZE);
-            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%04"PRIx16, (uint16_t)measurement->value);
+            snprintf(fmt_tmp, MEASUREMENTS__FMT_SIZE, "%04"PRIx16, (uint16_t)value);
             strncat(meas, fmt_tmp, strlen(fmt_tmp));
             break;
         default:
@@ -143,9 +170,9 @@ void measurements_send(uint32_t interval_count)
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.read_data[i];
-        if (interval_count % measurement->interval == 0)
+        if (measurement->interval && (interval_count % measurement->interval == 0))
         {
-            if (measurement->value == MEASUREMENTS__UNSET_VALUE)
+            if (measurement->value == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
             {
                 log_error("Measurement requested but value not set.");
                 continue;
@@ -195,9 +222,56 @@ bool measurements_write_data_value(uint8_t uuid, value_t val)
 }
 
 
+void measurements_update(void)
+{
+    volatile measurement_list_t* measurement;
+    for (int i = 0; i < data.len; i++)
+    {
+        measurement = &data.write_data[i];
+        if (measurement->value == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
+        {
+            value_t 
+            if (!measurement->cb(measurement->value))
+            {
+                log_error("Could not get the %s value.", measurement->name);
+                return;
+            }
+            measurement->num_samples++;
+            measurement->max = measurement->value;
+            measurement->min = measurement->value;
+        }
+        else if (measurement->sample_interval && (interval % measurement->sample_interval == 0))
+        {
+            value_t new_value;
+            if (!measurement->cb(&new_value))
+            {
+                log_error("Could not get the %s value.", measurement->name);
+                return;
+            }
+            measurement->value += new_value;
+            measurement->num_samples++;
+            if (new_value > measurement->max)
+            {
+                measurement->max = measurement->value;
+            }
+            else if (new_value < measurement->min)
+            {
+                measurement->min = measurement->value;
+            }
+        }
+    }
+}
+
+
 void measurements_loop(void)
 {
-    if (measurement_trigger)
+    if (since_boot_delta(since_boot_ms, last_sampled_ms) > INTERVAL__TRANSMIT_MS)
+    {
+        measurements_update();
+        last_sampled_ms = since_boot_ms;
+    }
+
+    if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL__SAMPLE_MS)
     {
         if (interval_count > UINT32_MAX - 1)
         {
@@ -205,6 +279,7 @@ void measurements_loop(void)
         }
         interval_count++;
         measurements_send(interval_count);
-        measurement_trigger = false;
+        last_sent_ms = since_boot_ms;
+        last_sampled_ms = since_boot_ms;
     }
 }
