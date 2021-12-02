@@ -101,6 +101,12 @@ typedef struct
 
 #define UART_CHANNELS_COUNT 4
 
+#define MODBUS_SPEED    UART_4_SPEED
+#define MODBUS_PARITY   UART_4_PARITY
+#define MODBUS_DATABITS UART_4_DATABITS
+#define MODBUS_STOP     UART_4_STOP
+
+
 #define IOS_PORT_N_PINS             \
 {                                   \
     {GPIOC, GPIO6 },   /* IO 0  */ \

@@ -23,6 +23,7 @@
 #include "lorawan.h"
 #include "measurements.h"
 #include "sys_time.h"
+#include "modbus.h"
 
 _Atomic uint32_t since_boot_ms = 0;
 
@@ -85,6 +86,7 @@ int main(void)
     clock_setup();
 
     uarts_setup();
+    uart_rings_init();
 
     systick_set_frequency(1000, rcc_ahb_frequency);
     systick_counter_enable();
@@ -101,6 +103,7 @@ int main(void)
     sai_init();
     lorawan_init();
     measurements_init();
+    modbus_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);

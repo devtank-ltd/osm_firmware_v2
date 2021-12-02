@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/rcc.h>
+
 #include "pinmap.h"
 #include "uart_rings.h"
 #include "ring.h"
@@ -10,6 +13,8 @@
 #include "lorawan.h"
 #include "hpm.h"
 #include "modbus.h"
+
+#include "sys_time.h"
 
 
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
@@ -130,6 +135,39 @@ static void uart_ring_in_drain(unsigned uart)
 }
 
 
+static void _set_rs485_mode(bool driver_enable)
+{
+    /* ST3485E
+     *
+     * 2. RE Receiver output enable. RO is enabled when RE is low; RO is
+     * high impedance when RE is high. If RE is high and DE is low, the
+     * device will enter a low power shutdown mode.
+
+     * 3. DE Driver output enable. The driver outputs are enabled by
+     * bringing DE high. They are high impedance when DE is low. If RE
+     * is high DE is low, the device will enter a low-power shutdown
+     * mode. If the driver outputs are enabled, the part functions as
+     * line driver, while they are high impedance, it functions as line
+     * receivers if RE is low.
+     *
+     * */
+
+    port_n_pins_t re_port_n_pin = RE_485_PIN;
+    port_n_pins_t de_port_n_pin = DE_485_PIN;
+    if (driver_enable)
+    {
+        log_debug(DEBUG_MODBUS, "Modbus driver:enable receiver:disable");
+        gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
+        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
+    }
+    else
+    {
+        log_debug(DEBUG_MODBUS, "Modbus driver:disable receiver:enable");
+        gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
+        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
+    }
+}
+
 static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 {
     unsigned uart = *(unsigned*)puart;
@@ -149,7 +187,52 @@ static void uart_ring_out_drain(unsigned uart)
 
     unsigned len = ring_buf_get_pending(ring);
 
-    if (!len)
+    if (uart == RS485_UART)
+    {
+        static bool rs485_transmitting = false;
+        static bool rs485_transmit_stopping = false;
+        static uint32_t rs485_start_transmitting = 0;
+        static uint32_t rs485_stop_transmitting = 0;
+
+        if (!len)
+        {
+            if (rs485_transmitting && uart_is_tx_empty(RS485_UART))
+            {
+                if (!rs485_transmit_stopping)
+                {
+                    log_debug(DEBUG_MODBUS, "Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
+                    rs485_stop_transmitting = since_boot_ms;
+                    rs485_transmit_stopping = true;
+                    return;
+                }
+                else if (since_boot_delta(since_boot_ms, rs485_stop_transmitting) > modbus_stop_delay())
+                {
+                    rs485_transmitting = false;
+                    rs485_transmit_stopping = false;
+                    _set_rs485_mode(false);
+                    return;
+                }
+            }
+            return;
+        }
+
+        if (!rs485_transmitting)
+        {
+            rs485_transmitting = true;
+            _set_rs485_mode(true);
+            rs485_start_transmitting = since_boot_ms;
+            log_debug(DEBUG_MODBUS, "Data to send, delay %"PRIu32"ms", modbus_start_delay());
+            return;
+        }
+        else
+        {
+            if (since_boot_delta(since_boot_ms, rs485_start_transmitting) < modbus_start_delay())
+                return;
+        }
+
+        modbus_debug("Sending %u", len);
+    }
+    else if (!len)
         return;
 
     if (uart_is_tx_empty(uart))
@@ -157,15 +240,10 @@ static void uart_ring_out_drain(unsigned uart)
         if (uart)
             log_debug(DEBUG_UART(uart), "UART %u OUT > %u", uart, len);
 
-        if (uart == RS485_UART)
-            log_debug(DEBUG_MODBUS, "Modbus : Sending %u", len);
-
         len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
 
         ring_buf_consume(ring, _uart_out_dma, uart_dma_buf[uart], len, &uart);
     }
-    else if (uart == RS485_UART)
-        log_debug(DEBUG_MODBUS, "Modbus : Not sending %u", len);
 }
 
 
@@ -180,7 +258,6 @@ void uart_rings_out_drain()
 {
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_ring_out_drain(n);
-    cleanup_rs485();
 }
 
 
@@ -205,4 +282,19 @@ void uart_rings_check()
         uart_ring_check(in_ring, "in", n);
         uart_ring_check(out_ring, "out", n);
     }
+}
+
+
+void uart_rings_init(void)
+{
+    port_n_pins_t re_port_n_pin = RE_485_PIN;
+    port_n_pins_t de_port_n_pin = DE_485_PIN;
+
+    rcc_periph_clock_enable(PORT_TO_RCC(re_port_n_pin.port));
+    rcc_periph_clock_enable(PORT_TO_RCC(de_port_n_pin.port));
+
+    gpio_mode_setup(re_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, re_port_n_pin.pins);
+    gpio_mode_setup(de_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, de_port_n_pin.pins);
+
+    _set_rs485_mode(false);
 }
