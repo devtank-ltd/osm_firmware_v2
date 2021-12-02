@@ -220,7 +220,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     if (!modbuspacket_len)
     {
-        if (len > 2)
+        if ((!do_binary_framing && len > 2) || (do_binary_framing && len > 3))
         {
             modbus_read_timing_init = 0;
             ring_buf_read(ring, (char*)modbuspacket, 1);
@@ -241,18 +241,9 @@ void modbus_ring_process(ring_buf_t * ring)
                 ring_buf_read(ring, (char*)modbuspacket, 1);
             }
 
-            if (!current_reg || (current_reg->slave_id != modbuspacket[0]))
-            {
-                modbus_debug("Possible slave ID 0x%"PRIx8" doesn't match slave ID waiting for.", modbuspacket[0]);
-                return;
-            }
             ring_buf_read(ring, (char*)modbuspacket + 1, 2);
             uint8_t func = modbuspacket[1];
-            if ((func & ~MODBUS_ERROR_MASK) != current_reg->func)
-            {
-                modbus_debug("Possible func ID doesn't match func ID waiting for.");
-                return;
-            }
+
             len -= 3;
             if (func == MODBUS_READ_HOLDING_FUNC)
             {
@@ -332,11 +323,23 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    if (current_reg_cb)
-        current_reg_cb(current_reg, modbuspacket + 3, modbuspacket[2]);
+    if (current_reg && (current_reg->slave_id == modbuspacket[0]))
+    {
+        modbus_reg_t  * reg    = current_reg;
+        modbus_reg_cb * reg_cb = current_reg_cb;
 
-    current_reg = NULL;
-    current_reg_cb = NULL;
+        current_reg = NULL;
+        current_reg_cb = NULL;
+
+        if (reg_cb)
+            reg_cb(reg, modbuspacket + 3, modbuspacket[2]);
+    }
+    else
+    {
+        modbus_debug("Unexpected packet");
+        return;
+    }
+
     modbuspacket_len = 0;
 }
 
