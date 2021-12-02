@@ -9,7 +9,7 @@
 #include "uarts.h"
 #include "uart_rings.h"
 
-uint32_t log_debug_mask = DEBUG_SYS | DEBUG_MODBUS;
+uint32_t log_debug_mask = DEBUG_SYS;
 bool     log_async_log  = false;
 
 
