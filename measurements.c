@@ -28,6 +28,11 @@
 #define MEASUREMENTS__EXPONENT_PM25              0
 
 
+#define MEASUREMENTS__COLLECT_TIME__TEMPERATURE__MS 10000
+#define MEASUREMENTS__COLLECT_TIME__HUMIDITY__MS    10000
+#define MEASUREMENTS__COLLECT_TIME__HPM__MS         10000
+
+
 typedef struct
 {
     const uint8_t   uuid;
@@ -35,12 +40,12 @@ typedef struct
     const char*     name;
     uint8_t         interval;           // multiples of 5 mins
     uint8_t         sample_rate;        // multiples of 1 minute. Must be greater than or equal to 1
-    bool            (*cb)(value_t* value);
+    void            (*init_cb)(void);
+    bool            (*get_cb)(value_t* value);
     value_t         sum;
     value_t         max;
     value_t         min;
     uint8_t         num_samples;
-    uint8_t         num_samples_attempted;
 } measurement_list_t;
 
 
@@ -50,6 +55,15 @@ typedef struct
     measurement_list_t*     write_data;
     uint16_t                len;
 } data_structure_t;
+
+
+typedef struct
+{
+    uint8_t     uuid;
+    uint8_t     num_samples_init;
+    uint8_t     num_samples_collected;
+    uint32_t    preinit_time;
+} measurement_hidden_t;
 
 
 static measurement_list_t data_0[LW__MAX_MEASUREMENTS];
@@ -63,25 +77,69 @@ static uint16_t measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE] = {0};
 static uint16_t measurements_hex_arr_pos = 0;
 
 
-static bool hpm_get_pm10(value_t* value);
-static bool hpm_get_pm25(value_t* value);
+static void hpm_pm10_init(void);
+static bool hpm_pm10_get(value_t* value);
+static void hpm_pm25_init(void);
+static bool hpm_pm25_get(value_t* value);
 
 
-static measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__PM10  , "pm10"          ,  1, 5, hpm_get_pm10, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0, 0} ,
-                                              { MEASUREMENT_UUID__PM25 , LW_ID__PM25  , "pm25"          ,  1, 5, hpm_get_pm25, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0, 0} };
+static measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__PM10  , "pm10"          ,  1, 5, hpm_pm10_init, hpm_pm10_get, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0} ,
+                                              { MEASUREMENT_UUID__PM25 , LW_ID__PM25  , "pm25"          ,  1, 5, hpm_pm25_init, hpm_pm25_get, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0} };
+
+static measurement_hidden_t data_working_array[ARRAY_SIZE(data_template)];
 
 
-static bool hpm_get_pm10(value_t* value)
+static void hpm_pm10_init(void)
+{
+    hpm_enable(true);
+    hpm_request();
+}
+
+static bool hpm_pm10_get(value_t* value)
 {
     uint16_t dummy;
-    return hpm_get((uint16_t*)value, &dummy);
+    bool r = hpm_get((uint16_t*)value, &dummy);
+    hpm_enable(false);
+    return r;
 }
 
 
-static bool hpm_get_pm25(value_t* value)
+static void hpm_pm25_init(void)
+{
+    hpm_enable(true);
+    hpm_request();
+}
+
+
+static bool hpm_pm25_get(value_t* value)
 {
     uint16_t dummy;
-    return hpm_get(&dummy, (uint16_t*)value);
+    bool r = hpm_get(&dummy, (uint16_t*)value);
+    hpm_enable(false);
+    return r;
+}
+
+
+static bool measurement_get_preinit_time(uint16_t data_id, uint32_t* time)
+{
+    switch (data_id)
+    {
+        case LW_ID__TEMPERATURE:
+            *time = MEASUREMENTS__COLLECT_TIME__TEMPERATURE__MS;
+            break;
+        case LW_ID__HUMIDITY:
+            *time = MEASUREMENTS__COLLECT_TIME__HUMIDITY__MS;
+            break;
+        case LW_ID__PM10:
+            *time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
+            break;
+        case LW_ID__PM25:
+            *time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
+            break;
+        default:
+            return false;
+    }
+    return true;
 }
 
 
@@ -92,6 +150,20 @@ void measurements_init(void)
     data.read_data = (measurement_list_t*)data_0;
     data.write_data = (measurement_list_t*)data_1;
     data.len = ARRAY_SIZE(data_template);
+
+    measurement_hidden_t* measurement_working;
+    for (int i = 0; i < data.len; i++)
+    {
+        measurement_working = &data_working_array[i];
+        measurement_working->uuid = data.write_data[i].uuid;
+        measurement_working->num_samples_init = 0;
+        measurement_working->num_samples_collected = 0;
+        if (!measurement_get_preinit_time(measurement_working->uuid, &measurement_working->preinit_time))
+        {
+            log_error("Could not find preinit time for %s.", data.write_data[i].name);;
+            measurement_working->preinit_time = 0;
+        }
+    }
 }
 
 
@@ -215,6 +287,8 @@ void measurements_send(void)
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.read_data[i];
+        data_working_array[i].num_samples_init = 0;
+        data_working_array[i].num_samples_collected = 0;
         if (measurement->interval && (interval_count % measurement->interval == 0))
         {
             if (measurement->sum == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
@@ -238,6 +312,7 @@ void measurements_send(void)
 static void measurements_sample(void)
 {
     volatile measurement_list_t* measurement;
+    measurement_hidden_t* measurement_working;
     uint32_t sample_interval;
     value_t new_value;
     uint32_t now = since_boot_ms;
@@ -245,16 +320,20 @@ static void measurements_sample(void)
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.write_data[i];
+        measurement_working = &data_working_array[i];
+
         sample_interval = measurement->interval * INTERVAL__TRANSMIT_MS / measurement->sample_rate;
         time_since_interval = since_boot_delta(now, last_sent_ms);
-        if (time_since_interval < sample_interval/2)
+
+        if (time_since_interval >= (measurement_working->num_samples_init * sample_interval) + sample_interval/2 - measurement_working->preinit_time)
         {
-            continue;
+            measurement_working->num_samples_init++;
+            measurement->init_cb();
         }
-        if (time_since_interval >= (measurement->num_samples_attempted * sample_interval) + sample_interval/2)
+        if (time_since_interval >= (measurement_working->num_samples_collected * sample_interval) + sample_interval/2)
         {
-            measurement->num_samples_attempted++;
-            if (!measurement->cb(&new_value))
+            measurement_working->num_samples_collected++;
+            if (!measurement->get_cb(&new_value))
             {
                 log_error("Could not get the %s value.", measurement->name);
                 return;

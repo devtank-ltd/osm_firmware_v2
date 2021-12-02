@@ -20,8 +20,6 @@ enum
 };
 
 
-extern volatile bool measurement_trigger;
-
 extern void measurements_init(void);
 extern bool measurements_set_interval(char* name, uint8_t interval);
 extern void measurements_loop(void);
