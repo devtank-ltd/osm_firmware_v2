@@ -57,7 +57,7 @@ void log_debug(uint32_t flag, const char *s, ...)
 }
 
 
-extern void log_error(const char * s, ...)
+void log_bad_error(const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
@@ -67,7 +67,16 @@ extern void log_error(const char * s, ...)
 }
 
 
-extern void log_out(const char * s, ...)
+void log_error(const char * s, ...)
+{
+    va_list ap;
+    va_start(ap, s);
+    log_msgv(UART_ERR_NU, false, "ERROR:", s, ap);
+    va_end(ap);
+}
+
+
+void log_out(const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
