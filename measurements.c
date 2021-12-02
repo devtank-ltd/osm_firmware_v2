@@ -10,6 +10,8 @@
 #include "lorawan.h"
 #include "log.h"
 #include "config.h"
+#include "hpm.h"
+#include "sys_time.h"
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
@@ -25,15 +27,16 @@
 #define MEASUREMENTS__EXPONENT_PM10              0
 #define MEASUREMENTS__EXPONENT_PM25              0
 
+
 typedef struct
 {
     const uint8_t   uuid;
     const uint16_t  data_id;
     const char*     name;
     uint8_t         interval;           // multiples of 5 mins
-    uint8_t         sample_rate;        // multiples of 1 minute
+    uint8_t         sample_rate;        // multiples of 1 minute. Must be greater than or equal to 1
     bool            (*cb)(value_t* value);
-    value_t         value;
+    value_t         sum;
     value_t         max;
     value_t         min;
     uint8_t         num_samples;
@@ -53,35 +56,38 @@ static measurement_list_t data_1[LW__MAX_MEASUREMENTS];
 
 static data_structure_t data;
 
-volatile bool measurement_trigger = true;
-static char measurement_hex_str[MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS] = {0};
-uint32_t last_sent_ms = 0;
-uint32_t last_sampled_ms = 0;
-uint32_t interval_count = 0;
+static uint32_t last_sent_ms = 0;
+static uint32_t interval_count = 0;
+static uint16_t measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE] = {0};
+static uint16_t measurements_hex_arr_pos = 0;
 
 
-measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__AIR_QUALITY  , "pm10"          ,  1, 1, hpm_get_pm10, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE } ,
-                                       { MEASUREMENT_UUID__PM25 , LW_ID__AIR_QUALITY  , "pm25"          ,  1, 1, hpm_get_pm25, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE } };
+static bool hpm_get_pm10(value_t* value);
+static bool hpm_get_pm25(value_t* value);
 
 
-bool hpm_get_pm10(value_t* value)
+measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__PM10  , "pm10"          ,  1, 1, hpm_get_pm10, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0} ,
+                                       { MEASUREMENT_UUID__PM25 , LW_ID__PM25  , "pm25"          ,  1, 1, hpm_get_pm25, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0} };
+
+
+static bool hpm_get_pm10(value_t* value)
 {
     uint16_t dummy;
-    return hpm_get(value, &dummy);
+    return hpm_get((uint16_t*)value, &dummy);
 }
 
 
-bool hpm_get_pm25(value_t* value)
+static bool hpm_get_pm25(value_t* value)
 {
     uint16_t dummy;
-    return hpm_get(&dummy, value);
+    return hpm_get(&dummy, (uint16_t*)value);
 }
 
 
 void measurements_init(void)
 {
-    memcpy((measurement_list_t*)&data_0, &data_template, sizeof(data_template));
-    memcpy((measurement_list_t*)&data_1, &data_template, sizeof(data_template));
+    memcpy((measurement_list_t*)data_0, data_template, sizeof(data_template));
+    memcpy((measurement_list_t*)data_1, data_template, sizeof(data_template));
     data.read_data = (measurement_list_t*)data_0;
     data.write_data = (measurement_list_t*)data_1;
     data.len = ARRAY_SIZE(data_template);
@@ -92,8 +98,8 @@ static void measurements_copy(void)
 {
     CM_ATOMIC_BLOCK()
     {
-        memcpy(&data.read_data, &data.write_data, sizeof(data.write_data));
-        memcpy(&data.write_data, &data_template, sizeof(data_template));
+        memcpy(data.read_data, data.write_data, sizeof(data_template));
+        memcpy(data.write_data, (measurement_list_t*)data_template, sizeof(data_template));
     }
 }
 
@@ -136,16 +142,16 @@ static bool measurement_get_exponent(uint16_t data_id, int16_t* exponent)
     switch (data_id)
     {
         case LW_ID__TEMPERATURE:
-            exponent = MEASUREMENTS__EXPONENT_TEMPERATURE;
+            *exponent = MEASUREMENTS__EXPONENT_TEMPERATURE;
             break;
         case LW_ID__HUMIDITY:
-            exponent = MEASUREMENTS__EXPONENT_HUMIDITY;
+            *exponent = MEASUREMENTS__EXPONENT_HUMIDITY;
             break;
         case LW_ID__PM10:
-            exponent = MEASUREMENTS__EXPONENT_PM10;
+            *exponent = MEASUREMENTS__EXPONENT_PM10;
             break;
         case LW_ID__PM25:
-            exponent = MEASUREMENTS__EXPONENT_PM25;
+            *exponent = MEASUREMENTS__EXPONENT_PM25;
             break;
         default:
             return false;
@@ -154,36 +160,56 @@ static bool measurement_get_exponent(uint16_t data_id, int16_t* exponent)
 }
 
 
-static bool measurements_to_hex_str(volatile measurement_list_t* measurement)
+static uint8_t measurements_arr_append(uint16_t val)
 {
-    char meas[MEASUREMENTS__STR_SIZE] = {0};
-    bool single = measurement->sample_interval == 1;
+    if (measurements_hex_arr_pos >= LW__MAX_MEASUREMENTS)
+    {
+        log_error("Measurement array is full.");
+        return 1;
+    }
+    measurements_hex_arr[measurements_hex_arr_pos++] = val;
+    return 0;
+}
+
+
+static bool measurements_to_arr(volatile measurement_list_t* measurement)
+{
+    bool single = measurement->sample_rate == 1;
     uint32_t mean = measurement->sum / measurement->num_samples;
     int16_t exponent;
 
     if (!measurement_get_exponent(measurement->data_id, &exponent))
     {
-        log_error("Cannot find exponent for %s.", measurement->name);
+        log_error("Cannot find exponent for %s (%"PRIu16").", measurement->name, measurement->data_id);
         return false;
     }
+
+    uint8_t r = 0;
+    r += measurements_arr_append(measurement->data_id);
     if (single)
     {
-        snprintf(meas, "%02x%02x%02x%04x", measurement->data_id, MEASUREMENTS__DATATYPE_SINGLE, exponent, mean);
+        r += measurements_arr_append(MEASUREMENTS__DATATYPE_SINGLE);
+        r += measurements_arr_append(exponent);
+        r += measurements_arr_append(mean);
     }
     else
     {
-        snprintf(meas, "%02x%02x%02x%04x%04x%04x", measurement->data_id, MEASUREMENTS__DATATYPE_AVERAGED, exponent, mean, measurement->min, measurement->max);
+        r += measurements_arr_append(MEASUREMENTS__DATATYPE_SINGLE);
+        r += measurements_arr_append(exponent);
+        r += measurements_arr_append(mean);
+        r += measurements_arr_append(measurement->min);
+        r += measurements_arr_append(measurement->max);
     }
-    strncat(measurement_hex_str, meas, MEASUREMENTS__STR_SIZE);
-    return true;
+    return (r == 0);
 }
 
 
-void measurements_send(uint32_t interval_count)
+void measurements_send(void)
 {
     measurements_copy();
     volatile measurement_list_t* measurement;
-    memset(measurement_hex_str, 0, MEASUREMENTS__STR_SIZE * LW__MAX_MEASUREMENTS);
+    memset(measurements_hex_arr, 0, LW__MAX_MEASUREMENTS);
+    measurements_hex_arr_pos = 0;
     uint16_t num_meas_qd = 0;
     for (int i = 0; i < data.len; i++)
     {
@@ -195,7 +221,7 @@ void measurements_send(uint32_t interval_count)
                 log_error("Measurement requested but value not set.");
                 continue;
             }
-            if (measurements_to_hex_str(measurement))
+            if (measurements_to_arr(measurement))
             {
                 num_meas_qd++;
             }
@@ -203,68 +229,78 @@ void measurements_send(uint32_t interval_count)
     }
     if (num_meas_qd > 0)
     {
-        lw_send(measurement_hex_str); // TODO: Make this be an array of uint16_ts instead of string.
+        lw_send(measurements_hex_arr, measurements_hex_arr_pos+1);
     }
 }
 
 
-void measurements_update(void)
+uint8_t a = 0;
+
+
+static void measurements_sample(void)
 {
     volatile measurement_list_t* measurement;
+    uint32_t sample_interval;
+    value_t new_value;
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.write_data[i];
-        if (measurement->sum == MEASUREMENTS__UNSET_VALUE || measurement->num_samples == 0)
+        sample_interval = measurement->interval * INTERVAL__SAMPLE_MS / measurement->sample_rate;
+        if (since_boot_delta(since_boot_ms, last_sent_ms) < sample_interval/2)
         {
-            value_t value;
-            if (!measurement->cb(&value))
-            {
-                log_error("Could not get the %s value.", measurement->name);
-                return;
-            }
-            measurement->sum = value;
-            measurement->num_samples++;
+            continue;
         }
-        else if (measurement->sample_interval && (interval % measurement->sample_interval == 0))
+        if ((since_boot_delta(since_boot_ms, last_sent_ms)-sample_interval/2) % sample_interval == 0)
         {
-            value_t new_value;
             if (!measurement->cb(&new_value))
             {
                 log_error("Could not get the %s value.", measurement->name);
                 return;
             }
+            if (measurement->sum == MEASUREMENTS__UNSET_VALUE)
+            {
+                measurement->sum = 0;
+            }
+            if (measurement->min == MEASUREMENTS__UNSET_VALUE)
+            {
+                measurement->min = 0;
+            }
+            if (measurement->max == MEASUREMENTS__UNSET_VALUE)
+            {
+                measurement->max = 0;
+            }
             measurement->sum += new_value;
             measurement->num_samples++;
             if (new_value > measurement->max)
             {
-                measurement->max = measurement->sum;
+                measurement->max = new_value;
             }
             else if (new_value < measurement->min)
             {
-                measurement->min = measurement->sum;
+                measurement->min = new_value;
             }
+            log_out("measurement->sum = %"PRIu64, measurement->sum);
+            log_out("measurement->max = %"PRIu64, measurement->max);
+            log_out("measurement->min = %"PRIu64, measurement->min);
         }
     }
+    a = 1;
 }
 
 
 void measurements_loop(void)
 {
-    if (since_boot_delta(since_boot_ms, last_sampled_ms) > INTERVAL__TRANSMIT_MS)
-    {
-        measurements_update();
-        last_sampled_ms = since_boot_ms;
-    }
+    uint32_t now = since_boot_ms;
+    measurements_sample();
 
-    if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL__SAMPLE_MS)
+    if (since_boot_delta(now, last_sent_ms) > INTERVAL__SAMPLE_MS)
     {
         if (interval_count > UINT32_MAX - 1)
         {
             interval_count = 0;
         }
         interval_count++;
-        measurements_send(interval_count);
-        last_sent_ms = since_boot_ms;
-        last_sampled_ms = since_boot_ms;
+        measurements_send();
+        last_sent_ms = now;
     }
 }

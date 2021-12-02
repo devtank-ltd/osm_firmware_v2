@@ -114,9 +114,8 @@ int main(void)
         {
             uart_rings_in_drain();
             uart_rings_out_drain();
+            measurements_loop();
         }
-
-        measurements_loop();
 
         gpio_toggle(LED_PORT, LED_PIN);
 

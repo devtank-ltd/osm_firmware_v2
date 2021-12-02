@@ -120,7 +120,7 @@ static void uart_ring_in_drain(unsigned uart)
     }
     else if (uart == HPM_UART)
     {
-        hdm_ring_process(ring, command, CMD_LINELEN);
+        hpm_ring_process(ring, command, CMD_LINELEN);
     }
 }
 

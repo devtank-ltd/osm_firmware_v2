@@ -5,6 +5,9 @@
 #include "lorawan.h"
 
 
+#define MEASUREMENTS__HEX_ARRAY_SIZE            LW__MAX_MEASUREMENTS * 14 + 14
+
+
 typedef uint64_t value_t;
 
 
@@ -21,8 +24,4 @@ extern volatile bool measurement_trigger;
 
 extern void measurements_init(void);
 extern bool measurements_set_interval(char* name, uint8_t interval);
-extern bool measurements_read_data_value(uint8_t uuid, value_t* val);
-extern bool measurements_write_data_value(uint8_t uuid, value_t val);
 extern void measurements_loop(void);
-
-extern void measurements_send(uint32_t interval_count);

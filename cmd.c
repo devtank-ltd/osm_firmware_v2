@@ -313,8 +313,8 @@ void audio_dump_cb(char * args)
 
 void lora_cb(char * args)
 {
-    char * pos = skip_space(args);
-    lw_send(pos);
+    //char * pos = skip_space(args);
+    //lw_send(pos);
 }
 
 
@@ -360,17 +360,14 @@ static void hmp_cb(char *args)
 {
     if (args[0] != '0')
     {
-        hmp_enable(true);
+        hpm_enable(true);
 
         uint16_t pm25;
         uint16_t pm10;
 
-        if (hmp_get(&pm25, &pm10))
+        if (hpm_get(&pm25, &pm10))
         {
             log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
-            measurements_write_data_value(MEASUREMENT_UUID__PM10, (value_t)pm10);
-            measurements_write_data_value(MEASUREMENT_UUID__PM25, (value_t)pm25);
-            measurements_send(1);
         }
         else
         {
@@ -379,7 +376,7 @@ static void hmp_cb(char *args)
     }
     else
     {
-        hmp_enable(false);
+        hpm_enable(false);
         log_out("HPM disabled");
     }
 }
