@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <stddef.h>
+#include <ctype.h>
 
 #include <libopencm3/cm3/systick.h>
 
@@ -9,6 +10,7 @@
 #include "uart_rings.h"
 #include "uarts.h"
 #include "sys_time.h"
+#include "cmd.h"
 
 #define MODBUS_RESP_TIMEOUT_MS 2000
 #define MODBUS_SENT_TIMEOUT_MS 2000
@@ -90,25 +92,24 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
     databits *= 10; /* *10 to support half bit. */
-    databits += 10; /* One start bit */ 
+    databits += 10; /* One start bit */
 
     switch(stop)
     {
         case uart_stop_bits_1   : databits += 10; break;
         case uart_stop_bits_1_5 : databits += 5;  break;
-        case uart_stop_bits_2   : databits += 20; break;   
+        case uart_stop_bits_2   : databits += 20; break;
         default:
             modbus_debug("Stop bits unknown...assuming 1.");
             databits += 10;
             break;
     }
-    
+
     if (parity != uart_parity_none)
         databits += 10;
 
     unsigned bits = deci_char * databits;
     uint32_t r = 1 + 1000 * bits / speed / 100;
-    modbus_debug("Delay for %u bits %"PRIu32"ms", bits / 10, r);
     return r;
 }
 
@@ -136,6 +137,55 @@ void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_s
 
     _modbus_setup_delays(speed, databits, parity, stop);
 }
+
+
+
+bool modbus_setup_from_str(char * str)
+{
+    char * pos = skip_space(str);
+
+    bool binary_framing = false;
+
+    if (toupper(pos[0]) == 'R' &&
+        toupper(pos[1]) == 'T' &&
+        toupper(pos[2]) == 'U')
+    {
+        binary_framing = false;
+    }
+    else if (toupper(pos[0]) == 'B' &&
+             toupper(pos[1]) == 'I' &&
+             toupper(pos[2]) == 'N')
+    {
+        binary_framing = true;
+    }
+    else
+    {
+        log_error("Unknown modbus protocol.");
+        return false;
+    }
+
+    pos+=3;
+
+    if (!uart_resetup_str(RS485_UART, skip_space(pos)))
+        return false;
+
+    unsigned speed;
+    uint8_t databits;
+    uart_parity_t parity;
+    uart_stop_bits_t stop;
+
+    uart_get_setup(RS485_UART, &speed, &databits, &parity, &stop);
+
+    do_binary_framing = binary_framing;
+
+    _modbus_setup_delays(speed, databits, parity, stop);
+
+    modbus_debug("Modbus @ %s %u %u%c%s", (binary_framing)?"BIN":"RTU", speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_str(stop));
+
+    return true;
+}
+
+
 
 
 uint32_t modbus_start_delay(void)

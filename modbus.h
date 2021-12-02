@@ -26,6 +26,8 @@ extern void modbus_ring_process(ring_buf_t * ring);
 
 extern void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop, bool binary_framing);
 
+extern bool modbus_setup_from_str(char * str);
+
 extern uint32_t modbus_start_delay(void);
 extern uint32_t modbus_stop_delay(void);
 

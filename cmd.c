@@ -45,7 +45,8 @@ static void lora_cb(char *args);
 static void interval_cb(char *args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
-static void modbus_cb(char *args);
+static void modbus_setup_cb(char *args);
+static void modbus_test_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -62,12 +63,13 @@ static cmd_t cmds[] = {
     { "interval", "Set the interval",        interval_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
-    { "modbus",    "Read modbus reg",        modbus_cb},
+    { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
+    { "mb_test",    "Read modbus reg",       modbus_test_cb},
     { NULL },
 };
 
 
-static char * skip_space(char * pos)
+char * skip_space(char * pos)
 {
     while(*pos == ' ')
         pos++;
@@ -198,62 +200,6 @@ void count_cb(char * args)
 }
 
 
-void uart_cb(char * args)
-{
-    char * pos = NULL;
-    unsigned uart = strtoul(args, &pos, 10);
-
-    unsigned         speed;
-    uint8_t          databits;
-    uart_parity_t    parity;
-    uart_stop_bits_t stop;
-
-    uart++;
-
-    if (!uart_get_setup(uart, &speed, &databits, &parity, &stop))
-    {
-        log_error("INVALID UART GIVEN");
-        return;
-    }
-
-    pos = skip_space(pos);
-    if (*pos)
-    {
-        speed = strtoul(pos, NULL, 10);
-        pos = skip_space(++pos);
-        if (*pos)
-        {
-            if (isdigit((unsigned char)*pos))
-            {
-                databits = (uint8_t)(*pos) - (uint8_t)'0';
-                pos = skip_space(++pos);
-            }
-
-            switch(*pos)
-            {
-                case 'N' : parity = uart_parity_none; break;
-                case 'E' : parity = uart_parity_even; break;
-                case 'O' : parity = uart_parity_odd; break;
-                default: break;
-            }
-            pos = skip_space(++pos);
-
-            switch(*pos)
-            {
-                case '1' : stop = uart_stop_bits_1; break;
-                case '2' : stop = uart_stop_bits_2; break;
-                default: break;
-            }
-        }
-
-        uart_resetup(uart, speed, databits, parity, stop);
-    }
-
-    log_out("UART %u : %u %"PRIu8"%c%"PRIu8, uart - 1,
-        speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_int(stop));
-}
-
-
 void persist_cb(char * args)
 {
     char * pos = skip_space(args);
@@ -381,6 +327,15 @@ static void hmp_cb(char *args)
 }
 
 
+static void modbus_setup_cb(char *args)
+{
+    /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
+     * EXAMPLE: RTU 115200 8N1
+     */
+    modbus_setup_from_str(args);
+}
+
+
 static void modbus_cmd_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 {
     for(unsigned n = 0; n < size; n++)
@@ -388,7 +343,7 @@ static void modbus_cmd_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 }
 
 
-static void modbus_cb(char *args)
+static void modbus_test_cb(char *args)
 {
     char * pos = skip_space(args);
 
