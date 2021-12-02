@@ -344,7 +344,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     if (do_binary_framing)
     {
-        if (modbuspacket[modbuspacket_len-1] != MODBUS_BIN_STOP)
+        if (modbuspacket[modbuspacket_len + 3 - 1] != MODBUS_BIN_STOP)
         {
             modbus_debug("Not binary frame stopped, discarded.");
             return;
