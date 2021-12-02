@@ -98,6 +98,7 @@ static void hpm_pm10_init(void)
 static bool hpm_pm10_get(value_t* value)
 {
     uint16_t dummy;
+    *value = 0;
     bool r = hpm_get((uint16_t*)value, &dummy);
     hpm_enable(false);
     return r;
@@ -114,6 +115,7 @@ static void hpm_pm25_init(void)
 static bool hpm_pm25_get(value_t* value)
 {
     uint16_t dummy;
+    *value = 0;
     bool r = hpm_get(&dummy, (uint16_t*)value);
     hpm_enable(false);
     return r;
@@ -365,6 +367,7 @@ static void measurements_sample(void)
             {
                 measurement->min = new_value;
             }
+            log_out("new_value = %"PRIu64, new_value);
             log_out("measurement->sum = %"PRIu64, measurement->sum);
             log_out("measurement->max = %"PRIu64, measurement->max);
             log_out("measurement->min = %"PRIu64, measurement->min);
