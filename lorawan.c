@@ -92,7 +92,7 @@ static void lw_write_to_uart(char* fmt, va_list args)
 }
 
 
-void lw_write(char* cmd_fmt, ...)
+static void lw_write(char* cmd_fmt, ...)
 {
     va_list args;
 
@@ -492,18 +492,33 @@ void lw_send(uint16_t* hex_arr, uint16_t arr_len)
         {
             lw_port = 0;
         }
-        snprintf(header_str, 17, "at+send=lora:%02"PRIx8":", lw_port);
-        uart_ring_out(LW_UART, hex_str, 16);
+        snprintf(header_str, 17, "at+send=lora:%"PRIx8":", lw_port);
+        uart_ring_out(LW_UART, header_str, 16);
+        uart_ring_out(CMD_UART, header_str, 16);
         for (uint16_t i = 0; i < arr_len; i++)
         {
             snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
             uart_ring_out(LW_UART, hex_str, 2);
+            uart_ring_out(CMD_UART, hex_str, 2);
         }
         uart_ring_out(LW_UART, "\r\n", 2);
+        uart_ring_out(CMD_UART, "\r\n", 2);
         memcpy(lw_message_backup.hex_arr, hex_arr, LW__MAX_MEASUREMENTS);
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
+}
+
+
+void lw_send_str(char* str)
+{
+    lw_port++;
+    if (lw_port > 223)
+    {
+        lw_port = 0;
+    }
+    lw_write("at+send=lora:%u:%s", lw_port, str);
+    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
 }
 
 

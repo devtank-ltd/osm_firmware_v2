@@ -315,8 +315,8 @@ void audio_dump_cb(char * args)
 
 void lora_cb(char * args)
 {
-    //char * pos = skip_space(args);
-    //lw_send(pos);
+    char * pos = skip_space(args);
+    lw_send_str(pos);
 }
 
 

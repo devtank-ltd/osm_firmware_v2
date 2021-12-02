@@ -268,10 +268,22 @@ static uint8_t measurements_arr_append(uint16_t val)
 }
 
 
+typedef union
+{
+    uint32_t d;
+    struct
+    {
+        uint16_t l;
+        uint16_t h;
+    };
+} hex_val_t;
+
+
 static bool measurements_to_arr(volatile measurement_list_t* measurement)
 {
     bool single = measurement->sample_rate == 1;
-    uint32_t mean = measurement->sum / measurement->num_samples;
+    hex_val_t mean;
+    mean.d = measurement->sum / measurement->num_samples;
     int16_t exponent;
 
     if (!measurement_get_exponent(measurement->data_id, &exponent))
@@ -286,15 +298,23 @@ static bool measurements_to_arr(volatile measurement_list_t* measurement)
     {
         r += measurements_arr_append(MEASUREMENTS__DATATYPE_SINGLE);
         r += measurements_arr_append(exponent);
-        r += measurements_arr_append(mean);
+        r += measurements_arr_append(mean.h);
+        r += measurements_arr_append(mean.l);
     }
     else
     {
-        r += measurements_arr_append(MEASUREMENTS__DATATYPE_SINGLE);
+        hex_val_t min;
+        hex_val_t max;
+        min.d = measurement->min;
+        max.d = measurement->max;
+        r += measurements_arr_append(MEASUREMENTS__DATATYPE_AVERAGED);
         r += measurements_arr_append(exponent);
-        r += measurements_arr_append(mean);
-        r += measurements_arr_append(measurement->min);
-        r += measurements_arr_append(measurement->max);
+        r += measurements_arr_append(mean.h);
+        r += measurements_arr_append(mean.l);
+        r += measurements_arr_append(min.h);
+        r += measurements_arr_append(min.l);
+        r += measurements_arr_append(max.h);
+        r += measurements_arr_append(max.l);
     }
     return (r == 0);
 }
