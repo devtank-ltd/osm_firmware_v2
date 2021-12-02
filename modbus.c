@@ -47,7 +47,7 @@ static uint32_t modbus_read_timing_init = 0;
 static uint32_t modbus_send_start_delay = 0;
 static uint32_t modbus_send_stop_delay = 0;
 
-static bool do_binary_framing = false;
+static bool do_binary_framing = false; /* This is to support pymodbus.framer.binary_framer and http://jamod.sourceforge.net/. */
 
 
 
