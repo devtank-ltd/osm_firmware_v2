@@ -42,6 +42,7 @@ static void version_cb(char *args);
 static void audio_dump_cb(char *args);
 static void lora_cb(char *args);
 static void interval_cb(char *args);
+static void samplerate_cb(char * args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
 
@@ -58,6 +59,7 @@ static cmd_t cmds[] = {
     { "audio_dump", "Do audiodump",          audio_dump_cb},
     { "lora",      "Send lora message",      lora_cb},
     { "interval", "Set the interval",        interval_cb},
+    { "samplerate", "Set the samplerate",    samplerate_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { NULL },
@@ -318,7 +320,7 @@ void lora_cb(char * args)
 }
 
 
-void interval_cb(char * args)
+static void interval_cb(char * args)
 {
     // CMD  : "interval temperature 3"
     // ARGS : "temperature 3"
@@ -337,6 +339,28 @@ void interval_cb(char * args)
     uint8_t new_interval = strtoul(p, NULL, 10);
 
     measurements_set_interval(name, new_interval);
+}
+
+
+static void samplerate_cb(char * args)
+{
+    // CMD  : "samplerate temperature 5"
+    // ARGS : "temperature 5"
+
+    char* p = skip_space(args);
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+    uint8_t end_pos_word = p - args + 1;
+    char name[32] = {0};
+    memset(name, 0, end_pos_word);
+    strncpy(name, args, end_pos_word-1);
+    p = skip_space(p);
+    uint8_t new_sample_rate = strtoul(p, NULL, 10);
+
+    measurements_set_sample_rate(name, new_sample_rate);
 }
 
 

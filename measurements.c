@@ -195,21 +195,42 @@ bool measurements_set_interval_uuid(uint8_t uuid, uint8_t interval)
 }
 
 
-bool measurements_set_interval(char* name, uint8_t interval)
+static bool measurements_get_measurement(char* name, volatile measurement_list_t* measurement)
 {
-    volatile measurement_list_t* measurement;
     for (uint8_t i = 0; i < data.len; i++)
     {
         measurement = &data.write_data[i];
         if (strncmp(measurement->name, name, strlen(measurement->name)) == 0)
         {
-            measurement->interval = interval;
             return true;
         }
     }
     return false;
 }
 
+
+bool measurements_set_interval(char* name, uint8_t interval)
+{
+    volatile measurement_list_t* measurement = {0};
+    if (!measurements_get_measurement(name, measurement))
+    {
+        return false;
+    }
+    measurement->interval = interval;
+    return true;
+}
+
+
+bool measurements_set_sample_rate(char* name, uint8_t sample_rate)
+{
+    volatile measurement_list_t* measurement = {0};
+    if (!measurements_get_measurement(name, measurement))
+    {
+        return false;
+    }
+    measurement->sample_rate = sample_rate;
+    return true;
+}
 
 
 static bool measurement_get_exponent(uint16_t data_id, int16_t* exponent)

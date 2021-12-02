@@ -22,4 +22,5 @@ enum
 
 extern void measurements_init(void);
 extern bool measurements_set_interval(char* name, uint8_t interval);
+extern bool measurements_set_sample_rate(char* name, uint8_t sample_rate);
 extern void measurements_loop(void);
