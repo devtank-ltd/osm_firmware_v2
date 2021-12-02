@@ -5,7 +5,7 @@
 #include "lorawan.h"
 
 
-#define MEASUREMENTS__HEX_ARRAY_SIZE            LW__MAX_MEASUREMENTS * 14 + 14
+#define MEASUREMENTS__HEX_ARRAY_SIZE            26
 
 
 typedef uint64_t value_t;

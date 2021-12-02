@@ -304,7 +304,7 @@ typedef union
 
 static uint8_t measurements_arr_append(uint8_t val)
 {
-    if (measurements_hex_arr_pos >= LW__MAX_MEASUREMENTS)
+    if (measurements_hex_arr_pos >= MEASUREMENTS__HEX_ARRAY_SIZE)
     {
         log_error("Measurement array is full.");
         return 1;
