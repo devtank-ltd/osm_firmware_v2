@@ -87,6 +87,5 @@
 #define DEBUG_HPM   0x100
 
 #define INTERVAL__TRANSMIT_MS   5 * 60 * 1000 // 5 mins
-#define INTERVAL__SAMPLE_MS     1 * 60 * 1000 // 1 min
 
 #endif //__CONFIG__

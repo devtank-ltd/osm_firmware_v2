@@ -40,6 +40,7 @@ typedef struct
     value_t         max;
     value_t         min;
     uint8_t         num_samples;
+    uint8_t         num_samples_attempted;
 } measurement_list_t;
 
 
@@ -66,8 +67,8 @@ static bool hpm_get_pm10(value_t* value);
 static bool hpm_get_pm25(value_t* value);
 
 
-measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__PM10  , "pm10"          ,  1, 1, hpm_get_pm10, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0} ,
-                                       { MEASUREMENT_UUID__PM25 , LW_ID__PM25  , "pm25"          ,  1, 1, hpm_get_pm25, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0} };
+static measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__PM10  , "pm10"          ,  1, 5, hpm_get_pm10, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0, 0} ,
+                                              { MEASUREMENT_UUID__PM25 , LW_ID__PM25  , "pm25"          ,  1, 5, hpm_get_pm25, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0, 0} };
 
 
 static bool hpm_get_pm10(value_t* value)
@@ -234,24 +235,25 @@ void measurements_send(void)
 }
 
 
-uint8_t a = 0;
-
-
 static void measurements_sample(void)
 {
     volatile measurement_list_t* measurement;
     uint32_t sample_interval;
     value_t new_value;
+    uint32_t now = since_boot_ms;
+    uint32_t time_since_interval;
     for (int i = 0; i < data.len; i++)
     {
         measurement = &data.write_data[i];
-        sample_interval = measurement->interval * INTERVAL__SAMPLE_MS / measurement->sample_rate;
-        if (since_boot_delta(since_boot_ms, last_sent_ms) < sample_interval/2)
+        sample_interval = measurement->interval * INTERVAL__TRANSMIT_MS / measurement->sample_rate;
+        time_since_interval = since_boot_delta(now, last_sent_ms);
+        if (time_since_interval < sample_interval/2)
         {
             continue;
         }
-        if ((since_boot_delta(since_boot_ms, last_sent_ms)-sample_interval/2) % sample_interval == 0)
+        if (time_since_interval >= (measurement->num_samples_attempted * sample_interval) + sample_interval/2)
         {
+            measurement->num_samples_attempted++;
             if (!measurement->cb(&new_value))
             {
                 log_error("Could not get the %s value.", measurement->name);
@@ -284,7 +286,6 @@ static void measurements_sample(void)
             log_out("measurement->min = %"PRIu64, measurement->min);
         }
     }
-    a = 1;
 }
 
 
@@ -293,7 +294,7 @@ void measurements_loop(void)
     uint32_t now = since_boot_ms;
     measurements_sample();
 
-    if (since_boot_delta(now, last_sent_ms) > INTERVAL__SAMPLE_MS)
+    if (since_boot_delta(now, last_sent_ms) > INTERVAL__TRANSMIT_MS)
     {
         if (interval_count > UINT32_MAX - 1)
         {
