@@ -57,7 +57,7 @@ typedef struct
 
 typedef struct
 {
-    uint16_t hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE];
+    uint8_t hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE];
     uint16_t len;
 } lw_lora_message_t;
 
@@ -481,7 +481,7 @@ static void lw_handle_unsol(char* message)
 }
 
 
-void lw_send(uint16_t* hex_arr, uint16_t arr_len)
+void lw_send(uint8_t* hex_arr, uint16_t arr_len)
 {
     char header_str[17] = {0};
     char hex_str[3] = {0};

@@ -44,7 +44,7 @@ typedef struct
 
 
 extern void lorawan_init(void);
-extern void lw_send(uint16_t* hex_arr, uint16_t arr_len);
+extern void lw_send(uint8_t* hex_arr, uint16_t arr_len);
 extern void lw_send_str(char* str);
 extern void lw_process(char* message);
 extern bool lw_send_packet(lw_packet_t* packet, uint32_t interval_count);

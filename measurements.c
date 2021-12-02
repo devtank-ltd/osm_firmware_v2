@@ -17,9 +17,9 @@
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
 #define MEASUREMENTS__STR_SIZE      16
 
-#define MEASUREMENTS__PAYLOAD_VERSION       0x01
-#define MEASUREMENTS__DATATYPE_SINGLE       0x01
-#define MEASUREMENTS__DATATYPE_AVERAGED     0x02
+#define MEASUREMENTS__PAYLOAD_VERSION       (uint8_t)0x01
+#define MEASUREMENTS__DATATYPE_SINGLE       (uint8_t)0x01
+#define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
 
 
 #define MEASUREMENTS__EXPONENT_TEMPERATURE      -3
@@ -73,7 +73,7 @@ static data_structure_t data;
 
 static uint32_t last_sent_ms = 0;
 static uint32_t interval_count = 0;
-static uint16_t measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE] = {0};
+static uint8_t measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE] = {0};
 static uint16_t measurements_hex_arr_pos = 0;
 
 
@@ -89,36 +89,58 @@ static measurement_list_t data_template[] = { { MEASUREMENT_UUID__PM10 , LW_ID__
 static measurement_hidden_t data_working_array[ARRAY_SIZE(data_template)];
 
 
+uint32_t hpm_init_time = 0;
+uint16_t hpm_pm10, hpm_pm25;
+
+
+static void hpm_preinit(void)
+{
+    uint32_t now = since_boot_ms;
+    if (hpm_init_time == 0 || since_boot_delta(now, hpm_init_time) > MEASUREMENTS__COLLECT_TIME__HPM__MS)
+    {
+        hpm_enable(true);
+        hpm_request();
+        hpm_init_time = now;
+    }
+}
+
+
 static void hpm_pm10_init(void)
 {
-    hpm_enable(true);
-    hpm_request();
+    hpm_preinit();
 }
 
 static bool hpm_pm10_get(value_t* value)
 {
-    uint16_t dummy;
     *value = 0;
-    bool r = hpm_get((uint16_t*)value, &dummy);
-    hpm_enable(false);
-    return r;
+    uint16_t hpm_pm10_cp, hpm_pm25_cp;
+    if (hpm_get(&hpm_pm10_cp, &hpm_pm25_cp))
+    {
+        hpm_pm10 = hpm_pm10_cp;
+        hpm_pm25 = hpm_pm25_cp;
+    }
+    *value = hpm_pm10;
+    return true;
 }
 
 
 static void hpm_pm25_init(void)
 {
-    hpm_enable(true);
-    hpm_request();
+    hpm_preinit();
 }
 
 
 static bool hpm_pm25_get(value_t* value)
 {
-    uint16_t dummy;
     *value = 0;
-    bool r = hpm_get(&dummy, (uint16_t*)value);
-    hpm_enable(false);
-    return r;
+    uint16_t hpm_pm10_cp, hpm_pm25_cp;
+    if (hpm_get(&hpm_pm10_cp, &hpm_pm25_cp))
+    {
+        hpm_pm10 = hpm_pm10_cp;
+        hpm_pm25 = hpm_pm25_cp;
+    }
+    *value = hpm_pm25;
+    return true;
 }
 
 
@@ -160,7 +182,7 @@ void measurements_init(void)
         measurement_working->uuid = data.write_data[i].uuid;
         measurement_working->num_samples_init = 0;
         measurement_working->num_samples_collected = 0;
-        if (!measurement_get_preinit_time(measurement_working->uuid, &measurement_working->preinit_time))
+        if (!measurement_get_preinit_time(data.write_data[i].data_id, &measurement_working->preinit_time))
         {
             log_error("Could not find preinit time for %s.", data.write_data[i].name);;
             measurement_working->preinit_time = 0;
@@ -233,7 +255,7 @@ bool measurements_set_sample_rate(char* name, uint8_t sample_rate)
 }
 
 
-static bool measurement_get_exponent(uint16_t data_id, int16_t* exponent)
+static bool measurement_get_exponent(uint16_t data_id, int8_t* exponent)
 {
     switch (data_id)
     {
@@ -256,7 +278,31 @@ static bool measurement_get_exponent(uint16_t data_id, int16_t* exponent)
 }
 
 
-static uint8_t measurements_arr_append(uint16_t val)
+typedef union
+{
+    uint32_t d;
+    struct
+    {
+        uint8_t ll;
+        uint8_t lh;
+        uint8_t hl;
+        uint8_t hh;
+    };
+} uint32_to_uint8_t;
+
+
+typedef union
+{
+    uint16_t d;
+    struct
+    {
+        uint8_t l;
+        uint8_t h;
+    };
+} uint16_to_uint8_t;
+
+
+static uint8_t measurements_arr_append(uint8_t val)
 {
     if (measurements_hex_arr_pos >= LW__MAX_MEASUREMENTS)
     {
@@ -268,23 +314,12 @@ static uint8_t measurements_arr_append(uint16_t val)
 }
 
 
-typedef union
-{
-    uint32_t d;
-    struct
-    {
-        uint16_t l;
-        uint16_t h;
-    };
-} hex_val_t;
-
-
 static bool measurements_to_arr(volatile measurement_list_t* measurement)
 {
     bool single = measurement->sample_rate == 1;
-    hex_val_t mean;
+    uint16_to_uint8_t mean;
     mean.d = measurement->sum / measurement->num_samples;
-    int16_t exponent;
+    int8_t exponent;
 
     if (!measurement_get_exponent(measurement->data_id, &exponent))
     {
@@ -303,8 +338,8 @@ static bool measurements_to_arr(volatile measurement_list_t* measurement)
     }
     else
     {
-        hex_val_t min;
-        hex_val_t max;
+        uint16_to_uint8_t min;
+        uint16_to_uint8_t max;
         min.d = measurement->min;
         max.d = measurement->max;
         r += measurements_arr_append(MEASUREMENTS__DATATYPE_AVERAGED);
@@ -392,11 +427,11 @@ static void measurements_sample(void)
             }
             if (measurement->min == MEASUREMENTS__UNSET_VALUE)
             {
-                measurement->min = 0;
+                measurement->min = new_value;
             }
             if (measurement->max == MEASUREMENTS__UNSET_VALUE)
             {
-                measurement->max = 0;
+                measurement->max = new_value;
             }
             measurement->sum += new_value;
             measurement->num_samples++;
