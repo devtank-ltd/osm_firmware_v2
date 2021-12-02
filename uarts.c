@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
+#include <ctype.h>
 
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/gpio.h>
@@ -19,7 +20,6 @@
 static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
-
 
 
 static uint32_t _uart_get_parity(uart_parity_t parity)
@@ -179,8 +179,8 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
 
     uart_up(channel);
 
-    log_debug(DEBUG_UART(uart), "UART %u : %u %"PRIu8"%c%"PRIu8, uart,
-            (unsigned)channel->baud, channel->databits, uart_parity_as_char(channel->parity), uart_stop_bits_as_int(channel->stop));
+    log_debug(DEBUG_UART(uart), "UART %u : %u %"PRIu8"%c%s", uart,
+            (unsigned)channel->baud, channel->databits, uart_parity_as_char(channel->parity), uart_stop_bits_as_str(channel->stop));
 }
 
 
@@ -203,6 +203,79 @@ extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, 
     if (stop)
         *stop = channel->stop;
 
+    return true;
+}
+
+
+bool uart_resetup_str(unsigned uart, char * str)
+{
+    unsigned         speed;
+    uint8_t          databits;
+    uart_parity_t    parity;
+    uart_stop_bits_t stop;
+
+    if (uart >= UART_CHANNELS_COUNT )
+    {
+        log_error("INVALID UART GIVEN");
+        return false;
+    }
+
+    if (!isdigit((unsigned char)*str))
+    {
+        log_error("Speed should be in decimal.");
+        return false;
+    }
+
+    char * pos = NULL;
+    speed = strtoul(str, &pos, 10);
+    pos = skip_space(++pos);
+    if (!isdigit((unsigned char)*pos))
+    {
+        log_error("Bits should be given.");
+        return false;
+    }
+
+    databits = (uint8_t)(*pos) - (uint8_t)'0';
+    pos = skip_space(++pos);
+
+    switch(*pos)
+    {
+        case 'N' : parity = uart_parity_none; break;
+        case 'E' : parity = uart_parity_even; break;
+        case 'O' : parity = uart_parity_odd; break;
+        default:
+        {
+            log_error("Unknown parity type");
+            return false;
+        }
+    }
+    pos = skip_space(++pos);
+
+    switch(*pos)
+    {
+        case '1' :
+        {
+            if (pos[1])
+            {
+                if (pos[1] != '.' || pos[2] != '5')
+                {
+                    log_error("Unknown stop bits count.");
+                    return false;
+                }
+                else stop = uart_stop_bits_1_5;
+            }
+            else stop = uart_stop_bits_1;
+            break;
+        }
+        case '2' : stop = uart_stop_bits_2; break;
+        default:
+        {
+            log_error("Unknown stop bits count.");
+            return false;
+        }
+    }
+
+    uart_resetup(uart, speed, databits, parity, stop);
     return true;
 }
 

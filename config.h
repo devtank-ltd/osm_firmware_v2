@@ -58,7 +58,7 @@
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 115200
-#define UART_4_SPEED 115200
+#define UART_4_SPEED 9600
 
 #define UART_1_PARITY uart_parity_none
 #define UART_2_PARITY uart_parity_none
@@ -85,5 +85,6 @@
 #define DEBUG_IO    0x8
 #define DEBUG_UART(_x_)  (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
 #define DEBUG_HPM   0x100
+#define DEBUG_MODBUS 0x200
 
 #endif //__CONFIG__

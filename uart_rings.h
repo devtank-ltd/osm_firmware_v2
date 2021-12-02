@@ -9,5 +9,6 @@ extern void uart_rings_out_drain();
 
 extern void uart_rings_check();
 
+extern void uart_rings_init(void);
 
 #endif //__UART_RINGS__
