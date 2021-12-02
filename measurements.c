@@ -325,11 +325,16 @@ static void measurements_sample(void)
         sample_interval = measurement->interval * INTERVAL__TRANSMIT_MS / measurement->sample_rate;
         time_since_interval = since_boot_delta(now, last_sent_ms);
 
+        // If it takes time to get a sample, it is begun here.
         if (time_since_interval >= (measurement_working->num_samples_init * sample_interval) + sample_interval/2 - measurement_working->preinit_time)
         {
             measurement_working->num_samples_init++;
             measurement->init_cb();
         }
+
+        // The sample is collected every interval/sample_rate but offset by 1/2.
+        // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
+        //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
         if (time_since_interval >= (measurement_working->num_samples_collected * sample_interval) + sample_interval/2)
         {
             measurement_working->num_samples_collected++;
