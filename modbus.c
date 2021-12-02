@@ -11,6 +11,7 @@
 #include "uarts.h"
 #include "sys_time.h"
 #include "cmd.h"
+#include "persist_config.h"
 
 #define MODBUS_RESP_TIMEOUT_MS 2000
 #define MODBUS_SENT_TIMEOUT_MS 2000
@@ -396,5 +397,12 @@ void modbus_ring_process(ring_buf_t * ring)
 
 void modbus_init(void)
 {
-    _modbus_setup_delays(MODBUS_SPEED, MODBUS_DATABITS, MODBUS_PARITY, MODBUS_STOP);
+    modbus_bus_config_t config;
+
+    if (persist_get_modbus_bus_config(&config))
+    {
+        _modbus_setup_delays(config.baudrate, config.databits, config.parity, config.stopbits);
+        do_binary_framing = config.binary_protocol;
+    }
+    else _modbus_setup_delays(MODBUS_SPEED, MODBUS_DATABITS, MODBUS_PARITY, MODBUS_STOP);
 }

@@ -13,9 +13,9 @@
 #include "lorawan.h"
 
 #define FLASH_ADDRESS               0x8000000
+#define FLASH_SIZE                  (512 * 1024)
 #define FLASH_PAGE_SIZE             2048
-#define PERSIST__RAW_DATA           ((void*)0x807f800)
-#define PERSIST__RAW_SIZE           2048
+#define PERSIST__RAW_DATA           ((void*)(FLASH_ADDRESS + FLASH_SIZE - FLASH_PAGE_SIZE))
 #define PERSIST__VERSION            1
 
 
@@ -23,7 +23,7 @@ typedef struct
 {
     uint8_t     uuid;
     uint16_t    interval;
-} persist_measurement_t;
+} __attribute__((__packed__)) persist_measurement_t;
 
 
 typedef struct
@@ -33,7 +33,8 @@ typedef struct
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     persist_measurement_t   p_measurements[LW__MAX_MEASUREMENTS];
-} persist_storage_t;
+    modbus_bus_config_t     modbus_bus_config;
+} __attribute__((__packed__)) persist_storage_t;
 
 
 static bool                 persist_data_valid = false;
@@ -259,4 +260,24 @@ void persist_new_interval(uint8_t uuid, uint16_t interval)
             return;
         }
     }
+}
+
+
+void persist_set_modbus_bus_config(modbus_bus_config_t* config)
+{
+    if (!config)
+        return;
+    persist_data.version = PERSIST__VERSION;
+    memcpy(&persist_data.modbus_bus_config, config, sizeof(modbus_bus_config_t));
+    _persistent_commit();
+}
+
+
+bool persist_get_modbus_bus_config(modbus_bus_config_t* config)
+{
+    if (!persist_data_valid || !config)
+        return false;
+
+    memcpy(config, &persist_data.modbus_bus_config, sizeof(modbus_bus_config_t));
+    return true;
 }
