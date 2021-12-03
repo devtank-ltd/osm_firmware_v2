@@ -300,10 +300,6 @@ static void measurements_sample(void)
             {
                 m_data->min = new_value;
             }
-            log_out("new_value = %"PRIu64, new_value);
-            log_out("m_data->sum = %"PRIu64, m_data->sum);
-            log_out("m_data->max = %"PRIu64, m_data->max);
-            log_out("m_data->min = %"PRIu64, m_data->min);
         }
     }
 }
