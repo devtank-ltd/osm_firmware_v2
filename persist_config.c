@@ -15,7 +15,8 @@
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_SIZE                  (512 * 1024)
 #define FLASH_PAGE_SIZE             2048
-#define PERSIST__RAW_DATA           ((void*)(FLASH_ADDRESS + FLASH_SIZE - FLASH_PAGE_SIZE))
+#define FLASH_CONFIG_PAGE           255
+#define PERSIST__RAW_DATA           ((uint8_t*)(FLASH_ADDRESS + (FLASH_CONFIG_PAGE * FLASH_PAGE_SIZE)))
 #define PERSIST__VERSION            1
 
 
@@ -82,7 +83,7 @@ void init_persistent(void)
 }
 
 
-static bool persistent_set_data(const void * addr, const void * data, unsigned size)
+static void persistent_set_data(const void * addr, const void * data, unsigned size)
 {
     uintptr_t _addr = (uintptr_t)addr;
 
@@ -90,17 +91,7 @@ static bool persistent_set_data(const void * addr, const void * data, unsigned s
     unsigned easy_size = size - left_over;
 
     if (easy_size)
-    {
         flash_program(_addr, (void*)data, easy_size);
-    }
-
-    if(*(uint64_t*)_addr != *(uint64_t*)data)
-    {
-        log_out("Written doesnt match.");
-        log_out("To write: %"PRIu64, *(uint64_t*)data);
-        log_out("Written: %"PRIu64, *(uint64_t*)_addr);
-        return false;
-    }
 
     if (size > easy_size)
     {
@@ -114,26 +105,21 @@ static bool persistent_set_data(const void * addr, const void * data, unsigned s
         }
 
         flash_program_double_word(_addr + easy_size, v);
-        if(*((uint64_t*)(_addr + easy_size)) != v)
-        {
-            log_out("Written doesnt match.");
-            return false;
-        }
     }
-    log_out("Written successfully.");
-    return true;
 }
 
 
 static void _persistent_commit(void)
 {
     flash_unlock();
-
-    flash_erase_page((uintptr_t)PERSIST__RAW_DATA);
-
-    persist_data_valid = persistent_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
-
+    flash_erase_page(FLASH_CONFIG_PAGE);
+    persistent_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
     flash_lock();
+
+    if (memcmp(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+        log_sys_debug("Flash successfully written.");
+    else
+        log_error("Flash write failed");
 }
 
 
