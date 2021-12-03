@@ -300,6 +300,10 @@ static void measurements_sample(void)
             {
                 m_data->min = new_value;
             }
+            log_debug(DEBUG_MEASUREMENTS, "New %s reading: %"PRIi64, m_def->name, new_value);
+            log_debug(DEBUG_MEASUREMENTS, "%s sum: %"PRIi64, m_def->name, m_data->sum);
+            log_debug(DEBUG_MEASUREMENTS, "%s min: %"PRIi64, m_def->name, m_data->min);
+            log_debug(DEBUG_MEASUREMENTS, "%s max: %"PRIi64, m_def->name, m_data->max);
         }
     }
 }
