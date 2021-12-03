@@ -31,6 +31,6 @@ value = 123.4567
 -> data = 1234567
 -> exponent = -4
 
-2x hex => int16_t
-4x hex => int32_t
-8x hex => int64_t
+2x hex => int8_t
+4x hex => int16_t
+8x hex => int32_t
