@@ -34,3 +34,38 @@ value = 123.4567
 2x hex => int8_t
 4x hex => int16_t
 8x hex => int32_t
+
+===============================================================================================
+||                                                                                           ||
+||                              DEVTANK Measurements Design                                  ||
+||                                                                                           ||
+===============================================================================================
+
+Split between measurement definition and data. Structure for each. Definition is public, data is private.
+Predefined array of max measurements. Has unused slots.
+
+
+typedef struct
+{
+    char     name[16];
+    uint16_t lora_id;
+    uint8_t  pre_init_time;      /* WTF is pre init time? */
+    uint8_t  interval;           // multiples of 5 mins
+    uint8_t  sample_rate;        // multiples of 1 minute. Must be greater than or equal to 1
+    bool     (*init_cb)(void);
+    bool     (*get_cb)(value_t* value);
+} measurement_def_t;
+
+Interface
+
+extern void     measurements_init(void);
+extern uint16_t measurements_num_measurements(void);
+extern char *   measurements_get_name(unsigned index);
+
+extern bool measurements_add(measurement_def_t * measurement);
+extern bool measurements_del(char* name);
+
+extern bool measurements_set_interval(char* name, uint8_t interval);       /* What is interval. */
+extern bool measurements_set_sample_rate(char* name, uint8_t sample_rate); /* What is sample rate. */
+
+extern void measurements_loop_iteration(void);
