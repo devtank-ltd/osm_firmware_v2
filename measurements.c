@@ -260,7 +260,11 @@ static void measurements_sample(void)
         if (time_since_interval >= (m_data->num_samples_init * sample_interval) + sample_interval/2 - m_def->collection_time)
         {
             m_data->num_samples_init++;
-            m_def->init_cb();
+            if (!m_def->init_cb())
+            {
+                log_error("Failed to call init for %s.", m_def->name);
+                m_data->num_samples_collected++;
+            }
         }
 
         // The sample is collected every interval/sample_rate but offset by 1/2.
