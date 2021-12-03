@@ -5,7 +5,7 @@
 
 typedef struct modbus_reg_t modbus_reg_t;
 
-typedef void modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size);
+typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
 #define MODBUS_READ_HOLDING_FUNC 3
 
@@ -13,14 +13,15 @@ typedef void modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
 struct modbus_reg_t
 {
-    char name[16];
-    uint16_t addr;
-    uint8_t  len;
-    uint8_t  slave_id;
-    uint8_t  func;
+    char          name[16];
+    uint16_t      reg_addr;
+    uint8_t       reg_count;
+    uint8_t       slave_id;
+    uint8_t       func;
+    modbus_reg_cb cb;
 };
 
-extern bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb);
+extern bool modbus_start_read(modbus_reg_t * reg);
 
 extern void modbus_ring_process(ring_buf_t * ring);
 

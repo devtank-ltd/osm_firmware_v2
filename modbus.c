@@ -40,7 +40,6 @@ static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
 static unsigned modbuspacket_len = 0;
 
 static modbus_reg_t * current_reg = NULL;
-static modbus_reg_cb * current_reg_cb = NULL;
 
 static uint32_t modbus_sent_timing_init = 0;
 static uint32_t modbus_read_timing_init = 0;
@@ -207,7 +206,7 @@ void modbus_use_do_binary_framing(bool enable)
 }
 
 
-bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
+bool modbus_start_read(modbus_reg_t * reg)
 {
     if (modbus_sent_timing_init)
     {
@@ -217,24 +216,23 @@ bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
             modbus_debug("Previous modbus response took timeout.");
             modbus_sent_timing_init = 0;
             current_reg = NULL;
-            current_reg_cb = NULL;
         }
     }
 
-    if (!reg || !cb || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
+    if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
         return false;
 
-    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->len, reg->slave_id, reg->addr);
+    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->reg_count, reg->slave_id, reg->reg_addr);
 
     /* ADU Header (Application Data Unit) */
     modbuspacket[0] = reg->slave_id;
     /* ====================================== */
     /* PDU payload (Protocol Data Unit) */
     modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
-    modbuspacket[2] = reg->addr >> 8;   /*Register read address */
-    modbuspacket[3] = reg->addr & 0xFF;
-    modbuspacket[4] = reg->len >> 8; /*Register read count */
-    modbuspacket[5] = reg->len & 0xFF;
+    modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+    modbuspacket[3] = reg->reg_addr & 0xFF;
+    modbuspacket[4] = reg->reg_count >> 8; /*Register read count */
+    modbuspacket[5] = reg->reg_count & 0xFF;
     /* ====================================== */
     /* ADU Tail */
     uint16_t crc = modbus_crc(modbuspacket, 6);
@@ -250,7 +248,6 @@ bool modbus_start_read(modbus_reg_t * reg, modbus_reg_cb cb)
     else uart_ring_out(RS485_UART, (char*)modbuspacket, 8); /* Frame is done with silence */
 
     current_reg = reg;
-    current_reg_cb = cb;
     modbus_sent_timing_init = since_boot_ms;
     return true;
 }
@@ -367,6 +364,7 @@ void modbus_ring_process(ring_buf_t * ring)
     }
 
     modbus_debug("Good CRC");
+    modbuspacket_len = 0;
 
     if (modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
     {
@@ -376,22 +374,11 @@ void modbus_ring_process(ring_buf_t * ring)
 
     if (current_reg && (current_reg->slave_id == modbuspacket[0]))
     {
-        modbus_reg_t  * reg    = current_reg;
-        modbus_reg_cb * reg_cb = current_reg_cb;
-
+        modbus_reg_t * reg = current_reg;
         current_reg = NULL;
-        current_reg_cb = NULL;
-
-        if (reg_cb)
-            reg_cb(reg, modbuspacket + 3, modbuspacket[2]);
+        reg->cb(reg, modbuspacket + 3, modbuspacket[2]);
     }
-    else
-    {
-        modbus_debug("Unexpected packet");
-        return;
-    }
-
-    modbuspacket_len = 0;
+    else modbus_debug("Unexpected packet");
 }
 
 

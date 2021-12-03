@@ -333,7 +333,7 @@ static void modbus_test_cb(char *args)
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    static modbus_reg_t cmd_reg = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC};
+    static modbus_reg_t cmd_reg = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC, .cb = modbus_cmd_cb};
 
     cmd_reg.slave_id = strtoul(pos, &pos, 16);
 
@@ -342,15 +342,15 @@ static void modbus_test_cb(char *args)
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    cmd_reg.addr = strtoul(pos, &pos, 16);
+    cmd_reg.reg_addr = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
-    cmd_reg.len = strtoul(pos, NULL, 10);
+    cmd_reg.reg_count = strtoul(pos, NULL, 10);
 
     log_debug_mask |= DEBUG_MODBUS;
 
-    if (modbus_start_read(&cmd_reg, modbus_cmd_cb))
+    if (modbus_start_read(&cmd_reg))
         log_out("Modbus read sent");
     else
         log_out("Modbus read not sent");
