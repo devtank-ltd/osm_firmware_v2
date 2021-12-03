@@ -12,6 +12,9 @@
 #include "measurements.h"
 
 
+#define LW_TRANSMIT__MINIMUM_INTERVAL_US   5 * 60 * 1000 * 1000 // 5 mins
+
+
 static volatile unsigned fast_rate_sps     = DEFAULT_SPS;
 static volatile unsigned fast_sample_count = DEFAULT_SPS-1;
 
