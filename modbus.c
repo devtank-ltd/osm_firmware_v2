@@ -462,6 +462,9 @@ void modbus_reg_float_cb(modbus_reg_float_t * reg, uint8_t * data, uint8_t size)
     if (size != 4)
         return;
     uint32_t v = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wstrict-aliasing"
     reg->value = *(float*)&v;
+    #pragma GCC diagnostic pop
     reg->valid = true;
 }
