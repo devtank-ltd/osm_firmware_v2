@@ -1,0 +1,36 @@
+===============================================================================================
+||                                                                                           ||
+||                              DEVTANK LORAWAN PACKET STRUCTURE                             ||
+||                                                                                           ||
+===============================================================================================
+
+
+<version>                      | 2x hex
+
+[
+// Open Smart Monitor RTC - Every hour or so
+<version>                      | 2x hex
+<type-id>                      | 2x hex
+<data>                         | 8x hex
+]
+
+
+{
+          <type-id>                      | 2x hex
+          <data-type> [single/averaged]  | 2x hex
+
+        [ | SINGLE |                                  , | AVERAGED |                            ]
+        [                                             ,                                         ]
+        [ <exponent>                     | 2x hex     , <exponent>                     | 2x hex ]
+        [ <data>                         | 4x hex     , <data>                         | 4x hex ]
+        [                                             , <data>                         | 4x hex ]
+        [                                             , <data>                         | 4x hex ]
+}
+
+value = 123.4567
+-> data = 1234567
+-> exponent = -4
+
+2x hex => int8_t
+4x hex => int16_t
+8x hex => int32_t

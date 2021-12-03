@@ -41,6 +41,7 @@ static void audio_dump_cb(char *args);
 static void lora_cb(char *args);
 static void lora_config_cb(char *args);
 static void interval_cb(char *args);
+static void samplerate_cb(char * args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
 static void modbus_setup_cb(char *args);
@@ -57,6 +58,7 @@ static cmd_t cmds[] = {
     { "lora",      "Send lora message",      lora_cb},
     { "lora_config", "Set lora config",      lora_config_cb},
     { "interval", "Set the interval",        interval_cb},
+    { "samplerate", "Set the samplerate",    samplerate_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
@@ -211,38 +213,11 @@ void audio_dump_cb(char * args)
 void lora_cb(char * args)
 {
     char * pos = skip_space(args);
-    lw_send(pos);
+    lw_send_str(pos);
 }
 
 
-void lora_config_cb(char * args)
-{
-    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
-    // ARGS : "dev-eui 118f875d6994bbfd"
-    char* p = skip_space(args);
-    p = strchr(p, ' ');
-    if (p == NULL)
-    {
-        return;
-    }
-    uint8_t end_pos_word = p - args + 1;
-    p = skip_space(p);
-    if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
-    {
-        char eui[LW__DEV_EUI_LEN] = "";
-        strncpy(eui, p, strlen(p));
-        persist_set_lw_dev_eui(eui);
-    }
-    else if (strncmp(args, "app-key", end_pos_word-1) == 0)
-    {
-        char key[LW__APP_KEY_LEN] = "";
-        strncpy(key, p, strlen(p));
-        persist_set_lw_dev_eui(key);
-    }
-}
-
-
-void interval_cb(char * args)
+static void interval_cb(char * args)
 {
     // CMD  : "interval temperature 3"
     // ARGS : "temperature 3"
@@ -285,6 +260,28 @@ void interval_cb(char * args)
 }
 
 
+static void samplerate_cb(char * args)
+{
+    // CMD  : "samplerate temperature 5"
+    // ARGS : "temperature 5"
+
+    char* p = skip_space(args);
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+    uint8_t end_pos_word = p - args + 1;
+    char name[32] = {0};
+    memset(name, 0, end_pos_word);
+    strncpy(name, args, end_pos_word-1);
+    p = skip_space(p);
+    uint8_t new_sample_rate = strtoul(p, NULL, 10);
+
+    measurements_set_sample_rate(name, new_sample_rate);
+}
+
+
 static void debug_cb(char * args)
 {
     char * pos = skip_space(args);
@@ -309,17 +306,14 @@ static void hmp_cb(char *args)
 {
     if (args[0] != '0')
     {
-        hmp_enable(true);
+        hpm_enable(true);
 
         uint16_t pm25;
         uint16_t pm10;
 
-        if (hmp_get(&pm25, &pm10))
+        if (hpm_get(&pm25, &pm10))
         {
             log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
-            measurements_write_data_value(MEASUREMENT_UUID__PM10, (value_t)pm10);
-            measurements_write_data_value(MEASUREMENT_UUID__PM25, (value_t)pm25);
-            measurements_send(1);
         }
         else
         {
@@ -328,7 +322,7 @@ static void hmp_cb(char *args)
     }
     else
     {
-        hmp_enable(false);
+        hpm_enable(false);
         log_out("HPM disabled");
     }
 }

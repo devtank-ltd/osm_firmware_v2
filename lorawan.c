@@ -14,6 +14,7 @@
 #include "lorawan.h"
 #include "log.h"
 #include "cmd.h"
+#include "measurements.h"
 
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
@@ -37,13 +38,6 @@
 #define LW_FMT__TEMPERATURE                 "%02X%02X%04X"
 
 
-static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
-static char lw_leftover[LW_BUFFER_SIZE] = {0};
-static char lw_message_backup[LW_BUFFER_SIZE] = {0};
-volatile bool ready = true;
-static uint8_t lw_port = 0;
-
-
 typedef struct
 {
     union
@@ -59,6 +53,19 @@ typedef struct
     } header;
     char* data;
 } lw_payload_t;
+
+
+typedef struct
+{
+    uint8_t hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE];
+    uint16_t len;
+} lw_lora_message_t;
+
+static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
+static char lw_leftover[LW_BUFFER_SIZE] = {0};
+static lw_lora_message_t lw_message_backup = {{0}, 0};
+volatile bool ready = true;
+static uint8_t lw_port = 0;
 
 
 static void lw_spin_us(uint32_t time_us)
@@ -473,8 +480,10 @@ static void lw_handle_unsol(char* message)
 }
 
 
-void lw_send(char* message)
+void lw_send(uint8_t* hex_arr, uint16_t arr_len)
 {
+    char header_str[17] = {0};
+    char hex_str[3] = {0};
     if (lw_state_machine.state == LW_STATE_IDLE)
     {
         lw_port++;
@@ -482,14 +491,37 @@ void lw_send(char* message)
         {
             lw_port = 0;
         }
-        lw_write("at+send=lora:%x:%s", lw_port, message);
-        memcpy(&lw_message_backup, &message, sizeof(message));
+        snprintf(header_str, 17, "at+send=lora:%"PRIx8":", lw_port);
+        uart_ring_out(LW_UART, header_str, 16);
+        uart_ring_out(CMD_UART, header_str, 16);
+        for (uint16_t i = 0; i < arr_len; i++)
+        {
+            snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
+            uart_ring_out(LW_UART, hex_str, 2);
+            uart_ring_out(CMD_UART, hex_str, 2);
+        }
+        uart_ring_out(LW_UART, "\r\n", 2);
+        uart_ring_out(CMD_UART, "\r\n", 2);
+        memcpy(lw_message_backup.hex_arr, hex_arr, LW__MAX_MEASUREMENTS);
+        lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
 }
 
 
+void lw_send_str(char* str)
+{
+    lw_port++;
+    if (lw_port > 223)
+    {
+        lw_port = 0;
+    }
+    lw_write("at+send=lora:%u:%s", lw_port, str);
+    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
+}
+
+
 static void lw_resend_message(void)
 {
-    lw_send(lw_message_backup);
+    lw_send(lw_message_backup.hex_arr, lw_message_backup.len);
 }
