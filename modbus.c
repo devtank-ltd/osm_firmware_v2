@@ -222,10 +222,10 @@ bool modbus_start_read(modbus_reg_t * reg)
     if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
         return false;
 
-    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->reg_count, reg->slave_id, reg->reg_addr);
+    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->reg_count, reg->dev->slave_id, reg->reg_addr);
 
     /* ADU Header (Application Data Unit) */
-    modbuspacket[0] = reg->slave_id;
+    modbuspacket[0] = reg->dev->slave_id;
     /* ====================================== */
     /* PDU payload (Protocol Data Unit) */
     modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
@@ -372,7 +372,7 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    if (current_reg && (current_reg->slave_id == modbuspacket[0]))
+    if (current_reg && (current_reg->dev->slave_id == modbuspacket[0]))
     {
         modbus_reg_t * reg = current_reg;
         current_reg = NULL;
@@ -392,4 +392,48 @@ void modbus_init(void)
         do_binary_framing = config.binary_protocol;
     }
     else _modbus_setup_delays(MODBUS_SPEED, MODBUS_DATABITS, MODBUS_PARITY, MODBUS_STOP);
+}
+
+
+void modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8_t size)
+{
+    if (size != reg->ref_count)
+    {
+        modbus_debug("Not enough bytes for check. Device disabled.");
+        reg->base.dev->enabled = false;
+        return;
+    }
+
+    for(unsigned n = 0; n < size; n++)
+    {
+        if (reg->ref[n] != data[n])
+        {
+            modbus_debug("Bin check failed byte %u. Device disabled.", n);
+            reg->base.dev->enabled = false;
+            return;
+        }
+    }
+
+    modbus_debug("Bin check for device %"PRIu8" passed", reg->base.dev->slave_id);
+    reg->base.dev->enabled = true;
+}
+
+
+void modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size)
+{
+    uint16_t id = data[0] << 8 | data[1];
+
+    modbus_debug("ID check for device %"PRIu8" ID:%"PRIu16, reg->base.dev->slave_id, id);
+
+    for(unsigned n = 0; n < reg->ids_count; n++)
+    {
+        if (reg->ids[n] == id)
+        {
+            modbus_debug("ID check passed");
+            reg->base.dev->enabled = true;
+        }
+    }
+
+    modbus_debug("ID check failed");
+    reg->base.dev->enabled = false;
 }

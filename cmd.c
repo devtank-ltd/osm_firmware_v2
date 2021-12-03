@@ -333,9 +333,10 @@ static void modbus_test_cb(char *args)
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    static modbus_reg_t cmd_reg = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC, .cb = modbus_cmd_cb};
+    static modbus_dev_t cmd_dev = {.enabled = true };
+    static modbus_reg_t cmd_reg = {.dev = &cmd_dev, .name = "CMD", .func = MODBUS_READ_HOLDING_FUNC, .cb = modbus_cmd_cb};
 
-    cmd_reg.slave_id = strtoul(pos, &pos, 16);
+    cmd_dev.slave_id = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
