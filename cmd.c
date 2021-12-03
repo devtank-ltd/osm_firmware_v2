@@ -319,13 +319,6 @@ static void modbus_setup_cb(char *args)
 }
 
 
-static void modbus_cmd_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
-{
-    for(unsigned n = 0; n < size; n++)
-        log_debug(DEBUG_MODBUS, "0x%"PRIx8, data[n]);
-}
-
-
 static void modbus_test_cb(char *args)
 {
     char * pos = skip_space(args);
@@ -334,24 +327,59 @@ static void modbus_test_cb(char *args)
         pos += 2;
 
     static modbus_dev_t cmd_dev = {.enabled = true };
-    static modbus_reg_t cmd_reg = {.dev = &cmd_dev, .name = "CMD", .func = MODBUS_READ_HOLDING_FUNC, .cb = modbus_cmd_cb};
+
+    static union
+    {
+        modbus_reg_t       base;
+        modbus_reg_u16_t   reg_u16;
+        modbus_reg_u32_t   reg_u32;
+        modbus_reg_float_t reg_float;
+    }  cmd_reg = {.base = {.dev = &cmd_dev, .name = "CMD", .func = MODBUS_READ_HOLDING_FUNC}};
 
     cmd_dev.slave_id = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
+    if (pos[0] == 'U')
+    {
+        if (pos[1] == '1' && pos[2] == '6' && pos[3] == ' ')
+        {
+            cmd_reg.base.type = MODBUS_REG_TYPE_U16;
+        }
+        else if (pos[1] == '3' && pos[2] == '2' && pos[3] == ' ')
+        {
+            cmd_reg.base.type = MODBUS_REG_TYPE_U32;
+        }
+        else
+        {
+            log_out("Unknown reg type.");
+            return;
+        }
+        pos = skip_space(pos + 3);
+    }
+    else if (pos[0] == 'F' && pos[1] == ' ')
+    {
+        cmd_reg.base.type = MODBUS_REG_TYPE_FLOAT;
+        pos = skip_space(pos + 1);
+    }
+    else
+    {
+        log_out("Unknown reg type.");
+        return;
+    }
+
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    cmd_reg.reg_addr = strtoul(pos, &pos, 16);
+    cmd_reg.base.reg_addr = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
-    cmd_reg.reg_count = strtoul(pos, NULL, 10);
+    cmd_reg.base.reg_count = strtoul(pos, NULL, 10);
 
     log_debug_mask |= DEBUG_MODBUS;
 
-    if (modbus_start_read(&cmd_reg))
+    if (modbus_start_read(&cmd_reg.base))
         log_out("Modbus read sent");
     else
         log_out("Modbus read not sent");

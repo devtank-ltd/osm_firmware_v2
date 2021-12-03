@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <libopencm3/cm3/systick.h>
 
@@ -20,6 +21,8 @@
 
 #define MODBUS_BIN_START '{'
 #define MODBUS_BIN_STOP '}'
+
+typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
 
 /*         <               ADU                         >
@@ -252,6 +255,7 @@ bool modbus_start_read(modbus_reg_t * reg)
     return true;
 }
 
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
 void modbus_ring_process(ring_buf_t * ring)
 {
@@ -376,7 +380,7 @@ void modbus_ring_process(ring_buf_t * ring)
     {
         modbus_reg_t * reg = current_reg;
         current_reg = NULL;
-        reg->cb(reg, modbuspacket + 3, modbuspacket[2]);
+        _modbus_reg_cb(reg, modbuspacket + 3, modbuspacket[2]);
     }
     else modbus_debug("Unexpected packet");
 }
@@ -395,7 +399,7 @@ void modbus_init(void)
 }
 
 
-void modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != reg->ref_count)
     {
@@ -419,7 +423,7 @@ void modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8
 }
 
 
-void modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 2)
         return;
@@ -441,23 +445,25 @@ void modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8
 }
 
 
-void modbus_reg_u16_cb(modbus_reg_u16_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_u16_cb(modbus_reg_u16_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 2)
         return;
-    reg->value = data[0] << 8 | data[1];
+    reg->value = data[1] << 8 | data[0];
     reg->valid = true;
+    modbus_debug("U16:%"PRIu16, reg->value);
 }
 
-void modbus_reg_u32_cb(modbus_reg_u32_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_u32_cb(modbus_reg_u32_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 4)
         return;
     reg->value = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
     reg->valid = true;
+    modbus_debug("U32:%"PRIu32, reg->value);
 }
 
-void modbus_reg_float_cb(modbus_reg_float_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_float_cb(modbus_reg_float_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 4)
         return;
@@ -467,4 +473,85 @@ void modbus_reg_float_cb(modbus_reg_float_t * reg, uint8_t * data, uint8_t size)
     reg->value = *(float*)&v;
     #pragma GCC diagnostic pop
     reg->valid = true;
+    modbus_debug("F32:%f", reg->value);
+}
+
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+{
+    modbus_reg_cb cb;
+
+    switch(reg->type)
+    {
+        case MODBUS_REG_TYPE_BIN:    cb = (modbus_reg_cb)_modbus_reg_bin_check_cb;break;
+        case MODBUS_REG_TYPE_U16_ID: cb = (modbus_reg_cb)_modbus_reg_ids_check_cb;break;
+        case MODBUS_REG_TYPE_U16:    cb = (modbus_reg_cb)_modbus_reg_u16_cb;break;
+        case MODBUS_REG_TYPE_U32:    cb = (modbus_reg_cb)_modbus_reg_u32_cb;break;
+        case MODBUS_REG_TYPE_FLOAT:  cb = (modbus_reg_cb)_modbus_reg_float_cb;break;
+        default:
+        {
+            cb = NULL;
+            break;
+        }
+    }
+
+    if (cb)
+        cb(reg, data, size);
+    else
+        log_error("Unknown modbus reg type.");
+}
+
+
+unsigned      modbus_get_device_count(void)
+{
+    return 0;
+}
+
+
+modbus_dev_t * modbus_get_device(unsigned index)
+{
+    return NULL;
+}
+
+
+static uint64_t _get_id_of_name(char name[8])
+{
+    return *(uint64_t*)name;
+}
+
+
+static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint64_t id)
+{
+    for(unsigned n = 0; n < dev->reg_num; n++)
+    {
+        modbus_reg_t * reg = dev->regs[n];
+        if (id == _get_id_of_name(reg->name))
+            return reg;
+    }
+    return NULL;
+}
+
+
+modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, char * name)
+{
+    if (!dev || !name)
+        return NULL;
+    uint64_t id = 0;
+    memcpy(&id, name, strlen(name));
+    return _modbus_dev_get_reg_by_id(dev, id);
+}
+
+
+modbus_reg_t* modbus_get_reg(char * name)
+{
+    if (!name)
+        return NULL;
+    uint64_t id = 0;
+    memcpy(&id, name, strlen(name));
+    for(unsigned n = 0; n < modbus_get_device_count(); n++)
+    {
+        modbus_reg_t * reg = _modbus_dev_get_reg_by_id(modbus_get_device(n), id);
+        if (reg)
+            return reg;
+    }
+    return NULL;
 }
