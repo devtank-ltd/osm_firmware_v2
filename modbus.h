@@ -61,3 +61,30 @@ typedef struct
 
 /* Given register value must match of one of the IDs or dev is disabled. */
 extern void modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size);
+
+
+typedef struct
+{
+    modbus_reg_t base;
+    uint16_t value;
+    bool     valid;
+} modbus_reg_u16_t;
+extern void modbus_reg_u16_cb(modbus_reg_u16_t * reg, uint8_t * data, uint8_t size);
+
+
+typedef struct
+{
+    modbus_reg_t base;
+    uint32_t value;
+    bool     valid;
+} modbus_reg_u32_t;
+extern void modbus_reg_u32_cb(modbus_reg_u32_t * reg, uint8_t * data, uint8_t size);
+
+
+typedef struct
+{
+    modbus_reg_t base;
+    float    value;
+    bool     valid;
+} modbus_reg_float_t;
+extern void modbus_reg_float_cb(modbus_reg_float_t * reg, uint8_t * data, uint8_t size);

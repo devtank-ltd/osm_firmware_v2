@@ -421,6 +421,8 @@ void modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8
 
 void modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size)
 {
+    if (size != 2)
+        return;
     uint16_t id = data[0] << 8 | data[1];
 
     modbus_debug("ID check for device %"PRIu8" ID:%"PRIu16, reg->base.dev->slave_id, id);
@@ -436,4 +438,30 @@ void modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8
 
     modbus_debug("ID check failed");
     reg->base.dev->enabled = false;
+}
+
+
+void modbus_reg_u16_cb(modbus_reg_u16_t * reg, uint8_t * data, uint8_t size)
+{
+    if (size != 2)
+        return;
+    reg->value = data[0] << 8 | data[1];
+    reg->valid = true;
+}
+
+void modbus_reg_u32_cb(modbus_reg_u32_t * reg, uint8_t * data, uint8_t size)
+{
+    if (size != 4)
+        return;
+    reg->value = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+    reg->valid = true;
+}
+
+void modbus_reg_float_cb(modbus_reg_float_t * reg, uint8_t * data, uint8_t size)
+{
+    if (size != 4)
+        return;
+    uint32_t v = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+    reg->value = *(float*)&v;
+    reg->valid = true;
 }
