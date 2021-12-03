@@ -9,103 +9,84 @@
 #include "config.h"
 #include "pinmap.h"
 #include "timers.h"
+#include "measurements.h"
+#include "lorawan.h"
 
-#define FLASH_ADDRESS 0x8000000
-#define FLASH_PAGE_SIZE 2048
-#define RAW_PERSIST_DATA ((void*)0x801F800)
-#define RAW_PERSIST_SIZE 2048
-#define PERSIST_VERSION 3
+#define FLASH_ADDRESS               0x8000000
+#define FLASH_SIZE                  (512 * 1024)
+#define FLASH_PAGE_SIZE             2048
+#define FLASH_CONFIG_PAGE           255
+#define PERSIST__RAW_DATA           ((uint8_t*)(FLASH_ADDRESS + (FLASH_CONFIG_PAGE * FLASH_PAGE_SIZE)))
+#define PERSIST__VERSION            1
 
-#define CONFIG_NAME_MAX_LEN 32
 
 typedef struct
 {
-    union
+    uint8_t     uuid;
+    uint16_t    interval;
+} __attribute__((__packed__)) persist_measurement_t;
+
+
+typedef struct
+{
+    uint32_t                version;
+    uint32_t                log_debug_mask;
+    char                    lw_dev_eui[LW__DEV_EUI_LEN];
+    char                    lw_app_key[LW__APP_KEY_LEN];
+    persist_measurement_t   p_measurements[LW__MAX_MEASUREMENTS];
+    modbus_bus_config_t     modbus_bus_config;
+} __attribute__((__packed__)) persist_storage_t;
+
+
+static bool                 persist_data_valid = false;
+static bool                 persist_data_lw_valid = false;
+static persist_storage_t    persist_data;
+
+
+static void _lw_config_valid(void)
+{
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
+
+    if (persist_data_raw->lw_dev_eui[0] && persist_data_raw->lw_app_key[0])
     {
-        struct
+        persist_data_lw_valid = true;
+        for(unsigned n = 0; n < LW__DEV_EUI_LEN; n++)
         {
-            float offset;
-            float scale;
-        };
-        double cals[MAX_ADC_CAL_POLY_NUM];
-    };
-    uint64_t poly_len:8;
-    uint64_t _:56;
-} __attribute__((packed)) cal_data_t;
+            if (!isascii(persist_data_raw->lw_dev_eui[n]))
+            {
+                persist_data_lw_valid = false;
+                log_error("Persistent data not valid");
+                break;
+            }
+        }
+        for(unsigned n = 0; n < LW__APP_KEY_LEN; n++)
+        {
+            if (!isascii(persist_data_raw->lw_app_key[n]))
+            {
+                persist_data_lw_valid = false;
+                log_error("Persistent data not valid");
+                break;
+            }
+        }
+    }
+}
 
-typedef char cal_unit_t[4];
 
-typedef union
+void init_persistent(void)
 {
-    struct
-    {
-        uint32_t  use_adc_cals:1;
-    };
-    uint32_t raw;
-} __attribute__((packed)) config_flags_t;
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
 
-
-typedef struct
-{
-    uint32_t       version;
-    config_flags_t flags;
-    uint32_t       _;
-    uint32_t       adc_sample_rate;
-    char           config_name[CONFIG_NAME_MAX_LEN];
-    cal_data_t     cals[ADC_COUNT];
-    cal_unit_t     units[ADC_COUNT];
-} __attribute__((packed)) config_data_t;
-
-
-static bool          config_data_valid = false;
-static config_data_t config_data;
-
-
-
-
-void        init_persistent()
-{
-    config_data_t * config_data_raw = (config_data_t*)RAW_PERSIST_DATA;
-
-    if (config_data_raw->version != PERSIST_VERSION)
+    uint32_t vs = persist_data_raw->version;
+    if (vs != PERSIST__VERSION)
     {
         log_error("Persistent data version unknown.");
         return;
     }
 
-    if (!config_data_raw->config_name[0])
-    {
-        log_error("Persistent data empty.");
-        return;
-    }
+    _lw_config_valid();
 
-    for(unsigned n = 0; n < 32; n++)
-    {
-        if (!isascii(config_data_raw->config_name[n]))
-        {
-            log_error("Persistent data not valid");
-            return;
-        }
-
-        if (!config_data_raw->config_name[n])
-        {
-            log_sys_debug("Found named persistent data : %s", config_data_raw->config_name);
-            break;
-        }
-    }
-
-    memcpy(&config_data, config_data_raw, sizeof(config_data));/*
-    if (!timer_set_adc_boardary(config_data.adc_sample_rate))
-        log_error("Failed to set ADC sample rate from config.");*/
-    config_data_valid = true;
-}
-
-
-const char* persistent_get_name()
-{
-    if (config_data_valid)
-        return config_data.config_name;
-    return NULL;
+    memcpy(&persist_data, persist_data_raw, sizeof(*persist_data_raw));
+    persist_data_valid = true;
 }
 
 
@@ -126,198 +107,174 @@ static void persistent_set_data(const void * addr, const void * data, unsigned s
         uint64_t v = 0;
 
         for(unsigned n = 0; n < left_over; n+=1)
+        {
              v |= (p[easy_size + n]) << (8*n);
+        }
 
         flash_program_double_word(_addr + easy_size, v);
     }
 }
 
 
-static void _persistent_commit()
+static void _persistent_commit(void)
 {
     flash_unlock();
-
-    flash_erase_page((uintptr_t)RAW_PERSIST_DATA);
-
-    config_data_valid = true;
-
-    persistent_set_data(RAW_PERSIST_DATA, &config_data, sizeof(config_data));
-
+    flash_erase_page(FLASH_CONFIG_PAGE);
+    persistent_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
     flash_lock();
+
+    if (memcmp(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+        log_sys_debug("Flash successfully written.");
+    else
+        log_error("Flash write failed");
 }
 
 
-void        persistent_set_name(const char * name)
+void persist_set_log_debug_mask(uint32_t mask)
 {
-    unsigned len = strlen(name) + 1;
-
-    if (len > CONFIG_NAME_MAX_LEN)
-    {
-        log_error("Persistent name too long.");
-        len = CONFIG_NAME_MAX_LEN;
-    }
-
-    config_data.version = PERSIST_VERSION;
-    config_data.flags.raw = 0;
-    config_data.flags.use_adc_cals = 1;
-
-    for(unsigned n = 0; n < CONFIG_NAME_MAX_LEN; n++)
-    {
-        if (n < len)
-            config_data.config_name[n] = name[n];
-        else
-            config_data.config_name[n] = 0;
-    }
-
-    /* Default calibration values are just 3.3v */
-    
-    float v3_3 = 3300 / 4095; /* 3.3v / 4095 */
-
-    for(unsigned n = 0; n < ADC_COUNT; n++)
-    {
-        cal_data_t * cal = &config_data.cals[n];
-        cal->scale = v3_3;
-        cal->offset = 0;
-        memcpy(&config_data.units[n], "mV", 3);
-    }
-
-    //config_data.adc_sample_rate = timer_get_adc_boardary();
-
+    persist_data.version = PERSIST__VERSION;
+    persist_data.log_debug_mask = mask;
     _persistent_commit();
 }
 
 
-bool        persistent_get_cal_type(unsigned adc, cal_type_t * type)
+uint32_t persist_get_log_debug_mask(void)
 {
-    if (adc >= ADC_COUNT || !type)
-        return false;
-
-    if (!config_data_valid)
+    if (!persist_data_valid)
     {
-        *type = ADC_NO_CAL;
-        return true;
+        log_out("Invalid data");
+        return DEBUG_SYS;
     }
-
-    cal_data_t * cal = &config_data.cals[adc];
-
-    *type = (cal->poly_len)?ADC_POLY_CAL:ADC_LIN_CAL;
-    return true;
+    return persist_data.log_debug_mask;
 }
 
 
-bool        persistent_get_cal(unsigned adc, float * scale, float * offset, const char ** unit)
+void persist_set_lw_dev_eui(char* dev_eui)
 {
-    if (adc >= ADC_COUNT || !config_data_valid ||  !offset || !scale || !unit)
-        return false;
-
-    cal_data_t * cal = &config_data.cals[adc];
-
-    if (cal->poly_len)
-        return false;
-
-    *offset = cal->offset;
-    *scale = cal->scale;
-    *unit = config_data.units[adc];
-    return true;
-}
-
-
-bool        persistent_set_cal(unsigned adc, float scale, float offset, const char * unit)
-{
-    if (adc >= ADC_COUNT || !config_data_valid)
-        return false;
-
-    cal_data_t * cal = &config_data.cals[adc];
-
-    if (unit)
+    persist_data.version = PERSIST__VERSION;
+    if (!dev_eui || strlen(dev_eui) > LW__DEV_EUI_LEN)
     {
-        unsigned len = strlen(unit) + 1;
-
-        memcpy(&config_data.units[adc], unit, (len < sizeof(cal_unit_t))?len:sizeof(cal_unit_t));
-        config_data.units[adc][sizeof(cal_unit_t)-1] = 0;
+        log_error("LORAWAN DEV EUI invalid.");
+        return;
     }
-
-    if (scale)
-        cal->scale = scale;
-
-    if (offset)
-        cal->offset = offset;
-
-    cal->poly_len = 0;
-
+    memcpy(&persist_data.lw_dev_eui, &dev_eui, LW__DEV_EUI_LEN);
     _persistent_commit();
-
-   return true;
+    _lw_config_valid();
 }
 
 
-bool        persistent_get_exp_cal(unsigned adc, double ** cals, unsigned * count, const char ** unit)
+bool persist_get_lw_dev_eui(char** dev_eui)
 {
-    if (adc >= ADC_COUNT || !config_data_valid ||  !cals || !count || !unit)
-        return false;
-
-    cal_data_t * cal = &config_data.cals[adc];
-
-    if (!cal->poly_len)
-        return false;
-
-    *cals = NULL;//cal->cals; // FIXME: ew.
-
-    *count = cal->poly_len;
-    *unit = config_data.units[adc];
-    return true;
-}
-
-
-bool        persistent_set_exp_cal(unsigned adc, double * cals, unsigned count, const char * unit)
-{
-    if (adc >= ADC_COUNT || !config_data_valid)
-        return false;
-
-    if (count > MAX_ADC_CAL_POLY_NUM)
+    if (!persist_data_lw_valid || !dev_eui)
     {
-        log_error("Polynomial count over limit.");
+        log_error("LORAWAN DEV EUI get failed.");
         return false;
     }
+    *dev_eui = persist_data.lw_dev_eui;
+    return true;
+}
 
-    cal_data_t * cal = &config_data.cals[adc];
 
-    for(unsigned n = 0; n < count; n++)
-        cal->cals[n] = cals[n];
-
-    cal->poly_len = count;
-
-    if (unit)
+void persist_set_lw_app_key(char* app_key)
+{
+    persist_data.version = PERSIST__VERSION;
+    if (!app_key || strlen(app_key) > LW__APP_KEY_LEN)
     {
-        unsigned len = strlen(unit) + 1;
-
-        memcpy(&config_data.units[adc], unit, (len < sizeof(cal_unit_t))?len:sizeof(cal_unit_t));
-        config_data.units[adc][sizeof(cal_unit_t)-1] = 0;
+        log_error("LORAWAN APP KEY invalid.");
+        return;
     }
-
+    memcpy(&persist_data.lw_app_key, &app_key, LW__APP_KEY_LEN);
     _persistent_commit();
+    _lw_config_valid();
+}
 
+
+bool persist_get_lw_app_key(char** app_key)
+{
+    if (!persist_data_lw_valid || !app_key)
+    {
+        log_error("LORAWAN APP KEY get failed.");
+        return false;
+    }
+    *app_key = persist_data.lw_app_key;
     return true;
 }
 
 
-bool        persistent_set_use_cal(bool enable)
+bool persist_set_interval(uint8_t uuid, uint16_t interval)
 {
-    if (!config_data_valid)
-        return false;
-
-    config_data.flags.use_adc_cals = (enable)?1:0;
-
-    _persistent_commit();
-
-    return true;
+    persist_data.version = PERSIST__VERSION;
+    persist_measurement_t* measurement;
+    uint16_t num_measurements = measurements_num_measurements();
+    for (unsigned int i = 0; i < num_measurements; i++)
+    {
+        measurement = (persist_measurement_t*)&persist_data.p_measurements[i];
+        if (measurement->uuid == uuid)
+        {
+            measurement->interval = interval;
+            _persistent_commit();
+            return true;
+        }
+    }
+    return false;
 }
 
 
-bool        persistent_get_use_cal()
+bool persist_get_interval(uint8_t uuid, uint16_t* interval)
 {
-    if (!config_data_valid)
+    persist_measurement_t* measurement;
+    uint16_t num_measurements = measurements_num_measurements();
+    for (unsigned int i = 0; i < num_measurements; i++)
+    {
+        measurement = (persist_measurement_t*)&persist_data.p_measurements[i];
+        if (measurement->uuid == uuid)
+        {
+            *interval = measurement->interval;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+void persist_new_interval(uint8_t uuid, uint16_t interval)
+{
+    persist_data.version = PERSIST__VERSION;
+    persist_measurement_t* measurement;
+    uint16_t num_measurements = measurements_num_measurements();
+    if (persist_set_interval(uuid, interval))
+    {
+        return;
+    }
+    for (unsigned int i = 0; i < num_measurements; i++)
+    {
+        measurement = (persist_measurement_t*)&persist_data.p_measurements[i];
+        if (measurement->uuid == 0)
+        {
+            measurement->uuid = uuid;
+            measurement->interval = interval;
+            _persistent_commit();
+            return;
+        }
+    }
+}
+
+
+void persist_set_modbus_bus_config(modbus_bus_config_t* config)
+{
+    if (!config)
+        return;
+    persist_data.version = PERSIST__VERSION;
+    memcpy(&persist_data.modbus_bus_config, config, sizeof(modbus_bus_config_t));
+    _persistent_commit();
+}
+
+
+bool persist_get_modbus_bus_config(modbus_bus_config_t* config)
+{
+    if (!persist_data_valid || !config)
         return false;
 
-    return config_data.flags.use_adc_cals;
+    memcpy(config, &persist_data.modbus_bus_config, sizeof(modbus_bus_config_t));
+    return true;
 }

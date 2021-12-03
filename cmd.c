@@ -36,12 +36,10 @@ typedef struct
 static void io_cb(char *args);
 static void special_cb(char *args);
 static void count_cb(char *args);
-static void persist_cb(char *args);
-static void en_cal_cb(char *args);
-static void cal_name_cb(char *args);
 static void version_cb(char *args);
 static void audio_dump_cb(char *args);
 static void lora_cb(char *args);
+static void lora_config_cb(char *args);
 static void interval_cb(char *args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
@@ -54,12 +52,10 @@ static cmd_t cmds[] = {
     { "io",       "Get/set IO set.",         io_cb},
     { "sio",      "Enable Special IO.",      special_cb},
     { "count",    "Counts of controls.",     count_cb},
-    { "persist",  "Start persist of name.",  persist_cb},
-    { "en_cal",   "Enable ADC Calibration.", en_cal_cb},
-    { "cal_name", "Get Calibration Name",    cal_name_cb},
     { "version",  "Print version.",          version_cb},
     { "audio_dump", "Do audiodump",          audio_dump_cb},
     { "lora",      "Send lora message",      lora_cb},
+    { "lora_config", "Set lora config",      lora_config_cb},
     { "interval", "Set the interval",        interval_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
@@ -200,54 +196,6 @@ void count_cb(char * args)
 }
 
 
-void persist_cb(char * args)
-{
-    char * pos = skip_space(args);
-
-    if (*pos)
-        persistent_set_name(pos);
-
-    log_out("New persistent data started.");
-}
-
-
-void en_cal_cb(char * args)
-{
-    char * pos = skip_space(args);
-
-    if (*pos)
-    {
-        if (strncmp(pos, "ON", 2) == 0 || pos[0] == '1')
-        {
-            if (persistent_set_use_cal(true))
-                log_out("Enabled ADC Cals");
-            else
-                log_debug(DEBUG_SYS, "Failed to enable ADC Cals");
-        }
-        else
-        {
-            log_out("Disabled ADC Cals");
-            if (!persistent_set_use_cal(false))
-                log_debug(DEBUG_SYS, "Failed to disable ADC Cals");
-        }
-    }
-    else
-    {
-        if (persistent_get_use_cal())
-            log_out("ADC Cals Enabled");
-        else
-            log_out("ADC Cals Disabled");
-    }
-}
-
-
-void cal_name_cb(char * args)
-{
-    const char * name = persistent_get_name();
-    log_out("N:%s", name);
-}
-
-
 void version_cb(char * args)
 {
     log_out("Version : %s", GIT_VERSION);
@@ -267,6 +215,33 @@ void lora_cb(char * args)
 }
 
 
+void lora_config_cb(char * args)
+{
+    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
+    // ARGS : "dev-eui 118f875d6994bbfd"
+    char* p = skip_space(args);
+    p = strchr(p, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+    uint8_t end_pos_word = p - args + 1;
+    p = skip_space(p);
+    if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
+    {
+        char eui[LW__DEV_EUI_LEN] = "";
+        strncpy(eui, p, strlen(p));
+        persist_set_lw_dev_eui(eui);
+    }
+    else if (strncmp(args, "app-key", end_pos_word-1) == 0)
+    {
+        char key[LW__APP_KEY_LEN] = "";
+        strncpy(key, p, strlen(p));
+        persist_set_lw_dev_eui(key);
+    }
+}
+
+
 void interval_cb(char * args)
 {
     // CMD  : "interval temperature 3"
@@ -282,10 +257,31 @@ void interval_cb(char * args)
     char name[32] = {0};
     memset(name, 0, end_pos_word);
     strncpy(name, args, end_pos_word-1);
+    uint8_t uuid;
+    if (!measurements_get_uuid(name, &uuid))
+    {
+        return;
+    }
+    uint16_t interval;
     p = skip_space(p);
-    uint8_t new_interval = strtoul(p, NULL, 10);
-
-    measurements_set_interval(name, new_interval);
+    if (p[0] == '?')
+    {
+        if (persist_get_interval(uuid, &interval))
+        {
+            log_out("interval = %"PRIu8" x 5mins", interval);
+        }
+        else
+        {
+            log_out("No record.");
+        }
+    }
+    else if (isdigit((unsigned char)*p))
+    {
+        interval = strtoul(p, NULL, 10);
+        measurements_set_interval_uuid(uuid, interval);
+        persist_set_interval(uuid, interval);
+        log_out("Set interval for %s to %u x 5mins", name, interval);
+    }
 }
 
 
@@ -300,8 +296,12 @@ static void debug_cb(char * args)
 
     mask |= DEBUG_SYS;
 
-    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    uint32_t prev_mask = persist_get_log_debug_mask();
+
     log_debug_mask = mask;
+    persist_set_log_debug_mask(mask);
+    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    log_debug(DEBUG_SYS, "Previous mask was 0x%"PRIx32, prev_mask);
 }
 
 
