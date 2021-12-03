@@ -31,23 +31,7 @@
 #define LW__APP_KEY_LEN                     32
 
 
-typedef struct
-{
-    uint16_t    data_id;
-    uint32_t    data;
-    uint8_t     interval; // multiples of 5 mins
-} lw_measurement_t;
-
-typedef struct
-{
-    lw_measurement_t    measurements[LW__MAX_MEASUREMENTS];
-    uint32_t            read_pos;
-    uint32_t            write_pos;
-} lw_packet_t;
-
-
 extern void lorawan_init(void);
 extern void lw_send(uint8_t* hex_arr, uint16_t arr_len);
 extern void lw_send_str(char* str);
 extern void lw_process(char* message);
-extern bool lw_send_packet(lw_packet_t* packet, uint32_t interval_count);
