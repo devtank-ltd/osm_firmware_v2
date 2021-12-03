@@ -31,7 +31,7 @@ extern bool     measurements_add(measurement_def_t* measurement);
 extern bool     measurements_del(char* name);
 
 extern bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of 5m for the measurements to be sent.
-extern bool     measurements_set_samplerate(char* name, uint8_t samplerate); // How many samples should be taken in each interval
+extern bool     measurements_set_samplecount(char* name, uint8_t samplecount); // How many samples should be taken in each interval
 
 extern void     measurements_loop_iteration(void);
 extern void     measurements_init(void);

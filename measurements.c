@@ -267,7 +267,7 @@ static void measurements_sample(void)
             }
         }
 
-        // The sample is collected every interval/sample_rate but offset by 1/2.
+        // The sample is collected every interval/samplecount but offset by 1/2.
         // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
         //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
         if (time_since_interval >= (m_data->num_samples_collected * sample_interval) + sample_interval/2)
