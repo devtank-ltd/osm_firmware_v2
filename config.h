@@ -87,4 +87,6 @@
 #define DEBUG_HPM   0x100
 #define DEBUG_MODBUS 0x200
 
+#define INTERVAL__TRANSMIT_MS   5 * 60 * 1000 // 5 mins
+
 #endif //__CONFIG__

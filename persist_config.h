@@ -14,6 +14,9 @@ extern bool persist_get_lw_app_key(char** app_key);
 extern bool persist_set_interval(uint8_t uuid, uint16_t interval);
 extern bool persist_get_interval(uint8_t uuid, uint16_t* interval);
 extern void persist_new_interval(uint8_t uuid, uint16_t interval);
+extern bool persist_set_samplerate(uint8_t uuid, uint16_t samplerate);
+extern bool persist_get_samplerate(uint8_t uuid, uint16_t* samplerate);
+extern void persist_new_samplerate(uint8_t uuid, uint16_t samplerate);
 
 typedef struct
 {

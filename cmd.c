@@ -211,7 +211,7 @@ void audio_dump_cb(char * args)
 void lora_cb(char * args)
 {
     char * pos = skip_space(args);
-    lw_send(pos);
+    lw_send_str(pos);
 }
 
 
@@ -242,7 +242,7 @@ void lora_config_cb(char * args)
 }
 
 
-void interval_cb(char * args)
+static void interval_cb(char * args)
 {
     // CMD  : "interval temperature 3"
     // ARGS : "temperature 3"
@@ -257,31 +257,10 @@ void interval_cb(char * args)
     char name[32] = {0};
     memset(name, 0, end_pos_word);
     strncpy(name, args, end_pos_word-1);
-    uint8_t uuid;
-    if (!measurements_get_uuid(name, &uuid))
-    {
-        return;
-    }
-    uint16_t interval;
     p = skip_space(p);
-    if (p[0] == '?')
-    {
-        if (persist_get_interval(uuid, &interval))
-        {
-            log_out("interval = %"PRIu8" x 5mins", interval);
-        }
-        else
-        {
-            log_out("No record.");
-        }
-    }
-    else if (isdigit((unsigned char)*p))
-    {
-        interval = strtoul(p, NULL, 10);
-        measurements_set_interval_uuid(uuid, interval);
-        persist_set_interval(uuid, interval);
-        log_out("Set interval for %s to %u x 5mins", name, interval);
-    }
+    uint8_t new_interval = strtoul(p, NULL, 10);
+
+    measurements_set_interval(name, new_interval);
 }
 
 
@@ -309,17 +288,14 @@ static void hmp_cb(char *args)
 {
     if (args[0] != '0')
     {
-        hmp_enable(true);
+        hpm_enable(true);
 
         uint16_t pm25;
         uint16_t pm10;
 
-        if (hmp_get(&pm25, &pm10))
+        if (hpm_get(&pm25, &pm10))
         {
             log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
-            measurements_write_data_value(MEASUREMENT_UUID__PM10, (value_t)pm10);
-            measurements_write_data_value(MEASUREMENT_UUID__PM25, (value_t)pm25);
-            measurements_send(1);
         }
         else
         {
@@ -328,7 +304,7 @@ static void hmp_cb(char *args)
     }
     else
     {
-        hmp_enable(false);
+        hpm_enable(false);
         log_out("HPM disabled");
     }
 }

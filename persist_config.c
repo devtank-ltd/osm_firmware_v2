@@ -24,6 +24,7 @@ typedef struct
 {
     uint8_t     uuid;
     uint16_t    interval;
+    uint16_t    samplerate;
 } __attribute__((__packed__)) persist_measurement_t;
 
 
