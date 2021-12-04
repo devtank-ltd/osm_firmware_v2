@@ -35,6 +35,7 @@ typedef struct
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     persist_measurement_t   p_measurements[LW__MAX_MEASUREMENTS];
+    uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
     modbus_bus_config_t     modbus_bus_config;
 } __attribute__((__packed__)) persist_storage_t;
 
@@ -278,4 +279,16 @@ bool persist_get_modbus_bus_config(modbus_bus_config_t* config)
 
     memcpy(config, &persist_data.modbus_bus_config, sizeof(modbus_bus_config_t));
     return true;
+}
+
+
+uint8_t * persist_get_modbus_data(void)
+{
+    return persist_data.modbus_data;
+}
+
+
+void      persist_commit_modbus_data(void)
+{
+    _persistent_commit();
 }

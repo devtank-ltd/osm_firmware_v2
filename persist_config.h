@@ -31,4 +31,7 @@ typedef struct
 extern void persist_set_modbus_bus_config(modbus_bus_config_t* config);
 extern bool persist_get_modbus_bus_config(modbus_bus_config_t* config);
 
+extern uint8_t * persist_get_modbus_data(void);
+extern void      persist_commit_modbus_data(void);
+
 #endif //__PERSISTENT_CONIFG__

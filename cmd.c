@@ -326,17 +326,15 @@ static void modbus_test_cb(char *args)
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    static modbus_dev_t cmd_dev = {.enabled = true };
-
     static union
     {
         modbus_reg_t       base;
         modbus_reg_u16_t   reg_u16;
         modbus_reg_u32_t   reg_u32;
         modbus_reg_float_t reg_float;
-    }  cmd_reg = {.base = {.dev = &cmd_dev, .name = "CMD", .func = MODBUS_READ_HOLDING_FUNC}};
+    }  cmd_reg = {.base = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC}};
 
-    cmd_dev.slave_id = strtoul(pos, &pos, 16);
+    cmd_reg.base.slave_id = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
