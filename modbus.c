@@ -780,9 +780,9 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
             dst_reg->class_data = data_size;
             return true;
         }
-        case MODBUS_REG_TYPE_U16   : return true;
-        case MODBUS_REG_TYPE_U32   : return true;
-        case MODBUS_REG_TYPE_FLOAT : return true;
+        case MODBUS_REG_TYPE_U16   : ((modbus_reg_u16_t*)dst_reg)->valid = 0; return true;
+        case MODBUS_REG_TYPE_U32   : ((modbus_reg_u32_t*)dst_reg)->valid = 0; return true;
+        case MODBUS_REG_TYPE_FLOAT : ((modbus_reg_float_t*)dst_reg)->valid = 0; return true;
         default:
             break;
     }
