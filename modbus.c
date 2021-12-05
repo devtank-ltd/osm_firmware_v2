@@ -46,9 +46,65 @@ typedef struct
     uint8_t dev_num;
     uint8_t reg_num;
     uint8_t _;
-    uint16_t size;
-    uint16_t used;
+    uint32_t __;
+    uint32_t size;
+    uint32_t used;
 } __attribute__((__packed__)) modbus_blob_header_t;
+
+struct modbus_reg_t
+{
+    char              name[MODBUS_NAME_LEN];
+    uint8_t           class_data; /* what ever child class wants */
+    uint8_t           type; /*modbus_reg_type_t*/
+    uint8_t           reg_count;
+    uint8_t           func;
+    uint16_t          device_offset; /* Offset to device */
+    uint16_t          reg_addr;
+} __attribute__((__packed__)) ;
+
+struct modbus_dev_t
+{
+    char           name[MODBUS_NAME_LEN];
+    uint32_t       regs[MODBUS_DEV_REGS]; /* Offsets to regsiters */
+    uint8_t        enabled;
+    uint8_t        slave_id;
+    uint8_t        reg_num;
+    uint8_t        _; /* pad */
+} __attribute__((__packed__)) ;
+
+typedef struct
+{
+    modbus_reg_t base;
+    uint8_t      ref[1];
+} __attribute__((__packed__)) modbus_reg_bin_check_t;
+
+typedef struct
+{
+    modbus_reg_t base;
+    uint16_t     ids[1];
+} __attribute__((__packed__)) modbus_reg_ids_check_t;
+
+typedef struct
+{
+    modbus_reg_t base;
+    uint16_t     value;
+    uint16_t     valid;
+} __attribute__((__packed__)) modbus_reg_u16_t;
+
+typedef struct
+{
+    modbus_reg_t base;
+    uint32_t     value;
+    uint32_t     valid;
+} __attribute__((__packed__)) modbus_reg_u32_t;
+
+typedef struct
+{
+    modbus_reg_t base;
+    float        value;
+    uint32_t     valid;
+} __attribute__((__packed__)) modbus_reg_float_t;
+
 
 static uint8_t * modbus_data = NULL;
 static uint8_t * modbus_data_pos = NULL;
@@ -242,10 +298,12 @@ bool modbus_start_read(modbus_reg_t * reg)
     if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
         return false;
 
-    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->reg_count, reg->slave_id, reg->reg_addr);
+    modbus_dev_t * dev = modbus_reg_get_dev(reg);
+
+    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg->reg_count, dev->slave_id, reg->reg_addr);
 
     /* ADU Header (Application Data Unit) */
-    modbuspacket[0] = reg->slave_id;
+    modbuspacket[0] = dev->slave_id;
     /* ====================================== */
     /* PDU payload (Protocol Data Unit) */
     modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
@@ -393,26 +451,32 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    if (current_reg && (current_reg->slave_id == modbuspacket[0]))
+    if (current_reg)
     {
-        modbus_reg_t * reg = current_reg;
-        current_reg = NULL;
-        _modbus_reg_cb(reg, modbuspacket + 3, modbuspacket[2]);
+        modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
+
+        if (dev->slave_id == modbuspacket[0])
+        {
+            modbus_reg_t * reg = current_reg;
+            current_reg = NULL;
+            _modbus_reg_cb(reg, modbuspacket + 3, modbuspacket[2]);
+            return;
+        }
     }
-    else modbus_debug("Unexpected packet");
+    modbus_debug("Unexpected packet");
 }
 
 
 static void _modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8_t size)
 {
-    modbus_dev_t * dev = modbus_get_device_by_id(reg->base.slave_id);
+    modbus_dev_t * dev = modbus_reg_get_dev(&reg->base);
     if (!dev)
     {
         modbus_debug("No matching device for slave ID.");
         return;
     }
 
-    if (size != reg->ref_count)
+    if (size != reg->base.class_data)
     {
         modbus_debug("Not enough bytes for check. Device disabled.");
         dev->enabled = false;
@@ -436,7 +500,7 @@ static void _modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * dat
 
 static void _modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size)
 {
-    modbus_dev_t * dev = modbus_get_device_by_id(reg->base.slave_id);
+    modbus_dev_t * dev = modbus_reg_get_dev(&reg->base);
     if (!dev)
     {
         modbus_debug("No matching device for slave ID.");
@@ -449,7 +513,7 @@ static void _modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * dat
 
     modbus_debug("ID check for device %"PRIu8" ID:%"PRIu16, dev->slave_id, id);
 
-    for(unsigned n = 0; n < reg->ids_count; n++)
+    for(unsigned n = 0; n < (reg->base.class_data / sizeof(uint16_t)); n++)
     {
         if (reg->ids[n] == id)
         {
@@ -554,11 +618,17 @@ static uint64_t _get_id_of_name(char name[8])
 }
 
 
+static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned index)
+{
+    return (modbus_reg_t*)(modbus_data + dev->regs[index]);
+}
+
+
 static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint64_t id)
 {
     for(unsigned n = 0; n < dev->reg_num; n++)
     {
-        modbus_reg_t * reg = dev->regs[n];
+        modbus_reg_t * reg = _modbus_dev_get_reg_by_index(dev, n);
         if (id == _get_id_of_name(reg->name))
             return reg;
     }
@@ -619,26 +689,59 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
 }
 
 
-bool           modbus_dev_add_reg(modbus_dev_t * dev, modbus_reg_t * reg)
+bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count, void * data, unsigned data_size)
 {
-    if (!dev || !reg)
+    if (!dev || !name)
         return false;
 
     if (dev->reg_num == MODBUS_DEV_REGS)
         return false;
 
+    if (modbus_get_reg(name) != NULL)
+        return false;
+
+    if (func != MODBUS_READ_HOLDING_FUNC)
+        return false;
+
+    unsigned name_len = strlen(name) + 1;
+
+    if (name_len > MODBUS_NAME_LEN)
+        return false;
+
     unsigned size = 0;
 
-    switch (reg->type)
+    switch (type)
     {
-        case MODBUS_REG_TYPE_BIN    : size += sizeof(modbus_reg_bin_check_t) + ((modbus_reg_bin_check_t*)reg)->ref_count; break;
-        case MODBUS_REG_TYPE_U16_ID : size += sizeof(modbus_reg_ids_check_t) + ((modbus_reg_ids_check_t*)reg)->ids_count * sizeof(uint16_t); break;
-        case MODBUS_REG_TYPE_U16    : size += sizeof(modbus_reg_u16_t); break;
-        case MODBUS_REG_TYPE_U32    : size += sizeof(modbus_reg_u32_t); break;
-        case MODBUS_REG_TYPE_FLOAT  : size += sizeof(modbus_reg_float_t); break;
+        case MODBUS_REG_TYPE_BIN    :
+            if (!data)
+                return false;
+            size += sizeof(modbus_reg_t) + data_size;
+            break;
+        case MODBUS_REG_TYPE_U16_ID :
+            if (!data)
+                return false;
+            size += sizeof(modbus_reg_t) + data_size;
+            break;
+        case MODBUS_REG_TYPE_U16    :
+            if (sizeof(uint16_t) != data_size)
+                return false;
+            size += sizeof(modbus_reg_u16_t);
+            break;
+        case MODBUS_REG_TYPE_U32    :
+            if (sizeof(uint32_t) != data_size)
+                return false;
+            size += sizeof(modbus_reg_u32_t);
+            break;
+        case MODBUS_REG_TYPE_FLOAT  :
+            if (sizeof(float) != data_size)
+                return false;
+            size += sizeof(modbus_reg_float_t);
+            break;
         default:
             return false;
     }
+
+    size = ALIGN_16(size);
 
     if ((modbus_data_pos + size) > (modbus_data + MODBUS_MEMORY_SIZE))
     {
@@ -646,187 +749,151 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, modbus_reg_t * reg)
         return false;
     }
 
-    switch (reg->type)
+    modbus_reg_t * dst_reg = (modbus_reg_t*)modbus_data_pos;
+
+    modbus_data_pos += size;
+
+    modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
+
+    header->used = ((uintptr_t)modbus_data_pos) - ((uintptr_t)modbus_data);
+
+    memcpy(dst_reg->name, name, name_len);
+    dst_reg->reg_addr  = reg_addr;
+    dst_reg->reg_count = reg_count;
+    dst_reg->type      = type;
+    dst_reg->func      = func;
+    dst_reg->device_offset = ((intptr_t)dev) - ((intptr_t)modbus_data);
+
+    dev->regs[dev->reg_num++] = ((intptr_t)dst_reg) - ((intptr_t)modbus_data);
+
+    switch (type)
     {
-        case MODBUS_REG_TYPE_BIN    :
+        case MODBUS_REG_TYPE_BIN:
         {
-            modbus_reg_bin_check_t * src_reg = (modbus_reg_bin_check_t*)reg;
-            modbus_reg_bin_check_t * dst_reg = (modbus_reg_bin_check_t*)modbus_data_pos;
-
-            memcpy(dst_reg, src_reg, sizeof(modbus_reg_bin_check_t));
-            modbus_data_pos += sizeof(modbus_reg_bin_check_t);
-            
-            dst_reg->ref = modbus_data_pos;
-
-            modbus_data_pos += ALIGN_16(dst_reg->ref_count);
-
-            memcpy(dst_reg->ref, src_reg->ref, src_reg->ref_count);
-
-            dev->regs[dev->reg_num++] = &dst_reg->base;
-
+            memcpy(((modbus_reg_bin_check_t*)dst_reg)->ref, data, data_size);
+            dst_reg->class_data = data_size;
             return true;
         }
-        case MODBUS_REG_TYPE_U16_ID :
+        case MODBUS_REG_TYPE_U16_ID:
         {
-            modbus_reg_ids_check_t * src_reg = (modbus_reg_ids_check_t*)reg;
-            modbus_reg_ids_check_t * dst_reg = (modbus_reg_ids_check_t*)modbus_data_pos;
-
-            memcpy(dst_reg, src_reg, sizeof(modbus_reg_ids_check_t));
-            modbus_data_pos += sizeof(modbus_reg_ids_check_t);
-
-            dst_reg->ids = (uint16_t*)modbus_data_pos;
-
-            size = sizeof(uint16_t) * src_reg->ids_count;
-
-            modbus_data_pos += ALIGN_16(size);
-
-            memcpy(dst_reg->ids, src_reg->ids, size);
-
-            dev->regs[dev->reg_num++] = &dst_reg->base;
-
+            memcpy(((modbus_reg_ids_check_t*)dst_reg)->ids, data, data_size);
+            dst_reg->class_data = data_size;
             return true;
         }
-        case MODBUS_REG_TYPE_U16    :
-        {
-            size = sizeof(modbus_reg_u16_t);
-            goto easy_type;
-        }
-        case MODBUS_REG_TYPE_U32    :
-        {
-            size = sizeof(modbus_reg_u32_t);
-            goto easy_type;
-        }
-        case MODBUS_REG_TYPE_FLOAT  :
-        {
-            size = sizeof(modbus_reg_float_t);
-            goto easy_type;
-        }
+        case MODBUS_REG_TYPE_U16   : return true;
+        case MODBUS_REG_TYPE_U32   : return true;
+        case MODBUS_REG_TYPE_FLOAT : return true;
         default:
-            return false;
+            break;
     }
 
     return false;
+}
 
-easy_type:
+
+bool           modbus_dev_is_enabled(modbus_dev_t * dev)
+{
+    if (!dev)
+        return false;
+    return dev->enabled;
+}
+
+
+modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg)
+{
+    if (!reg)
+        return MODBUS_REG_TYPE_INVALID;
+    return reg->type;
+}
+
+
+bool              modbus_reg_get_data(modbus_reg_t * reg, void ** data, unsigned * size)
+{
+    if (!reg || !data)
+        return false;
+
+    switch (reg->type)
     {
-        modbus_reg_t * src_reg = (modbus_reg_t*)reg;
-        modbus_reg_t * dst_reg = (modbus_reg_t*)modbus_data_pos;
-
-        memcpy(dst_reg, src_reg, size);
-        modbus_data_pos += size;
-
-        dev->regs[dev->reg_num++] = dst_reg;
+        case MODBUS_REG_TYPE_BIN    :
+            *data = ((modbus_reg_bin_check_t*)reg)->ref;
+            *size = reg->class_data;
+            return true;
+        case MODBUS_REG_TYPE_U16_ID :
+            *data = ((modbus_reg_ids_check_t*)reg)->ids;
+            *size = reg->class_data;
+            return true;
+        case MODBUS_REG_TYPE_U16    :
+            if (!((modbus_reg_u16_t*)reg)->valid)
+                return false;
+            *data = &((modbus_reg_u16_t*)reg)->value;
+            *size = sizeof(uint16_t);
+            return true;
+        case MODBUS_REG_TYPE_U32    :
+            if (!((modbus_reg_u32_t*)reg)->valid)
+                return false;
+            *data = &((modbus_reg_u32_t*)reg)->value;
+            *size = sizeof(uint32_t);
+            return true;
+        case MODBUS_REG_TYPE_FLOAT  :
+            if (!((modbus_reg_float_t*)reg)->valid)
+                return false;
+            *data = &((modbus_reg_float_t*)reg)->value;
+            *size = sizeof(float);
+            return true;
+        default:
+            break;
     }
+    return false;
+}
+
+
+bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value)
+{
+    if (!reg || !value)
+        return false;
+    modbus_reg_u16_t* reg2 = (modbus_reg_u16_t*)reg;
+    if (!reg2->valid)
+        return false;
+    *value = reg2->value;
     return true;
 }
 
 
-static void modbus_serialize(void)
+bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value)
 {
-    modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
-    
-    header->version = MODBUS_BLOB_VERSION;
-    header->dev_num = MODBUS_MAX_DEV;
-    header->reg_num = MODBUS_DEV_REGS;
-    header->size = MODBUS_MEMORY_SIZE;
-    header->used = ((uintptr_t)modbus_data_pos) - ((uintptr_t)modbus_data);
-
-    for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
-    {
-        modbus_dev_t * dev = &modbus_devices[n];
-        if (dev->name[0])
-        {
-            for(unsigned i = 0; i < MODBUS_DEV_REGS; i++)
-            {
-                modbus_reg_t * reg = dev->regs[i];
-                dev->regs[i] = (modbus_reg_t*)(((uintptr_t)reg) - ((uintptr_t)modbus_data));
-
-                switch (reg->type)
-                {
-                    case MODBUS_REG_TYPE_BIN    :
-                    {
-                        modbus_reg_bin_check_t * reg2 = (modbus_reg_bin_check_t*)reg;
-                        reg2->ref = (uint8_t*)(((uintptr_t)reg2->ref) - ((uintptr_t)modbus_data));
-                        break;
-                    }
-                    case MODBUS_REG_TYPE_U16_ID :
-                    {
-                        modbus_reg_ids_check_t * reg2 = (modbus_reg_ids_check_t*)reg;
-                        reg2->ids = (uint16_t*)(((uintptr_t)reg2->ids) - ((uintptr_t)modbus_data));
-                        break;
-                    }
-                    case MODBUS_REG_TYPE_U16    :
-                    case MODBUS_REG_TYPE_U32    :
-                    case MODBUS_REG_TYPE_FLOAT  :
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-    }
+    if (!reg || !value)
+        return false;
+    modbus_reg_u32_t* reg2 = (modbus_reg_u32_t*)reg;
+    if (!reg2->valid)
+        return false;
+    *value = reg2->value;
+    return true;
 }
 
 
-static void modbus_unserialize(void)
+bool              modbus_reg_get_float(modbus_reg_t * reg, float * value)
 {
-    modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
+    if (!reg || !value)
+        return false;
+    modbus_reg_float_t* reg2 = (modbus_reg_float_t*)reg;
+    if (!reg2->valid)
+        return false;
+    *value = reg2->value;
+    return true;
+}
 
-    if (header->version != MODBUS_BLOB_VERSION ||
-        header->dev_num != MODBUS_MAX_DEV      ||
-        header->reg_num != MODBUS_DEV_REGS     ||
-        header->size != MODBUS_MEMORY_SIZE)
-    {
-        modbus_debug("Persist data header invalid.");
-        memset(modbus_data, 0, MODBUS_MEMORY_SIZE);
-        return;
-    }
 
-    modbus_data_pos = modbus_data + header->used;
-
-    for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
-    {
-        modbus_dev_t * dev = &modbus_devices[n];
-        if (dev->name[0])
-        {
-            for(unsigned i = 0; i < MODBUS_DEV_REGS; i++)
-            {
-                dev->regs[i] = (modbus_reg_t*)(((uintptr_t)modbus_data) + (uintptr_t)dev->regs[i]);
-
-                modbus_reg_t * reg = dev->regs[i];
-
-                switch (reg->type)
-                {
-                    case MODBUS_REG_TYPE_BIN    :
-                    {
-                        modbus_reg_bin_check_t * reg2 = (modbus_reg_bin_check_t*)reg;
-                        reg2->ref = (uint8_t*)(((uintptr_t)modbus_data) + (uintptr_t)reg2->ref);
-                        break;
-                    }
-                    case MODBUS_REG_TYPE_U16_ID :
-                    {
-                        modbus_reg_ids_check_t * reg2 = (modbus_reg_ids_check_t*)reg;
-                        reg2->ids = (uint16_t*)(((uintptr_t)modbus_data) + (uintptr_t)reg2->ids);
-                        break;
-                    }
-                    case MODBUS_REG_TYPE_U16    :
-                    case MODBUS_REG_TYPE_U32    :
-                    case MODBUS_REG_TYPE_FLOAT  :
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }
-    }
+modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
+{
+    if (!reg)
+        return NULL;
+    return (modbus_dev_t*)(modbus_data + reg->device_offset);
 }
 
 
 void modbus_save(void)
 {
-    modbus_serialize();
     persist_commit_modbus_data();
-    modbus_unserialize();
 }
 
 
@@ -841,8 +908,28 @@ void modbus_init(void)
     }
     else _modbus_setup_delays(MODBUS_SPEED, MODBUS_DATABITS, MODBUS_PARITY, MODBUS_STOP);
 
-    modbus_data = persist_get_modbus_data();
+    modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
+
+    modbus_data    = persist_get_modbus_data();
     modbus_devices = (modbus_dev_t*)(modbus_data + sizeof(modbus_blob_header_t));
-    modbus_data_pos = modbus_data + sizeof(modbus_blob_header_t) + (sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
-    modbus_unserialize();
+
+    if (header->version == MODBUS_BLOB_VERSION &&
+        header->dev_num == MODBUS_MAX_DEV      &&
+        header->reg_num == MODBUS_DEV_REGS     &&
+        header->size <= MODBUS_MEMORY_SIZE)
+    {
+        log_sys_debug("Loaded modbus defs");
+        modbus_data_pos = modbus_data + header->used;
+    }
+    else
+    {
+        log_sys_debug("Failed to load modbus defs");
+        memset(modbus_devices, 0, sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
+        modbus_data_pos = modbus_data + sizeof(modbus_blob_header_t) + (sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
+        header->version = MODBUS_BLOB_VERSION;
+        header->dev_num = MODBUS_MAX_DEV;
+        header->reg_num = MODBUS_DEV_REGS;
+        header->size = MODBUS_MEMORY_SIZE;
+        header->used = ((uintptr_t)modbus_data_pos) - ((uintptr_t)modbus_data);
+    }
 }

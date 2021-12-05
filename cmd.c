@@ -44,7 +44,9 @@ static void interval_cb(char *args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
 static void modbus_setup_cb(char *args);
-static void modbus_test_cb(char *args);
+static void modbus_add_dev_cb(char *args);
+static void modbus_add_reg_cb(char *args);
+static void modbus_get_reg_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -60,7 +62,9 @@ static cmd_t cmds[] = {
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
-    { "mb_test",    "Read modbus reg",       modbus_test_cb},
+    { "mb_dev_add","Add modbus dev",         modbus_add_dev_cb},
+    { "mb_reg_add","Add modbus reg",         modbus_add_reg_cb},
+    { "mb_get_add","Get modbus reg",         modbus_get_reg_cb},
     { NULL },
 };
 
@@ -319,68 +323,107 @@ static void modbus_setup_cb(char *args)
 }
 
 
-static void modbus_test_cb(char *args)
+static void modbus_add_dev_cb(char * args)
 {
-    char * pos = skip_space(args);
+    char * name = skip_space(args);
+    char * name_end = skip_to_space(name);
 
-    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
-        pos += 2;
+    char * pos = skip_space(name_end);
+    name_end[0] = 0;
 
-    static union
-    {
-        modbus_reg_t       base;
-        modbus_reg_u16_t   reg_u16;
-        modbus_reg_u32_t   reg_u32;
-        modbus_reg_float_t reg_float;
-    }  cmd_reg = {.base = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC}};
+    uint16_t slave_id = strtoul(pos, &pos, 16);
 
-    cmd_reg.base.slave_id = strtoul(pos, &pos, 16);
+    if (modbus_add_device(slave_id, name))
+        log_out("Added modbus device");
+    else
+        log_out("Failed to add modbus device.");
+}
 
-    pos = skip_space(pos);
+
+static void modbus_add_reg_cb(char * args)
+{
+    char * name = skip_space(args);
+    char * name_end = skip_to_space(name);
+
+    char * pos = skip_space(name_end);
+    name_end[0] = 0;
+
+    modbus_reg_type_t type = MODBUS_REG_TYPE_INVALID;
 
     if (pos[0] == 'U')
     {
         if (pos[1] == '1' && pos[2] == '6' && pos[3] == ' ')
         {
-            cmd_reg.base.type = MODBUS_REG_TYPE_U16;
+            type = MODBUS_REG_TYPE_U16;
         }
         else if (pos[1] == '3' && pos[2] == '2' && pos[3] == ' ')
         {
-            cmd_reg.base.type = MODBUS_REG_TYPE_U32;
+            type = MODBUS_REG_TYPE_U32;
         }
         else
         {
-            log_out("Unknown reg type.");
+            log_out("Unknown modbus reg type.");
             return;
         }
         pos = skip_space(pos + 3);
     }
     else if (pos[0] == 'F' && pos[1] == ' ')
     {
-        cmd_reg.base.type = MODBUS_REG_TYPE_FLOAT;
+        type = MODBUS_REG_TYPE_FLOAT;
         pos = skip_space(pos + 1);
     }
     else
     {
-        log_out("Unknown reg type.");
+        log_out("Unknown modbus reg type.");
         return;
     }
+
+    uint8_t func = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
 
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    cmd_reg.base.reg_addr = strtoul(pos, &pos, 16);
+    uint16_t slave_id = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
-    cmd_reg.base.reg_count = strtoul(pos, NULL, 10);
+    uint16_t reg_addr = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    uint8_t reg_count = strtoul(pos, NULL, 10);
+
+    modbus_dev_t * dev = modbus_get_device_by_id(slave_id);
+    if (!dev)
+    {
+        log_out("Unknown modbus device.");
+        return;
+    }
+
+    if (modbus_dev_add_reg(dev, name, type, func, reg_addr, reg_count, NULL, 0))
+        log_out("Added modbus reg");
+    else
+        log_out("Failed to add modbus reg.");
+}
+
+
+static void modbus_get_reg_cb(char * args)
+{
+    char * name = skip_space(args);
+
+    modbus_reg_t * reg = modbus_get_reg(name);
+
+    if (!reg)
+    {
+        log_out("Unknown modbus register.");
+        return;
+    }
 
     log_debug_mask |= DEBUG_MODBUS;
 
-    if (modbus_start_read(&cmd_reg.base))
-        log_out("Modbus read sent");
-    else
-        log_out("Modbus read not sent");
+    modbus_start_read(reg);
 }
 
 
