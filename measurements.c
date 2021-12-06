@@ -22,10 +22,6 @@
 #define MEASUREMENTS__DATATYPE_SINGLE       (uint8_t)0x01
 #define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
 
-#define MEASUREMENTS__COLLECT_TIME__TEMPERATURE__MS 10000
-#define MEASUREMENTS__COLLECT_TIME__HUMIDITY__MS    10000
-#define MEASUREMENTS__COLLECT_TIME__HPM__MS         10000
-
 #define MEASUREMENT_ID_FROM_NAME(_name_)  *(uint64_t*)(char[8]){_name_}
 
 #define MEASUREMENT_PM10_NAME "pm10"
@@ -61,67 +57,9 @@ static uint16_t measurements_hex_arr_pos = 0;
 static measurement_arr_t measurement_arr = {0};
 
 
-uint32_t hpm_init_time = 0;
-uint16_t hpm_pm10, hpm_pm25;
-
-
 static uint32_t modbus_bus_collection_time(void) { return 10000; }
 static bool modbus_init(char* name) { return true; }
 static bool modbus_get(char* name, value_t* value) { return true; }
-
-
-static void hpm_preinit(void)
-{
-    uint32_t now = since_boot_ms;
-    if (hpm_init_time == 0 || since_boot_delta(now, hpm_init_time) > MEASUREMENTS__COLLECT_TIME__HPM__MS)
-    {
-        hpm_enable(true);
-        hpm_request();
-        hpm_init_time = now;
-    }
-}
-
-
-static bool hpm_pm10_init(char* name)
-{
-    hpm_preinit();
-    return true;
-}
-
-
-static bool hpm_pm10_get(char* name, value_t* value)
-{
-    *value = 0;
-    uint16_t hpm_pm10_cp, hpm_pm25_cp;
-    if (hpm_get(&hpm_pm10_cp, &hpm_pm25_cp))
-    {
-        hpm_pm10 = hpm_pm10_cp;
-        hpm_pm25 = hpm_pm25_cp;
-    }
-    *value = hpm_pm10;
-    return true;
-}
-
-
-static bool hpm_pm25_init(char* name)
-{
-    hpm_preinit();
-    return true;
-}
-
-
-static bool hpm_pm25_get(char* name, value_t* value)
-{
-    *value = 0;
-    uint16_t hpm_pm10_cp, hpm_pm25_cp;
-    if (hpm_get(&hpm_pm10_cp, &hpm_pm25_cp))
-    {
-        hpm_pm10 = hpm_pm10_cp;
-        hpm_pm25 = hpm_pm25_cp;
-    }
-    *value = hpm_pm25;
-    return true;
-}
 
 
 static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
@@ -437,13 +375,13 @@ static void _measurement_fixup(measurement_def_t* def)
     {
         case PM10:
             def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
-            def->init_cb = hpm_pm10_init;
-            def->get_cb = hpm_pm10_get;
+            def->init_cb = hpm_init;
+            def->get_cb = hpm_get_pm10;
             break;
         case PM25:
             def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
-            def->init_cb = hpm_pm25_init;
-            def->get_cb = hpm_pm25_get;
+            def->init_cb = hpm_init;
+            def->get_cb = hpm_get_pm25;
             break;
         case MODBUS:
             def->collection_time = modbus_bus_collection_time();
@@ -532,6 +470,27 @@ void measurements_init(void)
         measurements_save();
         return;
     }
+
+    {
+        measurement_def_t temp_def;
+        strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, sizeof(temp_def.base.name));
+        temp_def.base.interval = 1;
+        temp_def.base.samplecount = 5;
+        temp_def.base.type = PM10;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+    }
+    {
+        measurement_def_t temp_def;
+        strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, strlen(temp_def.base.name));
+        temp_def.base.interval = 1;
+        temp_def.base.samplecount = 5;
+        temp_def.base.type = PM25;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+    }
+    measurements_save();
+
 
     for(unsigned n = 0; n < LW__MAX_MEASUREMENTS; n++)
     {

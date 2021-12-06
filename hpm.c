@@ -8,6 +8,7 @@
 #include "hpm.h"
 #include "pinmap.h"
 #include "uart_rings.h"
+#include "sys_time.h"
 
 #define hpm_debug(...) log_debug(DEBUG_HPM, "HPM: " __VA_ARGS__)
 #define hpm_error(...) log_debug(DEBUG_HPM, "HPM: ERROR: " __VA_ARGS__)
@@ -55,6 +56,9 @@ static hpm_response_t responses[] =
     {{0xA5, 2},  process_ack_response},
     {{0,0}, 0}
 };
+
+
+uint32_t hpm_last_inited = 0;
 
 
 _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
@@ -242,8 +246,45 @@ bool hpm_get(uint16_t * pm25, uint16_t * pm10)
 }
 
 
-void hpm_init(void)
+bool hpm_get_pm10(char* name, value_t* val)
 {
-    
-    
+    if (!val)
+    {
+        return false;
+    }
+    if (hpm_last_inited != 0 && since_boot_delta(since_boot_ms, hpm_last_inited) > MEASUREMENTS__COLLECT_TIME__HPM__MS * 1.5)
+    {
+        return false;
+    }
+    *val = (value_t)pm10_entry.d;
+    hpm_enable(false);
+    return true;
+}
+
+
+bool hpm_get_pm25(char* name, value_t* val)
+{
+    if (!val)
+    {
+        return false;
+    }
+    if (hpm_last_inited != 0 && since_boot_delta(since_boot_ms, hpm_last_inited) > MEASUREMENTS__COLLECT_TIME__HPM__MS * 1.5)
+    {
+        return false;
+    }
+    *val = (value_t)pm25_entry.d;
+    hpm_enable(false);
+    return true;
+}
+
+
+bool hpm_init(char* name)
+{
+    if (since_boot_delta(since_boot_ms, hpm_last_inited) < MEASUREMENTS__COLLECT_TIME__HPM__MS)
+    {
+        return true;
+    }
+    hpm_last_inited = since_boot_ms;
+    hpm_enable(true);
+    return true;
 }
