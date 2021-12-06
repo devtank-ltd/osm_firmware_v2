@@ -211,44 +211,6 @@ void persist_commit_measurement(void)
 }
 
 
-bool persist_set_interval(char* name, uint16_t interval)
-{
-    persist_data.version = PERSIST__VERSION;
-    measurement_def_base_t* measurement;
-    uint16_t num_measurements = measurements_num_measurements();
-    for (unsigned int i = 0; i < num_measurements; i++)
-    {
-        measurement = (measurement_def_base_t*)&persist_data.measurements_arr[i];
-        if (strncmp(measurement->name, name, sizeof(measurement->name)) == 0)
-        {
-            measurement->interval = interval;
-            _persistent_commit();
-            return true;
-        }
-    }
-    return false;
-}
-
-
-bool persist_set_samplecount(char* name, uint16_t samplecount)
-{
-    persist_data.version = PERSIST__VERSION;
-    measurement_def_base_t* measurement;
-    uint16_t num_measurements = measurements_num_measurements();
-    for (unsigned int i = 0; i < num_measurements; i++)
-    {
-        measurement = (measurement_def_base_t*)&persist_data.measurements_arr[i];
-        if (strncmp(measurement->name, name, sizeof(measurement->name)) == 0)
-        {
-            measurement->samplecount = samplecount;
-            _persistent_commit();
-            return true;
-        }
-    }
-    return false;
-}
-
-
 void persist_set_modbus_bus_config(modbus_bus_config_t* config)
 {
     if (!config)

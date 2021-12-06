@@ -6,7 +6,7 @@
 #include "lorawan.h"
 
 
-#define MEASUREMENTS__HEX_ARRAY_SIZE            26
+#define MEASUREMENTS__HEX_ARRAY_SIZE            100
 
 
 typedef int64_t value_t;
@@ -39,6 +39,9 @@ typedef struct
 
 extern uint16_t measurements_num_measurements(void);
 extern char*    measurements_get_name(unsigned index);
+
+extern void     measurements_print(void);
+extern void     measurements_print_persist(void);
 
 extern bool     measurements_add(measurement_def_t* measurement);
 extern bool     measurements_del(char* name);

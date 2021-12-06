@@ -124,13 +124,15 @@ static bool hpm_pm25_get(char* name, value_t* value)
 }
 
 
-static bool measurements_get_measurement_def(char* name, measurement_def_t* measurement_def)
+static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
 {
-    for (unsigned i = 0; i < measurement_arr.len; i++)
+    measurement_def_t* t_measurement_def;
+    for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
     {
-        measurement_def = &measurement_arr.def[i];
-        if (strncmp(measurement_def->base.name, name, strlen(measurement_def->base.name)) == 0)
+        t_measurement_def = &measurement_arr.def[i];
+        if (MEASUREMENT_ID_FROM_NAME(*t_measurement_def->base.name) == MEASUREMENT_ID_FROM_NAME(*name))
         {
+            *measurement_def = t_measurement_def;
             return true;
         }
     }
@@ -339,6 +341,7 @@ bool measurements_add(measurement_def_t* measurement_def)
     measurement_arr.def[measurement_arr.len] = *measurement_def;
     measurement_arr.data[measurement_arr.len] = measurement_data;
     measurement_arr.len++;
+
     return true;
 }
 
@@ -362,15 +365,11 @@ bool measurements_del(char* name)
 bool measurements_set_interval(char* name, uint8_t interval)
 {
     measurement_def_t* measurement_def = NULL;
-    if (!measurements_get_measurement_def(name, measurement_def))
+    if (!measurements_get_measurement_def(name, &measurement_def))
     {
         return false;
     }
     measurement_def->base.interval = interval;
-    if (!persist_set_interval(name, interval))
-    {
-        log_error("Could not write interval to persistent storage.");
-    }
     return true;
 }
 
@@ -383,15 +382,11 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurement_def_t* measurement_def = NULL;
-    if (!measurements_get_measurement_def(name, measurement_def))
+    if (!measurements_get_measurement_def(name, &measurement_def))
     {
         return false;
     }
     measurement_def->base.samplecount = samplecount;
-    if (!persist_set_samplecount(name, samplecount))
-    {
-        log_error("Could not write samplecount to persistent storage.");
-    }
     return true;
 }
 
@@ -430,8 +425,7 @@ bool measurements_save(void)
 }
 
 
-
-static void _measurement_fixup(measurement_def_t * def)
+static void _measurement_fixup(measurement_def_t* def)
 {
     switch(def->base.type)
     {
@@ -454,16 +448,66 @@ static void _measurement_fixup(measurement_def_t * def)
 }
 
 
+void measurements_print(void)
+{
+    measurement_def_t* measurement_def;
+    log_out("Loaded Measurements");
+    log_out("Name\tInterval\tSample Count");
+    for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
+    {
+        measurement_def = &measurement_arr.def[i];
+        char id_start = measurement_def->base.name[0];
+        if (!id_start || id_start == 0xFF)
+        {
+            continue;
+        }
+        if ( 0 /* uart nearly full */ )
+        {
+            ; // Do something
+        }
+        log_out("%s\t%"PRIu8"x5mins\t\t%"PRIu8, measurement_def->base.name, measurement_def->base.interval, measurement_def->base.samplecount);
+    }
+}
+
+
+void measurements_print_persist(void)
+{
+    measurement_def_base_t* measurement_def_base;
+    measurement_def_base_t* persistent_measurement_arr;
+    if (!persist_get_measurements(&persistent_measurement_arr))
+    {
+        log_error("Cannot retrieve stored measurements.");
+        return;
+    }
+    log_out("Stored Measurements");
+    log_out("Name\tInterval\tSample Count");
+    for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
+    {
+        measurement_def_base = &persistent_measurement_arr[i];
+        char id_start = measurement_def_base->name[0];
+        if (!id_start || id_start == 0xFF)
+        {
+            continue;
+        }
+        if ( 0 /* uart nearly full */ )
+        {
+            ; // Do something
+        }
+        log_out("%s\t%"PRIu8"x5mins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, measurement_def_base->samplecount);
+    }
+}
+
 
 void measurements_init(void)
 {
     measurement_def_base_t* persistent_measurement_arr;
     if (!persist_get_measurements(&persistent_measurement_arr))
     {
+        log_error("No persistent loaded, load defaults.");
         /* Add defaults. */
         {
             measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, 8);
+            strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, sizeof(temp_def.base.name));
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 5;
             temp_def.base.type = PM10;
@@ -472,7 +516,7 @@ void measurements_init(void)
         }
         {
             measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, 8);
+            strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, strlen(temp_def.base.name));
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 5;
             temp_def.base.type = PM25;
@@ -482,15 +526,16 @@ void measurements_init(void)
         measurements_save();
         return;
     }
+    log_error("Measurements loaded.");
 
     for(unsigned n = 0; n < LW__MAX_MEASUREMENTS; n++)
     {
-        measurement_def_base_t * def_base = &persistent_measurement_arr[n];
+        measurement_def_base_t* def_base = &persistent_measurement_arr[n];
 
         char id_start = def_base->name[0];
 
         if (!id_start || id_start == 0xFF)
-            break;
+            continue;
 
         measurement_def_t new_def;
 

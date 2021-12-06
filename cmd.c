@@ -46,6 +46,7 @@ static void debug_cb(char *args);
 static void hmp_cb(char *args);
 static void modbus_setup_cb(char *args);
 static void modbus_test_cb(char *args);
+static void measurements_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -63,6 +64,7 @@ static cmd_t cmds[] = {
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
     { "mb_test",    "Read modbus reg",       modbus_test_cb},
+    { "measurements", "Print measurements",  measurements_cb},
     { NULL },
 };
 
@@ -256,13 +258,14 @@ static void interval_cb(char * args)
         return;
     }
     uint8_t end_pos_word = p - args + 1;
-    char name[32] = {0};
+    char name[8] = {0};
     memset(name, 0, end_pos_word);
     strncpy(name, args, end_pos_word-1);
     p = skip_space(p);
     uint8_t new_interval = strtoul(p, NULL, 10);
 
     measurements_set_interval(name, new_interval);
+    measurements_save();
 }
 
 
@@ -278,13 +281,14 @@ static void samplecount_cb(char * args)
         return;
     }
     uint8_t end_pos_word = p - args + 1;
-    char name[32] = {0};
+    char name[8] = {0};
     memset(name, 0, end_pos_word);
     strncpy(name, args, end_pos_word-1);
     p = skip_space(p);
     uint8_t new_samplecount = strtoul(p, NULL, 10);
 
     measurements_set_samplecount(name, new_samplecount);
+    measurements_save();
 }
 
 
@@ -378,6 +382,13 @@ static void modbus_test_cb(char *args)
         log_out("Modbus read sent");
     else
         log_out("Modbus read not sent");
+}
+
+
+static void measurements_cb(char *args)
+{
+    measurements_print();
+    measurements_print_persist();
 }
 
 
