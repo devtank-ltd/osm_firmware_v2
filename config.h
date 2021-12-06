@@ -32,7 +32,7 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
-#define MODBUS_MEMORY_SIZE 256
+#define MODBUS_MEMORY_SIZE 512
 
 #define ALIGN_TO(_x, _y) ((_x + _y -1 ) & ~(_y - 1)) ///< Align one number to another, for instance 16 for optimial addressing.
 #define ALIGN_16(_x) ALIGN_TO(_x, 16)                ///< Align given number to 16.
@@ -63,7 +63,7 @@
 #define UART_1_OUT_BUF_SIZE 128
 
 #define UART_2_IN_BUF_SIZE  64
-#define UART_2_OUT_BUF_SIZE 1
+#define UART_2_OUT_BUF_SIZE 64
 
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
