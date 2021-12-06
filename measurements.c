@@ -223,8 +223,6 @@ static void measurements_send(void)
     {
         m_def = &measurement_arr.def[i];
         m_data = &measurement_arr.data[i];
-        m_data->num_samples_init = 0;
-        m_data->num_samples_collected = 0;
         if (m_def->base.interval && (interval_count % m_def->base.interval == 0))
         {
             if (m_data->sum == MEASUREMENTS__UNSET_VALUE || m_data->num_samples == 0)
@@ -237,7 +235,12 @@ static void measurements_send(void)
                 return;
             }
             num_qd++;
-            memset(m_data, 0, sizeof(measurement_data_t));
+            m_data->sum = MEASUREMENTS__UNSET_VALUE;
+            m_data->min = MEASUREMENTS__UNSET_VALUE;
+            m_data->max = MEASUREMENTS__UNSET_VALUE;
+            m_data->num_samples = 0;
+            m_data->num_samples_init = 0;
+            m_data->num_samples_collected = 0;
         }
     }
     if (num_qd > 0)
