@@ -209,8 +209,6 @@ char * modbus_reg_type_get_str(modbus_reg_type_t type)
 {
     switch(type)
     {
-        case MODBUS_REG_TYPE_BIN:    return "REF"; break;
-        case MODBUS_REG_TYPE_U16_ID: return "REF_IDs"; break;
         case MODBUS_REG_TYPE_U16:    return "U16"; break;
         case MODBUS_REG_TYPE_U32:    return "U32"; break;
         case MODBUS_REG_TYPE_FLOAT:  return "F"; break;
@@ -483,66 +481,6 @@ void modbus_ring_process(ring_buf_t * ring)
 }
 
 
-static void _modbus_reg_bin_check_cb(modbus_reg_bin_check_t * reg, uint8_t * data, uint8_t size)
-{
-    modbus_dev_t * dev = modbus_reg_get_dev(&reg->base);
-    if (!dev)
-    {
-        modbus_debug("No matching device for slave ID.");
-        return;
-    }
-
-    if (size != reg->base.class_data)
-    {
-        modbus_debug("Not enough bytes for check. Device disabled.");
-        dev->enabled = false;
-        return;
-    }
-
-    for(unsigned n = 0; n < size; n++)
-    {
-        if (reg->ref[n] != data[n])
-        {
-            modbus_debug("Bin check failed byte %u. Device disabled.", n);
-            dev->enabled = false;
-            return;
-        }
-    }
-
-    modbus_debug("Bin check for device %"PRIu8" passed", dev->slave_id);
-    dev->enabled = true;
-}
-
-
-static void _modbus_reg_ids_check_cb(modbus_reg_ids_check_t * reg, uint8_t * data, uint8_t size)
-{
-    modbus_dev_t * dev = modbus_reg_get_dev(&reg->base);
-    if (!dev)
-    {
-        modbus_debug("No matching device for slave ID.");
-        return;
-    }
-
-    if (size != 2)
-        return;
-    uint16_t id = data[0] << 8 | data[1];
-
-    modbus_debug("ID check for device %"PRIu8" ID:%"PRIu16, dev->slave_id, id);
-
-    for(unsigned n = 0; n < (reg->base.class_data / sizeof(uint16_t)); n++)
-    {
-        if (reg->ids[n] == id)
-        {
-            modbus_debug("ID check passed");
-            dev->enabled = true;
-        }
-    }
-
-    modbus_debug("ID check failed");
-    dev->enabled = false;
-}
-
-
 static void _modbus_reg_u16_cb(modbus_reg_u16_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 2)
@@ -580,8 +518,6 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 
     switch(reg->type)
     {
-        case MODBUS_REG_TYPE_BIN:    cb = (modbus_reg_cb)_modbus_reg_bin_check_cb;break;
-        case MODBUS_REG_TYPE_U16_ID: cb = (modbus_reg_cb)_modbus_reg_ids_check_cb;break;
         case MODBUS_REG_TYPE_U16:    cb = (modbus_reg_cb)_modbus_reg_u16_cb;break;
         case MODBUS_REG_TYPE_U32:    cb = (modbus_reg_cb)_modbus_reg_u32_cb;break;
         case MODBUS_REG_TYPE_FLOAT:  cb = (modbus_reg_cb)_modbus_reg_float_cb;break;
@@ -766,7 +702,7 @@ void           modbus_config_wipe(void)
 }
 
 
-bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count, void * data, unsigned data_size)
+bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count)
 {
     if (!dev || !name)
         return false;
@@ -801,16 +737,6 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
 
     switch (type)
     {
-        case MODBUS_REG_TYPE_BIN    :
-            if (!data)
-                return false;
-            size += sizeof(modbus_reg_t) + data_size;
-            break;
-        case MODBUS_REG_TYPE_U16_ID :
-            if (!data)
-                return false;
-            size += sizeof(modbus_reg_t) + data_size;
-            break;
         case MODBUS_REG_TYPE_U16    :
             size += sizeof(modbus_reg_u16_t);
             break;
@@ -851,18 +777,6 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
 
     switch (type)
     {
-        case MODBUS_REG_TYPE_BIN:
-        {
-            memcpy(((modbus_reg_bin_check_t*)dst_reg)->ref, data, data_size);
-            dst_reg->class_data = data_size;
-            return true;
-        }
-        case MODBUS_REG_TYPE_U16_ID:
-        {
-            memcpy(((modbus_reg_ids_check_t*)dst_reg)->ids, data, data_size);
-            dst_reg->class_data = data_size;
-            return true;
-        }
         case MODBUS_REG_TYPE_U16   : ((modbus_reg_u16_t*)dst_reg)->valid = 0; return true;
         case MODBUS_REG_TYPE_U32   : ((modbus_reg_u32_t*)dst_reg)->valid = 0; return true;
         case MODBUS_REG_TYPE_FLOAT : ((modbus_reg_float_t*)dst_reg)->valid = 0; return true;
@@ -915,14 +829,6 @@ bool              modbus_reg_get_data(modbus_reg_t * reg, void ** data, unsigned
 
     switch (reg->type)
     {
-        case MODBUS_REG_TYPE_BIN    :
-            *data = ((modbus_reg_bin_check_t*)reg)->ref;
-            *size = reg->class_data;
-            return true;
-        case MODBUS_REG_TYPE_U16_ID :
-            *data = ((modbus_reg_ids_check_t*)reg)->ids;
-            *size = reg->class_data;
-            return true;
         case MODBUS_REG_TYPE_U16    :
             if (!((modbus_reg_u16_t*)reg)->valid)
                 return false;

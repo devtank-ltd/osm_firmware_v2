@@ -435,7 +435,7 @@ static void modbus_add_reg_cb(char * args)
         return;
     }
 
-    if (modbus_dev_add_reg(dev, name, type, func, reg_addr, reg_count, NULL, 0))
+    if (modbus_dev_add_reg(dev, name, type, func, reg_addr, reg_count))
         log_out("Added modbus reg");
     else
         log_out("Failed to add modbus reg.");

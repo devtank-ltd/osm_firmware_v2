@@ -13,8 +13,6 @@
 typedef enum
 {
     MODBUS_REG_TYPE_INVALID,
-    MODBUS_REG_TYPE_BIN,
-    MODBUS_REG_TYPE_U16_ID,
     MODBUS_REG_TYPE_U16,
     MODBUS_REG_TYPE_U32,
     MODBUS_REG_TYPE_FLOAT,
@@ -50,7 +48,7 @@ extern modbus_dev_t * modbus_add_device(unsigned slave_id, char *name);
 
 extern void           modbus_config_wipe(void);
 
-extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count, void * data, unsigned data_size);
+extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count);
 extern bool           modbus_dev_is_enabled(modbus_dev_t * dev);
 extern unsigned       modbus_get_reg_num(modbus_dev_t * dev);
 extern modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index);
