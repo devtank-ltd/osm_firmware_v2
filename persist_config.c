@@ -22,19 +22,11 @@
 
 typedef struct
 {
-    uint8_t     uuid;
-    uint16_t    interval;
-    uint16_t    samplerate;
-} __attribute__((__packed__)) persist_measurement_t;
-
-
-typedef struct
-{
     uint32_t                version;
     uint32_t                log_debug_mask;
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
-    persist_measurement_t   p_measurements[LW__MAX_MEASUREMENTS];
+    measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
     modbus_bus_config_t     modbus_bus_config;
 } __attribute__((__packed__)) persist_storage_t;
 
@@ -202,62 +194,20 @@ bool persist_get_lw_app_key(char** app_key)
 }
 
 
-bool persist_set_interval(uint8_t uuid, uint16_t interval)
+bool persist_get_measurements(measurement_def_base_t** m_arr)
 {
-    persist_data.version = PERSIST__VERSION;
-    persist_measurement_t* measurement;
-    uint16_t num_measurements = measurements_num_measurements();
-    for (unsigned int i = 0; i < num_measurements; i++)
+    if (!persist_data_valid || !m_arr)
     {
-        measurement = (persist_measurement_t*)&persist_data.p_measurements[i];
-        if (measurement->uuid == uuid)
-        {
-            measurement->interval = interval;
-            _persistent_commit();
-            return true;
-        }
+        return false;
     }
-    return false;
+    *m_arr = persist_data.measurements_arr;
+    return true;
 }
 
 
-bool persist_get_interval(uint8_t uuid, uint16_t* interval)
+void persist_commit_measurement(void)
 {
-    persist_measurement_t* measurement;
-    uint16_t num_measurements = measurements_num_measurements();
-    for (unsigned int i = 0; i < num_measurements; i++)
-    {
-        measurement = (persist_measurement_t*)&persist_data.p_measurements[i];
-        if (measurement->uuid == uuid)
-        {
-            *interval = measurement->interval;
-            return true;
-        }
-    }
-    return false;
-}
-
-
-void persist_new_interval(uint8_t uuid, uint16_t interval)
-{
-    persist_data.version = PERSIST__VERSION;
-    persist_measurement_t* measurement;
-    uint16_t num_measurements = measurements_num_measurements();
-    if (persist_set_interval(uuid, interval))
-    {
-        return;
-    }
-    for (unsigned int i = 0; i < num_measurements; i++)
-    {
-        measurement = (persist_measurement_t*)&persist_data.p_measurements[i];
-        if (measurement->uuid == 0)
-        {
-            measurement->uuid = uuid;
-            measurement->interval = interval;
-            _persistent_commit();
-            return;
-        }
-    }
+    _persistent_commit();
 }
 
 
