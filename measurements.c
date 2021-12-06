@@ -471,27 +471,6 @@ void measurements_init(void)
         return;
     }
 
-    {
-        measurement_def_t temp_def;
-        strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, sizeof(temp_def.base.name));
-        temp_def.base.interval = 1;
-        temp_def.base.samplecount = 5;
-        temp_def.base.type = PM10;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
-    }
-    {
-        measurement_def_t temp_def;
-        strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, strlen(temp_def.base.name));
-        temp_def.base.interval = 1;
-        temp_def.base.samplecount = 5;
-        temp_def.base.type = PM25;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
-    }
-    measurements_save();
-
-
     for(unsigned n = 0; n < LW__MAX_MEASUREMENTS; n++)
     {
         measurement_def_base_t* def_base = &persistent_measurement_arr[n];
