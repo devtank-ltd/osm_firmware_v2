@@ -20,10 +20,10 @@ extern void platform_raw_msg(const char * s)
     uart_blocking(UART_ERR_NU, "\n\r", 2);
 }
 
+static char log_buffer[LOG_LINELEN];
 
 static void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
 {
-    char log_buffer[LOG_LINELEN];
     unsigned len = vsnprintf(log_buffer, LOG_LINELEN, s, ap);
     log_buffer[LOG_LINELEN-1] = 0;
     if (len > LOG_LINELEN-1)
