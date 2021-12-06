@@ -24,6 +24,10 @@ typedef enum
 typedef struct modbus_dev_t modbus_dev_t;
 typedef struct modbus_reg_t modbus_reg_t;
 
+
+extern char * modbus_reg_type_get_str(modbus_reg_type_t type);
+
+
 extern bool modbus_start_read(modbus_reg_t * reg);
 
 extern void modbus_ring_process(ring_buf_t * ring);
@@ -36,15 +40,23 @@ extern uint32_t modbus_start_delay(void);
 extern uint32_t modbus_stop_delay(void);
 
 
+extern void           modbus_log();
+
 extern unsigned       modbus_get_device_count(void);
 extern modbus_dev_t * modbus_get_device(unsigned index);
 extern modbus_dev_t * modbus_get_device_by_id(unsigned slave_id);
 
 extern modbus_dev_t * modbus_add_device(unsigned slave_id, char *name);
 
+extern void           modbus_config_wipe(void);
+
 extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count, void * data, unsigned data_size);
 extern bool           modbus_dev_is_enabled(modbus_dev_t * dev);
-extern modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, char * name);
+extern unsigned       modbus_get_reg_num(modbus_dev_t * dev);
+extern modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index);
+extern modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name);
+extern char *         modbus_dev_get_name(modbus_dev_t * dev);
+extern uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev);
 
 extern modbus_reg_t * modbus_get_reg(char * name);
 
@@ -55,6 +67,6 @@ extern bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value
 extern bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value);
 extern bool              modbus_reg_get_float(modbus_reg_t * reg, float * value);
 
-extern void modbus_save(void);
+extern void modbus_save();
 
 extern void modbus_init(void);

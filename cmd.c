@@ -47,6 +47,7 @@ static void modbus_setup_cb(char *args);
 static void modbus_add_dev_cb(char *args);
 static void modbus_add_reg_cb(char *args);
 static void modbus_get_reg_cb(char *args);
+static void modbus_wipe_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -64,7 +65,10 @@ static cmd_t cmds[] = {
     { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
     { "mb_dev_add","Add modbus dev",         modbus_add_dev_cb},
     { "mb_reg_add","Add modbus reg",         modbus_add_reg_cb},
-    { "mb_get_add","Get modbus reg",         modbus_get_reg_cb},
+    { "mb_get_reg","Get modbus reg",         modbus_get_reg_cb},
+    { "mb_wipe",   "Wipe modbus setup",      modbus_wipe_cb},
+    { "mb_log",    "Show modbus setup",      modbus_log},
+    { "mb_save",   "Save modbus setup",      modbus_save},
     { NULL },
 };
 
@@ -325,13 +329,11 @@ static void modbus_setup_cb(char *args)
 
 static void modbus_add_dev_cb(char * args)
 {
-    char * name = skip_space(args);
-    char * name_end = skip_to_space(name);
-
-    char * pos = skip_space(name_end);
-    name_end[0] = 0;
+    char * pos = skip_space(args);
 
     uint16_t slave_id = strtoul(pos, &pos, 16);
+
+    char * name = skip_space(pos);
 
     if (modbus_add_device(slave_id, name))
         log_out("Added modbus device");
@@ -342,11 +344,29 @@ static void modbus_add_dev_cb(char * args)
 
 static void modbus_add_reg_cb(char * args)
 {
-    char * name = skip_space(args);
-    char * name_end = skip_to_space(name);
+    char * pos = skip_space(args);
 
-    char * pos = skip_space(name_end);
-    name_end[0] = 0;
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t slave_id = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t reg_addr = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    uint8_t reg_count = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
+
+    uint8_t func = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
 
     modbus_reg_type_t type = MODBUS_REG_TYPE_INVALID;
 
@@ -378,22 +398,7 @@ static void modbus_add_reg_cb(char * args)
         return;
     }
 
-    uint8_t func = strtoul(pos, &pos, 10);
-
-    pos = skip_space(pos);
-
-    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
-        pos += 2;
-
-    uint16_t slave_id = strtoul(pos, &pos, 16);
-
-    pos = skip_space(pos);
-
-    uint16_t reg_addr = strtoul(pos, &pos, 16);
-
-    pos = skip_space(pos);
-
-    uint8_t reg_count = strtoul(pos, NULL, 10);
+    char * name = pos;
 
     modbus_dev_t * dev = modbus_get_device_by_id(slave_id);
     if (!dev)
@@ -425,6 +430,15 @@ static void modbus_get_reg_cb(char * args)
 
     modbus_start_read(reg);
 }
+
+
+static void modbus_wipe_cb(char *args)
+{
+    modbus_config_wipe();
+    modbus_save();
+    log_out("Modbus wiped.");
+}
+
 
 
 void cmds_process(char * command, unsigned len)
