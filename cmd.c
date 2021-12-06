@@ -43,7 +43,7 @@ static void lora_config_cb(char *args);
 static void interval_cb(char *args);
 static void samplecount_cb(char * args);
 static void debug_cb(char *args);
-static void hmp_cb(char *args);
+static void hpm_cb(char *args);
 static void modbus_setup_cb(char *args);
 static void modbus_add_dev_cb(char *args);
 static void modbus_add_reg_cb(char *args);
