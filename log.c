@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <libopencm3/stm32/usart.h>
 
@@ -22,13 +23,9 @@ extern void platform_raw_msg(const char * s)
 
 static char log_buffer[LOG_LINELEN];
 
-static void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
-{
-    unsigned len = vsnprintf(log_buffer, LOG_LINELEN, s, ap);
-    log_buffer[LOG_LINELEN-1] = 0;
-    if (len > LOG_LINELEN-1)
-        len = LOG_LINELEN-1;
 
+static void _dispatch_line(unsigned uart, bool blocking, const char * prefix, unsigned len)
+{
     if (!blocking)
     {
         if (prefix)
@@ -43,6 +40,17 @@ static void log_msgv(unsigned uart, bool blocking, const char * prefix, const ch
         uart_blocking(uart, log_buffer, len);
         uart_blocking(uart, "\n\r", 2);
     }
+}
+
+
+static void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
+{
+    unsigned len = vsnprintf(log_buffer, LOG_LINELEN, s, ap);
+    log_buffer[LOG_LINELEN-1] = 0;
+    if (len > LOG_LINELEN-1)
+        len = LOG_LINELEN-1;
+
+    _dispatch_line(uart, blocking, prefix, len);
 }
 
 
@@ -89,4 +97,31 @@ void log_out(const char * s, ...)
 extern void log_init(void)
 {
     log_debug_mask = persist_get_log_debug_mask();
+}
+
+
+void log_debug_data(uint32_t flag, void * data, unsigned size)
+{
+    if ((flag & log_debug_mask) != flag)
+        return;
+    uint8_t * src = (uint8_t*)data;
+    uart_rings_out_drain();
+    while(size)
+    {
+        char * pos = log_buffer;
+        snprintf(pos, 12, "0x%08x ", (uintptr_t)src);
+        pos+=11;
+        unsigned len = (size > 16)?16:size;
+        for(unsigned i = 0; i <len; i++, pos+=2)
+        {
+            uart_rings_out_drain();
+            snprintf(pos, 3, "%02"PRIx8, src[i]);
+        }
+        size -= len;
+        src += len;
+
+        _dispatch_line(UART_ERR_NU, false, NULL, 43);
+
+        uart_rings_out_drain();
+    }
 }
