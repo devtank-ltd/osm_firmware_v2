@@ -65,10 +65,9 @@ struct modbus_reg_t
 struct modbus_dev_t
 {
     char           name[MODBUS_NAME_LEN];
-    uint8_t        enabled;
     uint8_t        slave_id;
     uint8_t        reg_num;
-    uint8_t        _; /* pad */
+    uint16_t       _; /* pad.*/
     uint32_t       regs[MODBUS_DEV_REGS]; /* Offsets to regsiters */
 } __attribute__((__packed__)) ;
 
@@ -660,7 +659,6 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
         {
             memcpy(dev->name, name, len);
             dev->slave_id = slave_id;
-            dev->enabled = false;
             dev->reg_num = 0;
             modbus_debug("Added device 0x%"PRIx16" \"%s\"", slave_id, name);
             return dev;
@@ -754,15 +752,7 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
 }
 
 
-bool           modbus_dev_is_enabled(modbus_dev_t * dev)
-{
-    if (!dev)
-        return false;
-    return dev->enabled;
-}
-
-
-unsigned       modbus_get_reg_num(modbus_dev_t * dev)
+unsigned       modbus_dev_get_reg_num(modbus_dev_t * dev)
 {
     if (!dev)
         return 0;
