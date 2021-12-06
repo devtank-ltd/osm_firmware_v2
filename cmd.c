@@ -64,7 +64,7 @@ static cmd_t cmds[] = {
     { "interval", "Set the interval",        interval_cb},
     { "samplecount", "Set the samplecount",  samplecount_cb},
     { "debug",     "Set hex debug mask",     debug_cb},
-    { "hpm",       "Enable/Disable HPM",     hmp_cb},
+    { "hpm",       "Enable/Disable HPM",     hpm_cb},
     { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
     { "mb_dev_add","Add modbus dev",         modbus_add_dev_cb},
     { "mb_reg_add","Add modbus reg",         modbus_add_reg_cb},
@@ -320,7 +320,7 @@ static void debug_cb(char * args)
 }
 
 
-static void hmp_cb(char *args)
+static void hpm_cb(char *args)
 {
     if (args[0] != '0')
     {
