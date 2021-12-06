@@ -80,13 +80,13 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
     {
         if (!uart_is_tx_empty(uart))
         {
-            log_error("UArt already DMAing without ring.");
+            log_error("UART %u already DMAing without ring.", uart);
             return 0;
         }
 
         if (len > DMA_DATA_PCK_SZ)
         {
-            log_error("String too big for DMA without ring.");
+            log_error("String too big for UART %u DMA without ring.", uart);
             return 0;
         }
 

@@ -5,16 +5,14 @@
 
 #define MODBUS_READ_HOLDING_FUNC 3
 
-#define MODBUS_NAME_LEN 8
-#define MODBUS_DEV_REGS 8
+#define MODBUS_NAME_LEN 4
+#define MODBUS_DEV_REGS 4
 
 #define modbus_debug(...) log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
 
 typedef enum
 {
     MODBUS_REG_TYPE_INVALID,
-    MODBUS_REG_TYPE_BIN,
-    MODBUS_REG_TYPE_U16_ID,
     MODBUS_REG_TYPE_U16,
     MODBUS_REG_TYPE_U32,
     MODBUS_REG_TYPE_FLOAT,
@@ -50,7 +48,7 @@ extern modbus_dev_t * modbus_add_device(unsigned slave_id, char *name);
 
 extern void           modbus_config_wipe(void);
 
-extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr, uint8_t reg_count, void * data, unsigned data_size);
+extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr);
 extern bool           modbus_dev_is_enabled(modbus_dev_t * dev);
 extern unsigned       modbus_get_reg_num(modbus_dev_t * dev);
 extern modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index);
@@ -61,7 +59,6 @@ extern uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev);
 extern modbus_reg_t * modbus_get_reg(char * name);
 
 extern modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg);
-extern bool              modbus_reg_get_data(modbus_reg_t * reg, void ** data, unsigned * size);
 extern modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg);
 extern bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value);
 extern bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value);

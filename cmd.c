@@ -388,10 +388,6 @@ static void modbus_add_reg_cb(char * args)
 
     pos = skip_space(pos);
 
-    uint8_t reg_count = strtoul(pos, &pos, 10);
-
-    pos = skip_space(pos);
-
     uint8_t func = strtoul(pos, &pos, 10);
 
     pos = skip_space(pos);
@@ -435,7 +431,7 @@ static void modbus_add_reg_cb(char * args)
         return;
     }
 
-    if (modbus_dev_add_reg(dev, name, type, func, reg_addr, reg_count, NULL, 0))
+    if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
         log_out("Added modbus reg");
     else
         log_out("Failed to add modbus reg.");
