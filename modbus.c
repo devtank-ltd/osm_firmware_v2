@@ -1009,9 +1009,10 @@ void modbus_init(void)
     }
     else _modbus_setup_delays(MODBUS_SPEED, MODBUS_DATABITS, MODBUS_PARITY, MODBUS_STOP);
 
+    modbus_data    = persist_get_modbus_data();
+
     modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
 
-    modbus_data    = persist_get_modbus_data();
     modbus_devices = (modbus_dev_t*)(modbus_data + sizeof(modbus_blob_header_t));
 
     if (header->version == MODBUS_BLOB_VERSION &&
