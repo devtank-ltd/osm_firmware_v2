@@ -1,7 +1,7 @@
 #ifndef __CONFIG__
 #define __CONFIG__
 
-#define CMD_LINELEN 32
+#define CMD_LINELEN 64
 #define LOG_LINELEN 64
 
 /* On some versions of gcc this header isn't defining it. Quick fix. */
@@ -66,7 +66,7 @@
 #define UART_2_OUT_BUF_SIZE 1
 
 #define UART_3_IN_BUF_SIZE  128
-#define UART_3_OUT_BUF_SIZE 1
+#define UART_3_OUT_BUF_SIZE 128
 
 /* Uart Index on STM Uart */
 
