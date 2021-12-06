@@ -49,7 +49,7 @@ static void _lw_config_valid(void)
             if (!isascii(persist_data_raw->lw_dev_eui[n]))
             {
                 persist_data_lw_valid = false;
-                log_error("Persistent data not valid");
+                log_error("Persistent data lw dev not valid");
                 break;
             }
         }
@@ -58,7 +58,7 @@ static void _lw_config_valid(void)
             if (!isascii(persist_data_raw->lw_app_key[n]))
             {
                 persist_data_lw_valid = false;
-                log_error("Persistent data not valid");
+                log_error("Persistent data lw app not valid");
                 break;
             }
         }
@@ -149,25 +149,28 @@ uint32_t persist_get_log_debug_mask(void)
 void persist_set_lw_dev_eui(char* dev_eui)
 {
     persist_data.version = PERSIST__VERSION;
-    if (!dev_eui || strlen(dev_eui) > LW__DEV_EUI_LEN)
+    unsigned len = (dev_eui)?strlen(dev_eui):(LW__DEV_EUI_LEN+1);
+    if (len > LW__DEV_EUI_LEN)
     {
         log_error("LORAWAN DEV EUI invalid.");
         return;
     }
-    memcpy(&persist_data.lw_dev_eui, &dev_eui, LW__DEV_EUI_LEN);
+    memcpy(persist_data.lw_dev_eui, dev_eui, len);
     _persistent_commit();
+    log_debug(DEBUG_LW, "lw dev set");
     _lw_config_valid();
 }
 
 
-bool persist_get_lw_dev_eui(char** dev_eui)
+bool persist_get_lw_dev_eui(char dev_eui[LW__DEV_EUI_LEN + 1])
 {
     if (!persist_data_lw_valid || !dev_eui)
     {
         log_error("LORAWAN DEV EUI get failed.");
         return false;
     }
-    *dev_eui = persist_data.lw_dev_eui;
+    memcpy(dev_eui, persist_data.lw_dev_eui, LW__DEV_EUI_LEN);
+    dev_eui[LW__DEV_EUI_LEN] = 0;
     return true;
 }
 
@@ -175,25 +178,28 @@ bool persist_get_lw_dev_eui(char** dev_eui)
 void persist_set_lw_app_key(char* app_key)
 {
     persist_data.version = PERSIST__VERSION;
-    if (!app_key || strlen(app_key) > LW__APP_KEY_LEN)
+    unsigned len = (app_key)?strlen(app_key):(LW__APP_KEY_LEN+1);
+    if (len > LW__APP_KEY_LEN)
     {
         log_error("LORAWAN APP KEY invalid.");
         return;
     }
-    memcpy(&persist_data.lw_app_key, &app_key, LW__APP_KEY_LEN);
+    memcpy(persist_data.lw_app_key, app_key, len);
     _persistent_commit();
+    log_debug(DEBUG_LW, "lw app set");
     _lw_config_valid();
 }
 
 
-bool persist_get_lw_app_key(char** app_key)
+bool persist_get_lw_app_key(char app_key[LW__APP_KEY_LEN+1])
 {
     if (!persist_data_lw_valid || !app_key)
     {
         log_error("LORAWAN APP KEY get failed.");
         return false;
     }
-    *app_key = persist_data.lw_app_key;
+    memcpy(app_key, persist_data.lw_app_key, LW__APP_KEY_LEN);
+    app_key[LW__APP_KEY_LEN] = 0;
     return true;
 }
 

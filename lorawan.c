@@ -146,8 +146,8 @@ typedef struct
 lw_state_machine_t lw_state_machine = {LW_STATE_INIT, .data={.init_step = 0}};
 
 
-static char* lw_dev_eui;
-static char* lw_app_key;
+static char lw_dev_eui[LW__DEV_EUI_LEN + 1];
+static char lw_app_key[LW__APP_KEY_LEN + 1];
 
 
 char init_msgs[][64] = { "at+set_config=lora:default_parameters",
@@ -170,7 +170,7 @@ void lorawan_init(void)
         return;
     }
 
-    if (persist_get_lw_dev_eui(&lw_dev_eui) && persist_get_lw_app_key(&lw_app_key))
+    if (persist_get_lw_dev_eui(lw_dev_eui) && persist_get_lw_app_key(lw_app_key))
     {
         char buf[64];
         snprintf(buf, sizeof(buf), "at+set_config=lora:dev_eui:%s", lw_dev_eui);
