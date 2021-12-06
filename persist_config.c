@@ -25,7 +25,7 @@ typedef struct
     uint32_t                version;
     uint32_t                log_debug_mask;
     modbus_bus_config_t     modbus_bus_config;
-    uint8_t                 modbus_data[256];
+    uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
