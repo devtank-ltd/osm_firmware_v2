@@ -21,7 +21,7 @@ typedef enum
 
 typedef struct
 {
-    char     name[8];                                   // Name of the measurement
+    char     name[5];                                   // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type;

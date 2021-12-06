@@ -173,11 +173,10 @@ static bool measurements_arr_append_i64(int64_t val)
 }
 
 
-
-#define measurements_arr_append(_b_) _Generic((_b_),                       \
-                                    signed char: measurements_arr_append_i8,   \
-                                    short int: measurements_arr_append_i16, \
-                                    long int: measurements_arr_append_i32, \
+#define measurements_arr_append(_b_) _Generic((_b_),                            \
+                                    signed char: measurements_arr_append_i8,    \
+                                    short int: measurements_arr_append_i16,     \
+                                    long int: measurements_arr_append_i32,      \
                                     long long int: measurements_arr_append_i64)(_b_)
 
 
@@ -187,7 +186,7 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
     int16_t mean = measurement_data->sum / measurement_data->num_samples;
 
     bool r = 0;
-    r |= !measurements_arr_append(*(int64_t*)measurement_def->base.name);
+    r |= !measurements_arr_append(*(int32_t*)measurement_def->base.name);
     if (single)
     {
         r |= !measurements_arr_append((int8_t)MEASUREMENTS__DATATYPE_SINGLE);
@@ -200,7 +199,7 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
         r |= !measurements_arr_append((int16_t)measurement_data->min);
         r |= !measurements_arr_append((int16_t)measurement_data->max);
     }
-    return r;
+    return !r;
 }
 
 
@@ -212,6 +211,8 @@ static void measurements_send(void)
 
     memset(measurements_hex_arr, 0, LW__MAX_MEASUREMENTS);
     measurements_hex_arr_pos = 0;
+
+    log_debug(DEBUG_MEASUREMENTS, "Attempting to send measurements");
 
     if (!measurements_arr_append((int8_t)MEASUREMENTS__PAYLOAD_VERSION))
     {
@@ -231,10 +232,12 @@ static void measurements_send(void)
                 log_error("Measurement requested but value not set.");
                 continue;
             }
-            if (measurements_to_arr(m_def, m_data))
+            if (!measurements_to_arr(m_def, m_data))
             {
-                num_qd++;
+                return;
             }
+            num_qd++;
+            memset(m_data, 0, sizeof(measurement_data_t));
         }
     }
     if (num_qd > 0)
@@ -516,7 +519,7 @@ void measurements_init(void)
         }
         {
             measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, strlen(temp_def.base.name));
+            strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, strlen(temp_def.base.name));
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 5;
             temp_def.base.type = PM25;
@@ -526,7 +529,6 @@ void measurements_init(void)
         measurements_save();
         return;
     }
-    log_error("Measurements loaded.");
 
     for(unsigned n = 0; n < LW__MAX_MEASUREMENTS; n++)
     {
