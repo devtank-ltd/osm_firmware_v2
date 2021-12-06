@@ -15,27 +15,33 @@
 #include "log.h"
 #include "cmd.h"
 #include "measurements.h"
+#include "persist_config.h"
 
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
 #define LW_BUFFER_SIZE          512
 #define LW_MESSAGE_DELAY        30000
 
-#define LW_JOIN_MODE_OTAA       0
-#define LW_JOIN_MODE_ABP        1
-#define LW_JOIN_MODE            LW_JOIN_MODE_OTAA
-#define LW_CLASS_A              0
-#define LW_CLASS_C              2
-#define LW_CLASS                LW_CLASS_C
-#define LW_REGION               "EU868"
+#define LW_SETTING__JOIN_MODE_OTAA       0
+#define LW_SETTING__JOIN_MODE_ABP        1
+#define LW_SETTING__CLASS_A              0
+#define LW_SETTING__CLASS_C              2
+#define LW_SETTING__UNCONFIRM            0
+#define LW_SETTING__CONFIRM              1
+
+
+#define LW_CONFIG__JOIN_MODE        STR(LW_SETTING__JOIN_MODE_OTAA)
+#define LW_CONFIG__CLASS            STR(LW_SETTING__CLASS_C)
+#define LW_CONFIG__REGION           "EU868"
+#define LW_CONFIG__CONFIRM_TYPE     STR(LW_SETTING__CONFIRM)
 // TODO: Dev EUI and App Key should not be baked in.
-#define LW_DEV_EUI              "118f875d6994bbfd"
+#define LW_CONFIG__DEV_EUI          "118f875d6994bbfd"
 // For Chirpstack OTAA the App EUI must match the Dev EUI
-#define LW_APP_EUI              LW_DEV_EUI
-#define LW_APP_KEY              "d9597152b1293bb9c0e220cd04fc973c"
+#define LW_CONFIG__APP_EUI          LW_CONFIG__DEV_EUI
+#define LW_CONFIG__APP_KEY          "d9597152b1293bb9c0e220cd04fc973c"
 
 
-#define LW_FMT__TEMPERATURE                 "%02X%02X%04X"
+#define LW_FMT__TEMPERATURE         "%02X%02X%04X"
 
 
 typedef struct
@@ -140,15 +146,20 @@ typedef struct
 lw_state_machine_t lw_state_machine = {LW_STATE_INIT, .data={.init_step = 0}};
 
 
-const char init_msgs[][64] = { "at+set_config=lora:default_parameters",
-                               "at+set_config=lora:join_mode:"STR(LW_JOIN_MODE),
-                               "at+set_config=lora:class:"STR(LW_CLASS),
-                               "at+set_config=lora:region:"LW_REGION,
-                               "at+set_config=lora:dev_eui:"LW_DEV_EUI,
-                               "at+set_config=lora:app_eui:"LW_APP_EUI,
-                               "at+set_config=lora:app_key:"LW_APP_KEY,
-                               "at+set_config=device:restart",
-                               "at+join" };
+static char* lw_dev_eui;
+static char* lw_app_key;
+
+
+char init_msgs[][64] = { "at+set_config=lora:default_parameters",
+                         "at+set_config=lora:join_mode:"LW_CONFIG__JOIN_MODE,
+                         "at+set_config=lora:class:"LW_CONFIG__CLASS,
+                         "at+set_config=lora:region:"LW_CONFIG__REGION,
+                         "at+set_config=lora:confirm:"LW_CONFIG__CONFIRM_TYPE,
+                         "at+set_config=lora:dev_eui:"LW_CONFIG__DEV_EUI,
+                         "at+set_config=lora:app_eui:"LW_CONFIG__APP_EUI,
+                         "at+set_config=lora:app_key:"LW_CONFIG__APP_KEY,
+                         "at+set_config=device:restart",
+                         "at+join" };
 
 
 void lorawan_init(void)
@@ -158,6 +169,18 @@ void lorawan_init(void)
         log_error("LW not expected in init state.");
         return;
     }
+
+    if (persist_get_lw_dev_eui(&lw_dev_eui) && persist_get_lw_app_key(&lw_app_key))
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "at+set_config=lora:dev_eui:%s", lw_dev_eui);
+        strncpy(init_msgs[5], buf, sizeof(buf));
+        snprintf(buf, sizeof(buf), "at+set_config=lora:app_eui:%s", lw_dev_eui);
+        strncpy(init_msgs[6], buf, sizeof(buf));
+        snprintf(buf, sizeof(buf), "at+set_config=lora:app_key:%s", lw_app_key);
+        strncpy(init_msgs[7], buf, sizeof(buf));
+    }
+
     lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
 }
 
@@ -230,7 +253,7 @@ void lw_process(char* message)
         }
         lw_state_machine.state = LW_STATE_IDLE;
     }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step < 8))
+    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step < 9))
     {
         if (lw_msg_is_ok(message))
         {
@@ -239,11 +262,11 @@ void lw_process(char* message)
         else
         {
             log_debug(DEBUG_LW, "LORA: Setting not OKed. Retrying.");
-            //lw_set_config(init_msgs[lw_state_machine.data.init_step]);
+            lw_set_config(init_msgs[lw_state_machine.data.init_step]);
         }
         lw_spin_us(LW_MESSAGE_DELAY);
     }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 8)) /*Restart*/
+    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 9)) /*Restart*/
     {
         if (strstr(message, "UART1") == message ||
             strstr(message, "Current work") == message)
@@ -259,7 +282,7 @@ void lw_process(char* message)
              /*HANDLE ERROR!*/
         }
     }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 9)) /*Join*/
+    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 10)) /*Join*/
     {
         if (strcmp(message, "OK Join Success") == 0)
         {
