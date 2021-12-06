@@ -48,17 +48,27 @@
 
 #define CMD_OUT_BUF_SIZE 1024
 
+/* Uart index on uart ring buffer use
+
+    CMD_UART   0
+    LW_UART    1
+    HPM_UART   2
+    RS485_UART 3
+*/
+
 #define UART_0_IN_BUF_SIZE  CMD_LINELEN
 #define UART_0_OUT_BUF_SIZE 1024
 
-#define UART_1_IN_BUF_SIZE  512
-#define UART_1_OUT_BUF_SIZE 512
+#define UART_1_IN_BUF_SIZE  128
+#define UART_1_OUT_BUF_SIZE 128
 
-#define UART_2_IN_BUF_SIZE  512
-#define UART_2_OUT_BUF_SIZE 512
+#define UART_2_IN_BUF_SIZE  64
+#define UART_2_OUT_BUF_SIZE 1
 
-#define UART_3_IN_BUF_SIZE  512
-#define UART_3_OUT_BUF_SIZE 512
+#define UART_3_IN_BUF_SIZE  128
+#define UART_3_OUT_BUF_SIZE 1
+
+/* Uart Index on STM Uart */
 
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
