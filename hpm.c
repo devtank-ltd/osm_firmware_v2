@@ -33,11 +33,11 @@ typedef struct
 {
     uint8_t id;
     uint8_t len;
-} __attribute__((packed)) hmp_packet_header_t;
+} __attribute__((packed)) hpm_packet_header_t;
 
 typedef struct
 {
-    hmp_packet_header_t header;
+    hpm_packet_header_t header;
     void (*cb)(uint8_t *data);
 } hpm_response_t;
 
@@ -147,7 +147,7 @@ static void process_ack_response(uint8_t *data)
 
 void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 {
-    static hmp_packet_header_t header;
+    static hpm_packet_header_t header;
     static bool header_active = false;
 
     unsigned len = ring_buf_get_pending(ring);
