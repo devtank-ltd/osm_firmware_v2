@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
@@ -73,9 +74,31 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
     if (uart >= UART_CHANNELS_COUNT)
         return 0;
 
-    ring_buf_t * ring;
+    ring_buf_t * ring = &ring_out_bufs[uart];
 
-    ring = &ring_out_bufs[uart];
+    if (ring->size == 1)
+    {
+        if (!uart_is_tx_empty(uart))
+        {
+            log_error("UArt already DMAing without ring.");
+            return 0;
+        }
+
+        if (len > DMA_DATA_PCK_SZ)
+        {
+            log_error("String too big for DMA without ring.");
+            return 0;
+        }
+
+        char *dma_mem = uart_dma_buf[uart];
+
+        memcpy(dma_mem, s, len);
+
+        uart_dma_out(uart, dma_mem, len);
+
+        return len;
+    }
+
     if (uart) // Add debug messages to debug ring buffer is a loop.
         log_debug(DEBUG_UART(uart), "UART %u out < %u", uart, len);
 

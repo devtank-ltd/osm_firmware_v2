@@ -17,6 +17,8 @@ extern void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
 extern void log_out(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
 extern void log_init(void);
 
+extern void log_debug_data(uint32_t flag, void * data, unsigned size);
+
 #define log_sys_debug(...) log_debug(DEBUG_SYS,  __VA_ARGS__)
 
 #endif //__LOG__

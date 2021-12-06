@@ -32,6 +32,11 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
+#define MODBUS_MEMORY_SIZE 256
+
+#define ALIGN_TO(_x, _y) ((_x + _y -1 ) & ~(_y - 1)) ///< Align one number to another, for instance 16 for optimial addressing.
+#define ALIGN_16(_x) ALIGN_TO(_x, 16)                ///< Align given number to 16.
+
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 
@@ -43,17 +48,27 @@
 
 #define CMD_OUT_BUF_SIZE 1024
 
+/* Uart index on uart ring buffer use
+
+    CMD_UART   0
+    LW_UART    1
+    HPM_UART   2
+    RS485_UART 3
+*/
+
 #define UART_0_IN_BUF_SIZE  CMD_LINELEN
 #define UART_0_OUT_BUF_SIZE 1024
 
-#define UART_1_IN_BUF_SIZE  512
-#define UART_1_OUT_BUF_SIZE 512
+#define UART_1_IN_BUF_SIZE  128
+#define UART_1_OUT_BUF_SIZE 128
 
-#define UART_2_IN_BUF_SIZE  512
-#define UART_2_OUT_BUF_SIZE 512
+#define UART_2_IN_BUF_SIZE  64
+#define UART_2_OUT_BUF_SIZE 1
 
-#define UART_3_IN_BUF_SIZE  512
-#define UART_3_OUT_BUF_SIZE 512
+#define UART_3_IN_BUF_SIZE  128
+#define UART_3_OUT_BUF_SIZE 1
+
+/* Uart Index on STM Uart */
 
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
@@ -77,7 +92,7 @@
 
 #define USB_DATA_PCK_SZ    64
 
-#define DMA_DATA_PCK_SZ    32
+#define DMA_DATA_PCK_SZ    64
 
 #define DEBUG_SYS   0x1
 #define DEBUG_ADC   0x2

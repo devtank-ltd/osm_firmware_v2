@@ -24,10 +24,11 @@ typedef struct
 {
     uint32_t                version;
     uint32_t                log_debug_mask;
+    modbus_bus_config_t     modbus_bus_config;
+    uint8_t                 modbus_data[256];
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
-    modbus_bus_config_t     modbus_bus_config;
 } __attribute__((__packed__)) persist_storage_t;
 
 
@@ -73,12 +74,15 @@ void init_persistent(void)
     if (vs != PERSIST__VERSION)
     {
         log_error("Persistent data version unknown.");
+        memset(&persist_data, 0, sizeof(persist_data));
+        persist_data.version = PERSIST__VERSION;
+        persist_data.log_debug_mask = DEBUG_SYS;
         return;
     }
 
     _lw_config_valid();
 
-    memcpy(&persist_data, persist_data_raw, sizeof(*persist_data_raw));
+    memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
     persist_data_valid = true;
 }
 
@@ -228,4 +232,16 @@ bool persist_get_modbus_bus_config(modbus_bus_config_t* config)
 
     memcpy(config, &persist_data.modbus_bus_config, sizeof(modbus_bus_config_t));
     return true;
+}
+
+
+uint8_t * persist_get_modbus_data(void)
+{
+    return persist_data.modbus_data;
+}
+
+
+void      persist_commit_modbus_data(void)
+{
+    _persistent_commit();
 }

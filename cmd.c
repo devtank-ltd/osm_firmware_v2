@@ -45,7 +45,10 @@ static void samplecount_cb(char * args);
 static void debug_cb(char *args);
 static void hmp_cb(char *args);
 static void modbus_setup_cb(char *args);
-static void modbus_test_cb(char *args);
+static void modbus_add_dev_cb(char *args);
+static void modbus_add_reg_cb(char *args);
+static void modbus_get_reg_cb(char *args);
+static void modbus_wipe_cb(char *args);
 static void measurements_cb(char *args);
 
 
@@ -63,7 +66,12 @@ static cmd_t cmds[] = {
     { "debug",     "Set hex debug mask",     debug_cb},
     { "hpm",       "Enable/Disable HPM",     hmp_cb},
     { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
-    { "mb_test",    "Read modbus reg",       modbus_test_cb},
+    { "mb_dev_add","Add modbus dev",         modbus_add_dev_cb},
+    { "mb_reg_add","Add modbus reg",         modbus_add_reg_cb},
+    { "mb_get_reg","Get modbus reg",         modbus_get_reg_cb},
+    { "mb_wipe",   "Wipe modbus setup",      modbus_wipe_cb},
+    { "mb_log",    "Show modbus setup",      modbus_log},
+    { "mb_save",   "Save modbus setup",      modbus_save},
     { "measurements", "Print measurements",  measurements_cb},
     { NULL },
 };
@@ -347,43 +355,117 @@ static void modbus_setup_cb(char *args)
 }
 
 
-static void modbus_cmd_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+static void modbus_add_dev_cb(char * args)
 {
-    for(unsigned n = 0; n < size; n++)
-        log_debug(DEBUG_MODBUS, "0x%"PRIx8, data[n]);
+    char * pos = skip_space(args);
+
+    uint16_t slave_id = strtoul(pos, &pos, 16);
+
+    char * name = skip_space(pos);
+
+    if (modbus_add_device(slave_id, name))
+        log_out("Added modbus device");
+    else
+        log_out("Failed to add modbus device.");
 }
 
 
-static void modbus_test_cb(char *args)
+static void modbus_add_reg_cb(char * args)
 {
     char * pos = skip_space(args);
 
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    static modbus_reg_t cmd_reg = {.name = "CMD", .func = MODBUS_READ_HOLDING_FUNC};
-
-    cmd_reg.slave_id = strtoul(pos, &pos, 16);
+    uint16_t slave_id = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    cmd_reg.addr = strtoul(pos, &pos, 16);
+    uint16_t reg_addr = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
-    cmd_reg.len = strtoul(pos, NULL, 10);
+    uint8_t reg_count = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
+
+    uint8_t func = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
+
+    modbus_reg_type_t type = MODBUS_REG_TYPE_INVALID;
+
+    if (pos[0] == 'U')
+    {
+        if (pos[1] == '1' && pos[2] == '6' && pos[3] == ' ')
+        {
+            type = MODBUS_REG_TYPE_U16;
+        }
+        else if (pos[1] == '3' && pos[2] == '2' && pos[3] == ' ')
+        {
+            type = MODBUS_REG_TYPE_U32;
+        }
+        else
+        {
+            log_out("Unknown modbus reg type.");
+            return;
+        }
+        pos = skip_space(pos + 3);
+    }
+    else if (pos[0] == 'F' && pos[1] == ' ')
+    {
+        type = MODBUS_REG_TYPE_FLOAT;
+        pos = skip_space(pos + 1);
+    }
+    else
+    {
+        log_out("Unknown modbus reg type.");
+        return;
+    }
+
+    char * name = pos;
+
+    modbus_dev_t * dev = modbus_get_device_by_id(slave_id);
+    if (!dev)
+    {
+        log_out("Unknown modbus device.");
+        return;
+    }
+
+    if (modbus_dev_add_reg(dev, name, type, func, reg_addr, reg_count, NULL, 0))
+        log_out("Added modbus reg");
+    else
+        log_out("Failed to add modbus reg.");
+}
+
+
+static void modbus_get_reg_cb(char * args)
+{
+    char * name = skip_space(args);
+
+    modbus_reg_t * reg = modbus_get_reg(name);
+
+    if (!reg)
+    {
+        log_out("Unknown modbus register.");
+        return;
+    }
 
     log_debug_mask |= DEBUG_MODBUS;
 
-    if (modbus_start_read(&cmd_reg, modbus_cmd_cb))
-        log_out("Modbus read sent");
-    else
-        log_out("Modbus read not sent");
+    modbus_start_read(reg);
 }
 
+
+static void modbus_wipe_cb(char *args)
+{
+    modbus_config_wipe();
+    modbus_save();
+    log_out("Modbus wiped.");
+}
 
 static void measurements_cb(char *args)
 {
