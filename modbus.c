@@ -527,13 +527,13 @@ static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned 
 }
 
 
-static uint64_t _get_id_of_name(char name[8])
+static uint32_t _get_id_of_name(char name[8])
 {
-    return *(uint64_t*)name;
+    return *(uint32_t*)name;
 }
 
 
-static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint64_t id)
+static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint32_t id)
 {
     for(unsigned n = 0; n < dev->reg_num; n++)
     {
@@ -607,7 +607,7 @@ modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
 {
     if (!dev || !name)
         return NULL;
-    uint64_t id = 0;
+    uint32_t id = 0;
     memcpy(&id, name, strlen(name));
     return _modbus_dev_get_reg_by_id(dev, id);
 }
