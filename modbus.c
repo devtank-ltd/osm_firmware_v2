@@ -316,6 +316,9 @@ bool modbus_start_read(modbus_reg_t * reg)
     }
     else uart_ring_out(RS485_UART, (char*)modbuspacket, 8); /* Frame is done with silence */
 
+    /* All current types use this as is_valid. */
+    reg->class_data_b = 0;
+
     current_reg = reg;
     modbus_sent_timing_init = since_boot_ms;
     return true;
