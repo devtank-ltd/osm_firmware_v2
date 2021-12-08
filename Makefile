@@ -44,7 +44,8 @@ SOURCES += main.c \
            value.c \
            persist_config.c \
            lorawan.c \
-           measurements.c
+           measurements.c \
+           modbus_measurements.c
 
 BUILD_DIR := build/
 PROJECT_NAME := firmware

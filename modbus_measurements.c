@@ -1,12 +1,12 @@
 #include "modbus_measurements.h"
 #include "modbus.h"
 
-uint32_t modbus_bus_collection_time(void)
+uint32_t modbus_measurements_collection_time(void)
 {
     return 500;
 }
 
-bool modbus_init(char* name)
+bool modbus_measurements_init(char* name)
 {
     modbus_reg_t * reg = modbus_get_reg(name);
     if (!reg)
@@ -15,16 +15,43 @@ bool modbus_init(char* name)
 }
 
 
-bool modbus_get(char* name, value_t* value)
+bool modbus_measurements_get(char* name, value_t* value)
 {
     modbus_reg_t * reg = modbus_get_reg(name);
-    if (!reg)
+    if (!reg || !value)
         return false;
     switch(modbus_reg_get_type(reg))
     {
         case MODBUS_REG_TYPE_U16:
+        {
+            uint16_t v;
+
+            if (!modbus_reg_get_u16(reg, &v))
+                return false;
+
+            *value = value_from(v);
+            return true;
+        }
         case MODBUS_REG_TYPE_U32:
+        {
+            uint32_t v;
+
+            if (!modbus_reg_get_u32(reg, &v))
+                return false;
+
+            *value = value_from(v);
+            return true;
+        }
         case MODBUS_REG_TYPE_FLOAT:
+        {
+            float v;
+
+            if (!modbus_reg_get_float(reg, &v))
+                return false;
+
+            *value = value_from(v);
+            return true;
+        }
         default: break;
     }
    return false;

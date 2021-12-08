@@ -13,6 +13,7 @@
 #include "hpm.h"
 #include "sys_time.h"
 #include "persist_config.h"
+#include "modbus_measurements.h"
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
@@ -56,10 +57,6 @@ static int8_t measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE] = {0};
 static uint16_t measurements_hex_arr_pos = 0;
 static measurement_arr_t measurement_arr = {0};
 
-
-static uint32_t modbus_bus_collection_time(void) { return 10000; }
-static bool modbus_init(char* name) { return true; }
-static bool modbus_get(char* name, value_t* value) { return true; }
 
 
 static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
@@ -412,9 +409,9 @@ static void _measurement_fixup(measurement_def_t* def)
             def->get_cb = hpm_get_pm25;
             break;
         case MODBUS:
-            def->collection_time = modbus_bus_collection_time();
-            def->init_cb = modbus_init;
-            def->get_cb = modbus_get;
+            def->collection_time = modbus_measurements_collection_time();
+            def->init_cb = modbus_measurements_init;
+            def->get_cb = modbus_measurements_get;
             break;
     }
 }
