@@ -1,19 +1,23 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
+
+
+#define VALUE_TYPE_IS_SIGNED 0x10
 
 typedef enum
 {
-    VALUE_UNSET,
-    VALUE_UINT8,
-    VALUE_INT8,
-    VALUE_UINT16,
-    VALUE_INT16,
-    VALUE_UINT32,
-    VALUE_INT32,
-    VALUE_UINT64,
-    VALUE_INT64,
-    VALUE_FLOAT,
-    VALUE_DOUBLE,
+    VALUE_UNSET   = 0,
+    VALUE_UINT8   = 1,
+    VALUE_UINT16  = 2,
+    VALUE_UINT32  = 3,
+    VALUE_UINT64  = 4,
+    VALUE_INT8    = 1 | VALUE_TYPE_IS_SIGNED,
+    VALUE_INT16   = 2 | VALUE_TYPE_IS_SIGNED,
+    VALUE_INT32   = 3 | VALUE_TYPE_IS_SIGNED,
+    VALUE_INT64   = 4 | VALUE_TYPE_IS_SIGNED,
+    VALUE_FLOAT   = 5 | VALUE_TYPE_IS_SIGNED,
+    VALUE_DOUBLE  = 6 | VALUE_TYPE_IS_SIGNED,
 } value_type_t;
 
 typedef struct
@@ -21,29 +25,55 @@ typedef struct
     value_type_t type;
     union
     {
-        uint8_t u8;
-        int8_t  i8;
-        uint8_t u16;
-        int8_t  i16;
-        uint8_t u32;
-        int8_t  i32;
-        uint8_t u64;
-        int8_t  i64;
-        float   f;
-        double  r;
+        uint8_t  u8;
+        int8_t   i8;
+        uint16_t u16;
+        int16_t  i16;
+        uint32_t u32;
+        int32_t  i32;
+        uint64_t u64;
+        int64_t  i64;
+        float    f;
+        double   r;
     };
 } value_t;
 
-#define VALUE_FROM_U8(_d_)     (value_t){.type = VALUE_UINT8,  .u8  = _d_}
-#define VALUE_FROM_I8(_d_)     (value_t){.type = VALUE_INT8,   .i8  = _d_}
-#define VALUE_FROM_U16(_d_)    (value_t){.type = VALUE_UINT16, .u16 = _d_}
-#define VALUE_FROM_I16(_d_)    (value_t){.type = VALUE_INT16,  .i16 = _d_}
-#define VALUE_FROM_U32(_d_)    (value_t){.type = VALUE_UINT32, .u32 = _d_}
-#define VALUE_FROM_I32(_d_)    (value_t){.type = VALUE_INT32,  .i32 = _d_}
-#define VALUE_FROM_U64(_d_)    (value_t){.type = VALUE_UINT64, .u64 = _d_}
-#define VALUE_FROM_I64(_d_)    (value_t){.type = VALUE_INT64,  .i64 = _d_}
-#define VALUE_FROM_FLOAT(_d_)  (value_t){.type = VALUE_FLOAT,  .f   = _d_}
-#define VALUE_FROM_DOUBLE(_d_) (value_t){.type = VALUE_DOUBLE, .r   = _d_}
+inline value_t value_from_u8(uint8_t d)    { return (value_t){.type = VALUE_UINT8,  .u8  = d}; }
+inline value_t value_from_i8(int8_t d)     { return (value_t){.type = VALUE_INT8,   .i8  = d}; }
+inline value_t value_from_u16(uint16_t d)  { return (value_t){.type = VALUE_UINT16, .u16 = d}; }
+inline value_t value_from_i16(int16_t d)   { return (value_t){.type = VALUE_INT16,  .i16 = d}; }
+inline value_t value_from_u32(uint32_t d)  { return (value_t){.type = VALUE_UINT32, .u32 = d}; }
+inline value_t value_from_i32(int32_t d)   { return (value_t){.type = VALUE_INT32,  .i32 = d}; }
+inline value_t value_from_u64(uint64_t d)  { return (value_t){.type = VALUE_UINT64, .u64 = d}; }
+inline value_t value_from_i64(int64_t d)   { return (value_t){.type = VALUE_INT64,  .i64 = d}; }
+inline value_t value_from_float(float d)   { return (value_t){.type = VALUE_FLOAT,  .f   = d}; }
+inline value_t value_from_double(double d) { return (value_t){.type = VALUE_DOUBLE, .r   = d}; }
+
+
+#define value_from(_d_) _Generic((_d_),                                   \
+                                    unsigned char:      value_from_u8,    \
+                                    char:               value_from_u8,    \
+                                    unsigned short :    value_from_u16,   \
+                                    short :             value_from_u16,   \
+                                    unsigned long:      value_from_u32,   \
+                                    long:               value_from_i32,   \
+                                    unsigned long long: value_from_u64,   \
+                                    long long:          value_from_i64,   \
+                                    float :             value_from_float, \
+                                    double :            value_from_double \
+                                    )(_d_)
+
+#define value_get(_v_) ( (_v_->type == VALUE_UINT8)?_v_->u8:  \
+                         (_v_->type == VALUE_INT8)?_v_->i8:   \
+                         (_v_->type == VALUE_UINT16)?_v_->u16:\
+                         (_v_->type == VALUE_INT16)?_v_->i16: \
+                         (_v_->type == VALUE_UINT32)?_v_->u32:\
+                         (_v_->type == VALUE_INT32)?_v_->i32: \
+                         (_v_->type == VALUE_UINT64)?_v_->u64:\
+                         (_v_->type == VALUE_INT64)?_v_->i64: \
+                         (_v_->type == VALUE_FLOAT)?_v_->f:   \
+                         (_v_->type == VALUE_DOUBLE)?_v_->r:0 )
+
 
 #define VALUE_EMPTY   (value_t){.type = VALUE_UNSET}
 

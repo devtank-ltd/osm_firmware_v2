@@ -41,6 +41,7 @@ SOURCES += main.c \
            ring.c \
            hpm.c \
            modbus.c \
+           value.c \
            persist_config.c \
            lorawan.c \
            measurements.c

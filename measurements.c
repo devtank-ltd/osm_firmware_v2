@@ -146,7 +146,8 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
     bool single = measurement_def->base.samplecount == 1;
     
     value_t mean;
-    value_div(&mean, &measurement_data->sum, &VALUE_FROM_U32(measurement_data->num_samples));
+    value_t num_samples = value_from(measurement_data->num_samples);
+    value_div(&mean, &measurement_data->sum, &num_samples);
 
     bool r = 0;
     r |= !measurements_arr_append(*(int32_t*)measurement_def->base.name);
