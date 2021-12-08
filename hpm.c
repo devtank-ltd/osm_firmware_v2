@@ -256,7 +256,8 @@ bool hpm_get_pm10(char* name, value_t* val)
     {
         return false;
     }
-    *val = (value_t)pm10_entry.d;
+    val->type = VALUE_UINT16;
+    val->u16 = pm10_entry.d;
     hpm_enable(false);
     return true;
 }
@@ -272,7 +273,8 @@ bool hpm_get_pm25(char* name, value_t* val)
     {
         return false;
     }
-    *val = (value_t)pm25_entry.d;
+    val->type = VALUE_UINT16;
+    val->u16 = pm25_entry.d;
     hpm_enable(false);
     return true;
 }

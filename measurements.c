@@ -110,32 +110,57 @@ static bool measurements_arr_append_i64(int64_t val)
            measurements_arr_append_i32((val >> 32) & 0xFFFFFFFF);
 }
 
+static bool measurements_arr_append_value(value_t * value)
+{
+    if (!value)
+        return false;
+    if (!measurements_arr_append_i8(value->type))
+        return false;
+    switch(value->type)
+    {
+        case VALUE_UINT8  : return measurements_arr_append_i8(value->i8);
+        case VALUE_INT8   : return measurements_arr_append_i8(value->i8);
+        case VALUE_UINT16 : return measurements_arr_append_i16(value->i16);
+        case VALUE_INT16  : return measurements_arr_append_i16(value->i16);
+        case VALUE_UINT32 : return measurements_arr_append_i32(value->i32);
+        case VALUE_INT32  : return measurements_arr_append_i32(value->i32);
+        case VALUE_UINT64 : return measurements_arr_append_i64(value->i64);
+        case VALUE_INT64  : return measurements_arr_append_i64(value->i64);
+        case VALUE_FLOAT  : return measurements_arr_append_i32(value->i32);
+        case VALUE_DOUBLE : return measurements_arr_append_i64(value->i64);
+        default: break;
+    }
+    return false;
+}
 
 #define measurements_arr_append(_b_) _Generic((_b_),                            \
                                     signed char: measurements_arr_append_i8,    \
                                     short int: measurements_arr_append_i16,     \
                                     long int: measurements_arr_append_i32,      \
-                                    long long int: measurements_arr_append_i64)(_b_)
+                                    long long int: measurements_arr_append_i64, \
+                                    value_t * : measurements_arr_append_value)(_b_)
 
 
 static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_data_t* measurement_data)
 {
     bool single = measurement_def->base.samplecount == 1;
-    int16_t mean = measurement_data->sum / measurement_data->num_samples;
+    
+    value_t mean;
+    value_div(&mean, &measurement_data->sum, &VALUE_FROM_U32(measurement_data->num_samples));
 
     bool r = 0;
     r |= !measurements_arr_append(*(int32_t*)measurement_def->base.name);
     if (single)
     {
         r |= !measurements_arr_append((int8_t)MEASUREMENTS__DATATYPE_SINGLE);
-        r |= !measurements_arr_append((int16_t)mean);
+        r |= !measurements_arr_append(&mean);
     }
     else
     {
         r |= !measurements_arr_append((int8_t)MEASUREMENTS__DATATYPE_AVERAGED);
-        r |= !measurements_arr_append((int16_t)mean);
-        r |= !measurements_arr_append((int16_t)measurement_data->min);
-        r |= !measurements_arr_append((int16_t)measurement_data->max);
+        r |= !measurements_arr_append(&mean);
+        r |= !measurements_arr_append(&measurement_data->min);
+        r |= !measurements_arr_append(&measurement_data->max);
     }
     return !r;
 }
@@ -163,7 +188,7 @@ static void measurements_send(void)
         m_data = &measurement_arr.data[i];
         if (m_def->base.interval && (interval_count % m_def->base.interval == 0))
         {
-            if (m_data->sum == MEASUREMENTS__UNSET_VALUE || m_data->num_samples == 0)
+            if (m_data->sum.type == VALUE_UNSET || m_data->num_samples == 0)
             {
                 log_error("Measurement requested but value not set.");
                 continue;
@@ -173,9 +198,9 @@ static void measurements_send(void)
                 return;
             }
             num_qd++;
-            m_data->sum = MEASUREMENTS__UNSET_VALUE;
-            m_data->min = MEASUREMENTS__UNSET_VALUE;
-            m_data->max = MEASUREMENTS__UNSET_VALUE;
+            m_data->sum.type = VALUE_UNSET;
+            m_data->min.type = VALUE_UNSET;
+            m_data->max.type = VALUE_UNSET;
             m_data->num_samples = 0;
             m_data->num_samples_init = 0;
             m_data->num_samples_collected = 0;
@@ -227,32 +252,34 @@ static void measurements_sample(void)
                 log_error("Could not get the %s value.", m_def->base.name);
                 return;
             }
-            if (m_data->sum == MEASUREMENTS__UNSET_VALUE)
+            if (m_data->sum.type == VALUE_UNSET)
             {
-                m_data->sum = 0;
+                m_data->sum.type = VALUE_UINT8;
+                m_data->sum.u8 = 0;
             }
-            if (m_data->min == MEASUREMENTS__UNSET_VALUE)
+            if (m_data->min.type == VALUE_UNSET)
             {
                 m_data->min = new_value;
             }
-            if (m_data->max == MEASUREMENTS__UNSET_VALUE)
+            if (m_data->max.type == VALUE_UNSET)
             {
                 m_data->max = new_value;
             }
-            m_data->sum += new_value;
+            value_add(&m_data->sum, &m_data->sum, &new_value);
             m_data->num_samples++;
-            if (new_value > m_data->max)
+            if (value_grt(&new_value, &m_data->max))
             {
                 m_data->max = new_value;
             }
-            else if (new_value < m_data->min)
+            else if (value_lst(&new_value, &m_data->min))
             {
                 m_data->min = new_value;
             }
-            log_debug(DEBUG_MEASUREMENTS, "New %s reading: %"PRIi64, m_def->base.name, new_value);
-            log_debug(DEBUG_MEASUREMENTS, "%s sum: %"PRIi64, m_def->base.name, m_data->sum);
-            log_debug(DEBUG_MEASUREMENTS, "%s min: %"PRIi64, m_def->base.name, m_data->min);
-            log_debug(DEBUG_MEASUREMENTS, "%s max: %"PRIi64, m_def->base.name, m_data->max);
+            log_debug(DEBUG_MEASUREMENTS, "New %s reading", m_def->base.name);
+            value_log_debug(DEBUG_MEASUREMENTS, "Value :", &new_value);
+            value_log_debug(DEBUG_MEASUREMENTS, "Sum :", &m_data->sum);
+            value_log_debug(DEBUG_MEASUREMENTS, "Min :", &m_data->min);
+            value_log_debug(DEBUG_MEASUREMENTS, "Max :", &m_data->max);
         }
     }
 }
@@ -281,7 +308,7 @@ bool measurements_add(measurement_def_t* measurement_def)
             return false;
         }
     }
-    measurement_data_t measurement_data = { MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, MEASUREMENTS__UNSET_VALUE, 0, 0, 0};
+    measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
     measurement_arr.def[measurement_arr.len] = *measurement_def;
     measurement_arr.data[measurement_arr.len] = measurement_data;
     measurement_arr.len++;

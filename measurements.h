@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 #include "lorawan.h"
+#include "value.h"
 
 
 #define MEASUREMENTS__HEX_ARRAY_SIZE            100
@@ -14,7 +15,6 @@
 #define MEASUREMENTS__COLLECT_TIME__HPM__MS         10000
 
 
-typedef int64_t value_t;
 
 typedef enum
 {
