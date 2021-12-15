@@ -77,13 +77,15 @@ inline value_t value_from_double(double d) { return (value_t){.type = VALUE_DOUB
 
 #define VALUE_EMPTY   (value_t){.type = VALUE_UNSET}
 
-extern void value_add(value_t * dst, value_t *a, value_t* b);
-extern void value_sub(value_t * dst, value_t *a, value_t* b);
-extern void value_mult(value_t * dst, value_t *a, value_t* b);
-extern void value_div(value_t * dst, value_t *a, value_t* b);
+extern bool value_add(value_t * dst, value_t *a, value_t* b);
+extern bool value_sub(value_t * dst, value_t *a, value_t* b);
+extern bool value_mult(value_t * dst, value_t *a, value_t* b);
+extern bool value_div(value_t * dst, value_t *a, value_t* b);
 
 extern bool value_equ(value_t *a, value_t* b);
 extern bool value_grt(value_t *a, value_t* b);
 extern bool value_lst(value_t *a, value_t* b);
 
-extern void value_log_debug(uint32_t flag, const char * prefix, value_t * v);
+extern bool value_from_str(value_t * v, char * str);
+
+extern bool value_to_str(value_t * v, char * str, unsigned size);

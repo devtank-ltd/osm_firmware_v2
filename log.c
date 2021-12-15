@@ -125,3 +125,25 @@ void log_debug_data(uint32_t flag, void * data, unsigned size)
         uart_rings_out_drain();
     }
 }
+
+
+void log_debug_value(uint32_t flag, const char * prefix, value_t * v)
+{
+    if (!v || !prefix)
+        return;
+
+    switch(v->type)
+    {
+        case VALUE_UINT8  : log_debug(flag, "%s%"PRIu8,  prefix, v->u8);  break;
+        case VALUE_INT8   : log_debug(flag, "%s%"PRId8,  prefix, v->i8);  break;
+        case VALUE_UINT16 : log_debug(flag, "%s%"PRIu16, prefix, v->u16); break;
+        case VALUE_INT16  : log_debug(flag, "%s%"PRId16, prefix, v->i16); break;
+        case VALUE_UINT32 : log_debug(flag, "%s%"PRIu32, prefix, v->u32); break;
+        case VALUE_INT32  : log_debug(flag, "%s%"PRId32, prefix, v->i32); break;
+        case VALUE_UINT64 : log_debug(flag, "%s%"PRIu64, prefix, v->u64); break;
+        case VALUE_INT64  : log_debug(flag, "%s%lld",    prefix, v->i64); break;
+        case VALUE_FLOAT  : log_debug(flag, "%s%f",      prefix, v->f);   break;
+        case VALUE_DOUBLE : log_debug(flag, "%s%f",      prefix, v->r);   break;
+        default: log_debug(flag, "%sINVALID", prefix); break;
+    }
+}

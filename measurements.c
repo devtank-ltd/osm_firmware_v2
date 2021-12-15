@@ -144,7 +144,10 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
     
     value_t mean;
     value_t num_samples = value_from(measurement_data->num_samples);
-    value_div(&mean, &measurement_data->sum, &num_samples);
+    if (!value_div(&mean, &measurement_data->sum, &num_samples))
+    {
+        log_error("Failed to average %s value.", measurement_def->base.name);
+    }
 
     bool r = 0;
     r |= !measurements_arr_append(*(int32_t*)measurement_def->base.name);
@@ -263,7 +266,10 @@ static void measurements_sample(void)
             {
                 m_data->max = new_value;
             }
-            value_add(&m_data->sum, &m_data->sum, &new_value);
+            if (!value_add(&m_data->sum, &m_data->sum, &new_value))
+            {
+                log_error("Failed to add %s value.", m_def->base.name);
+            }
             m_data->num_samples++;
             if (value_grt(&new_value, &m_data->max))
             {
@@ -274,10 +280,10 @@ static void measurements_sample(void)
                 m_data->min = new_value;
             }
             log_debug(DEBUG_MEASUREMENTS, "New %s reading", m_def->base.name);
-            value_log_debug(DEBUG_MEASUREMENTS, "Value :", &new_value);
-            value_log_debug(DEBUG_MEASUREMENTS, "Sum :", &m_data->sum);
-            value_log_debug(DEBUG_MEASUREMENTS, "Min :", &m_data->min);
-            value_log_debug(DEBUG_MEASUREMENTS, "Max :", &m_data->max);
+            log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
+            log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &m_data->sum);
+            log_debug_value(DEBUG_MEASUREMENTS, "Min :", &m_data->min);
+            log_debug_value(DEBUG_MEASUREMENTS, "Max :", &m_data->max);
         }
     }
 }
