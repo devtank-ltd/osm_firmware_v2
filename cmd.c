@@ -357,6 +357,11 @@ static void modbus_setup_cb(char *args)
 
 static void modbus_add_dev_cb(char * args)
 {
+    /*<slave_id> <name>
+     * (name can only be 4 char long)
+     * EXAMPLES:
+     * 0x1 TEST
+     */
     char * pos = skip_space(args);
 
     uint16_t slave_id = strtoul(pos, &pos, 16);
@@ -372,6 +377,14 @@ static void modbus_add_dev_cb(char * args)
 
 static void modbus_add_reg_cb(char * args)
 {
+    /*<slave_id> <reg_addr> <modbus_func> <type> <name>
+     * (name can only be 4 char long)
+     * Only Modbus Function 3, Hold Read supported right now.
+     * 0x1 0x16 3 F   T-Hz
+     * 1 22 3 F       T-Hz
+     * 0x2 0x30 3 U16 T-As
+     * 0x2 0x32 3 U32 T-Vs
+     */
     char * pos = skip_space(args);
 
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
