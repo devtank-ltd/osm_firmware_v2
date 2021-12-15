@@ -527,7 +527,7 @@ static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned 
 }
 
 
-static uint32_t _get_id_of_name(char name[8])
+static uint32_t _get_id_of_name(char name[MODBUS_NAME_LEN])
 {
     return *(uint32_t*)name;
 }
@@ -563,11 +563,11 @@ void           modbus_log()
         modbus_dev_t * dev = modbus_devices + n;
         if (dev->name[0])
         {
-            log_out("- Device - 0x%"PRIx16" \"%s\"", dev->slave_id, dev->name);
+            log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", dev->slave_id, dev->name);
             for (unsigned i = 0; i < dev->reg_num; i++)
             {
                 modbus_reg_t * reg = _modbus_dev_get_reg_by_index(dev, i);
-                log_out("  - Reg - 0x%"PRIx16" \"%s\" %s", reg->reg_addr, reg->name, modbus_reg_type_get_str(reg->type));
+                log_out("  - Reg - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->name, modbus_reg_type_get_str(reg->type));
             }
         }
     }
@@ -613,14 +613,6 @@ modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
 }
 
 
-char *         modbus_dev_get_name(modbus_dev_t * dev)
-{
-    if (!dev)
-        return NULL;
-    return dev->name;
-}
-
-
 uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev)
 {
     if (!dev)
@@ -650,7 +642,7 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
     if (!name || !slave_id)
         return NULL;
 
-    unsigned len = strlen(name) + 1;
+    unsigned len = strlen(name);
 
     if (len > MODBUS_NAME_LEN)
         return NULL;
@@ -660,10 +652,11 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
         modbus_dev_t * dev = &modbus_devices[n];
         if (!dev->name[0])
         {
+            memset(dev->name, 0, MODBUS_NAME_LEN);
             memcpy(dev->name, name, len);
             dev->slave_id = slave_id;
             dev->reg_num = 0;
-            modbus_debug("Added device 0x%"PRIx16" \"%s\"", slave_id, name);
+            modbus_debug("Added device 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", slave_id, name);
             return dev;
         }
     }
@@ -712,7 +705,7 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
         return false;
     }
 
-    unsigned name_len = strlen(name) + 1;
+    unsigned name_len = strlen(name);
 
     if (name_len > MODBUS_NAME_LEN)
     {
@@ -739,6 +732,7 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
     header->used = ((uintptr_t)modbus_data_pos) - ((uintptr_t)modbus_data);
     modbus_debug("%"PRIu32" remaining space", (header->size - header->used));
 
+    memset(dst_reg->name, 0, MODBUS_NAME_LEN);
     memcpy(dst_reg->name, name, name_len);
     dst_reg->reg_addr  = reg_addr;
     dst_reg->type      = type;

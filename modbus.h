@@ -53,7 +53,6 @@ extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus
 extern unsigned       modbus_dev_get_reg_num(modbus_dev_t * dev);
 extern modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index);
 extern modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name);
-extern char *         modbus_dev_get_name(modbus_dev_t * dev);
 extern uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev);
 
 extern modbus_reg_t * modbus_get_reg(char * name);
