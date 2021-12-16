@@ -249,7 +249,7 @@ void lora_config_cb(char * args)
     {
         char key[LW__APP_KEY_LEN + 1] = "";
         strncpy(key, p, strlen(p));
-        persist_set_lw_dev_eui(key);
+        persist_set_lw_app_key(key);
     }
 }
 
