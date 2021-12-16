@@ -73,6 +73,7 @@ static cmd_t cmds[] = {
     { "mb_log",    "Show modbus setup",      modbus_log},
     { "mb_save",   "Save modbus setup",      modbus_save},
     { "measurements", "Print measurements",  measurements_cb},
+    { "adcs",      "ADC debug",              adcs_cb},
     { NULL },
 };
 

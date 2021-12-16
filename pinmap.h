@@ -23,7 +23,7 @@ typedef struct
     {GPIOC, GPIO3},      /* ADC 3  = Channel 4  */  \
 }
 
-#define ADC_CHANNELS  {1,2,3,4}
+#define ADC_CHANNELS  {10,ADC_CHANNEL_VREF,ADC_CHANNEL_TEMP,ADC_CHANNEL_VBAT}
 
 #define ADC_COUNT 4
 
