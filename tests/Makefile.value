@@ -1,0 +1,5 @@
+SRC:=values_test.c ../value.c
+PROGRAM:=values_test
+TEST:=$(PROGRAM)
+
+include Makefile.test

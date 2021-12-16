@@ -121,9 +121,11 @@ static void _persistent_commit(void)
     flash_lock();
 
     if (memcmp(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+    {
         log_sys_debug("Flash successfully written.");
-    else
-        log_error("Flash write failed");
+        persist_data_valid = true;
+    }
+    else log_error("Flash write failed");
 }
 
 

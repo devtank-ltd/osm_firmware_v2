@@ -2,11 +2,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "ring.h"
+#include "pinmap.h"
 
 #define MODBUS_READ_HOLDING_FUNC 3
 
 #define MODBUS_NAME_LEN 4
-#define MODBUS_DEV_REGS 4
+#define MODBUS_DEV_REGS 16
 
 #define modbus_debug(...) log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
 
@@ -52,11 +53,11 @@ extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus
 extern unsigned       modbus_dev_get_reg_num(modbus_dev_t * dev);
 extern modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index);
 extern modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name);
-extern char *         modbus_dev_get_name(modbus_dev_t * dev);
 extern uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev);
 
 extern modbus_reg_t * modbus_get_reg(char * name);
 
+extern bool              modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1]);
 extern modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg);
 extern modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg);
 extern bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value);

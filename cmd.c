@@ -19,7 +19,7 @@
 #include "lorawan.h"
 #include "measurements.h"
 #include "hpm.h"
-#include "modbus.h"
+#include "modbus_measurements.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -241,15 +241,15 @@ void lora_config_cb(char * args)
     p = skip_space(p);
     if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
     {
-        char eui[LW__DEV_EUI_LEN] = "";
+        char eui[LW__DEV_EUI_LEN + 1] = "";
         strncpy(eui, p, strlen(p));
         persist_set_lw_dev_eui(eui);
     }
     else if (strncmp(args, "app-key", end_pos_word-1) == 0)
     {
-        char key[LW__APP_KEY_LEN] = "";
+        char key[LW__APP_KEY_LEN + 1] = "";
         strncpy(key, p, strlen(p));
-        persist_set_lw_dev_eui(key);
+        persist_set_lw_app_key(key);
     }
 }
 
@@ -357,6 +357,11 @@ static void modbus_setup_cb(char *args)
 
 static void modbus_add_dev_cb(char * args)
 {
+    /*<slave_id> <name>
+     * (name can only be 4 char long)
+     * EXAMPLES:
+     * 0x1 TEST
+     */
     char * pos = skip_space(args);
 
     uint16_t slave_id = strtoul(pos, &pos, 16);
@@ -372,6 +377,14 @@ static void modbus_add_dev_cb(char * args)
 
 static void modbus_add_reg_cb(char * args)
 {
+    /*<slave_id> <reg_addr> <modbus_func> <type> <name>
+     * (name can only be 4 char long)
+     * Only Modbus Function 3, Hold Read supported right now.
+     * 0x1 0x16 3 F   T-Hz
+     * 1 22 3 F       T-Hz
+     * 0x2 0x30 3 U16 T-As
+     * 0x2 0x32 3 U32 T-Vs
+     */
     char * pos = skip_space(args);
 
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
@@ -432,9 +445,12 @@ static void modbus_add_reg_cb(char * args)
     }
 
     if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
+    {
         log_out("Added modbus reg");
-    else
-        log_out("Failed to add modbus reg.");
+        if (!modbus_measurement_add(modbus_dev_get_reg_by_name(dev, name)))
+            log_out("Failed to add modbus reg to measurements!");
+    }
+    else log_out("Failed to add modbus reg.");
 }
 
 
