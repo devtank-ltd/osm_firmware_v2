@@ -241,13 +241,13 @@ void lora_config_cb(char * args)
     p = skip_space(p);
     if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
     {
-        char eui[LW__DEV_EUI_LEN] = "";
+        char eui[LW__DEV_EUI_LEN + 1] = "";
         strncpy(eui, p, strlen(p));
         persist_set_lw_dev_eui(eui);
     }
     else if (strncmp(args, "app-key", end_pos_word-1) == 0)
     {
-        char key[LW__APP_KEY_LEN] = "";
+        char key[LW__APP_KEY_LEN + 1] = "";
         strncpy(key, p, strlen(p));
         persist_set_lw_dev_eui(key);
     }
