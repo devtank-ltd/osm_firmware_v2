@@ -19,7 +19,7 @@
 #include "lorawan.h"
 #include "measurements.h"
 #include "hpm.h"
-#include "modbus.h"
+#include "modbus_measurements.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -445,9 +445,12 @@ static void modbus_add_reg_cb(char * args)
     }
 
     if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
+    {
         log_out("Added modbus reg");
-    else
-        log_out("Failed to add modbus reg.");
+        if (!modbus_measurement_add(modbus_dev_get_reg_by_name(dev, name)))
+            log_out("Failed to add modbus reg to measurements!");
+    }
+    else log_out("Failed to add modbus reg.");
 }
 
 

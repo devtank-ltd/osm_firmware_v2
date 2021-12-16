@@ -767,6 +767,17 @@ modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index)
 }
 
 
+bool              modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1])
+{
+    if (!reg)
+        return false;
+
+    memcpy(name, reg->name, MODBUS_NAME_LEN);
+    name[MODBUS_NAME_LEN] = 0;
+    return true;
+}
+
+
 modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg)
 {
     if (!reg)

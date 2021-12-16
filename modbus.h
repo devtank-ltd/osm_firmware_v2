@@ -57,6 +57,7 @@ extern uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev);
 
 extern modbus_reg_t * modbus_get_reg(char * name);
 
+extern bool              modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1]);
 extern modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg);
 extern modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg);
 extern bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value);
