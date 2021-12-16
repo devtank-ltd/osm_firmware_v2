@@ -54,18 +54,30 @@ static uint16_t adcs_read(uint32_t adc, uint8_t channel)
 }
 
 
-static void adcs_to_mV(uint16_t* value, uint16_t* mV)
+static bool adcs_to_mV(uint16_t* value, uint16_t* mV)
 {
     // Linear scale without calibration.
     // ADC of    0 -> 0V
     //        4096 -> 3.3V
     
     
-    uint32_t max_value = 4096;
-    uint32_t min_value = 0;
-    uint32_t max_mV = 3300;
-    uint32_t min_mV = 0;
-    *mV = (*value * (max_mV - min_mV)) / (max_value - min_value);
+    uint16_t max_value = 4095;
+    uint16_t min_value = 0;
+    uint16_t max_mV = 3300;
+    uint16_t min_mV = 0;
+    uint32_t inter_val;
+
+    inter_val = *value * (max_mV - min_mV);
+    inter_val /= (max_value - min_value);
+
+    if (inter_val > UINT16_MAX)
+    {
+        log_debug(DEBUG_ADC, "Cannot downsize value '%"PRIu32"'.", inter_val);
+        return false;
+    }
+
+    *mV = (uint16_t)inter_val;
+    return true;
 }
 
 
@@ -105,7 +117,7 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
 
     if (inter_value > UINT32_MAX / 2000)
     {
-        log_out("Overflowing value.");
+        log_debug(DEBUG_ADC, "Overflowing value.");
         return false;
     }
     inter_value *= 2000;
@@ -116,7 +128,7 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
     inter_value /= 22;
     if (inter_value > UINT16_MAX)
     {
-        log_out("Cannot downsize value '%"PRIu32"'.", inter_value);
+        log_debug(DEBUG_ADC, "Cannot downsize value '%"PRIu32"'.", inter_value);
         return false;
     }
     *cc_mA = (uint16_t)inter_value;
@@ -140,19 +152,30 @@ void adcs_init(void)
     // Setup the adc(s)
     adcs_setup_adc();
 }
- /// 10,ADC_CHANNEL_VREF,ADC_CHANNEL_TEMP,ADC_CHANNEL_VBAT
+
+
+bool adcs_get_current_clamp(uint16_t* cc_mA)
+{
+    uint16_t cc, cc_mV;
+    cc = adcs_read(ADC1, 6);
+    if (!adcs_to_mV(&cc, &cc_mV))
+    {
+        log_debug(DEBUG_ADC, "Failed to convert ADC value to mV");
+        return false;
+    }
+    if (!adcs_current_clamp_conv(false, &cc_mV, cc_mA))
+    {
+        log_debug(DEBUG_ADC, "Failed to convert mV to mA");
+        return false;
+    }
+    return true;
+}
+
+
 void adcs_cb(char* args)
 {
-    uint16_t cc = adcs_read(ADC1, 6);
-    log_out("Current Clamp      : %"PRIu16, cc);
-    uint16_t cc_mV, cc_mA;
-    adcs_to_mV(&cc, &cc_mV);
-    log_out("Current Clamp      : %"PRIu16"mV", cc_mV);
-    if (!adcs_current_clamp_conv(false, &cc_mV, &cc_mA))
-    {
-        log_out("Failed");
-        return;
-    }
+    uint16_t cc_mA;
+    adcs_get_current_clamp(&cc_mA);
     log_out("Current Clamp      : %"PRIu16"mA", cc_mA);
     log_out("BAT_MON            : %"PRIu16, adcs_read(ADC1, 1));
     log_out("3V3_RAIL_MONITOR   : %"PRIu16, adcs_read(ADC1, 3));
