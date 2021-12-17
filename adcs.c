@@ -100,15 +100,21 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
      a uint32_t and then divisions after.
     */
     uint32_t inter_value;
+    uint16_t mp_mV;
+    if (!adcs_to_mV((uint16_t*)&midpoint, &mp_mV))
+    {
+        log_debug(DEBUG_ADC, "Cannot get mV value of midpoint.");
+        return false;
+    }
 
     // If adc_mV is larger then pretend it is at the midpoint
-    if (*adc_mV > midpoint)
+    if (*adc_mV > mp_mV)
     {
         inter_value = 0;
     }
     else
     {
-        inter_value = midpoint - *adc_mV;
+        inter_value = mp_mV - *adc_mV;
     }
 
     if (inter_value > UINT32_MAX / 2000)
