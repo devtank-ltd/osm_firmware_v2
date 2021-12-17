@@ -123,7 +123,7 @@ cmd:
 
 
 serial_program: $(TARGET_BIN)
-	./scripts/program.sh $(TARGET_BIN)
+	KEEPCONFIG=1 ./scripts/program.sh $(TARGET_BIN)
 
 
 $(BUILD_DIR)stack_info : $(TARGET_ELF)
