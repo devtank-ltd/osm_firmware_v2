@@ -2,6 +2,7 @@
 #define __PINMAPS__
 
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/dma.h>
 #include <stdint.h>
 
 typedef struct
@@ -72,6 +73,25 @@ typedef enum
     uart_stop_bits_1_5 = 1,
     uart_stop_bits_2   = 2,
 } uart_stop_bits_t;
+
+
+typedef struct
+{
+    uint32_t              adc_unit;
+    uint32_t              dma_unit;
+    uint32_t              dma_rcc;
+    uint8_t               dma_channel;
+    uint8_t               priority;
+    uint8_t               enabled;
+} adc_dma_channel_t;
+
+
+#define ADC_DMA_CHANNELS                                                        \
+{                                                                               \
+    { ADC1, DMA1, RCC_DMA1, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
+}
+
+#define ADC_DMA_CHANNELS_COUNT  1
 
 typedef struct
 {

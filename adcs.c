@@ -11,8 +11,14 @@
 #include "persist_config.h"
 
 
+#define NUM_SAMPLES     128
+
+
+static adc_dma_channel_t adc_dma_channels[] = ADC_DMA_CHANNELS;
+static uint16_t adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES];
 static uint8_t adc_channel_array[] = ADC_CHANNELS;
-uint16_t midpoint;
+static uint16_t midpoint;
+static bool adc_value_ready = false;
 
 
 static void adcs_setup_adc(void)
@@ -186,6 +192,28 @@ void adcs_calibrate_current_clamp(void)
 }
 
 
+void adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
+{
+    rcc_periph_clock_enable(adc_dma->dma_rcc);
+
+    dma_channel_reset(adc_dma->dma_unit, adc_dma->dma_channel);
+
+    dma_set_peripheral_address(adc_dma->dma_unit, adc_dma->dma_channel, &ADC_DR(adc_dma->adc_unit));
+    dma_set_memory_address(adc_dma->dma_unit, adc_dma->dma_channel, (uint32_t)(adcs_buffer[index]));
+    dma_enable_memory_increment_mode(adc_dma->dma_unit, adc_dma->dma_channel);
+    dma_set_peripheral_size(adc_dma->dma_unit, adc_dma->dma_channel, DMA_CCR_PSIZE_16BIT);
+    dma_set_memory_size(adc_dma->dma_unit, adc_dma->dma_channel, DMA_CCR_MSIZE_16BIT);
+    dma_set_priority(adc_dma->dma_unit, adc_dma->dma_channel, adc_dma->priority);
+
+    dma_enable_transfer_complete_interrupt(adc_dma->dma_unit, adc_dma->dma_channel);
+    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, NUM_SAMPLES);
+    if (adc_dma->enabled)
+    {
+        dma_enable_channel(adc_dma->dma_unit, adc_dma->dma_channel);
+    }
+}
+
+
 void adcs_init(void)
 {
     // Get the midpoint
@@ -207,6 +235,21 @@ void adcs_init(void)
                         GPIO_PUPD_NONE,
                         port_n_pins[n].pins);
     }
+    // Setup the dma(s)
+    for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
+    {
+        adcs_setup_dma(adc_dma_channels[i], i);
+    }
     // Setup the adc(s)
     adcs_setup_adc();
+}
+
+
+void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
+{
+    if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))
+    {
+        dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
+        adc_value_ready = true;
+    }
 }
