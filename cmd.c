@@ -50,6 +50,8 @@ static void modbus_add_reg_cb(char *args);
 static void modbus_get_reg_cb(char *args);
 static void modbus_wipe_cb(char *args);
 static void measurements_cb(char *args);
+static void adcs_midpoint_cb(char *args);
+static void adcs_calibrate_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -74,6 +76,8 @@ static cmd_t cmds[] = {
     { "mb_save",   "Save modbus setup",      modbus_save},
     { "measurements", "Print measurements",  measurements_cb},
     { "adcs",      "ADC debug",              adcs_cb},
+    { "adcs_mp",   "Set the adc midpoint",   adcs_midpoint_cb},
+    { "adcs_cal",  "Calibrate the adc",      adcs_calibrate_cb},
     { NULL },
 };
 
@@ -468,6 +472,20 @@ static void measurements_cb(char *args)
 {
     measurements_print();
     measurements_print_persist();
+}
+
+
+static void adcs_midpoint_cb(char *args)
+{
+    char* pos = skip_space(args);
+    uint16_t new_mp = (uint16_t)strtoul(pos, NULL, 10);
+    adcs_set_midpoint(new_mp);
+}
+
+
+static void adcs_calibrate_cb(char *args)
+{
+    adcs_calibrate_current_clamp();
 }
 
 

@@ -135,7 +135,7 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
 bool adcs_get_current_clamp(uint16_t* cc_mA)
 {
     uint16_t cc, cc_mV;
-    cc = adcs_read(ADC1, 6);
+    cc = adcs_read(ADC1, ADC1_CHANNEL__CURRENT_CLAMP);
     if (!adcs_to_mV(&cc, &cc_mV))
     {
         log_debug(DEBUG_ADC, "Failed to convert ADC value to mV");
@@ -155,9 +155,9 @@ void adcs_cb(char* args)
     uint16_t cc_mA;
     adcs_get_current_clamp(&cc_mA);
     log_out("Current Clamp      : %"PRIu16"mA", cc_mA);
-    log_out("BAT_MON            : %"PRIu16, adcs_read(ADC1, 1));
-    log_out("3V3_RAIL_MONITOR   : %"PRIu16, adcs_read(ADC1, 3));
-    log_out("5V_RAIL_MONITOR    : %"PRIu16, adcs_read(ADC1, 4));
+    log_out("BAT_MON            : %"PRIu16, adcs_read(ADC1, ADC1_CHANNEL__BAT_MON));
+    log_out("3V3_RAIL_MONITOR   : %"PRIu16, adcs_read(ADC1, ADC1_CHANNEL__3V3_RAIL_MON));
+    log_out("5V_RAIL_MONITOR    : %"PRIu16, adcs_read(ADC1, ADC1_CHANNEL__5V_RAIL_MON));
 }
 
 
@@ -173,13 +173,21 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
 }
 
 
+void adcs_calibrate_current_clamp(void)
+{
+    uint16_t new_midpoint = adcs_read(ADC1, ADC1_CHANNEL__CURRENT_CLAMP);
+    adcs_set_midpoint(new_midpoint);
+}
+
+
 void adcs_init(void)
 {
     // Get the midpoint
     if (!persist_get_adc_midpoint(&midpoint))
     {
         // Assume it to be the theoretical midpoint
-        midpoint = 3300 / 2;
+        log_debug(DEBUG_ADC, "Failed to load persistent midpoint.");
+        adcs_set_midpoint(3300 / 2);
     }
 
     // Setup the clock and gpios
