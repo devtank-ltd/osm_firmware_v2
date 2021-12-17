@@ -29,6 +29,7 @@ typedef struct
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
+    uint16_t                adc_midpoint;
 } __attribute__((__packed__)) persist_storage_t;
 
 
@@ -218,6 +219,29 @@ bool persist_get_measurements(measurement_def_base_t** m_arr)
 void persist_commit_measurement(void)
 {
     _persistent_commit();
+}
+
+
+bool persist_set_adc_midpoint(uint16_t midpoint)
+{
+    if (!persist_data_valid)
+    {
+        return false;
+    }
+    persist_data.adc_midpoint = midpoint;
+    return true;
+}
+
+
+bool persist_get_adc_midpoint(uint16_t* midpoint)
+{
+    if (!persist_data_valid)
+    {
+        return false;
+    }
+    *midpoint = persist_data.adc_midpoint;
+    _persistent_commit();
+    return true;
 }
 
 

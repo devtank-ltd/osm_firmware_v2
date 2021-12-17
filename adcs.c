@@ -12,28 +12,28 @@
 
 
 static uint8_t adc_channel_array[] = ADC_CHANNELS;
+uint16_t midpoint;
 
 
 static void adcs_setup_adc(void)
 {
-    gpio_mode_setup(GPIOA, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO5);
     RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
     adc_power_off(ADC1);
     if (ADC_CR(ADC1) && ADC_CR_DEEPPWD)
     {
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
-                                                                            // adc_set_clk_source(ADC1, ADC_CLKSOURCE_ADC);
-    adc_calibrate(ADC1);                                                    // Exists but get held up
-    adc_set_single_conversion_mode(ADC1);                                   // adc_set_operation_mode(ADC1, ADC_MODE_SCAN);
-    adc_enable_regulator(ADC1);                                            // adc_disable_external_trigger_regular(ADC1);
+
+    adc_calibrate(ADC1);
+    adc_set_single_conversion_mode(ADC1);
+    adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
     adc_enable_vrefint();
     adc_enable_temperature_sensor();
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_6DOT5CYC);     // adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_071DOT5);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_6DOT5CYC);
     adc_set_regular_sequence(ADC1, 1, adc_channel_array);
-    adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);                         // adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
-                                                                            // adc_disable_analog_watchdog(ADC1);
+    adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
+
     adc_power_on(ADC1);
 
     /* Wait for ADC starting up. */
@@ -59,8 +59,7 @@ static bool adcs_to_mV(uint16_t* value, uint16_t* mV)
     // Linear scale without calibration.
     // ADC of    0 -> 0V
     //        4096 -> 3.3V
-    
-    
+
     uint16_t max_value = 4095;
     uint16_t min_value = 0;
     uint16_t max_mV = 3300;
@@ -96,13 +95,10 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
 
      The current is scaled by the current clamp to the effect of
      I_t = 2000 * I.
-    
+
      To retain precision, multiplications should be done first (after casting to
      a uint32_t and then divisions after.
     */
-
-    // By definition (as no calibration) the midpoint is (3.3 / 2)V
-    uint16_t midpoint = 3300 / 2;
     uint32_t inter_value;
 
     // If adc_mV is larger then pretend it is at the midpoint
@@ -136,24 +132,6 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
 }
 
 
-void adcs_init(void)
-{
-    // Setup the clock and gpios
-    const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
-    rcc_periph_clock_enable(RCC_ADC1);
-    for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
-    {
-        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pins[n].port));
-        gpio_mode_setup(port_n_pins[n].port,
-                        GPIO_MODE_ANALOG,
-                        GPIO_PUPD_NONE,
-                        port_n_pins[n].pins);
-    }
-    // Setup the adc(s)
-    adcs_setup_adc();
-}
-
-
 bool adcs_get_current_clamp(uint16_t* cc_mA)
 {
     uint16_t cc, cc_mV;
@@ -180,4 +158,41 @@ void adcs_cb(char* args)
     log_out("BAT_MON            : %"PRIu16, adcs_read(ADC1, 1));
     log_out("3V3_RAIL_MONITOR   : %"PRIu16, adcs_read(ADC1, 3));
     log_out("5V_RAIL_MONITOR    : %"PRIu16, adcs_read(ADC1, 4));
+}
+
+
+bool adcs_set_midpoint(uint16_t new_midpoint)
+{
+    midpoint = new_midpoint;
+    if (!persist_set_adc_midpoint(new_midpoint))
+    {
+        log_debug(DEBUG_ADC, "Could not set the persistent storage for the midpoint.");
+        return false;
+    }
+    return true;
+}
+
+
+void adcs_init(void)
+{
+    // Get the midpoint
+    if (!persist_get_adc_midpoint(&midpoint))
+    {
+        // Assume it to be the theoretical midpoint
+        midpoint = 3300 / 2;
+    }
+
+    // Setup the clock and gpios
+    const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
+    rcc_periph_clock_enable(RCC_ADC1);
+    for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
+    {
+        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pins[n].port));
+        gpio_mode_setup(port_n_pins[n].port,
+                        GPIO_MODE_ANALOG,
+                        GPIO_PUPD_NONE,
+                        port_n_pins[n].pins);
+    }
+    // Setup the adc(s)
+    adcs_setup_adc();
 }

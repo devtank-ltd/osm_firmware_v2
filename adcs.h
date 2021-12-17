@@ -17,6 +17,7 @@ extern unsigned adcs_get_tick(unsigned adc);
 extern void     adcs_adc_log(unsigned adc);
 extern void     adcs_log(void);
 
+extern bool adcs_set_midpoint(uint16_t new_midpoint);
 extern void adcs_cb(char* args);
 
 
