@@ -123,14 +123,14 @@ cmd:
 
 
 serial_program: $(TARGET_BIN)
-	sudo gpioset -m time -s 1 0 3=0
-	sudo gpioset -m time -s 1 0 2=0
-	sudo gpioset -m time -s 1 0 2=1
+	sudo gpioset -m time -s 1 cp210x 3=0
+	sudo gpioset -m time -s 1 cp210x 2=0
+	sudo gpioset -m time -s 1 cp210x 2=0
 	sleep 0.1
 	stm32flash -b 115200 -w $(TARGET_BIN) /dev/ttyUSB0
-	sudo gpioset -m time -s 1 0 3=1
-	sudo gpioset -m time -s 1 0 2=0
-	sudo gpioset -m time -s 1 0 2=1
+	sudo gpioset -m time -s 1 cp210x 3=1
+	sudo gpioset -m time -s 1 cp210x 2=0
+	sudo gpioset -m time -s 1 cp210x 2=1
 
 
 $(BUILD_DIR)stack_info : $(TARGET_ELF)
