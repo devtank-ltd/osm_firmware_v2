@@ -89,3 +89,31 @@ bool modbus_measurement_add(modbus_reg_t * reg)
 
     return measurements_save();
 }
+
+
+void modbus_measurement_del_reg(char * name)
+{
+    modbus_reg_t * reg = modbus_get_reg(name);
+    if (!reg)
+        return;
+    measurements_del(name);
+    modbus_reg_del(reg);
+}
+
+void modbus_measurement_del_dev(char * name)
+{
+    modbus_dev_t * dev = modbus_get_device_by_name(name);
+    if (!dev)
+    return;
+
+    modbus_reg_t * reg = modbus_dev_get_reg(dev, 0);
+    while (reg)
+    {
+    char name[MODBUS_NAME_LEN+1];
+    modbus_reg_get_name(reg, name);
+    measurements_del(name);
+    modbus_reg_del(reg);
+    reg = modbus_dev_get_reg(dev, 0);
+    }
+    modbus_dev_del(dev);
+}

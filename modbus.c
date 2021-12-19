@@ -47,8 +47,7 @@ typedef struct
     uint8_t max_reg_num;
     uint8_t _;
     uint32_t __;
-    uint32_t size;
-    uint32_t used;
+    uint64_t ___;
 } __attribute__((__packed__)) modbus_blob_header_t;
 
 struct modbus_reg_t
@@ -57,23 +56,19 @@ struct modbus_reg_t
     uint32_t          class_data_a; /* what ever child class wants */
     uint8_t           type; /*modbus_reg_type_t*/
     uint8_t           func;
-    uint16_t          class_data_b; /* what ever child class wants */
-    uint16_t          device_offset; /* Offset to device */
     uint16_t          reg_addr;
+    uint32_t          class_data_b; /* what ever child class wants */
 } __attribute__((__packed__)) ;
 
 struct modbus_dev_t
 {
     char           name[MODBUS_NAME_LEN];
     uint8_t        slave_id;
-    uint8_t        reg_num;
-    uint16_t       _; /* pad.*/
-    uint32_t       regs[MODBUS_DEV_REGS]; /* Offsets to regsiters */
+    uint8_t        _;
+    uint16_t       __; /* pad.*/
+    modbus_reg_t   regs[MODBUS_DEV_REGS]; /* Offsets to regsiters */
 } __attribute__((__packed__)) ;
 
-
-static uint8_t * modbus_data = NULL;
-static uint8_t * modbus_data_pos = NULL;
 
 static modbus_dev_t * modbus_devices = NULL;
 
@@ -523,7 +518,16 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 
 static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned index)
 {
-    return (modbus_reg_t*)(modbus_data + dev->regs[index]);
+    for(unsigned n=0;n<MODBUS_DEV_REGS;n++)
+    {
+        if (dev->regs[n].name[0])
+        {
+            if (!index)
+                return &dev->regs[n];
+            index--;
+        }
+    }
+    return NULL;
 }
 
 
@@ -535,9 +539,9 @@ static uint32_t _get_id_of_name(char name[MODBUS_NAME_LEN])
 
 static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint32_t id)
 {
-    for(unsigned n = 0; n < dev->reg_num; n++)
+    for(unsigned n = 0; n < MODBUS_DEV_REGS; n++)
     {
-        modbus_reg_t * reg = _modbus_dev_get_reg_by_index(dev, n);
+        modbus_reg_t * reg = &dev->regs[n];
         if (id == _get_id_of_name(reg->name))
             return reg;
     }
@@ -564,10 +568,11 @@ void           modbus_log()
         if (dev->name[0])
         {
             log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", dev->slave_id, dev->name);
-            for (unsigned i = 0; i < dev->reg_num; i++)
+            for (unsigned i = 0; i < MODBUS_DEV_REGS; i++)
             {
-                modbus_reg_t * reg = _modbus_dev_get_reg_by_index(dev, i);
-                log_out("  - Reg - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->name, modbus_reg_type_get_str(reg->type));
+                modbus_reg_t * reg = &dev->regs[i];
+                if (reg->name[0])
+                    log_out("  - Reg - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->name, modbus_reg_type_get_str(reg->type));
             }
         }
     }
@@ -603,12 +608,35 @@ modbus_dev_t * modbus_get_device_by_id(unsigned slave_id)
 }
 
 
+modbus_dev_t * modbus_get_device_by_name(char * name)
+{
+    if (!name)
+        return NULL;
+    unsigned name_len = strlen(name);
+    if (name_len > MODBUS_NAME_LEN)
+        return NULL;
+    uint32_t id = 0;
+    memcpy(&id, name, name_len);
+
+    for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
+    {
+        modbus_dev_t * dev = &modbus_devices[n];
+        if (_get_id_of_name(dev->name) == id)
+            return dev;
+    }
+    return NULL;
+}
+
+
 modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
 {
     if (!dev || !name)
         return NULL;
+    unsigned name_len = strlen(name);
+    if (name_len > MODBUS_NAME_LEN)
+        return NULL;
     uint32_t id = 0;
-    memcpy(&id, name, strlen(name));
+    memcpy(&id, name, name_len);
     return _modbus_dev_get_reg_by_id(dev, id);
 }
 
@@ -618,6 +646,13 @@ uint16_t       modbus_dev_get_slave_id(modbus_dev_t * dev)
     if (!dev)
         return 0;
     return dev->slave_id;
+}
+
+void           modbus_dev_del(modbus_dev_t * dev)
+{
+    if (!dev)
+        return;
+    memset(dev, 0, sizeof(modbus_dev_t));
 }
 
 
@@ -634,6 +669,14 @@ modbus_reg_t* modbus_get_reg(char * name)
             return reg;
     }
     return NULL;
+}
+
+
+void modbus_reg_del(modbus_reg_t * reg)
+{
+    if (!reg)
+        return;
+    reg->name[0]=0;
 }
 
 
@@ -655,7 +698,6 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
             memset(dev->name, 0, MODBUS_NAME_LEN);
             memcpy(dev->name, name, len);
             dev->slave_id = slave_id;
-            dev->reg_num = 0;
             modbus_debug("Added device 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", slave_id, name);
             return dev;
         }
@@ -665,29 +707,23 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
 }
 
 
-void           modbus_config_wipe(void)
-{
-    modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
-
-    memset(modbus_devices, 0, sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
-    modbus_data_pos = modbus_data + sizeof(modbus_blob_header_t) + (sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
-
-    header->version = MODBUS_BLOB_VERSION;
-    header->max_dev_num = MODBUS_MAX_DEV;
-    header->max_reg_num = MODBUS_DEV_REGS;
-    header->size = MODBUS_MEMORY_SIZE;
-    header->used = ((uintptr_t)modbus_data_pos) - ((uintptr_t)modbus_data);
-
-    modbus_debug("%"PRIu32" remaining space", (header->size - header->used));
-}
-
-
 bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr)
 {
     if (!dev || !name)
         return false;
 
-    if (dev->reg_num == MODBUS_DEV_REGS)
+    modbus_reg_t * dst_reg = NULL;
+
+    for(unsigned n = 0; n < MODBUS_DEV_REGS; n++)
+    {
+        if (!dev->regs[n].name[0])
+        {
+            dst_reg = &dev->regs[n];
+            break;
+        }
+    }
+
+    if (!dst_reg)
     {
         modbus_debug("Dev has max regs.");
         return false;
@@ -712,34 +748,11 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
         modbus_debug("Name too long");
         return false;
     }
-
-    unsigned size = sizeof(modbus_reg_t);
-
-    size = ALIGN_16(size);
-
-    if ((modbus_data_pos + size) > (modbus_data + MODBUS_MEMORY_SIZE))
-    {
-        modbus_debug("Not enough memory to add reg.");
-        return false;
-    }
-
-    modbus_reg_t * dst_reg = (modbus_reg_t*)modbus_data_pos;
-
-    modbus_data_pos += size;
-
-    modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
-
-    header->used = ((uintptr_t)modbus_data_pos) - ((uintptr_t)modbus_data);
-    modbus_debug("%"PRIu32" remaining space", (header->size - header->used));
-
     memset(dst_reg->name, 0, MODBUS_NAME_LEN);
     memcpy(dst_reg->name, name, name_len);
     dst_reg->reg_addr  = reg_addr;
     dst_reg->type      = type;
     dst_reg->func      = func;
-    dst_reg->device_offset = ((intptr_t)dev) - ((intptr_t)modbus_data);
-
-    dev->regs[dev->reg_num++] = ((intptr_t)dst_reg) - ((intptr_t)modbus_data);
 
     /* For the current types, this start as zero. */
     dst_reg->class_data_a = 0;
@@ -753,7 +766,16 @@ unsigned       modbus_dev_get_reg_num(modbus_dev_t * dev)
 {
     if (!dev)
         return 0;
-    return dev->reg_num;
+
+    unsigned r=0;
+    for (unsigned i = 0; i < MODBUS_DEV_REGS; i++)
+    {
+        modbus_reg_t * reg = &dev->regs[i];
+        if (reg->name[0])
+            r++;
+    }
+
+    return r;
 }
 
 
@@ -761,7 +783,7 @@ modbus_reg_t * modbus_dev_get_reg(modbus_dev_t * dev, unsigned index)
 {
     if (!dev)
         return NULL;
-    if (index >= dev->reg_num)
+    if (index >= MODBUS_DEV_REGS)
         return NULL;
     return _modbus_dev_get_reg_by_index(dev, index);
 }
@@ -829,7 +851,15 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
 {
     if (!reg)
         return NULL;
-    return (modbus_dev_t*)(modbus_data + reg->device_offset);
+
+    for(unsigned n=1; n < MODBUS_MAX_DEV; n++)
+    {
+        if ((uintptr_t)reg < (uintptr_t)&modbus_devices[n] &&
+            (uintptr_t)reg < (uintptr_t)&modbus_devices[n-1])
+        return &modbus_devices[n-1];
+    }
+
+    return NULL;
 }
 
 
@@ -850,7 +880,7 @@ void modbus_init(void)
     }
     else _modbus_setup_delays(MODBUS_SPEED, MODBUS_DATABITS, MODBUS_PARITY, MODBUS_STOP);
 
-    modbus_data    = persist_get_modbus_data();
+    uint8_t * modbus_data = persist_get_modbus_data();
 
     modbus_blob_header_t * header = (modbus_blob_header_t*)modbus_data;
 
@@ -858,16 +888,16 @@ void modbus_init(void)
 
     if (header->version == MODBUS_BLOB_VERSION &&
         header->max_dev_num == MODBUS_MAX_DEV      &&
-        header->max_reg_num == MODBUS_DEV_REGS     &&
-        header->size <= MODBUS_MEMORY_SIZE)
+        header->max_reg_num == MODBUS_DEV_REGS)
     {
         log_sys_debug("Loaded modbus defs");
-        modbus_data_pos = modbus_data + header->used;
-        modbus_debug("%"PRIu32" remaining space", (header->size - header->used));
     }
     else
     {
         log_sys_debug("Failed to load modbus defs");
-        modbus_config_wipe();
+        memset(modbus_devices, 0, sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
+        header->version = MODBUS_BLOB_VERSION;
+        header->max_dev_num = MODBUS_MAX_DEV;
+        header->max_reg_num = MODBUS_DEV_REGS;
     }
 }

@@ -48,7 +48,6 @@ static void modbus_setup_cb(char *args);
 static void modbus_add_dev_cb(char *args);
 static void modbus_add_reg_cb(char *args);
 static void modbus_get_reg_cb(char *args);
-static void modbus_wipe_cb(char *args);
 static void measurements_cb(char *args);
 
 
@@ -69,7 +68,8 @@ static cmd_t cmds[] = {
     { "mb_dev_add","Add modbus dev",         modbus_add_dev_cb},
     { "mb_reg_add","Add modbus reg",         modbus_add_reg_cb},
     { "mb_get_reg","Get modbus reg",         modbus_get_reg_cb},
-    { "mb_wipe",   "Wipe modbus setup",      modbus_wipe_cb},
+    { "mb_reg_del","Delete modbus reg",      modbus_measurement_del_reg},
+    { "mb_dev_del","Delete modbus dev",      modbus_measurement_del_dev},
     { "mb_log",    "Show modbus setup",      modbus_log},
     { "mb_save",   "Save modbus setup",      modbus_save},
     { "measurements", "Print measurements",  measurements_cb},
@@ -471,13 +471,6 @@ static void modbus_get_reg_cb(char * args)
     modbus_start_read(reg);
 }
 
-
-static void modbus_wipe_cb(char *args)
-{
-    modbus_config_wipe();
-    modbus_save();
-    log_out("Modbus wiped.");
-}
 
 static void measurements_cb(char *args)
 {
