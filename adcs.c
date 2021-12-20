@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/adc.h>
@@ -26,7 +27,7 @@ typedef struct
 
 static uint64_t             call_count                                          = 0;
 static adc_dma_channel_t    adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
-static adc_reading_t        adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADC_COUNT];
+static uint16_t             adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT];
 static uint8_t              adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t             midpoint;
 static volatile bool        adc_value_ready                                     = false;
@@ -34,17 +35,35 @@ static volatile bool        adc_value_ready                                     
 
 static void _adcs_empty_buffer(void)
 {
-    adc_reading_t* buff_element;
-    for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
+    //memset(adcs_buffer, 0, (ADC_DMA_CHANNELS_COUNT * NUM_SAMPLES * ADC_COUNT) * sizeof(uint16_t));
+}
+
+
+static void _adcs_data_compress(uint16_t buff[NUM_SAMPLES], adc_reading_t* data, uint8_t len)
+{
+    uint16_t* element;
+    adc_reading_t* p = data;
+    for (unsigned i = 0; i < len; i++)
     {
-        for (unsigned j = 0; j < ADC_COUNT; j++)
+        p->sum = 0;
+        p->count = 0;
+        p->max = 0;
+        p->min = UINT16_MAX;
+        for (unsigned j = 0; j < NUM_SAMPLES; j++)
         {
-            buff_element = &adcs_buffer[i][j];
-            buff_element->max   = 0;
-            buff_element->min   = UINT16_MAX;
-            buff_element->sum   = 0;
-            buff_element->count = 0;
+            element = &buff[i + j * len];
+            if (*element > p->max)
+            {
+                p->max = *element;
+            }
+            if (*element < p->min)
+            {
+                p->min = *element;
+            }
+            p->sum += *element;
+            p->count++;
         }
+        p++;
     }
 }
 
@@ -58,17 +77,19 @@ static void _adcs_setup_adc(void)
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
-    adc_calibrate(ADC1);
     adc_enable_eoc_interrupt(ADC1);
-    adc_set_continuous_conversion_mode(ADC1);
     adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
     adc_enable_vrefint();
     adc_enable_temperature_sensor();
     adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_6DOT5CYC);
-    adc_set_regular_sequence(ADC1, ADC_COUNT, adc_channel_array);
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
-    adc_power_on(ADC1);
+
+    adc_calibrate(ADC1);
+    //adc_power_on(ADC1);
+
+    //adc_set_regular_sequence(ADC1, ADC_COUNT, adc_channel_array);
+    adc_set_continuous_conversion_mode(ADC1);
 }
 
 
@@ -86,7 +107,7 @@ static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
     dma_set_priority(adc_dma->dma_unit, adc_dma->dma_channel, adc_dma->priority);
 
     dma_enable_transfer_complete_interrupt(adc_dma->dma_unit, adc_dma->dma_channel);
-    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, NUM_SAMPLES);
+    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, NUM_SAMPLES * ADC_COUNT);
     dma_enable_circular_mode(adc_dma->dma_unit, adc_dma->dma_channel);
     dma_set_read_from_peripheral(adc_dma->dma_unit, adc_dma->dma_channel);
 
@@ -202,20 +223,15 @@ static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_
 
 static void _adcs_print_buff(void)
 {
-    adc_reading_t* adc_res;
-    for (unsigned i = 0; i < ADC_COUNT; i++)
-    {
-        adc_res = &adcs_buffer[0][i];
-        log_out("%"PRIu8" = %"PRIu32" / %"PRIu16" : %"PRIu16" -> %"PRIu16, adc_channel_array[i], adc_res->sum, adc_res->count, adc_res->min, adc_res->max);
-    }
 }
 
 
-static void _adcs_start_sampling(uint32_t adc, uint32_t sample_time_ms)
+static void _adcs_start_sampling(uint32_t adc, uint8_t* channels, uint8_t len)
 {
     _adcs_empty_buffer();
     call_count = 0;
-    adc_start_conversion_regular(ADC1);
+    adc_set_regular_sequence(adc, len, channels);
+    adc_start_conversion_regular(adc);
 }
 
 
@@ -246,7 +262,6 @@ void adcs_loop_iteration(void)
 
 void temp(char* args)
 {
-    _adcs_start_sampling(ADC1, 10000);
     uint16_t adc_mV = 1800;
     uint16_t cc_mA;
     _adcs_current_clamp_conv(false, &adc_mV, &cc_mA);
@@ -256,9 +271,10 @@ void temp(char* args)
 
 bool adcs_begin(char* name)
 {
-    _adcs_start_sampling(ADC1, 10000);
-    _adcs_setup_dma(&adc_dma_channels[0], 0);
-    _adcs_setup_adc();
+    adc_power_on(ADC1);
+    //uint8_t local_channel_array[1] = { adc_channel_array[0] };
+    //_adcs_start_sampling(ADC1, local_channel_array , 1);
+    _adcs_start_sampling(ADC1, adc_channel_array, ADC_COUNT);
     return true;
 }
 
@@ -270,10 +286,11 @@ bool adcs_collect(char* name, value_t* value)
         return false;
     }
     adc_value_ready = false;
-    adc_reading_t* cc_reading = &adcs_buffer[0][0];
-    if (cc_reading->count)
+    adc_reading_t cc_reading[ADC_COUNT];
+    _adcs_data_compress(adcs_buffer[0], cc_reading, ADC_COUNT);
+    if (cc_reading[0].count)
     {
-        *value = cc_reading->sum / cc_reading->count;
+        *value = cc_reading[0].sum / cc_reading[0].count;
     }
     else
     {
@@ -326,12 +343,19 @@ void adcs_init(void)
 }
 
 
+void adc1_eoc_isr(void)
+{
+    adc_value_ready = true;
+    ADC_IER(ADC1) &= ~ADC_IER_EOCIE;
+}
+
+
 void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
 {
     if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
-        adc_value_ready = true;
     }
-    adcs_init();
+    adc_value_ready = true;
+    _adcs_setup_dmas();
 }

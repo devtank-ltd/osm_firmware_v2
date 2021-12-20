@@ -478,9 +478,12 @@ static void measurements_cb(char *args)
 
 static void adcs_cb(char* args)
 {
-    value_t value;
-    adcs_wait(&value);
-    log_out("CC = %"PRIu64, value);
+    //value_t value;
+    if (!adcs_begin("None"))
+    {
+        log_out("failed");
+    }
+    //log_out("CC = %"PRIu64, value);
 }
 
 
