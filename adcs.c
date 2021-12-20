@@ -9,19 +9,56 @@
 #include "adcs.h"
 #include "pinmap.h"
 #include "persist_config.h"
+#include "sys_time.h"
 
 
 #define NUM_SAMPLES     128
 
 
-static adc_dma_channel_t adc_dma_channels[] = ADC_DMA_CHANNELS;
-static uint16_t adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES];
-static uint8_t adc_channel_array[] = ADC_CHANNELS;
-static uint16_t midpoint;
-static bool adc_value_ready = false;
+typedef struct
+{
+    uint32_t        sum;
+    uint16_t        count;
+    uint16_t        max;
+    uint16_t        min;
+} adc_reading_t;
 
 
-static void adcs_setup_adc(void)
+typedef struct
+{
+    bool        active;
+    uint32_t    unit;
+    uint32_t    start_time;
+    uint32_t    sample_time;
+} sample_info_t;
+
+
+static uint64_t             call_count                                          = 0;
+static adc_dma_channel_t    adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
+static adc_reading_t        adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADC_COUNT];
+static uint8_t              adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
+static uint16_t             midpoint;
+static bool                 adc_value_ready                                     = false;
+
+
+static void _adcs_empty_buffer(void)
+{
+    adc_reading_t* buff_element;
+    for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
+    {
+        for (unsigned j = 0; j < ADC_COUNT; j++)
+        {
+            buff_element = &adcs_buffer[i][j];
+            buff_element->max   = 0;
+            buff_element->min   = UINT16_MAX;
+            buff_element->sum   = 0;
+            buff_element->count = 0;
+        }
+    }
+}
+
+
+static void _adcs_setup_adc(void)
 {
     RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
     adc_power_off(ADC1);
@@ -31,13 +68,14 @@ static void adcs_setup_adc(void)
     }
 
     adc_calibrate(ADC1);
-    adc_set_single_conversion_mode(ADC1);
+    adc_enable_eoc_interrupt(ADC1);
+    adc_set_continuous_conversion_mode(ADC1);
     adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
     adc_enable_vrefint();
     adc_enable_temperature_sensor();
     adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_6DOT5CYC);
-    adc_set_regular_sequence(ADC1, 1, adc_channel_array);
+    adc_set_regular_sequence(ADC1, ADC_COUNT, adc_channel_array);
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
 
     adc_power_on(ADC1);
@@ -50,7 +88,33 @@ static void adcs_setup_adc(void)
 }
 
 
-static uint16_t adcs_read(uint32_t adc, uint8_t channel)
+static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
+{
+    rcc_periph_clock_enable(adc_dma->dma_rcc);
+
+    dma_channel_reset(adc_dma->dma_unit, adc_dma->dma_channel);
+
+    dma_set_peripheral_address(adc_dma->dma_unit, adc_dma->dma_channel, (uint32_t)&ADC_DR(adc_dma->adc_unit));
+    dma_set_memory_address(adc_dma->dma_unit, adc_dma->dma_channel, (uint32_t)(adcs_buffer[index]));
+    dma_enable_memory_increment_mode(adc_dma->dma_unit, adc_dma->dma_channel);
+    dma_set_peripheral_size(adc_dma->dma_unit, adc_dma->dma_channel, DMA_CCR_PSIZE_16BIT);
+    dma_set_memory_size(adc_dma->dma_unit, adc_dma->dma_channel, DMA_CCR_MSIZE_16BIT);
+    dma_set_priority(adc_dma->dma_unit, adc_dma->dma_channel, adc_dma->priority);
+
+    dma_enable_transfer_complete_interrupt(adc_dma->dma_unit, adc_dma->dma_channel);
+    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, NUM_SAMPLES);
+    dma_enable_circular_mode(adc_dma->dma_unit, adc_dma->dma_channel);
+    dma_set_read_from_peripheral(adc_dma->dma_unit, adc_dma->dma_channel);
+
+    if (adc_dma->enabled)
+    {
+        dma_enable_channel(adc_dma->dma_unit, adc_dma->dma_channel);
+    }
+    adc_enable_dma(adc_dma->adc_unit);
+}
+
+
+static uint16_t _adcs_read(uint32_t adc, uint8_t channel)
 {
     uint8_t local_channel_array[1] = { channel };
     adc_set_regular_sequence(adc, 1, local_channel_array);
@@ -60,7 +124,7 @@ static uint16_t adcs_read(uint32_t adc, uint8_t channel)
 }
 
 
-static bool adcs_to_mV(uint16_t* value, uint16_t* mV)
+static bool _adcs_to_mV(uint16_t* value, uint16_t* mV)
 {
     // Linear scale without calibration.
     // ADC of    0 -> 0V
@@ -86,7 +150,7 @@ static bool adcs_to_mV(uint16_t* value, uint16_t* mV)
 }
 
 
-static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_mA)
+static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_mA)
 {
     /**
      First must calculate the peak voltage
@@ -107,7 +171,7 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
     */
     uint32_t inter_value;
     uint16_t mp_mV;
-    if (!adcs_to_mV((uint16_t*)&midpoint, &mp_mV))
+    if (!_adcs_to_mV((uint16_t*)&midpoint, &mp_mV))
     {
         log_debug(DEBUG_ADC, "Cannot get mV value of midpoint.");
         return false;
@@ -144,32 +208,22 @@ static bool adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_m
 }
 
 
-bool adcs_get_current_clamp(uint16_t* cc_mA)
+static void _adcs_print_buff(void)
 {
-    uint16_t cc, cc_mV;
-    cc = adcs_read(ADC1, ADC1_CHANNEL__CURRENT_CLAMP);
-    if (!adcs_to_mV(&cc, &cc_mV))
+    adc_reading_t* adc_res;
+    for (unsigned i = 0; i < ADC_COUNT; i++)
     {
-        log_debug(DEBUG_ADC, "Failed to convert ADC value to mV");
-        return false;
+        adc_res = &adcs_buffer[0][i];
+        log_out("%"PRIu8" = %"PRIu32" / %"PRIu16" : %"PRIu16" -> %"PRIu16, adc_channel_array[i], adc_res->sum, adc_res->count, adc_res->min, adc_res->max);
     }
-    if (!adcs_current_clamp_conv(false, &cc_mV, cc_mA))
-    {
-        log_debug(DEBUG_ADC, "Failed to convert mV to mA");
-        return false;
-    }
-    return true;
 }
 
 
-void adcs_cb(char* args)
+static void _adcs_start_sampling(uint32_t adc, uint32_t sample_time_ms)
 {
-    uint16_t cc_mA;
-    adcs_get_current_clamp(&cc_mA);
-    log_out("Current Clamp      : %"PRIu16"mA", cc_mA);
-    log_out("BAT_MON            : %"PRIu16, adcs_read(ADC1, ADC1_CHANNEL__BAT_MON));
-    log_out("3V3_RAIL_MONITOR   : %"PRIu16, adcs_read(ADC1, ADC1_CHANNEL__3V3_RAIL_MON));
-    log_out("5V_RAIL_MONITOR    : %"PRIu16, adcs_read(ADC1, ADC1_CHANNEL__5V_RAIL_MON));
+    _adcs_empty_buffer();
+    call_count = 0;
+    adc_start_conversion_regular(ADC1);
 }
 
 
@@ -187,30 +241,42 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
 
 void adcs_calibrate_current_clamp(void)
 {
-    uint16_t new_midpoint = adcs_read(ADC1, ADC1_CHANNEL__CURRENT_CLAMP);
+    uint16_t new_midpoint = _adcs_read(ADC1, ADC1_CHANNEL__CURRENT_CLAMP);
     adcs_set_midpoint(new_midpoint);
 }
 
 
-void adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
+void adcs_loop_iteration(void)
 {
-    rcc_periph_clock_enable(adc_dma->dma_rcc);
+    ;
+}
 
-    dma_channel_reset(adc_dma->dma_unit, adc_dma->dma_channel);
 
-    dma_set_peripheral_address(adc_dma->dma_unit, adc_dma->dma_channel, &ADC_DR(adc_dma->adc_unit));
-    dma_set_memory_address(adc_dma->dma_unit, adc_dma->dma_channel, (uint32_t)(adcs_buffer[index]));
-    dma_enable_memory_increment_mode(adc_dma->dma_unit, adc_dma->dma_channel);
-    dma_set_peripheral_size(adc_dma->dma_unit, adc_dma->dma_channel, DMA_CCR_PSIZE_16BIT);
-    dma_set_memory_size(adc_dma->dma_unit, adc_dma->dma_channel, DMA_CCR_MSIZE_16BIT);
-    dma_set_priority(adc_dma->dma_unit, adc_dma->dma_channel, adc_dma->priority);
+void adcs_cb(char* args)
+{
+    _adcs_start_sampling(ADC1, 10000);
+}
 
-    dma_enable_transfer_complete_interrupt(adc_dma->dma_unit, adc_dma->dma_channel);
-    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, NUM_SAMPLES);
-    if (adc_dma->enabled)
-    {
-        dma_enable_channel(adc_dma->dma_unit, adc_dma->dma_channel);
-    }
+
+bool adcs_begin(char* name)
+{
+    uint16_t adc_mV = 1800;
+    uint16_t cc_mA;
+    _adcs_current_clamp_conv(false, &adc_mV, &cc_mA);
+    return true;
+}
+
+
+bool adcs_collect(char* name, value_t* value)
+{
+    _adcs_print_buff();
+    return true;
+}
+
+
+bool adcs_wait(value_t* value)
+{
+    return true;
 }
 
 
@@ -238,10 +304,10 @@ void adcs_init(void)
     // Setup the dma(s)
     for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
     {
-        adcs_setup_dma(adc_dma_channels[i], i);
+        _adcs_setup_dma(&adc_dma_channels[i], i);
     }
     // Setup the adc(s)
-    adcs_setup_adc();
+    _adcs_setup_adc();
 }
 
 
@@ -252,4 +318,5 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         adc_value_ready = true;
     }
+    _adcs_setup_dma(&adc_dma_channels[0], 0);
 }

@@ -50,6 +50,7 @@ static void modbus_add_reg_cb(char *args);
 static void modbus_get_reg_cb(char *args);
 static void modbus_wipe_cb(char *args);
 static void measurements_cb(char *args);
+static void adcs_cb(char* args);
 static void adcs_midpoint_cb(char *args);
 static void adcs_calibrate_cb(char *args);
 
@@ -472,6 +473,14 @@ static void measurements_cb(char *args)
 {
     measurements_print();
     measurements_print_persist();
+}
+
+
+static void adcs_cb(char* args)
+{
+    value_t value;
+    adcs_wait(&value);
+    log_out("CC = %"PRIu64, value);
 }
 
 
