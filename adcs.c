@@ -24,21 +24,12 @@ typedef struct
 } adc_reading_t;
 
 
-typedef struct
-{
-    bool        active;
-    uint32_t    unit;
-    uint32_t    start_time;
-    uint32_t    sample_time;
-} sample_info_t;
-
-
 static uint64_t             call_count                                          = 0;
 static adc_dma_channel_t    adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
 static adc_reading_t        adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADC_COUNT];
 static uint8_t              adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t             midpoint;
-static bool                 adc_value_ready                                     = false;
+static volatile bool        adc_value_ready                                     = false;
 
 
 static void _adcs_empty_buffer(void)
@@ -77,14 +68,7 @@ static void _adcs_setup_adc(void)
     adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_6DOT5CYC);
     adc_set_regular_sequence(ADC1, ADC_COUNT, adc_channel_array);
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
-
     adc_power_on(ADC1);
-
-    /* Wait for ADC starting up. */
-    for (int i = 0; i < 800000; i++)
-    {    /* Wait a bit. */
-        __asm__("nop");
-    }
 }
 
 
@@ -111,6 +95,14 @@ static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
         dma_enable_channel(adc_dma->dma_unit, adc_dma->dma_channel);
     }
     adc_enable_dma(adc_dma->adc_unit);
+}
+
+static void _adcs_setup_dmas(void)
+{
+    for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
+    {
+        _adcs_setup_dma(&adc_dma_channels[i], i);
+    }
 }
 
 
@@ -252,30 +244,56 @@ void adcs_loop_iteration(void)
 }
 
 
-void adcs_cb(char* args)
+void temp(char* args)
 {
     _adcs_start_sampling(ADC1, 10000);
+    uint16_t adc_mV = 1800;
+    uint16_t cc_mA;
+    _adcs_current_clamp_conv(false, &adc_mV, &cc_mA);
+    _adcs_print_buff();
 }
 
 
 bool adcs_begin(char* name)
 {
-    uint16_t adc_mV = 1800;
-    uint16_t cc_mA;
-    _adcs_current_clamp_conv(false, &adc_mV, &cc_mA);
+    _adcs_start_sampling(ADC1, 10000);
+    _adcs_setup_dma(&adc_dma_channels[0], 0);
+    _adcs_setup_adc();
     return true;
 }
 
 
 bool adcs_collect(char* name, value_t* value)
 {
-    _adcs_print_buff();
+    if (!adc_value_ready)
+    {
+        return false;
+    }
+    adc_value_ready = false;
+    adc_reading_t* cc_reading = &adcs_buffer[0][0];
+    if (cc_reading->count)
+    {
+        *value = cc_reading->sum / cc_reading->count;
+    }
+    else
+    {
+        *value = 0;
+    }
     return true;
 }
 
 
 bool adcs_wait(value_t* value)
 {
+    if (!value)
+    {
+        return false;
+    }
+    if (!adcs_begin("NONE"))
+    {
+        return false;
+    }
+    while(!adcs_collect("NONE", value));
     return true;
 }
 
@@ -302,10 +320,7 @@ void adcs_init(void)
                         port_n_pins[n].pins);
     }
     // Setup the dma(s)
-    for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
-    {
-        _adcs_setup_dma(&adc_dma_channels[i], i);
-    }
+    _adcs_setup_dmas();
     // Setup the adc(s)
     _adcs_setup_adc();
 }
@@ -318,5 +333,5 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         adc_value_ready = true;
     }
-    _adcs_setup_dma(&adc_dma_channels[0], 0);
+    adcs_init();
 }
