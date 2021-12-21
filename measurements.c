@@ -332,7 +332,6 @@ bool measurements_del(char* name)
             return true;
         }
     }
-    log_error("Cannot find measurement to remove.");
     return false;
 }
 
