@@ -19,20 +19,6 @@ extern bool persist_get_lw_app_key(char app_key[LW__APP_KEY_LEN + 1]);
 extern bool persist_get_measurements(measurement_def_base_t** m_arr);
 extern void persist_commit_measurement(void);
 
-
-typedef struct
-{
-    uint32_t baudrate;
-    uint8_t binary_protocol; /* BIN or RTU */
-    uint8_t databits;        /* 8? */
-    uint8_t stopbits;        /* uart_stop_bits_t */
-    uint8_t parity;          /* uart_parity_t */
-} __attribute__((__packed__)) modbus_bus_config_t;
-
-
-extern void persist_set_modbus_bus_config(modbus_bus_config_t* config);
-extern bool persist_get_modbus_bus_config(modbus_bus_config_t* config);
-
 extern uint8_t * persist_get_modbus_data(void);
 extern void      persist_commit_modbus_data(void);
 

@@ -12,7 +12,7 @@
 #include "measurements.h"
 #include "lorawan.h"
 
-#define FLASH_ADDRESS               0x8000000
+#define FLASH_ADDRESS               FMC3_BANK_BASE
 #define FLASH_SIZE                  (512 * 1024)
 #define FLASH_PAGE_SIZE             2048
 #define FLASH_CONFIG_PAGE           255
@@ -24,7 +24,8 @@ typedef struct
 {
     uint32_t                version;
     uint32_t                log_debug_mask;
-    modbus_bus_config_t     modbus_bus_config;
+    uint32_t                fw_a;
+    uint32_t                fw_b;
     uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
@@ -220,26 +221,6 @@ bool persist_get_measurements(measurement_def_base_t** m_arr)
 void persist_commit_measurement(void)
 {
     _persistent_commit();
-}
-
-
-void persist_set_modbus_bus_config(modbus_bus_config_t* config)
-{
-    if (!config)
-        return;
-    persist_data.version = PERSIST__VERSION;
-    memcpy(&persist_data.modbus_bus_config, config, sizeof(modbus_bus_config_t));
-    _persistent_commit();
-}
-
-
-bool persist_get_modbus_bus_config(modbus_bus_config_t* config)
-{
-    if (!persist_data_valid || !config)
-        return false;
-
-    memcpy(config, &persist_data.modbus_bus_config, sizeof(modbus_bus_config_t));
-    return true;
 }
 
 
