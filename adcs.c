@@ -33,41 +33,6 @@ static uint16_t             midpoint;
 static volatile bool        adc_value_ready                                     = false;
 
 
-static void _adcs_empty_buffer(void)
-{
-    //memset(adcs_buffer, 0, (ADC_DMA_CHANNELS_COUNT * NUM_SAMPLES * ADC_COUNT) * sizeof(uint16_t));
-}
-
-
-static void _adcs_data_compress(uint16_t buff[NUM_SAMPLES], adc_reading_t* data, uint8_t len)
-{
-    uint16_t* element;
-    adc_reading_t* p = data;
-    for (unsigned i = 0; i < len; i++)
-    {
-        p->sum = 0;
-        p->count = 0;
-        p->max = 0;
-        p->min = UINT16_MAX;
-        for (unsigned j = 0; j < NUM_SAMPLES; j++)
-        {
-            element = &buff[i + j * len];
-            if (*element > p->max)
-            {
-                p->max = *element;
-            }
-            if (*element < p->min)
-            {
-                p->min = *element;
-            }
-            p->sum += *element;
-            p->count++;
-        }
-        p++;
-    }
-}
-
-
 static void _adcs_setup_adc(void)
 {
     RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
@@ -134,6 +99,35 @@ static uint16_t _adcs_read(uint32_t adc, uint8_t channel)
     adc_start_conversion_regular(adc);
     while (!(adc_eoc(adc)));
     return adc_read_regular(adc);
+}
+
+
+static void _adcs_data_compress(volatile uint16_t buff[NUM_SAMPLES], adc_reading_t* data, uint8_t len)
+{
+    volatile uint16_t* element;
+    adc_reading_t* p = data;
+    for (unsigned i = 0; i < len; i++)
+    {
+        p->sum = 0;
+        p->count = 0;
+        p->max = 0;
+        p->min = UINT16_MAX;
+        for (unsigned j = 0; j < NUM_SAMPLES; j++)
+        {
+            element = &buff[i + j * len];
+            if (*element > p->max)
+            {
+                p->max = *element;
+            }
+            if (*element < p->min)
+            {
+                p->min = *element;
+            }
+            p->sum += *element;
+            p->count++;
+        }
+        p++;
+    }
 }
 
 
@@ -228,7 +222,6 @@ static void _adcs_print_buff(void)
 
 static void _adcs_start_sampling(uint32_t adc, uint8_t* channels, uint8_t len)
 {
-    _adcs_empty_buffer();
     call_count = 0;
     adc_set_regular_sequence(adc, len, channels);
     adc_start_conversion_regular(adc);

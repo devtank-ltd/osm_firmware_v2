@@ -3,6 +3,7 @@
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/dma.h>
+#include <libopencm3/cm3/nvic.h>
 #include <stdint.h>
 
 typedef struct
@@ -80,6 +81,7 @@ typedef struct
     uint32_t              adc_unit;
     uint32_t              dma_unit;
     uint32_t              dma_rcc;
+    uint8_t               dma_irqn;
     uint8_t               dma_channel;
     uint8_t               priority;
     uint8_t               enabled;
@@ -88,7 +90,7 @@ typedef struct
 
 #define ADC_DMA_CHANNELS                                                        \
 {                                                                               \
-    { ADC1, DMA1, RCC_DMA1, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
+    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
 }
 
 #define ADC_DMA_CHANNELS_COUNT  1
