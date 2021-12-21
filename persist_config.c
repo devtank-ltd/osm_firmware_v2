@@ -9,18 +9,8 @@
 #include "config.h"
 #include "pinmap.h"
 #include "timers.h"
-#include "measurements.h"
 #include "lorawan.h"
 #include "persist_config_header.h"
-
-typedef struct
-{
-    persist_storage_header_t;
-    uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
-    char                    lw_dev_eui[LW__DEV_EUI_LEN];
-    char                    lw_app_key[LW__APP_KEY_LEN];
-    measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
-} __attribute__((__packed__)) persist_storage_t;
 
 
 static bool                 persist_data_valid = false;
@@ -68,6 +58,7 @@ void init_persistent(void)
         memset(&persist_data, 0, sizeof(persist_data));
         persist_data.version = PERSIST__VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
+	persist_data.fw_a = DEFAULT_FW_ADDR;
         return;
     }
 
@@ -122,7 +113,6 @@ static void _persistent_commit(void)
 
 void persist_set_log_debug_mask(uint32_t mask)
 {
-    persist_data.version = PERSIST__VERSION;
     persist_data.log_debug_mask = mask;
     _persistent_commit();
 }

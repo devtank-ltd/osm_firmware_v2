@@ -96,7 +96,7 @@ int main(void)
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
-    persist_storage_header_t * config = (persist_storage_header_t*)PERSIST__RAW_DATA;
+    persist_storage_t * config = (persist_storage_t*)PERSIST__RAW_DATA;
 
     run_firmware(config->fw_a);
 
