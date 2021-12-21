@@ -5,6 +5,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/adc.h>
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/cm3/nvic.h>
 
 #include "log.h"
 #include "adcs.h"
@@ -16,6 +17,14 @@
 #define NUM_SAMPLES     128
 
 
+typedef enum
+{
+    ADCS_VAL_STATUS__IDLE,
+    ADCS_VAL_STATUS__DOING,
+    ADCS_VAL_STATUS__DONE,
+} adc_value_status_t;
+
+
 typedef struct
 {
     uint32_t        sum;
@@ -25,12 +34,12 @@ typedef struct
 } adc_reading_t;
 
 
-static uint64_t             call_count                                          = 0;
-static adc_dma_channel_t    adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
-static uint16_t             adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT];
-static uint8_t              adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
-static uint16_t             midpoint;
-static volatile bool        adc_value_ready                                     = false;
+static uint64_t                     call_count                                          = 0;
+static adc_dma_channel_t            adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
+static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT];
+static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
+static uint16_t                     midpoint;
+static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS__IDLE;
 
 
 static void _adcs_setup_adc(void)
@@ -41,6 +50,8 @@ static void _adcs_setup_adc(void)
     {
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
+
+    nvic_enable_irq(NVIC_ADC1_2_IRQ);
 
     adc_enable_eoc_interrupt(ADC1);
     adc_enable_regulator(ADC1);
@@ -215,11 +226,6 @@ static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_
 }
 
 
-static void _adcs_print_buff(void)
-{
-}
-
-
 static void _adcs_start_sampling(uint32_t adc, uint8_t* channels, uint8_t len)
 {
     call_count = 0;
@@ -258,12 +264,19 @@ void temp(char* args)
     uint16_t adc_mV = 1800;
     uint16_t cc_mA;
     _adcs_current_clamp_conv(false, &adc_mV, &cc_mA);
-    _adcs_print_buff();
 }
 
 
 bool adcs_begin(char* name)
 {
+    if (adc_value_status == ADCS_VAL_STATUS__DONE)
+    {
+        return true;
+    }
+    else if (adc_value_status == ADCS_VAL_STATUS__DOING)
+    {
+        return false;
+    }
     adc_power_on(ADC1);
     //uint8_t local_channel_array[1] = { adc_channel_array[0] };
     //_adcs_start_sampling(ADC1, local_channel_array , 1);
@@ -274,11 +287,11 @@ bool adcs_begin(char* name)
 
 bool adcs_collect(char* name, value_t* value)
 {
-    if (!adc_value_ready)
+    if (adc_value_status != ADCS_VAL_STATUS__DONE)
     {
         return false;
     }
-    adc_value_ready = false;
+    adc_value_status = ADCS_VAL_STATUS__IDLE;
     adc_reading_t cc_reading[ADC_COUNT];
     _adcs_data_compress(adcs_buffer[0], cc_reading, ADC_COUNT);
     if (cc_reading[0].count)
@@ -336,10 +349,10 @@ void adcs_init(void)
 }
 
 
-void adc1_eoc_isr(void)
+void adc1_2_isr(void)
 {
-    adc_value_ready = true;
-    ADC_IER(ADC1) &= ~ADC_IER_EOCIE;
+    adc_value_status = ADCS_VAL_STATUS__DONE;
+    //ADC_IER(ADC1) &= ~ADC_IER_EOCIE;
 }
 
 
@@ -349,6 +362,6 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
     }
-    adc_value_ready = true;
+    adc_value_status = ADCS_VAL_STATUS__DONE;
     _adcs_setup_dmas();
 }
