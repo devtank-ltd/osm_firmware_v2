@@ -103,16 +103,6 @@ static void _adcs_setup_dmas(void)
 }
 
 
-static uint16_t _adcs_read(uint32_t adc, uint8_t channel)
-{
-    uint8_t local_channel_array[1] = { channel };
-    adc_set_regular_sequence(adc, 1, local_channel_array);
-    adc_start_conversion_regular(adc);
-    while (!(adc_eoc(adc)));
-    return adc_read_regular(adc);
-}
-
-
 static void _adcs_data_compress(volatile uint16_t buff[NUM_SAMPLES], adc_reading_t* data, uint8_t len)
 {
     volatile uint16_t* element;
@@ -246,13 +236,6 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
 }
 
 
-void adcs_calibrate_current_clamp(void)
-{
-    uint16_t new_midpoint = _adcs_read(ADC1, ADC1_CHANNEL__CURRENT_CLAMP);
-    adcs_set_midpoint(new_midpoint);
-}
-
-
 void adcs_loop_iteration(void)
 {
     ;
@@ -284,7 +267,7 @@ bool adcs_begin(char* name)
 }
 
 
-bool adcs_collect(char* name, value_t* value)
+bool adcs_collect(char* name, uint16_t* value)
 {
     if (adc_value_status != ADCS_VAL_STATUS__DONE)
     {
@@ -305,7 +288,7 @@ bool adcs_collect(char* name, value_t* value)
 }
 
 
-bool adcs_wait(value_t* value)
+static bool _adcs_wait(uint16_t* value)
 {
     if (!value)
     {
@@ -316,6 +299,41 @@ bool adcs_wait(value_t* value)
         return false;
     }
     while(!adcs_collect("NONE", value));
+    return true;
+}
+
+
+bool adcs_calibrate_current_clamp(void)
+{
+    uint16_t new_midpoint;
+    if (!_adcs_wait(&new_midpoint))
+    {
+        return false;
+    }
+    return adcs_set_midpoint(new_midpoint);
+}
+
+
+bool adcs_get_cc_mA(value_t* value)
+{
+    if (!value)
+    {
+        return false;
+    }
+    uint16_t adc_val, mV_val, mA_val;
+    if (!_adcs_wait(&adc_val))
+    {
+        return false;
+    }
+    if (!_adcs_to_mV(&adc_val, &mV_val))
+    {
+        return false;
+    }
+    if (!_adcs_current_clamp_conv(false, &mV_val, &mA_val))
+    {
+        return false;
+    }
+    *value = mA_val;
     return true;
 }
 
@@ -354,7 +372,7 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         adc_power_off(ADC1);
-    adc_value_status = ADCS_VAL_STATUS__DONE;
+        adc_value_status = ADCS_VAL_STATUS__DONE;
     }
     _adcs_setup_dmas();
 }

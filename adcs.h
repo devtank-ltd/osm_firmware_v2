@@ -9,14 +9,13 @@
 
 
 extern void adcs_init(void);
-extern void adcs_loop_iteration(void);
 
 extern bool adcs_begin(char* name);
-extern bool adcs_collect(char* name, value_t* value);
-extern bool adcs_wait(value_t* value);
+extern bool adcs_collect(char* name, uint16_t* value);
+extern bool adcs_get_cc_mA(value_t* value);
 
 extern bool adcs_set_midpoint(uint16_t new_midpoint);
-extern void adcs_calibrate_current_clamp(void);
+extern bool adcs_calibrate_current_clamp(void);
 
 
 #endif //__ADCS__

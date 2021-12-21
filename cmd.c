@@ -479,7 +479,7 @@ static void measurements_cb(char *args)
 static void adcs_cb(char* args)
 {
     value_t value;
-    adcs_wait(&value);
+    adcs_get_cc_mA(&value);
     log_out("CC = %"PRIu64, value);
 }
 
