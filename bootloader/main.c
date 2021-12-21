@@ -9,6 +9,7 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
+#include <libopencm3/cm3/scb.h>
 
 #include "config.h"
 #include "pinmap.h"
@@ -72,6 +73,17 @@ static void clock_setup(void)
     rcc_apb1_frequency = 80e6;
     rcc_apb2_frequency = 80e6;
 }
+
+
+static void run_firmware(uintptr_t addr)
+{
+    SCB_VTOR = addr & 0xFFFF;
+    /* Initialise master stack pointer. */
+    asm volatile("msr msp, %0"::"g"(*(volatile uint32_t *)addr));
+    /* Jump to application. */
+    (*(void (**)())(addr + 4))();
+}
+
 
 
 int main(void)
