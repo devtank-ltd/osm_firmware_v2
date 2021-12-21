@@ -13,6 +13,7 @@
 
 #include "config.h"
 #include "pinmap.h"
+#include "persist_config_header.h"
 
 #define FAULT_STR  "----big fat bootloader crash -----"
 
@@ -94,6 +95,10 @@ int main(void)
     rcc_periph_clock_enable(PORT_TO_RCC(LED_PORT));
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
+
+    persist_storage_header_t * config = (persist_storage_header_t*)PERSIST__RAW_DATA;
+
+    run_firmware(config->fw_a);
 
     return 0;
 }
