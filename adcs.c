@@ -51,9 +51,6 @@ static void _adcs_setup_adc(void)
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
-    nvic_enable_irq(NVIC_ADC1_2_IRQ);
-
-    adc_enable_eoc_interrupt(ADC1);
     adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
     adc_enable_vrefint();
@@ -72,6 +69,9 @@ static void _adcs_setup_adc(void)
 static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
 {
     rcc_periph_clock_enable(adc_dma->dma_rcc);
+
+    nvic_enable_irq(NVIC_DMA1_CHANNEL1_IRQ);
+    dma_set_channel_request(adc_dma->dma_unit, adc_dma->dma_channel, 0);
 
     dma_channel_reset(adc_dma->dma_unit, adc_dma->dma_channel);
 
@@ -277,9 +277,8 @@ bool adcs_begin(char* name)
     {
         return false;
     }
+    adc_enable_eoc_interrupt(ADC1);
     adc_power_on(ADC1);
-    //uint8_t local_channel_array[1] = { adc_channel_array[0] };
-    //_adcs_start_sampling(ADC1, local_channel_array , 1);
     _adcs_start_sampling(ADC1, adc_channel_array, ADC_COUNT);
     return true;
 }
@@ -349,19 +348,13 @@ void adcs_init(void)
 }
 
 
-void adc1_2_isr(void)
-{
-    adc_value_status = ADCS_VAL_STATUS__DONE;
-    //ADC_IER(ADC1) &= ~ADC_IER_EOCIE;
-}
-
-
 void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
 {
     if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
-    }
+        adc_power_off(ADC1);
     adc_value_status = ADCS_VAL_STATUS__DONE;
+    }
     _adcs_setup_dmas();
 }
