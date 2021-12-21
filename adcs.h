@@ -11,7 +11,7 @@
 extern void adcs_init(void);
 
 extern bool adcs_begin(char* name);
-extern bool adcs_collect(char* name, uint16_t* value);
+extern bool adcs_collect(char* name, value_t* value);
 extern bool adcs_get_cc_mA(value_t* value);
 
 extern bool adcs_set_midpoint(uint16_t new_midpoint);

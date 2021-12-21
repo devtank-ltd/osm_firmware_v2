@@ -25,6 +25,23 @@ typedef enum
 } adc_value_status_t;
 
 
+typedef enum
+{
+    ADCS_ADC_INDEX__ADC1    = 0 ,
+    ADCS_ADC_INDEX__ADC2    = 1 ,
+} adcs_adc_index_enum_t;
+
+
+typedef enum
+{
+    ADCS_CHAN_INDEX__CURRENT_CLAMP  = 0 ,
+    ADCS_CHAN_INDEX__BAT_MON        = 1 ,
+    ADCS_CHAN_INDEX__3V3_MON        = 2 ,
+    ADCS_CHAN_INDEX__5V_MON         = 3 ,
+} adcs_chan_index_enum_t;
+
+
+
 typedef struct
 {
     uint32_t        sum;
@@ -158,7 +175,7 @@ static bool _adcs_to_mV(uint16_t* value, uint16_t* mV)
 }
 
 
-static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_mA)
+static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_val, uint16_t* cc_mA)
 {
     /**
      First must calculate the peak voltage
@@ -177,25 +194,23 @@ static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_
      To retain precision, multiplications should be done first (after casting to
      a uint32_t and then divisions after.
     */
-    uint32_t inter_value;
-    uint16_t mp_mV;
-    if (!_adcs_to_mV((uint16_t*)&midpoint, &mp_mV))
+    uint32_t inter_value    = 0;
+    uint16_t adc_diff       = 0;
+
+    // If adc_val is larger, then pretend it is at the midpoint
+    if (*adc_val < midpoint)
+    {
+        adc_diff = midpoint - *adc_val;
+    }
+
+    // Once the conversion is no longer linearly multiplicative this needs to be changed.
+    if (!_adcs_to_mV(&adc_diff, (uint16_t*)&inter_value))
     {
         log_debug(DEBUG_ADC, "Cannot get mV value of midpoint.");
         return false;
     }
 
-    // If adc_mV is larger then pretend it is at the midpoint
-    if (*adc_mV > mp_mV)
-    {
-        inter_value = 0;
-    }
-    else
-    {
-        inter_value = mp_mV - *adc_mV;
-    }
-
-    if (inter_value > UINT32_MAX / 2000)
+    if (inter_value > UINT32_MAX / 2000)                        // Division should be removed/boiled away by compiler
     {
         log_debug(DEBUG_ADC, "Overflowing value.");
         return false;
@@ -203,8 +218,8 @@ static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_mV, uint16_t* cc_
     inter_value *= 2000;
     if (is_AC)
     {
-        inter_value /= 1.4142136;
-    }
+        inter_value /= 1.4142136;                               // Once actually sorted (AC only) this should maybe be combined with scale from resistor to minimise the divisions.
+    }                                                           // Realistically speed isn't the issue anyway, retaining precision is. This maybe boiled away anyway.
     inter_value /= 22;
     if (inter_value > UINT16_MAX)
     {
@@ -252,12 +267,9 @@ void temp(char* args)
 
 bool adcs_begin(char* name)
 {
-    if (adc_value_status == ADCS_VAL_STATUS__DONE)
+    if (adc_value_status != ADCS_VAL_STATUS__IDLE)
     {
-        return true;
-    }
-    else if (adc_value_status == ADCS_VAL_STATUS__DOING)
-    {
+        log_debug(DEBUG_ADC, "Cannot begin, not in idle state.");
         return false;
     }
     adc_enable_eoc_interrupt(ADC1);
@@ -267,38 +279,88 @@ bool adcs_begin(char* name)
 }
 
 
-bool adcs_collect(char* name, uint16_t* value)
+static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned chan_index)
 {
+    if (!value)
+    {
+        log_debug(DEBUG_ADC, "Given null pointer.");
+        return false;
+    }
     if (adc_value_status != ADCS_VAL_STATUS__DONE)
     {
+        log_debug(DEBUG_ADC, "ADC not ready to collect.");
+        return false;
+    }
+    if (adc_index > ADC_DMA_CHANNELS_COUNT)
+    {
+        log_debug(DEBUG_ADC, "ADC index out of range.");
+        return false;
+    }
+    if (chan_index > ADC_COUNT)
+    {
+        log_debug(DEBUG_ADC, "Channel index out of range.");
         return false;
     }
     adc_value_status = ADCS_VAL_STATUS__IDLE;
     adc_reading_t cc_reading[ADC_COUNT];
-    _adcs_data_compress(adcs_buffer[0], cc_reading, ADC_COUNT);
-    if (cc_reading[0].count)
+    _adcs_data_compress(adcs_buffer[adc_index], cc_reading, ADC_COUNT);
+    if (!cc_reading[chan_index].count)
     {
-        *value = cc_reading[0].sum / cc_reading[0].count;
+        log_debug(DEBUG_ADC, "No samples were taken.");
+        return false;
     }
-    else
-    {
-        *value = 0;
-    }
+    *value = cc_reading[chan_index].sum / cc_reading[chan_index].count;
     return true;
 }
 
 
-static bool _adcs_wait(uint16_t* value)
+bool adcs_collect(char* name, value_t* value)
+{
+    unsigned adc_index, chan_index;
+    if (strncmp(name, "CuCl", 4) == 0)
+    {
+        adc_index = ADCS_ADC_INDEX__ADC1;
+        chan_index = ADCS_CHAN_INDEX__CURRENT_CLAMP;
+    }
+    else if (strncmp(name, "batt", 4) == 0)
+    {
+        adc_index = ADCS_ADC_INDEX__ADC1;
+        chan_index = ADCS_CHAN_INDEX__BAT_MON;
+    }
+    else if (strncmp(name, "3vrf", 4) == 0)
+    {
+        adc_index = ADCS_ADC_INDEX__ADC1;
+        chan_index = ADCS_CHAN_INDEX__3V3_MON;
+    }
+    else if (strncmp(name, "5vrf", 4) == 0)
+    {
+        adc_index = ADCS_ADC_INDEX__ADC1;
+        chan_index = ADCS_CHAN_INDEX__5V_MON;
+    }
+    else
+    {
+        log_debug(DEBUG_ADC, "Unknown name given.");
+        return false;
+    }
+    adc_value_status = ADCS_VAL_STATUS__IDLE;
+    *value = 0;
+    return _adcs_collect_index((uint16_t*)value, adc_index, chan_index);
+}
+
+
+static bool _adcs_wait(uint16_t* value, unsigned adc_index, unsigned chan_index)
 {
     if (!value)
     {
+        log_debug(DEBUG_ADC, "Given null pointer.");
         return false;
     }
     if (!adcs_begin("NONE"))
     {
+        log_debug(DEBUG_ADC, "Begin sampling failed.");
         return false;
     }
-    while(!adcs_collect("NONE", value));
+    while(!_adcs_collect_index(value, adc_index, chan_index));
     return true;
 }
 
@@ -306,8 +368,9 @@ static bool _adcs_wait(uint16_t* value)
 bool adcs_calibrate_current_clamp(void)
 {
     uint16_t new_midpoint;
-    if (!_adcs_wait(&new_midpoint))
+    if (!_adcs_wait(&new_midpoint, 0, 0))
     {
+        log_debug(DEBUG_ADC, "Could not retreive adc value to set as midpoint.");
         return false;
     }
     return adcs_set_midpoint(new_midpoint);
@@ -318,21 +381,21 @@ bool adcs_get_cc_mA(value_t* value)
 {
     if (!value)
     {
+        log_debug(DEBUG_ADC, "Given null pointer.");
         return false;
     }
-    uint16_t adc_val, mV_val, mA_val;
-    if (!_adcs_wait(&adc_val))
+    uint16_t adc_val, mA_val;
+    if (!_adcs_wait(&adc_val, 0, 0))
     {
+        log_debug(DEBUG_ADC, "Could not retrieve adc value.");
         return false;
     }
-    if (!_adcs_to_mV(&adc_val, &mV_val))
+    if (!_adcs_current_clamp_conv(false, &adc_val, &mA_val))
     {
+        log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
     }
-    if (!_adcs_current_clamp_conv(false, &mV_val, &mA_val))
-    {
-        return false;
-    }
+    *value = 0;
     *value = mA_val;
     return true;
 }
