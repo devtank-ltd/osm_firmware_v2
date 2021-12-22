@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/adc.h>
@@ -57,6 +58,25 @@ static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMP
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS__IDLE;
+static uint16_t peak_vals[NUM_SAMPLES];
+
+
+float Q_rsqrt( float number )
+{
+    long i;
+    float x2, y;
+    const float threehalfs = 1.5F;
+
+    x2 = number * 0.5F;
+    y  = number;
+    i  = * ( long * ) &y;                       // evil floating point bit level hacking
+    i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
+    y  = * ( float * ) &i;
+    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+    return y;
+}
 
 
 static void _adcs_setup_adc(void)
@@ -120,7 +140,7 @@ static void _adcs_setup_dmas(void)
 }
 
 
-static void _adcs_data_compress(volatile uint16_t buff[NUM_SAMPLES], adc_reading_t* data, uint8_t len)
+static void _adcs_data_compress(volatile uint16_t buff[NUM_SAMPLES*ADC_COUNT], adc_reading_t* data, uint8_t len)
 {
     volatile uint16_t* element;
     adc_reading_t* p = data;
@@ -130,7 +150,7 @@ static void _adcs_data_compress(volatile uint16_t buff[NUM_SAMPLES], adc_reading
         p->count = 0;
         p->max = 0;
         p->min = UINT16_MAX;
-        for (unsigned j = 0; j < NUM_SAMPLES; j++)
+        for (unsigned j = 0; j < NUM_SAMPLES*ADC_COUNT; j++)
         {
             element = &buff[i + j * len];
             if (*element > p->max)
@@ -146,6 +166,81 @@ static void _adcs_data_compress(volatile uint16_t buff[NUM_SAMPLES], adc_reading
         }
         p++;
     }
+}
+
+
+static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
+{
+    uint64_t sum = 0;
+    for (unsigned i = chan_index; i < NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
+    {
+        sum = buff[adc_index][i] * buff[adc_index][i];
+    }
+    *adc_rms = 1/Q_rsqrt(sum);
+    return true;
+}
+
+
+static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
+{
+    /**
+    Four major steps:
+    * First find the peaks, this is done with the following criteria:
+        - adc val is smaller than previous
+        - new wave (and so move position/cursor) when before was below midpoint, now is above midpoint
+
+    * Calculate 'rough' average
+
+    * If peak values are larger than 30% of average then remove.
+      This will remove the small noises that may fit the criteria but not be true peaks.
+
+    * This value is divided by sqrt(2) to give the RMS.
+    */
+
+    uint16_t peak_pos = 0;
+    peak_vals[0] = buff[adc_index][chan_index];
+
+    // Find the peaks in the data
+    for (unsigned i = chan_index + ADC_COUNT; i < NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
+    {
+        if (buff[adc_index][i] < buff[adc_index][i-ADC_COUNT])
+        {
+            peak_vals[peak_pos] = buff[adc_index][i];
+        }
+        else if (buff[adc_index][i-ADC_COUNT] <= midpoint && buff[adc_index][i] > midpoint)
+        {
+            peak_vals[++peak_pos] = buff[adc_index][i];
+        }
+    }
+
+    // Early exit if nothing found
+    if (peak_pos == 0)
+    {
+        log_debug(DEBUG_ADC, "Cannot find any peaks.");
+        return false;
+    }
+
+    // Calculate rough average
+    uint32_t sum = 0;
+    for (unsigned i = 0; i < peak_pos; i++)
+    {
+        sum += peak_vals[i];
+    }
+    uint16_t rough_avg = sum / peak_pos;
+
+    // Filter peaks
+    uint32_t true_sum = 0;
+    uint16_t true_count = 0;
+    for (unsigned i = 0; i < peak_pos; i++)
+    {
+        if (peak_vals[i] <= rough_avg)
+        {
+            true_sum += peak_vals[i];
+            true_count++;
+        }
+    }
+    *adc_rms = true_sum / true_count;
+    return true;
 }
 
 
@@ -251,12 +346,6 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
 }
 
 
-void adcs_loop_iteration(void)
-{
-    ;
-}
-
-
 void temp(char* args)
 {
     uint16_t adc_mV = 1800;
@@ -341,8 +430,7 @@ bool adcs_collect(char* name, value_t* value)
     {
         log_debug(DEBUG_ADC, "Unknown name given.");
         return false;
-    }
-    adc_value_status = ADCS_VAL_STATUS__IDLE;
+    };
     *value = 0;
     return _adcs_collect_index((uint16_t*)value, adc_index, chan_index);
 }
@@ -368,7 +456,7 @@ static bool _adcs_wait(uint16_t* value, unsigned adc_index, unsigned chan_index)
 bool adcs_calibrate_current_clamp(void)
 {
     uint16_t new_midpoint;
-    if (!_adcs_wait(&new_midpoint, 0, 0))
+    if (!_adcs_wait(&new_midpoint, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP))
     {
         log_debug(DEBUG_ADC, "Could not retreive adc value to set as midpoint.");
         return false;
@@ -384,13 +472,20 @@ bool adcs_get_cc_mA(value_t* value)
         log_debug(DEBUG_ADC, "Given null pointer.");
         return false;
     }
-    uint16_t adc_val, mA_val;
-    if (!_adcs_wait(&adc_val, 0, 0))
+    if (!adcs_begin(""))
     {
         log_debug(DEBUG_ADC, "Could not retrieve adc value.");
         return false;
     }
-    if (!_adcs_current_clamp_conv(false, &adc_val, &mA_val))
+    while (adc_value_status != ADCS_VAL_STATUS__DONE);
+    uint16_t adc_rms = 0;
+    uint16_t mA_val = 0;
+    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
+    log_debug(DEBUG_ADC, "Quick = %"PRIu16, adc_rms);
+    _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
+    log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
+    adc_value_status = ADCS_VAL_STATUS__IDLE;
+    if (!_adcs_current_clamp_conv(false, &adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
