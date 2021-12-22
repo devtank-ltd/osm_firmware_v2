@@ -64,7 +64,7 @@ static volatile adc_value_status_t  adc_value_status                            
 static uint16_t peak_vals[NUM_SAMPLES];
 
 
-float Q_rsqrt( float number )
+static float Q_rsqrt( float number )
 {
     long i;
     float x2, y;
@@ -82,16 +82,35 @@ float Q_rsqrt( float number )
 }
 
 
+static bool _adcs_set_prescale(uint32_t adc, uint32_t prescale)
+{
+    if (((ADC_CR(adc) & ADC_CR_ADCAL    )==0) &&
+        ((ADC_CR(adc) & ADC_CR_JADSTART )==0) &&
+        ((ADC_CR(adc) & ADC_CR_ADSTART  )==0) &&
+        ((ADC_CR(adc) & ADC_CR_ADSTP    )==0) &&
+        ((ADC_CR(adc) & ADC_CR_ADDIS    )==0) &&
+        ((ADC_CR(adc) & ADC_CR_ADEN     )==0) )
+    {
+        ADC_CCR(adc) = (ADC_CCR(adc) & ADC_CCR_PRESCALE__MASK) | prescale;
+        return true;
+    }
+    return false;
+}
+
+
 static void _adcs_setup_adc(void)
 {
     RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
     adc_power_off(ADC1);
-    if (ADC_CR(ADC1) && ADC_CR_DEEPPWD)
+    if (ADC_CR(ADC1) & ADC_CR_DEEPPWD)
     {
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
-    ADC_CCR(ADC1) = (ADC_CCR(ADC1) & ADC_CCR_PRESCALE__MASK) | ADC_CCR_PRESCALE__64;
+    if (!_adcs_set_prescale(ADC1, ADC_CCR_PRESCALE__64))
+    {
+        log_debug(DEBUG_ADC, "Could not set prescale value.");
+    }
 
     adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
@@ -112,7 +131,7 @@ static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
 {
     rcc_periph_clock_enable(adc_dma->dma_rcc);
 
-    nvic_enable_irq(NVIC_DMA1_CHANNEL1_IRQ);
+    nvic_enable_irq(adc_dma->dma_irqn);
     dma_set_channel_request(adc_dma->dma_unit, adc_dma->dma_channel, 0);
 
     dma_channel_reset(adc_dma->dma_unit, adc_dma->dma_channel);
@@ -275,7 +294,7 @@ static bool _adcs_to_mV(uint16_t* value, uint16_t* mV)
 }
 
 
-static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_val, uint16_t* cc_mA)
+static bool _adcs_current_clamp_conv(uint16_t* adc_val, uint16_t* cc_mA)
 {
     /**
      First must calculate the peak voltage
@@ -316,10 +335,6 @@ static bool _adcs_current_clamp_conv(bool is_AC, uint16_t* adc_val, uint16_t* cc
         return false;
     }
     inter_value *= 2000;
-    if (is_AC)
-    {
-        inter_value /= 1.4142136;                               // Once actually sorted (AC only) this should maybe be combined with scale from resistor to minimise the divisions.
-    }                                                           // Realistically speed isn't the issue anyway, retaining precision is. This maybe boiled away anyway.
     inter_value /= 22;
     if (inter_value > UINT16_MAX)
     {
@@ -351,14 +366,6 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
 }
 
 
-void temp(char* args)
-{
-    uint16_t adc_mV = 1800;
-    uint16_t cc_mA;
-    _adcs_current_clamp_conv(false, &adc_mV, &cc_mA);
-}
-
-
 bool adcs_begin(char* name)
 {
     if (adc_value_status != ADCS_VAL_STATUS__IDLE)
@@ -366,7 +373,6 @@ bool adcs_begin(char* name)
         log_debug(DEBUG_ADC, "Cannot begin, not in idle state.");
         return false;
     }
-    adc_enable_eoc_interrupt(ADC1);
     adc_power_on(ADC1);
     _adcs_start_sampling(ADC1, adc_channel_array, ADC_COUNT);
     return true;
@@ -493,7 +499,7 @@ bool adcs_get_cc_mA(value_t* value)
     _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
     log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
     adc_value_status = ADCS_VAL_STATUS__IDLE;
-    if (!_adcs_current_clamp_conv(false, &adc_rms, &mA_val))
+    if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
