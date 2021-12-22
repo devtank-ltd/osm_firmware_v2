@@ -517,7 +517,7 @@ void adcs_init(void)
     {
         // Assume it to be the theoretical midpoint
         log_debug(DEBUG_ADC, "Failed to load persistent midpoint.");
-        adcs_set_midpoint(3300 / 2);
+        adcs_set_midpoint(2048); // = 4095 / 2
     }
 
     // Setup the clock and gpios
