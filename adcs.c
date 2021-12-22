@@ -15,7 +15,11 @@
 #include "sys_time.h"
 
 
-#define NUM_SAMPLES     128
+#define ADC_CCR_PRESCALE__MASK  (15 << 18)
+#define ADC_CCR_PRESCALE__64    ( 9 << 18)
+
+
+#define NUM_SAMPLES     480
 
 
 typedef enum
@@ -88,11 +92,13 @@ static void _adcs_setup_adc(void)
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
+    ADC_CCR(ADC1) = (ADC_CCR(ADC1) & ADC_CCR_PRESCALE__MASK) | ADC_CCR_PRESCALE__64;
+
     adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
     adc_enable_vrefint();
     adc_enable_temperature_sensor();
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_6DOT5CYC);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_640DOT5CYC);
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
 
     adc_calibrate(ADC1);
@@ -354,8 +360,12 @@ void temp(char* args)
 }
 
 
+static uint32_t start_time;
+
+
 bool adcs_begin(char* name)
 {
+    start_time = since_boot_ms;
     if (adc_value_status != ADCS_VAL_STATUS__IDLE)
     {
         log_debug(DEBUG_ADC, "Cannot begin, not in idle state.");
@@ -377,7 +387,7 @@ static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned ch
     }
     if (adc_value_status != ADCS_VAL_STATUS__DONE)
     {
-        log_debug(DEBUG_ADC, "ADC not ready to collect.");
+        //log_debug(DEBUG_ADC, "ADC not ready to collect.");
         return false;
     }
     if (adc_index > ADC_DMA_CHANNELS_COUNT)
@@ -478,6 +488,7 @@ bool adcs_get_cc_mA(value_t* value)
         return false;
     }
     while (adc_value_status != ADCS_VAL_STATUS__DONE);
+    log_out("Time taken = %"PRIu32, since_boot_delta(since_boot_ms, start_time));
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
     _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
