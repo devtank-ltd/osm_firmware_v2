@@ -46,7 +46,6 @@ typedef enum
 } adcs_chan_index_enum_t;
 
 
-
 typedef struct
 {
     uint32_t        sum;
@@ -360,12 +359,8 @@ void temp(char* args)
 }
 
 
-static uint32_t start_time;
-
-
 bool adcs_begin(char* name)
 {
-    start_time = since_boot_ms;
     if (adc_value_status != ADCS_VAL_STATUS__IDLE)
     {
         log_debug(DEBUG_ADC, "Cannot begin, not in idle state.");
@@ -448,6 +443,7 @@ bool adcs_collect(char* name, value_t* value)
 
 static bool _adcs_wait(uint16_t* value, unsigned adc_index, unsigned chan_index)
 {
+    // This function is blocking and only should be used for debug
     if (!value)
     {
         log_debug(DEBUG_ADC, "Given null pointer.");
@@ -465,6 +461,7 @@ static bool _adcs_wait(uint16_t* value, unsigned adc_index, unsigned chan_index)
 
 bool adcs_calibrate_current_clamp(void)
 {
+    // This function is blocking and only should be used for debug/calibration
     uint16_t new_midpoint;
     if (!_adcs_wait(&new_midpoint, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP))
     {
@@ -477,6 +474,7 @@ bool adcs_calibrate_current_clamp(void)
 
 bool adcs_get_cc_mA(value_t* value)
 {
+    // This function is blocking and only should be used for debug
     if (!value)
     {
         log_debug(DEBUG_ADC, "Given null pointer.");
@@ -488,7 +486,6 @@ bool adcs_get_cc_mA(value_t* value)
         return false;
     }
     while (adc_value_status != ADCS_VAL_STATUS__DONE);
-    log_out("Time taken = %"PRIu32, since_boot_delta(since_boot_ms, start_time));
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
     _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
