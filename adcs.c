@@ -543,6 +543,6 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         adc_power_off(ADC1);
         adc_value_status = ADCS_VAL_STATUS__DONE;
+        ADC_ISR(ADC1) &= ~ADC_ISR_EOSMP;
     }
-    //_adcs_setup_dmas();
 }
