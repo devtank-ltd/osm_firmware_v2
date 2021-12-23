@@ -173,12 +173,12 @@ static void _adcs_data_compress(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
         memset(sum, 0, ADC_COUNT*sizeof(uint64_t));
         for (unsigned i = 0; i < NUM_SAMPLES*ADC_COUNT; i++)
         {
-            sum[i%ADC_COUNT] = buff[adc_index][i] * buff[adc_index][i] - midpoint;
+            sum[i%ADC_COUNT] = buff[adc_index][i] * buff[adc_index][i];
         }
-        p++->rms = midpoint - 1/Q_rsqrt(sum[0]);
-        p++->rms = midpoint - 1/Q_rsqrt(sum[1]);
-        p++->rms = midpoint - 1/Q_rsqrt(sum[2]);
-        p++->rms = midpoint - 1/Q_rsqrt(sum[3]);
+        p++->rms = midpoint - 1/Q_rsqrt( ( sum[0] / NUM_SAMPLES ) - midpoint);
+        p++->rms = midpoint - 1/Q_rsqrt( ( sum[1] / NUM_SAMPLES ) - midpoint);
+        p++->rms = midpoint - 1/Q_rsqrt( ( sum[2] / NUM_SAMPLES ) - midpoint);
+        p++->rms = midpoint - 1/Q_rsqrt( ( sum[3] / NUM_SAMPLES ) - midpoint);
     }
 }
 
@@ -188,9 +188,9 @@ static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES
     uint64_t sum = 0;
     for (unsigned i = chan_index; i < NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
     {
-        sum = (buff[adc_index][i] - midpoint) * (buff[adc_index][i] - midpoint);
+        sum = buff[adc_index][i] * buff[adc_index][i];
     }
-    *adc_rms = midpoint - 1/Q_rsqrt(sum);
+    *adc_rms = midpoint - 1/Q_rsqrt( ( sum / NUM_SAMPLES ) - midpoint );
     return true;
 }
 
@@ -242,6 +242,7 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
     }
     uint16_t rough_avg = sum / peak_pos;
 
+/*
     // Filter peaks
     uint32_t true_sum = 0;
     uint16_t true_count = 0;
@@ -254,6 +255,10 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
         }
     }
     *adc_rms = true_sum / true_count;
+    */
+    uint32_t inter_val = midpoint - rough_avg;
+    inter_val *= 0.707106781187;                // * 1/sqrt(2)
+    *adc_rms = midpoint - inter_val;
     return true;
 }
 
@@ -497,6 +502,8 @@ bool adcs_get_cc_mA(value_t* value)
     uint16_t mA_val = 0;
     _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
     log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
+    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
+    log_debug(DEBUG_ADC, "Quick = %"PRIu16, adc_rms);
     if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");

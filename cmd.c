@@ -484,7 +484,7 @@ static void adcs_cb(char* args)
         log_out("Could not get adc value.");
         return;
     }
-    log_out("CC = %"PRIu64, value);
+    log_out("CC = %"PRIu64"mA", value);
 }
 
 
