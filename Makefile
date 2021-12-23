@@ -29,6 +29,8 @@ $(WHOLE_IMG) : $(BUILD_DIR)/$(PROJECT_NAME).bin $(BUILD_DIR)/bootloader.bin
 	dd of=$@ if=$(BUILD_DIR)/bootloader.bin bs=2k
 	dd of=$@ if=$(BUILD_DIR)/firmware.bin seek=2 conv=notrunc bs=2k
 
+default: $(WHOLE_IMG)
+
 serial_program: $(WHOLE_IMG)
 	KEEPCONFIG=1 ./scripts/program.sh $<
 
