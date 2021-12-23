@@ -67,23 +67,6 @@ $(LIBOPENCM3) :
 size: $(TARGET_ELF)
 	$(SIZE) $(TARGET_ELF)
 
-flash: $(TARGET_ELF)
-
-	openocd -f interface/stlink-v2-1.cfg \
-		    -f target/stm32l4x.cfg \
-		    -c "init" -c "reset init" \
-		    -c "flash write_image erase $(TARGET_ELF)" \
-		    -c "reset" \
-		    -c "shutdown"
-
-$(TARGET_DFU): $(TARGET_BIN)
-	cp $(TARGET_BIN) $(TARGET_DFU)
-	dfu-suffix -a $(TARGET_DFU)
-
-dfu : $(TARGET_DFU)
-	dfu-util -D $(TARGET_DFU) -a 0 -s 0x08000000:leave
-
-
 clean:
 	make -C $(SELF_DIR)/libs/libopencm3 $@ TARGETS=stm32/l4
 	rm -rf $(BUILD_DIR)
@@ -101,10 +84,6 @@ debug_gdb: $(TARGET_ELF)
 
 cmd:
 	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
-
-
-serial_program: $(TARGET_BIN)
-	KEEPCONFIG=1 ./scripts/program.sh $(TARGET_BIN)
 
 
 $(BUILD_DIR)/stack_info : $(TARGET_ELF)
