@@ -16,5 +16,6 @@ SOURCES += main.c \
 
 BUILD_DIR := build/
 PROJECT_NAME := firmware
+LINK_SCRIPT = stm32l452.ld
 
 include Makefile.base
