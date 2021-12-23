@@ -1,0 +1,67 @@
+#include <string.h>
+
+#include <libopencm3/stm32/flash.h>
+
+#include "log.h"
+#include "modbus.h"
+#include "persist_config_header.h"
+#include "update.h"
+
+static uint8_t page[2048];
+
+static int fw_ota_pos =-1;
+
+
+static void _fw_ota_flush_page(unsigned cur_page)
+{
+    uintptr_t dst = NEW_FW_ADDR + (FLASH_PAGE_SIZE * cur_page);
+    flash_program(dst, page, FLASH_PAGE_SIZE);
+    memset(page, 0xFF, FLASH_PAGE_SIZE);
+}
+
+
+bool fw_ota_add_chunk(void * data, unsigned size)
+{
+    if (fw_ota_pos < 0)
+    {
+        fw_ota_pos = 0;
+        memset(page, 0xFF, FLASH_PAGE_SIZE);
+    }
+
+    if ((fw_ota_pos + size) > FW_MAX_SIZE)
+    {
+        log_error("Firmware update too big.");
+	fw_ota_pos = -1;
+	return false;
+    }
+
+    unsigned start_page     = fw_ota_pos / FLASH_PAGE_SIZE;
+    unsigned start_page_pos = fw_ota_pos % FLASH_PAGE_SIZE;
+
+    fw_ota_pos += size;
+
+    int over_page = (start_page_pos + size) - FLASH_PAGE_SIZE;
+
+    if (over_page < 0)
+    {
+        memcpy(page + start_page_pos, data, size);
+    }
+    else
+    {
+        unsigned remainer = size - over_page;
+        memcpy(page + start_page_pos, data, remainer);
+        _fw_ota_flush_page(start_page);
+        memcpy(page, ((uint8_t*)data) + remainer, over_page);
+    }
+    return true;
+}
+
+bool fw_ota_complete(uint16_t crc)
+{
+    unsigned cur_page_pos = fw_ota_pos % FLASH_PAGE_SIZE;
+    if (cur_page_pos)
+        _fw_ota_flush_page(fw_ota_pos / FLASH_PAGE_SIZE);
+    uint16_t data_crc = modbus_crc((uint8_t*)NEW_FW_ADDR, fw_ota_pos);
+    fw_ota_pos = -1;
+    return (data_crc == crc);
+}

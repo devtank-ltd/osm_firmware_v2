@@ -24,6 +24,7 @@ typedef enum
 typedef struct modbus_dev_t modbus_dev_t;
 typedef struct modbus_reg_t modbus_reg_t;
 
+extern uint16_t modbus_crc(uint8_t * buf, unsigned length);
 
 extern char * modbus_reg_type_get_str(modbus_reg_type_t type);
 

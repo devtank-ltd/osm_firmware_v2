@@ -20,6 +20,7 @@
 #include "measurements.h"
 #include "hpm.h"
 #include "modbus_measurements.h"
+#include "update.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -49,6 +50,8 @@ static void modbus_add_dev_cb(char *args);
 static void modbus_add_reg_cb(char *args);
 static void modbus_get_reg_cb(char *args);
 static void measurements_cb(char *args);
+static void fw_add(char *args);
+static void fw_fin(char *args);
 
 
 static cmd_t cmds[] = {
@@ -73,6 +76,8 @@ static cmd_t cmds[] = {
     { "mb_log",    "Show modbus setup",      modbus_log},
     { "mb_save",   "Save modbus setup",      modbus_save},
     { "measurements", "Print measurements",  measurements_cb},
+    { "fw+",       "Add chunk of new fw.",   fw_add},
+    { "fw@",       "Finishing crc of new fw.", fw_fin},
     { NULL },
 };
 
@@ -476,6 +481,43 @@ static void measurements_cb(char *args)
 {
     measurements_print();
     measurements_print_persist();
+}
+
+
+static void fw_add(char *args)
+{
+    unsigned len = strlen(args);
+    if (len%2)
+    {
+        log_error("Invalid fw chunk.");
+	return;
+    }
+    char * end = args + len;
+    while(args < end)
+    {
+        char * next = args + 2;
+        char t = *next;
+	*next=0;
+	uint8_t d = strtoul(args, NULL, 16);
+	*next=t;
+	args=next;
+        if (!fw_ota_add_chunk(&d, 1))
+        {
+            log_error("Invalid fw.");
+	    return;
+	}
+    }
+    log_debug(DEBUG_FW, "FW chunk added");
+}
+
+
+static void fw_fin(char *args)
+{
+    uint16_t crc = strtoul(args, NULL, 16);
+    if (fw_ota_complete(crc))
+        log_debug(DEBUG_FW, "FW added");
+    else
+        log_error("FW adding failed.");
 }
 
 
