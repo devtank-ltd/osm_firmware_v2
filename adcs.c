@@ -19,7 +19,8 @@
 #define ADC_CCR_PRESCALE__64    ( 9 << 18)
 
 
-#define NUM_SAMPLES     480
+#define ADCS_NUM_SAMPLES            480
+#define ADCS_TIMEOUT_TIME_MS        5000
 
 
 typedef enum
@@ -46,21 +47,12 @@ typedef enum
 } adcs_chan_index_enum_t;
 
 
-typedef struct
-{
-    uint32_t        rms;
-    uint16_t        max;
-    uint16_t        min;
-} adc_reading_t;
-
-
-static uint64_t                     call_count                                          = 0;
 static adc_dma_channel_t            adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
-static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT];
+static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT];
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS__IDLE;
-static uint16_t peak_vals[NUM_SAMPLES];
+static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
 
 
 static float Q_rsqrt( float number )
@@ -119,9 +111,7 @@ static void _adcs_setup_adc(void)
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
 
     adc_calibrate(ADC1);
-    //adc_power_on(ADC1);
 
-    //adc_set_regular_sequence(ADC1, ADC_COUNT, adc_channel_array);
     adc_set_continuous_conversion_mode(ADC1);
 }
 
@@ -143,7 +133,7 @@ static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
     dma_set_priority(adc_dma->dma_unit, adc_dma->dma_channel, adc_dma->priority);
 
     dma_enable_transfer_complete_interrupt(adc_dma->dma_unit, adc_dma->dma_channel);
-    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, NUM_SAMPLES * ADC_COUNT);
+    dma_set_number_of_data(adc_dma->dma_unit, adc_dma->dma_channel, ADCS_NUM_SAMPLES * ADC_COUNT);
     dma_enable_circular_mode(adc_dma->dma_unit, adc_dma->dma_channel);
     dma_set_read_from_peripheral(adc_dma->dma_unit, adc_dma->dma_channel);
 
@@ -163,39 +153,31 @@ static void _adcs_setup_dmas(void)
 }
 
 
-static void _adcs_data_compress(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT], adc_reading_t data[ADC_COUNT], uint8_t len)
+static bool _adcs_get_mean(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_mean)
 {
-    adc_reading_t* p = data;
-
-    uint64_t sum[ADC_COUNT];
-    for (unsigned adc_index = 0; adc_index < ADC_DMA_CHANNELS_COUNT; adc_index++)
+    uint32_t sum = 0;
+    for (unsigned i = chan_index; i < ADCS_NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
     {
-        memset(sum, 0, ADC_COUNT*sizeof(uint64_t));
-        for (unsigned i = 0; i < NUM_SAMPLES*ADC_COUNT; i++)
-        {
-            sum[i%ADC_COUNT] = buff[adc_index][i] * buff[adc_index][i];
-        }
-        p++->rms = midpoint - 1/Q_rsqrt( ( sum[0] / NUM_SAMPLES ) - midpoint);
-        p++->rms = midpoint - 1/Q_rsqrt( ( sum[1] / NUM_SAMPLES ) - midpoint);
-        p++->rms = midpoint - 1/Q_rsqrt( ( sum[2] / NUM_SAMPLES ) - midpoint);
-        p++->rms = midpoint - 1/Q_rsqrt( ( sum[3] / NUM_SAMPLES ) - midpoint);
+        sum += buff[adc_index][i];
     }
-}
-
-
-static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
-{
-    uint64_t sum = 0;
-    for (unsigned i = chan_index; i < NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
-    {
-        sum = buff[adc_index][i] * buff[adc_index][i];
-    }
-    *adc_rms = midpoint - 1/Q_rsqrt( ( sum / NUM_SAMPLES ) - midpoint );
+    *adc_mean = sum / ADCS_NUM_SAMPLES;
     return true;
 }
 
 
-static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
+static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
+{
+    uint64_t sum = 0;
+    for (unsigned i = chan_index; i < ADCS_NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
+    {
+        sum += buff[adc_index][i] * buff[adc_index][i];
+    }
+    *adc_rms = midpoint - 1/Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
+    return true;
+}
+
+
+static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
 {
     /**
     Four major steps:
@@ -211,11 +193,12 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
     * This value is divided by sqrt(2) to give the RMS.
     */
 
+    uint32_t sum = 0;
     uint16_t peak_pos = 0;
     peak_vals[0] = buff[adc_index][chan_index];
 
     // Find the peaks in the data
-    for (unsigned i = chan_index + ADC_COUNT; i < NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
+    for (unsigned i = chan_index + ADC_COUNT; i < ADCS_NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
     {
         if (buff[adc_index][i] < buff[adc_index][i-ADC_COUNT])
         {
@@ -223,6 +206,7 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
         }
         else if (buff[adc_index][i-ADC_COUNT] <= midpoint && buff[adc_index][i] > midpoint)
         {
+            sum += peak_vals[peak_pos];
             peak_vals[++peak_pos] = buff[adc_index][i];
         }
     }
@@ -233,22 +217,15 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
         log_debug(DEBUG_ADC, "Cannot find any peaks.");
         return false;
     }
-
-    // Calculate rough average
-    uint32_t sum = 0;
-    for (unsigned i = 0; i < peak_pos; i++)
-    {
-        sum += peak_vals[i];
-    }
     uint16_t rough_avg = sum / peak_pos;
 
-/*
+    /*
     // Filter peaks
     uint32_t true_sum = 0;
     uint16_t true_count = 0;
     for (unsigned i = 0; i < peak_pos; i++)
     {
-        if (peak_vals[i] <= rough_avg)
+        if (peak_vals[i] >= rough_avg * 1.1)
         {
             true_sum += peak_vals[i];
             true_count++;
@@ -256,6 +233,7 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][NUM_SAMPLE
     }
     *adc_rms = true_sum / true_count;
     */
+
     uint32_t inter_val = midpoint - rough_avg;
     inter_val *= 0.707106781187;                // * 1/sqrt(2)
     *adc_rms = midpoint - inter_val;
@@ -343,7 +321,6 @@ static bool _adcs_current_clamp_conv(uint16_t* adc_val, uint16_t* cc_mA)
 
 static void _adcs_start_sampling(uint32_t adc, uint8_t* channels, uint8_t len)
 {
-    call_count = 0;
     adc_set_regular_sequence(adc, len, channels);
     adc_start_conversion_regular(adc);
 }
@@ -398,10 +375,7 @@ static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned ch
         return false;
     }
     adc_value_status = ADCS_VAL_STATUS__IDLE;
-    adc_reading_t cc_reading[ADC_COUNT];
-    _adcs_data_compress(adcs_buffer, cc_reading, ADC_COUNT);
-    *value = cc_reading[chan_index].rms;
-    return true;
+    return _adcs_get_mean(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, value);
 }
 
 
@@ -469,9 +443,6 @@ bool adcs_calibrate_current_clamp(void)
 }
 
 
-#define ADC_TIMEOUT_TIME_MS     5000
-
-
 bool adcs_get_cc_mA(value_t* value)
 {
     // This function is blocking and only should be used for debug
@@ -488,7 +459,7 @@ bool adcs_get_cc_mA(value_t* value)
     uint32_t start_time = since_boot_ms;
     while (adc_value_status != ADCS_VAL_STATUS__DONE)
     {
-        if (since_boot_delta(since_boot_ms, start_time) > ADC_TIMEOUT_TIME_MS)
+        if (since_boot_delta(since_boot_ms, start_time) > ADCS_TIMEOUT_TIME_MS)
         {
             log_debug(DEBUG_ADC, "ADC request timed out.");
             adc_power_off(ADC1);

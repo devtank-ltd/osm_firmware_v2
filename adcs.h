@@ -5,9 +5,6 @@
 #include "measurements.h"
 
 
-#define ADCS_SAMPLE_TIME    4000
-
-
 extern void adcs_init(void);
 
 extern bool adcs_begin(char* name);
