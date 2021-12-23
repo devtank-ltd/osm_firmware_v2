@@ -110,6 +110,8 @@ int main(void)
             flash_set_data((const void*)FW_ADDR, (uint8_t*)NEW_FW_ADDR, 200*1024);
             flash_lock();
             uart_send_str("New Firmware Copied");
+	    if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, 200*1024) != 0)
+                uart_send_str("FW flash DOOOM!");
         }
 	else uart_send_str("No New Firmware!");
 
