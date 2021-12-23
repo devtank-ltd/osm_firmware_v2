@@ -9,6 +9,7 @@
 
 
 extern void init_persistent();
+extern void persist_set_new_fw_ready(void);
 extern void persist_set_log_debug_mask(uint32_t mask);
 extern uint32_t persist_get_log_debug_mask(void);
 extern void persist_set_lw_dev_eui(char* dev_eui);

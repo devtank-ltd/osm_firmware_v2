@@ -4,6 +4,7 @@
 
 #include "log.h"
 #include "modbus.h"
+#include "persist_config.h"
 #include "persist_config_header.h"
 #include "update.h"
 
@@ -63,5 +64,8 @@ bool fw_ota_complete(uint16_t crc)
         _fw_ota_flush_page(fw_ota_pos / FLASH_PAGE_SIZE);
     uint16_t data_crc = modbus_crc((uint8_t*)NEW_FW_ADDR, fw_ota_pos);
     fw_ota_pos = -1;
-    return (data_crc == crc);
+    if (data_crc != crc)
+        return false;
+    persist_set_new_fw_ready();
+    return true;
 }
