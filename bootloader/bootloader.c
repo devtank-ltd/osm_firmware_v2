@@ -3,10 +3,7 @@
 #include <string.h>
 
 #include <libopencm3/stm32/rcc.h>
-#include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/gpio.h>
-#include <libopencm3/cm3/systick.h>
-#include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/cm3/scb.h>
@@ -14,8 +11,12 @@
 #include "config.h"
 #include "pinmap.h"
 #include "persist_config_header.h"
+#include "flash_data.h"
 
 #define FAULT_STR  "----big fat bootloader crash -----"
+
+static persist_storage_t _config;
+
 
 static void uart_send_str(char *s)
 {
@@ -100,21 +101,27 @@ int main(void)
 
     persist_storage_t * config = (persist_storage_t*)PERSIST__RAW_DATA;
 
-    if (config->pending_fw)
+    if (config->pending_fw && config->pending_fw != 0xFFFFFFFF)
     {
-        uart_send_str("New Firmware");
+        uart_send_str("New Firmware Flag");
         if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
 	{
+            flash_unlock();
+            flash_set_data((const void*)FW_ADDR, (uint8_t*)NEW_FW_ADDR, 200*1024);
+            flash_lock();
+            uart_send_str("New Firmware Copied");
         }
 	else uart_send_str("No New Firmware!");
+
+	_config = *config;
+	_config.pending_fw = 0;
+	flash_set_data(config, &_config, sizeof(_config));
     }
 
     if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)
-    {
         uart_send_str("No Firmware!");
-
-    }
-    else run_firmware(FW_ADDR);
+    else
+        run_firmware(FW_ADDR);
 
     return 0;
 }
