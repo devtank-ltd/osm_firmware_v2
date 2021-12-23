@@ -58,7 +58,6 @@ void init_persistent(void)
         memset(&persist_data, 0, sizeof(persist_data));
         persist_data.version = PERSIST__VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
-	persist_data.fw_a = DEFAULT_FW_ADDR;
         return;
     }
 

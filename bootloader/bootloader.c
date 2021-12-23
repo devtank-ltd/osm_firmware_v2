@@ -92,13 +92,29 @@ int main(void)
     clock_setup();
     uart_setup();
 
+    uart_send_str("Bootloader");
+
     rcc_periph_clock_enable(PORT_TO_RCC(LED_PORT));
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
     persist_storage_t * config = (persist_storage_t*)PERSIST__RAW_DATA;
 
-    run_firmware(config->fw_a);
+    if (config->pending_fw)
+    {
+        uart_send_str("New Firmware");
+        if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
+	{
+        }
+	else uart_send_str("No New Firmware!");
+    }
+
+    if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)
+    {
+        uart_send_str("No Firmware!");
+
+    }
+    else run_firmware(FW_ADDR);
 
     return 0;
 }

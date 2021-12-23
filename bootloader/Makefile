@@ -1,6 +1,5 @@
-SOURCES += main.c
+SOURCES += bootloader.c
 
-BUILD_DIR := build/
 PROJECT_NAME := bootloader
 
 INCLUDE_PATHS += -I. -I..

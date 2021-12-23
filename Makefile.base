@@ -23,6 +23,8 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\"
 
 SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
+BUILD_DIR := $(SELF_DIR)/build
+
 INCLUDE_PATHS += -I$(SELF_DIR)/libs/libopencm3/include -I.
 
 LINK_FLAGS =  -L$(SELF_DIR)/libs/libopencm3/lib --static -nostartfiles
@@ -31,9 +33,9 @@ LINK_FLAGS += -T$(LINK_SCRIPT) -lopencm3_stm32l4
 LINK_FLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-sections
 LINK_FLAGS += $(CPU_DEFINES)
 
-OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)%.o)
-DEPS = $(SOURCES:%.c=$(BUILD_DIR)%.d)
-TARGET_ELF = $(BUILD_DIR)$(PROJECT_NAME).elf
+OBJECTS = $(SOURCES:%.c=$(BUILD_DIR)/%.o)
+DEPS = $(SOURCES:%.c=$(BUILD_DIR)/%.d)
+TARGET_ELF = $(BUILD_DIR)/$(PROJECT_NAME).elf
 TARGET_HEX = $(TARGET_ELF:%.elf=%.hex)
 TARGET_BIN = $(TARGET_ELF:%.elf=%.bin)
 TARGET_DFU = $(TARGET_ELF:%.elf=%.dfu)
@@ -42,11 +44,11 @@ TARGET_DFU = $(TARGET_ELF:%.elf=%.dfu)
 LIBOPENCM3 := $(SELF_DIR)/libs/libopencm3/lib/libopencm3_stm32l4.a
 
 
-default: $(TARGET_ELF)
+default: $(TARGET_BIN)
 
-$(BUILD_DIR).git.$(GIT_COMMIT): $(LIBOPENCM3)
+$(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 	mkdir -p `dirname $@`
-	rm -f $(BUILD_DIR).git.*
+	rm -f $(BUILD_DIR)/.git.*
 	touch $@
 
 $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
@@ -55,7 +57,7 @@ $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
 $(TARGET_BIN): $(TARGET_ELF)
 	$(OBJCOPY) -O binary $< $@
 
-$(OBJECTS): $(BUILD_DIR)%.o: %.c $(BUILD_DIR).git.$(GIT_COMMIT)
+$(OBJECTS): $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p `dirname $@`
 	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
 
@@ -83,7 +85,7 @@ dfu : $(TARGET_DFU)
 
 
 clean:
-	make -C libs/libopencm3 $@
+	make -C $(SELF_DIR)/libs/libopencm3 $@ TARGETS=stm32/l4
 	rm -rf $(BUILD_DIR)
 
 
@@ -105,10 +107,10 @@ serial_program: $(TARGET_BIN)
 	KEEPCONFIG=1 ./scripts/program.sh $(TARGET_BIN)
 
 
-$(BUILD_DIR)stack_info : $(TARGET_ELF)
+$(BUILD_DIR)/stack_info : $(TARGET_ELF)
 	./avstack.pl $(OBJECTS) > $@
 
-stack_info: $(BUILD_DIR)stack_info
-	cat $(BUILD_DIR)stack_info
+stack_info: $(BUILD_DIR)/stack_info
+	cat $(BUILD_DIR)/stack_info
 
 -include $(DEPS)
