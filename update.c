@@ -16,7 +16,10 @@ static int fw_ota_pos =-1;
 static void _fw_ota_flush_page(unsigned cur_page)
 {
     uintptr_t dst = NEW_FW_ADDR + (FLASH_PAGE_SIZE * cur_page);
+    flash_unlock();
+    flash_erase_page(cur_page);
     flash_program(dst, page, FLASH_PAGE_SIZE);
+    flash_lock();
     memset(page, 0xFF, FLASH_PAGE_SIZE);
 }
 
