@@ -21,12 +21,14 @@ static void _fw_ota_flush_page(unsigned cur_page)
 }
 
 
+
 bool fw_ota_add_chunk(void * data, unsigned size)
 {
     if (fw_ota_pos < 0)
     {
         fw_ota_pos = 0;
         memset(page, 0xFF, FLASH_PAGE_SIZE);
+        persist_set_new_fw_ready(false);
     }
 
     if ((fw_ota_pos + size) > FW_MAX_SIZE)
@@ -66,6 +68,6 @@ bool fw_ota_complete(uint16_t crc)
     fw_ota_pos = -1;
     if (data_crc != crc)
         return false;
-    persist_set_new_fw_ready();
+    persist_set_new_fw_ready(true);
     return true;
 }
