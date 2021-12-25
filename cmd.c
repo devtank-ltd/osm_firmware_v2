@@ -509,7 +509,7 @@ static void fw_add(char *args)
 	    return;
 	}
     }
-    log_debug(DEBUG_FW, "FW chunk added");
+    log_out("FW chunk added");
 }
 
 
@@ -517,7 +517,7 @@ static void fw_fin(char *args)
 {
     uint16_t crc = strtoul(args, NULL, 16);
     if (fw_ota_complete(crc))
-        log_debug(DEBUG_FW, "FW added");
+        log_out("FW added");
     else
         log_error("FW adding failed.");
 }
