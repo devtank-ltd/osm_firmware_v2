@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/cm3/scb.h>
 
 #include "pinmap.h"
 #include "log.h"
@@ -52,6 +53,7 @@ static void modbus_get_reg_cb(char *args);
 static void measurements_cb(char *args);
 static void fw_add(char *args);
 static void fw_fin(char *args);
+static void reset_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -78,6 +80,7 @@ static cmd_t cmds[] = {
     { "measurements", "Print measurements",  measurements_cb},
     { "fw+",       "Add chunk of new fw.",   fw_add},
     { "fw@",       "Finishing crc of new fw.", fw_fin},
+    { "reset",     "Reset device.",          reset_cb},
     { NULL },
 };
 
@@ -518,6 +521,12 @@ static void fw_fin(char *args)
         log_debug(DEBUG_FW, "FW added");
     else
         log_error("FW adding failed.");
+}
+
+
+static void reset_cb(char *args)
+{
+    scb_reset_system();
 }
 
 
