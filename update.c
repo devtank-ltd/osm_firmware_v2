@@ -1,6 +1,5 @@
 #include <string.h>
 
-#include <libopencm3/cm3/scb.h>
 #include <libopencm3/stm32/flash.h>
 
 #include "log.h"
@@ -73,6 +72,5 @@ bool fw_ota_complete(uint16_t crc)
     if (data_crc != crc)
         return false;
     persist_set_new_fw_ready(true);
-    scb_reset_system();
     return true;
 }
