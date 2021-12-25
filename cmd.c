@@ -212,7 +212,6 @@ void special_cb(char * args)
 void count_cb(char * args)
 {
     log_out("IOs     : %u", ios_get_count());
-    log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 
 
