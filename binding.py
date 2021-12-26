@@ -254,6 +254,8 @@ class io_board_py_t(object):
             assert b"FW chunk added" in r
         r = self.command(b"fw@ %04x" % crc)
         assert b"FW added" in r
+
+    def reset(self):
         self.comm.write(b'reset\n')
         self.comm.flush()
         self.comm.drain()
