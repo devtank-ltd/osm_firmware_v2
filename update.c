@@ -15,7 +15,7 @@ static int fw_ota_pos =-1;
 
 static void _fw_ota_flush_page(unsigned cur_page)
 {
-    uintptr_t dst = FLASH_PAGE_SIZE * cur_page;
+    uintptr_t dst = FLASH_ADDRESS + (FLASH_PAGE_SIZE * cur_page);
     flash_unlock();
     flash_erase_page(cur_page);
     flash_program(dst, page, FLASH_PAGE_SIZE);
