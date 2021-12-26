@@ -488,6 +488,7 @@ static void measurements_cb(char *args)
 
 static void fw_add(char *args)
 {
+    args = skip_space(args);
     unsigned len = strlen(args);
     if (len%2)
     {
@@ -515,6 +516,7 @@ static void fw_add(char *args)
 
 static void fw_fin(char *args)
 {
+    args = skip_space(args);
     uint16_t crc = strtoul(args, NULL, 16);
     if (fw_ota_complete(crc))
         log_out("FW added");
