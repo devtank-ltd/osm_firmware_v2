@@ -8,14 +8,14 @@
 #include "persist_config_header.h"
 #include "update.h"
 
-static uint8_t page[2048];
+static uint8_t page[FLASH_PAGE_SIZE];
 
 static int fw_ota_pos =-1;
 
 
 static void _fw_ota_flush_page(unsigned cur_page)
 {
-    uintptr_t dst = NEW_FW_ADDR + (FLASH_PAGE_SIZE * cur_page);
+    uintptr_t dst = FLASH_PAGE_SIZE * cur_page;
     flash_unlock();
     flash_erase_page(cur_page);
     flash_program(dst, page, FLASH_PAGE_SIZE);
@@ -41,14 +41,12 @@ bool fw_ota_add_chunk(void * data, unsigned size)
 	return false;
     }
 
-    unsigned start_page     = fw_ota_pos / FLASH_PAGE_SIZE;
-    unsigned start_page_pos = fw_ota_pos % FLASH_PAGE_SIZE;
+    unsigned start_page     = NEW_FW_PAGE + (fw_ota_pos / FLASH_PAGE_SIZE);
+    unsigned start_page_pos = size + (fw_ota_pos % FLASH_PAGE_SIZE);
 
-    fw_ota_pos += size;
+    int over_page = start_page_pos - FLASH_PAGE_SIZE;
 
-    int over_page = (start_page_pos + size) - FLASH_PAGE_SIZE;
-
-    if (over_page < 0)
+    if (over_page <= 0)
     {
         memcpy(page + start_page_pos, data, size);
     }
