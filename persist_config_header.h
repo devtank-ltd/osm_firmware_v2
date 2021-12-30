@@ -17,7 +17,7 @@
 #define NEW_FW_ADDR         (FLASH_ADDRESS + (FLASH_PAGE_SIZE * NEW_FW_PAGE))
 #define FW_PAGES            100
 #define FW_MAX_SIZE         (FW_PAGES * FLASH_PAGE_SIZE)
-#define PERSIST__RAW_DATA           ((uint8_t*)(FLASH_ADDRESS + (FLASH_CONFIG_PAGE * FLASH_PAGE_SIZE)))
+#define PERSIST_RAW_DATA           ((uint8_t*)(FLASH_ADDRESS + (FLASH_CONFIG_PAGE * FLASH_PAGE_SIZE)))
 #define PERSIST__VERSION            1
 
 

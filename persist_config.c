@@ -20,7 +20,7 @@ static persist_storage_t    persist_data;
 
 static void _lw_config_valid(void)
 {
-    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
 
     if (persist_data_raw->lw_dev_eui[0] && persist_data_raw->lw_app_key[0])
     {
@@ -49,7 +49,7 @@ static void _lw_config_valid(void)
 
 void init_persistent(void)
 {
-    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
 
     uint32_t vs = persist_data_raw->version;
     if (vs != PERSIST__VERSION)
@@ -72,10 +72,10 @@ static void _persistent_commit(void)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
-    flash_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
+    flash_set_data(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data));
     flash_lock();
 
-    if (memcmp(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+    if (memcmp(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
     {
         log_sys_debug("Flash successfully written.");
         persist_data_valid = true;
