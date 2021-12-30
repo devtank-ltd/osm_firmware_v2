@@ -10,14 +10,19 @@
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
 #define FLASH_SIZE                  (256 * FLASH_PAGE_SIZE)
+
 #define FLASH_CONFIG_PAGE           255
 #define FW_PAGE                     2
-#define FW_ADDR                     (FLASH_ADDRESS + (FLASH_PAGE_SIZE * FW_PAGE))
 #define NEW_FW_PAGE                 118
-#define NEW_FW_ADDR                 (FLASH_ADDRESS + (FLASH_PAGE_SIZE * NEW_FW_PAGE))
+
 #define FW_PAGES                    100
 #define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
-#define PERSIST_RAW_DATA            ((uint8_t*)(FLASH_ADDRESS + (FLASH_CONFIG_PAGE * FLASH_PAGE_SIZE)))
+
+#define PAGE2ADDR(_page_)           (FLASH_ADDRESS + (FLASH_PAGE_SIZE * _page_))
+#define FW_ADDR                     PAGE2ADDR(FW_PAGE)
+#define NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
+#define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
+
 #define PERSIST__VERSION            1
 
 
