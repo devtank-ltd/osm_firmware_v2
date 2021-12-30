@@ -246,19 +246,27 @@ class io_board_py_t(object):
     def fw_upload(self, filmware):
         from crccheck.crc import CrcModbus
         data = open(filmware, "rb").read()
-        hdata = b"".join([b"%02x" % x for x in data])
         crc = CrcModbus.calc(data)
-        for n in range(0, len(hdata), 24):
-            debug_print("Chunk %u/%u" % (n, len(hdata)))
-            r = self.command(b"fw+ "+hdata[n:n+24])
-            assert b"FW chunk added" in r
+        hdata = [b"%02x" % x for x in data]
+        hdata = b"".join(hdata)
+        mtu=56
+        for n in range(0, len(hdata), mtu):
+            debug_print("Chunk %u/%u" % (n/2, len(hdata)/2))
+            chunk=hdata[n:n + mtu]
+            r = self.command(b"fw+ "+chunk)
+            expect= b"FW %u chunk added" % (len(chunk)/2)
+            assert expect in r
         r = self.command(b"fw@ %04x" % crc)
         assert b"FW added" in r
 
     def reset(self):
         self.comm.write(b'reset\n')
         self.comm.flush()
-        self.comm.drain()
+        try:
+            while True:
+                self._read_line()
+        except:
+            pass
 
     def _read_line(self):
         line = self.comm.readline().strip()

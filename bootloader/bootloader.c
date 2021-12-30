@@ -107,9 +107,21 @@ int main(void)
         if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
 	{
             flash_unlock();
+	    uint32_t size = config->pending_fw;
             unsigned fw_first_page = (FW_ADDR - FLASH_ADDRESS) / FLASH_PAGE_SIZE;
-	    for(unsigned n = fw_first_page; n < (fw_first_page + (FW_MAX_SIZE/FLASH_PAGE_SIZE)); n++)
-	        flash_erase_page(n);
+	    unsigned fw_end_page = fw_first_page + (size/FLASH_PAGE_SIZE);
+	    if (size % FLASH_PAGE_SIZE)
+                fw_end_page++;
+	    uint8_t * dst = (uint8_t*)FW_ADDR;
+	    uint8_t * src = (uint8_t*)NEW_FW_ADDR;
+	    for(unsigned n = fw_first_page; n < fw_end_page; n++)
+            {
+                uart_send_str("FW page copy");
+                flash_erase_page(n);
+                flash_program((uintptr_t)dst, src, FLASH_PAGE_SIZE);
+                dst += FLASH_PAGE_SIZE;
+                dst += FLASH_PAGE_SIZE;
+	    }
             flash_set_data((const void*)FW_ADDR, (uint8_t*)NEW_FW_ADDR, FW_MAX_SIZE);
             flash_lock();
             uart_send_str("New Firmware Copied");

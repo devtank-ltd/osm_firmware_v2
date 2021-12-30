@@ -510,7 +510,7 @@ static void fw_add(char *args)
 	    return;
 	}
     }
-    log_out("FW chunk added");
+    log_out("FW %u chunk added", len/2);
 }
 
 

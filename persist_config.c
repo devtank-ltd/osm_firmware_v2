@@ -83,9 +83,9 @@ static void _persistent_commit(void)
     else log_error("Flash write failed");
 }
 
-void persist_set_new_fw_ready(bool enabled)
+void persist_set_fw_ready(uint32_t size)
 {
-    persist_data.pending_fw = enabled;
+    persist_data.pending_fw = size;
     _persistent_commit();
 }
 
