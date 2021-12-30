@@ -8,8 +8,8 @@
 
 
 #define FLASH_ADDRESS               0x8000000
-#define FLASH_SIZE                  (512 * 1024)
 #define FLASH_PAGE_SIZE             2048
+#define FLASH_SIZE                  (256 * FLASH_PAGE_SIZE)
 #define FLASH_CONFIG_PAGE           255
 #define FW_PAGE                     2
 #define FW_ADDR                     (FLASH_ADDRESS + (FLASH_PAGE_SIZE * FW_PAGE))
