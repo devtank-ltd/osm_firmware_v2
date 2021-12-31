@@ -13,7 +13,7 @@ static uint8_t _fw_page[FLASH_PAGE_SIZE] __attribute__ ( (aligned (16)));
 static int _fw_ota_pos =-1;
 
 
-static void _fw_ota_flush_page(unsigned fw_page_index)
+static bool _fw_ota_flush_page(unsigned fw_page_index)
 {
     unsigned abs_page = NEW_FW_PAGE + fw_page_index;
     uintptr_t dst = NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE);
@@ -22,7 +22,15 @@ static void _fw_ota_flush_page(unsigned fw_page_index)
     flash_erase_page(abs_page);
     flash_program(dst, _fw_page, FLASH_PAGE_SIZE);
     flash_lock();
-    memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
+
+    if (memcmp((void*)dst, _fw_page, FLASH_PAGE_SIZE) == 0)
+    {
+        memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
+	return true;
+    }
+
+    log_error("Failed to write FW page.");
+    return false;
 }
 
 
@@ -69,7 +77,8 @@ bool fw_ota_add_chunk(void * data, unsigned size)
         unsigned remainer = size - over_page;
 	if (remainer)
             memcpy(_fw_page + start_page_pos, data, remainer);
-        _fw_ota_flush_page(start_page);
+        if (!_fw_ota_flush_page(start_page))
+            return false;
 	if (over_page)
             memcpy(_fw_page, ((uint8_t*)data) + remainer, over_page);
     }
