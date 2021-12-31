@@ -262,11 +262,10 @@ class io_board_py_t(object):
     def reset(self):
         self.comm.write(b'reset\n')
         self.comm.flush()
-        try:
-            while True:
-                self._read_line()
-        except:
-            pass
+        while True:
+            line = self._read_line()
+            if b'----start----' in line:
+                return
 
     def _read_line(self):
         line = self.comm.readline().strip()
