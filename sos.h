@@ -1,3 +1,5 @@
+#pragma once
+
 /* SOS in morse code is ... --- ...
 * 1. dot is one time unit
 * 2. dash is three time units
