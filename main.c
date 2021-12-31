@@ -24,6 +24,7 @@
 #include "measurements.h"
 #include "sys_time.h"
 #include "modbus.h"
+#include "sos.h"
 
 _Atomic uint32_t since_boot_ms = 0;
 
@@ -31,7 +32,7 @@ _Atomic uint32_t since_boot_ms = 0;
 void hard_fault_handler(void)
 {
     platform_raw_msg("----big fat crash -----");
-    while(true);
+    error_state();
 }
 
 

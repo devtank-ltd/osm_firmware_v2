@@ -12,6 +12,7 @@
 #include "pinmap.h"
 #include "persist_config_header.h"
 #include "flash_data.h"
+#include "sos.h"
 
 #define FAULT_STR  "----big fat bootloader crash -----"
 
@@ -29,7 +30,7 @@ static void uart_send_str(char *s)
 void hard_fault_handler(void)
 {
     uart_send_str(FAULT_STR);
-    while(true);
+    error_state();
 }
 
 
@@ -99,7 +100,7 @@ int main(void)
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
-    persist_storage_t * config = (persist_storage_t*)PERSIST__RAW_DATA;
+    persist_storage_t * config = (persist_storage_t*)PERSIST_RAW_DATA;
 
     if (config->pending_fw && config->pending_fw != 0xFFFFFFFF)
     {
@@ -119,14 +120,22 @@ int main(void)
                 uart_send_str("FW page copy");
                 flash_erase_page(n);
                 flash_program((uintptr_t)dst, src, FLASH_PAGE_SIZE);
-                dst += FLASH_PAGE_SIZE;
+                if (memcmp((void*)dst, src, FLASH_PAGE_SIZE) != 0)
+                {
+                    uart_send_str("FW page copu failed.");
+                    error_state();
+                }
+                src += FLASH_PAGE_SIZE;
                 dst += FLASH_PAGE_SIZE;
 	    }
             flash_set_data((const void*)FW_ADDR, (uint8_t*)NEW_FW_ADDR, FW_MAX_SIZE);
             flash_lock();
             uart_send_str("New Firmware Copied");
 	    if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, 200*1024) != 0)
+            {
                 uart_send_str("FW flash DOOOM!");
+		error_state();
+	    }
         }
 	else uart_send_str("No New Firmware!");
 
@@ -136,9 +145,11 @@ int main(void)
     }
 
     if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)
+    {
         uart_send_str("No Firmware!");
-    else
-        run_firmware(FW_ADDR);
+        error_state();
+    }
+    else run_firmware(FW_ADDR);
 
     return 0;
 }
