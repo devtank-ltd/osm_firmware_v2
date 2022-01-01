@@ -22,7 +22,9 @@ include Makefile.base
 
 WHOLE_IMG := $(BUILD_DIR)/complete.bin
 
-$(BUILD_DIR)/bootloader.bin: bootloader/bootloader.c
+$(BUILD_DIR)/bootloader.bin: $(BUILD_DIR)/bootloader/bootloader.o
+
+$(BUILD_DIR)/bootloader/bootloader.o:
 	$(MAKE) -C bootloader
 
 $(WHOLE_IMG) : $(BUILD_DIR)/$(PROJECT_NAME).bin $(BUILD_DIR)/bootloader.bin
