@@ -70,7 +70,7 @@ struct modbus_dev_t
     uint8_t        slave_id;
     uint8_t        _;
     uint16_t       __; /* pad.*/
-    modbus_reg_t   regs[MODBUS_DEV_REGS]; /* Offsets to regsiters */
+    modbus_reg_t   regs[MODBUS_DEV_REGS];
 } __attribute__((__packed__)) ;
 
 
