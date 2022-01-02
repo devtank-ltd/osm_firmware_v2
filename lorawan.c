@@ -357,7 +357,7 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
     if (*next_pos == ':')
     {
         payload->data = next_pos + 1;
-        ssize_t size_diff = strlen(payload->data)/2 - (size_t)payload->header.datalen;
+        int size_diff = strlen(payload->data)/2 - (int)payload->header.datalen;
         if (size_diff < 0)
         {
             strncat(lw_leftover, proc_str, strlen(proc_str));

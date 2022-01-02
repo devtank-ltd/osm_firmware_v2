@@ -18,7 +18,7 @@ CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter
 CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
-CFLAGS		+= $(CPU_DEFINES)
+CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
 CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\"
 
 SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
@@ -38,7 +38,7 @@ LINK_FLAGS =  -L$(ABS_SELF_DIR)/libs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -L$(ABS_SELF_DIR)/libs/libopencm3/lib/stm32/l4
 LINK_FLAGS += -T$(ABS_LINK_SCRIPT) -lopencm3_stm32l4
 LINK_FLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-sections
-LINK_FLAGS += $(CPU_DEFINES)
+LINK_FLAGS += $(CPU_DEFINES) --specs=picolibc.specs
 
 OBJECTS = $(ABS_SRC:$(ABS_SELF_DIR)/%.c=$(BUILD_DIR)/%.o)
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
