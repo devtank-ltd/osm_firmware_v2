@@ -15,8 +15,8 @@
 #include "sys_time.h"
 
 
-#define ADC_CCR_PRESCALE__MASK  (15 << 18)
-#define ADC_CCR_PRESCALE__64    ( 9 << 18)
+#define ADC_CCR_PRESCALE_MASK  (15 << 18)
+#define ADC_CCR_PRESCALE_64    ( 9 << 18)
 
 
 #define ADCS_NUM_SAMPLES            480
@@ -25,25 +25,25 @@
 
 typedef enum
 {
-    ADCS_VAL_STATUS__IDLE,
-    ADCS_VAL_STATUS__DOING,
-    ADCS_VAL_STATUS__DONE,
+    ADCS_VAL_STATUS_IDLE,
+    ADCS_VAL_STATUS_DOING,
+    ADCS_VAL_STATUS_DONE,
 } adc_value_status_t;
 
 
 typedef enum
 {
-    ADCS_ADC_INDEX__ADC1    = 0 ,
-    ADCS_ADC_INDEX__ADC2    = 1 ,
+    ADCS_ADC_INDEX_ADC1    = 0 ,
+    ADCS_ADC_INDEX_ADC2    = 1 ,
 } adcs_adc_index_enum_t;
 
 
 typedef enum
 {
-    ADCS_CHAN_INDEX__CURRENT_CLAMP  = 0 ,
-    ADCS_CHAN_INDEX__BAT_MON        = 1 ,
-    ADCS_CHAN_INDEX__3V3_MON        = 2 ,
-    ADCS_CHAN_INDEX__5V_MON         = 3 ,
+    ADCS_CHAN_INDEX_CURRENT_CLAMP  = 0 ,
+    ADCS_CHAN_INDEX_BAT_MON        = 1 ,
+    ADCS_CHAN_INDEX_3V3_MON        = 2 ,
+    ADCS_CHAN_INDEX_5V_MON         = 3 ,
 } adcs_chan_index_enum_t;
 
 
@@ -51,11 +51,11 @@ static adc_dma_channel_t            adc_dma_channels[]                          
 static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT];
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
-static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS__IDLE;
+static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
 
 
-static float Q_rsqrt( float number )
+static float _Q_rsqrt( float number )
 {
     long i;
     float x2, y;
@@ -85,7 +85,7 @@ static bool _adcs_set_prescale(uint32_t adc, uint32_t prescale)
         ((ADC_CR(adc) & ADC_CR_ADDIS    )==0) &&
         ((ADC_CR(adc) & ADC_CR_ADEN     )==0) )
     {
-        ADC_CCR(adc) = (ADC_CCR(adc) & ADC_CCR_PRESCALE__MASK) | prescale;
+        ADC_CCR(adc) = (ADC_CCR(adc) & ADC_CCR_PRESCALE_MASK) | prescale;
         return true;
     }
     return false;
@@ -101,7 +101,7 @@ static void _adcs_setup_adc(void)
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
-    if (!_adcs_set_prescale(ADC1, ADC_CCR_PRESCALE__64))
+    if (!_adcs_set_prescale(ADC1, ADC_CCR_PRESCALE_64))
     {
         log_debug(DEBUG_ADC, "Could not set prescale value.");
     }
@@ -176,7 +176,7 @@ static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SA
     {
         sum += buff[adc_index][i] * buff[adc_index][i];
     }
-    *adc_rms = midpoint - 1/Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
+    *adc_rms = midpoint - 1/_Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
     return true;
 }
 
@@ -344,14 +344,14 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
 
 bool adcs_begin(char* name)
 {
-    if (adc_value_status != ADCS_VAL_STATUS__IDLE)
+    if (adc_value_status != ADCS_VAL_STATUS_IDLE)
     {
         log_debug(DEBUG_ADC, "Cannot begin, not in idle state.");
         return false;
     }
     adc_power_on(ADC1);
     _adcs_start_sampling(ADC1, adc_channel_array, ADC_COUNT);
-    adc_value_status = ADCS_VAL_STATUS__DOING;
+    adc_value_status = ADCS_VAL_STATUS_DOING;
     return true;
 }
 
@@ -363,7 +363,7 @@ static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned ch
         log_debug(DEBUG_ADC, "Given null pointer.");
         return false;
     }
-    if (adc_value_status != ADCS_VAL_STATUS__DONE)
+    if (adc_value_status != ADCS_VAL_STATUS_DONE)
     {
         //log_debug(DEBUG_ADC, "ADC not ready to collect.");
         return false;
@@ -378,8 +378,8 @@ static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned ch
         log_debug(DEBUG_ADC, "Channel index out of range.");
         return false;
     }
-    adc_value_status = ADCS_VAL_STATUS__IDLE;
-    return _adcs_get_mean(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, value);
+    adc_value_status = ADCS_VAL_STATUS_IDLE;
+    return _adcs_get_mean(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, value);
 }
 
 
@@ -388,23 +388,23 @@ bool adcs_collect(char* name, value_t* value)
     unsigned adc_index, chan_index;
     if (strncmp(name, "CuCl", 4) == 0)
     {
-        adc_index = ADCS_ADC_INDEX__ADC1;
-        chan_index = ADCS_CHAN_INDEX__CURRENT_CLAMP;
+        adc_index = ADCS_ADC_INDEX_ADC1;
+        chan_index = ADCS_CHAN_INDEX_CURRENT_CLAMP;
     }
     else if (strncmp(name, "batt", 4) == 0)
     {
-        adc_index = ADCS_ADC_INDEX__ADC1;
-        chan_index = ADCS_CHAN_INDEX__BAT_MON;
+        adc_index = ADCS_ADC_INDEX_ADC1;
+        chan_index = ADCS_CHAN_INDEX_BAT_MON;
     }
     else if (strncmp(name, "3vrf", 4) == 0)
     {
-        adc_index = ADCS_ADC_INDEX__ADC1;
-        chan_index = ADCS_CHAN_INDEX__3V3_MON;
+        adc_index = ADCS_ADC_INDEX_ADC1;
+        chan_index = ADCS_CHAN_INDEX_3V3_MON;
     }
     else if (strncmp(name, "5vrf", 4) == 0)
     {
-        adc_index = ADCS_ADC_INDEX__ADC1;
-        chan_index = ADCS_CHAN_INDEX__5V_MON;
+        adc_index = ADCS_ADC_INDEX_ADC1;
+        chan_index = ADCS_CHAN_INDEX_5V_MON;
     }
     else
     {
@@ -438,7 +438,7 @@ bool adcs_calibrate_current_clamp(void)
 {
     // This function is blocking and only should be used for debug/calibration
     uint16_t new_midpoint = 0;
-    if (!_adcs_wait(&new_midpoint, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP))
+    if (!_adcs_wait(&new_midpoint, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP))
     {
         log_debug(DEBUG_ADC, "Could not retreive adc value to set as midpoint.");
         return false;
@@ -461,23 +461,23 @@ bool adcs_get_cc_mA(value_t* value)
         return false;
     }
     uint32_t start_time = since_boot_ms;
-    while (adc_value_status != ADCS_VAL_STATUS__DONE)
+    while (adc_value_status != ADCS_VAL_STATUS_DONE)
     {
         if (since_boot_delta(since_boot_ms, start_time) > ADCS_TIMEOUT_TIME_MS)
         {
             log_debug(DEBUG_ADC, "ADC request timed out.");
             adc_power_off(ADC1);
-            adc_value_status = ADCS_VAL_STATUS__IDLE;
+            adc_value_status = ADCS_VAL_STATUS_IDLE;
             //_adcs_setup_dmas();
             return false;
         }
     }
-    adc_value_status = ADCS_VAL_STATUS__IDLE;
+    adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
+    _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
     log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
-    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX__ADC1, ADCS_CHAN_INDEX__CURRENT_CLAMP, &adc_rms);
+    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
     log_debug(DEBUG_ADC, "Quick = %"PRIu16, adc_rms);
     if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {
@@ -524,7 +524,7 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         adc_power_off_async(ADC1);
-        adc_value_status = ADCS_VAL_STATUS__DONE;
+        adc_value_status = ADCS_VAL_STATUS_DONE;
         ADC_ISR(ADC1) &= ~ADC_ISR_EOSMP;
     }
 }
