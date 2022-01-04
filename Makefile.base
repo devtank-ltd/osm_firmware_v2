@@ -32,7 +32,7 @@ ABS_SRC :=$(SOURCES:%=$(CUR_DIR)/%)
 
 ABS_LINK_SCRIPT := $(CUR_DIR)/$(LINK_SCRIPT)
 
-INCLUDE_PATHS += -I$(ABS_SELF_DIR)/libs/libopencm3/include -I$(ABS_SELF_DIR)
+INCLUDE_PATHS += -I$(ABS_SELF_DIR)/libs/libopencm3/include -I$(CUR_DIR) -I$(ABS_SELF_DIR)
 
 LINK_FLAGS =  -L$(ABS_SELF_DIR)/libs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -L$(ABS_SELF_DIR)/libs/libopencm3/lib/stm32/l4
