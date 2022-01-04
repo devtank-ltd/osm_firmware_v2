@@ -144,6 +144,7 @@ static void _adcs_setup_dma(adc_dma_channel_t* adc_dma, unsigned index)
     adc_enable_dma(adc_dma->adc_unit);
 }
 
+
 static void _adcs_setup_dmas(void)
 {
     for (unsigned i = 0; i < ADC_DMA_CHANNELS_COUNT; i++)
@@ -519,7 +520,7 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
-        adc_power_off(ADC1);
+        adc_power_off_async(ADC1);
         adc_value_status = ADCS_VAL_STATUS__DONE;
         ADC_ISR(ADC1) &= ~ADC_ISR_EOSMP;
     }
