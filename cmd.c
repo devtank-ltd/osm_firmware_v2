@@ -493,22 +493,22 @@ static void fw_add(char *args)
     if (len%2)
     {
         log_error("Invalid fw chunk.");
-	return;
+        return;
     }
     char * end = args + len;
     while(args < end)
     {
         char * next = args + 2;
         char t = *next;
-	*next=0;
-	uint8_t d = strtoul(args, NULL, 16);
-	*next=t;
-	args=next;
+        *next=0;
+        uint8_t d = strtoul(args, NULL, 16);
+        *next=t;
+        args=next;
         if (!fw_ota_add_chunk(&d, 1))
         {
             log_error("Invalid fw.");
-	    return;
-	}
+            return;
+        }
     }
     log_out("FW %u chunk added", len/2);
 }

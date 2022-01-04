@@ -26,7 +26,7 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
     if (memcmp((void*)dst, _fw_page, FLASH_PAGE_SIZE) == 0)
     {
         memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
-	return true;
+        return true;
     }
 
     log_error("Failed to write FW page.");
@@ -55,8 +55,8 @@ bool fw_ota_add_chunk(void * data, unsigned size)
     if ((_fw_ota_pos + size) > FW_MAX_SIZE)
     {
         log_error("Firmware update too big.");
-	_fw_ota_pos = -1;
-	return false;
+        _fw_ota_pos = -1;
+        return false;
     }
 
     unsigned start_page     = _fw_ota_pos / FLASH_PAGE_SIZE;
@@ -75,11 +75,11 @@ bool fw_ota_add_chunk(void * data, unsigned size)
         fw_debug("pos:%u", _fw_ota_pos);
         unsigned over_page = next_page_pos % FLASH_PAGE_SIZE;
         unsigned remainer = size - over_page;
-	if (remainer)
+        if (remainer)
             memcpy(_fw_page + start_page_pos, data, remainer);
         if (!_fw_ota_flush_page(start_page))
             return false;
-	if (over_page)
+        if (over_page)
             memcpy(_fw_page, ((uint8_t*)data) + remainer, over_page);
     }
     return true;

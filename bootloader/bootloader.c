@@ -106,16 +106,16 @@ int main(void)
     {
         uart_send_str("New Firmware Flag");
         if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
-	{
+        {
             flash_unlock();
-	    uint32_t size = config->pending_fw;
+            uint32_t size = config->pending_fw;
             unsigned fw_first_page = (FW_ADDR - FLASH_ADDRESS) / FLASH_PAGE_SIZE;
-	    unsigned fw_end_page = fw_first_page + (size/FLASH_PAGE_SIZE);
-	    if (size % FLASH_PAGE_SIZE)
+            unsigned fw_end_page = fw_first_page + (size/FLASH_PAGE_SIZE);
+            if (size % FLASH_PAGE_SIZE)
                 fw_end_page++;
-	    uint8_t * dst = (uint8_t*)FW_ADDR;
-	    uint8_t * src = (uint8_t*)NEW_FW_ADDR;
-	    for(unsigned n = fw_first_page; n < fw_end_page; n++)
+            uint8_t * dst = (uint8_t*)FW_ADDR;
+            uint8_t * src = (uint8_t*)NEW_FW_ADDR;
+            for(unsigned n = fw_first_page; n < fw_end_page; n++)
             {
                 uart_send_str("FW page copy");
                 flash_erase_page(n);
@@ -127,21 +127,21 @@ int main(void)
                 }
                 src += FLASH_PAGE_SIZE;
                 dst += FLASH_PAGE_SIZE;
-	    }
+            }
             flash_set_data((const void*)FW_ADDR, (uint8_t*)NEW_FW_ADDR, FW_MAX_SIZE);
             flash_lock();
             uart_send_str("New Firmware Copied");
-	    if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, 200*1024) != 0)
+            if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, 200*1024) != 0)
             {
                 uart_send_str("FW flash DOOOM!");
-		error_state();
-	    }
+                error_state();
+            }
         }
-	else uart_send_str("No New Firmware!");
+        else uart_send_str("No New Firmware!");
 
-	_config = *config;
-	_config.pending_fw = 0;
-	flash_set_data(config, &_config, sizeof(_config));
+        _config = *config;
+        _config.pending_fw = 0;
+        flash_set_data(config, &_config, sizeof(_config));
     }
 
     if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)

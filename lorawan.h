@@ -6,7 +6,7 @@
 
 /** IDs are taken from or abide by similar rules to the Cayenne LPP.
  *  https://devtoolkit.openmobilealliance.org/OEditor/default.aspx
- *  
+ *
  *  IDs = OMA Object ID - 3200
  *  as defined by Cayenne Protocol.
  *  https://developers.mydevices.com/cayenne/docs/lora/#lora-cayenne-low-power-payload

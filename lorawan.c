@@ -118,7 +118,7 @@ static void lw_set_config(const char* config_fmt, ...)
 }
 
 
-typedef enum 
+typedef enum
 {
     LW_STATE_PREINIT       ,
     LW_STATE_INIT          ,
@@ -245,7 +245,7 @@ void lw_process(char* message)
             return;
         if (lw_msg_is_error(message))
             return; /* Logged in check */
-        
+
         if (lw_state_machine.data.response_cb)
         {
             lw_state_machine.data.response_cb();
