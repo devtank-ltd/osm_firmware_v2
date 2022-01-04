@@ -117,7 +117,8 @@ int main(void)
             uint8_t * src = (uint8_t*)NEW_FW_ADDR;
             for(unsigned n = fw_first_page; n < fw_end_page; n++)
             {
-                for (unsigned i = 0; i < 3; i++)
+                unsigned retries = 3;
+                while(retries--)
                 {
                     flash_unlock();
                     flash_erase_page(n);
@@ -129,12 +130,16 @@ int main(void)
                         break;
                     }
 
-                    if (i == 2)
+                    if (retries)
+                    {
+                        uart_send_str("ERROR: FW page copy failed, trying again.");
+                        flash_clear_status_flags();
+                    }
+                    else
                     {
                         uart_send_str("ERROR: FW page copy failed all retries.");
                         error_state();
                     }
-                    else uart_send_str("ERROR: FW page copy failed, trying again.");
                 }
                 src += FLASH_PAGE_SIZE;
                 dst += FLASH_PAGE_SIZE;

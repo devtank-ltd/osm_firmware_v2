@@ -17,19 +17,35 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
 {
     unsigned abs_page = NEW_FW_PAGE + fw_page_index;
     uintptr_t dst = NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE);
-    fw_debug("Writing page %u (%p)", abs_page, (void*)dst);
-    flash_unlock();
-    flash_erase_page(abs_page);
-    flash_program(dst, _fw_page, FLASH_PAGE_SIZE);
-    flash_lock();
 
-    if (memcmp((void*)dst, _fw_page, FLASH_PAGE_SIZE) == 0)
+    fw_debug("Writing page %u (%p) pos:%u", abs_page, (void*)dst, _fw_ota_pos);
+
+    unsigned retries = 3;
+
+    while(retries--)
     {
-        memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
-        return true;
+        flash_unlock();
+        flash_erase_page(abs_page);
+        flash_program(dst, _fw_page, FLASH_PAGE_SIZE);
+        flash_lock();
+
+        fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, *(uint64_t*)_fw_page);
+
+        if (memcmp((void*)dst, _fw_page, FLASH_PAGE_SIZE) == 0)
+        {
+            fw_debug("Written page");
+            memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
+            return true;
+        }
+
+        if (retries)
+        {
+            log_error("Retrying to write page");
+            flash_clear_status_flags();
+        }
     }
 
-    log_error("Failed to write FW page.");
+    log_error("Failed to write FW page");
     return false;
 }
 
@@ -72,7 +88,6 @@ bool fw_ota_add_chunk(void * data, unsigned size)
     }
     else
     {
-        fw_debug("pos:%u", _fw_ota_pos);
         unsigned over_page = next_page_pos % FLASH_PAGE_SIZE;
         unsigned remainer = size - over_page;
         if (remainer)
@@ -91,7 +106,10 @@ bool fw_ota_complete(uint16_t crc)
     unsigned pages        = _fw_ota_pos / FLASH_PAGE_SIZE;
     fw_debug("Size:%u", _fw_ota_pos);
     if (cur_page_pos)
+    {
+        fw_debug("Unwritten:%u", cur_page_pos);
         _fw_ota_flush_page(pages);
+    }
     uint16_t data_crc = modbus_crc((uint8_t*)NEW_FW_ADDR, _fw_ota_pos);
     fw_debug("CRC:0x%04x", data_crc);
     if (data_crc != crc)
