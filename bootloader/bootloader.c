@@ -107,33 +107,42 @@ int main(void)
         uart_send_str("New Firmware Flag");
         if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
         {
-            flash_unlock();
             uint32_t size = config->pending_fw;
-            unsigned fw_first_page = (FW_ADDR - FLASH_ADDRESS) / FLASH_PAGE_SIZE;
-            unsigned fw_end_page = fw_first_page + (size/FLASH_PAGE_SIZE);
+            unsigned page_count = size / FLASH_PAGE_SIZE;
             if (size % FLASH_PAGE_SIZE)
-                fw_end_page++;
+                page_count++;
+            unsigned fw_first_page = (FW_ADDR - FLASH_ADDRESS) / FLASH_PAGE_SIZE;
+            unsigned fw_end_page = fw_first_page + page_count;
             uint8_t * dst = (uint8_t*)FW_ADDR;
             uint8_t * src = (uint8_t*)NEW_FW_ADDR;
             for(unsigned n = fw_first_page; n < fw_end_page; n++)
             {
-                uart_send_str("FW page copy");
-                flash_erase_page(n);
-                flash_program((uintptr_t)dst, src, FLASH_PAGE_SIZE);
-                if (memcmp((void*)dst, src, FLASH_PAGE_SIZE) != 0)
+                for (unsigned i = 0; i < 3; i++)
                 {
-                    uart_send_str("FW page copu failed.");
-                    error_state();
+                    flash_unlock();
+                    flash_erase_page(n);
+                    flash_program((uintptr_t)dst, src, FLASH_PAGE_SIZE);
+                    flash_lock();
+                    if (memcmp((void*)dst, src, FLASH_PAGE_SIZE) == 0)
+                    {
+                        uart_send_str("FW page copied");
+                        break;
+                    }
+
+                    if (i == 2)
+                    {
+                        uart_send_str("ERROR: FW page copy failed all retries.");
+                        error_state();
+                    }
+                    else uart_send_str("ERROR: FW page copy failed, trying again.");
                 }
                 src += FLASH_PAGE_SIZE;
                 dst += FLASH_PAGE_SIZE;
             }
-            flash_set_data((const void*)FW_ADDR, (uint8_t*)NEW_FW_ADDR, FW_MAX_SIZE);
-            flash_lock();
             uart_send_str("New Firmware Copied");
-            if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, 200*1024) != 0)
+            if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, size) != 0)
             {
-                uart_send_str("FW flash DOOOM!");
+                uart_send_str("ERROR: New Firmware check failed.");
                 error_state();
             }
         }
@@ -146,7 +155,7 @@ int main(void)
 
     if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)
     {
-        uart_send_str("No Firmware!");
+        uart_send_str("ERROR: No Firmware!");
         error_state();
     }
     else run_firmware(FW_ADDR);
