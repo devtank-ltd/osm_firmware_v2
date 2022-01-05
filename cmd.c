@@ -479,7 +479,7 @@ static void measurements_cb(char *args)
 static void adcs_cb(char* args)
 {
     value_t value;
-    if (!adcs_get_cc_mA(&value))
+    if (!adcs_get_cc_blocking("None", &value))
     {
         log_out("Could not get adc value.");
         return;

@@ -19,6 +19,13 @@
 #define ADC_CCR_PRESCALE_64    ( 9 << 18)
 
 
+#define ADCS_CONFIG_PRESCALE        ADC_CCR_PRESCALE_64
+#define ADCS_CONFIG_SAMPLE_TIME     ADC_SMPR_SMP_640DOT5CYC
+
+
+#define ADCS_DEFAULT_COLLECTION_TIME    5000;
+
+
 #define ADCS_NUM_SAMPLES            480
 #define ADCS_TIMEOUT_TIME_MS        5000
 
@@ -53,6 +60,15 @@ static uint8_t                      adc_channel_array[ADC_COUNT]                
 static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
+
+
+uint32_t adcs_collection_time(void)
+{
+    /**
+    Could calculate how long it should take to get the results. For now use 5 seconds.
+    */
+    return ADCS_DEFAULT_COLLECTION_TIME;
+}
 
 
 static float _Q_rsqrt( float number )
@@ -101,7 +117,7 @@ static void _adcs_setup_adc(void)
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
-    if (!_adcs_set_prescale(ADC1, ADC_CCR_PRESCALE_64))
+    if (!_adcs_set_prescale(ADC1, ADCS_CONFIG_PRESCALE))
     {
         log_debug(DEBUG_ADC, "Could not set prescale value.");
     }
@@ -110,7 +126,7 @@ static void _adcs_setup_adc(void)
     adc_set_right_aligned(ADC1);
     adc_enable_vrefint();
     adc_enable_temperature_sensor();
-    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_640DOT5CYC);
+    adc_set_sample_time_on_all_channels(ADC1, ADCS_CONFIG_SAMPLE_TIME);
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
 
     adc_calibrate(ADC1);
@@ -447,7 +463,7 @@ bool adcs_calibrate_current_clamp(void)
 }
 
 
-bool adcs_get_cc_mA(value_t* value)
+bool adcs_get_cc_blocking(char* name, value_t* value)
 {
     // This function is blocking and only should be used for debug
     if (!value)
@@ -471,6 +487,39 @@ bool adcs_get_cc_mA(value_t* value)
             //_adcs_setup_dmas();
             return false;
         }
+    }
+    adc_value_status = ADCS_VAL_STATUS_IDLE;
+    uint16_t adc_rms = 0;
+    uint16_t mA_val = 0;
+    _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
+    log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
+    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
+    log_debug(DEBUG_ADC, "Quick = %"PRIu16, adc_rms);
+    if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
+    {
+        log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
+        return false;
+    }
+    *value = 0;
+    *value = mA_val;
+    return true;
+}
+
+
+bool adcs_get_cc(char* name, value_t* value)
+{
+    // This function is blocking and only should be used for debug
+    if (!value)
+    {
+        log_debug(DEBUG_ADC, "Given null pointer.");
+        return false;
+    }
+    if (adc_value_status != ADCS_VAL_STATUS_DONE)
+    {
+        log_debug(DEBUG_ADC, "No ADC value ready.");
+        adc_power_off(ADC1);
+        adc_value_status = ADCS_VAL_STATUS_IDLE;
+        return false;
     }
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;

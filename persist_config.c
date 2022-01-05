@@ -229,6 +229,7 @@ bool persist_set_adc_midpoint(uint16_t midpoint)
         return false;
     }
     persist_data.adc_midpoint = midpoint;
+    _persistent_commit();
     return true;
 }
 
@@ -240,7 +241,6 @@ bool persist_get_adc_midpoint(uint16_t* midpoint)
         return false;
     }
     *midpoint = persist_data.adc_midpoint;
-    _persistent_commit();
     return true;
 }
 
