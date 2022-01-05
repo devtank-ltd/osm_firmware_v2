@@ -71,6 +71,7 @@ uint32_t adcs_collection_time(void)
 }
 
 
+/*
 static float _Q_rsqrt( float number )
 {
     long i;
@@ -90,6 +91,7 @@ static float _Q_rsqrt( float number )
 
     return y;
 }
+*/
 
 
 static bool _adcs_set_prescale(uint32_t adc, uint32_t prescale)
@@ -185,6 +187,7 @@ static bool _adcs_get_mean(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLE
 }
 
 
+/*
 static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
 {
     uint64_t sum = 0;
@@ -195,6 +198,7 @@ static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SA
     *adc_rms = midpoint - 1/_Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
     return true;
 }
+*/
 
 
 static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
@@ -491,10 +495,8 @@ bool adcs_get_cc_blocking(char* name, value_t* value)
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
-    log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
     _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
-    log_debug(DEBUG_ADC, "Quick = %"PRIu16, adc_rms);
+    log_debug(DEBUG_ADC, "Quick RMS = %"PRIu16, adc_rms);
     if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
@@ -524,10 +526,8 @@ bool adcs_get_cc(char* name, value_t* value)
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    _adcs_get_rms_full(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
-    log_debug(DEBUG_ADC, "Full = %"PRIu16, adc_rms);
     _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
-    log_debug(DEBUG_ADC, "Quick = %"PRIu16, adc_rms);
+    log_debug(DEBUG_ADC, "Quick RMS = %"PRIu16, adc_rms);
     if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
