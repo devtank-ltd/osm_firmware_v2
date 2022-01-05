@@ -30,4 +30,18 @@ flash: $(WHOLE_IMG)
 		    -c "reset" \
 		    -c "shutdown"
 
+
+clean:
+	make -C libs/libopencm3 $@ TARGETS=stm32/l4
+	rm -rf $(BUILD_DIR)
+
+
+size:
+	$(MAKE) -f Makefile.bootloader size
+	$(MAKE) -f Makefile.firmware size
+
+cppcheck:
+	cppcheck --enable=all --std=c99 *.[ch]
+
+
 -include $(DEPS)

@@ -56,7 +56,7 @@ $(TARGET_ELF): $(LIBS) $(OBJECTS) $(LINK_SCRIPT)
 
 $(TARGET_BIN): $(TARGET_ELF)
 	$(OBJCOPY) -O binary $< $@
-	echo $(TARGET_BIN): $(SOURCES)>$(TARGET_BIN).d
+	echo $(TARGET_BIN): $(OBJECTS)>$(TARGET_BIN).d
 
 $(OBJECTS): $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p `dirname $@`
@@ -68,29 +68,10 @@ $(LIBOPENCM3) :
 size: $(TARGET_ELF)
 	$(SIZE) $(TARGET_ELF)
 
-clean:
-	make -C $(SELF_DIR)/libs/libopencm3 $@ TARGETS=stm32/l4
-	rm -rf $(BUILD_DIR)
-
-
-cppcheck:
-	cppcheck --enable=all --std=c99 $(SOURCES)
-
-
 debug_mon: $(TARGET_ELF)
 	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
 debug_gdb: $(TARGET_ELF)
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF);
-
-cmd:
-	screen $$(ls /dev/serial/by-id/usb-STMicroelectronics_STM32_STLink* -1 | head -n 1) 115200 8n1
-
-
-$(BUILD_DIR)/stack_info : $(TARGET_ELF)
-	./avstack.pl $(OBJECTS) > $@
-
-stack_info: $(BUILD_DIR)/stack_info
-	cat $(BUILD_DIR)/stack_info
 
 -include $(DEPS)
