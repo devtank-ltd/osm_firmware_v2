@@ -39,14 +39,14 @@ function Decode(fPort, bytes, variables)
                 break;
             // Multiple measurement
             case 2:
-                mean = bytes[pos++];
-                mean = (mean << 8) + bytes[pos++];
+                mean = (bytes[pos+1] << 8) | bytes[pos];
+                pos += 2
                 obj[name] = mean;
-                min = bytes[pos++];
-                min = (min << 8) + bytes[pos++];
+                min = (bytes[pos+1] << 8) | bytes[pos];
+                pos += 2
                 obj[name+"_min"] = min;
-                max = bytes[pos++];
-                max = (max << 8) + bytes[pos++];
+                max = (bytes[pos+1] << 8) | bytes[pos];
+                pos += 2
                 obj[name+"_max"] = max;
                 break;
             default:
@@ -110,5 +110,7 @@ function Encode(fPort, obj, variables)
 
     return bytes;
 }
-console.log(Decode(0, [1, 67, 67, 49, 0, 1, 12, 17, 84, 77, 80, 49, 2, 12, 17, 12, 17, 12, 17], 0));
+
+
+console.log(Decode(0, [1, 80, 77, 49, 48, 2, 0, 0, 0, 0, 0, 0, 80, 77, 50, 53, 2, 0, 0, 0, 0, 0, 0, 67, 67, 49, 0, 2, 126, 13, 0, 0, 88, 27, 0], 0));
 console.log(Encode(0, {"CMD" : "How are you?"}, 0));
