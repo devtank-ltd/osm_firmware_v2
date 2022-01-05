@@ -15,6 +15,16 @@ function Decode(fPort, bytes, variables)
         return obj;
     }
 
+    var value_type_sizes = { 0x01 : 1 ,
+                             0x02 : 2 ,
+                             0x03 : 4 ,
+                             0x04 : 8 ,
+                             0x11 : 1 ,
+                             0x12 : 2 ,
+                             0x13 : 4 ,
+                             0x14 : 8 };
+
+
     var name;
     while(pos < bytes.length)
     {
@@ -28,25 +38,44 @@ function Decode(fPort, bytes, variables)
             pos++;
         }
         var data_type = bytes[pos++];
+        var value_size;
         var mean, min, max;
         switch (data_type)
         {
             // Single measurement
             case 1:
-                mean = bytes[pos++];
-                mean = (mean << 8) + bytes[pos++];
+                value_type = value_type_sizes[bytes[pos++]];
+                mean = 0;
+                for (var i = 0; i < value_type; i++)
+                {
+                    mean = (mean << 8) | bytes[pos++];
+                }
                 obj[name] = mean;
                 break;
             // Multiple measurement
             case 2:
-                mean = (bytes[pos+1] << 8) | bytes[pos];
-                pos += 2
+                value_size = value_type_sizes[bytes[pos++]];
+                mean = 0;
+                for (var i = 0; i < value_size; i++)
+                {
+                    mean = (mean << 8) | bytes[pos++];
+                }
                 obj[name] = mean;
-                min = (bytes[pos+1] << 8) | bytes[pos];
-                pos += 2
+
+                value_size = value_type_sizes[bytes[pos++]];
+                min = 0;
+                for (var i = 0; i < value_size; i++)
+                {
+                    min = (min << 8) | bytes[pos++];
+                }
                 obj[name+"_min"] = min;
-                max = (bytes[pos+1] << 8) | bytes[pos];
-                pos += 2
+
+                value_size = value_type_sizes[bytes[pos++]];
+                max = 0;
+                for (var i = 0; i < value_size; i++)
+                {
+                    max = (max << 8) | bytes[pos++];
+                }
                 obj[name+"_max"] = max;
                 break;
             default:
@@ -111,6 +140,5 @@ function Encode(fPort, obj, variables)
     return bytes;
 }
 
-
-console.log(Decode(0, [1, 80, 77, 49, 48, 2, 0, 0, 0, 0, 0, 0, 80, 77, 50, 53, 2, 0, 0, 0, 0, 0, 0, 67, 67, 49, 0, 2, 126, 13, 0, 0, 88, 27, 0], 0));
+console.log(Decode(0, [1, 80, 77, 49, 48, 2, 1, 0, 2, 0, 0, 2, 0, 0, 80, 77, 50, 53, 2, 1, 0, 2, 0, 0, 2, 0, 0, 67, 67, 49, 0, 2, 2, 174, 49, 2, 0, 0, 2, 0, 0, 0], 0));
 console.log(Encode(0, {"CMD" : "How are you?"}, 0));
