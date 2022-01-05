@@ -118,7 +118,7 @@ static void lw_set_config(const char* config_fmt, ...)
 }
 
 
-typedef enum 
+typedef enum
 {
     LW_STATE_PREINIT       ,
     LW_STATE_INIT          ,
@@ -245,7 +245,7 @@ void lw_process(char* message)
             return;
         if (lw_msg_is_error(message))
             return; /* Logged in check */
-        
+
         if (lw_state_machine.data.response_cb)
         {
             lw_state_machine.data.response_cb();
@@ -357,7 +357,7 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
     if (*next_pos == ':')
     {
         payload->data = next_pos + 1;
-        ssize_t size_diff = strlen(payload->data)/2 - (size_t)payload->header.datalen;
+        int size_diff = strlen(payload->data)/2 - (int)payload->header.datalen;
         if (size_diff < 0)
         {
             strncat(lw_leftover, proc_str, strlen(proc_str));

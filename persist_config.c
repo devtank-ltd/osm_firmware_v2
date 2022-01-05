@@ -9,28 +9,9 @@
 #include "config.h"
 #include "pinmap.h"
 #include "timers.h"
-#include "measurements.h"
 #include "lorawan.h"
-
-#define FLASH_ADDRESS               0x8000000
-#define FLASH_SIZE                  (512 * 1024)
-#define FLASH_PAGE_SIZE             2048
-#define FLASH_CONFIG_PAGE           255
-#define PERSIST__RAW_DATA           ((uint8_t*)(FLASH_ADDRESS + (FLASH_CONFIG_PAGE * FLASH_PAGE_SIZE)))
-#define PERSIST__VERSION            1
-
-
-typedef struct
-{
-    uint32_t                version;
-    uint32_t                log_debug_mask;
-    modbus_bus_config_t     modbus_bus_config;
-    uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
-    char                    lw_dev_eui[LW__DEV_EUI_LEN];
-    char                    lw_app_key[LW__APP_KEY_LEN];
-    measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
-} __attribute__((__packed__)) persist_storage_t;
-
+#include "persist_config_header.h"
+#include "flash_data.h"
 
 static bool                 persist_data_valid = false;
 static bool                 persist_data_lw_valid = false;
@@ -39,7 +20,7 @@ static persist_storage_t    persist_data;
 
 static void _lw_config_valid(void)
 {
-    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
 
     if (persist_data_raw->lw_dev_eui[0] && persist_data_raw->lw_app_key[0])
     {
@@ -68,7 +49,7 @@ static void _lw_config_valid(void)
 
 void init_persistent(void)
 {
-    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST__RAW_DATA;
+    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
 
     uint32_t vs = persist_data_raw->version;
     if (vs != PERSIST__VERSION)
@@ -87,40 +68,14 @@ void init_persistent(void)
 }
 
 
-static void persistent_set_data(const void * addr, const void * data, unsigned size)
-{
-    uintptr_t _addr = (uintptr_t)addr;
-
-    unsigned left_over = size % 8;
-    unsigned easy_size = size - left_over;
-
-    if (easy_size)
-        flash_program(_addr, (void*)data, easy_size);
-
-    if (size > easy_size)
-    {
-        const uint8_t * p = (const uint8_t*)data;
-
-        uint64_t v = 0;
-
-        for(unsigned n = 0; n < left_over; n+=1)
-        {
-             v |= (p[easy_size + n]) << (8*n);
-        }
-
-        flash_program_double_word(_addr + easy_size, v);
-    }
-}
-
-
 static void _persistent_commit(void)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
-    persistent_set_data(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data));
+    flash_set_data(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data));
     flash_lock();
 
-    if (memcmp(PERSIST__RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+    if (memcmp(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
     {
         log_sys_debug("Flash successfully written.");
         persist_data_valid = true;
@@ -128,10 +83,14 @@ static void _persistent_commit(void)
     else log_error("Flash write failed");
 }
 
+void persist_set_fw_ready(uint32_t size)
+{
+    persist_data.pending_fw = size;
+    _persistent_commit();
+}
 
 void persist_set_log_debug_mask(uint32_t mask)
 {
-    persist_data.version = PERSIST__VERSION;
     persist_data.log_debug_mask = mask;
     _persistent_commit();
 }
@@ -220,26 +179,6 @@ bool persist_get_measurements(measurement_def_base_t** m_arr)
 void persist_commit_measurement(void)
 {
     _persistent_commit();
-}
-
-
-void persist_set_modbus_bus_config(modbus_bus_config_t* config)
-{
-    if (!config)
-        return;
-    persist_data.version = PERSIST__VERSION;
-    memcpy(&persist_data.modbus_bus_config, config, sizeof(modbus_bus_config_t));
-    _persistent_commit();
-}
-
-
-bool persist_get_modbus_bus_config(modbus_bus_config_t* config)
-{
-    if (!persist_data_valid || !config)
-        return false;
-
-    memcpy(config, &persist_data.modbus_bus_config, sizeof(modbus_bus_config_t));
-    return true;
 }
 
 

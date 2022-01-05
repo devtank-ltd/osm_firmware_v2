@@ -1,0 +1,7 @@
+SOURCES += bootloader/bootloader.c
+
+PROJECT_NAME := bootloader
+
+LINK_SCRIPT = bootloader/stm32l452.ld
+
+include Makefile.base

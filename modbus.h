@@ -11,6 +11,7 @@
 
 #define modbus_debug(...) log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
 
+
 typedef enum
 {
     MODBUS_REG_TYPE_INVALID,
@@ -23,6 +24,7 @@ typedef enum
 typedef struct modbus_dev_t modbus_dev_t;
 typedef struct modbus_reg_t modbus_reg_t;
 
+extern uint16_t modbus_crc(uint8_t * buf, unsigned length);
 
 extern char * modbus_reg_type_get_str(modbus_reg_type_t type);
 

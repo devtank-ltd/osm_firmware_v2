@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/cm3/scb.h>
 
 #include "pinmap.h"
 #include "log.h"
@@ -20,6 +21,7 @@
 #include "measurements.h"
 #include "hpm.h"
 #include "modbus_measurements.h"
+#include "update.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -49,6 +51,9 @@ static void modbus_add_dev_cb(char *args);
 static void modbus_add_reg_cb(char *args);
 static void modbus_get_reg_cb(char *args);
 static void measurements_cb(char *args);
+static void fw_add(char *args);
+static void fw_fin(char *args);
+static void reset_cb(char *args);
 
 
 static cmd_t cmds[] = {
@@ -73,6 +78,9 @@ static cmd_t cmds[] = {
     { "mb_log",    "Show modbus setup",      modbus_log},
     { "mb_save",   "Save modbus setup",      modbus_save},
     { "measurements", "Print measurements",  measurements_cb},
+    { "fw+",       "Add chunk of new fw.",   fw_add},
+    { "fw@",       "Finishing crc of new fw.", fw_fin},
+    { "reset",     "Reset device.",          reset_cb},
     { NULL },
 };
 
@@ -204,7 +212,6 @@ void special_cb(char * args)
 void count_cb(char * args)
 {
     log_out("IOs     : %u", ios_get_count());
-    log_out("UARTs   : %u", UART_CHANNELS_COUNT-1); /* Control/Debug is left */
 }
 
 
@@ -476,6 +483,51 @@ static void measurements_cb(char *args)
 {
     measurements_print();
     measurements_print_persist();
+}
+
+
+static void fw_add(char *args)
+{
+    args = skip_space(args);
+    unsigned len = strlen(args);
+    if (len%2)
+    {
+        log_error("Invalid fw chunk.");
+        return;
+    }
+    char * end = args + len;
+    while(args < end)
+    {
+        char * next = args + 2;
+        char t = *next;
+        *next=0;
+        uint8_t d = strtoul(args, NULL, 16);
+        *next=t;
+        args=next;
+        if (!fw_ota_add_chunk(&d, 1))
+        {
+            log_error("Invalid fw.");
+            return;
+        }
+    }
+    log_out("FW %u chunk added", len/2);
+}
+
+
+static void fw_fin(char *args)
+{
+    args = skip_space(args);
+    uint16_t crc = strtoul(args, NULL, 16);
+    if (fw_ota_complete(crc))
+        log_out("FW added");
+    else
+        log_error("FW adding failed.");
+}
+
+
+static void reset_cb(char *args)
+{
+    scb_reset_system();
 }
 
 

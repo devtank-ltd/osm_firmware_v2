@@ -92,7 +92,7 @@ static bool measurements_arr_append_i16(int16_t val)
     return measurements_arr_append_i8(val & 0xFF) &&
            measurements_arr_append_i8((val >> 8) & 0xFF);
 }
-    
+
 
 static bool measurements_arr_append_i32(int32_t val)
 {
@@ -141,7 +141,7 @@ static bool measurements_arr_append_value(value_t * value)
 static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_data_t* measurement_data)
 {
     bool single = measurement_def->base.samplecount == 1;
-    
+
     value_t mean;
     value_t num_samples = value_from(measurement_data->num_samples);
     if (!value_div(&mean, &measurement_data->sum, &num_samples))
@@ -332,7 +332,6 @@ bool measurements_del(char* name)
             return true;
         }
     }
-    log_error("Cannot find measurement to remove.");
     return false;
 }
 
@@ -521,6 +520,6 @@ void measurements_init(void)
     }
 
     /*
-     * 
+     *
      */
 }

@@ -1,0 +1,22 @@
+SOURCES += main.c \
+           log.c \
+           sai.c \
+           uarts.c \
+           uart_rings.c \
+           cmd.c \
+           io.c \
+           ring.c \
+           hpm.c \
+           modbus.c \
+           value.c \
+           persist_config.c \
+           lorawan.c \
+           measurements.c \
+           modbus_measurements.c \
+           update.c
+
+PROJECT_NAME := firmware
+LINK_SCRIPT = stm32l452.ld
+
+include Makefile.base
+
