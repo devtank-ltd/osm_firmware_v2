@@ -515,8 +515,8 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
             lw_port = 0;
         }
         snprintf(header_str, 17, "at+send=lora:%"PRIx8":", lw_port);
-        uart_ring_out(LW_UART, header_str, 16);
-        uart_ring_out(CMD_UART, header_str, 16);
+        uart_ring_out(LW_UART, header_str, 15);
+        uart_ring_out(CMD_UART, header_str, 15);
         for (uint16_t i = 0; i < arr_len; i++)
         {
             snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
