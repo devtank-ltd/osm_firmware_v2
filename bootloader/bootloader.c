@@ -155,7 +155,12 @@ int main(void)
 
         _config = *config;
         _config.pending_fw = 0;
+        flash_unlock();
+        flash_erase_page(FLASH_CONFIG_PAGE);
         flash_set_data(config, &_config, sizeof(_config));
+        flash_lock();
+        if (memcmp((const void*)config, (const void*)&_config, sizeof(_config)) != 0)
+            uart_send_str("WARNING: Config update failed.");
     }
 
     if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)
