@@ -35,62 +35,6 @@ typedef struct
 } cmd_t;
 
 
-static void io_cb(char *args);
-static void special_cb(char *args);
-static void count_cb(char *args);
-static void version_cb(char *args);
-static void audio_dump_cb(char *args);
-static void lora_cb(char *args);
-static void lora_config_cb(char *args);
-static void interval_cb(char *args);
-static void samplecount_cb(char * args);
-static void debug_cb(char *args);
-static void hpm_cb(char *args);
-static void modbus_setup_cb(char *args);
-static void modbus_add_dev_cb(char *args);
-static void modbus_add_reg_cb(char *args);
-static void modbus_get_reg_cb(char *args);
-static void measurements_cb(char *args);
-static void fw_add(char *args);
-static void fw_fin(char *args);
-static void reset_cb(char *args);
-static void adcs_cb(char* args);
-static void adcs_midpoint_cb(char *args);
-static void adcs_calibrate_cb(char *args);
-
-
-
-static cmd_t cmds[] = {
-    { "ios",      "Print all IOs.",          ios_log},
-    { "io",       "Get/set IO set.",         io_cb},
-    { "sio",      "Enable Special IO.",      special_cb},
-    { "count",    "Counts of controls.",     count_cb},
-    { "version",  "Print version.",          version_cb},
-    { "audio_dump", "Do audiodump",          audio_dump_cb},
-    { "lora",      "Send lora message",      lora_cb},
-    { "lora_config", "Set lora config",      lora_config_cb},
-    { "interval", "Set the interval",        interval_cb},
-    { "samplecount", "Set the samplecount",  samplecount_cb},
-    { "debug",     "Set hex debug mask",     debug_cb},
-    { "hpm",       "Enable/Disable HPM",     hpm_cb},
-    { "mb_setup",  "Change Modbus comms",    modbus_setup_cb},
-    { "mb_dev_add","Add modbus dev",         modbus_add_dev_cb},
-    { "mb_reg_add","Add modbus reg",         modbus_add_reg_cb},
-    { "mb_get_reg","Get modbus reg",         modbus_get_reg_cb},
-    { "mb_reg_del","Delete modbus reg",      modbus_measurement_del_reg},
-    { "mb_dev_del","Delete modbus dev",      modbus_measurement_del_dev},
-    { "mb_log",    "Show modbus setup",      modbus_log},
-    { "mb_save",   "Save modbus setup",      modbus_save},
-    { "measurements", "Print measurements",  measurements_cb},
-    { "fw+",       "Add chunk of new fw.",   fw_add},
-    { "fw@",       "Finishing crc of new fw.", fw_fin},
-    { "reset",     "Reset device.",          reset_cb},
-    { "adcs",      "ADC debug",              adcs_cb},
-    { "adcs_mp",   "Set the adc midpoint",   adcs_midpoint_cb},
-    { "adcs_cal",  "Calibrate the adc",      adcs_calibrate_cb},
-    { NULL },
-};
-
 
 char * skip_space(char * pos)
 {
@@ -571,6 +515,37 @@ static void adcs_calibrate_cb(char *args)
 
 void cmds_process(char * command, unsigned len)
 {
+    static cmd_t cmds[] = {
+        { "ios",          "Print all IOs.",           ios_log},
+        { "io",           "Get/set IO set.",          io_cb},
+        { "sio",          "Enable Special IO.",       special_cb},
+        { "count",        "Counts of controls.",      count_cb},
+        { "version",      "Print version.",           version_cb},
+        { "audio_dump",   "Do audiodump",             audio_dump_cb},
+        { "lora",         "Send lora message",        lora_cb},
+        { "lora_config",  "Set lora config",          lora_config_cb},
+        { "interval",     "Set the interval",         interval_cb},
+        { "samplecount",  "Set the samplecount",      samplecount_cb},
+        { "debug",        "Set hex debug mask",       debug_cb},
+        { "hpm",          "Enable/Disable HPM",       hpm_cb},
+        { "mb_setup",     "Change Modbus comms",      modbus_setup_cb},
+        { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb},
+        { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb},
+        { "mb_get_reg",   "Get modbus reg",           modbus_get_reg_cb},
+        { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg},
+        { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev},
+        { "mb_log",       "Show modbus setup",        modbus_log},
+        { "mb_save",      "Save modbus setup",        modbus_save},
+        { "measurements", "Print measurements",       measurements_cb},
+        { "fw+",          "Add chunk of new fw.",     fw_add},
+        { "fw@",          "Finishing crc of new fw.", fw_fin},
+        { "reset",        "Reset device.",            reset_cb},
+        { "adcs",         "ADC debug",                adcs_cb},
+        { "adcs_mp",      "Set the adc midpoint",     adcs_midpoint_cb},
+        { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
+        { NULL },
+    };
+
     if (!len)
         return;
 
