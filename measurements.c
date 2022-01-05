@@ -11,6 +11,7 @@
 #include "log.h"
 #include "config.h"
 #include "hpm.h"
+#include "adcs.h"
 #include "sys_time.h"
 #include "persist_config.h"
 #include "modbus_measurements.h"
@@ -25,11 +26,14 @@
 
 #define MEASUREMENT_ID_FROM_NAME(_name_)  *(uint64_t*)(char[8]){_name_}
 
-#define MEASUREMENT_PM10_NAME "pm10"
+#define MEASUREMENT_PM10_NAME "PM10"
 #define MEASUREMENT_PM10_ID   MEASUREMENT_ID_FROM_NAME(MEASUREMENT_PM10_NAME)
 
-#define MEASUREMENT_PM25_NAME "pm25"
+#define MEASUREMENT_PM25_NAME "PM25"
 #define MEASUREMENT_PM25_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_PM25_NAME)
+
+#define MEASUREMENT_CURRENT_CLAMP_NAME "CC1"
+#define MEASUREMENT_CURRENT_CLAMP_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_CURRENT_CLAMP_NAME)
 
 
 typedef struct
@@ -418,6 +422,11 @@ static void _measurement_fixup(measurement_def_t* def)
             def->init_cb = modbus_measurements_init;
             def->get_cb = modbus_measurements_get;
             break;
+        case CURRENT_CLAMP:
+            def->collection_time = adcs_collection_time();
+            def->init_cb = adcs_begin;
+            def->get_cb = adcs_get_cc;
+            break;
     }
 }
 
@@ -494,6 +503,15 @@ void measurements_init(void)
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 5;
             temp_def.base.type = PM25;
+            _measurement_fixup(&temp_def);
+            measurements_add(&temp_def);
+        }
+        {
+            measurement_def_t temp_def;
+            strncpy(temp_def.base.name, MEASUREMENT_CURRENT_CLAMP_NAME, strlen(temp_def.base.name));
+            temp_def.base.interval = 1;
+            temp_def.base.samplecount = 25;
+            temp_def.base.type = CURRENT_CLAMP;
             _measurement_fixup(&temp_def);
             measurements_add(&temp_def);
         }

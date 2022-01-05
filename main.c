@@ -102,6 +102,7 @@ int main(void)
     cmds_init();
     ios_init();
     sai_init();
+    adcs_init();
     lorawan_init();
     measurements_init();
     modbus_init();

@@ -1,0 +1,53 @@
+
+   x2    ||      x8       ||    x2     ||   x4   ||      x8       ||    x2     ||   x4   ||   x4   ||   x4   ||
+         ||               ||           ||        ||               ||           ||        ||        ||        ||
+PROTOCOL ||   DATA NAME   || DATA TYPE ||  DATA  ||   DATA NAME   || DATA TYPE ||  DATA  ||  DATA  ||  DATA  ||
+         ||               ||           ||        ||               ||           ||        ||        ||        ||
+   01    ||   43433100    ||    01     ||  0C11  ||   544d5031    ||    02     ||  0C11  ||  0C11  ||  0C11  ||
+
+
+
+
+
+CC1  - Current Clamp (1)
+
+PF   - Modbus Power Factor
+cVP1 - Modbus cV Phase 1
+cVP2 - Modbus cV Phase 2
+cVP3 - Modbus cV Phase 3
+mAP1 - Modbus mA Phase 1
+mAP2 - Modbus mA Phase 2 
+mAP3 - Modbus mA Phase 3
+ImEn - Modbus Import energy 
+
+PM25 - ppm 2.5
+PM10 - ppm 10
+
+TMP1 - Temperature (chip)
+HUM1 - Humidity
+
+LUX1 - Light
+
+TMP2 - One wire temperature
+
+PPI1 - Pulse per interval (Water meter)
+
+dB1  - Sound in dB
+
+RSP  - Respond to CMD (Think about) (Success and Fail only?)
+
+CMD [command] - Send Command
+
+
+
+
+mb_dev_add 5 E53
+
+mb_reg_add 5 0xc56e 3 U32 PF
+mb_reg_add 5 0xc552 3 U32 cVP1
+mb_reg_add 5 0xc554 3 U32 cVP2
+mb_reg_add 5 0xc556 3 U32 cVP3
+mb_reg_add 5 0xc560 3 U32 mAP1
+mb_reg_add 5 0xc562 3 U32 mAP2
+mb_reg_add 5 0xc564 3 U32 mAP3
+mb_reg_add 5 0xc652 3 U32 ImEn

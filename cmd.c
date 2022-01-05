@@ -54,6 +54,10 @@ static void measurements_cb(char *args);
 static void fw_add(char *args);
 static void fw_fin(char *args);
 static void reset_cb(char *args);
+static void adcs_cb(char* args);
+static void adcs_midpoint_cb(char *args);
+static void adcs_calibrate_cb(char *args);
+
 
 
 static cmd_t cmds[] = {
@@ -81,6 +85,9 @@ static cmd_t cmds[] = {
     { "fw+",       "Add chunk of new fw.",   fw_add},
     { "fw@",       "Finishing crc of new fw.", fw_fin},
     { "reset",     "Reset device.",          reset_cb},
+    { "adcs",      "ADC debug",              adcs_cb},
+    { "adcs_mp",   "Set the adc midpoint",   adcs_midpoint_cb},
+    { "adcs_cal",  "Calibrate the adc",      adcs_calibrate_cb},
     { NULL },
 };
 
@@ -528,6 +535,32 @@ static void fw_fin(char *args)
 static void reset_cb(char *args)
 {
     scb_reset_system();
+}
+
+
+static void adcs_cb(char* args)
+{
+    value_t value;
+    if (!adcs_get_cc_blocking("None", &value))
+    {
+        log_out("Could not get adc value.");
+        return;
+    }
+    log_out("CC = %"PRIu64"mA", value);
+}
+
+
+static void adcs_midpoint_cb(char *args)
+{
+    char* pos = skip_space(args);
+    uint16_t new_mp = (uint16_t)strtoul(pos, NULL, 10);
+    adcs_set_midpoint(new_mp);
+}
+
+
+static void adcs_calibrate_cb(char *args)
+{
+    adcs_calibrate_current_clamp();
 }
 
 

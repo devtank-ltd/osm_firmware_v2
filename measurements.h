@@ -21,6 +21,7 @@ typedef enum
     MODBUS,
     PM10,
     PM25,
+    CURRENT_CLAMP,
 } measurement_def_type_t;
 
 

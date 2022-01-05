@@ -2,6 +2,8 @@
 #define __PINMAPS__
 
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/dma.h>
+#include <libopencm3/cm3/nvic.h>
 #include <stdint.h>
 
 #include "base_types.h"
@@ -11,13 +13,21 @@
 
 #define ADCS_PORT_N_PINS                            \
 {                                                   \
-    {GPIOC, GPIO0},      /* ADC 0  = Channel 1  */  \
-    {GPIOC, GPIO1},      /* ADC 1  = Channel 2  */  \
-    {GPIOC, GPIO2},      /* ADC 2  = Channel 3  */  \
-    {GPIOC, GPIO3},      /* ADC 3  = Channel 4  */  \
+    {GPIOA, GPIO1},      /* ADC 1  = Channel 6  */  \
+    {GPIOC, GPIO0},      /* ADC 1  = Channel 1  */  \
+    {GPIOC, GPIO2},      /* ADC 1  = Channel 3  */  \
+    {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
 }
 
-#define ADC_CHANNELS  {1,2,3,4}
+#define ADC1_CHANNEL__CURRENT_CLAMP      6
+#define ADC1_CHANNEL__BAT_MON            1
+#define ADC1_CHANNEL__3V3_RAIL_MON       3
+#define ADC1_CHANNEL__5V_RAIL_MON        4
+
+#define ADC_CHANNELS  { ADC1_CHANNEL__CURRENT_CLAMP,    \
+                        ADC1_CHANNEL__BAT_MON,          \
+                        ADC1_CHANNEL__3V3_RAIL_MON,     \
+                        ADC1_CHANNEL__5V_RAIL_MON       }
 
 #define ADC_COUNT 4
 

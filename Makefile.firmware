@@ -13,7 +13,8 @@ SOURCES += main.c \
            lorawan.c \
            measurements.c \
            modbus_measurements.c \
-           update.c
+           update.c \
+           adc.c
 
 PROJECT_NAME := firmware
 LINK_SCRIPT = stm32l452.ld

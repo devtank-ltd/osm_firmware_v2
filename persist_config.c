@@ -182,6 +182,29 @@ void persist_commit_measurement(void)
 }
 
 
+bool persist_set_adc_midpoint(uint16_t midpoint)
+{
+    if (!persist_data_valid)
+    {
+        return false;
+    }
+    persist_data.adc_midpoint = midpoint;
+    _persistent_commit();
+    return true;
+}
+
+
+bool persist_get_adc_midpoint(uint16_t* midpoint)
+{
+    if (!persist_data_valid)
+    {
+        return false;
+    }
+    *midpoint = persist_data.adc_midpoint;
+    return true;
+}
+
+
 uint8_t * persist_get_modbus_data(void)
 {
     return persist_data.modbus_data;

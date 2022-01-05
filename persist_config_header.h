@@ -36,5 +36,6 @@ typedef struct
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[LW__MAX_MEASUREMENTS];
+    uint16_t                adc_midpoint;
 } __attribute__((__packed__)) persist_storage_t;
 

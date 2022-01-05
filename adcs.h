@@ -1,20 +1,20 @@
 #ifndef __ADCS__
 #define __ADCS__
 
-extern char adc_temp_buffer[24];
 
-extern void     adcs_init();
+#include "measurements.h"
 
-extern void     adcs_do_samples();
-extern void     adcs_collect_boardary();
 
-extern unsigned adcs_get_count();
+extern void adcs_init(void);
 
-extern unsigned adcs_get_last(unsigned adc);
-extern unsigned adcs_get_tick(unsigned adc);
+extern bool     adcs_begin(char* name);
+extern bool     adcs_collect(char* name, value_t* value);
+extern bool     adcs_get_cc(char* name, value_t* value);
+extern bool     adcs_get_cc_blocking(char* name, value_t* value);
+extern uint32_t adcs_collection_time(void);
 
-extern void     adcs_adc_log(unsigned adc);
-extern void     adcs_log();
+extern bool     adcs_set_midpoint(uint16_t new_midpoint);
+extern bool     adcs_calibrate_current_clamp(void);
 
 
 #endif //__ADCS__
