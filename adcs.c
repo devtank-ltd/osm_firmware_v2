@@ -54,6 +54,18 @@ typedef enum
 } adcs_chan_index_enum_t;
 
 
+typedef struct
+{
+    uint32_t              adc_unit;
+    uint32_t              dma_unit;
+    uint32_t              dma_rcc;
+    uint8_t               dma_irqn;
+    uint8_t               dma_channel;
+    uint8_t               priority;
+    uint8_t               enabled;
+} adc_dma_channel_t;
+
+
 static adc_dma_channel_t            adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
 static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT];
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
@@ -430,8 +442,7 @@ bool adcs_collect(char* name, value_t* value)
     {
         log_debug(DEBUG_ADC, "Unknown name given.");
         return false;
-    };
-    *value = 0;
+    }
     return _adcs_collect_index((uint16_t*)value, adc_index, chan_index);
 }
 
@@ -502,8 +513,7 @@ bool adcs_get_cc_blocking(char* name, value_t* value)
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
     }
-    *value = 0;
-    *value = mA_val;
+    *value = value_from_u16(mA_val);
     return true;
 }
 
@@ -533,8 +543,7 @@ bool adcs_get_cc(char* name, value_t* value)
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
     }
-    *value = 0;
-    *value = mA_val;
+    *value = value_from_u16(mA_val);
     return true;
 }
 
