@@ -31,6 +31,13 @@
 
 #define ADC_COUNT 4
 
+#define ADC_DMA_CHANNELS                                                        \
+{                                                                               \
+    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
+}
+
+#define ADC_DMA_CHANNELS_COUNT  1
+
 #define PPS_PORT_N_PINS             \
 {                                   \
     {GPIOB, GPIO3},     /* PPS 0 */ \
