@@ -18,7 +18,8 @@ typedef struct
     port_n_pins_t port_n_pins[2];
 } i2c_def_t;
 
-#define I2C_BUSES {{0,0,0,0,{0,0},{{0,0},{0,0}} }}
+
+#define I2C_BUSES {{RCC_I2C2, I2C2, i2c_speed_sm_100k, 8, {GPIO_AF4, GPIO_AF4}, {{GPIOB, GPIO8},{GPIOB, GPIO9}} }}
 
 #define HTU21D_I2C 0
 #define HTU21D_I2C_INDEX 0
