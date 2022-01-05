@@ -8,6 +8,10 @@ WHOLE_IMG := $(BUILD_DIR)/complete.bin
 
 default: $(WHOLE_IMG)
 
+$(BUILD_DIR)/%.o: %.c
+	$(MAKE) -f Makefile.bootloader
+	$(MAKE) -f Makefile.firmware
+
 $(WHOLE_IMG) : $(BL_IMG) $(FW_IMG)
 	dd of=$@ if=$(BL_IMG) bs=2k
 	dd of=$@ if=$(FW_IMG) seek=2 conv=notrunc bs=2k
