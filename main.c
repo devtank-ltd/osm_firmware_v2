@@ -26,6 +26,7 @@
 #include "modbus.h"
 #include "sos.h"
 #include "timers.h"
+#include "htu21d.h"
 
 volatile uint32_t since_boot_ms = 0;
 
@@ -105,6 +106,7 @@ int main(void)
     ios_init();
     sai_init();
     adcs_init();
+    htu21d_init();
     lorawan_init();
     measurements_init();
     modbus_init();

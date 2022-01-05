@@ -1,9 +1,10 @@
-#ifndef __HDC2080__
-#define __HDC2080__
+#pragma once
 
-extern void     hdc2080_init();
+#include <stdbool.h>
+#include <stdint.h>
 
-/* returns degrees * 10 and %RH * 10 */
-extern bool hdc2080_read(uint16_t * temp, uint16_t * humidity);
+extern void htu21d_init();
 
-#endif //__HDC2080__
+extern bool htu21d_read_temp(uint16_t * temp);
+
+extern bool htu21d_read_humidity(uint16_t * humidity);
