@@ -50,7 +50,7 @@ static void log_msgv(unsigned uart, bool blocking, const char * prefix, const ch
     if (len > LOG_LINELEN-1)
         len = LOG_LINELEN-1;
 
-    _dispatch_line(uart, blocking, prefix, len);
+    _dispatch_line(uart, blocking || !log_async_log, prefix, len);
 }
 
 
