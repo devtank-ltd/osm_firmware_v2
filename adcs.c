@@ -506,7 +506,11 @@ bool adcs_get_cc_blocking(char* name, value_t* value)
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
+    if (!_adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms))
+    {
+        log_debug(DEBUG_ADC, "Could not get ADC RMS.");
+        return false;
+    }
     log_debug(DEBUG_ADC, "Quick RMS = %"PRIu16, adc_rms);
     if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {
@@ -536,7 +540,11 @@ bool adcs_get_cc(char* name, value_t* value)
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    _adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms);
+    if (!_adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms))
+    {
+        log_debug(DEBUG_ADC, "Could not get ADC RMS.");
+        return false;
+    }
     log_debug(DEBUG_ADC, "Quick RMS = %"PRIu16, adc_rms);
     if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
     {

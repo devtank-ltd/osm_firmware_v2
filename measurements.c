@@ -256,7 +256,6 @@ static void measurements_sample(void)
         time_init = (m_data->num_samples_init * sample_interval) + sample_interval/2 - m_def->collection_time;
         if (time_since_interval >= time_init)
         {
-            log_debug(DEBUG_MEASUREMENTS, "Got something");
             m_data->num_samples_init++;
             if (!m_def->init_cb(m_def->base.name))
             {
@@ -275,7 +274,6 @@ static void measurements_sample(void)
         time_collect = (m_data->num_samples_collected * sample_interval) + sample_interval/2;
         if (time_since_interval >= time_collect)
         {
-            log_debug(DEBUG_MEASUREMENTS, "Got something");
             m_data->num_samples_collected++;
             if (!m_def->get_cb(m_def->base.name, &new_value))
             {
@@ -403,7 +401,6 @@ void measurements_loop_iteration(void)
     uint32_t now = since_boot_ms;
     if (since_boot_delta(now, check_time.last_checked_time) > check_time.wait_time)
     {
-        log_debug(DEBUG_MEASUREMENTS, "CHECK TIMES");
         measurements_sample();
     }
     if (since_boot_delta(now, last_sent_ms) > INTERVAL__TRANSMIT_MS)
@@ -522,7 +519,7 @@ void measurements_print_persist(void)
 void measurements_init(void)
 {
     measurement_def_base_t* persistent_measurement_arr;
-    if (!persist_get_measurements(&persistent_measurement_arr))
+    if (1)// !persist_get_measurements(&persistent_measurement_arr))
     {
         log_error("No persistent loaded, load defaults.");
         /* Add defaults. */
@@ -537,7 +534,7 @@ void measurements_init(void)
         }
         {
             measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, strlen(temp_def.base.name));
+            strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, sizeof(temp_def.base.name));
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 5;
             temp_def.base.type = PM25;
@@ -546,7 +543,7 @@ void measurements_init(void)
         }
         {
             measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_CURRENT_CLAMP_NAME, strlen(temp_def.base.name));
+            strncpy(temp_def.base.name, MEASUREMENT_CURRENT_CLAMP_NAME, sizeof(temp_def.base.name));
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 25;
             temp_def.base.type = CURRENT_CLAMP;
@@ -555,9 +552,9 @@ void measurements_init(void)
         }
         {
             measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_W1_PROBE_NAME, strlen(temp_def.base.name));
+            strncpy(temp_def.base.name, MEASUREMENT_W1_PROBE_NAME, sizeof(temp_def.base.name));
             temp_def.base.interval = 1;
-            temp_def.base.samplecount = 25;
+            temp_def.base.samplecount = 5;
             temp_def.base.type = W1_PROBE;
             _measurement_fixup(&temp_def);
             measurements_add(&temp_def);
