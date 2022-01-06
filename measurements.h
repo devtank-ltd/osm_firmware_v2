@@ -22,6 +22,7 @@ typedef enum
     PM10,
     PM25,
     CURRENT_CLAMP,
+    W1_PROBE,
 } measurement_def_type_t;
 
 

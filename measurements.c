@@ -15,6 +15,7 @@
 #include "sys_time.h"
 #include "persist_config.h"
 #include "modbus_measurements.h"
+#include "one_wire_driver.h"
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
@@ -34,6 +35,9 @@
 
 #define MEASUREMENT_CURRENT_CLAMP_NAME "CC1"
 #define MEASUREMENT_CURRENT_CLAMP_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_CURRENT_CLAMP_NAME)
+
+#define MEASUREMENT_W1_PROBE_NAME "TMP2"
+#define MEASUREMENT_W1_PROBE_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_W1_PROBE_NAME)
 
 
 typedef struct
@@ -456,6 +460,11 @@ static void _measurement_fixup(measurement_def_t* def)
             def->init_cb = adcs_begin;
             def->get_cb = adcs_get_cc;
             break;
+        case W1_PROBE:
+            def->collection_time = w1_collection_time();
+            def->init_cb = w1_measurement_init;
+            def->get_cb = w1_measurement_collect;
+            break;
     }
 }
 
@@ -541,6 +550,15 @@ void measurements_init(void)
             temp_def.base.interval = 1;
             temp_def.base.samplecount = 25;
             temp_def.base.type = CURRENT_CLAMP;
+            _measurement_fixup(&temp_def);
+            measurements_add(&temp_def);
+        }
+        {
+            measurement_def_t temp_def;
+            strncpy(temp_def.base.name, MEASUREMENT_W1_PROBE_NAME, strlen(temp_def.base.name));
+            temp_def.base.interval = 1;
+            temp_def.base.samplecount = 25;
+            temp_def.base.type = W1_PROBE;
             _measurement_fixup(&temp_def);
             measurements_add(&temp_def);
         }
