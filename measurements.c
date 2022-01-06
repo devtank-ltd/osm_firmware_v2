@@ -55,11 +55,19 @@ typedef struct
 } measurement_arr_t;
 
 
-static uint32_t last_sent_ms = 0;
-static uint32_t interval_count = 0;
-static int8_t measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE] = {0};
-static uint16_t measurements_hex_arr_pos = 0;
-static measurement_arr_t measurement_arr = {0};
+typedef struct
+{
+    uint32_t last_checked_time;
+    uint32_t wait_time;
+} measurement_check_time_t;
+
+
+static uint32_t                 last_sent_ms                                        = 0;
+static measurement_check_time_t check_time                                          = {0, 0};
+static uint32_t                 interval_count                                      =  0;
+static int8_t                   measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE]  = {0};
+static uint16_t                 measurements_hex_arr_pos                            =  0;
+static measurement_arr_t        measurement_arr                                     = {0};
 
 
 
@@ -227,6 +235,11 @@ static void measurements_sample(void)
     uint32_t            now = since_boot_ms;
     uint32_t            time_since_interval;
 
+    uint32_t            time_init;
+    uint32_t            time_collect;
+
+    check_time.last_checked_time = now;
+
     for (unsigned i = 0; i < measurement_arr.len; i++)
     {
         m_def  = &measurement_arr.def[i];
@@ -236,8 +249,10 @@ static void measurements_sample(void)
         time_since_interval = since_boot_delta(now, last_sent_ms);
 
         // If it takes time to get a sample, it is begun here.
-        if (time_since_interval >= (m_data->num_samples_init * sample_interval) + sample_interval/2 - m_def->collection_time)
+        time_init = (m_data->num_samples_init * sample_interval) + sample_interval/2 - m_def->collection_time;
+        if (time_since_interval >= time_init)
         {
+            log_debug(DEBUG_MEASUREMENTS, "Got something");
             m_data->num_samples_init++;
             if (!m_def->init_cb(m_def->base.name))
             {
@@ -245,12 +260,18 @@ static void measurements_sample(void)
                 m_data->num_samples_collected++;
             }
         }
+        else if (check_time.wait_time > (time_since_interval - time_init))
+        {
+            check_time.wait_time = time_since_interval - time_init;
+        }
 
         // The sample is collected every interval/samplecount but offset by 1/2.
         // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
         //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
-        if (time_since_interval >= (m_data->num_samples_collected * sample_interval) + sample_interval/2)
+        time_collect = (m_data->num_samples_collected * sample_interval) + sample_interval/2;
+        if (time_since_interval >= time_collect)
         {
+            log_debug(DEBUG_MEASUREMENTS, "Got something");
             m_data->num_samples_collected++;
             if (!m_def->get_cb(m_def->base.name, &new_value))
             {
@@ -288,6 +309,10 @@ static void measurements_sample(void)
             log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &m_data->sum);
             log_debug_value(DEBUG_MEASUREMENTS, "Min :", &m_data->min);
             log_debug_value(DEBUG_MEASUREMENTS, "Max :", &m_data->max);
+        }
+        else if (check_time.wait_time > (time_since_interval - time_collect))
+        {
+            check_time.wait_time = time_since_interval - time_collect;
         }
     }
 }
@@ -372,7 +397,11 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 void measurements_loop_iteration(void)
 {
     uint32_t now = since_boot_ms;
-    measurements_sample();
+    if (since_boot_delta(now, check_time.last_checked_time) > check_time.wait_time)
+    {
+        log_debug(DEBUG_MEASUREMENTS, "CHECK TIMES");
+        measurements_sample();
+    }
     if (since_boot_delta(now, last_sent_ms) > INTERVAL__TRANSMIT_MS)
     {
         if (interval_count > UINT32_MAX - 1)
