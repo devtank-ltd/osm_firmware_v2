@@ -15,6 +15,7 @@ Documents used:
 #include "pinmap.h"
 #include "log.h"
 #include "value.h"
+#include "timers.h"
 
 #define DELAY_READ_START    2
 #define DELAY_READ_WAIT     10
@@ -64,7 +65,7 @@ static void _w1_stop_interrupt(void) {}
 
 static void _w1_delay_us(uint64_t delay)
 {
-    delay = delay;
+    timer_delay_us(delay);
 }
 
 

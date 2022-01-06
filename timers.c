@@ -55,17 +55,16 @@ void tim3_isr(void)
 }
 
 
-void tim2_isr(void)
+static volatile uint32_t us_counter = 0;
+
+
+void timer_delay_us(uint16_t wait_us)
 {
-    fast_sample_count++;
-
-    if (fast_sample_count >= LW_TRANSMIT__MINIMUM_INTERVAL)
-    {
-        measurement_trigger = true;
-        fast_sample_count = 0;
-    }
-
-    timer_clear_flag(TIM2, TIM_SR_CC1IF);
+    TIM_ARR(TIM2) = us;
+    TIM_EGR(TIM2) = TIM_EGR_UG;
+    //TIM_CR1(TIM2) |= TIM_CR1_CEN;
+    timer_enable_counter(TIM6);
+    while (TIM_CR1(TIM2) & TIM_CR1_CEN);
 }
 
 
@@ -111,14 +110,7 @@ void     timers_init()
                    TIM_CR1_DIR_UP);
     //-1 because it starts at zero, and interrupts on the overflow
     timer_set_prescaler(TIM2, rcc_ahb_frequency / 1000000-1);
-    timer_set_period(TIM2, 1000 * 1000 / DEFAULT_SPS - 1);
+    timer_set_period(TIM6, 0xffff);
     timer_enable_preload(TIM2);
-    timer_continuous_mode(TIM2);
-
-    timer_enable_counter(TIM2);
-    timer_enable_irq(TIM2, TIM_DIER_CC1IE);
-
-    timer_set_counter(TIM2, 0);
-    nvic_enable_irq(NVIC_TIM2_IRQ);
-    nvic_set_priority(NVIC_TIM2_IRQ, TIMER2_PRIORITY);
+    timer_one_shot_mode(TIM2);
 }
