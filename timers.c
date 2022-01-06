@@ -49,7 +49,7 @@ extern unsigned timer_get_adc_boardary()
 
 void tim3_isr(void)
 {
-    pulsecount_second_boardary();
+    //pulsecount_second_boardary();
 
     timer_clear_flag(TIM3, TIM_SR_CC1IF);
 }
@@ -60,7 +60,7 @@ static volatile uint32_t us_counter = 0;
 
 void timer_delay_us(uint16_t wait_us)
 {
-    TIM_ARR(TIM2) = us;
+    TIM_ARR(TIM2) = wait_us;
     TIM_EGR(TIM2) = TIM_EGR_UG;
     //TIM_CR1(TIM2) |= TIM_CR1_CEN;
     timer_enable_counter(TIM6);

@@ -25,6 +25,7 @@
 #include "sys_time.h"
 #include "modbus.h"
 #include "sos.h"
+#include "timers.h"
 
 _Atomic uint32_t since_boot_ms = 0;
 
@@ -98,6 +99,7 @@ int main(void)
     log_sys_debug("Version : %s", GIT_VERSION);
 
     init_persistent();
+    timers_init();
     log_init();
     cmds_init();
     ios_init();

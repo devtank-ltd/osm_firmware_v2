@@ -16,7 +16,7 @@ SOURCES += main.c \
            update.c \
            adcs.c \
            one_wire_driver.c \
-           timers.h
+           timers.c
 
 PROJECT_NAME := firmware
 LINK_SCRIPT = stm32l452.ld
