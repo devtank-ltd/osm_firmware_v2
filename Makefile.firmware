@@ -14,7 +14,8 @@ SOURCES += main.c \
            measurements.c \
            modbus_measurements.c \
            update.c \
-           adcs.c
+           adcs.c \
+           one_wire_driver.c
 
 PROJECT_NAME := firmware
 LINK_SCRIPT = stm32l452.ld
