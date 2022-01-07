@@ -22,6 +22,7 @@
 #include "hpm.h"
 #include "modbus_measurements.h"
 #include "update.h"
+#include "one_wire_driver.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -513,6 +514,18 @@ static void adcs_calibrate_cb(char *args)
 }
 
 
+static void w1_cb(char* args)
+{
+    double w1_temp;
+    if (!w1_query_temp(&w1_temp))
+    {
+        log_error("Could not get a temperature from the onewire.");
+        return;
+    }
+    log_out("Temp: %f degC.", w1_temp);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -543,6 +556,7 @@ void cmds_process(char * command, unsigned len)
         { "adcs",         "ADC debug",                adcs_cb},
         { "adcs_mp",      "Set the adc midpoint",     adcs_midpoint_cb},
         { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
+        { "w1",           "Get temperature with w1",  w1_cb},
         { NULL },
     };
 
