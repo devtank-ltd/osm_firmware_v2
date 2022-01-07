@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import csv
 
 
+NUM_ADCS = 4
+
+
 all_data = []
 
 with open("data.dat", "r") as f:
@@ -18,9 +21,9 @@ with open("data.dat", "r") as f:
 all_data_reordered = [[], [], [], []]
 
 for i in range(0, len(all_data)):
-    all_data_reordered[i%4].append(all_data[i])
+    all_data_reordered[i%NUM_ADCS].append(all_data[i])
 
-cc_data = all_data_reordered[0]
+cc_data,_,_,_ = all_data_reordered
 
 peak_index,_ = find_peaks(-np.array(cc_data), height=-4095)
 
@@ -33,9 +36,9 @@ for index in peak_index:
 # plt.plot(all_data_reordered[3])
 
 plt.plot(peak_index, peak_vals)
-plt.plot(cc_data)
+plt.plot(np.linspace(0, len(cc_data), len(cc_data)), cc_data, marker='h')
 
-midpoint = 2048
+midpoint = 2044
 
 max_ = np.max(cc_data)
 min_ = np.min(cc_data)

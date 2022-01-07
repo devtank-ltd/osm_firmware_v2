@@ -1,3 +1,4 @@
 file build/firmware.elf
 target extended-remote localhost:3333
+set print elements 0
 pi open("data.dat","w").write(gdb.execute("print adcs_buffer",to_string=True))
