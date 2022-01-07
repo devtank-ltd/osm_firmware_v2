@@ -261,13 +261,12 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_S
     uint16_t true_count = 0;
     for (unsigned i = 0; i < peak_pos; i++)
     {
-        if (peak_vals[i] >= rough_avg * 1.1)
+        if (peak_vals[i] >= rough_avg * 1.1 && peak_vals[i] <= rough_avg * 0.9)
         {
             true_sum += peak_vals[i];
             true_count++;
         }
     }
-    *adc_rms = true_sum / true_count;
     */
 
     uint32_t inter_val = midpoint - rough_avg;
@@ -381,6 +380,7 @@ bool adcs_begin(char* name)
         log_debug(DEBUG_ADC, "Cannot begin, not in idle state.");
         return false;
     }
+    _adcs_setup_adc();
     adc_power_on(ADC1);
     _adcs_start_sampling(ADC1, adc_channel_array, ADC_COUNT);
     adc_value_status = ADCS_VAL_STATUS_DOING;
@@ -590,7 +590,9 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         adc_power_off_async(ADC1);
-        adc_value_status = ADCS_VAL_STATUS_DONE;
+        ADC_ISR(ADC1) &= ~ADC_ISR_EOC;
+        ADC_ISR(ADC1) &= ~ADC_ISR_EOS;
         ADC_ISR(ADC1) &= ~ADC_ISR_EOSMP;
+        adc_value_status = ADCS_VAL_STATUS_DONE;
     }
 }
