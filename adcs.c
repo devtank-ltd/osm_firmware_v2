@@ -284,7 +284,7 @@ static bool _adcs_current_clamp_conv(uint16_t* adc_val, uint16_t* cc_mA)
         return false;
     }
 
-    if (inter_value > UINT32_MAX / 2000)                        // Division should be removed/boiled away by compiler
+    if (inter_value > UINT32_MAX / 2000)
     {
         log_debug(DEBUG_ADC, "Overflowing value.");
         return false;
@@ -364,22 +364,22 @@ static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned ch
 bool adcs_collect(char* name, value_t* value)
 {
     unsigned adc_index, chan_index;
-    if (strncmp(name, "CuCl", 4) == 0)
+    if (strncmp(name, "CC1", 4) == 0)
     {
         adc_index = ADCS_ADC_INDEX_ADC1;
         chan_index = ADCS_CHAN_INDEX_CURRENT_CLAMP;
     }
-    else if (strncmp(name, "batt", 4) == 0)
+    else if (strncmp(name, "BATT", 4) == 0)
     {
         adc_index = ADCS_ADC_INDEX_ADC1;
         chan_index = ADCS_CHAN_INDEX_BAT_MON;
     }
-    else if (strncmp(name, "3vrf", 4) == 0)
+    else if (strncmp(name, "3VRF", 4) == 0)
     {
         adc_index = ADCS_ADC_INDEX_ADC1;
         chan_index = ADCS_CHAN_INDEX_3V3_MON;
     }
-    else if (strncmp(name, "5vrf", 4) == 0)
+    else if (strncmp(name, "5VRF", 4) == 0)
     {
         adc_index = ADCS_ADC_INDEX_ADC1;
         chan_index = ADCS_CHAN_INDEX_5V_MON;
