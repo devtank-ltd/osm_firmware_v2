@@ -145,6 +145,8 @@ GPIO16 D2
 #define PPS0_IO_NUM          26
 #define PPS1_IO_NUM          27
 
+#define PULSE2_PORT     GPIOA
+#define PULSE2_PIN      GPIO11
 
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
