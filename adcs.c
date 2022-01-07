@@ -309,9 +309,8 @@ void adcs_loop_iteration(void)
         adc_set_regular_sequence(ADC1, 1, local_channel_array);
         adc_start_conversion_regular(ADC1);
         while (!(adc_eoc(ADC1)));
-        uint16_t new_reading = adc_read_regular(ADC1);
 
-        adcs_buffer[0][adcs_buffer_pos++] = new_reading;
+        adcs_buffer[0][adcs_buffer_pos++] = adc_read_regular(ADC1);
         if (adcs_buffer_pos == sizeof(adcs_buffer[0]) / sizeof(uint16_t))
         {
             adcs_running = false;
@@ -323,7 +322,6 @@ void adcs_loop_iteration(void)
 bool adcs_begin(char* name)
 {
     adcs_buffer_pos = 0;
-    memset(&adcs_buffer, 0, sizeof(all_adcs_buf_t));
     adcs_running = true;
     return true;
 }
@@ -331,6 +329,17 @@ bool adcs_begin(char* name)
 
 bool adcs_calibrate_current_clamp(void)
 {
+    adcs_begin("");
+    while (adcs_running)
+    {
+        adcs_loop_iteration();
+    }
+    uint64_t sum = 0;
+    for (unsigned i = 0; i < adcs_buffer_pos; i++)
+    {
+        sum += adcs_buffer[0][i];
+    }
+    adcs_set_midpoint(sum / adcs_buffer_pos);
     return true;
 }
 
@@ -350,6 +359,11 @@ bool adcs_get_cc(char* name, value_t* value)
 
 bool adcs_get_cc_blocking(char* name, value_t* value)
 {
+    adcs_begin(name);
+    while (adcs_running)
+    {
+        adcs_loop_iteration();
+    }
     return adcs_get_cc(name, value);
 }
 
