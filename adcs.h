@@ -7,6 +7,8 @@
 
 extern void adcs_init(void);
 
+extern void adcs_loop_iteration(void);
+
 extern bool     adcs_begin(char* name);
 extern bool     adcs_collect(char* name, value_t* value);
 extern bool     adcs_get_cc(char* name, value_t* value);
