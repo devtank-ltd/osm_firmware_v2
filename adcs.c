@@ -66,8 +66,11 @@ typedef struct
 } adc_dma_channel_t;
 
 
+typedef uint16_t all_adcs_buf_t[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT];
+
+
 static adc_dma_channel_t            adc_dma_channels[]                                  = ADC_DMA_CHANNELS;
-static uint16_t                     adcs_buffer[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT];
+static all_adcs_buf_t               adcs_buffer;
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
@@ -164,7 +167,7 @@ static void _adcs_setup_dmas(void)
 }
 
 
-static bool _adcs_get_mean(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_mean)
+static bool _adcs_get_mean(all_adcs_buf_t buff, unsigned adc_index, unsigned chan_index, uint16_t* adc_mean)
 {
     uint32_t sum = 0;
     for (unsigned i = chan_index; i < ADCS_NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
@@ -175,8 +178,39 @@ static bool _adcs_get_mean(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLE
     return true;
 }
 
+#ifdef __ADC_RMS_FULL__
+static float _Q_rsqrt( float number )
+{
+    long i;
+    float x2, y;
+    const float threehalfs = 1.5F;
 
-static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
+    x2 = number * 0.5F;
+    y  = number;
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+    i  = * ( long * ) &y;                       // evil floating point bit level hacking
+    i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
+    y  = * ( float * ) &i;
+    #pragma GCC diagnostic pop
+    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+    return y;
+}
+
+static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
+{
+    uint64_t sum = 0;
+    for (unsigned i = chan_index; i < ADCS_NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
+    {
+        sum += buff[adc_index][i] * buff[adc_index][i];
+    }
+    *adc_rms = midpoint - 1/_Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
+    return true;
+}
+#else
+static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
 {
     /**
     Four major steps:
@@ -221,9 +255,10 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_S
     *adc_rms = midpoint - inter_val;
     return true;
 }
+#endif //__ADC_RMS_FULL__
 
 
-static bool _adcs_to_mV(uint16_t* value, uint16_t* mV)
+static bool _adcs_to_mV(uint16_t value, uint16_t* mV)
 {
     // Linear scale without calibration.
     // ADC of    0 -> 0V
@@ -235,7 +270,7 @@ static bool _adcs_to_mV(uint16_t* value, uint16_t* mV)
     uint16_t min_mV = 0;
     uint32_t inter_val;
 
-    inter_val = *value * (max_mV - min_mV);
+    inter_val = value * (max_mV - min_mV);
     inter_val /= (max_value - min_value);
 
     if (inter_val > UINT16_MAX)
@@ -249,7 +284,7 @@ static bool _adcs_to_mV(uint16_t* value, uint16_t* mV)
 }
 
 
-static bool _adcs_current_clamp_conv(uint16_t* adc_val, uint16_t* cc_mA)
+static bool _adcs_current_clamp_conv(uint16_t adc_val, uint16_t* cc_mA)
 {
     /**
      First must calculate the peak voltage
@@ -272,13 +307,13 @@ static bool _adcs_current_clamp_conv(uint16_t* adc_val, uint16_t* cc_mA)
     uint16_t adc_diff       = 0;
 
     // If adc_val is larger, then pretend it is at the midpoint
-    if (*adc_val < midpoint)
+    if (adc_val < midpoint)
     {
-        adc_diff = midpoint - *adc_val;
+        adc_diff = midpoint - adc_val;
     }
 
     // Once the conversion is no longer linearly multiplicative this needs to be changed.
-    if (!_adcs_to_mV(&adc_diff, (uint16_t*)&inter_value))
+    if (!_adcs_to_mV(adc_diff, (uint16_t*)&inter_value))
     {
         log_debug(DEBUG_ADC, "Cannot get mV value of midpoint.");
         return false;
@@ -451,13 +486,13 @@ bool adcs_get_cc_blocking(char* name, value_t* value)
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    if (!_adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms))
+    if (!_adcs_get_rms(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms))
     {
         log_debug(DEBUG_ADC, "Could not get ADC RMS.");
         return false;
     }
     log_debug(DEBUG_ADC, "Quick RMS = %"PRIu16, adc_rms);
-    if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
+    if (!_adcs_current_clamp_conv(adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
@@ -484,13 +519,13 @@ bool adcs_get_cc(char* name, value_t* value)
     adc_value_status = ADCS_VAL_STATUS_IDLE;
     uint16_t adc_rms = 0;
     uint16_t mA_val = 0;
-    if (!_adcs_get_rms_quick(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms))
+    if (!_adcs_get_rms(adcs_buffer, ADCS_ADC_INDEX_ADC1, ADCS_CHAN_INDEX_CURRENT_CLAMP, &adc_rms))
     {
         log_debug(DEBUG_ADC, "Could not get ADC RMS.");
         return false;
     }
     log_debug(DEBUG_ADC, "Quick RMS = %"PRIu16, adc_rms);
-    if (!_adcs_current_clamp_conv(&adc_rms, &mA_val))
+    if (!_adcs_current_clamp_conv(adc_rms, &mA_val))
     {
         log_debug(DEBUG_ADC, "Could not convert adc value into mA.");
         return false;
