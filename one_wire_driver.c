@@ -44,8 +44,10 @@ Documents used:
 #define W1_DEFAULT_COLLECTION_TIME 1000
 
 
-typedef union {
-    struct {
+typedef union
+{
+    struct
+    {
         uint16_t t;
         uint16_t tmp_t;
         uint8_t conf;
