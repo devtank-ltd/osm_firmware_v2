@@ -33,7 +33,7 @@ void     timers_init()
                    TIM_CR1_DIR_UP);
     //-1 because it starts at zero, and interrupts on the overflow
     timer_set_prescaler(TIM2, rcc_ahb_frequency / 1000000-1);
-    timer_set_period(TIM6, 0xffff);
+    timer_set_period(TIM2, 0xffff);
     timer_enable_preload(TIM2);
     timer_one_shot_mode(TIM2);
 }
