@@ -22,6 +22,8 @@
 #include "hpm.h"
 #include "modbus_measurements.h"
 #include "update.h"
+#include "one_wire_driver.h"
+#include "sys_time.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -513,6 +515,28 @@ static void adcs_calibrate_cb(char *args)
 }
 
 
+static void w1_cb(char* args)
+{
+    double w1_temp;
+    if (!w1_query_temp(&w1_temp))
+    {
+        log_error("Could not get a temperature from the onewire.");
+        return;
+    }
+    log_out("Temp: %f degC.", w1_temp);
+}
+
+
+static void timer_cb(char* args)
+{
+    char* pos = skip_space(args);
+    uint32_t delay_ms = strtoul(pos, NULL, 10);
+    uint32_t start_time = since_boot_ms;
+    timer_delay_us(delay_ms * 1000);
+    log_out("Time elapsed: %"PRIu32, since_boot_delta(since_boot_ms, start_time));
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -543,6 +567,8 @@ void cmds_process(char * command, unsigned len)
         { "adcs",         "ADC debug",                adcs_cb},
         { "adcs_mp",      "Set the adc midpoint",     adcs_midpoint_cb},
         { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
+        { "w1",           "Get temperature with w1",  w1_cb},
+        { "timer",        "Test timer",               timer_cb},
         { NULL },
     };
 
