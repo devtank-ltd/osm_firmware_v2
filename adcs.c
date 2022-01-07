@@ -77,33 +77,10 @@ static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
 uint32_t adcs_collection_time(void)
 {
     /**
-    Could calculate how long it should take to get the results. For now use 5 seconds.
+    Could calculate how long it should take to get the results. For now use 2 seconds.
     */
     return ADCS_DEFAULT_COLLECTION_TIME;
 }
-
-
-/*
-static float _Q_rsqrt( float number )
-{
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
-
-    x2 = number * 0.5F;
-    y  = number;
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
-    y  = * ( float * ) &i;
-    #pragma GCC diagnostic pop
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-//  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-    return y;
-}
-*/
 
 
 static bool _adcs_set_prescale(uint32_t adc, uint32_t prescale)
@@ -199,20 +176,6 @@ static bool _adcs_get_mean(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLE
 }
 
 
-/*
-static bool _adcs_get_rms_full(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
-{
-    uint64_t sum = 0;
-    for (unsigned i = chan_index; i < ADCS_NUM_SAMPLES*ADC_COUNT; i += ADC_COUNT)
-    {
-        sum += buff[adc_index][i] * buff[adc_index][i];
-    }
-    *adc_rms = midpoint - 1/_Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
-    return true;
-}
-*/
-
-
 static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT], unsigned adc_index, unsigned chan_index, uint16_t* adc_rms)
 {
     /**
@@ -253,24 +216,8 @@ static bool _adcs_get_rms_quick(uint16_t buff[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_S
         log_debug(DEBUG_ADC, "Cannot find any peaks.");
         return false;
     }
-    uint16_t rough_avg = sum / peak_pos;
-
-    /*
-    // Filter peaks
-    uint32_t true_sum = 0;
-    uint16_t true_count = 0;
-    for (unsigned i = 0; i < peak_pos; i++)
-    {
-        if (peak_vals[i] >= rough_avg * 1.1 && peak_vals[i] <= rough_avg * 0.9)
-        {
-            true_sum += peak_vals[i];
-            true_count++;
-        }
-    }
-    */
-
-    uint32_t inter_val = midpoint - rough_avg;
-    inter_val *= 0.707106781187;                // * 1/sqrt(2)
+    uint32_t inter_val = midpoint - sum / peak_pos;
+    inter_val /= sqrt(2);
     *adc_rms = midpoint - inter_val;
     return true;
 }
@@ -397,7 +344,6 @@ static bool _adcs_collect_index(uint16_t* value, unsigned adc_index, unsigned ch
     }
     if (adc_value_status != ADCS_VAL_STATUS_DONE)
     {
-        //log_debug(DEBUG_ADC, "ADC not ready to collect.");
         return false;
     }
     if (adc_index > ADC_DMA_CHANNELS_COUNT)
@@ -499,7 +445,6 @@ bool adcs_get_cc_blocking(char* name, value_t* value)
             log_debug(DEBUG_ADC, "ADC request timed out.");
             adc_power_off(ADC1);
             adc_value_status = ADCS_VAL_STATUS_IDLE;
-            //_adcs_setup_dmas();
             return false;
         }
     }
@@ -524,7 +469,6 @@ bool adcs_get_cc_blocking(char* name, value_t* value)
 
 bool adcs_get_cc(char* name, value_t* value)
 {
-    // This function is blocking and only should be used for debug
     if (!value)
     {
         log_debug(DEBUG_ADC, "Given null pointer.");
@@ -563,7 +507,7 @@ void adcs_init(void)
     {
         // Assume it to be the theoretical midpoint
         log_debug(DEBUG_ADC, "Failed to load persistent midpoint.");
-        adcs_set_midpoint(2048); // = 4095 / 2
+        adcs_set_midpoint(4095 / 2);
     }
 
     // Setup the clock and gpios
