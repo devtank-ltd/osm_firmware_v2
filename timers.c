@@ -16,7 +16,7 @@ void timer_delay_us(uint16_t wait_us)
     TIM_ARR(TIM2) = wait_us;
     TIM_EGR(TIM2) = TIM_EGR_UG;
     //TIM_CR1(TIM2) |= TIM_CR1_CEN;
-    timer_enable_counter(TIM6);
+    timer_enable_counter(TIM2);
     while (TIM_CR1(TIM2) & TIM_CR1_CEN);
 }
 
