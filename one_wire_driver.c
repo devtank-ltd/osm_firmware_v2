@@ -282,7 +282,6 @@ bool w1_measurement_init(char* name)
     }
     _w1_send_byte(W1_CMD_SKIP_ROM);
     _w1_send_byte(W1_CMD_CONV_T);
-    _w1_delay_us(DELAY_GET_TEMP);
     return true;
 }
 
