@@ -19,7 +19,7 @@ typedef struct
 } i2c_def_t;
 
 
-#define I2C_BUSES {{RCC_I2C2, I2C2, i2c_speed_sm_100k, 8, {GPIO_AF4, GPIO_AF4}, {{GPIOB, GPIO8},{GPIOB, GPIO9}} }}
+#define I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, {GPIO_AF4, GPIO_AF4}, {{GPIOB, GPIO8},{GPIOB, GPIO9}} }}
 
 #define HTU21D_I2C 0
 #define HTU21D_I2C_INDEX 0
