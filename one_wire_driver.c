@@ -67,7 +67,7 @@ static void _w1_stop_interrupt(void) {}
 
 static void _w1_delay_us(uint64_t delay)
 {
-    timer_delay_us(delay);
+    timer_delay_us_64(delay);
 }
 
 
@@ -157,14 +157,7 @@ static bool _w1_reset(void)
         return false;
     }
     _w1_delay_us(DELAY_RESET_READ);
-    if (_w1_get_level() == W1_LEVEL_HIGH)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    return (_w1_get_level() == W1_LEVEL_HIGH);
 }
 
 
