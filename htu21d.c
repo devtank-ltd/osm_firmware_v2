@@ -1,3 +1,16 @@
+/*
+A driver for a HPP845E131R5 temperature and humidity sensor by Devtank Ltd.
+
+Documents used:
+- DS18B20 Programmable Resolution 1-Wire Digital Thermometer
+    : https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7FHPC199_6%7FA6%7Fpdf%7FEnglish%7FENG_DS_HPC199_6_A6.pdf%7FHPP845E131R5
+      (Accessed: 10.01.22)
+- Understanding and Using Cyclic Redunancy Checks With maxim 1-Wire and iButton products
+    : https://maximintegrated.com/en/design/technical-documents/app-notes/2/27.html
+      (Accessed: 25.03.21)
+*/
+
+
 #include <inttypes.h>
 
 #include <libopencm3/stm32/i2c.h>
@@ -72,8 +85,65 @@ static void htu21d_send(htu21d_reg_t reg)
 }
 
 
+static bool _htu32d_temp_conv(uint16_t s_temp, uint16_t* temp)
+{
+    if (!temp)
+    {
+        return false;
+    }
+    uint32_t inter_val = -4685 + 17572 * s_temp;
+    inter_val /= (1 << 16);
+    if (inter_val > UINT16_MAX)
+    {
+        log_debug(DEBUG_TMP_HUM, "Cannot downsize temperature.");
+        return false;
+    }
+    *temp = inter_val;
+    return true;
+}
 
-void htu21d_init()
+
+static bool _htu32d_humi_conv(uint16_t s_humi, uint16_t* humi)
+{
+    if (!hum)
+    {
+        return false;
+    }
+    uint32_t inter_val = -600 + 12500 * s_humi;
+    inter_val /= (1 << 16);
+    if (inter_val > UINT16_MAX)
+    {
+        log_debug(DEBUG_TMP_HUM, "Cannot downsize humidity.");
+    }
+    *humi = inter_val;
+    return true;
+}
+
+
+static bool _htu32d_humi_full(uint16_t s_temp, uint16_t s_humi, uint16_t* humi)
+{
+    if (!_htu32d_humi_conv(s_humi, humi))
+    {
+        return false;
+    }
+    *humi += -0.15 * (2500 - s_temp);
+    return true;
+}
+
+
+static bool _htu32d_dew_point(uint16_t temp, uint16_t humi, uint16_t* t_dew)
+{
+    float A, B, C;
+    A = 8.1332;
+    B = 1762.39;
+    C = 235.66;
+    uint32_t denom = log(s_humi) + A - B / (temp/100 + C) - 4 - A;
+    *t_dew = -B / denom;
+    return true;
+}
+
+
+void htu21d_init(void)
 {
     i2c_init(HTU21D_I2C_INDEX);
     htu21d_send(HTU21D_SOFT_RESET);
