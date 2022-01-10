@@ -24,6 +24,7 @@
 #include "update.h"
 #include "one_wire_driver.h"
 #include "sys_time.h"
+#include "htu21d.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -497,7 +498,7 @@ static void adcs_cb(char* args)
 
     value_to_str(&value, temp, sizeof(temp));
 
-    log_out("CC: %s mA", temp);
+    log_out("CC = %smA", temp);
 }
 
 
@@ -534,6 +535,30 @@ static void timer_cb(char* args)
     uint32_t start_time = since_boot_ms;
     timer_delay_us_64(delay_ms * 1000);
     log_out("Time elapsed: %"PRIu32, since_boot_delta(since_boot_ms, start_time));
+}
+
+
+static void temperature_cb(char* args)
+{
+    int32_t temp;
+    htu21d_read_temp(&temp);
+    log_out("Temperature: %0.3fdegC", (float)temp/100.);
+}
+
+
+static void humidity_cb(char* args)
+{
+    int32_t humi;
+    htu21d_read_humidity(&humi);
+    log_out("Humidity: %0.3f%%", (float)humi/100.);
+}
+
+
+static void dew_point_cb(char* args)
+{
+    int32_t dew_temp;
+    htu21d_read_dew_temp(&dew_temp);
+    log_out("Dew temperature: %0.3fdegC", (float)dew_temp/100.);
 }
 
 
@@ -582,6 +607,9 @@ void cmds_process(char * command, unsigned len)
         { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
         { "w1",           "Get temperature with w1",  w1_cb},
         { "timer",        "Test timer",               timer_cb},
+        { "temp",         "Get the temperature",      temperature_cb},
+        { "humi",         "Get the humidity",         humidity_cb},
+        { "dew",          "Get the dew temperature",  dew_point_cb},
         { "lora_conn",    "LoRa connected",           lora_conn_cb},
         { NULL },
     };
