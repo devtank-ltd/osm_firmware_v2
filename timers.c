@@ -21,6 +21,17 @@ void timer_delay_us(uint16_t wait_us)
 }
 
 
+void timer_delay_us_64(uint64_t wait_us)
+{
+    while (wait_us > UINT16_MAX)
+    {
+        timer_delay_us(UINT16_MAX);
+        wait_us -= UINT16_MAX;
+    }
+    timer_delay_us(wait_us);
+}
+
+
 void     timers_init()
 {
     rcc_periph_clock_enable(RCC_TIM2);

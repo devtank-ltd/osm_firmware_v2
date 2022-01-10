@@ -6,6 +6,7 @@
 extern void     timers_init();
 
 extern void     timer_delay_us(uint16_t wait_us);
+extern void     timer_delay_us_64(uint64_t wait_us);
 
 extern void     timer_wait();
 

@@ -532,7 +532,7 @@ static void timer_cb(char* args)
     char* pos = skip_space(args);
     uint32_t delay_ms = strtoul(pos, NULL, 10);
     uint32_t start_time = since_boot_ms;
-    timer_delay_us(delay_ms * 1000);
+    timer_delay_us_64(delay_ms * 1000);
     log_out("Time elapsed: %"PRIu32, since_boot_delta(since_boot_ms, start_time));
 }
 
