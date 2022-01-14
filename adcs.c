@@ -350,8 +350,14 @@ bool adcs_get_cc(char* name, value_t* value)
 
     uint16_t adcs_rms = 0;
     uint16_t cc_mA = 0;
-    _adcs_get_rms(adcs_buffer, adcs_buffer_pos, &adcs_rms);
-    _adcs_current_clamp_conv(adcs_rms, &cc_mA);
+    if (!_adcs_get_rms(adcs_buffer, adcs_buffer_pos, &adcs_rms))
+    {
+        return false;
+    }
+    if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA))
+    {
+        return false;
+    }
     *value = value_from_u16(cc_mA);
     return true;
 }
