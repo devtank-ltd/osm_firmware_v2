@@ -41,7 +41,7 @@ Documents used:
 #define W1_LEVEL_LOW        (uint8_t)0
 #define W1_LEVEL_HIGH       (uint8_t)1
 
-#define W1_DEFAULT_COLLECTION_TIME 1000
+#define W1_DEFAULT_COLLECTION_TIME DELAY_GET_TEMP
 
 
 typedef union
@@ -286,7 +286,7 @@ bool w1_query_temp(double* temperature)
         decimal_bits = (decimal_bits - 16) % 16;
     }
 
-    *temperature = integer_bits + decimal_bits / 16;
+    *temperature = (float)integer_bits + (float)decimal_bits / 16.f;
     log_debug(DEBUG_IO, "T: %.03f C", *temperature);
     return true;
 }
@@ -337,7 +337,7 @@ bool w1_measurement_collect(char* name, value_t* value)
         decimal_bits = (decimal_bits - 16) % 16;
     }
 
-    *value = value_from_float(integer_bits + decimal_bits / 16);
+    *value = value_from_float((float)integer_bits + (float)decimal_bits / 16.f);
     return true;
 }
 
