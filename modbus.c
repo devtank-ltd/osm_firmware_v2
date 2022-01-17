@@ -865,7 +865,7 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
     for(unsigned n=1; n < MODBUS_MAX_DEV; n++)
     {
         if ((uintptr_t)reg < (uintptr_t)&modbus_devices[n] &&
-            (uintptr_t)reg < (uintptr_t)&modbus_devices[n-1])
+            (uintptr_t)reg > (uintptr_t)&modbus_devices[n-1])
         return &modbus_devices[n-1];
     }
 
