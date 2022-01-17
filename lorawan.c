@@ -75,6 +75,7 @@ static char lw_leftover[LW_BUFFER_SIZE] = {0};
 static lw_lora_message_t lw_message_backup = {{0}, 0};
 volatile bool ready = true;
 static uint8_t lw_port = 0;
+static bool lw_connected = false;
 
 
 static void lw_spin_us(uint32_t time_us)
@@ -290,6 +291,7 @@ void lw_process(char* message)
         if (strcmp(message, "OK Join Success") == 0)
         {
             lw_state_machine.state = LW_STATE_IDLE;
+            lw_connected = true;
         }
         else if (lw_msg_is_error(message))
         {
@@ -532,6 +534,12 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
+}
+
+
+bool lw_get_connected(void)
+{
+    return lw_connected;
 }
 
 

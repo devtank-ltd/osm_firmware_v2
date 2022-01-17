@@ -497,7 +497,7 @@ static void adcs_cb(char* args)
 
     value_to_str(&value, temp, sizeof(temp));
 
-    log_out("CC = %smA", temp);
+    log_out("CC: %s mA", temp);
 }
 
 
@@ -523,7 +523,7 @@ static void w1_cb(char* args)
         log_error("Could not get a temperature from the onewire.");
         return;
     }
-    log_out("Temp: %f degC.", w1_temp);
+    log_out("Temp: %.03f degC.", w1_temp);
 }
 
 
@@ -534,6 +534,19 @@ static void timer_cb(char* args)
     uint32_t start_time = since_boot_ms;
     timer_delay_us_64(delay_ms * 1000);
     log_out("Time elapsed: %"PRIu32, since_boot_delta(since_boot_ms, start_time));
+}
+
+
+static void lora_conn_cb(char* args)
+{
+    if (lw_get_connected())
+    {
+        log_out("1 | Connected");
+    }
+    else
+    {
+        log_out("0 | Disconnected");
+    }
 }
 
 
@@ -569,6 +582,7 @@ void cmds_process(char * command, unsigned len)
         { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
         { "w1",           "Get temperature with w1",  w1_cb},
         { "timer",        "Test timer",               timer_cb},
+        { "lora_conn",    "LoRa connected",           lora_conn_cb},
         { NULL },
     };
 
