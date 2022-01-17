@@ -41,7 +41,7 @@
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 
-#define ID_FROM_NAME(_name_)  (*(uint64_t*)(const char[8]){_name_})
+#define ID_FROM_NAME(_name_)  (*(uint32_t*)(const char[8]){_name_})
 
 #define LOG_START_SPACER  "============{"
 #define LOG_END_SPACER    "}============"
