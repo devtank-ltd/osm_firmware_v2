@@ -1,13 +1,28 @@
 
-   x2    ||      x8       ||    x2     ||   x4   ||      x8       ||    x2     ||   x4   ||   x4   ||   x4   ||
-         ||               ||           ||        ||               ||           ||        ||        ||        ||
-PROTOCOL ||   DATA NAME   || DATA TYPE ||  DATA  ||   DATA NAME   || DATA TYPE ||  DATA  ||  DATA  ||  DATA  ||
-         ||               ||           ||        ||               ||           ||        ||        ||        ||
-   01    ||   43433100    ||    01     ||  0C11  ||   544d5031    ||    02     ||  0C11  ||  0C11  ||  0C11  ||
+   x2    ||      x8       ||    x2     ||     x2     ||   xX   ||     x2     ||   xX   ||     x2     ||   xX   ||      x8       ||    x2     ||     x2     ||   xX   ||     x2     ||   xX   ||     x2     ||   x4   ||      x8       ||    x2     ||     x2     ||   xX   ||     x2     ||   xX   ||     x2     ||   x4   ||
+         ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||
+PROTOCOL ||   DATA NAME   || DATA TYPE || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  ||   DATA NAME   || DATA TYPE || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  ||   DATA NAME   || DATA TYPE || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  ||
+         ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||
+   01    ||   43433100    ||    01     ||            ||  0C11  ||            ||  0C11  ||            ||  0C11  ||   544d5031    ||    02     ||            ||  0C11  ||            ||  0C11  ||            ||  0C11  ||   544d5031    ||    02     ||            ||  0C11  ||            ||  0C11  ||            ||  0C11  ||
 
 
+   01        504d3130           02             01         00         02          0000         02         0000       504d3235          02             01         00          02         0000          02        0000       43433100          02            02         5418         02         0000         02         b21b    00
+
+   01        504d3130           02             01         00         02          0000         02         0000       504d3235          02             01         00          02         0000          02        0000       43433100          02            02         ae31         02         0000         02         0000    00
 
 
+VALUE_TYPE_IS_SIGNED 0x10
+    VALUE_UNSET   = 0,
+    VALUE_UINT8   = 1,
+    VALUE_UINT16  = 2,
+    VALUE_UINT32  = 3,
+    VALUE_UINT64  = 4,
+    VALUE_INT8    = 1 | VALUE_TYPE_IS_SIGNED,
+    VALUE_INT16   = 2 | VALUE_TYPE_IS_SIGNED,
+    VALUE_INT32   = 3 | VALUE_TYPE_IS_SIGNED,
+    VALUE_INT64   = 4 | VALUE_TYPE_IS_SIGNED,
+    VALUE_FLOAT   = 5 | VALUE_TYPE_IS_SIGNED,
+    VALUE_DOUBLE  = 6 | VALUE_TYPE_IS_SIGNED,
 
 CC1  - Current Clamp (1)
 
