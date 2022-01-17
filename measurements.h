@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
+#include "config.h"
 #include "lorawan.h"
 #include "value.h"
 
@@ -28,7 +29,7 @@ typedef enum
 
 typedef struct
 {
-    char     name[5];                                   // Name of the measurement
+    char     name[MEASURE_NAME_LEN + 1];                // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type;

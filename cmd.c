@@ -406,7 +406,7 @@ static void modbus_add_reg_cb(char * args)
 
     if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
     {
-        log_out("Added modbus reg");
+        log_out("Added modbus reg %s", name);
         if (!modbus_measurement_add(modbus_dev_get_reg_by_name(dev, name)))
             log_out("Failed to add modbus reg to measurements!");
     }

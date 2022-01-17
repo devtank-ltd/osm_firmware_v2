@@ -68,15 +68,13 @@ bool modbus_measurement_add(modbus_reg_t * reg)
     if (!reg)
         return false;
 
-    char name[MODBUS_NAME_LEN + 1];
-
-    modbus_reg_get_name(reg, name);
-
-    measurements_del(name);
-
     measurement_def_t meas_def;
 
-    memcpy(meas_def.base.name, name, MODBUS_NAME_LEN);
+    modbus_reg_get_name(reg, meas_def.base.name);
+
+    measurements_del(meas_def.base.name);
+
+    meas_def.base.name[MODBUS_NAME_LEN] = 0;
     meas_def.base.samplecount = 1;
     meas_def.base.interval    = 1;
     meas_def.base.type        = MODBUS;
