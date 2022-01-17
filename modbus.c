@@ -296,7 +296,7 @@ bool modbus_start_read(modbus_reg_t * reg)
 
     modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
-    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx8 , reg_count, dev->slave_id, reg->reg_addr);
+    modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx16 , reg_count, dev->slave_id, reg->reg_addr);
 
     /* ADU Header (Application Data Unit) */
     modbuspacket[0] = dev->slave_id;
