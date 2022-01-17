@@ -25,19 +25,17 @@
 #define MEASUREMENTS__DATATYPE_SINGLE       (uint8_t)0x01
 #define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
 
-#define MEASUREMENT_ID_FROM_NAME(_name_)  *(uint64_t*)(char[8]){_name_}
-
 #define MEASUREMENT_PM10_NAME "PM10"
-#define MEASUREMENT_PM10_ID   MEASUREMENT_ID_FROM_NAME(MEASUREMENT_PM10_NAME)
+#define MEASUREMENT_PM10_ID   ID_FROM_NAME(MEASUREMENT_PM10_NAME)
 
 #define MEASUREMENT_PM25_NAME "PM25"
-#define MEASUREMENT_PM25_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_PM25_NAME)
+#define MEASUREMENT_PM25_ID  ID_FROM_NAME(MEASUREMENT_PM25_NAME)
 
 #define MEASUREMENT_CURRENT_CLAMP_NAME "CC1"
-#define MEASUREMENT_CURRENT_CLAMP_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_CURRENT_CLAMP_NAME)
+#define MEASUREMENT_CURRENT_CLAMP_ID  ID_FROM_NAME(MEASUREMENT_CURRENT_CLAMP_NAME)
 
 #define MEASUREMENT_W1_PROBE_NAME "TMP2"
-#define MEASUREMENT_W1_PROBE_ID  MEASUREMENT_ID_FROM_NAME(MEASUREMENT_W1_PROBE_NAME)
+#define MEASUREMENT_W1_PROBE_ID  ID_FROM_NAME(MEASUREMENT_W1_PROBE_NAME)
 
 
 typedef struct
@@ -81,7 +79,7 @@ static bool measurements_get_measurement_def(char* name, measurement_def_t** mea
     for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
     {
         t_measurement_def = &measurement_arr.def[i];
-        if (MEASUREMENT_ID_FROM_NAME(*t_measurement_def->base.name) == MEASUREMENT_ID_FROM_NAME(*name))
+        if (ID_FROM_NAME(*t_measurement_def->base.name) == ID_FROM_NAME(*name))
         {
             *measurement_def = t_measurement_def;
             return true;
@@ -283,7 +281,7 @@ static void measurements_sample(void)
             if (m_data->sum.type == VALUE_UNSET)
             {
                 m_data->sum.type = VALUE_UINT8;
-                m_data->sum.u8 = 0;
+                m_data->sum.u64 = 0;
             }
             if (m_data->min.type == VALUE_UNSET)
             {
