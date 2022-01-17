@@ -43,6 +43,9 @@
 
 #define LW_FMT__TEMPERATURE         "%02X%02X%04X"
 
+#define LW_ID_CMD_NAME  "CMD"
+#define LW_ID_CMD       0x444d43
+
 
 typedef struct
 {
@@ -478,9 +481,9 @@ static void lw_handle_unsol(char* message)
 
     char pl_id_s[3] = "";
     strncpy(pl_id_s, p, 2);
-    uint8_t pl_id = strtoul(pl_id_s, NULL, 16);
+    uint64_t pl_id = strtoul(pl_id_s, NULL, 16);
 
-    p += 2;
+    p += 8;
 
     char cmd_ascii[LW_BUFFER_SIZE] = "";
     char val_str[3] = "";
@@ -494,7 +497,7 @@ static void lw_handle_unsol(char* message)
 
     switch (pl_id)
     {
-        case LW_ID__ADDRESSABLE_TEXT_DISPLAY:
+        case LW_ID_CMD:
             cmds_process(cmd_ascii, strlen(cmd_ascii));
             break;
         default:
