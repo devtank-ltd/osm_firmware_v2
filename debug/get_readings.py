@@ -210,6 +210,9 @@ class dev_t(object):
             self.modbus_dev_del(device)
             return True
 
+        def current_clamp_calibrate(self):
+            self._ll.write("adcs_cal")
+
 
 class csv_obj_t(object):
     def __init__(self, csv_loc):
@@ -294,6 +297,12 @@ mb_regs = [ modbus_reg_t("Power Factor"         , 0xc56e, 3, "U32", "PF"   ) ,
 def main():
     dev = dev_t("/dev/ttyUSB0")
     with dev as d:
+        input("Ensure current clamp (ADC in) is unplugged/off. Press Enter to continue.")
+        lock_until = time.monotonic() + 2
+        d.current_clamp_calibrate()
+        while (time.monotonic() < lock_until):
+            pass
+        input("Plug current clamp (ADC in) in. Press Enter to continue.")
         d.get_vals(commands)
         d.get_modbus(5, "E53", mb_regs)
     csv_obj = csv_obj_t("./testing.csv")
