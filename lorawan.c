@@ -530,7 +530,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         }
         uart_ring_out(LW_UART, "\r\n", 2);
         uart_ring_out(CMD_UART, "\r\n", 2);
-        memcpy(lw_message_backup.hex_arr, hex_arr, LW__MAX_MEASUREMENTS);
+        memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS_MAX_NUMBER);
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
