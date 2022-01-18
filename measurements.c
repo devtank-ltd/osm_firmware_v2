@@ -51,8 +51,8 @@ typedef struct
 
 typedef struct
 {
-    measurement_def_t   def[LW__MAX_MEASUREMENTS];
-    measurement_data_t  data[LW__MAX_MEASUREMENTS];
+    measurement_def_t   def[MEASUREMENTS_MAX_NUMBER];
+    measurement_data_t  data[MEASUREMENTS_MAX_NUMBER];
     uint16_t            len;
 } measurement_arr_t;
 
@@ -76,7 +76,7 @@ static measurement_arr_t        measurement_arr                                 
 static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
 {
     measurement_def_t* t_measurement_def;
-    for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         t_measurement_def = &measurement_arr.def[i];
         if (ID_FROM_NAME(*t_measurement_def->base.name) == ID_FROM_NAME(*name))
@@ -187,7 +187,7 @@ static void measurements_send(void)
     measurement_def_t*  m_def;
     measurement_data_t* m_data;
 
-    memset(measurements_hex_arr, 0, LW__MAX_MEASUREMENTS);
+    memset(measurements_hex_arr, 0, MEASUREMENTS_MAX_NUMBER);
     measurements_hex_arr_pos = 0;
 
     log_debug(DEBUG_MEASUREMENTS, "Attempting to send measurements");
@@ -326,7 +326,7 @@ uint16_t measurements_num_measurements(void)
 
 bool measurements_add(measurement_def_t* measurement_def)
 {
-    if (measurement_arr.len >= LW__MAX_MEASUREMENTS)
+    if (measurement_arr.len >= MEASUREMENTS_MAX_NUMBER)
     {
         log_error("Cannot add more measurements. Reached max.");
         return false;
@@ -469,7 +469,7 @@ void measurements_print(void)
     measurement_def_t* measurement_def;
     log_out("Loaded Measurements");
     log_out("Name\tInterval\tSample Count");
-    for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurement_def = &measurement_arr.def[i];
         char id_start = measurement_def->base.name[0];
@@ -497,7 +497,7 @@ void measurements_print_persist(void)
     }
     log_out("Stored Measurements");
     log_out("Name\tInterval\tSample Count");
-    for (unsigned i = 0; i < LW__MAX_MEASUREMENTS; i++)
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurement_def_base = &persistent_measurement_arr[i];
         char id_start = measurement_def_base->name[0];
@@ -561,7 +561,7 @@ void measurements_init(void)
         return;
     }
 
-    for(unsigned n = 0; n < LW__MAX_MEASUREMENTS; n++)
+    for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
     {
         measurement_def_base_t* def_base = &persistent_measurement_arr[n];
 
