@@ -468,7 +468,8 @@ void modbus_ring_process(ring_buf_t * ring)
     modbus_debug("Good CRC");
     modbuspacket_len = 0;
 
-    if (modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
+    if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
+        (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
     {
         modbus_debug("Exception: %0x"PRIx8, modbuspacket[2]);
         return;
