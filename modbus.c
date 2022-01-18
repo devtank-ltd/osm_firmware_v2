@@ -769,7 +769,7 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
         return false;
     }
 
-    if (func != MODBUS_READ_HOLDING_FUNC)
+    if (func != MODBUS_READ_HOLDING_FUNC && func != MODBUS_READ_INPUT_FUNC)
     {
         modbus_debug("Unsupported func");
         return false;
