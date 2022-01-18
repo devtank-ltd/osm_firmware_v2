@@ -25,8 +25,6 @@
 #define LW_ID__PM25                         106
 
 
-#define LW__MAX_MEASUREMENTS                10
-
 #define LW__DEV_EUI_LEN                     16
 #define LW__APP_KEY_LEN                     32
 
@@ -35,3 +33,4 @@ extern void lorawan_init(void);
 extern void lw_send(int8_t* hex_arr, uint16_t arr_len);
 extern void lw_send_str(char* str);
 extern void lw_process(char* message);
+extern bool lw_get_connected(void);
