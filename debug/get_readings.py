@@ -56,6 +56,7 @@ class modbus_reg_t(measurement_t):
         if "ERROR" in r_str:
             return False
         r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+        # r = re.findall(r'0x[0-9A-F]+', r_str)
         if r:
             return r[-1]
         return False
