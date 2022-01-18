@@ -38,7 +38,8 @@ class measurement_t(object):
 
     @value.setter
     def value(self, value_str):
-        self._value = self.parse_func(value_str)
+        v_str = value_str.replace(self.cmd, "")
+        self._value = self.parse_func(v_str)
         self.type_ = type(self._value)
 
 
@@ -191,7 +192,9 @@ class dev_t(object):
                 return False
             for reg in regs:
                 self._ll.write(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
+                self._ll.readlines()
             self._ll.write("mb_setup BIN 9600 8N1")
+            self._ll.readlines()
             return True
 
         def modbus_dev_del(self, device:str):
