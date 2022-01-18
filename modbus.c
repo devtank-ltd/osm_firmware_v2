@@ -280,7 +280,7 @@ bool modbus_start_read(modbus_reg_t * reg)
         }
     }
 
-    if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
+    if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC && reg->func != MODBUS_READ_INPUT_FUNC))
         return false;
 
     unsigned reg_count;
@@ -298,20 +298,40 @@ bool modbus_start_read(modbus_reg_t * reg)
 
     modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx16 , reg_count, dev->slave_id, reg->reg_addr);
 
-    /* ADU Header (Application Data Unit) */
-    modbuspacket[0] = dev->slave_id;
-    /* ====================================== */
-    /* PDU payload (Protocol Data Unit) */
-    modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
-    modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
-    modbuspacket[3] = reg->reg_addr & 0xFF;
-    modbuspacket[4] = reg_count >> 8; /*Register read count */
-    modbuspacket[5] = reg_count & 0xFF;
-    /* ====================================== */
+    unsigned body_size = 4;
+
+    if (reg->func == MODBUS_READ_HOLDING_FUNC)
+    {
+        /* ADU Header (Application Data Unit) */
+        modbuspacket[0] = dev->slave_id;
+        /* ====================================== */
+        /* PDU payload (Protocol Data Unit) */
+        modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
+        modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+        modbuspacket[3] = reg->reg_addr & 0xFF;
+        modbuspacket[4] = reg_count >> 8; /*Register read count */
+        modbuspacket[5] = reg_count & 0xFF;
+        body_size = 6;
+        /* ====================================== */
+    }
+    else if (reg->func == MODBUS_READ_INPUT_FUNC)
+    {
+        /* ADU Header (Application Data Unit) */
+        modbuspacket[0] = dev->slave_id;
+        /* ====================================== */
+        /* PDU payload (Protocol Data Unit) */
+        modbuspacket[1] = MODBUS_READ_INPUT_FUNC; /*Input*/
+        modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+        modbuspacket[3] = reg->reg_addr & 0xFF;
+        modbuspacket[4] = reg_count >> 8; /*Register read count */
+        modbuspacket[5] = reg_count & 0xFF;
+        body_size = 6;
+        /* ====================================== */
+    }
     /* ADU Tail */
-    uint16_t crc = modbus_crc(modbuspacket, 6);
-    modbuspacket[6] = crc & 0xFF;
-    modbuspacket[7] = crc >> 8;
+    uint16_t crc = modbus_crc(modbuspacket, body_size);
+    modbuspacket[body_size] = crc & 0xFF;
+    modbuspacket[body_size+1] = crc >> 8;
 
     if (do_binary_framing)
     {
@@ -372,6 +392,10 @@ void modbus_ring_process(ring_buf_t * ring)
 
             len -= 3;
             if (func == MODBUS_READ_HOLDING_FUNC)
+            {
+                modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
+            }
+            if (func == MODBUS_READ_INPUT_FUNC)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
