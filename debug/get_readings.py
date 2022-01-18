@@ -168,9 +168,6 @@ class dev_t(object):
                     cmd.value = self.do_cmd(cmd.cmd)
             self._set_debug(debug_before)
 
-        def _parse_response(self, response:str)->float:
-            return re.findall(r"[-+]?(?:\d*\.\d+|\d+)", response)
-
         def _set_debug(self, value:int)->int:
             r = self.do_cmd(f"debug {hex(value)}")
             r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r)
@@ -270,7 +267,7 @@ def parse_particles(r_str:str):
         return False
     r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
     if r:
-        return r[-2:]
+        return [r[-3],r[-1]]
     return False
 
 
@@ -294,8 +291,34 @@ mb_regs = [ modbus_reg_t("Power Factor"         , 0xc56e, 3, "U32", "PF"   ) ,
             modbus_reg_t("Import Energy"        , 0xc652, 3, "U32", "ImEn" ) ]
 
 
+def print_usage():
+    print("Usage:")
+    print(f"./{sys.argv[0]} [port] [filename]")
+
+
+def parse_args():
+    port = "/dev/ttyUSB0"
+    file_name = "results.csv"
+    argc = len(sys.argv)
+    print(sys.argv)
+    if argc > 3:
+        print_usage()
+        exit()
+    elif argc == 3:
+        _, port, file_name = sys.argv
+    elif argc == 2:
+        _, port = sys.argv
+    elif argc == 1:
+        pass
+    else:
+        print_usage()
+        exit()
+    return (port, file_name)
+
+
 def main():
-    dev = dev_t("/dev/ttyUSB0")
+    port, file_name = parse_args()
+    dev = dev_t(port)
     with dev as d:
         input("Ensure current clamp (ADC in) is unplugged/off. Press Enter to continue.")
         lock_until = time.monotonic() + 2
@@ -305,7 +328,7 @@ def main():
         input("Plug current clamp (ADC in) in. Press Enter to continue.")
         d.get_vals(commands)
         d.get_modbus(5, "E53", mb_regs)
-    csv_obj = csv_obj_t("./testing.csv")
+    csv_obj = csv_obj_t(file_name)
     with csv_obj as c:
         c.write_data(commands + mb_regs)
     return 0
