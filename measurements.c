@@ -476,7 +476,7 @@ void measurements_print(void)
         {
             ; // Do something
         }
-        log_out("%s\t%"PRIu8"x5mins\t\t%"PRIu8, measurement_def->base.name, measurement_def->base.interval, measurement_def->base.samplecount);
+        log_out("%s\t%"PRIu8"x%umins\t\t%"PRIu8, measurement_def->base.name, measurement_def->base.interval, INTERVAL__TRANSMIT_MIN, measurement_def->base.samplecount);
     }
 }
 
@@ -504,7 +504,7 @@ void measurements_print_persist(void)
         {
             ; // Do something
         }
-        log_out("%s\t%"PRIu8"x5mins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, measurement_def_base->samplecount);
+        log_out("%s\t%"PRIu8"x%umins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, INTERVAL__TRANSMIT_MIN, measurement_def_base->samplecount);
     }
 }
 
