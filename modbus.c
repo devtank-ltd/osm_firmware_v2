@@ -274,12 +274,12 @@ void modbus_use_do_binary_framing(bool enable)
 
 bool modbus_start_read(modbus_reg_t * reg)
 {
-    if (modbus_sent_timing_init)
+    if (modbus_sent_timing_init && current_reg)
     {
         uint32_t delta = since_boot_delta(since_boot_ms, modbus_sent_timing_init);
         if (delta > MODBUS_SENT_TIMEOUT_MS)
         {
-            modbus_debug("Previous modbus response took timeout.");
+            modbus_debug("Previous modbus response took timeout (reg:%."STR(MODBUS_NAME_LEN)"s).", current_reg->name);
             modbus_sent_timing_init = 0;
             current_reg = NULL;
         }
@@ -460,6 +460,8 @@ void modbus_ring_process(ring_buf_t * ring)
     // Now include the header too.
     modbuspacket_len += 3;
 
+    modbus_sent_timing_init = 0;
+
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
 
     if ( (modbuspacket[modbuspacket_len-1] == (crc >> 8)) &&
@@ -519,7 +521,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
         return;
     uint16_t v = data[1] << 8 | data[0];
     _modbus_reg_set(reg, v);
-    modbus_debug("U16:%"PRIu16, v);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
 static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
@@ -528,7 +530,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
         return;
     uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
     _modbus_reg_set(reg, v);
-    modbus_debug("U32:%"PRIu32, v);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
 static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
@@ -541,7 +543,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
     float f = *(float*)&v;
     #pragma GCC diagnostic pop
     _modbus_reg_set(reg, v);
-    modbus_debug("F32:%f", f);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s F32:%f", reg->name, f);
 }
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
