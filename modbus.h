@@ -3,11 +3,11 @@
 #include <stdbool.h>
 #include "ring.h"
 #include "pinmap.h"
+#include "log.h"
 
 #define MODBUS_READ_HOLDING_FUNC 3
 #define MODBUS_READ_INPUT_FUNC 4
 
-#define MODBUS_DEV_REGS 16
 
 #define modbus_debug(...) log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
 

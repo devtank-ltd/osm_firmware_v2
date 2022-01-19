@@ -2,6 +2,7 @@
 
 #include "modbus_measurements.h"
 #include "modbus.h"
+#include "value.h"
 
 #define MODBUS_COLLECTION_MS 1000
 

@@ -23,7 +23,6 @@
 #define MODBUS_BIN_STOP '}'
 
 #define MODBUS_BLOB_VERSION 1
-#define MODBUS_MAX_DEV 4
 
 typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
@@ -53,6 +52,8 @@ typedef struct
     uint8_t  stopbits;        /* uart_stop_bits_t */
     uint8_t  parity;          /* uart_parity_t */
 } __attribute__((__packed__)) modbus_blob_header_t;
+_Static_assert(sizeof(modbus_blob_header_t) == MODBUS_BLOB_SIZE,  "Modbus header has changed size.");
+
 
 struct modbus_reg_t
 {
@@ -63,6 +64,8 @@ struct modbus_reg_t
     uint16_t          reg_addr;
     uint32_t          class_data_b; /* what ever child class wants */
 } __attribute__((__packed__)) ;
+_Static_assert(sizeof(modbus_reg_t) == MODBUS_REG_SIZE,  "Modbus reg has changed size.");
+
 
 struct modbus_dev_t
 {
@@ -72,7 +75,9 @@ struct modbus_dev_t
     uint16_t       __; /* pad.*/
     modbus_reg_t   regs[MODBUS_DEV_REGS];
 } __attribute__((__packed__)) ;
+_Static_assert(sizeof(modbus_dev_t) == MODBUS_DEV_SIZE,  "Modbus dev has changed size.");
 
+_Static_assert((sizeof(modbus_blob_header_t) + (sizeof(modbus_dev_t) * MODBUS_MAX_DEV)) <= MODBUS_MEMORY_SIZE,  "Memory allocated for modbus structure is not enough for limits given.");
 
 static modbus_blob_header_t * modbus_header = NULL;
 static modbus_dev_t * modbus_devices = NULL;
@@ -269,12 +274,12 @@ void modbus_use_do_binary_framing(bool enable)
 
 bool modbus_start_read(modbus_reg_t * reg)
 {
-    if (modbus_sent_timing_init)
+    if (modbus_sent_timing_init && current_reg)
     {
         uint32_t delta = since_boot_delta(since_boot_ms, modbus_sent_timing_init);
         if (delta > MODBUS_SENT_TIMEOUT_MS)
         {
-            modbus_debug("Previous modbus response took timeout.");
+            modbus_debug("Previous response took timeout (reg:%."STR(MODBUS_NAME_LEN)"s).", current_reg->name);
             modbus_sent_timing_init = 0;
             current_reg = NULL;
         }
@@ -405,7 +410,7 @@ void modbus_ring_process(ring_buf_t * ring)
             }
             else
             {
-                modbus_debug("Bad modbus function.");
+                modbus_debug("Bad function.");
                 return;
             }
 
@@ -413,7 +418,7 @@ void modbus_ring_process(ring_buf_t * ring)
                 modbuspacket_len++;
 
             modbus_read_timing_init = since_boot_ms;
-            modbus_debug("Modbus header received, timer started at:%"PRIu32, modbus_read_timing_init);
+            modbus_debug("header received, timer started at:%"PRIu32, modbus_read_timing_init);
         }
         else
         {
@@ -421,7 +426,7 @@ void modbus_ring_process(ring_buf_t * ring)
             {
                 // There is some bytes, but not enough to be a header yet
                 modbus_read_timing_init = since_boot_ms;
-                modbus_debug("Modbus bus received, timer started at:%"PRIu32, modbus_read_timing_init);
+                modbus_debug("bus received, timer started at:%"PRIu32, modbus_read_timing_init);
             }
             else _modbus_has_timedout(ring);
             return;
@@ -454,6 +459,8 @@ void modbus_ring_process(ring_buf_t * ring)
 
     // Now include the header too.
     modbuspacket_len += 3;
+
+    modbus_sent_timing_init = 0;
 
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
 
@@ -514,7 +521,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
         return;
     uint16_t v = data[1] << 8 | data[0];
     _modbus_reg_set(reg, v);
-    modbus_debug("U16:%"PRIu16, v);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
 static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
@@ -523,7 +530,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
         return;
     uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
     _modbus_reg_set(reg, v);
-    modbus_debug("U32:%"PRIu32, v);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
 static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
@@ -536,7 +543,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
     float f = *(float*)&v;
     #pragma GCC diagnostic pop
     _modbus_reg_set(reg, v);
-    modbus_debug("F32:%f", f);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s F32:%f", reg->name, f);
 }
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
@@ -561,24 +568,6 @@ static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned 
                 return &dev->regs[n];
             index--;
         }
-    }
-    return NULL;
-}
-
-
-static uint32_t _get_id_of_name(char name[MODBUS_NAME_LEN])
-{
-    return *(uint32_t*)name;
-}
-
-
-static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint32_t id)
-{
-    for(unsigned n = 0; n < MODBUS_DEV_REGS; n++)
-    {
-        modbus_reg_t * reg = &dev->regs[n];
-        if (id == _get_id_of_name(reg->name))
-            return reg;
     }
     return NULL;
 }
@@ -650,13 +639,10 @@ modbus_dev_t * modbus_get_device_by_name(char * name)
     unsigned name_len = strlen(name);
     if (name_len > MODBUS_NAME_LEN)
         return NULL;
-    uint32_t id = 0;
-    memcpy(&id, name, name_len);
-
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_dev_t * dev = &modbus_devices[n];
-        if (_get_id_of_name(dev->name) == id)
+        if (strncmp(name, dev->name, MODBUS_NAME_LEN) == 0)
             return dev;
     }
     return NULL;
@@ -670,9 +656,13 @@ modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
     unsigned name_len = strlen(name);
     if (name_len > MODBUS_NAME_LEN)
         return NULL;
-    uint32_t id = 0;
-    memcpy(&id, name, name_len);
-    return _modbus_dev_get_reg_by_id(dev, id);
+    for(unsigned n = 0; n < MODBUS_DEV_REGS; n++)
+    {
+        modbus_reg_t * reg = &dev->regs[n];
+        if (strncmp(name, reg->name,  MODBUS_NAME_LEN) == 0)
+            return reg;
+    }
+    return NULL;
 }
 
 
@@ -695,11 +685,9 @@ modbus_reg_t* modbus_get_reg(char * name)
 {
     if (!name)
         return NULL;
-    uint64_t id = 0;
-    memcpy(&id, name, strlen(name));
     for(unsigned n = 0; n < modbus_get_device_count(); n++)
     {
-        modbus_reg_t * reg = _modbus_dev_get_reg_by_id(modbus_get_device(n), id);
+        modbus_reg_t * reg = modbus_dev_get_reg_by_name(modbus_get_device(n), name);
         if (reg)
             return reg;
     }

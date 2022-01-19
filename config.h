@@ -38,7 +38,12 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
-#define MODBUS_MEMORY_SIZE 512
+#define MODBUS_MAX_DEV 4
+#define MODBUS_DEV_REGS 16
+#define MODBUS_BLOB_SIZE 16
+#define MODBUS_REG_SIZE  16
+#define MODBUS_DEV_SIZE   (8 + (MODBUS_REG_SIZE * MODBUS_DEV_REGS))
+#define MODBUS_MEMORY_SIZE  (MODBUS_BLOB_SIZE + (MODBUS_DEV_SIZE * MODBUS_MAX_DEV))
 
 #define ALIGN_TO(_x, _y) ((_x + _y -1 ) & ~(_y - 1)) ///< Align one number to another, for instance 16 for optimial addressing.
 #define ALIGN_16(_x) ALIGN_TO(_x, 16)                ///< Align given number to 16.
@@ -46,13 +51,9 @@
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 
-#define ID_FROM_NAME(_name_)  (*(uint32_t*)(const char[8]){_name_})
-
 #define LOG_START_SPACER  "============{"
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
-
-#define DEFAULT_SPS 120000
 
 #define CMD_OUT_BUF_SIZE 1024
 
@@ -112,6 +113,7 @@
 #define DEBUG_MEASUREMENTS 0x400
 #define DEBUG_FW           0x800
 
-#define INTERVAL__TRANSMIT_MS   5 * 60 * 1000 // 5 mins
+#define INTERVAL__TRANSMIT_MIN  5
+#define INTERVAL__TRANSMIT_MS   (INTERVAL__TRANSMIT_MIN * 60 * 1000)
 
 #endif //__CONFIG__
