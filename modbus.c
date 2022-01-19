@@ -280,7 +280,7 @@ bool modbus_start_read(modbus_reg_t * reg)
         }
     }
 
-    if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC))
+    if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC && reg->func != MODBUS_READ_INPUT_FUNC))
         return false;
 
     unsigned reg_count;
@@ -298,20 +298,40 @@ bool modbus_start_read(modbus_reg_t * reg)
 
     modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx16 , reg_count, dev->slave_id, reg->reg_addr);
 
-    /* ADU Header (Application Data Unit) */
-    modbuspacket[0] = dev->slave_id;
-    /* ====================================== */
-    /* PDU payload (Protocol Data Unit) */
-    modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
-    modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
-    modbuspacket[3] = reg->reg_addr & 0xFF;
-    modbuspacket[4] = reg_count >> 8; /*Register read count */
-    modbuspacket[5] = reg_count & 0xFF;
-    /* ====================================== */
+    unsigned body_size = 4;
+
+    if (reg->func == MODBUS_READ_HOLDING_FUNC)
+    {
+        /* ADU Header (Application Data Unit) */
+        modbuspacket[0] = dev->slave_id;
+        /* ====================================== */
+        /* PDU payload (Protocol Data Unit) */
+        modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
+        modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+        modbuspacket[3] = reg->reg_addr & 0xFF;
+        modbuspacket[4] = reg_count >> 8; /*Register read count */
+        modbuspacket[5] = reg_count & 0xFF;
+        body_size = 6;
+        /* ====================================== */
+    }
+    else if (reg->func == MODBUS_READ_INPUT_FUNC)
+    {
+        /* ADU Header (Application Data Unit) */
+        modbuspacket[0] = dev->slave_id;
+        /* ====================================== */
+        /* PDU payload (Protocol Data Unit) */
+        modbuspacket[1] = MODBUS_READ_INPUT_FUNC; /*Input*/
+        modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+        modbuspacket[3] = reg->reg_addr & 0xFF;
+        modbuspacket[4] = reg_count >> 8; /*Register read count */
+        modbuspacket[5] = reg_count & 0xFF;
+        body_size = 6;
+        /* ====================================== */
+    }
     /* ADU Tail */
-    uint16_t crc = modbus_crc(modbuspacket, 6);
-    modbuspacket[6] = crc & 0xFF;
-    modbuspacket[7] = crc >> 8;
+    uint16_t crc = modbus_crc(modbuspacket, body_size);
+    modbuspacket[body_size] = crc & 0xFF;
+    modbuspacket[body_size+1] = crc >> 8;
 
     if (do_binary_framing)
     {
@@ -372,6 +392,10 @@ void modbus_ring_process(ring_buf_t * ring)
 
             len -= 3;
             if (func == MODBUS_READ_HOLDING_FUNC)
+            {
+                modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
+            }
+            if (func == MODBUS_READ_INPUT_FUNC)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
@@ -444,7 +468,8 @@ void modbus_ring_process(ring_buf_t * ring)
     modbus_debug("Good CRC");
     modbuspacket_len = 0;
 
-    if (modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK))
+    if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
+        (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
     {
         modbus_debug("Exception: %0x"PRIx8, modbuspacket[2]);
         return;
@@ -496,7 +521,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 4)
         return;
-    uint32_t v = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+    uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
     _modbus_reg_set(reg, v);
     modbus_debug("U32:%"PRIu32, v);
 }
@@ -505,7 +530,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
 {
     if (size != 4)
         return;
-    uint32_t v = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+    uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstrict-aliasing"
     float f = *(float*)&v;
@@ -745,7 +770,7 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
         return false;
     }
 
-    if (func != MODBUS_READ_HOLDING_FUNC)
+    if (func != MODBUS_READ_HOLDING_FUNC && func != MODBUS_READ_INPUT_FUNC)
     {
         modbus_debug("Unsupported func");
         return false;
