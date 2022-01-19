@@ -279,7 +279,7 @@ bool modbus_start_read(modbus_reg_t * reg)
         uint32_t delta = since_boot_delta(since_boot_ms, modbus_sent_timing_init);
         if (delta > MODBUS_SENT_TIMEOUT_MS)
         {
-            modbus_debug("Previous modbus response took timeout (reg:%."STR(MODBUS_NAME_LEN)"s).", current_reg->name);
+            modbus_debug("Previous response took timeout (reg:%."STR(MODBUS_NAME_LEN)"s).", current_reg->name);
             modbus_sent_timing_init = 0;
             current_reg = NULL;
         }
@@ -410,7 +410,7 @@ void modbus_ring_process(ring_buf_t * ring)
             }
             else
             {
-                modbus_debug("Bad modbus function.");
+                modbus_debug("Bad function.");
                 return;
             }
 
@@ -418,7 +418,7 @@ void modbus_ring_process(ring_buf_t * ring)
                 modbuspacket_len++;
 
             modbus_read_timing_init = since_boot_ms;
-            modbus_debug("Modbus header received, timer started at:%"PRIu32, modbus_read_timing_init);
+            modbus_debug("header received, timer started at:%"PRIu32, modbus_read_timing_init);
         }
         else
         {
@@ -426,7 +426,7 @@ void modbus_ring_process(ring_buf_t * ring)
             {
                 // There is some bytes, but not enough to be a header yet
                 modbus_read_timing_init = since_boot_ms;
-                modbus_debug("Modbus bus received, timer started at:%"PRIu32, modbus_read_timing_init);
+                modbus_debug("bus received, timer started at:%"PRIu32, modbus_read_timing_init);
             }
             else _modbus_has_timedout(ring);
             return;
