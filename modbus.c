@@ -24,6 +24,8 @@
 
 #define MODBUS_BLOB_VERSION 1
 
+#define MODBUS_SLOTS  (MODBUS_MAX_DEV * MODBUS_DEV_REGS)
+
 typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
 
@@ -86,10 +88,12 @@ static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
 
 static unsigned modbuspacket_len = 0;
 
-static modbus_reg_t * current_reg = NULL;
+static modbus_reg_t * current_regs[MODBUS_SLOTS] = {0};
+static unsigned current_regs_r_pos = 0;
+static unsigned current_regs_w_pos = 0;
 
-static uint32_t modbus_sent_timing_init = 0;
 static uint32_t modbus_read_timing_init = 0;
+static uint32_t modbus_read_last_good = 0;
 
 static uint32_t modbus_send_start_delay = 0;
 static uint32_t modbus_send_stop_delay = 0;
@@ -274,19 +278,13 @@ void modbus_use_do_binary_framing(bool enable)
 
 bool modbus_start_read(modbus_reg_t * reg)
 {
-    if (modbus_sent_timing_init && current_reg)
-    {
-        uint32_t delta = since_boot_delta(since_boot_ms, modbus_sent_timing_init);
-        if (delta > MODBUS_SENT_TIMEOUT_MS)
-        {
-            modbus_debug("Previous response took timeout (reg:%."STR(MODBUS_NAME_LEN)"s).", current_reg->name);
-            modbus_sent_timing_init = 0;
-            current_reg = NULL;
-        }
-    }
+    modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
-    if (!reg || current_reg || (reg->func != MODBUS_READ_HOLDING_FUNC && reg->func != MODBUS_READ_INPUT_FUNC))
+    if (!dev || !(reg->func != MODBUS_READ_HOLDING_FUNC && reg->func != MODBUS_READ_INPUT_FUNC))
+    {
+        log_error("Modbus register \"%."STR(MODBUS_NAME_LEN)"s\" unable to start read.", reg->name);
         return false;
+    }
 
     unsigned reg_count;
 
@@ -299,7 +297,22 @@ bool modbus_start_read(modbus_reg_t * reg)
             return false;
     }
 
-    modbus_dev_t * dev = modbus_reg_get_dev(reg);
+    if (current_regs[current_regs_r_pos]) /* Read has caught up with write. */
+    {
+        uint32_t delta = since_boot_delta(since_boot_ms, modbus_read_last_good);
+        if (delta < MODBUS_SENT_TIMEOUT_MS)
+        {
+            modbus_debug("No slot free.. comms??");
+            return false;
+        }
+        modbus_debug("Previous comms issue. Restarting slots.");
+        memset(current_regs, 0, sizeof(current_regs));
+        current_regs_r_pos = current_regs_w_pos = 0;
+        modbus_read_last_good = 0;
+    }
+
+    current_regs[current_regs_r_pos++] = reg;
+    current_regs_r_pos %= MODBUS_SLOTS;
 
     modbus_debug("Reading %"PRIu8" of 0x%"PRIx8":0x%"PRIx16 , reg_count, dev->slave_id, reg->reg_addr);
 
@@ -349,8 +362,6 @@ bool modbus_start_read(modbus_reg_t * reg)
     /* All current types use this as is_valid. */
     reg->class_data_b = 0;
 
-    current_reg = reg;
-    modbus_sent_timing_init = since_boot_ms;
     return true;
 }
 
@@ -359,15 +370,6 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 void modbus_ring_process(ring_buf_t * ring)
 {
     unsigned len = ring_buf_get_pending(ring);
-
-    if (!modbus_sent_timing_init)
-    {
-        modbus_debug("Data not expected.");
-        char c;
-        while(ring_buf_get_pending(ring))
-            ring_buf_read(ring, &c, 1);
-        return;
-    }
 
     if (!modbuspacket_len)
     {
@@ -404,7 +406,7 @@ void modbus_ring_process(ring_buf_t * ring)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
-            else if (func == (current_reg->func | MODBUS_ERROR_MASK))
+            else if ((func & MODBUS_ERROR_MASK) == MODBUS_ERROR_MASK)
             {
                 modbuspacket_len = 3; /* Exception code and crc*/
             }
@@ -460,8 +462,6 @@ void modbus_ring_process(ring_buf_t * ring)
     // Now include the header too.
     modbuspacket_len += 3;
 
-    modbus_sent_timing_init = 0;
-
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
 
     if ( (modbuspacket[modbuspacket_len-1] == (crc >> 8)) &&
@@ -474,6 +474,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     modbus_debug("Good CRC");
     modbuspacket_len = 0;
+    modbus_read_last_good = since_boot_ms;
 
     if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
         (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
@@ -482,19 +483,26 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    if (current_reg)
-    {
-        modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
+    modbus_reg_t * current_reg = current_regs[current_regs_w_pos];
+    current_regs[current_regs_w_pos] = NULL;
 
-        if (dev->slave_id == modbuspacket[0])
-        {
-            modbus_reg_t * reg = current_reg;
-            current_reg = NULL;
-            _modbus_reg_cb(reg, modbuspacket + 3, modbuspacket[2]);
-            return;
-        }
+    if (!current_reg)
+    {
+        log_error("Modbus comms issues!");
+        return;
     }
-    modbus_debug("Unexpected packet");
+
+    current_regs_w_pos++;
+    current_regs_w_pos %= MODBUS_SLOTS;
+    modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
+
+    if (dev->slave_id != modbuspacket[0])
+    {
+        log_error("Modbus comms issues!");
+        return;
+    }
+
+    _modbus_reg_cb(current_reg, modbuspacket + 3, modbuspacket[2]);
 }
 
 
