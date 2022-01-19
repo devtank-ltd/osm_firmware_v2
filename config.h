@@ -55,8 +55,6 @@
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
 
-#define DEFAULT_SPS 120000
-
 #define CMD_OUT_BUF_SIZE 1024
 
 /* Uart index on uart ring buffer use
