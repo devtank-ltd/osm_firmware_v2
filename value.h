@@ -38,16 +38,16 @@ typedef struct
     };
 } value_t;
 
-inline value_t value_from_u8(uint8_t d)    { return (value_t){.type = VALUE_UINT8,  .u8  = d}; }
-inline value_t value_from_i8(int8_t d)     { return (value_t){.type = VALUE_INT8,   .i8  = d}; }
-inline value_t value_from_u16(uint16_t d)  { return (value_t){.type = VALUE_UINT16, .u16 = d}; }
-inline value_t value_from_i16(int16_t d)   { return (value_t){.type = VALUE_INT16,  .i16 = d}; }
-inline value_t value_from_u32(uint32_t d)  { return (value_t){.type = VALUE_UINT32, .u32 = d}; }
-inline value_t value_from_i32(int32_t d)   { return (value_t){.type = VALUE_INT32,  .i32 = d}; }
-inline value_t value_from_u64(uint64_t d)  { return (value_t){.type = VALUE_UINT64, .u64 = d}; }
-inline value_t value_from_i64(int64_t d)   { return (value_t){.type = VALUE_INT64,  .i64 = d}; }
-inline value_t value_from_float(float d)   { return (value_t){.type = VALUE_FLOAT,  .f   = d}; }
-inline value_t value_from_double(double d) { return (value_t){.type = VALUE_DOUBLE, .r   = d}; }
+static inline value_t value_from_u8(uint8_t d)    { return (value_t){.type = VALUE_UINT8,  .u8  = d}; }
+static inline value_t value_from_i8(int8_t d)     { return (value_t){.type = VALUE_INT8,   .i8  = d}; }
+static inline value_t value_from_u16(uint16_t d)  { return (value_t){.type = VALUE_UINT16, .u16 = d}; }
+static inline value_t value_from_i16(int16_t d)   { return (value_t){.type = VALUE_INT16,  .i16 = d}; }
+static inline value_t value_from_u32(uint32_t d)  { return (value_t){.type = VALUE_UINT32, .u32 = d}; }
+static inline value_t value_from_i32(int32_t d)   { return (value_t){.type = VALUE_INT32,  .i32 = d}; }
+static inline value_t value_from_u64(uint64_t d)  { return (value_t){.type = VALUE_UINT64, .u64 = d}; }
+static inline value_t value_from_i64(int64_t d)   { return (value_t){.type = VALUE_INT64,  .i64 = d}; }
+static inline value_t value_from_float(float d)   { return (value_t){.type = VALUE_FLOAT,  .f   = d}; }
+static inline value_t value_from_double(double d) { return (value_t){.type = VALUE_DOUBLE, .r   = d}; }
 
 
 #define value_from(_d_) _Generic((_d_),                                   \

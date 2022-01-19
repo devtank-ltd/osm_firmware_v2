@@ -566,24 +566,6 @@ static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned 
 }
 
 
-static uint32_t _get_id_of_name(char name[MODBUS_NAME_LEN])
-{
-    return *(uint32_t*)name;
-}
-
-
-static modbus_reg_t * _modbus_dev_get_reg_by_id(modbus_dev_t * dev, uint32_t id)
-{
-    for(unsigned n = 0; n < MODBUS_DEV_REGS; n++)
-    {
-        modbus_reg_t * reg = &dev->regs[n];
-        if (id == _get_id_of_name(reg->name))
-            return reg;
-    }
-    return NULL;
-}
-
-
 void           modbus_log()
 {
     {
@@ -650,13 +632,10 @@ modbus_dev_t * modbus_get_device_by_name(char * name)
     unsigned name_len = strlen(name);
     if (name_len > MODBUS_NAME_LEN)
         return NULL;
-    uint32_t id = 0;
-    memcpy(&id, name, name_len);
-
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_dev_t * dev = &modbus_devices[n];
-        if (_get_id_of_name(dev->name) == id)
+        if (strncmp(name, dev->name, MODBUS_NAME_LEN) == 0)
             return dev;
     }
     return NULL;
@@ -670,9 +649,13 @@ modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
     unsigned name_len = strlen(name);
     if (name_len > MODBUS_NAME_LEN)
         return NULL;
-    uint32_t id = 0;
-    memcpy(&id, name, name_len);
-    return _modbus_dev_get_reg_by_id(dev, id);
+    for(unsigned n = 0; n < MODBUS_DEV_REGS; n++)
+    {
+        modbus_reg_t * reg = &dev->regs[n];
+        if (strncmp(name, reg->name,  MODBUS_NAME_LEN) == 0)
+            return reg;
+    }
+    return NULL;
 }
 
 
@@ -695,11 +678,9 @@ modbus_reg_t* modbus_get_reg(char * name)
 {
     if (!name)
         return NULL;
-    uint64_t id = 0;
-    memcpy(&id, name, strlen(name));
     for(unsigned n = 0; n < modbus_get_device_count(); n++)
     {
-        modbus_reg_t * reg = _modbus_dev_get_reg_by_id(modbus_get_device(n), id);
+        modbus_reg_t * reg = modbus_dev_get_reg_by_name(modbus_get_device(n), name);
         if (reg)
             return reg;
     }

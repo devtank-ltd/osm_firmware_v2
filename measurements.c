@@ -26,16 +26,12 @@
 #define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
 
 #define MEASUREMENT_PM10_NAME "PM10"
-#define MEASUREMENT_PM10_ID   ID_FROM_NAME(MEASUREMENT_PM10_NAME)
 
 #define MEASUREMENT_PM25_NAME "PM25"
-#define MEASUREMENT_PM25_ID  ID_FROM_NAME(MEASUREMENT_PM25_NAME)
 
 #define MEASUREMENT_CURRENT_CLAMP_NAME "CC1"
-#define MEASUREMENT_CURRENT_CLAMP_ID  ID_FROM_NAME(MEASUREMENT_CURRENT_CLAMP_NAME)
 
 #define MEASUREMENT_W1_PROBE_NAME "TMP2"
-#define MEASUREMENT_W1_PROBE_ID  ID_FROM_NAME(MEASUREMENT_W1_PROBE_NAME)
 
 
 typedef struct
@@ -79,7 +75,7 @@ static bool measurements_get_measurement_def(char* name, measurement_def_t** mea
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         t_measurement_def = &measurement_arr.def[i];
-        if (ID_FROM_NAME(*t_measurement_def->base.name) == ID_FROM_NAME(*name))
+        if (strncmp(t_measurement_def->base.name, name, MEASURE_NAME_LEN) == 0)
         {
             *measurement_def = t_measurement_def;
             return true;
@@ -331,19 +327,18 @@ bool measurements_add(measurement_def_t* measurement_def)
         log_error("Cannot add more measurements. Reached max.");
         return false;
     }
-    measurement_def_t* measurement_def_iter;
     for (unsigned i = 0; i < measurement_arr.len; i++)
     {
-        measurement_def_iter = &measurement_arr.def[i];
-        if (strncmp(measurement_def_iter->base.name, measurement_def->base.name, sizeof(measurement_def_iter->base.name)) == 0)
+        if (memcmp(measurement_arr.def[i].base.name,
+                    measurement_def->base.name,
+                    MEASURE_NAME_LEN) == 0)
         {
             log_error("Tried to add measurement with the same name: %s", measurement_def->base.name);
             return false;
         }
     }
-    measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
     measurement_arr.def[measurement_arr.len] = *measurement_def;
-    measurement_arr.data[measurement_arr.len] = measurement_data;
+    memset(&measurement_arr.data[measurement_arr.len], 0, sizeof(measurement_data_t));
     measurement_arr.len++;
 
     return true;
@@ -517,46 +512,41 @@ void measurements_print_persist(void)
 void measurements_init(void)
 {
     measurement_def_base_t* persistent_measurement_arr;
+    measurement_def_t temp_def;
+
     if (!persist_get_measurements(&persistent_measurement_arr) && persistent_measurement_arr != NULL)
     {
         log_error("No persistent loaded, load defaults.");
         /* Add defaults. */
-        {
-            measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, sizeof(temp_def.base.name));
-            temp_def.base.interval = 1;
-            temp_def.base.samplecount = 5;
-            temp_def.base.type = PM10;
-            _measurement_fixup(&temp_def);
-            measurements_add(&temp_def);
-        }
-        {
-            measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, sizeof(temp_def.base.name));
-            temp_def.base.interval = 1;
-            temp_def.base.samplecount = 5;
-            temp_def.base.type = PM25;
-            _measurement_fixup(&temp_def);
-            measurements_add(&temp_def);
-        }
-        {
-            measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_CURRENT_CLAMP_NAME, sizeof(temp_def.base.name));
-            temp_def.base.interval = 1;
-            temp_def.base.samplecount = 25;
-            temp_def.base.type = CURRENT_CLAMP;
-            _measurement_fixup(&temp_def);
-            measurements_add(&temp_def);
-        }
-        {
-            measurement_def_t temp_def;
-            strncpy(temp_def.base.name, MEASUREMENT_W1_PROBE_NAME, sizeof(temp_def.base.name));
-            temp_def.base.interval = 1;
-            temp_def.base.samplecount = 5;
-            temp_def.base.type = W1_PROBE;
-            _measurement_fixup(&temp_def);
-            measurements_add(&temp_def);
-        }
+
+        strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, sizeof(temp_def.base.name));
+        temp_def.base.interval = 1;
+        temp_def.base.samplecount = 5;
+        temp_def.base.type = PM10;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
+        strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, sizeof(temp_def.base.name));
+        temp_def.base.interval = 1;
+        temp_def.base.samplecount = 5;
+        temp_def.base.type = PM25;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
+        strncpy(temp_def.base.name, MEASUREMENT_CURRENT_CLAMP_NAME, sizeof(temp_def.base.name));
+        temp_def.base.interval = 1;
+        temp_def.base.samplecount = 25;
+        temp_def.base.type = CURRENT_CLAMP;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
+        strncpy(temp_def.base.name, MEASUREMENT_W1_PROBE_NAME, sizeof(temp_def.base.name));
+        temp_def.base.interval = 1;
+        temp_def.base.samplecount = 5;
+        temp_def.base.type = W1_PROBE;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
         measurements_save();
         return;
     }
@@ -570,13 +560,11 @@ void measurements_init(void)
         if (!id_start || id_start == 0xFF)
             continue;
 
-        measurement_def_t new_def;
+        temp_def.base = *def_base;
 
-        new_def.base = *def_base;
+        _measurement_fixup(&temp_def);
 
-        _measurement_fixup(&new_def);
-
-        measurements_add(&new_def);
+        measurements_add(&temp_def);
     }
 
     /*

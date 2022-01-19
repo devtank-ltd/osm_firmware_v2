@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "ring.h"
 #include "pinmap.h"
+#include "log.h"
 
 #define MODBUS_READ_HOLDING_FUNC 3
 #define MODBUS_READ_INPUT_FUNC 4
