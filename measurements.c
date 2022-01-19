@@ -517,7 +517,7 @@ void measurements_print_persist(void)
 void measurements_init(void)
 {
     measurement_def_base_t* persistent_measurement_arr;
-    if (1)// !persist_get_measurements(&persistent_measurement_arr))
+    if (!persist_get_measurements(&persistent_measurement_arr) && persistent_measurement_arr != NULL)
     {
         log_error("No persistent loaded, load defaults.");
         /* Add defaults. */
