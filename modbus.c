@@ -23,7 +23,6 @@
 #define MODBUS_BIN_STOP '}'
 
 #define MODBUS_BLOB_VERSION 1
-#define MODBUS_MAX_DEV 4
 
 typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
@@ -53,6 +52,8 @@ typedef struct
     uint8_t  stopbits;        /* uart_stop_bits_t */
     uint8_t  parity;          /* uart_parity_t */
 } __attribute__((__packed__)) modbus_blob_header_t;
+_Static_assert(sizeof(modbus_blob_header_t) == MODBUS_BLOB_SIZE,  "Modbus header has changed size.");
+
 
 struct modbus_reg_t
 {
@@ -63,6 +64,8 @@ struct modbus_reg_t
     uint16_t          reg_addr;
     uint32_t          class_data_b; /* what ever child class wants */
 } __attribute__((__packed__)) ;
+_Static_assert(sizeof(modbus_reg_t) == MODBUS_REG_SIZE,  "Modbus reg has changed size.");
+
 
 struct modbus_dev_t
 {
@@ -72,7 +75,9 @@ struct modbus_dev_t
     uint16_t       __; /* pad.*/
     modbus_reg_t   regs[MODBUS_DEV_REGS];
 } __attribute__((__packed__)) ;
+_Static_assert(sizeof(modbus_dev_t) == MODBUS_DEV_SIZE,  "Modbus dev has changed size.");
 
+_Static_assert((sizeof(modbus_blob_header_t) + (sizeof(modbus_dev_t) * MODBUS_MAX_DEV)) <= MODBUS_MEMORY_SIZE,  "Memory allocated for modbus structure is not enough for limits given.");
 
 static modbus_blob_header_t * modbus_header = NULL;
 static modbus_dev_t * modbus_devices = NULL;
