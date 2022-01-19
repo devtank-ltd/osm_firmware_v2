@@ -9,7 +9,7 @@
 */
 static void _wait_units(unsigned count)
 {
-    for(unsigned n = 0; n < rcc_ahb_frequency / 50 * count ; n++)
+    for(unsigned n = 0; n < rcc_ahb_frequency / 150 * count ; n++)
        asm("nop");
 }
 static void _dot(void)
