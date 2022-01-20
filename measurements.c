@@ -213,9 +213,9 @@ static void measurements_send(void)
                 return;
             }
             num_qd++;
-            m_data->sum.type = VALUE_UNSET;
-            m_data->min.type = VALUE_UNSET;
-            m_data->max.type = VALUE_UNSET;
+            m_data->sum = VALUE_EMPTY;
+            m_data->min = VALUE_EMPTY;
+            m_data->max = VALUE_EMPTY;
             m_data->num_samples = 0;
             m_data->num_samples_init = 0;
             m_data->num_samples_collected = 0;
@@ -233,7 +233,7 @@ static void measurements_sample(void)
     measurement_def_t*  m_def;
     measurement_data_t* m_data;
     uint32_t            sample_interval;
-    value_t             new_value;
+    value_t             new_value = VALUE_EMPTY;
     uint32_t            now = since_boot_ms;
     uint32_t            time_since_interval;
 
@@ -273,6 +273,7 @@ static void measurements_sample(void)
         if (time_since_interval >= time_collect)
         {
             m_data->num_samples_collected++;
+            new_value = VALUE_EMPTY;
             if (!m_def->get_cb(m_def->base.name, &new_value))
             {
                 log_error("Could not get the %s value.", m_def->base.name);
@@ -280,8 +281,8 @@ static void measurements_sample(void)
             }
             if (m_data->sum.type == VALUE_UNSET)
             {
-                m_data->sum.type = VALUE_UINT8;
                 m_data->sum.u64 = 0;
+                m_data->sum.type = VALUE_INT32;
             }
             if (m_data->min.type == VALUE_UNSET)
             {
