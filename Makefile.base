@@ -67,9 +67,9 @@ size: $(TARGET_ELF)
 	$(SIZE) $(TARGET_ELF)
 
 debug_mon: $(TARGET_ELF)
-	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
+	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg
 
 debug_gdb: $(TARGET_ELF)
-	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "monitor reset halt" -ex load $(TARGET_ELF);
+	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex "load $(TARGET_ELF)" -ex "monitor reset init" ;
 
 -include $(DEPS)
