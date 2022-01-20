@@ -93,7 +93,7 @@ static void lw_write_to_uart(char* fmt, va_list args)
     size_t len;
 
     vsnprintf(lw_out_buffer, LW_BUFFER_SIZE, fmt, args);
-    log_debug(DEBUG_LW, "LORA << %s", lw_out_buffer);
+    lw_debug("LORA << %s", lw_out_buffer);
     len = strlen(lw_out_buffer);
     lw_out_buffer[len] = '\r';
     lw_out_buffer[len+1] = '\n';
@@ -265,7 +265,7 @@ void lw_process(char* message)
         }
         else
         {
-            log_debug(DEBUG_LW, "LORA: Setting not OKed. Retrying.");
+            lw_debug("Setting not OKed. Retrying.");
             lw_set_config(init_msgs[lw_state_machine.data.init_step]);
         }
         lw_spin_us(LW_MESSAGE_DELAY);
@@ -275,7 +275,7 @@ void lw_process(char* message)
         if (strstr(message, "UART1") == message ||
             strstr(message, "Current work") == message)
         {
-            log_debug(DEBUG_LW, "Valid Init 7 response line");
+            lw_debug("Valid Init 7 response line");
         }
         else if (strcmp(message, "Initialization OK") == 0)
         {
@@ -304,7 +304,7 @@ void lw_process(char* message)
         if (lw_msg_is_unsoclitied(message))
         {
             /*Done?*/
-            log_debug(DEBUG_LW, "LORA >> (UNSOL) %s", message);
+            lw_debug("LORA >> (UNSOL) %s", message);
             lw_handle_unsol(message);
             return;
         }
@@ -443,22 +443,22 @@ static void lw_error_handle(char* message)
     {
         case LW__ERROR__NOT_CONNECTED:
             lw_reconnect();
-            log_debug(DEBUG_LW, "LORA: Not connected to a network.");
+            lw_debug("Not connected to a network.");
             break;
         case LW__ERROR__JOIN_FAIL:
             lw_reconnect();
-            log_debug(DEBUG_LW, "LORA: Failed to join network.");
+            lw_debug("Failed to join network.");
             break;
         case LW__ERROR__TIMEOUT_RX1:
             lw_resend_message();
-            log_debug(DEBUG_LW, "LORA: RX1 Window timed out.");
+            lw_debug("RX1 Window timed out.");
             break;
         case LW__ERROR__TIMEOUT_RX2:
             lw_resend_message();
-            log_debug(DEBUG_LW, "LORA: RX1 Window timed out.");
+            lw_debug("RX1 Window timed out.");
             break;
         default:
-            log_debug(DEBUG_LW, "LORA: Error: %"PRIu8, err_no);
+            lw_debug("Error: %"PRIu8, err_no);
             break;
     }
 }

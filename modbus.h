@@ -9,9 +9,6 @@
 #define MODBUS_READ_INPUT_FUNC 4
 
 
-#define modbus_debug(...) log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
-
-
 typedef enum
 {
     MODBUS_REG_TYPE_INVALID,

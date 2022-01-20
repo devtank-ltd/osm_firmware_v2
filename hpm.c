@@ -10,8 +10,7 @@
 #include "uart_rings.h"
 #include "sys_time.h"
 
-#define hpm_debug(...) log_debug(DEBUG_HPM, "HPM: " __VA_ARGS__)
-#define hpm_error(...) log_debug(DEBUG_HPM, "HPM: ERROR: " __VA_ARGS__)
+#define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
 
 
 typedef union
