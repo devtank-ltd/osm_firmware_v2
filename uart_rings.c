@@ -123,6 +123,13 @@ static void uart_ring_in_drain(unsigned uart)
         return;
 
     ring_buf_t * ring = &ring_in_bufs[uart];
+
+    if (uart == RS485_UART)
+    {
+        modbus_ring_process(ring);
+        return;
+    }
+
     unsigned len = ring_buf_get_pending(ring);
 
     if (!len)
@@ -151,10 +158,6 @@ static void uart_ring_in_drain(unsigned uart)
     {
         hpm_ring_process(ring, command, CMD_LINELEN);
     }
-    else if (uart == RS485_UART)
-    {
-        modbus_ring_process(ring);
-    }
 }
 
 
@@ -179,13 +182,13 @@ static void _set_rs485_mode(bool driver_enable)
     port_n_pins_t de_port_n_pin = DE_485_PIN;
     if (driver_enable)
     {
-        log_debug(DEBUG_MODBUS, "Modbus driver:enable receiver:disable");
+        modbus_debug("driver:enable receiver:disable");
         gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
         gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
     }
     else
     {
-        log_debug(DEBUG_MODBUS, "Modbus driver:disable receiver:enable");
+        modbus_debug("driver:disable receiver:enable");
         gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
         gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
     }
@@ -223,7 +226,7 @@ static void uart_ring_out_drain(unsigned uart)
             {
                 if (!rs485_transmit_stopping)
                 {
-                    log_debug(DEBUG_MODBUS, "Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
+                    modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
                     rs485_stop_transmitting = since_boot_ms;
                     rs485_transmit_stopping = true;
                     return;
@@ -244,7 +247,7 @@ static void uart_ring_out_drain(unsigned uart)
             rs485_transmitting = true;
             _set_rs485_mode(true);
             rs485_start_transmitting = since_boot_ms;
-            log_debug(DEBUG_MODBUS, "Data to send, delay %"PRIu32"ms", modbus_start_delay());
+            modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
             return;
         }
         else

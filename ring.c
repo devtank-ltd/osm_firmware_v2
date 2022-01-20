@@ -23,6 +23,16 @@ bool ring_buf_add(ring_buf_t * ring_buf, char c)
 }
 
 
+bool     ring_buf_add_data(ring_buf_t * ring_buf, void * data, unsigned size)
+{
+    char * pos = (char*)data;
+    while(size--)
+        if (!ring_buf_add(ring_buf, *pos++))
+            return false;
+    return true;
+}
+
+
 void ring_buf_add_str(ring_buf_t * ring_buf, char * s)
 {
     while(*s)
@@ -64,6 +74,23 @@ unsigned  ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
     }
     return len;
 }
+
+
+unsigned ring_buf_peek(ring_buf_t * ring_buf, char * buf, unsigned len)
+{
+    unsigned r_pos = ring_buf->r_pos;
+
+    for(unsigned n = 0; n < len; n++)
+    {
+        buf[n] = ring_buf->buf[r_pos];
+        if (r_pos == ring_buf->w_pos)
+            return n;
+        r_pos++;
+        r_pos %= ring_buf->size;
+    }
+    return len;
+}
+
 
 
 unsigned  ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
