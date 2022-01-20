@@ -111,15 +111,16 @@
 #define DEBUG_MEASUREMENTS 0x400
 #define DEBUG_FW           0x800
 
-#define log_sys_debug(...) log_debug(DEBUG_SYS,  __VA_ARGS__)
-#define adc_debug(...)  log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
-#define lw_debug(...)  log_debug(DEBUG_LW, "LORA: " __VA_ARGS__)
-#define io_debug(...)  log_debug(DEBUG_IO, "IO: " __VA_ARGS__)
-#define uart_debug(_uart_, ...) log_debug(DEBUG_UART(uart), "UART"STR(_uart_)__VA_ARGS__)
-#define hpm_debug(...) log_debug(DEBUG_HPM, "HPM: " __VA_ARGS__)
-#define modbus_debug(...) log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
+#define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
+#define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
+#define lw_debug(...)           log_debug(DEBUG_LW, "LORA: " __VA_ARGS__)
+#define io_debug(...)           log_debug(DEBUG_IO, "IO: " __VA_ARGS__)
+#define uart_debug(_uart_, ...) log_debug(DEBUG_UART(uart), "UART"STR(_uart_)": "__VA_ARGS__)
+#define hpm_debug(...)          log_debug(DEBUG_HPM, "HPM: " __VA_ARGS__)
+#define modbus_debug(...)       log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
 #define measurements_debug(...) log_debug(DEBUG_MEASUREMENTS, "Measure: " __VA_ARGS__)
-#define fw_debug(...) log_debug(DEBUG_FW, "FW: "__VA_ARGS__)
+#define fw_debug(...)           log_debug(DEBUG_FW, "FW: "__VA_ARGS__)
+
 
 #define INTERVAL__TRANSMIT_MIN  5
 #define INTERVAL__TRANSMIT_MS   (INTERVAL__TRANSMIT_MIN * 60 * 1000)
