@@ -247,6 +247,12 @@ static void measurements_sample(void)
         m_def  = &measurement_arr.def[i];
         m_data = &measurement_arr.data[i];
 
+        // Breakout if the interval is 0
+        if (m_def->base.interval == 0)
+        {
+            continue;
+        }
+
         sample_interval = m_def->base.interval * INTERVAL__TRANSMIT_MS / m_def->base.samplecount;
         time_since_interval = since_boot_delta(now, last_sent_ms);
 
@@ -325,6 +331,19 @@ uint16_t measurements_num_measurements(void)
 }
 
 
+static bool measurements_is_all_zero(uint8_t* memory, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (memory[i] != 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 bool measurements_add(measurement_def_t* measurement_def)
 {
     if (measurement_arr.len >= MEASUREMENTS_MAX_NUMBER)
@@ -342,12 +361,19 @@ bool measurements_add(measurement_def_t* measurement_def)
             return false;
         }
     }
-    measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
-    measurement_arr.def[measurement_arr.len] = *measurement_def;
-    measurement_arr.data[measurement_arr.len] = measurement_data;
-    measurement_arr.len++;
-
-    return true;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        if (measurements_is_all_zero((uint8_t*)&measurement_arr.def[i], sizeof(measurement_arr.def[i])))
+        {
+            measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
+            measurement_arr.def[i] = *measurement_def;
+            measurement_arr.data[i] = measurement_data;
+            measurement_arr.len++;
+            return true;
+        }
+    }
+    log_error("Could not find a space to add %s", measurement_def->base.name);
+    return false;
 }
 
 
@@ -357,7 +383,10 @@ bool measurements_del(char* name)
     {
         if (strcmp(name, measurement_arr.def[i].base.name) == 0)
         {
-            memset(&measurement_arr.def[measurement_arr.len], 0, sizeof(measurement_def_t));
+            memset(&measurement_arr.def[i], 0, sizeof(measurement_def_t));
+            memset(&measurement_arr.data[i], 0, sizeof(measurement_data_t));
+            //measurement_arr.def[i] = MEASUREMENT_DEF_UNSET;
+            //measurement_arr.data[i] = MEASUREMENT_DATA_UNSET;
             measurement_arr.len--;
             return true;
         }

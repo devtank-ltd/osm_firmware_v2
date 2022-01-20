@@ -439,6 +439,20 @@ static void measurements_cb(char *args)
 }
 
 
+static void measurements_rm_cb(char* args)
+{
+    if (!measurements_del(args))
+    {
+        log_out("Could not remove measurment.");
+    }
+    if (!measurements_save())
+    {
+        log_out("Failed to commit remove to persistent.");
+    }
+}
+
+
+
 static void fw_add(char *args)
 {
     args = skip_space(args);
@@ -574,6 +588,7 @@ void cmds_process(char * command, unsigned len)
         { "mb_log",       "Show modbus setup",        modbus_log},
         { "mb_save",      "Save modbus setup",        modbus_save},
         { "measurements", "Print measurements",       measurements_cb},
+        { "measurements_rm", "Remove measurement",    measurements_rm_cb},
         { "fw+",          "Add chunk of new fw.",     fw_add},
         { "fw@",          "Finishing crc of new fw.", fw_fin},
         { "reset",        "Reset device.",            reset_cb},
