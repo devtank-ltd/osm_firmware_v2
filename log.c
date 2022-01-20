@@ -10,6 +10,7 @@
 #include "uarts.h"
 #include "uart_rings.h"
 #include "persist_config.h"
+#include "sys_time.h"
 
 uint32_t log_debug_mask = DEBUG_SYS | DEBUG_LW | DEBUG_MEASUREMENTS;
 bool     log_async_log  = false;
@@ -56,12 +57,17 @@ static void log_msgv(unsigned uart, bool blocking, const char * prefix, const ch
 
 void log_debug(uint32_t flag, const char *s, ...)
 {
-    if ((flag & log_debug_mask) != flag)
+    if (!(flag & log_debug_mask))
         return;
 
     va_list ap;
     va_start(ap, s);
-    log_msgv(UART_ERR_NU, false, "DEBUG:", s, ap);
+
+    char prefix[18];
+
+    snprintf(prefix, sizeof(prefix), "DEBUG:%010u:", (unsigned)since_boot_ms);
+
+    log_msgv(UART_ERR_NU, false, prefix, s, ap);
     va_end(ap);
 }
 

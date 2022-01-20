@@ -27,7 +27,7 @@
 #include "sos.h"
 #include "timers.h"
 
-_Atomic uint32_t since_boot_ms = 0;
+volatile uint32_t since_boot_ms = 0;
 
 
 void hard_fault_handler(void)

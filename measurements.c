@@ -201,7 +201,7 @@ static void measurements_send(void)
         {
             if (m_data->sum.type == VALUE_UNSET || m_data->num_samples == 0)
             {
-                log_error("Measurement requested but value not set.");
+                log_error("Measurement \"%s\" requested but value not set.", m_def->base.name);
                 continue;
             }
             if (!measurements_to_arr(m_def, m_data))

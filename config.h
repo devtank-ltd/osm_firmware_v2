@@ -55,8 +55,6 @@
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
 
-#define CMD_OUT_BUF_SIZE 1024
-
 /* Uart index on uart ring buffer use
 
     CMD_UART   0
@@ -66,7 +64,7 @@
 */
 
 #define UART_0_IN_BUF_SIZE  CMD_LINELEN
-#define UART_0_OUT_BUF_SIZE 1024
+#define UART_0_OUT_BUF_SIZE 2048
 
 #define UART_1_IN_BUF_SIZE  128
 #define UART_1_OUT_BUF_SIZE 512
