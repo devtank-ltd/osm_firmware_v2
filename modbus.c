@@ -94,6 +94,7 @@ static unsigned current_regs_w_pos = 0;
 
 static uint32_t modbus_read_timing_init = 0;
 static uint32_t modbus_read_last_good = 0;
+static bool     modbus_has_rx = false;
 
 static uint32_t modbus_send_start_delay = 0;
 static uint32_t modbus_send_stop_delay = 0;
@@ -299,16 +300,20 @@ bool modbus_start_read(modbus_reg_t * reg)
 
     if (current_regs[current_regs_r_pos]) /* Read has caught up with write. */
     {
-        uint32_t delta = since_boot_delta(since_boot_ms, modbus_read_last_good);
-        if (delta < MODBUS_SENT_TIMEOUT_MS)
+        if (modbus_has_rx)
         {
-            modbus_debug("No slot free.. comms??");
-            return false;
+            uint32_t delta = since_boot_delta(since_boot_ms, modbus_read_last_good);
+            if (delta < MODBUS_SENT_TIMEOUT_MS)
+            {
+                modbus_debug("No slot free.. comms??");
+                return false;
+            }
         }
         modbus_debug("Previous comms issue. Restarting slots.");
         memset(current_regs, 0, sizeof(current_regs));
         current_regs_r_pos = current_regs_w_pos = 0;
         modbus_read_last_good = 0;
+        modbus_has_rx = false;
     }
 
     current_regs[current_regs_r_pos++] = reg;
@@ -475,6 +480,7 @@ void modbus_ring_process(ring_buf_t * ring)
     modbus_debug("Good CRC");
     modbuspacket_len = 0;
     modbus_read_last_good = since_boot_ms;
+    modbus_has_rx = true;
 
     if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
         (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
