@@ -281,7 +281,7 @@ bool modbus_start_read(modbus_reg_t * reg)
 {
     modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
-    if (!dev || !(reg->func != MODBUS_READ_HOLDING_FUNC && reg->func != MODBUS_READ_INPUT_FUNC))
+    if (!dev || !(reg->func == MODBUS_READ_HOLDING_FUNC || reg->func == MODBUS_READ_INPUT_FUNC))
     {
         log_error("Modbus register \"%."STR(MODBUS_NAME_LEN)"s\" unable to start read.", reg->name);
         return false;
