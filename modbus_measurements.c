@@ -4,12 +4,16 @@
 #include "modbus.h"
 #include "value.h"
 
-#define MODBUS_COLLECTION_MS 1000
+/* On tests it's about 300ms per register @9600 with the RI-F220
+ * Max 4 devices with max 16 registers
+ * 300 * 16 * 4 = 19200
+ */
+#define MODBUS_COLLECTION_MS 20000
 
 
 uint32_t modbus_measurements_collection_time(void)
 {
-    return 500;
+    return MODBUS_COLLECTION_MS;
 }
 
 bool modbus_measurements_init(char* name)
@@ -55,7 +59,7 @@ bool modbus_measurements_get(char* name, value_t* value)
             if (!modbus_reg_get_float(reg, &v))
                 return false;
 
-            *value = value_from(v);
+            *value = value_from((int64_t)(v * 1000));
             return true;
         }
         default: break;
