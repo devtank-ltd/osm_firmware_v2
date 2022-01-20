@@ -312,9 +312,6 @@ static void process_serial(unsigned uart)
     if (!uart_getc(channel->usart, &c))
         return;
 
-    if (uart == RS485_UART)
-        log_debug(DEBUG_MODBUS, "Modbus RX byte:0x%"PRIx8, *(uint8_t*)&c);
-
     uart_ring_in(uart, &c, 1);
 }
 
