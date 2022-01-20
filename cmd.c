@@ -444,10 +444,12 @@ static void measurements_rm_cb(char* args)
     if (!measurements_del(args))
     {
         log_out("Could not remove measurment.");
+        return;
     }
     if (!measurements_save())
     {
         log_out("Failed to commit remove to persistent.");
+        return;
     }
 }
 
