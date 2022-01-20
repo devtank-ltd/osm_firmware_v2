@@ -79,7 +79,7 @@ static bool measurements_get_measurement_def(char* name, measurement_def_t** mea
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         t_measurement_def = &measurement_arr.def[i];
-        if (ID_FROM_NAME(*t_measurement_def->base.name) == ID_FROM_NAME(*name))
+        if (strcmp(t_measurement_def->base.name, name) == 0)
         {
             *measurement_def = t_measurement_def;
             return true;
