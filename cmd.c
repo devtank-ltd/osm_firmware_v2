@@ -265,19 +265,21 @@ static void debug_cb(char * args)
 {
     char * pos = skip_space(args);
 
-    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
-        pos += 2;
+    log_debug(DEBUG_SYS, "Debug mask : 0x%"PRIx32, log_debug_mask);
 
-    unsigned mask = strtoul(pos, &pos, 16);
+    if (pos[0])
+    {
+        if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+            pos += 2;
 
-    mask |= DEBUG_SYS;
+        unsigned mask = strtoul(pos, &pos, 16);
 
-    uint32_t prev_mask = persist_get_log_debug_mask();
+        mask |= DEBUG_SYS;
 
-    log_debug_mask = mask;
-    persist_set_log_debug_mask(mask);
-    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
-    log_debug(DEBUG_SYS, "Previous mask was 0x%"PRIx32, prev_mask);
+        log_debug_mask = mask;
+        persist_set_log_debug_mask(mask);
+        log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    }
 }
 
 
