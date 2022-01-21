@@ -24,8 +24,9 @@ Documents used:
 #include "log.h"
 #include "htu21d.h"
 #include "measurements.h"
+#include "sys_time.h"
 
-#define MEASUREMENT_COLLECTION_MS 50
+#define MEASUREMENT_COLLECTION_MS 45
 
 typedef enum
 {
@@ -104,6 +105,19 @@ uint8_t _crc8(uint8_t* mem, uint8_t size)
 #define htu21d_debug(...)  log_debug(DEBUG_TMP_HUM, "HTU21D: " __VA_ARGS__)
 
 
+
+static bool _htu21d_get_u16(uint8_t d[3], uint16_t *r)
+{
+    htu21d_debug("Got 0x%"PRIx8" 0x%"PRIx8" 0x%"PRIx8, d[0], d[1], d[2]);
+
+    *r = (d[0] << 8) | d[1];
+
+    uint8_t crc =  _crc8(d, 2);
+    htu21d_debug("CRC : 0x%"PRIx8, crc);
+    return d[2] == crc;
+}
+
+
 static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
 {
     if (!r)
@@ -114,13 +128,42 @@ static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
 
     i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3);
 
-    htu21d_debug("Got 0x%"PRIx8" 0x%"PRIx8" 0x%"PRIx8, d[0], d[1], d[2]);
+    return _htu21d_get_u16(d, r);
+}
 
-    *r = (d[0] << 8) | d[1];
 
-    uint8_t crc =  _crc8(d, 2);
-    htu21d_debug("CRC : 0x%"PRIx8, crc);
-    return d[2] == crc;
+static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
+{
+    htu21d_debug("Try read");
+    i2c_set_7bit_address(HTU21D_I2C, I2C_HTU21D_ADDR);
+    i2c_set_read_transfer_dir(HTU21D_I2C);
+    i2c_set_bytes_to_transfer(HTU21D_I2C, 3);
+
+    i2c_send_start(HTU21D_I2C);
+    i2c_enable_autoend(HTU21D_I2C);
+
+    uint32_t start_ms = since_boot_ms;
+
+    while(since_boot_delta(since_boot_ms, start_ms) < timeout)
+    {
+        if (!i2c_nack(HTU21D_I2C))
+        {
+            uint8_t d[3] = {0};
+            for (size_t i = 0; i < 3; i++)
+            {
+                while (i2c_received_data(HTU21D_I2C) == 0)
+                    if (since_boot_delta(since_boot_ms, start_ms) > timeout)
+                        goto timeout;
+                d[i] = i2c_get_data(HTU21D_I2C);
+            }
+            return _htu21d_get_u16(d, r);
+        }
+    }
+
+timeout:
+    htu21d_debug("Read timeout.");
+
+    return false;
 }
 
 
@@ -181,8 +224,13 @@ uint32_t htu21d_measurements_collection_time(void)
 }
 
 
+static int32_t last_temp_reading = 0;
+
 bool htu21d_temp_measurements_init(char* name)
 {
+    if (last_temp_reading)
+        return false;
+    _htu21d_send(HTU21D_TRIG_TEMP_MEAS);
     return true;
 }
 
@@ -191,17 +239,20 @@ bool htu21d_temp_measurements_get(char* name, value_t* value)
 {
     if (!value)
         return false;
-    int32_t temp;
-    if (!htu21d_read_temp(&temp))
+    uint16_t s_temp;
+    if (!_htu21d_read_data(&s_temp, 10))
         return false;
-
-    *value = value_from(temp / 100.0f);
+    _htu21d_temp_conv(s_temp, &last_temp_reading);
+    *value = value_from(last_temp_reading / 100.0f);
     return true;
 }
 
 
 bool htu21d_humi_measurements_init(char* name)
 {
+    if (!last_temp_reading)
+        return false;
+    _htu21d_send(HTU21D_TRIG_HUMI_MEAS);
     return true;
 }
 
@@ -210,11 +261,17 @@ bool htu21d_humi_measurements_get(char* name, value_t* value)
 {
     if (!value)
         return false;
-    int32_t temp;
-    if (!htu21d_read_humidity(&temp))
+    if (!last_temp_reading)
         return false;
-
-    *value = value_from(temp / 100.0f);
+    int32_t temp = last_temp_reading;
+    last_temp_reading = 0; /*Release*/
+    uint16_t s_humi;
+    if (!_htu21d_read_data(&s_humi, 10))
+        return false;
+    int32_t humi;
+    if (!_htu21d_humi_full(temp, s_humi, &humi))
+        return false;
+    *value = value_from(humi / 100.0f);
     return true;
 }
 
@@ -228,7 +285,7 @@ void htu21d_init(void)
 
     memcpy(meas_def.base.name, "TEMP", 5);
 
-    meas_def.base.samplecount = 1;
+    meas_def.base.samplecount = 2;
     meas_def.base.interval    = 1;
     meas_def.base.type        = HTU21D_TMP;
     meas_def.collection_time  = MEASUREMENT_COLLECTION_MS;
@@ -236,7 +293,6 @@ void htu21d_init(void)
     meas_def.get_cb           = htu21d_temp_measurements_get;
 
     measurements_add(&meas_def);
-
     memcpy(meas_def.base.name, "HUMI", 5);
     meas_def.base.type        = HTU21D_HUM;
     meas_def.init_cb          = htu21d_humi_measurements_init;
