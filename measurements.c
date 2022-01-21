@@ -121,6 +121,21 @@ static bool measurements_arr_append_i64(int64_t val)
            measurements_arr_append_i32((val >> 32) & 0xFFFFFFFF);
 }
 
+
+static bool measurements_arr_append_float(float val)
+{
+    int32_t m_val = val * 1000;
+    return measurements_arr_append_i32(m_val);
+}
+
+
+static bool measurements_arr_append_double(double val)
+{
+    int64_t m_val = val * 1000;
+    return measurements_arr_append_i64(m_val);
+}
+
+
 static bool measurements_arr_append_value(value_t * value)
 {
     if (!value)
@@ -137,8 +152,8 @@ static bool measurements_arr_append_value(value_t * value)
         case VALUE_INT32  : return measurements_arr_append_i32(value->i32);
         case VALUE_UINT64 : return measurements_arr_append_i64(value->i64);
         case VALUE_INT64  : return measurements_arr_append_i64(value->i64);
-        case VALUE_FLOAT  : return measurements_arr_append_i32(value->i32);
-        case VALUE_DOUBLE : return measurements_arr_append_i64(value->i64);
+        case VALUE_FLOAT  : return measurements_arr_append_float(value->f);
+        case VALUE_DOUBLE : return measurements_arr_append_double(value->r);
         default: break;
     }
     return false;
@@ -285,11 +300,6 @@ static void measurements_sample(void)
                 log_error("Could not get the %s value.", m_def->base.name);
                 return;
             }
-            if (m_data->sum.type == VALUE_UNSET)
-            {
-                m_data->sum.u64 = 0;
-                m_data->sum.type = VALUE_INT32;
-            }
             if (m_data->min.type == VALUE_UNSET)
             {
                 m_data->min = new_value;
@@ -298,10 +308,19 @@ static void measurements_sample(void)
             {
                 m_data->max = new_value;
             }
-            if (!value_add(&m_data->sum, &m_data->sum, &new_value))
+
+            if (m_data->sum.type == VALUE_UNSET)
             {
-                log_error("Failed to add %s value.", m_def->base.name);
+                m_data->sum = new_value;
             }
+            else
+            {
+                if (!value_add(&m_data->sum, &m_data->sum, &new_value))
+                {
+                    log_error("Failed to add %s value.", m_def->base.name);
+                }
+            }
+
             m_data->num_samples++;
             if (value_grt(&new_value, &m_data->max))
             {
