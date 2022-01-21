@@ -114,4 +114,7 @@
 #define INTERVAL__TRANSMIT_MIN  5
 #define INTERVAL__TRANSMIT_MS   (INTERVAL__TRANSMIT_MIN * 60 * 1000)
 
+
+#define __ADC_RMS_FULL__
+
 #endif //__CONFIG__

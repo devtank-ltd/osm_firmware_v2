@@ -141,7 +141,7 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
     return true;
 }
 
-#define __ADC_RMS_FULL__
+
 #ifdef __ADC_RMS_FULL__
 
 static float _Q_rsqrt( float number )
