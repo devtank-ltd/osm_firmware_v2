@@ -75,19 +75,22 @@ int32_t ilog10(uint32_t x)
 }
 
 
+// HTU21D(F) sensor provides a CRC-8 checksum for error detection. The polynomial used is X8 + X5 + X4 + 1.
 uint8_t _crc8(uint8_t* mem, uint8_t size)
 {
     uint8_t crc = 0x00;
     for (uint8_t i = 0; i < size; i++)
     {
          uint8_t byte = mem[i];
+         crc ^= byte;
          for (uint8_t j = 0; j < 8; ++j)
          {
-            uint8_t blend = (crc ^ byte) & 0x01;
-            crc >>= 1;
-            if (blend)
-                crc ^= 0x8C;
-            byte >>= 1;
+            if (crc & 0x80)
+            {
+                crc <<= 1;
+                crc ^= 0x131;
+            }
+            else crc <<= 1;
          }
     }
     return crc;
@@ -109,10 +112,11 @@ static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
 
     htu21d_debug("Got 0x%"PRIx8" 0x%"PRIx8" 0x%"PRIx8, d[0], d[1], d[2]);
 
-    *r = ((d[0] & 0x3f) << 8) | d[1];
+    *r = (d[0] << 8) | d[1];
 
-    // HTU21D(F) sensor provides a CRC-8 checksum for error detection. The polynomial used is X8 + X5 + X4 + 1.
-    return (d[2] == _crc8(d, 2));
+    uint8_t crc =  _crc8(d, 2);
+    htu21d_debug("CRC : 0x%"PRIx8, crc);
+    return d[2] == crc;
 }
 
 
@@ -130,9 +134,7 @@ static bool _htu21d_temp_conv(uint16_t s_temp, int32_t* temp)
     {
         return false;
     }
-    uint32_t inter_val = -4685 + 17572 * s_temp;
-    inter_val /= (1 << 16);
-    *temp = inter_val;
+    *temp = 17572 * s_temp / (1 << 16) - 4685;
     return true;
 }
 
@@ -140,23 +142,20 @@ static bool _htu21d_temp_conv(uint16_t s_temp, int32_t* temp)
 static bool _htu21d_humi_conv(uint16_t s_humi, int32_t* humi)
 {
     if (!humi)
-    {
+
         return false;
-    }
-    uint32_t inter_val = -600 + 12500 * s_humi;
-    inter_val /= (1 << 16);
-    *humi = inter_val;
+    *humi =12500 * s_humi / (1 << 16) - 600;
     return true;
 }
 
 
-static bool _htu21d_humi_full(uint16_t s_temp, uint16_t s_humi, int32_t* humi)
+static bool _htu21d_humi_full(int32_t temp, uint16_t s_humi, int32_t* humi)
 {
     if (!_htu21d_humi_conv(s_humi, humi))
     {
         return false;
     }
-    *humi += -0.15 * (2500 - s_temp);
+    *humi += -(15 * (2500 - temp)) / 100;
     return true;
 }
 
@@ -194,18 +193,20 @@ bool htu21d_read_temp(int32_t* temp)
 
 bool htu21d_read_humidity(int32_t* humidity)
 {
-    uint16_t s_humi, s_temp;
+    uint16_t s_humi;
+    int32_t temp;
+
     if (!_htu21d_read_reg16(HTU21D_HOLD_TRIG_HUMI_MEAS, &s_humi))
     {
         htu21d_debug("Cannot read the humdity.");
         return false;
     }
-    if (!_htu21d_read_reg16(HTU21D_HOLD_TRIG_TEMP_MEAS, &s_temp))
+    if (!htu21d_read_temp(&temp))
     {
         htu21d_debug("Cannot read the temperature.");
         return false;
     }
-    return _htu21d_humi_full(s_temp, s_humi, humidity);
+    return _htu21d_humi_full(temp, s_humi, humidity);
 }
 
 
