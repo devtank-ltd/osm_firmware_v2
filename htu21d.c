@@ -160,13 +160,13 @@ static bool _htu21d_humi_full(int32_t temp, uint16_t s_humi, int32_t* humi)
 }
 
 
-static bool _htu21d_dew_point(uint16_t temp, uint16_t humi, int32_t* t_dew)
+static bool _htu21d_dew_point(int32_t temp, int32_t humi, int32_t* t_dew)
 {
     float A, B, C;
-    A = 8.1332;
-    B = 1762.39;
-    C = 235.66;
-    uint32_t denom = ilog10(humi) + A - B / (temp/100 + C) - 4 - A;
+    A = 8.1332f;
+    B = 1762.39f;
+    C = 235.66f;
+    uint32_t denom = ilog10(humi) + A - B / (temp/100.0f + C) - 4 - A;
     *t_dew = -B * 100 / denom;
     return true;
 }

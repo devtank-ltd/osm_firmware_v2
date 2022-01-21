@@ -542,7 +542,7 @@ static void temperature_cb(char* args)
 {
     int32_t temp;
     htu21d_read_temp(&temp);
-    log_out("Temperature: %0.3fdegC", (float)temp/100.);
+    log_out("Temperature: %0.3fdegC", (float)temp/100.f);
 }
 
 
@@ -550,7 +550,7 @@ static void humidity_cb(char* args)
 {
     int32_t humi;
     htu21d_read_humidity(&humi);
-    log_out("Humidity: %0.3f%%", (float)humi/100.);
+    log_out("Humidity: %0.3f%%", (float)humi/100.f);
 }
 
 
@@ -558,7 +558,7 @@ static void dew_point_cb(char* args)
 {
     int32_t dew_temp;
     htu21d_read_dew_temp(&dew_temp);
-    log_out("Dew temperature: %0.3fdegC", (float)dew_temp/100.);
+    log_out("Dew temperature: %0.3fdegC", (float)dew_temp/100.f);
 }
 
 
