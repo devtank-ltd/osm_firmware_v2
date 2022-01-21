@@ -10,11 +10,10 @@
 
 #define I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, GPIO_AF4, {GPIOB, GPIO8|GPIO9} }}
 
-#define HTU21D_I2C 0
+#define HTU21D_I2C       I2C1
 #define HTU21D_I2C_INDEX 0
 
-#define I2C_HTU21D_R_ADDR 0x40
-#define I2C_HTU21D_W_ADDR 0x80
+#define I2C_HTU21D_ADDR 0x40
 
 #define LED_PORT   GPIOA
 #define LED_PIN    GPIO0

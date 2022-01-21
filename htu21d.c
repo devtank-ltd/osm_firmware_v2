@@ -105,7 +105,7 @@ static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
     uint8_t d[3] = {0};
     htu21d_debug("Read command 0x%"PRIx8, reg8);
 
-    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_R_ADDR, &reg8, 1, d, 3);
+    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3);
 
     htu21d_debug("Got 0x%"PRIx8" 0x%"PRIx8" 0x%"PRIx8, d[0], d[1], d[2]);
 
@@ -120,7 +120,7 @@ static void _htu21d_send(htu21d_reg_t reg)
 {
     uint8_t reg8 = reg;
     htu21d_debug("Send command 0x%"PRIx8, reg8);
-    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_W_ADDR, &reg8, 1, NULL, 0);
+    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0);
 }
 
 
@@ -175,6 +175,7 @@ static bool _htu21d_dew_point(uint16_t temp, uint16_t humi, int32_t* t_dew)
 
 void htu21d_init(void)
 {
+    i2c_init(HTU21D_I2C_INDEX);
     _htu21d_send(HTU21D_SOFT_RESET);
 }
 
