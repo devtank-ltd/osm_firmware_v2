@@ -117,6 +117,21 @@ static bool measurements_arr_append_i64(int64_t val)
            measurements_arr_append_i32((val >> 32) & 0xFFFFFFFF);
 }
 
+
+static bool measurements_arr_append_float(float val)
+{
+    int32_t m_val = val * 1000;
+    return measurements_arr_append_i32(m_val);
+}
+
+
+static bool measurements_arr_append_double(double val)
+{
+    int64_t m_val = val * 1000;
+    return measurements_arr_append_i64(m_val);
+}
+
+
 static bool measurements_arr_append_value(value_t * value)
 {
     if (!value)
@@ -133,8 +148,8 @@ static bool measurements_arr_append_value(value_t * value)
         case VALUE_INT32  : return measurements_arr_append_i32(value->i32);
         case VALUE_UINT64 : return measurements_arr_append_i64(value->i64);
         case VALUE_INT64  : return measurements_arr_append_i64(value->i64);
-        case VALUE_FLOAT  : return measurements_arr_append_i32(value->i32);
-        case VALUE_DOUBLE : return measurements_arr_append_i64(value->i64);
+        case VALUE_FLOAT  : return measurements_arr_append_float(value->f);
+        case VALUE_DOUBLE : return measurements_arr_append_double(value->r);
         default: break;
     }
     return false;
@@ -209,9 +224,9 @@ static void measurements_send(void)
                 return;
             }
             num_qd++;
-            m_data->sum.type = VALUE_UNSET;
-            m_data->min.type = VALUE_UNSET;
-            m_data->max.type = VALUE_UNSET;
+            m_data->sum = VALUE_EMPTY;
+            m_data->min = VALUE_EMPTY;
+            m_data->max = VALUE_EMPTY;
             m_data->num_samples = 0;
             m_data->num_samples_init = 0;
             m_data->num_samples_collected = 0;
@@ -229,7 +244,7 @@ static void measurements_sample(void)
     measurement_def_t*  m_def;
     measurement_data_t* m_data;
     uint32_t            sample_interval;
-    value_t             new_value;
+    value_t             new_value = VALUE_EMPTY;
     uint32_t            now = since_boot_ms;
     uint32_t            time_since_interval;
 
@@ -242,6 +257,12 @@ static void measurements_sample(void)
     {
         m_def  = &measurement_arr.def[i];
         m_data = &measurement_arr.data[i];
+
+        // Breakout if the interval is 0
+        if (m_def->base.interval == 0)
+        {
+            continue;
+        }
 
         sample_interval = m_def->base.interval * INTERVAL__TRANSMIT_MS / m_def->base.samplecount;
         time_since_interval = since_boot_delta(now, last_sent_ms);
@@ -269,15 +290,11 @@ static void measurements_sample(void)
         if (time_since_interval >= time_collect)
         {
             m_data->num_samples_collected++;
+            new_value = VALUE_EMPTY;
             if (!m_def->get_cb(m_def->base.name, &new_value))
             {
                 log_error("Could not get the %s value.", m_def->base.name);
                 return;
-            }
-            if (m_data->sum.type == VALUE_UNSET)
-            {
-                m_data->sum.type = VALUE_UINT8;
-                m_data->sum.u64 = 0;
             }
             if (m_data->min.type == VALUE_UNSET)
             {
@@ -287,10 +304,19 @@ static void measurements_sample(void)
             {
                 m_data->max = new_value;
             }
-            if (!value_add(&m_data->sum, &m_data->sum, &new_value))
+
+            if (m_data->sum.type == VALUE_UNSET)
             {
-                log_error("Failed to add %s value.", m_def->base.name);
+                m_data->sum = new_value;
             }
+            else
+            {
+                if (!value_add(&m_data->sum, &m_data->sum, &new_value))
+                {
+                    log_error("Failed to add %s value.", m_def->base.name);
+                }
+            }
+
             m_data->num_samples++;
             if (value_grt(&new_value, &m_data->max))
             {
@@ -320,6 +346,19 @@ uint16_t measurements_num_measurements(void)
 }
 
 
+static bool measurements_is_all_zero(uint8_t* memory, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (memory[i] != 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 bool measurements_add(measurement_def_t* measurement_def)
 {
     if (measurement_arr.len >= MEASUREMENTS_MAX_NUMBER)
@@ -327,21 +366,29 @@ bool measurements_add(measurement_def_t* measurement_def)
         log_error("Cannot add more measurements. Reached max.");
         return false;
     }
+    measurement_def_t* measurement_def_iter;
     for (unsigned i = 0; i < measurement_arr.len; i++)
     {
-        if (memcmp(measurement_arr.def[i].base.name,
-                    measurement_def->base.name,
-                    MEASURE_NAME_LEN) == 0)
+        measurement_def_iter = &measurement_arr.def[i];
+        if (strncmp(measurement_def_iter->base.name, measurement_def->base.name, sizeof(measurement_def_iter->base.name)) == 0)
         {
             log_error("Tried to add measurement with the same name: %s", measurement_def->base.name);
             return false;
         }
     }
-    measurement_arr.def[measurement_arr.len] = *measurement_def;
-    memset(&measurement_arr.data[measurement_arr.len], 0, sizeof(measurement_data_t));
-    measurement_arr.len++;
-
-    return true;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        if (measurements_is_all_zero((uint8_t*)&measurement_arr.def[i], sizeof(measurement_arr.def[i])))
+        {
+            measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
+            measurement_arr.def[i] = *measurement_def;
+            measurement_arr.data[i] = measurement_data;
+            measurement_arr.len++;
+            return true;
+        }
+    }
+    log_error("Could not find a space to add %s", measurement_def->base.name);
+    return false;
 }
 
 
@@ -351,7 +398,8 @@ bool measurements_del(char* name)
     {
         if (strcmp(name, measurement_arr.def[i].base.name) == 0)
         {
-            memset(&measurement_arr.def[measurement_arr.len], 0, sizeof(measurement_def_t));
+            memset(&measurement_arr.def[i], 0, sizeof(measurement_def_t));
+            memset(&measurement_arr.data[i], 0, sizeof(measurement_data_t));
             measurement_arr.len--;
             return true;
         }

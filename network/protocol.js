@@ -3,6 +3,156 @@
 //  - bytes is an array of bytes, e.g. [225, 230, 255, 0]
 //  - variables contains the device variables e.g. {"calibration": "3.5"} (both the key / value are of type string)
 // The function must return an object, e.g. {"temperature": 22.5}
+
+function Decode_u8(bytes, pos)
+{
+    return bytes[pos];
+}
+
+
+function Decode_u16(bytes, pos)
+{
+    return (bytes[pos + 1] << 8) | bytes[pos];
+}
+
+
+function Decode_u32(bytes, pos)
+{
+    return (Decode_u16(bytes, pos + 2) << 16) | Decode_u16(bytes, pos);
+}
+
+
+function Decode_u64(bytes, pos)
+{
+    return (Decode_u32(bytes, pos + 4) << 32 | Decode_u32(bytes, pos));
+}
+
+
+function Decode_i8(bytes, pos)
+{
+    var UINT8_MAX = 256;
+    var val;
+    pos, val = Decode_u8(bytes, pos);
+    if (val > UINT8_MAX / 2)
+    {
+        val -= UINT8_MAX;
+    }
+    return (pos, val);
+}
+
+
+function Decode_i16(bytes, pos)
+{
+    var UINT16_MAX = 0xFFFF;
+    var val;
+    pos, val = Decode_u16(bytes, pos);
+    if (val & 0x8000)
+    {
+        val -= (UINT16_MAX + 1);
+    }
+    return (pos, val);
+}
+
+
+function Decode_i32(bytes, pos)
+{
+    var UINT32_MAX = 0xFFFFFFFF;
+    var val;
+    pos, val = Decode_u32(bytes, pos);
+    if (val > UINT32_MAX / 2)
+    {
+        
+        val -= (UINT32_MAX + 1);
+    }
+    return (pos, val);
+}
+
+
+function Decode_i64(bytes, pos)
+{
+    var UINT64_MAX = 0xFFFFFFFFFFFFFFFF;
+    var val;
+    pos, val = Decode_u64(bytes, pos);
+    if (val > UINT64_MAX / 2)
+    {
+        val -= (UINT64_MAX - 1);
+    }
+    return (pos, val);
+}
+
+
+function Decode_float(bytes, pos)
+{
+    return Decode_i32(bytes, pos) / 1000;
+}
+
+
+function Decode_double(bytes, pos)
+{
+    return Decode_i64(bytes, pos) / 1000;
+}
+
+
+function Decode_value(value_type, bytes, pos)
+{
+    switch (value_type)
+    {
+        case 0x01:
+            return Decode_u8(bytes, pos);
+        case 0x02:
+            return Decode_u16(bytes, pos);
+        case 0x03:
+            return Decode_u32(bytes, pos);
+        case 0x04:
+            return Decode_u64(bytes, pos);
+        case 0x11:
+            return Decode_i8(bytes, pos);
+        case 0x12:
+            return Decode_i16(bytes, pos);
+        case 0x13:
+            return Decode_i32(bytes, pos);
+        case 0x14:
+            return Decode_i64(bytes, pos);
+        case 0x15:
+            return Decode_float(bytes, pos);
+        case 0x16:
+            return Decode_double(bytes, pos);
+        default:
+            return false;
+    }
+}
+
+
+function Value_sizes(value_type)
+{
+    switch (value_type)
+    {
+        case 0x01:
+            return 1;
+        case 0x02:
+            return 2;
+        case 0x03:
+            return 4;
+        case 0x04:
+            return 8;
+        case 0x11:
+            return 1;
+        case 0x12:
+            return 2;
+        case 0x13:
+            return 4;
+        case 0x14:
+            return 8;
+        case 0x15:
+            return 4;
+        case 0x16:
+            return 8;
+        default:
+            return false;
+    }
+}
+
+
 function Decode(fPort, bytes, variables)
 {
     var pos = 0;
@@ -14,16 +164,6 @@ function Decode(fPort, bytes, variables)
     {
         return obj;
     }
-
-    var value_type_sizes = { 0x01 : 1 ,
-                             0x02 : 2 ,
-                             0x03 : 4 ,
-                             0x04 : 8 ,
-                             0x11 : 1 ,
-                             0x12 : 2 ,
-                             0x13 : 4 ,
-                             0x14 : 8 };
-
 
     var name;
     while(pos < bytes.length)
@@ -38,44 +178,33 @@ function Decode(fPort, bytes, variables)
             pos++;
         }
         var data_type = bytes[pos++];
-        var value_size;
+        var value_type, func;
         var mean, min, max;
         switch (data_type)
         {
             // Single measurement
             case 1:
-                value_type = value_type_sizes[bytes[pos++]];
-                mean = 0;
-                for (var i = 0; i < value_type; i++)
-                {
-                    mean = (mean << 8) | bytes[pos++];
-                }
+                value_type = bytes[pos++];
+                func = value_decoders[value_type];
+                mean = func(bytes, pos);
+                pos += Value_sizes(value_type);
                 obj[name] = mean;
                 break;
             // Multiple measurement
             case 2:
-                value_size = value_type_sizes[bytes[pos++]];
-                mean = 0;
-                for (var i = 0; i < value_size; i++)
-                {
-                    mean = (mean << 8) | bytes[pos++];
-                }
+                value_type = bytes[pos++];
+                mean = Decode_value(value_type, bytes, pos);
+                pos += Value_sizes(value_type);
                 obj[name] = mean;
 
-                value_size = value_type_sizes[bytes[pos++]];
-                min = 0;
-                for (var i = 0; i < value_size; i++)
-                {
-                    min = (min << 8) | bytes[pos++];
-                }
+                value_type = bytes[pos++];
+                min = Decode_value(value_type, bytes, pos);
+                pos += Value_sizes(value_type);
                 obj[name+"_min"] = min;
 
-                value_size = value_type_sizes[bytes[pos++]];
-                max = 0;
-                for (var i = 0; i < value_size; i++)
-                {
-                    max = (max << 8) | bytes[pos++];
-                }
+                value_type = bytes[pos++];
+                max = Decode_value(value_type, bytes, pos);
+                pos += Value_sizes(value_type);
                 obj[name+"_max"] = max;
                 break;
             default:
@@ -139,6 +268,6 @@ function Encode(fPort, obj, variables)
 
     return bytes;
 }
-
-console.log(Decode(0, [1, 80, 77, 49, 48, 2, 1, 0, 2, 0, 0, 2, 0, 0, 80, 77, 50, 53, 2, 1, 0, 2, 0, 0, 2, 0, 0, 67, 67, 49, 0, 2, 2, 174, 49, 2, 0, 0, 2, 0, 0, 0], 0));
-console.log(Encode(0, {"CMD" : "How are you?"}, 0));
+//0x01, 0x50,  4d 31 30 020104020400020600504d323502010302030002050000
+console.log(Decode(0, [1, 80, 77, 49, 48, 2, 1, 3, 2, 3, 0, 2, 5, 0, 80, 77, 50, 53, 2, 1, 2, 2, 2, 0, 2, 4, 0, 84, 77, 80, 50, 2, 21, 187, 73, 0, 0, 21, 187, 73, 0, 0, 21, 187, 73, 0, 0, 0], 0));
+//console.log(Encode(0, {"CMD" : "How are you?"}, 0));
