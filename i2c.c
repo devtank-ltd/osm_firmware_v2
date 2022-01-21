@@ -18,7 +18,6 @@ void    i2c_init(unsigned i2c_index)
 
     const i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
 
-    // It is important to have as small a gap as possible between Port bring up and pins being taken over by I2C, or it can be taken as a start bit!
     RCC_CCIPR |= (RCC_CCIPR_I2CxSEL_APB << RCC_CCIPR_I2C1SEL_SHIFT);
     rcc_periph_clock_enable(i2c_bus->rcc);
     rcc_periph_clock_enable(PORT_TO_RCC(i2c_bus->port_n_pins.port));
