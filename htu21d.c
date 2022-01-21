@@ -12,6 +12,7 @@ Documents used:
 
 
 #include <inttypes.h>
+#include <string.h>
 
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>
@@ -22,6 +23,9 @@ Documents used:
 #include "i2c.h"
 #include "log.h"
 #include "htu21d.h"
+#include "measurements.h"
+
+#define MEASUREMENT_COLLECTION_MS 50
 
 typedef enum
 {
@@ -171,11 +175,74 @@ static bool _htu21d_dew_point(int32_t temp, int32_t humi, int32_t* t_dew)
     return true;
 }
 
+uint32_t htu21d_measurements_collection_time(void)
+{
+    return MEASUREMENT_COLLECTION_MS;
+}
+
+
+bool htu21d_temp_measurements_init(char* name)
+{
+    return true;
+}
+
+
+bool htu21d_temp_measurements_get(char* name, value_t* value)
+{
+    if (!value)
+        return false;
+    int32_t temp;
+    if (!htu21d_read_temp(&temp))
+        return false;
+
+    *value = value_from(temp / 100.0f);
+    return true;
+}
+
+
+bool htu21d_humi_measurements_init(char* name)
+{
+    return true;
+}
+
+
+bool htu21d_humi_measurements_get(char* name, value_t* value)
+{
+    if (!value)
+        return false;
+    int32_t temp;
+    if (!htu21d_read_humidity(&temp))
+        return false;
+
+    *value = value_from(temp / 100.0f);
+    return true;
+}
+
 
 void htu21d_init(void)
 {
     i2c_init(HTU21D_I2C_INDEX);
     _htu21d_send(HTU21D_SOFT_RESET);
+
+    measurement_def_t meas_def;
+
+    memcpy(meas_def.base.name, "TEMP", 5);
+
+    meas_def.base.samplecount = 1;
+    meas_def.base.interval    = 1;
+    meas_def.base.type        = HTU21D_TMP;
+    meas_def.collection_time  = MEASUREMENT_COLLECTION_MS;
+    meas_def.init_cb          = htu21d_temp_measurements_init;
+    meas_def.get_cb           = htu21d_temp_measurements_get;
+
+    measurements_add(&meas_def);
+
+    memcpy(meas_def.base.name, "HUMI", 5);
+    meas_def.base.type        = HTU21D_HUM;
+    meas_def.init_cb          = htu21d_humi_measurements_init;
+    meas_def.get_cb           = htu21d_humi_measurements_get;
+
+    measurements_add(&meas_def);
 }
 
 

@@ -25,6 +25,8 @@ typedef enum
     PM25,
     CURRENT_CLAMP,
     W1_PROBE,
+    HTU21D_HUM,
+    HTU21D_TMP,
 } measurement_def_type_t;
 
 
