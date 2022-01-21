@@ -39,32 +39,6 @@ void hard_fault_handler(void)
 }
 
 
-static void clock_setup(void)
-{
-    rcc_osc_on(RCC_HSI16);
-
-    flash_prefetch_enable();
-    flash_set_ws(4);
-    flash_dcache_enable();
-    flash_icache_enable();
-    /* 16MHz / 4(M) = > 4 * 40(N) = 160MHz VCO => 80MHz main pll  */
-    rcc_set_main_pll(RCC_PLLCFGR_PLLSRC_HSI16, 4, 40,
-                     0, 0, RCC_PLLCFGR_PLLR_DIV2);
-    rcc_osc_on(RCC_PLL);
-    rcc_wait_for_osc_ready(RCC_PLL);
-
-    /* Enable clocks for peripherals we need */
-    rcc_periph_clock_enable(RCC_SYSCFG);
-
-    rcc_set_sysclk_source(RCC_CFGR_SW_PLL); /* careful with the param here! */
-    rcc_wait_for_sysclk_status(RCC_PLL);
-    /* FIXME - eventually handled internally */
-    rcc_ahb_frequency = 80e6;
-    rcc_apb1_frequency = 80e6;
-    rcc_apb2_frequency = 80e6;
-}
-
-
 uint32_t since_boot_delta(uint32_t newer, uint32_t older)
 {
     if (newer == older)
@@ -87,8 +61,10 @@ void sys_tick_handler(void)
 
 int main(void)
 {
-    clock_setup();
-    i2c_init(HTU21D_I2C_INDEX);
+    /* Main clocks setup in bootloader, but of course libopencm3 doesn't know. */
+    rcc_ahb_frequency = 80e6;
+    rcc_apb1_frequency = 80e6;
+    rcc_apb2_frequency = 80e6;
 
     uarts_setup();
     uart_rings_init();
