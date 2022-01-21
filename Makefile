@@ -29,8 +29,8 @@ serial_program: $(WHOLE_IMG)
 flash: $(WHOLE_IMG)
 	openocd -f interface/stlink-v2-1.cfg \
 		    -f target/stm32l4x.cfg \
-		    -c "init" -c "reset init" \
-		    -c "flash write_image erase $(WHOLE_IMG)" \
+		    -c "init" -c "halt" \
+		    -c "program $(WHOLE_IMG) 0x08000000 verify reset exit" \
 		    -c "reset" \
 		    -c "shutdown"
 
@@ -46,6 +46,12 @@ size:
 
 cppcheck:
 	cppcheck --enable=all --std=c99 *.[ch]
+
+debug_mon: $(WHOLE_IMG)
+	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
+
+debug_gdb: $(WHOLE_IMG)
+	arm-none-eabi-gdb -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
 
 
 -include $(DEPS)

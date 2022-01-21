@@ -26,6 +26,8 @@
 #include "modbus.h"
 #include "sos.h"
 #include "timers.h"
+#include "htu21d.h"
+#include "i2c.h"
 
 volatile uint32_t since_boot_ms = 0;
 
@@ -34,32 +36,6 @@ void hard_fault_handler(void)
 {
     platform_raw_msg("----big fat crash -----");
     error_state();
-}
-
-
-static void clock_setup(void)
-{
-    rcc_osc_on(RCC_HSI16);
-
-    flash_prefetch_enable();
-    flash_set_ws(4);
-    flash_dcache_enable();
-    flash_icache_enable();
-    /* 16MHz / 4(M) = > 4 * 40(N) = 160MHz VCO => 80MHz main pll  */
-    rcc_set_main_pll(RCC_PLLCFGR_PLLSRC_HSI16, 4, 40,
-                     0, 0, RCC_PLLCFGR_PLLR_DIV2);
-    rcc_osc_on(RCC_PLL);
-    rcc_wait_for_osc_ready(RCC_PLL);
-
-    /* Enable clocks for peripherals we need */
-    rcc_periph_clock_enable(RCC_SYSCFG);
-
-    rcc_set_sysclk_source(RCC_CFGR_SW_PLL); /* careful with the param here! */
-    rcc_wait_for_sysclk_status(RCC_PLL);
-    /* FIXME - eventually handled internally */
-    rcc_ahb_frequency = 80e6;
-    rcc_apb1_frequency = 80e6;
-    rcc_apb2_frequency = 80e6;
 }
 
 
@@ -85,7 +61,10 @@ void sys_tick_handler(void)
 
 int main(void)
 {
-    clock_setup();
+    /* Main clocks setup in bootloader, but of course libopencm3 doesn't know. */
+    rcc_ahb_frequency = 80e6;
+    rcc_apb1_frequency = 80e6;
+    rcc_apb2_frequency = 80e6;
 
     uarts_setup();
     uart_rings_init();
@@ -105,6 +84,7 @@ int main(void)
     ios_init();
     sai_init();
     adcs_init();
+    htu21d_init();
     lorawan_init();
     measurements_init();
     modbus_init();

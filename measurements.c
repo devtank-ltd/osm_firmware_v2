@@ -16,6 +16,7 @@
 #include "persist_config.h"
 #include "modbus_measurements.h"
 #include "one_wire_driver.h"
+#include "htu21d.h"
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
@@ -503,6 +504,18 @@ static void _measurement_fixup(measurement_def_t* def)
             def->init_cb = w1_measurement_init;
             def->get_cb = w1_measurement_collect;
             break;
+        case HTU21D_TMP:
+            def->collection_time = htu21d_measurements_collection_time();
+            def->init_cb = htu21d_temp_measurements_init;
+            def->get_cb  = htu21d_temp_measurements_get;
+            break;
+        case HTU21D_HUM:
+            def->collection_time = htu21d_measurements_collection_time();
+            def->init_cb = htu21d_humi_measurements_init;
+            def->get_cb  = htu21d_humi_measurements_get;
+            break;
+        default:
+            log_error("Unknown measurement type!");
     }
 }
 

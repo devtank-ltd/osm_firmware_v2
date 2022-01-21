@@ -24,6 +24,7 @@
 #include "update.h"
 #include "one_wire_driver.h"
 #include "sys_time.h"
+#include "htu21d.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -264,19 +265,21 @@ static void debug_cb(char * args)
 {
     char * pos = skip_space(args);
 
-    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
-        pos += 2;
+    log_debug(DEBUG_SYS, "Debug mask : 0x%"PRIx32, log_debug_mask);
 
-    unsigned mask = strtoul(pos, &pos, 16);
+    if (pos[0])
+    {
+        if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+            pos += 2;
 
-    mask |= DEBUG_SYS;
+        unsigned mask = strtoul(pos, &pos, 16);
 
-    uint32_t prev_mask = persist_get_log_debug_mask();
+        mask |= DEBUG_SYS;
 
-    log_debug_mask = mask;
-    persist_set_log_debug_mask(mask);
-    log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
-    log_debug(DEBUG_SYS, "Previous mask was 0x%"PRIx32, prev_mask);
+        log_debug_mask = mask;
+        persist_set_log_debug_mask(mask);
+        log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+    }
 }
 
 
@@ -513,7 +516,7 @@ static void adcs_cb(char* args)
 
     value_to_str(&value, temp, sizeof(temp));
 
-    log_out("CC: %s mA", temp);
+    log_out("CC = %smA", temp);
 }
 
 
@@ -550,6 +553,30 @@ static void timer_cb(char* args)
     uint32_t start_time = since_boot_ms;
     timer_delay_us_64(delay_ms * 1000);
     log_out("Time elapsed: %"PRIu32, since_boot_delta(since_boot_ms, start_time));
+}
+
+
+static void temperature_cb(char* args)
+{
+    int32_t temp;
+    if (htu21d_read_temp(&temp))
+        log_out("Temperature: %0.3fdegC", (float)temp/100.f);
+}
+
+
+static void humidity_cb(char* args)
+{
+    int32_t humi;
+    if (htu21d_read_humidity(&humi))
+        log_out("Humidity: %0.3f%%", (float)humi/100.f);
+}
+
+
+static void dew_point_cb(char* args)
+{
+    int32_t dew_temp;
+    htu21d_read_dew_temp(&dew_temp);
+    log_out("Dew temperature: %0.3fdegC", (float)dew_temp/100.f);
 }
 
 
@@ -599,6 +626,9 @@ void cmds_process(char * command, unsigned len)
         { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
         { "w1",           "Get temperature with w1",  w1_cb},
         { "timer",        "Test timer",               timer_cb},
+        { "temp",         "Get the temperature",      temperature_cb},
+        { "humi",         "Get the humidity",         humidity_cb},
+        { "dew",          "Get the dew temperature",  dew_point_cb},
         { "lora_conn",    "LoRa connected",           lora_conn_cb},
         { NULL },
     };
