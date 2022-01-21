@@ -99,10 +99,8 @@ void persist_set_log_debug_mask(uint32_t mask)
 uint32_t persist_get_log_debug_mask(void)
 {
     if (!persist_data_valid)
-    {
-        log_out("Invalid data");
         return DEBUG_SYS;
-    }
+
     return persist_data.log_debug_mask;
 }
 
