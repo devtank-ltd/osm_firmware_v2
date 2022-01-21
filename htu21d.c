@@ -175,7 +175,6 @@ static bool _htu21d_dew_point(uint16_t temp, uint16_t humi, int32_t* t_dew)
 
 void htu21d_init(void)
 {
-    i2c_init(HTU21D_I2C_INDEX);
     _htu21d_send(HTU21D_SOFT_RESET);
 }
 

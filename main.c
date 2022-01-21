@@ -27,6 +27,7 @@
 #include "sos.h"
 #include "timers.h"
 #include "htu21d.h"
+#include "i2c.h"
 
 volatile uint32_t since_boot_ms = 0;
 
@@ -87,6 +88,7 @@ void sys_tick_handler(void)
 int main(void)
 {
     clock_setup();
+    i2c_init(HTU21D_I2C_INDEX);
 
     uarts_setup();
     uart_rings_init();

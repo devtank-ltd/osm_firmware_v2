@@ -8,18 +8,7 @@
 
 #include "base_types.h"
 
-typedef struct
-{
-    uint32_t rcc;
-    uint32_t i2c;
-    uint32_t speed;
-    uint32_t clock_megahz;
-    uint32_t funcs[2];
-    port_n_pins_t port_n_pins[2];
-} i2c_def_t;
-
-
-#define I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, {GPIO_AF4, GPIO_AF4}, {{GPIOB, GPIO8},{GPIOB, GPIO9}} }}
+#define I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, GPIO_AF4, {GPIOB, GPIO8|GPIO9} }}
 
 #define HTU21D_I2C 0
 #define HTU21D_I2C_INDEX 0

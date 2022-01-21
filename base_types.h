@@ -47,3 +47,14 @@ typedef struct
     uint8_t               priority;
     uint8_t               enabled;
 } uart_channel_t;
+
+typedef struct
+{
+    uint32_t rcc;
+    uint32_t i2c;
+    uint32_t speed;
+    uint32_t clock_megahz;
+    uint32_t gpio_func;
+    port_n_pins_t port_n_pins;
+} i2c_def_t;
+
