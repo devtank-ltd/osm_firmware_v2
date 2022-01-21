@@ -243,7 +243,7 @@ bool htu21d_temp_measurements_get(char* name, value_t* value)
     if (!_htu21d_read_data(&s_temp, 10))
         return false;
     _htu21d_temp_conv(s_temp, &last_temp_reading);
-    *value = value_from(last_temp_reading / 100.0f);
+    *value = value_from(last_temp_reading);
     return true;
 }
 
@@ -271,7 +271,7 @@ bool htu21d_humi_measurements_get(char* name, value_t* value)
     int32_t humi;
     if (!_htu21d_humi_full(temp, s_humi, &humi))
         return false;
-    *value = value_from(humi / 100.0f);
+    *value = value_from(humi);
     return true;
 }
 
