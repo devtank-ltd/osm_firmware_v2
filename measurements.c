@@ -205,6 +205,7 @@ static void measurements_send(void)
 
     if (!measurements_arr_append((int8_t)MEASUREMENTS__PAYLOAD_VERSION))
     {
+        log_debug(DEBUG_MEASUREMENTS, "Failed to add version to measurement hex array.");
         return;
     }
 
@@ -221,6 +222,7 @@ static void measurements_send(void)
             }
             if (!measurements_to_arr(m_def, m_data))
             {
+                log_debug(DEBUG_MEASUREMENTS, "Failed to add measurement \"%s\" to measurement hex array.", m_def->base.name);
                 return;
             }
             num_qd++;
