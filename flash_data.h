@@ -1,6 +1,6 @@
 #pragma once
 
-static void flash_set_data(const void * addr, const void * data, unsigned size)
+static inline void flash_set_data(const void * addr, const void * data, unsigned size)
 {
     uintptr_t _addr = (uintptr_t)addr;
 
