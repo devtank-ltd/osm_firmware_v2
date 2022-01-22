@@ -449,13 +449,7 @@ void adcs_init(void)
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
 
-    /*Each adc sample requires 640.5 + 12.5 adc cycles. ADC is running 80MHz
-     *  1 / 80000000.0 * 653 = 8.1625e-06 seconds per sample
-     *  8.1625e-06 * 1000000 =  8.1625 microseconds
-     *  8.1625 * 480 (sample count) = 3918.0
-     *  3918.0 * 1000 = 3.918 millseconds
-     * So total of 4ms of sampling to spread over a second
-     *
+    /*
      * We have 480 samples to take over 1 second:
      * 2.083ms
      *
