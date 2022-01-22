@@ -6,6 +6,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/adc.h>
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/timer.h>
 #include <libopencm3/cm3/nvic.h>
 
 #include "log.h"
@@ -21,7 +22,7 @@
 
 
 #define ADCS_CONFIG_PRESCALE        ADC_CCR_PRESCALE_64
-#define ADCS_CONFIG_SAMPLE_TIME     ADC_SMPR_SMP_640DOT5CYC
+#define ADCS_CONFIG_SAMPLE_TIME     ADC_SMPR_SMP_640DOT5CYC /* 640.5 cycles of 80Mhz clock */
 
 
 #define ADCS_DEFAULT_COLLECTION_TIME    2000;
@@ -69,7 +70,6 @@ typedef struct
 typedef uint16_t all_adcs_buf_t[ADCS_NUM_SAMPLES];
 
 
-static uint16_t                     adcs_buffer_pos                                     = 0;
 static all_adcs_buf_t               adcs_buffer;
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
@@ -303,34 +303,39 @@ static bool _adcs_current_clamp_conv(uint16_t adc_val, uint16_t* cc_mA)
 }
 
 
-void adcs_loop_iteration(void)
+void tim3_isr(void)
 {
-    if (adcs_running)
+    timer_clear_flag(TIM3, TIM_SR_CC1IF);
+
+    static bool     started         = false;
+    static uint16_t adcs_buffer_pos = 0;
+
+    if (started)
     {
-        static unsigned started = 0;
+        if (!adc_eoc(ADC1))
+        {
+            adc_debug("ADC (%u) not complete!", adcs_buffer_pos);
+            return;
+        }
 
-        if (started)
-        {
-            if (!adc_eoc(ADC1))
-            {
-                adc_debug("ADC (%u) not complete!", adcs_buffer_pos);
-                return;
-            }
-            adcs_buffer[adcs_buffer_pos++] = adc_read_regular(ADC1);
-        }
-        else started = 1;
+        adcs_buffer[adcs_buffer_pos++] = adc_read_regular(ADC1);
+    }
+    else
+    {
+        adcs_buffer_pos = 0;
+        started = true;
+    }
 
-        if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
-        {
-            uint8_t local_channel_array[1] = { adc_channel_array[0] };
-            adc_set_regular_sequence(ADC1, 1, local_channel_array);
-            adc_start_conversion_regular(ADC1);
-        }
-        else
-        {
-            adcs_running = false;
-            started = 0;
-        }
+    if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
+    {
+        adc_set_regular_sequence(ADC1, 1, adc_channel_array);
+        adc_start_conversion_regular(ADC1);
+    }
+    else
+    {
+        adcs_running = false;
+        started = false;
+        timer_disable_counter(TIM3);
     }
 }
 
@@ -343,8 +348,9 @@ bool adcs_begin(char* name)
         adc_debug("ADCs already running.");
         return false;
     }
-    adcs_buffer_pos = 0;
     adcs_running = true;
+    timer_set_counter(TIM3, 0);
+    timer_enable_counter(TIM3);
     return true;
 }
 
@@ -382,7 +388,7 @@ bool adcs_get_cc(char* name, value_t* value)
 
     uint16_t adcs_rms = 0;
 
-    if (!_adcs_get_rms(adcs_buffer, adcs_buffer_pos, &adcs_rms))
+    if (!_adcs_get_rms(adcs_buffer, ARRAY_SIZE(adcs_buffer), &adcs_rms))
     {
         adc_debug("Failed to get RMS");
         return false;
@@ -433,4 +439,33 @@ void adcs_init(void)
     }
     // Setup the adc(s)
     _adcs_setup_adc();
+
+    rcc_periph_clock_enable(RCC_TIM3);
+
+    timer_disable_counter(TIM3);
+
+    timer_set_mode(TIM3,
+                   TIM_CR1_CKD_CK_INT,
+                   TIM_CR1_CMS_EDGE,
+                   TIM_CR1_DIR_UP);
+
+    /*Each adc sample requires 640.5 + 12.5 adc cycles. ADC is running 80MHz
+     *  1 / 80000000.0 * 653 = 8.1625e-06 seconds per sample
+     *  8.1625e-06 * 1000000 =  8.1625 microseconds
+     *  8.1625 * 480 (sample count) = 3918.0
+     *  3918.0 * 1000 = 3.918 millseconds
+     * So total of 4ms of sampling to spread over a second
+     *
+     * We have 480 samples to take over 1 second:
+     * 2.083ms
+     *
+     * */
+    /*Run at 1khz, i.e. milliseconds */
+    timer_set_prescaler(TIM3, rcc_ahb_frequency / 1000-1);//-1 because it starts at zero, and interrupts on the overflow
+    timer_set_period(TIM3, 10);
+    timer_enable_preload(TIM3);
+    timer_continuous_mode(TIM3);
+    timer_enable_irq(TIM3, TIM_DIER_CC1IE);
+
+    nvic_enable_irq(NVIC_TIM3_IRQ);
 }
