@@ -12,6 +12,7 @@
 #include "adcs.h"
 #include "pinmap.h"
 #include "persist_config.h"
+#include "uart_rings.h"
 #include "sys_time.h"
 
 
@@ -26,7 +27,6 @@
 #define ADCS_DEFAULT_COLLECTION_TIME    2000;
 
 
-#define ADCS_NUM_SAMPLES            480
 #define ADCS_TIMEOUT_TIME_MS        5000
 
 
@@ -66,16 +66,18 @@ typedef struct
 } adc_dma_channel_t;
 
 
-typedef uint16_t all_adcs_buf_t[ADC_DMA_CHANNELS_COUNT][ADCS_NUM_SAMPLES*ADC_COUNT];
+typedef uint16_t all_adcs_buf_t[ADCS_NUM_SAMPLES];
 
 
 static uint16_t                     adcs_buffer_pos                                     = 0;
 static all_adcs_buf_t               adcs_buffer;
-static bool                         adcs_running                                        = false;
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
+
+static volatile bool                adcs_running                                        = false;
+
 
 
 uint32_t adcs_collection_time(void)
@@ -169,7 +171,7 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
     uint64_t sum = 0;
     for (unsigned i = 0; i < buff_len; i++)
     {
-        sum += buff[0][i] * buff[0][i];
+        sum += buff[i] * buff[i];
     }
     *adc_rms = midpoint - 1/_Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
     return true;
@@ -193,19 +195,19 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
 
     uint32_t sum = 0;
     uint16_t peak_pos = 0;
-    peak_vals[0] = buff[0][0];
+    peak_vals[0] = buff[0];
 
     // Find the peaks in the data
     for (unsigned i = 1; i < buff_len; i++)
     {
-        if (buff[0][i] < buff[0][i-1])
+        if (buff[i] < buff[i-1])
         {
-            peak_vals[peak_pos] = buff[0][i];
+            peak_vals[peak_pos] = buff[i];
         }
-        else if (buff[0][i-1] <= midpoint && buff[0][i] > midpoint)
+        else if (buff[i-1] <= midpoint && buff[i] > midpoint)
         {
             sum += peak_vals[peak_pos];
-            peak_vals[++peak_pos] = buff[0][i];
+            peak_vals[++peak_pos] = buff[i];
         }
     }
 
@@ -305,59 +307,95 @@ void adcs_loop_iteration(void)
 {
     if (adcs_running)
     {
-        uint8_t local_channel_array[1] = { adc_channel_array[0] };
-        adc_set_regular_sequence(ADC1, 1, local_channel_array);
-        adc_start_conversion_regular(ADC1);
-        while (!(adc_eoc(ADC1)));
+        static unsigned started = 0;
 
-        adcs_buffer[0][adcs_buffer_pos++] = adc_read_regular(ADC1);
-        if (adcs_buffer_pos == sizeof(adcs_buffer[0]) / sizeof(uint16_t))
+        if (started)
+        {
+            if (!adc_eoc(ADC1))
+            {
+                adc_debug("ADC (%u) not complete!", adcs_buffer_pos);
+                return;
+            }
+            adcs_buffer[adcs_buffer_pos++] = adc_read_regular(ADC1);
+        }
+        else started = 1;
+
+        if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
+        {
+            uint8_t local_channel_array[1] = { adc_channel_array[0] };
+            adc_set_regular_sequence(ADC1, 1, local_channel_array);
+            adc_start_conversion_regular(ADC1);
+        }
+        else
         {
             adcs_running = false;
+            started = 0;
         }
     }
 }
 
 
+
 bool adcs_begin(char* name)
 {
+    if (adcs_running)
+    {
+        adc_debug("ADCs already running.");
+        return false;
+    }
     adcs_buffer_pos = 0;
     adcs_running = true;
     return true;
 }
 
 
+static void _adcs_wait(void)
+{
+    adc_debug("Waiting for ADC collection");
+    while (adcs_running)
+        uart_rings_out_drain();
+}
+
+
 bool adcs_calibrate_current_clamp(void)
 {
-    adcs_begin("");
-    while (adcs_running)
-    {
-        adcs_loop_iteration();
-    }
+    if (!adcs_begin(""))
+        return false;
+    _adcs_wait();
     uint64_t sum = 0;
-    for (unsigned i = 0; i < adcs_buffer_pos; i++)
+    for (unsigned i = 0; i < ARRAY_SIZE(adcs_buffer); i++)
     {
-        sum += adcs_buffer[0][i];
+        sum += adcs_buffer[i];
     }
-    adcs_set_midpoint(sum / adcs_buffer_pos);
+    adcs_set_midpoint(sum / ARRAY_SIZE(adcs_buffer));
     return true;
 }
 
 
 bool adcs_get_cc(char* name, value_t* value)
 {
-    adcs_running = false;
+    if (adcs_running)
+    {
+        adc_debug("ADCs not finished.");
+        return false;
+    }
 
     uint16_t adcs_rms = 0;
-    uint16_t cc_mA = 0;
+
     if (!_adcs_get_rms(adcs_buffer, adcs_buffer_pos, &adcs_rms))
     {
+        adc_debug("Failed to get RMS");
         return false;
     }
+
+    uint16_t cc_mA = 0;
+
     if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA))
     {
+        adc_debug("Failed to get current clamp");
         return false;
     }
+
     *value = value_from_u16(cc_mA);
     return true;
 }
@@ -365,11 +403,9 @@ bool adcs_get_cc(char* name, value_t* value)
 
 bool adcs_get_cc_blocking(char* name, value_t* value)
 {
-    adcs_begin(name);
-    while (adcs_running)
-    {
-        adcs_loop_iteration();
-    }
+    if (!adcs_begin(name))
+        return false;
+    _adcs_wait();
     return adcs_get_cc(name, value);
 }
 
