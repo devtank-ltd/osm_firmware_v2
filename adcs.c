@@ -114,7 +114,7 @@ static void _adcs_setup_adc(void)
 
     if (!_adcs_set_prescale(ADC1, ADCS_CONFIG_PRESCALE))
     {
-        log_debug(DEBUG_ADC, "Could not set prescale value.");
+        adc_debug("Could not set prescale value.");
     }
 
     adc_enable_regulator(ADC1);
@@ -136,7 +136,7 @@ bool adcs_set_midpoint(uint16_t new_midpoint)
     midpoint = new_midpoint;
     if (!persist_set_adc_midpoint(new_midpoint))
     {
-        log_debug(DEBUG_ADC, "Could not set the persistent storage for the midpoint.");
+        adc_debug("Could not set the persistent storage for the midpoint.");
         return false;
     }
     return true;
@@ -212,7 +212,7 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
     // Early exit if nothing found
     if (peak_pos == 0)
     {
-        log_debug(DEBUG_ADC, "Cannot find any peaks.");
+        adc_debug("Cannot find any peaks.");
         return false;
     }
     uint32_t inter_val = midpoint - sum / peak_pos;
@@ -240,7 +240,7 @@ static bool _adcs_to_mV(uint16_t value, uint16_t* mV)
 
     if (inter_val > UINT16_MAX)
     {
-        log_debug(DEBUG_ADC, "Cannot downsize value '%"PRIu32"'.", inter_val);
+        adc_debug("Cannot downsize value '%"PRIu32"'.", inter_val);
         return false;
     }
 
@@ -280,20 +280,20 @@ static bool _adcs_current_clamp_conv(uint16_t adc_val, uint16_t* cc_mA)
     // Once the conversion is no longer linearly multiplicative this needs to be changed.
     if (!_adcs_to_mV(adc_diff, (uint16_t*)&inter_value))
     {
-        log_debug(DEBUG_ADC, "Cannot get mV value of midpoint.");
+        adc_debug("Cannot get mV value of midpoint.");
         return false;
     }
 
     if (inter_value > UINT32_MAX / 2000)
     {
-        log_debug(DEBUG_ADC, "Overflowing value.");
+        adc_debug("Overflowing value.");
         return false;
     }
     inter_value *= 2000;
     inter_value /= 22;
     if (inter_value > UINT16_MAX)
     {
-        log_debug(DEBUG_ADC, "Cannot downsize value '%"PRIu32"'.", inter_value);
+        adc_debug("Cannot downsize value '%"PRIu32"'.", inter_value);
         return false;
     }
     *cc_mA = (uint16_t)inter_value;
@@ -380,7 +380,7 @@ void adcs_init(void)
     if (!persist_get_adc_midpoint(&midpoint))
     {
         // Assume it to be the theoretical midpoint
-        log_debug(DEBUG_ADC, "Failed to load persistent midpoint.");
+        adc_debug("Failed to load persistent midpoint.");
         adcs_set_midpoint(4095 / 2);
     }
 

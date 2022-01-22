@@ -71,7 +71,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     ios_state[io] = (ios_state[io] & (IO_TYPE_MASK | IO_UART_TX)) | io_state;
 
-    log_debug(DEBUG_IO, "IO %02u set to %s %s",
+    io_debug("%02u set to %s %s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
             _ios_get_pull_str(io_state));
@@ -87,7 +87,7 @@ void     ios_init()
         uint16_t io_state = ios_state[n];
 
         if (io_state & IO_SPECIAL_EN)
-            log_debug(DEBUG_IO, "IO %02u : USED %s", n, _ios_get_type(io_state));
+            io_debug("%02u : USED %s", n, _ios_get_type(io_state));
         else
             _ios_setup_gpio(n, io_state);
     }
@@ -115,24 +115,24 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
         {
            // pulsecount_enable(0, false);
             io_state &= ~IO_SPECIAL_EN;
-            log_debug(DEBUG_IO, "IO %02u : PPS0 NO LONGER", io);
+            io_debug("%02u : PPS0 NO LONGER", io);
         }
         else if (io_type == IO_PPS1)
         {
             //pulsecount_enable(1, false);
             io_state &= ~IO_SPECIAL_EN;
-            log_debug(DEBUG_IO, "IO %02u : PPS1 NO LONGER", io);
+            io_debug("%02u : PPS1 NO LONGER", io);
         }
         else
         {
-            log_debug(DEBUG_IO, "IO %02u : USED %s", io, _ios_get_type(io_state));
+            io_debug("%02u : USED %s", io, _ios_get_type(io_state));
             return;
         }
     }
 
     if (io_state & IO_DIR_LOCKED)
     {
-        log_debug(DEBUG_IO, "GPIO %02u locked but change attempted.", io);
+        io_debug("GPIO %02u locked but change attempted.", io);
         return;
     }
 
@@ -164,14 +164,14 @@ bool     io_enable_special(unsigned io)
     {
         //pulsecount_enable(0, true);
         ios_state[io] |= IO_SPECIAL_EN;
-        log_debug(DEBUG_IO, "IO %02u : USED PPS0", io);
+        io_debug("%02u : USED PPS0", io);
         return true;
     }
     else if (io_type == IO_PPS1)
     {
         //pulsecount_enable(1, true);
         ios_state[io] |= IO_SPECIAL_EN;
-        log_debug(DEBUG_IO, "IO %02u : USED PPS0", io);
+        io_debug("%02u : USED PPS0", io);
         return true;
     }
 
@@ -204,7 +204,7 @@ void     io_on(unsigned io, bool on_off)
 
     const port_n_pins_t * output = &ios_pins[io];
 
-    log_debug(DEBUG_IO, "IO %02u = %s", io, (on_off)?"ON":"OFF");
+    io_debug("%02u = %s", io, (on_off)?"ON":"OFF");
 
     if (on_off)
         gpio_set(output->port, output->pins);

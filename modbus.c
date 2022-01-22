@@ -616,10 +616,9 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
     uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-    float f = *(float*)&v;
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s F32:%f", reg->name, *(float*)&v);
     #pragma GCC diagnostic pop
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s F32:%f", reg->name, f);
 }
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)

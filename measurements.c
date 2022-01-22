@@ -202,7 +202,7 @@ static void measurements_send(void)
     memset(measurements_hex_arr, 0, MEASUREMENTS_MAX_NUMBER);
     measurements_hex_arr_pos = 0;
 
-    log_debug(DEBUG_MEASUREMENTS, "Attempting to send measurements");
+    measurements_debug( "Attempting to send measurements");
 
     if (!measurements_arr_append((int8_t)MEASUREMENTS__PAYLOAD_VERSION))
     {
@@ -327,7 +327,7 @@ static void measurements_sample(void)
             {
                 m_data->min = new_value;
             }
-            log_debug(DEBUG_MEASUREMENTS, "New %s reading", m_def->base.name);
+            measurements_debug( "New %s reading", m_def->base.name);
             log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
             log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &m_data->sum);
             log_debug_value(DEBUG_MEASUREMENTS, "Min :", &m_data->min);
