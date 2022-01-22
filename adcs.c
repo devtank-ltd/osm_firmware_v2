@@ -22,10 +22,19 @@
 
 
 #define ADCS_CONFIG_PRESCALE        ADC_CCR_PRESCALE_64
-#define ADCS_CONFIG_SAMPLE_TIME     ADC_SMPR_SMP_640DOT5CYC /* 640.5 cycles of 80Mhz clock */
+#define ADCS_CONFIG_SAMPLE_TIME     ADC_SMPR_SMP_640DOT5CYC /* 640.5 + 12.5 cycles of (80Mhz / 64) clock */
+/* (640.5 + 12.5) * (1000000 / (80000000 / 64)) = 522.4 microseconds
+ *
+ * 480 samples
+ *
+ * 522.4 * 480 = 250752 microseconds
+ *
+ * So 1/4 a second for all samples.
+ *
+ */
 
 
-#define ADCS_DEFAULT_COLLECTION_TIME    2000;
+#define ADCS_DEFAULT_COLLECTION_TIME    1000;
 
 
 #define ADCS_TIMEOUT_TIME_MS        5000
@@ -449,14 +458,8 @@ void adcs_init(void)
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
 
-    /*
-     * We have 480 samples to take over 1 second:
-     * 2.083ms
-     *
-     * */
-    /*Run at 1khz, i.e. milliseconds */
-    timer_set_prescaler(TIM3, rcc_ahb_frequency / 1000-1);//-1 because it starts at zero, and interrupts on the overflow
-    timer_set_period(TIM3, 10);
+    timer_set_prescaler(TIM3, rcc_ahb_frequency / 10000-1);//-1 because it starts at zero, and interrupts on the overflow
+    timer_set_period(TIM3, 5);
     timer_enable_preload(TIM3);
     timer_continuous_mode(TIM3);
     timer_enable_irq(TIM3, TIM_DIER_CC1IE);
