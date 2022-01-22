@@ -281,25 +281,6 @@ void htu21d_init(void)
 {
     i2c_init(HTU21D_I2C_INDEX);
     _htu21d_send(HTU21D_SOFT_RESET);
-
-    measurement_def_t meas_def;
-
-    memcpy(meas_def.base.name, "TEMP", 5);
-
-    meas_def.base.samplecount = 2;
-    meas_def.base.interval    = 1;
-    meas_def.base.type        = HTU21D_TMP;
-    meas_def.collection_time  = MEASUREMENT_COLLECTION_MS;
-    meas_def.init_cb          = htu21d_temp_measurements_init;
-    meas_def.get_cb           = htu21d_temp_measurements_get;
-
-    measurements_add(&meas_def);
-    memcpy(meas_def.base.name, "HUMI", 5);
-    meas_def.base.type        = HTU21D_HUM;
-    meas_def.init_cb          = htu21d_humi_measurements_init;
-    meas_def.get_cb           = htu21d_humi_measurements_get;
-
-    measurements_add(&meas_def);
 }
 
 

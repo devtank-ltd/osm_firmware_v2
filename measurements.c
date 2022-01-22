@@ -34,6 +34,10 @@
 
 #define MEASUREMENT_W1_PROBE_NAME "TMP2"
 
+#define MEASUREMENT_HTU21D_TEMP "TEMP"
+
+#define MEASUREMENT_HTU21D_HUMI "HUMI"
+
 
 typedef struct
 {
@@ -605,6 +609,18 @@ void measurements_init(void)
         temp_def.base.interval = 1;
         temp_def.base.samplecount = 5;
         temp_def.base.type = W1_PROBE;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
+        strncpy(temp_def.base.name, MEASUREMENT_HTU21D_TEMP, sizeof(temp_def.base.name));
+        temp_def.base.samplecount = 2;
+        temp_def.base.interval    = 1;
+        temp_def.base.type        = HTU21D_TMP;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
+        strncpy(temp_def.base.name, MEASUREMENT_HTU21D_HUMI, sizeof(temp_def.base.name));
+        temp_def.base.type        = HTU21D_HUM;
         _measurement_fixup(&temp_def);
         measurements_add(&temp_def);
 
