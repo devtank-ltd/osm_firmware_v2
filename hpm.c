@@ -247,7 +247,7 @@ bool hpm_get(uint16_t * pm25, uint16_t * pm10)
 
 bool hpm_get_pm10(char* name, value_t* val)
 {
-    if (!val)
+    if (!val || !hpm_valid)
     {
         return false;
     }
@@ -264,7 +264,7 @@ bool hpm_get_pm10(char* name, value_t* val)
 
 bool hpm_get_pm25(char* name, value_t* val)
 {
-    if (!val)
+    if (!val || !hpm_valid)
     {
         return false;
     }
