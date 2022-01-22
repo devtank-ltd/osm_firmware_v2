@@ -13,6 +13,7 @@ Documents used:
 
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>
@@ -26,7 +27,7 @@ Documents used:
 #include "measurements.h"
 #include "sys_time.h"
 
-#define MEASUREMENT_COLLECTION_MS 45
+#define MEASUREMENT_COLLECTION_MS 50
 
 typedef enum
 {
@@ -244,6 +245,7 @@ bool htu21d_temp_measurements_get(char* name, value_t* value)
     if (!_htu21d_read_data(&s_temp, 10))
         return false;
     _htu21d_temp_conv(s_temp, &last_temp_reading);
+    htu21d_debug("temperature: %i.%02udegC", (int)last_temp_reading/100, (unsigned)abs(last_temp_reading%100));
     *value = value_from(last_temp_reading);
     return true;
 }
@@ -272,6 +274,7 @@ bool htu21d_humi_measurements_get(char* name, value_t* value)
     int32_t humi;
     if (!_htu21d_humi_full(temp, s_humi, &humi))
         return false;
+    htu21d_debug("Humidity: %i.%02u%%", (int)humi/100, (unsigned)abs(humi%100));
     *value = value_from(humi);
     return true;
 }
