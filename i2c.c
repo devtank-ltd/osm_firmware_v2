@@ -3,6 +3,8 @@
 #include <libopencm3/stm32/i2c.h>
 
 #include "pinmap.h"
+#include "log.h"
+#include "sys_time.h"
 
 
 static const i2c_def_t i2c_buses[]     = I2C_BUSES;
@@ -39,4 +41,82 @@ void    i2c_init(unsigned i2c_index)
     i2c_set_digital_filter(i2c_bus->i2c, 0);
 
     i2c_peripheral_enable(i2c_bus->i2c);
+}
+
+
+bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
+{
+    /* i2c_transfer7 but with ms timeout. */
+    uint32_t start_ms = since_boot_ms;
+
+    if (wn)
+    {
+        i2c_set_7bit_address(i2c, addr);
+        i2c_set_write_transfer_dir(i2c);
+        i2c_set_bytes_to_transfer(i2c, wn);
+        if (rn)
+            i2c_disable_autoend(i2c);
+        else
+            i2c_enable_autoend(i2c);
+
+        i2c_send_start(i2c);
+
+        while (wn--)
+        {
+            bool wait = true;
+            while (wait)
+            {
+                if (i2c_transmit_int_status(i2c))
+                {
+                    wait = false;
+                }
+                while (i2c_nack(i2c))
+                {
+                    if (since_boot_delta(since_boot_ms, start_ms) > timeout_ms)
+                    {
+                        log_error("I2C timeout");
+                        return false;
+                    }
+                }
+            }
+            i2c_send_data(i2c, *w++);
+        }
+
+        if (rn)
+        {
+            while (!i2c_transfer_complete(i2c))
+            {
+                if (since_boot_delta(since_boot_ms, start_ms) > timeout_ms)
+                {
+                    log_error("I2C timeout");
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (rn)
+    {
+        i2c_set_7bit_address(i2c, addr);
+        i2c_set_read_transfer_dir(i2c);
+        i2c_set_bytes_to_transfer(i2c, rn);
+        i2c_send_start(i2c);
+
+        i2c_enable_autoend(i2c);
+
+        for (size_t i = 0; i < rn; i++)
+        {
+            while (i2c_received_data(i2c) == 0)
+            {
+                if (since_boot_delta(since_boot_ms, start_ms) > timeout_ms)
+                {
+                    log_error("I2C timeout");
+                    return false;
+                }
+            }
+            r[i] = i2c_get_data(i2c);
+        }
+    }
+
+    return true;
 }

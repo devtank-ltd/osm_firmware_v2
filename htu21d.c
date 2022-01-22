@@ -126,7 +126,8 @@ static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
     uint8_t d[3] = {0};
     htu21d_debug("Read command 0x%"PRIx8, reg8);
 
-    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3);
+    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3, 100))
+        return false;
 
     return _htu21d_get_u16(d, r);
 }
@@ -171,7 +172,7 @@ static void _htu21d_send(htu21d_reg_t reg)
 {
     uint8_t reg8 = reg;
     htu21d_debug("Send command 0x%"PRIx8, reg8);
-    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0);
+    i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100);
 }
 
 
