@@ -221,6 +221,9 @@ static void measurements_send(void)
         {
             if (data->sum.type == VALUE_UNSET || data->num_samples == 0)
             {
+                data->num_samples = 0;
+                data->num_samples_init = 0;
+                data->num_samples_collected = 0;
                 log_error("Measurement \"%s\" requested but value not set.", def->base.name);
                 continue;
             }
