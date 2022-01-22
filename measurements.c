@@ -279,7 +279,6 @@ static void measurements_sample(void)
             m_data->num_samples_init++;
             if (!m_def->init_cb(m_def->base.name))
             {
-                log_error("Failed to call init for %s.", m_def->base.name);
                 m_data->num_samples_collected++;
             }
         }
