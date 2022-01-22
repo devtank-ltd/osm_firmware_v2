@@ -265,7 +265,7 @@ static void debug_cb(char * args)
 {
     char * pos = skip_space(args);
 
-    log_debug(DEBUG_SYS, "Debug mask : 0x%"PRIx32, log_debug_mask);
+    log_out("Debug mask : 0x%"PRIx32, log_debug_mask);
 
     if (pos[0])
     {
@@ -278,7 +278,7 @@ static void debug_cb(char * args)
 
         log_debug_mask = mask;
         persist_set_log_debug_mask(mask);
-        log_debug(DEBUG_SYS, "Setting debug mask to 0x%x", mask);
+        log_out("Setting debug mask to 0x%x", mask);
     }
 }
 
@@ -636,7 +636,7 @@ void cmds_process(char * command, unsigned len)
     if (!len)
         return;
 
-    log_debug(DEBUG_SYS, "Command \"%s\"", command);
+    log_sys_debug("Command \"%s\"", command);
 
     rx_buffer = command;
     rx_buffer_len = len;
