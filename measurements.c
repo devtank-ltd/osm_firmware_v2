@@ -464,17 +464,7 @@ void measurements_loop_iteration(void)
 
 bool measurements_save(void)
 {
-    measurement_def_base_t* persistent_measurement_arr;
-    if (!persist_get_measurements(&persistent_measurement_arr))
-    {
-        return false;
-    }
-    for (unsigned i = 0; i < measurement_arr.len; i++)
-    {
-        measurement_def_base_t* def_base = &measurement_arr.def[i].base;
-        persistent_measurement_arr[i] = *def_base;
-    }
-    persist_commit_measurement();
+    persist_set_measurements(measurement_arr.def);
     return true;
 }
 
@@ -519,7 +509,7 @@ static void _measurement_fixup(measurement_def_t* def)
             def->get_cb  = htu21d_humi_measurements_get;
             break;
         default:
-            log_error("Unknown measurement type!");
+            log_error("Unknown measurement type! : 0x%"PRIx8, def->base.type);
     }
 }
 
@@ -576,10 +566,29 @@ void measurements_print_persist(void)
 
 void measurements_init(void)
 {
-    measurement_def_base_t* persistent_measurement_arr;
+    measurement_def_base_t * persistent_measurement_arr = NULL;
     measurement_def_t temp_def;
 
-    if (!persist_get_measurements(&persistent_measurement_arr) && persistent_measurement_arr != NULL)
+    if (persist_get_measurements(&persistent_measurement_arr) && persistent_measurement_arr != NULL)
+    {
+        measurements_debug("Loading measurements.");
+        for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
+        {
+            measurement_def_base_t* def_base = &persistent_measurement_arr[n];
+
+            char id_start = def_base->name[0];
+
+            if (!id_start || id_start == 0xFF)
+                continue;
+
+            temp_def.base = *def_base;
+
+            _measurement_fixup(&temp_def);
+
+            measurements_add(&temp_def);
+        }
+    }
+    else
     {
         log_error("No persistent loaded, load defaults.");
         /* Add defaults. */
@@ -625,26 +634,5 @@ void measurements_init(void)
         measurements_add(&temp_def);
 
         measurements_save();
-        return;
     }
-
-    for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
-    {
-        measurement_def_base_t* def_base = &persistent_measurement_arr[n];
-
-        char id_start = def_base->name[0];
-
-        if (!id_start || id_start == 0xFF)
-            continue;
-
-        temp_def.base = *def_base;
-
-        _measurement_fixup(&temp_def);
-
-        measurements_add(&temp_def);
-    }
-
-    /*
-     *
-     */
 }

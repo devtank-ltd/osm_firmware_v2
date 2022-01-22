@@ -20,13 +20,13 @@
 
 typedef enum
 {
-    MODBUS,
-    PM10,
-    PM25,
-    CURRENT_CLAMP,
-    W1_PROBE,
-    HTU21D_HUM,
-    HTU21D_TMP,
+    MODBUS        = 1,
+    PM10          = 2,
+    PM25          = 3,
+    CURRENT_CLAMP = 4,
+    W1_PROBE      = 5,
+    HTU21D_HUM    = 6,
+    HTU21D_TMP    = 7,
 } measurement_def_type_t;
 
 
@@ -35,7 +35,7 @@ typedef struct
     char     name[MEASURE_NAME_LEN + 1];                // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
-    uint8_t  type;
+    uint8_t  type;                                      // measurement_def_type_t
 } measurement_def_base_t;
 
 
