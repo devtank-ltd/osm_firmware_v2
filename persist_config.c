@@ -176,8 +176,16 @@ bool persist_get_measurements(measurement_def_base_t** arr)
 
 void persist_set_measurements(measurement_def_t * arr)
 {
+    unsigned index = 0;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-        persist_data.measurements_arr[i] = arr[i].base;
+    {
+        measurement_def_t * def = arr + i;
+        if (def->base.name[0]) /* Skip holes */
+            persist_data.measurements_arr[index++] = def->base;
+    }
+    /* Wipe unused entries */
+    for (unsigned i = index; i < MEASUREMENTS_MAX_NUMBER; i++)
+        memset(persist_data.measurements_arr + i, 0, sizeof(measurement_def_base_t));
 
     _persistent_commit();
 }
