@@ -8,8 +8,11 @@ import os
 import re
 
 
+def default_print(msg):
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    print("[%s] %s\r"% (now, msg), file=sys.stderr)
 
-_debug_fnc = lambda *args : print(*args, file=sys.stderr) if "DEBUG" in os.environ else None
+_debug_fnc = lambda *args : default_print if "DEBUG" in os.environ else None
 
 
 def debug_print(msg):
@@ -38,7 +41,7 @@ def parse_current_clamp(r_str:str):
         return False
     r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
     if r:
-        return r[-1]
+        return int(r[-1])
     return False
 
 
@@ -106,7 +109,7 @@ class modbus_reg_t(measurement_t):
         r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
         # r = re.findall(r'0x[0-9A-F]+', r_str)
         if r:
-            return r[-1]
+            return float(r[-1])
         return False
 
     @property
@@ -131,8 +134,7 @@ class log_t(object):
         self.receiver = receiver
 
     def emit(self, payload):
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-        debug_print("[%s] %s\r"% (now, payload))
+        debug_print(payload)
 
     def send(self, msg):
         self.emit("%s >>> %s : %s"% (self.sender, self.receiver, msg))
