@@ -979,11 +979,11 @@ void modbus_init(void)
         modbus_header->max_dev_num == MODBUS_MAX_DEV      &&
         modbus_header->max_reg_num == MODBUS_DEV_REGS)
     {
-        log_sys_debug("Loaded modbus defs");
+        modbus_debug("Loaded modbus defs");
     }
     else
     {
-        log_sys_debug("Failed to load modbus defs");
+        modbus_debug("Failed to load modbus defs");
         memset(modbus_devices, 0, sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
         modbus_header->version = MODBUS_BLOB_VERSION;
         modbus_header->max_dev_num = MODBUS_MAX_DEV;

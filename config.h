@@ -20,7 +20,7 @@
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
-#define MAX_ADC_CAL_POLY_NUM 4
+#define ADCS_NUM_SAMPLES            480
 
 #define UART1_PRIORITY 3
 #define UART2_PRIORITY 1

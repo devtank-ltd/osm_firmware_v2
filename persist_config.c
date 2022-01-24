@@ -163,19 +163,30 @@ bool persist_get_lw_app_key(char app_key[LW__APP_KEY_LEN+1])
 }
 
 
-bool persist_get_measurements(measurement_def_base_t** m_arr)
+bool persist_get_measurements(measurement_def_base_t** arr)
 {
-    if (!persist_data_valid || !m_arr)
+    if (!persist_data_valid || !arr)
     {
         return false;
     }
-    *m_arr = persist_data.measurements_arr;
+    *arr = persist_data.measurements_arr;
     return true;
 }
 
 
-void persist_commit_measurement(void)
+void persist_set_measurements(measurement_def_t * arr)
 {
+    unsigned index = 0;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        measurement_def_t * def = arr + i;
+        if (def->base.name[0]) /* Skip holes */
+            persist_data.measurements_arr[index++] = def->base;
+    }
+    /* Wipe unused entries */
+    for (unsigned i = index; i < MEASUREMENTS_MAX_NUMBER; i++)
+        memset(persist_data.measurements_arr + i, 0, sizeof(measurement_def_base_t));
+
     _persistent_commit();
 }
 

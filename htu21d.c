@@ -13,6 +13,7 @@ Documents used:
 
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <libopencm3/stm32/i2c.h>
 #include <libopencm3/stm32/rcc.h>
@@ -26,7 +27,7 @@ Documents used:
 #include "measurements.h"
 #include "sys_time.h"
 
-#define MEASUREMENT_COLLECTION_MS 45
+#define MEASUREMENT_COLLECTION_MS 50
 
 typedef enum
 {
@@ -126,9 +127,22 @@ static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
     uint8_t d[3] = {0};
     htu21d_debug("Read command 0x%"PRIx8, reg8);
 
-    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3);
+    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3, 100))
+    {
+        htu21d_init();
+        return false;
+    }
 
     return _htu21d_get_u16(d, r);
+}
+
+
+static void _htu21d_send(htu21d_reg_t reg)
+{
+    uint8_t reg8 = reg;
+    htu21d_debug("Send command 0x%"PRIx8, reg8);
+    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
+        htu21d_init();
 }
 
 
@@ -162,16 +176,8 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
 
 timeout:
     htu21d_debug("Read timeout.");
-
+    htu21d_init();
     return false;
-}
-
-
-static void _htu21d_send(htu21d_reg_t reg)
-{
-    uint8_t reg8 = reg;
-    htu21d_debug("Send command 0x%"PRIx8, reg8);
-    i2c_transfer7(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0);
 }
 
 
@@ -243,6 +249,7 @@ bool htu21d_temp_measurements_get(char* name, value_t* value)
     if (!_htu21d_read_data(&s_temp, 10))
         return false;
     _htu21d_temp_conv(s_temp, &last_temp_reading);
+    htu21d_debug("temperature: %i.%02udegC", (int)last_temp_reading/100, (unsigned)abs(last_temp_reading%100));
     *value = value_from(last_temp_reading);
     return true;
 }
@@ -271,6 +278,7 @@ bool htu21d_humi_measurements_get(char* name, value_t* value)
     int32_t humi;
     if (!_htu21d_humi_full(temp, s_humi, &humi))
         return false;
+    htu21d_debug("Humidity: %i.%02u%%", (int)humi/100, (unsigned)abs(humi%100));
     *value = value_from(humi);
     return true;
 }
@@ -280,25 +288,6 @@ void htu21d_init(void)
 {
     i2c_init(HTU21D_I2C_INDEX);
     _htu21d_send(HTU21D_SOFT_RESET);
-
-    measurement_def_t meas_def;
-
-    memcpy(meas_def.base.name, "TEMP", 5);
-
-    meas_def.base.samplecount = 2;
-    meas_def.base.interval    = 1;
-    meas_def.base.type        = HTU21D_TMP;
-    meas_def.collection_time  = MEASUREMENT_COLLECTION_MS;
-    meas_def.init_cb          = htu21d_temp_measurements_init;
-    meas_def.get_cb           = htu21d_temp_measurements_get;
-
-    measurements_add(&meas_def);
-    memcpy(meas_def.base.name, "HUMI", 5);
-    meas_def.base.type        = HTU21D_HUM;
-    meas_def.init_cb          = htu21d_humi_measurements_init;
-    meas_def.get_cb           = htu21d_humi_measurements_get;
-
-    measurements_add(&meas_def);
 }
 
 
