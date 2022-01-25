@@ -185,8 +185,7 @@ function Decode(fPort, bytes, variables)
             // Single measurement
             case 1:
                 value_type = bytes[pos++];
-                func = value_decoders[value_type];
-                mean = func(bytes, pos);
+                mean = Decode_value(value_type, bytes, pos);
                 pos += Value_sizes(value_type);
                 obj[name] = mean;
                 break;
