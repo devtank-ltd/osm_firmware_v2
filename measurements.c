@@ -66,6 +66,7 @@ typedef struct
 
 
 static uint32_t                 last_sent_ms                                        = 0;
+static bool                     pending_send                                        = false;
 static measurement_check_time_t check_time                                          = {0, 0};
 static uint32_t                 interval_count                                      =  0;
 static int8_t                   measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE]  = {0};
@@ -199,9 +200,24 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
 
 static void measurements_send(void)
 {
+    static unsigned measurement_pos = 0;
     uint16_t            num_qd = 0;
     measurement_def_t*  def;
     measurement_data_t* data;
+
+    if (!lw_get_connected())
+    {
+        measurements_debug("Not connected to send, dropping readings");
+        pending_send = false;
+        last_sent_ms = since_boot_ms;
+        return;
+    }
+
+    if (!lw_send_ready())
+    {
+        pending_send = true;
+        return;
+    }
 
     memset(measurements_hex_arr, 0, MEASUREMENTS__HEX_ARRAY_SIZE);
     measurements_hex_arr_pos = 0;
@@ -210,11 +226,18 @@ static void measurements_send(void)
 
     if (!measurements_arr_append((int8_t)MEASUREMENTS__PAYLOAD_VERSION))
     {
-        measurements_debug("Failed to add version to measurement hex array.");
+        log_error("Failed to add even version to measurement hex array.");
+        pending_send = false;
+        last_sent_ms = since_boot_ms;
         return;
     }
 
-    for (unsigned i = 0; i < measurement_arr.len; i++)
+    unsigned i = measurement_pos;
+
+    if (measurement_pos)
+        measurements_debug("Resumming previous measurements send.");
+
+    for (; i < measurement_arr.len; i++)
     {
         def = &measurement_arr.def[i];
         data = &measurement_arr.data[i];
@@ -228,10 +251,13 @@ static void measurements_send(void)
                 log_error("Measurement \"%s\" requested but value not set.", def->base.name);
                 continue;
             }
+            uint16_t prev_measurements_hex_arr_pos = measurements_hex_arr_pos;
             if (!measurements_to_arr(def, data))
             {
-                measurements_debug("Failed to add measurement \"%s\" to measurement hex array.", def->base.name);
-                return;
+                measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
+                measurements_debug("Failed to queue send of  \"%s\".", def->base.name);
+                measurement_pos = i;
+                break;
             }
             num_qd++;
             data->sum = VALUE_EMPTY;
@@ -242,9 +268,24 @@ static void measurements_send(void)
             data->num_samples_collected = 0;
         }
     }
+
+    if (i == measurement_arr.len)
+        measurement_pos = 0;
+
     if (num_qd > 0)
     {
         lw_send(measurements_hex_arr, measurements_hex_arr_pos+1);
+        if (!measurement_pos)
+        {
+            last_sent_ms = since_boot_ms;
+            pending_send = false;
+            measurements_debug("Complete send");
+        }
+        else
+        {
+            pending_send = true;
+            measurements_debug("Fragment send, wait to send more.");
+        }
     }
 }
 
@@ -448,6 +489,12 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 
 void measurements_loop_iteration(void)
 {
+    if (pending_send)
+    {
+        measurements_send();
+        return;
+    }
+
     uint32_t now = since_boot_ms;
     if (since_boot_delta(now, check_time.last_checked_time) > check_time.wait_time)
     {
@@ -461,7 +508,6 @@ void measurements_loop_iteration(void)
         }
         interval_count++;
         measurements_send();
-        last_sent_ms = now;
     }
 }
 

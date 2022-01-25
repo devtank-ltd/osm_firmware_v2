@@ -29,8 +29,14 @@
 #define LW__APP_KEY_LEN                     32
 
 
+#define LW_HEADER_SIZE          17
+#define LW_TAIL_SIZE             2
+
+
 extern void lorawan_init(void);
 extern void lw_send(int8_t* hex_arr, uint16_t arr_len);
 extern void lw_send_str(char* str);
+extern unsigned lw_send_size(uint16_t arr_len);
+extern bool lw_send_ready(void);
 extern void lw_process(char* message);
 extern bool lw_get_connected(void);

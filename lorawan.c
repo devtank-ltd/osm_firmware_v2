@@ -516,19 +516,20 @@ static void lw_handle_unsol(char* message)
 
 void lw_send(int8_t* hex_arr, uint16_t arr_len)
 {
-    char header_str[17] = {0};
+    char header_str[LW_HEADER_SIZE + 1] = {0};
     char hex_str[3] = {0};
     if (lw_state_machine.state == LW_STATE_IDLE)
     {
+        unsigned expected = lw_send_size(arr_len);
         lw_port++;
         if (lw_port > 223)
         {
             lw_port = 0;
         }
-        snprintf(header_str, 17, "at+send=lora:%"PRIu8":", lw_port);
+        unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", lw_port);
         unsigned sent = 0;
-        sent+= uart_ring_out(LW_UART, header_str, 15);
-        uart_ring_out(CMD_UART, header_str, 15);
+        sent+= uart_ring_out(LW_UART, header_str, header_size);
+        uart_ring_out(CMD_UART, header_str, header_size);
         for (uint16_t i = 0; i < arr_len; i++)
         {
             snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
@@ -538,8 +539,8 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         sent+= uart_ring_out(LW_UART, "\r\n", 2);
         uart_ring_out(CMD_UART, "\r\n", 2);
 
-        if (sent != (unsigned)(15 + (arr_len * 2) + 2))
-            log_error("Failed to send all bytes over LoRaWAN.");
+        if (sent != expected)
+            log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
         else
             lw_debug("Sent %u bytes", sent);
 
@@ -548,6 +549,31 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
     else lw_debug("Incorrect state to send : %u", (unsigned)lw_state_machine.state);
+}
+
+
+bool lw_send_ready(void)
+{
+    return lw_state_machine.state == LW_STATE_IDLE;
+}
+
+
+unsigned lw_send_size(uint16_t arr_len)
+{
+    unsigned next_lw_port = lw_port + 1;
+    if (next_lw_port > 223)
+        next_lw_port = 0;
+
+    unsigned size = (LW_HEADER_SIZE + (arr_len * 2) + LW_TAIL_SIZE);
+
+    if (next_lw_port < 99)
+    {
+        size--;
+        if (next_lw_port < 9)
+            size--;
+    }
+
+    return size;
 }
 
 

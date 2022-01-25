@@ -8,8 +8,8 @@
 #include "value.h"
 
 
-#define MEASUREMENTS__HEX_ARRAY_SIZE            200
-#define MEASUREMENTS_MAX_NUMBER             20
+#define MEASUREMENTS__HEX_ARRAY_SIZE            (128-LW_HEADER_SIZE-LW_TAIL_SIZE)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
+#define MEASUREMENTS_MAX_NUMBER                   20
 
 
 #define MEASUREMENTS__COLLECT_TIME__TEMPERATURE__MS 10000
