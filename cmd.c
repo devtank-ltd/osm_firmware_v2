@@ -285,23 +285,25 @@ static void debug_cb(char * args)
 
 static void hpm_cb(char *args)
 {
-    if (args[0] != '0')
+    if (args[0] == '1')
     {
         hpm_enable(true);
+        log_out("HPM enabled");
+    }
 
-        uint16_t pm25;
-        uint16_t pm10;
+    uint16_t pm25;
+    uint16_t pm10;
 
-        if (hpm_get(&pm25, &pm10))
-        {
-            log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
-        }
-        else
-        {
-            log_out("No HPM data.");
-        }
+    if (hpm_get(&pm25, &pm10))
+    {
+        log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
     }
     else
+    {
+        log_out("No HPM data.");
+    }
+
+    if (args[0] == '0')
     {
         hpm_enable(false);
         log_out("HPM disabled");

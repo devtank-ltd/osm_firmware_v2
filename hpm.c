@@ -57,9 +57,6 @@ static hpm_response_t responses[] =
 };
 
 
-uint32_t hpm_last_inited = 0;
-
-
 _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
 
 
@@ -215,21 +212,33 @@ void hpm_request(void)
 
 void hpm_enable(bool enable)
 {
+    static unsigned hpm_use_ref = 0;
+
     port_n_pins_t port_n_pin = HPM_EN_PIN;
 
-    if (enable && !hpm_valid)
+    if (enable)
     {
         rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
 
         gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
 
         gpio_set(port_n_pin.port, port_n_pin.pins);
+
+        hpm_use_ref++;
+        hpm_debug("Power On (ref:%u)", hpm_use_ref);
     }
 
     if (!enable)
     {
-        gpio_clear(port_n_pin.port, port_n_pin.pins);
-        hpm_valid = false;
+        if (hpm_use_ref)
+            hpm_use_ref--;
+        if (!hpm_use_ref)
+        {
+            hpm_debug("Power Off");
+            gpio_clear(port_n_pin.port, port_n_pin.pins);
+            hpm_valid = false;
+        }
+        else hpm_debug("Power Off deferred (ref:%u)", hpm_use_ref);
     }
 }
 
@@ -247,45 +256,34 @@ bool hpm_get(uint16_t * pm25, uint16_t * pm10)
 
 bool hpm_get_pm10(char* name, value_t* val)
 {
-    if (!val || !hpm_valid)
-    {
-        return false;
-    }
-    if (hpm_last_inited != 0 && since_boot_delta(since_boot_ms, hpm_last_inited) > MEASUREMENTS__COLLECT_TIME__HPM__MS * 1.5)
+    bool was_valid = hpm_valid;
+    hpm_enable(false);
+    if (!val || !was_valid)
     {
         return false;
     }
     val->type = VALUE_UINT16;
     val->u16 = pm10_entry.d;
-    hpm_enable(false);
     return true;
 }
 
 
 bool hpm_get_pm25(char* name, value_t* val)
 {
-    if (!val || !hpm_valid)
-    {
-        return false;
-    }
-    if (hpm_last_inited != 0 && since_boot_delta(since_boot_ms, hpm_last_inited) > MEASUREMENTS__COLLECT_TIME__HPM__MS * 1.5)
+    bool was_valid = hpm_valid;
+    hpm_enable(false);
+    if (!val || !was_valid)
     {
         return false;
     }
     val->type = VALUE_UINT16;
     val->u16 = pm25_entry.d;
-    hpm_enable(false);
     return true;
 }
 
 
 bool hpm_init(char* name)
 {
-    if (since_boot_delta(since_boot_ms, hpm_last_inited) < MEASUREMENTS__COLLECT_TIME__HPM__MS)
-    {
-        return true;
-    }
-    hpm_last_inited = since_boot_ms;
     hpm_enable(true);
     return true;
 }
