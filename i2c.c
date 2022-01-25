@@ -13,7 +13,7 @@ static uint8_t         i2c_buses_ready = 0;
 
 void    i2c_init(unsigned i2c_index)
 {
-    if (i2c_buses_ready & (1 << i2c_index))
+    if (!log_async_log && (i2c_buses_ready & (1 << i2c_index)))
         return;
 
     i2c_buses_ready |= (1 << i2c_index);
