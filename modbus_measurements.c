@@ -101,6 +101,7 @@ void modbus_measurement_del_reg(char * name)
         return;
     measurements_del(name);
     modbus_reg_del(reg);
+    measurements_save();
 }
 
 void modbus_measurement_del_dev(char * dev_name)
@@ -119,4 +120,5 @@ void modbus_measurement_del_dev(char * dev_name)
         reg = modbus_dev_get_reg(dev, 0);
     }
     modbus_dev_del(dev);
+    measurements_save();
 }
