@@ -416,6 +416,7 @@ static bool lw_msg_is_ack(char* message)
 
 enum
 {
+    LW__ERROR__TX_ERROR      =  5,  // more than 256 bytes?
     LW__ERROR__NOT_CONNECTED =  86, // reconnect
     LW__ERROR__PACKET_SIZE   =  87, // throw away message
     LW__ERROR__TIMEOUT_RX1   =  95, // resend
@@ -442,6 +443,10 @@ static void lw_error_handle(char* message)
     err_no = strtol(pos, &next_pos, 10);
     switch (err_no)
     {
+        case LW__ERROR__TX_ERROR:
+            lw_reconnect();
+            lw_debug("Error sending data (too big?)");
+            break;
         case LW__ERROR__NOT_CONNECTED:
             lw_reconnect();
             lw_debug("Not connected to a network.");
@@ -521,16 +526,23 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
             lw_port = 0;
         }
         snprintf(header_str, 17, "at+send=lora:%"PRIu8":", lw_port);
-        uart_ring_out(LW_UART, header_str, 15);
+        unsigned sent = 0;
+        sent+= uart_ring_out(LW_UART, header_str, 15);
         uart_ring_out(CMD_UART, header_str, 15);
         for (uint16_t i = 0; i < arr_len; i++)
         {
             snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
-            uart_ring_out(LW_UART, hex_str, 2);
+            sent+= uart_ring_out(LW_UART, hex_str, 2);
             uart_ring_out(CMD_UART, hex_str, 2);
         }
-        uart_ring_out(LW_UART, "\r\n", 2);
+        sent+= uart_ring_out(LW_UART, "\r\n", 2);
         uart_ring_out(CMD_UART, "\r\n", 2);
+
+        if (sent != (unsigned)(15 + (arr_len * 2) + 2))
+            log_error("Failed to send all bytes over LoRaWAN.");
+        else
+            lw_debug("Sent %u bytes", sent);
+
         memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS_MAX_NUMBER);
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
