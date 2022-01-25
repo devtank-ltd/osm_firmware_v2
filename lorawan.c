@@ -93,7 +93,7 @@ static void lw_write_to_uart(char* fmt, va_list args)
     size_t len;
 
     vsnprintf(lw_out_buffer, LW_BUFFER_SIZE, fmt, args);
-    lw_debug("LORA << %s", lw_out_buffer);
+    lw_debug("<< %s", lw_out_buffer);
     len = strlen(lw_out_buffer);
     lw_out_buffer[len] = '\r';
     lw_out_buffer[len+1] = '\n';
@@ -221,6 +221,7 @@ void lw_process(char* message)
     {
         if (lw_msg_is_ok(message))
         {
+            lw_debug(">> (UNSOL) %s", message);
             lw_state_machine.state = LW_STATE_IDLE;
             return;
         }
@@ -304,7 +305,7 @@ void lw_process(char* message)
         if (lw_msg_is_unsoclitied(message))
         {
             /*Done?*/
-            lw_debug("LORA >> (UNSOL) %s", message);
+            lw_debug(">> (UNSOL) %s", message);
             lw_handle_unsol(message);
             return;
         }
@@ -534,6 +535,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }
+    else lw_debug("Incorrect state to send : %u", (unsigned)lw_state_machine.state);
 }
 
 
