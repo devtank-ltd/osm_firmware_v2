@@ -543,7 +543,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         else
             lw_debug("Sent %u bytes", sent);
 
-        memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS_MAX_NUMBER);
+        memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS__HEX_ARRAY_SIZE);
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }

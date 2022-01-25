@@ -203,7 +203,7 @@ static void measurements_send(void)
     measurement_def_t*  def;
     measurement_data_t* data;
 
-    memset(measurements_hex_arr, 0, MEASUREMENTS_MAX_NUMBER);
+    memset(measurements_hex_arr, 0, MEASUREMENTS__HEX_ARRAY_SIZE);
     measurements_hex_arr_pos = 0;
 
     measurements_debug( "Attempting to send measurements");

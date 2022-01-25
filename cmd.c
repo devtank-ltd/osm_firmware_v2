@@ -227,8 +227,9 @@ static void interval_cb(char * args)
         return;
     }
     uint8_t end_pos_word = p - args + 1;
+    if (end_pos_word > 8)
+        end_pos_word = 8;
     char name[8] = {0};
-    memset(name, 0, end_pos_word);
     strncpy(name, args, end_pos_word-1);
     p = skip_space(p);
     uint8_t new_interval = strtoul(p, NULL, 10);
@@ -250,8 +251,9 @@ static void samplecount_cb(char * args)
         return;
     }
     uint8_t end_pos_word = p - args + 1;
+    if (end_pos_word > 8)
+        end_pos_word = 8;
     char name[8] = {0};
-    memset(name, 0, end_pos_word);
     strncpy(name, args, end_pos_word-1);
     p = skip_space(p);
     uint8_t new_samplecount = strtoul(p, NULL, 10);
