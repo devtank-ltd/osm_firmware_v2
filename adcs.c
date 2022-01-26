@@ -41,7 +41,7 @@
 #define ADC_MAX_VAL   4095
 #define ADC_MAX_MV    3300
 
-#define ADC_BAT_MUL   10000
+#define ADC_BAT_MUL   10000UL
 #define ADC_BAT_MAX_MV 1343 /* 1.343 volts */
 #define ADC_BAT_MIN_MV 791  /* 0.791 volts */
 #define ADC_BAT_MAX   (ADC_MAX_VAL * ADC_BAT_MUL / ADC_MAX_MV * ADC_BAT_MAX_MV)
@@ -366,6 +366,7 @@ bool adcs_cc_begin(char* name)
         adc_debug("ADCs already running.");
         return false;
     }
+    adc_debug("Started ADC reading for CC.");
     adcs_cc_running = true;
     timer_set_counter(TIM3, 0);
     timer_enable_counter(TIM3);
@@ -421,6 +422,7 @@ bool adcs_cc_get(char* name, value_t* value)
     }
 
     *value = value_from_u16(cc_mA);
+    adc_debug("CC = %umA", cc_mA);
     return true;
 }
 
@@ -442,6 +444,7 @@ bool adcs_bat_begin(char* name)
         return false;
     }
 
+    adc_debug("Started ADC reading for BAT.");
     adcs_bat_running = true;
     adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX__BAT_MON]);
     adc_start_conversion_regular(ADC1);
@@ -452,40 +455,50 @@ bool adcs_bat_begin(char* name)
 bool adcs_bat_get(char* name, value_t* value)
 {
     if (!adcs_bat_running)
+    {
+        adc_debug("ADC for Bat not running!");
         return false;
-
-    adcs_bat_running = false;
+    }
 
     if (!adc_eoc(ADC1))
     {
         adc_debug("ADC for Bat not complete!");
+        adcs_bat_running = false;
         return false;
     }
 
     if (!value)
+    {
+        adcs_bat_running = false;
         return false;
+    }
 
     unsigned adc = adc_read_regular(ADC1);
 
+    adcs_bat_running = false;
+
     adc *= ADC_BAT_MUL;
+
+    uint16_t perc;
 
     if (adc > ADC_BAT_MAX)
     {
-        *value = value_from((uint16_t)ADC_BAT_MUL);
-        return true;
+        perc = ADC_BAT_MUL;
     }
     else if (adc < ADC_BAT_MIN)
     {
         /* How are we here? */
-        *value = value_from((uint16_t)0);
-        return true;
+        perc = (uint16_t)ADC_BAT_MIN;
+    }
+    else
+    {
+        perc = adc - ADC_BAT_MIN;
+        perc /= (ADC_BAT_MAX / ADC_BAT_MUL) - (ADC_BAT_MIN / ADC_BAT_MUL);
     }
 
-    uint16_t perc = adc - ADC_BAT_MIN;
-
-    perc /= (ADC_BAT_MAX / ADC_BAT_MUL) - (ADC_BAT_MIN / ADC_BAT_MUL);
-
     *value = value_from(perc);
+
+    adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
     return true;
 }
