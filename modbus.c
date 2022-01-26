@@ -671,7 +671,7 @@ void           modbus_log()
             {
                 modbus_reg_t * reg = &dev->regs[i];
                 if (reg->name[0])
-                    log_out("  - Reg - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->name, modbus_reg_type_get_str(reg->type));
+                    log_out("  - Reg - 0x%"PRIx16" (F:%"PRIu8") \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->func, reg->name, modbus_reg_type_get_str(reg->type));
             }
         }
     }
