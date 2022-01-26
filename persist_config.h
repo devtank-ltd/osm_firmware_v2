@@ -1,5 +1,4 @@
-#ifndef __PERSISTENT_CONIFG__
-#define __PERSISTENT_CONIFG__
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -8,7 +7,7 @@
 #include "measurements.h"
 
 
-extern void init_persistent();
+extern void persistent_init();
 extern void persist_set_fw_ready(uint32_t size);
 extern void persist_set_log_debug_mask(uint32_t mask);
 extern uint32_t persist_get_log_debug_mask(void);
@@ -27,4 +26,4 @@ extern bool persist_get_adc_midpoint(uint16_t* midpoint);
 extern uint8_t * persist_get_modbus_data(void);
 extern void      persist_commit_modbus_data(void);
 
-#endif //__PERSISTENT_CONIFG__
+extern void persistent_wipe();

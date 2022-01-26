@@ -597,6 +597,12 @@ static void lora_conn_cb(char* args)
 }
 
 
+static void wipe_cb(char* args)
+{
+    persistent_wipe();
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -634,6 +640,7 @@ void cmds_process(char * command, unsigned len)
         { "humi",         "Get the humidity",         humidity_cb},
         { "dew",          "Get the dew temperature",  dew_point_cb},
         { "lora_conn",    "LoRa connected",           lora_conn_cb},
+        { "wipe",         "Factory Reset",            wipe_cb},
         { NULL },
     };
 

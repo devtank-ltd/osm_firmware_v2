@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 #include <libopencm3/stm32/flash.h>
+#include <libopencm3/cm3/scb.h>
 
 #include "log.h"
 #include "persist_config.h"
@@ -47,7 +48,7 @@ static void _lw_config_valid(void)
 }
 
 
-void init_persistent(void)
+void persistent_init(void)
 {
     persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
 
@@ -223,4 +224,14 @@ uint8_t * persist_get_modbus_data(void)
 void      persist_commit_modbus_data(void)
 {
     _persistent_commit();
+}
+
+
+void    persistent_wipe(void)
+{
+    flash_unlock();
+    flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_lock();
+    platform_raw_msg("Factory Reset");
+    scb_reset_system();
 }
