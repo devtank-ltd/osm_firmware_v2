@@ -205,16 +205,36 @@ static void measurements_send(void)
     measurement_def_t*  def;
     measurement_data_t* data;
 
+    static bool has_printed_no_con = false;
+
     if (!lw_get_connected())
     {
-        measurements_debug("Not connected to send, dropping readings");
+        if (!has_printed_no_con)
+        {
+            measurements_debug("Not connected to send, dropping readings");
+            has_printed_no_con = true;
+            measurement_pos = 0;
+        }
         pending_send = false;
-        last_sent_ms = since_boot_ms;
         return;
     }
 
+    has_printed_no_con = false;
+
     if (!lw_send_ready())
     {
+        if (pending_send)
+        {
+            if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL__TRANSMIT_MS/4)
+            {
+                measurements_debug("Pending send timed out.");
+                lw_reconnect();
+                measurement_pos = 0;
+                pending_send = false;
+            }
+            return;
+        }
+        last_sent_ms = since_boot_ms;
         pending_send = true;
         return;
     }
@@ -274,10 +294,10 @@ static void measurements_send(void)
 
     if (num_qd > 0)
     {
+        last_sent_ms = since_boot_ms;
         lw_send(measurements_hex_arr, measurements_hex_arr_pos+1);
         if (!measurement_pos)
         {
-            last_sent_ms = since_boot_ms;
             pending_send = false;
             measurements_debug("Complete send");
         }

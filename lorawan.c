@@ -189,8 +189,9 @@ void lorawan_init(void)
 }
 
 
-static void lw_reconnect(void)
+void lw_reconnect(void)
 {
+    lw_debug("restarted LoRaWAN connection");
     lw_state_machine.state = LW_STATE_INIT;
     lw_state_machine.data.init_step = 0;
     lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
