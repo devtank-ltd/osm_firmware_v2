@@ -598,5 +598,7 @@ void lw_send_str(char* str)
 
 static void lw_resend_message(void)
 {
+    if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
+        lw_state_machine.state = LW_STATE_IDLE;
     lw_send(lw_message_backup.hex_arr, lw_message_backup.len);
 }
