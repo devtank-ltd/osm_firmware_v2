@@ -510,7 +510,7 @@ static void reset_cb(char *args)
 static void adcs_cb(char* args)
 {
     value_t value;
-    if (!adcs_get_cc_blocking("None", &value))
+    if (!adcs_cc_get_blocking("None", &value))
     {
         log_out("Could not get adc value.");
         return;
@@ -528,13 +528,13 @@ static void adcs_midpoint_cb(char *args)
 {
     char* pos = skip_space(args);
     uint16_t new_mp = (uint16_t)strtoul(pos, NULL, 10);
-    adcs_set_midpoint(new_mp);
+    adcs_cc_set_midpoint(new_mp);
 }
 
 
 static void adcs_calibrate_cb(char *args)
 {
-    adcs_calibrate_current_clamp();
+    adcs_cc_calibrate();
 }
 
 
@@ -622,6 +622,19 @@ static void interval_mins_cb(char* args)
 }
 
 
+static void bat_cb(char* args)
+{
+    value_t value;
+    if (!adcs_bat_get_blocking(NULL, &value))
+    {
+        log_out("Could not get bat value.");
+        return;
+    }
+
+    log_out("Bat %u.%02u", value.u16 / 100, value.u16 %100);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -661,6 +674,7 @@ void cmds_process(char * command, unsigned len)
         { "lora_conn",    "LoRa connected",           lora_conn_cb},
         { "wipe",         "Factory Reset",            wipe_cb},
         { "interval_mins","Get/Set interval minutes", interval_mins_cb},
+        { "bat",          "Get battery level.",       bat_cb},
         { NULL },
     };
 

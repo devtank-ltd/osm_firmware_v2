@@ -34,10 +34,18 @@
  */
 
 
-#define ADCS_DEFAULT_COLLECTION_TIME    1000;
+#define ADCS_CC_DEFAULT_COLLECTION_TIME    1000;
 
+#define ADCS_MON_DEFAULT_COLLECTION_TIME    100;
 
-#define ADCS_TIMEOUT_TIME_MS        5000
+#define ADC_MAX_VAL   4095
+#define ADC_MAX_MV    3300
+
+#define ADC_BAT_MUL   10000
+#define ADC_BAT_MAX_MV 1343 /* 1.343 volts */
+#define ADC_BAT_MIN_MV 791  /* 0.791 volts */
+#define ADC_BAT_MAX   (ADC_MAX_VAL * ADC_BAT_MUL / ADC_MAX_MV * ADC_BAT_MAX_MV)
+#define ADC_BAT_MIN   (ADC_MAX_VAL * ADC_BAT_MUL / ADC_MAX_MV * ADC_BAT_MIN_MV)
 
 
 typedef enum
@@ -85,16 +93,17 @@ static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
 
-static volatile bool                adcs_running                                        = false;
+static volatile bool                adcs_cc_running                                        = false;
+static volatile bool                adcs_bat_running                                       = false;
 
 
 
-uint32_t adcs_collection_time(void)
+uint32_t adcs_cc_collection_time(void)
 {
     /**
     Could calculate how long it should take to get the results. For now use 2 seconds.
     */
-    return ADCS_DEFAULT_COLLECTION_TIME;
+    return ADCS_CC_DEFAULT_COLLECTION_TIME;
 }
 
 
@@ -142,7 +151,7 @@ static void _adcs_setup_adc(void)
 }
 
 
-bool adcs_set_midpoint(uint16_t new_midpoint)
+bool adcs_cc_set_midpoint(uint16_t new_midpoint)
 {
     midpoint = new_midpoint;
     if (!persist_set_adc_midpoint(new_midpoint))
@@ -240,10 +249,10 @@ static bool _adcs_to_mV(uint16_t value, uint16_t* mV)
     // ADC of    0 -> 0V
     //        4096 -> 3.3V
 
-    uint16_t max_value = 4095;
-    uint16_t min_value = 0;
-    uint16_t max_mV = 3300;
-    uint16_t min_mV = 0;
+    const uint16_t max_value = ADC_MAX_VAL;
+    const uint16_t min_value = 0;
+    const uint16_t max_mV = ADC_MAX_MV;
+    const uint16_t min_mV = 0;
     uint32_t inter_val;
 
     inter_val = value * (max_mV - min_mV);
@@ -337,12 +346,12 @@ void tim3_isr(void)
 
     if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
     {
-        adc_set_regular_sequence(ADC1, 1, adc_channel_array);
+        adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX__CURRENT_CLAMP]);
         adc_start_conversion_regular(ADC1);
     }
     else
     {
-        adcs_running = false;
+        adcs_cc_running = false;
         started = false;
         timer_disable_counter(TIM3);
     }
@@ -350,46 +359,46 @@ void tim3_isr(void)
 
 
 
-bool adcs_begin(char* name)
+bool adcs_cc_begin(char* name)
 {
-    if (adcs_running)
+    if (adcs_cc_running || adcs_bat_running)
     {
         adc_debug("ADCs already running.");
         return false;
     }
-    adcs_running = true;
+    adcs_cc_running = true;
     timer_set_counter(TIM3, 0);
     timer_enable_counter(TIM3);
     return true;
 }
 
 
-static void _adcs_wait(void)
+static void _adcs_cc_wait(void)
 {
-    adc_debug("Waiting for ADC collection");
-    while (adcs_running)
+    adc_debug("Waiting for ADC CC");
+    while (adcs_cc_running)
         uart_rings_out_drain();
 }
 
 
-bool adcs_calibrate_current_clamp(void)
+bool adcs_cc_calibrate(void)
 {
-    if (!adcs_begin(""))
+    if (!adcs_cc_begin(""))
         return false;
-    _adcs_wait();
+    _adcs_cc_wait();
     uint64_t sum = 0;
     for (unsigned i = 0; i < ARRAY_SIZE(adcs_buffer); i++)
     {
         sum += adcs_buffer[i];
     }
-    adcs_set_midpoint(sum / ARRAY_SIZE(adcs_buffer));
+    adcs_cc_set_midpoint(sum / ARRAY_SIZE(adcs_buffer));
     return true;
 }
 
 
-bool adcs_get_cc(char* name, value_t* value)
+bool adcs_cc_get(char* name, value_t* value)
 {
-    if (adcs_running)
+    if (adcs_cc_running)
     {
         adc_debug("ADCs not finished.");
         return false;
@@ -416,12 +425,86 @@ bool adcs_get_cc(char* name, value_t* value)
 }
 
 
-bool adcs_get_cc_blocking(char* name, value_t* value)
+bool adcs_cc_get_blocking(char* name, value_t* value)
 {
-    if (!adcs_begin(name))
+    if (!adcs_cc_begin(name))
         return false;
-    _adcs_wait();
-    return adcs_get_cc(name, value);
+    _adcs_cc_wait();
+    return adcs_cc_get(name, value);
+}
+
+
+bool adcs_bat_begin(char* name)
+{
+    if (adcs_cc_running || adcs_bat_running)
+    {
+        adc_debug("ADCs already running.");
+        return false;
+    }
+
+    adcs_bat_running = true;
+    adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX__BAT_MON]);
+    adc_start_conversion_regular(ADC1);
+    return true;
+}
+
+
+bool adcs_bat_get(char* name, value_t* value)
+{
+    if (!adcs_bat_running)
+        return false;
+
+    adcs_bat_running = false;
+
+    if (!adc_eoc(ADC1))
+    {
+        adc_debug("ADC for Bat not complete!");
+        return false;
+    }
+
+    if (!value)
+        return false;
+
+    unsigned adc = adc_read_regular(ADC1);
+
+    adc *= ADC_BAT_MUL;
+
+    if (adc > ADC_BAT_MAX)
+    {
+        *value = value_from((uint16_t)ADC_BAT_MUL);
+        return true;
+    }
+    else if (adc < ADC_BAT_MIN)
+    {
+        /* How are we here? */
+        *value = value_from((uint16_t)0);
+        return true;
+    }
+
+    uint16_t perc = adc - ADC_BAT_MIN;
+
+    perc /= (ADC_BAT_MAX / ADC_BAT_MUL) - (ADC_BAT_MIN / ADC_BAT_MUL);
+
+    *value = value_from(perc);
+
+    return true;
+}
+
+
+uint32_t adcs_bat_collection_time(void)
+{
+    return ADCS_MON_DEFAULT_COLLECTION_TIME;
+}
+
+
+bool adcs_bat_get_blocking(char* name, value_t* value)
+{
+    if (!adcs_bat_begin(name))
+        return false;
+    adc_debug("Waiting for ADC BAT");
+    while (!adc_eoc(ADC1))
+        uart_rings_out_drain();
+    return adcs_bat_get(name, value);
 }
 
 
@@ -432,7 +515,7 @@ void adcs_init(void)
     {
         // Assume it to be the theoretical midpoint
         adc_debug("Failed to load persistent midpoint.");
-        adcs_set_midpoint(4095 / 2);
+        adcs_cc_set_midpoint(ADC_MAX_VAL / 2);
     }
 
     // Setup the clock and gpios

@@ -38,6 +38,8 @@
 
 #define MEASUREMENT_HTU21D_HUMI "HUMI"
 
+#define MEASUREMENT_BATMON_NAME "BAT"
+
 
 typedef struct
 {
@@ -564,9 +566,9 @@ static void _measurement_fixup(measurement_def_t* def)
             def->get_cb = modbus_measurements_get;
             break;
         case CURRENT_CLAMP:
-            def->collection_time = adcs_collection_time();
-            def->init_cb = adcs_begin;
-            def->get_cb = adcs_get_cc;
+            def->collection_time = adcs_cc_collection_time();
+            def->init_cb = adcs_cc_begin;
+            def->get_cb = adcs_cc_get;
             break;
         case W1_PROBE:
             def->collection_time = w1_collection_time();
@@ -582,6 +584,11 @@ static void _measurement_fixup(measurement_def_t* def)
             def->collection_time = htu21d_measurements_collection_time();
             def->init_cb = htu21d_humi_measurements_init;
             def->get_cb  = htu21d_humi_measurements_get;
+            break;
+        case BAT_MON:
+            def->collection_time = adcs_bat_collection_time();
+            def->init_cb = adcs_bat_begin;
+            def->get_cb = adcs_bat_get;
             break;
         default:
             log_error("Unknown measurement type! : 0x%"PRIx8, def->base.type);
@@ -705,6 +712,13 @@ void measurements_init(void)
 
         strncpy(temp_def.base.name, MEASUREMENT_HTU21D_HUMI, sizeof(temp_def.base.name));
         temp_def.base.type        = HTU21D_HUM;
+        _measurement_fixup(&temp_def);
+        measurements_add(&temp_def);
+
+        strncpy(temp_def.base.name, MEASUREMENT_BATMON_NAME, sizeof(temp_def.base.name));
+        temp_def.base.samplecount = 5;
+        temp_def.base.interval    = 1;
+        temp_def.base.type        = BAT_MON;
         _measurement_fixup(&temp_def);
         measurements_add(&temp_def);
 

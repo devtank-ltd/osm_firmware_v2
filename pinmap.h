@@ -31,6 +31,11 @@
 #define ADC1_CHANNEL__3V3_RAIL_MON       3
 #define ADC1_CHANNEL__5V_RAIL_MON        4
 
+#define ADC_INDEX__CURRENT_CLAMP   0
+#define ADC_INDEX__BAT_MON         1
+#define ADC_INDEX__3V3_RAIL_MON    2
+#define ADC_INDEX__5V_RAIL_MON     3
+
 #define ADC_CHANNELS  { ADC1_CHANNEL__CURRENT_CLAMP,    \
                         ADC1_CHANNEL__BAT_MON,          \
                         ADC1_CHANNEL__3V3_RAIL_MON,     \
