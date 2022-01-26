@@ -101,15 +101,15 @@
 
 #define DMA_DATA_PCK_SZ    64
 
-#define DEBUG_SYS   0x1
-#define DEBUG_ADC   0x2
-#define DEBUG_LW    0x4
-#define DEBUG_IO    0x8
-#define DEBUG_UART(_x_)  (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
-#define DEBUG_HPM   0x100
-#define DEBUG_MODBUS 0x200
-#define DEBUG_MEASUREMENTS 0x400
-#define DEBUG_FW           0x800
+#define DEBUG_SYS             0x1
+#define DEBUG_ADC             0x2
+#define DEBUG_LW              0x4
+#define DEBUG_IO              0x8
+#define DEBUG_UART(_x_)     (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
+#define DEBUG_HPM           0x100
+#define DEBUG_MODBUS        0x200
+#define DEBUG_MEASUREMENTS  0x400
+#define DEBUG_FW            0x800
 #define DEBUG_TMP_HUM      0x1000
 
 #define INTERVAL__TRANSMIT_MIN  5
