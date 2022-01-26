@@ -471,7 +471,7 @@ void modbus_ring_process(ring_buf_t * ring)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
-            if (func == MODBUS_READ_INPUT_FUNC)
+            else if (func == MODBUS_READ_INPUT_FUNC)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
@@ -481,7 +481,7 @@ void modbus_ring_process(ring_buf_t * ring)
             }
             else
             {
-                modbus_debug("Bad function.");
+                modbus_debug("Bad function : %"PRIu8, func);
                 return;
             }
 
