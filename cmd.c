@@ -603,6 +603,25 @@ static void wipe_cb(char* args)
 }
 
 
+static void interval_mins_cb(char* args)
+{
+    if (args[0])
+    {
+        uint32_t new_interval_mins = strtoul(args, NULL, 10);
+        if (!new_interval_mins)
+            new_interval_mins = 5;
+
+        log_out("Setting interval minutes to %"PRIu32, new_interval_mins);
+        persist_set_mins_interval(new_interval_mins);
+        transmit_interval = new_interval_mins;
+    }
+    else
+    {
+        log_out("Current interval minutes is %"PRIu32, transmit_interval);
+    }
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -641,6 +660,7 @@ void cmds_process(char * command, unsigned len)
         { "dew",          "Get the dew temperature",  dew_point_cb},
         { "lora_conn",    "LoRa connected",           lora_conn_cb},
         { "wipe",         "Factory Reset",            wipe_cb},
+        { "interval_mins","Get/Set interval minutes", interval_mins_cb},
         { NULL },
     };
 

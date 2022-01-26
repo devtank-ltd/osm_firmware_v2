@@ -31,7 +31,7 @@ typedef struct
     uint32_t                version;
     uint32_t                log_debug_mask;
     uint32_t                pending_fw;
-    uint32_t                _;
+    uint32_t                mins_interval;
     uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];

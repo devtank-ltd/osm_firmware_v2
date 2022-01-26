@@ -17,6 +17,8 @@
 #define MEASUREMENTS__COLLECT_TIME__HPM__MS         10000
 
 
+extern uint32_t transmit_interval;
+
 
 typedef enum
 {

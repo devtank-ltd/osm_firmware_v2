@@ -59,6 +59,7 @@ void persistent_init(void)
         memset(&persist_data, 0, sizeof(persist_data));
         persist_data.version = PERSIST__VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
+        persist_data.mins_interval = 5;
         return;
     }
 
@@ -190,6 +191,30 @@ void persist_set_measurements(measurement_def_t * arr)
 
     _persistent_commit();
 }
+
+
+bool persist_get_mins_interval(uint32_t * mins_interval)
+{
+    if (!mins_interval || !persist_data_valid)
+    {
+        return false;
+    }
+    *mins_interval = persist_data.mins_interval;
+    return true;
+}
+
+
+bool persist_set_mins_interval(uint32_t mins_interval)
+{
+    if (!persist_data_valid)
+    {
+        return false;
+    }
+    persist_data.mins_interval = mins_interval;
+    _persistent_commit();
+    return true;
+}
+
 
 
 bool persist_set_adc_midpoint(uint16_t midpoint)

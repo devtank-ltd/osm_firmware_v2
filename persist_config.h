@@ -20,6 +20,9 @@ extern bool persist_get_lw_app_key(char app_key[LW__APP_KEY_LEN + 1]);
 extern bool persist_get_measurements(measurement_def_base_t** arr);
 extern void persist_set_measurements(measurement_def_t * arr);
 
+extern bool persist_get_mins_interval(uint32_t * mins_interval);
+extern bool persist_set_mins_interval(uint32_t mins_interval);
+
 extern bool persist_set_adc_midpoint(uint16_t midpoint);
 extern bool persist_get_adc_midpoint(uint16_t* midpoint);
 

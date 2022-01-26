@@ -112,7 +112,4 @@
 #define DEBUG_FW            0x800
 #define DEBUG_TMP_HUM      0x1000
 
-#define INTERVAL__TRANSMIT_MIN  5
-#define INTERVAL__TRANSMIT_MS   (INTERVAL__TRANSMIT_MIN * 60 * 1000)
-
 #endif //__CONFIG__

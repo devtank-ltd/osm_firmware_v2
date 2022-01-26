@@ -74,6 +74,11 @@ static uint16_t                 measurements_hex_arr_pos                        
 static measurement_arr_t        measurement_arr                                     = {0};
 
 
+uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
+
+#define INTERVAL__TRANSMIT_MS   (transmit_interval * 60 * 1000)
+
+
 
 static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
 {
@@ -601,7 +606,7 @@ void measurements_print(void)
         {
             ; // Do something
         }
-        log_out("%s\t%"PRIu8"x%umins\t\t%"PRIu8, measurement_def->base.name, measurement_def->base.interval, INTERVAL__TRANSMIT_MIN, measurement_def->base.samplecount);
+        log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurement_def->base.name, measurement_def->base.interval, transmit_interval, measurement_def->base.samplecount);
     }
 }
 
@@ -629,7 +634,7 @@ void measurements_print_persist(void)
         {
             ; // Do something
         }
-        log_out("%s\t%"PRIu8"x%umins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, INTERVAL__TRANSMIT_MIN, measurement_def_base->samplecount);
+        log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, transmit_interval, measurement_def_base->samplecount);
     }
 }
 
@@ -704,5 +709,18 @@ void measurements_init(void)
         measurements_add(&temp_def);
 
         measurements_save();
+    }
+
+    if (persist_get_mins_interval(&transmit_interval))
+    {
+        if (!transmit_interval)
+            transmit_interval = 5;
+
+        measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval);
+    }
+    else
+    {
+        log_error("Could not load measurement interval.");
+        transmit_interval = 5;
     }
 }
