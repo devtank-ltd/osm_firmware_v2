@@ -473,27 +473,29 @@ bool adcs_bat_get(char* name, value_t* value)
         return false;
     }
 
-    unsigned adc = adc_read_regular(ADC1);
+    unsigned raw = adc_read_regular(ADC1);
+
+    adc_debug("Bat raw ADC:%u", raw);
 
     adcs_bat_running = false;
 
-    adc *= ADC_BAT_MUL;
+    raw *= ADC_BAT_MUL;
 
     uint16_t perc;
 
-    if (adc > ADC_BAT_MAX)
+    if (raw > ADC_BAT_MAX)
     {
         perc = ADC_BAT_MUL;
     }
-    else if (adc < ADC_BAT_MIN)
+    else if (raw < ADC_BAT_MIN)
     {
         /* How are we here? */
         perc = (uint16_t)ADC_BAT_MIN;
     }
     else
     {
-        perc = adc - ADC_BAT_MIN;
-        perc /= (ADC_BAT_MAX / ADC_BAT_MUL) - (ADC_BAT_MIN / ADC_BAT_MUL);
+        uint32_t divider =  (ADC_BAT_MAX / ADC_BAT_MUL) - (ADC_BAT_MIN / ADC_BAT_MUL);
+        perc = (raw - ADC_BAT_MIN) / divider;
     }
 
     *value = value_from(perc);
