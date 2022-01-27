@@ -204,7 +204,7 @@ bool value_from_str(value_t * v, char * str)
             switch(bits)
             {
                 case 32: v->type = VALUE_FLOAT;  v->f  = strtof(splitter + 1, NULL); return true;
-                case 64: v->type = VALUE_DOUBLE; v->f  = strtod(splitter + 1, NULL); return true;
+                case 64: v->type = VALUE_DOUBLE; v->r  = strtod(splitter + 1, NULL); return true;
                 default:
                     return false;
             }

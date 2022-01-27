@@ -3,24 +3,11 @@
 
 #include "ring.h"
 
-#define NORMAL   "\033[39m"
-#define OKGREEN  "\033[92m"
-#define BADRED   "\033[91m"
-
-#define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
+#include "test.h"
 
 static char * test_lines[] = {"The rain in Spain stays\n",
                               "on the plane. Yes, plane.\n\r",
                               "It's a hot country.\n"};
-
-
-static void basic_test(char * test, unsigned expected, unsigned got)
-{
-    if (expected == got)
-        printf(OKGREEN"%s %u == %u - pass"NORMAL"\n", test, expected, got);
-    else
-        printf(BADRED"%s %u != %u FAIL"NORMAL"\n", test, expected, got);
-}
 
 
 static unsigned test_consume_cb(char * buf, unsigned len, void *data)
