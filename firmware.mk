@@ -1,4 +1,4 @@
-SOURCES += main.c \
+firmware_SOURCES := main.c \
            log.c \
            sai.c \
            uarts.c \
@@ -20,8 +20,4 @@ SOURCES += main.c \
            one_wire_driver.c \
            timers.c
 
-PROJECT_NAME := firmware
-LINK_SCRIPT = stm32l452.ld
-
-include Makefile.base
-
+firmware_LINK_SCRIPT := stm32l452.ld
