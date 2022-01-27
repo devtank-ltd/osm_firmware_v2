@@ -1,16 +1,16 @@
-Devtank IO Board
-================
+Devtank OpenSmartMonitor
+========================
 
-This is a firmware for a STM32F072RB as a generic IO board.
+This is a firmware for Devtank's OpenSmartMonitor based round the STML4.
 
-It has:
+Build requirements are:
 
-* 3 UARTs
-    - 2 via USB
-        - 1 at 115200 to/from STM32 UART4
-        - 1 at 9600 to/from STM32 UART3
-    - 1 to/from STM32 UART2 for debug.
-* 9 Input GPIOs
-* 16 Output GPIOs
-* 2 Pulses per second counters
-* 10 ADCs sampled at 6k getting min,max and average.
+make
+gcc-arm-none-eabi
+picolibc-arm-none-eabi
+
+To program a OpenSmartMonitor you're need either "stm32flash" or "openocd" and to have soldered wired on the right pins....
+
+This is all still work in progress and inherits code from previous Devtank STM projects.
+
+
