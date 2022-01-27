@@ -103,4 +103,8 @@ debug_mon: $(WHOLE_IMG)
 debug_gdb: $(WHOLE_IMG)
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
 
+size: $(WHOLE_IMG)
+	$(TOOLCHAIN)-size $(BUILD_DIR)/*.elf
+
+
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
