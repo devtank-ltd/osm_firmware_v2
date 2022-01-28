@@ -33,9 +33,6 @@ Documents used:
 #define W1_CMD_CONV_T       0x44
 #define W1_CMD_READ_SCP     0xBE
 
-#define W1_PORT             PULSE2_PORT
-#define W1_PIN              PULSE2_PIN
-
 #define W1_DIRECTION_OUTPUT true
 #define W1_DIRECTION_INPUT  false
 #define W1_LEVEL_LOW        (uint8_t)0

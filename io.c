@@ -36,10 +36,8 @@ static char* _ios_get_type(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
     {
-        case IO_PPS0: return "PPS0";
-        case IO_PPS1: return "PPS1";
-        case IO_RELAY : return "RL";
-        case IO_HIGHSIDE : return "HS";
+        case IO_PULSECOUNT: return "PLSCNT";
+        case IO_ONEWIRE:    return "W1";
         default : return "";
     }
 }
@@ -49,8 +47,8 @@ static bool _io_is_special(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
     {
-        case IO_PPS0:
-        case IO_PPS1:
+        case IO_PULSECOUNT:
+        case IO_ONEWIRE:
             return true;
         default : return false;
     }
@@ -69,7 +67,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
         io_state & IO_PULL_MASK,
         gpio_pin->pins);
 
-    ios_state[io] = (ios_state[io] & (IO_TYPE_MASK | IO_UART_TX)) | io_state;
+    ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
     io_debug("%02u set to %s %s",
             io,
@@ -111,22 +109,16 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
     {
         uint16_t io_type = io_state & IO_TYPE_MASK;
 
-        if (io_type == IO_PPS0)
-        {
-           // pulsecount_enable(0, false);
-            io_state &= ~IO_SPECIAL_EN;
-            io_debug("%02u : PPS0 NO LONGER", io);
-        }
-        else if (io_type == IO_PPS1)
+        if (io_type == IO_PULSECOUNT)
         {
             //pulsecount_enable(1, false);
             io_state &= ~IO_SPECIAL_EN;
-            io_debug("%02u : PPS1 NO LONGER", io);
+            io_debug("%02u : PLSCNT NO LONGER", io);
         }
-        else
+        else if (io_type == IO_ONEWIRE)
         {
-            io_debug("%02u : USED %s", io, _ios_get_type(io_state));
-            return;
+            io_state &= ~IO_SPECIAL_EN;
+            io_debug("%02u : W1 NO LONGER", io);
         }
     }
 
@@ -160,18 +152,16 @@ bool     io_enable_special(unsigned io)
 
     uint16_t io_type = io_state & IO_TYPE_MASK;
 
-    if (io_type == IO_PPS0)
+    if (io_type == IO_PULSECOUNT)
     {
-        //pulsecount_enable(0, true);
         ios_state[io] |= IO_SPECIAL_EN;
-        io_debug("%02u : USED PPS0", io);
+        io_debug("%02u : USED PLSCNT", io);
         return true;
     }
-    else if (io_type == IO_PPS1)
+    else if (io_type == IO_ONEWIRE)
     {
-        //pulsecount_enable(1, true);
         ios_state[io] |= IO_SPECIAL_EN;
-        io_debug("%02u : USED PPS0", io);
+        io_debug("%02u : USED W1", io);
         return true;
     }
 
