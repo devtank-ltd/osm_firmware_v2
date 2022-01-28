@@ -192,7 +192,7 @@ class dev_t(object):
 
         self._children = {
             "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
-            "cc"        : measurement_t("Current Clamp"      , int   , "adcs"      , parse_current_clamp  ),
+            "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
             "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
             "PF"        : modbus_reg_t("Power Factor"         , 0xc56e, 3, "U32", "PF"   ),

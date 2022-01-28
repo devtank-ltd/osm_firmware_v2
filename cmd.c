@@ -507,7 +507,7 @@ static void reset_cb(char *args)
 }
 
 
-static void adcs_cb(char* args)
+static void cc_cb(char* args)
 {
     value_t value;
     if (!adcs_cc_get_blocking("None", &value))
@@ -524,7 +524,7 @@ static void adcs_cb(char* args)
 }
 
 
-static void adcs_midpoint_cb(char *args)
+static void cc_midpoint_cb(char *args)
 {
     char* pos = skip_space(args);
     uint16_t new_mp = (uint16_t)strtoul(pos, NULL, 10);
@@ -532,7 +532,7 @@ static void adcs_midpoint_cb(char *args)
 }
 
 
-static void adcs_calibrate_cb(char *args)
+static void cc_calibrate_cb(char *args)
 {
     adcs_cc_calibrate();
 }
@@ -663,11 +663,11 @@ void cmds_process(char * command, unsigned len)
         { "fw+",          "Add chunk of new fw.",     fw_add},
         { "fw@",          "Finishing crc of new fw.", fw_fin},
         { "reset",        "Reset device.",            reset_cb},
-        { "adcs",         "ADC debug",                adcs_cb},
-        { "adcs_mp",      "Set the adc midpoint",     adcs_midpoint_cb},
-        { "adcs_cal",     "Calibrate the adc",        adcs_calibrate_cb},
+        { "cc",           "CC value",                 cc_cb},
+        { "cc_mp",        "Set the cc midpoint",      cc_midpoint_cb},
+        { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
         { "w1",           "Get temperature with w1",  w1_cb},
-        { "timer",        "Test timer",               timer_cb},
+        { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
         { "humi",         "Get the humidity",         humidity_cb},
         { "dew",          "Get the dew temperature",  dew_point_cb},

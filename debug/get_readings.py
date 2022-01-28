@@ -212,7 +212,7 @@ class dev_t(object):
             return True
 
         def current_clamp_calibrate(self):
-            self._ll.write("adcs_cal")
+            self._ll.write("cc_cal")
 
 
 class csv_obj_t(object):
@@ -280,7 +280,7 @@ def parse_lora_comms(r_str:str):
 
 
 commands = [ measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ) ,
-             measurement_t("Current Clamp"      , int   , "adcs"      , parse_current_clamp  ) ,
+             measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ) ,
              measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ) ,
              measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ) ]
 
