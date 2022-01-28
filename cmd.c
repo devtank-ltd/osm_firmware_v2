@@ -217,25 +217,37 @@ void lora_config_cb(char * args)
 
 static void interval_cb(char * args)
 {
-    // CMD  : "interval temperature 3"
-    // ARGS : "temperature 3"
-
+    char* name = args;
     char* p = skip_space(args);
     p = strchr(p, ' ');
-    if (p == NULL)
+    if (p)
     {
-        return;
+        p[0] = 0;
+        p = skip_space(p+1);
     }
-    uint8_t end_pos_word = p - args + 1;
-    if (end_pos_word > 8)
-        end_pos_word = 8;
-    char name[8] = {0};
-    strncpy(name, args, end_pos_word-1);
-    p = skip_space(p);
-    uint8_t new_interval = strtoul(p, NULL, 10);
+    if (p && isdigit(p[0]))
+    {
+        uint8_t new_interval = strtoul(p, NULL, 10);
 
-    measurements_set_interval(name, new_interval);
-    measurements_save();
+        if (measurements_set_interval(name, new_interval))
+        {
+            measurements_save();
+            log_out("Changed %s interval to %"PRIu8, name, new_interval);
+        }
+        else log_out("Unknown measuremnt");
+    }
+    else
+    {
+        uint8_t interval;
+        if (measurements_get_interval(name, &interval))
+        {
+            log_out("Interval of %s = %"PRIu8, name, interval);
+        }
+        else
+        {
+            log_out("Unknown measuremnt");
+        }
+    }
 }
 
 

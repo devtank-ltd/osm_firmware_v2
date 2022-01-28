@@ -84,6 +84,8 @@ uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
 
 static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
 {
+    if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
+        return false;
     measurement_def_t* t_measurement_def;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -493,6 +495,18 @@ bool measurements_set_interval(char* name, uint8_t interval)
         return false;
     }
     measurement_def->base.interval = interval;
+    return true;
+}
+
+
+bool     measurements_get_interval(char* name, uint8_t * interval)
+{
+    measurement_def_t* measurement_def = NULL;
+    if (!interval || !measurements_get_measurement_def(name, &measurement_def))
+    {
+        return false;
+    }
+    *interval = measurement_def->base.interval;
     return true;
 }
 
