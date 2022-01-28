@@ -153,8 +153,9 @@ lw_state_machine_t lw_state_machine = {LW_STATE_INIT, .data={.init_step = 0}};
 static char lw_dev_eui[LW__DEV_EUI_LEN + 1];
 static char lw_app_key[LW__APP_KEY_LEN + 1];
 
+typedef char lw_msg_buf_t[64];
 
-char init_msgs[][64] = { "at+set_config=lora:default_parameters",
+static lw_msg_buf_t init_msgs[] = { "at+set_config=lora:default_parameters",
                          "at+set_config=lora:join_mode:"LW_CONFIG__JOIN_MODE,
                          "at+set_config=lora:class:"LW_CONFIG__CLASS,
                          "at+set_config=lora:region:"LW_CONFIG__REGION,
@@ -176,13 +177,9 @@ void lorawan_init(void)
 
     if (persist_get_lw_dev_eui(lw_dev_eui) && persist_get_lw_app_key(lw_app_key))
     {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "at+set_config=lora:dev_eui:%s", lw_dev_eui);
-        strncpy(init_msgs[5], buf, sizeof(buf));
-        snprintf(buf, sizeof(buf), "at+set_config=lora:app_eui:%s", lw_dev_eui);
-        strncpy(init_msgs[6], buf, sizeof(buf));
-        snprintf(buf, sizeof(buf), "at+set_config=lora:app_key:%s", lw_app_key);
-        strncpy(init_msgs[7], buf, sizeof(buf));
+        snprintf(init_msgs[5], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", lw_dev_eui);
+        snprintf(init_msgs[6], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", lw_dev_eui);
+        snprintf(init_msgs[7], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", lw_app_key);
     }
 
     lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
