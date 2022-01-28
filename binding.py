@@ -1,13 +1,18 @@
-from __future__ import print_function
-import os
-import sys
-import time
 import serial
-import weakref
-import serial.tools.list_ports
+import datetime
+import time
+import csv
+import sys
+import io
+import os
+import re
 
 
-_debug_fnc = lambda *args : print(*args, file=sys.stderr) if "DEBUG" in os.environ else None
+def default_print(msg):
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    print("[%s] %s\r"% (now, msg), file=sys.stderr)
+
+_debug_fnc = lambda *args : default_print if "DEBUG" in os.environ else None
 
 
 def debug_print(msg):
@@ -21,281 +26,251 @@ def set_debug_print(_func):
 def get_debug_print():
     return _debug_fnc
 
-def _to_bytes(s):
-    if isinstance(s, bytes):
-        return s
-    return s.encode()
+
+def parse_one_wire(r_str:str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return float(r[-1])
+    return False
 
 
+def parse_current_clamp(r_str:str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return int(r[-1])
+    return False
 
-class io_board_prop_t(object):
-    def __init__(self, index, parent):
-        self._parent = weakref.ref(parent)
-        self.index  = index
-    @property
-    def parent(self):
-        return self._parent()
+
+def parse_particles(r_str:str):
+    if "ERROR" in r_str:
+        return False
+    if "No HPM data." in r_str:
+        return False
+    if "HPM disabled" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return [int(r[-3]),int(r[-1])]
+    return False
 
 
-class io_t(io_board_prop_t):
-    def __init__(self, index, parent):
-        io_board_prop_t.__init__(self, index, parent)
-        self._direction = None
-        self._bias = None
-        self._locked = None
-        self._has_special = None
-        self._as_special = None
-        self._label = None
+def parse_lora_comms(r_str:str):
+    return "Connected" in r_str
 
-    OUT = b"OUT"
-    IN = b"IN"
-    PULLDOWN = b"DOWN"
-    PULLUP = b"UP"
-    PULLNONE = b"NONE"
+
+class measurement_t(object):
+    def __init__(self, name:str, type_:type, cmd:str, parse_func):
+        self.name = name
+        self.type_ = type_
+        self.cmd = cmd
+        self._value = None
+        self.parse_func = parse_func
 
     @property
     def value(self):
-        r = self.parent.command(b"io %u" % self.index)
-        return self.load_from_line(r)
+        try:
+            if self.type_ == bool:
+                return bool(int(self._value) == 1)
+            if self.type_ == int:
+                return int(self._value)
+            if self.type_ == float:
+                return float(self._value)
+            if self.type_ == str:
+                return str(self._value)
+        except ValueError:
+            return False
+        except TypeError:
+            return False
+        return self._value
 
     @value.setter
-    def value(self, v):
-        r = self.parent.command(b"io %u = %u" % (self.index, 1 if v else 0))
-        assert len(r) == 1, "Unexpected IO set return."
-        r = r[0].strip()
-        assert r == b'IO %02u = %s' % (self.index, b"ON" if v else b"OFF"), "Unexpected IO set return."
+    def value(self, value_str):
+        v_str = value_str.replace(self.cmd, "")
+        self._value = self.parse_func(v_str)
+        self.type_ = type(self._value)
 
-    def load_from_line(self, line):
-        if isinstance(line, list):
-            assert len(line) == 1, "IO info should be one line"
-            line = line[0]
-        parts = line.split(b"=")
-        line = parts[0].strip()
-        if len(parts) > 1:
-            value = parts[1].strip()
-            value = False if value == b"OFF" else True if value == b"ON" else None
-        else:
-            value = None
-        parts = line.split(b":")
-        assert len(parts) == 2, "Unexpected IO line."
-        io = parts[0].split()[1]
-        assert int(io) == self.index, "IO line not for this IO."
-        parts = parts[1].split()
 
-        if parts[0] == b"USED":
-            self._label = parts[1]
-            self._bias = io_t.PULLNONE
-            self._direction = io_t.IN
-            self._has_special = True
-            self._as_special = True
-            self._locked = False
+class modbus_reg_t(measurement_t):
+    def __init__(self, name:str, address:int, func:int, mb_type_:str, handle:str):
+        self.name = name
+        self.address = address
+        self.func = func
+        self.mb_type_ = mb_type_
+        self.handle = handle
+        self.type_ = float
+
+    def parse_func(self, r_str):
+        if "ERROR" in r_str:
+            return False
+        r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+        # r = re.findall(r'0x[0-9A-F]+', r_str)
+        if r:
+            return float(r[-1])
+        return False
+
+    @property
+    def cmd(self)->str:
+        return f"mb_get_reg {self.handle}"
+
+
+class reader_child_t(object):
+    def __init__(self, parent, measurement):
+        self._parent = parent
+        self._measurement = measurement
+
+    @property
+    def value(self):
+        self._parent.get_val(self._measurement)
+        return self._measurement .value
+
+
+class log_t(object):
+    def __init__(self, sender, receiver):
+        self.sender = sender
+        self.receiver = receiver
+
+    def emit(self, payload):
+        debug_print(payload)
+
+    def send(self, msg):
+        self.emit("%s >>> %s : %s"% (self.sender, self.receiver, msg))
+
+    def recv(self, msg):
+        self.emit("%s <<< %s : %s"% (self.sender, self.receiver, msg))
+
+
+class low_level_dev_t(object):
+    def __init__(self, serial_obj, log_obj):
+        self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\r\n")
+        self._log_obj = log_obj
+
+    def write(self, msg):
+        self._log_obj.send(msg)
+        self._serial.write("%s\n"% msg)
+        self._serial.flush()
+        time.sleep(0.1)
+
+    def read(self):
+        try:
+            msg = self._serial.readline().strip("\r\n")
+        except UnicodeDecodeError:
             return None
-        elif parts[0].startswith(b"["):
-            self._has_special = True
-            self._locked = False
-            self._as_special = False
-            self._locked = False
-            self._label = parts[0].strip(b"[]")
-            parts = parts[1:]
-        elif parts[0] == b"HS" or parts[0] == b"RL":
-            self._has_special = False
-            self._locked = True
-            self._as_special = False
-            self._label = parts[0]
-            parts = parts[1:]
-        else:
-            self._has_special = False
-            self._as_special = False
-            self._locked = False
-            self._label = b""
-
-        assert parts[0] in [io_t.OUT, io_t.IN]
-        assert parts[1] in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE], "Invalid IO in line"
-
-        self._direction = parts[0]
-        self._bias = parts[1]
-
-        return value
-
-    def _get_info(self):
-        r = self.parent.command(b"io %02u"% self.index)
-        self.load_from_line(r)
-
-    @property
-    def label(self):
-        if self._label is None:
-            self._get_info()
-        return self._label
-
-    @property
-    def bias(self):
-        if self.special:
+        if msg == '':
             return None
-        if self._bias is None:
-            self._get_info()
-        return self._bias
+        self._log_obj.recv(msg)
+        return msg
 
-    @property
-    def direction(self):
-        if self.special:
-            return None
-        if self._direction is None:
-            self._get_info()
-        return self._direction
-
-    @property
-    def has_special(self):
-        if self._has_special is None:
-            self._get_info()
-        return self._has_special
-
-    @property
-    def special(self):
-        if self._as_special is None:
-            self._get_info()
-        return self._as_special
-
-    @special.setter
-    def special(self, value):
-        if not self._has_special:
-            return
-        if value:
-            cmd = b"sio %u" % self.index
-            r = self.parent.command(cmd)
-            assert len(r), "Not expected special IO line."
-            assert r[0] == b"IO %02u special enabled" % self.index
-            self._as_special = True
-        else:
-            self.setup(io_t.IN)
-
-    @property
-    def is_locked(self):
-        if self._locked is None:
-            self._get_info()
-        return self._locked
-
-    def setup(self, direction, bias=PULLNONE, value=None):
-        if direction is None:
-            self.special = True
-            return
-        assert direction in [io_t.IN, io_t.OUT], "Invalid IO setup argument"
-        assert bias in [io_t.PULLDOWN, io_t.PULLUP, io_t.PULLNONE, None], "Invalid IO setup argument"
-        if self.is_locked:
-            assert direction == self.direction, "Locked IO can't change direction"
-
-        bias = io_t.PULLNONE if bias is None else bias
-        cmd = b"io %02u : %s %s" % (self.index, direction, bias)
-        if value is not None:
-            value = bool(value)
-            cmd += b" = %s" % (b"ON" if value else b"OFF")
-        r = self.parent.command(cmd)
-        v = self.load_from_line(r)
-        assert self._direction == direction, "IO direction not changed"
-        assert self._direction != io_t.IN or self._bias == bias, "IO bias not changed"
-        if value is not None:
-            assert value == v
+    def readlines(self):
+        msg = self.read()
+        msgs = []
+        while msg != None:
+            msgs.append(msg)
+            msg = self.read()
+        return msgs
 
 
+class dev_t(object):
+    def __init__(self, port="/dev/ttyUSB0"):
+        self._serial_obj = serial.Serial(port=port,
+                                         baudrate=115200,
+                                         bytesize=serial.EIGHTBITS,
+                                         parity=serial.PARITY_NONE,
+                                         stopbits=serial.STOPBITS_ONE,
+                                         timeout=0,
+                                         xonxoff=False,
+                                         rtscts=False,
+                                         write_timeout=None,
+                                         dsrdtr=False,
+                                         inter_byte_timeout=None,
+                                         exclusive=None)
+        self._log_obj = log_t("PC", "OSM")
+        self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
 
-class io_board_py_t(object):
-    __LOG_START_SPACER = b"============{"
-    __LOG_END_SPACER   = b"}============"
-    PROP_MAP = {b"ios"   : io_t}
-    READTIME = 2
-    NAME_MAP = {}
+        self._children = {
+            "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
+            "cc"        : measurement_t("Current Clamp"      , int   , "adcs"      , parse_current_clamp  ),
+            "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
+            "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
+            "PF"        : modbus_reg_t("Power Factor"         , 0xc56e, 3, "U32", "PF"   ),
+            "cVP1"      : modbus_reg_t("Phase 1 centivolts"   , 0xc552, 3, "U32", "cVP1" ),
+            "cVP2"      : modbus_reg_t("Phase 2 centivolts"   , 0xc554, 3, "U32", "cVP2" ),
+            "cVP3"      : modbus_reg_t("Phase 3 centivolts"   , 0xc556, 3, "U32", "cVP3" ),
+            "mAP1"      : modbus_reg_t("Phase 1 milliamps"    , 0xc560, 3, "U32", "mAP1" ),
+            "mAP2"      : modbus_reg_t("Phase 2 milliamps"    , 0xc562, 3, "U32", "mAP2" ),
+            "mAP3"      : modbus_reg_t("Phase 3 milliamps"    , 0xc564, 3, "U32", "mAP3" ),
+            "ImEn"      : modbus_reg_t("Import Energy"        , 0xc652, 3, "U32", "ImEn" ),
+        }
 
-    def __init__(self, dev, dev_label = None):
-        self.ios = []
-        self.NAME_MAP = type(self).NAME_MAP
-        self.comm_port = dev
-        self.comm = serial.Serial(
-                port=dev,
-                baudrate=115200,
-                parity=serial.PARITY_NONE,
-                stopbits=serial.STOPBITS_ONE,
-                bytesize=serial.EIGHTBITS,
-                timeout=1)
-        while self.comm.in_waiting:
-            self.comm.readline(self.comm.in_waiting)
-        self.log_prefix = "%s: " % dev_label if dev_label else ""
-        debug_print("%sDrained" % self.log_prefix)
-        r = self.command(b"count")
-        for line in r:
-            parts = line.split(b':')
-            name  = parts[0].lower().strip()
-            count = int(parts[1])
-            for n in range(0, count):
-                child = type(self).PROP_MAP[name](n, self)
-                children = getattr(self, name.decode())
-                children += [child]
 
-        lines = self.command(b"ios")
-        for line in lines:
-            parts = line.split()
-            io_index = int(parts[1])
-            io_obj = self.ios[io_index]
-            io_obj.load_from_line(line)
+    def __getattr__(self, attr):
+        child = self._children.get(attr, None)
+        if child:
+            return reader_child_t(self, child)
+        raise AttributeError
 
-    def __getattr__(self, item):
-        debug_print("%sBinding name lookup %s" %(self.log_prefix, item))
-        getter = self.NAME_MAP.get(item, None)
-        if getter:
-            return getter(self)
-        raise AttributeError("Attribute %s not found" % item)
 
-    def fw_upload(self, filmware):
-        from crccheck.crc import CrcModbus
-        data = open(filmware, "rb").read()
-        crc = CrcModbus.calc(data)
-        hdata = [b"%02x" % x for x in data]
-        hdata = b"".join(hdata)
-        mtu=56
-        for n in range(0, len(hdata), mtu):
-            debug_print("Chunk %u/%u" % (n/2, len(hdata)/2))
-            chunk=hdata[n:n + mtu]
-            r = self.command(b"fw+ "+chunk)
-            expect= b"FW %u chunk added" % (len(chunk)/2)
-            assert expect in r
-        r = self.command(b"fw@ %04x" % crc)
-        assert b"FW added" in r
+    def do_cmd(self, cmd:str, timeout:float=1.5)->str:
+        self._ll.write(cmd)
+        end_time = time.monotonic() + timeout
+        r = []
+        while time.monotonic() < end_time:
+            r += self._ll.readlines()
+            assert not "ERROR" in r, "OSM Error"
+        r_str = ""
+        for i in range(0, len(r)):
+            line = r[i]
+            r_str += str(line)
+        return r_str
 
-    def reset(self):
-        self.comm.write(b'reset\n')
-        self.comm.flush()
-        while True:
-            line = self._read_line()
-            if b'----start----' in line:
-                return
+    def get_val(self, cmd:measurement_t):
+        cmd.value = self.do_cmd(cmd.cmd)
+        if cmd.value is False:
+            time.sleep(4)
+            cmd.value = self.do_cmd(cmd.cmd)
 
-    def _read_line(self):
-        line = self.comm.readline().strip()
-        debug_print("%s>> : %s" % (self.log_prefix, line))
-        return line
+    def get_vals(self, cmds:list):
+        for cmd in cmds:
+            assert isinstance(cmd, measurement_t), "Commands should be of type measurement_t"
+            cmd.value = self.do_cmd(cmd.cmd)
+            if cmd.value is False:
+                time.sleep(4)
+                cmd.value = self.do_cmd(cmd.cmd)
 
-    def read_response(self):
-        line = self._read_line()
-        start = time.time()
-        while line != type(self).__LOG_START_SPACER:
-            if (time.time() - start) > type(self).READTIME:
-                raise ValueError("Comms read took too long.")
-            line = self._read_line()
-            assert time.time() - start < type(self).READTIME
+    def _set_debug(self, value:int)->int:
+        r = self.do_cmd(f"debug {hex(value)}")
+        r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r)
+        if r:
+            return int(r[-1])
 
-        line = self._read_line()
-        data_lines = []
+    def modbus_dev_add(self, slave_id:int, device:str)->bool:
+        r = self.do_cmd(f"mb_dev_add {slave_id} {device}", timeout=3)
+        return "Added modbus device" in r
 
-        while line != type(self).__LOG_END_SPACER:
-            if (time.time() - start) > type(self).READTIME:
-                raise ValueError("Comms read took too long.")
-            data_lines += [line]
-            line = self._read_line()
-            assert time.time() - start < type(self).READTIME
+    def modbus_reg_add(self, reg:modbus_reg_t)->bool:
+        if not isinstance(reg, modbus_reg_t):
+            self._log("Registers should be an object of register")
+            return False
+        self.do_cmd(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
+        return "Added modbus reg" in r
 
-        return data_lines
+    def setup_modbus_dev(self, slave_id:int, device:str, regs:list)->bool:
+        if not self.modbus_dev_add(slave_id, device):
+            self._log("Could not add device.")
+            return False
+        for reg in regs:
+            self._ll.write(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
+            self._ll.readlines()
+        self._ll.write("mb_setup BIN 9600 8N1")
+        self._ll.readlines()
+        return True
 
-    def command(self, cmd):
-        self.comm.write(cmd)
-        self.comm.write(b'\n')
-        self.comm.flush()
-        debug_print("%s<< %s" % (self.log_prefix, cmd))
-        return self.read_response()
+    def modbus_dev_del(self, device:str):
+        self._ll.write(f"mb_dev_del {device}")
+
+    def current_clamp_calibrate(self):
+        self._ll.write("adcs_cal")
+
