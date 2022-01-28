@@ -18,6 +18,7 @@ firmware_SOURCES := main.c \
            update.c \
            adcs.c \
            one_wire_driver.c \
-           timers.c
+           timers.c \
+           pulsecount.c
 
 firmware_LINK_SCRIPT := stm32l452.ld

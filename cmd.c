@@ -25,6 +25,7 @@
 #include "one_wire_driver.h"
 #include "sys_time.h"
 #include "htu21d.h"
+#include "log.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -699,6 +700,7 @@ void cmds_process(char * command, unsigned len)
         { "wipe",         "Factory Reset",            wipe_cb},
         { "interval_mins","Get/Set interval minutes", interval_mins_cb},
         { "bat",          "Get battery level.",       bat_cb},
+        { "pulsecount",   "Show pulsecount.",         pulsecount_log},
         { NULL },
     };
 

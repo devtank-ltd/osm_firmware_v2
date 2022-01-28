@@ -17,6 +17,7 @@
 #include "modbus_measurements.h"
 #include "one_wire_driver.h"
 #include "htu21d.h"
+#include "pulsecount.h"
 
 
 #define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
@@ -39,6 +40,8 @@
 #define MEASUREMENT_HTU21D_HUMI "HUMI"
 
 #define MEASUREMENT_BATMON_NAME "BAT"
+
+#define MEASUREMENT_PULSE_COUNT_NAME "PCNT"
 
 typedef struct
 {
@@ -626,6 +629,12 @@ static void _measurement_fixup(measurement_def_t* def)
             def->init_cb         = adcs_bat_begin;
             def->get_cb          = adcs_bat_get;
             break;
+        case PULSE_COUNT:
+            def->collection_time = pulsecount_collection_time();
+            def->init_cb         = pulsecount_begin;
+            def->get_cb          = pulsecount_get;
+            def->acked_cb        = pulsecount_ack;
+            break;
         default:
             log_error("Unknown measurement type! : 0x%"PRIx8, def->base.type);
     }
@@ -759,6 +768,12 @@ void measurements_init(void)
         dst->base.samplecount = 5;
         dst->base.interval    = 1;
         dst->base.type        = BAT_MON;
+        _measurement_fixup(dst);
+
+        strncpy(dst->base.name, MEASUREMENT_PULSE_COUNT_NAME, sizeof(dst->base.name));
+        dst->base.samplecount = 1;
+        dst->base.interval    = 1;
+        dst->base.type        = PULSE_COUNT;
         _measurement_fixup(dst);
 
         measurements_save();

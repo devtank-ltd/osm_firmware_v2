@@ -40,6 +40,8 @@ Documents used:
 
 #define W1_DEFAULT_COLLECTION_TIME DELAY_GET_TEMP
 
+static bool _w1_enabled = true;
+
 
 typedef union
 {
@@ -243,8 +245,17 @@ static void _w1_temp_err(void)
 }
 
 
+void     w1_enable(bool enable)
+{
+    _w1_enabled = enable;
+}
+
+
 bool w1_query_temp(double* temperature)
 {
+    if (!_w1_enabled)
+        return false;
+
     w1_memory_t d; 
     if (!_w1_reset())
     {
@@ -291,6 +302,8 @@ bool w1_query_temp(double* temperature)
 
 bool w1_measurement_init(char* name)
 {
+    if (!_w1_enabled)
+        return false;
     if (!_w1_reset())
     {
         _w1_temp_err();
@@ -304,6 +317,8 @@ bool w1_measurement_init(char* name)
 
 bool w1_measurement_collect(char* name, value_t* value)
 {
+    if (!_w1_enabled)
+        return false;
     w1_memory_t d;
     if (!_w1_reset())
     {

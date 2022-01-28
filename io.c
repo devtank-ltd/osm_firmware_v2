@@ -9,6 +9,7 @@
 #include "log.h"
 #include "pulsecount.h"
 #include "uarts.h"
+#include "one_wire_driver.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t ios_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
@@ -111,12 +112,13 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
         if (io_type == IO_PULSECOUNT)
         {
-            //pulsecount_enable(1, false);
+            pulsecount_enable(false);
             io_state &= ~IO_SPECIAL_EN;
             io_debug("%02u : PLSCNT NO LONGER", io);
         }
         else if (io_type == IO_ONEWIRE)
         {
+            w1_enable(false);
             io_state &= ~IO_SPECIAL_EN;
             io_debug("%02u : W1 NO LONGER", io);
         }
@@ -154,12 +156,14 @@ bool     io_enable_special(unsigned io)
 
     if (io_type == IO_PULSECOUNT)
     {
+        pulsecount_enable(true);
         ios_state[io] |= IO_SPECIAL_EN;
         io_debug("%02u : USED PLSCNT", io);
         return true;
     }
     else if (io_type == IO_ONEWIRE)
     {
+        w1_enable(true);
         ios_state[io] |= IO_SPECIAL_EN;
         io_debug("%02u : USED W1", io);
         return true;

@@ -157,11 +157,11 @@ GPIO16 D2                   IO 11
 #define W1_PORT             GPIOA
 #define W1_PIN              GPIO11
 
-#define PPS0_IO_NUM          26
-#define PPS1_IO_NUM          27
-
 #define PULSE_PORT     GPIOA
-#define PULSE_PIN      GPIO11
+#define PULSE_PIN      GPIO12
+#define PULSE_EXTI     EXTI12
+#define PULSE_EXTI_IRQ NVIC_EXTI15_10_IRQ
+#define PULSE_ISR      exti15_10_isr
 
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
