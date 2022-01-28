@@ -253,25 +253,37 @@ static void interval_cb(char * args)
 
 static void samplecount_cb(char * args)
 {
-    // CMD  : "samplecount temperature 5"
-    // ARGS : "temperature 5"
-
+    char* name = args;
     char* p = skip_space(args);
     p = strchr(p, ' ');
-    if (p == NULL)
+    if (p)
     {
-        return;
+        p[0] = 0;
+        p = skip_space(p+1);
     }
-    uint8_t end_pos_word = p - args + 1;
-    if (end_pos_word > 8)
-        end_pos_word = 8;
-    char name[8] = {0};
-    strncpy(name, args, end_pos_word-1);
-    p = skip_space(p);
-    uint8_t new_samplecount = strtoul(p, NULL, 10);
+    if (p && isdigit(p[0]))
+    {
+        uint8_t new_samplecount = strtoul(p, NULL, 10);
 
-    measurements_set_samplecount(name, new_samplecount);
-    measurements_save();
+        if (measurements_set_samplecount(name, new_samplecount))
+        {
+            measurements_save();
+            log_out("Changed %s samplecount to %"PRIu8, name, new_samplecount);
+        }
+        else log_out("Unknown measuremnt");
+    }
+    else
+    {
+        uint8_t samplecount;
+        if (measurements_get_samplecount(name, &samplecount))
+        {
+            log_out("Samplecount of %s = %"PRIu8, name, samplecount);
+        }
+        else
+        {
+            log_out("Unknown measuremnt");
+        }
+    }
 }
 
 

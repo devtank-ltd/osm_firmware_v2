@@ -528,6 +528,18 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 }
 
 
+bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
+{
+    measurement_def_t* measurement_def = NULL;
+    if (!samplecount || !measurements_get_measurement_def(name, &measurement_def))
+    {
+        return false;
+    }
+    *samplecount = measurement_def->base.samplecount;
+    return true;
+}
+
+
 void measurements_loop_iteration(void)
 {
     if (pending_send)
