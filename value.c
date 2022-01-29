@@ -22,57 +22,55 @@ static value_type_t _get_op_max_type(value_t *a, value_t* b)
 }
 
 
-static void _shrink_value_store(value_t *v)
+void value_compact(value_t *v)
 {
-    switch(v->type)
+    if (!v || v->type >= VALUE_FLOAT)
+        return;
+
+    if ((v->type == VALUE_UINT64) && (v->u64 & 0x8000000000000000))
+        return;
+
+    int64_t i = value_get(v);
+    v->i64 = i;
+    if (i >= 0)
     {
-        case VALUE_INT64:
-        {
-            /* Only works will little endian */
-            int64_t i = value_get(v);
-            if (i >= 0)
-            {
-                /* Drop signed */
-                uint64_t u = i;
-                if (u < (1ULL << 32))
-                {
-                    if (u < (1ULL << 16))
-                    {
-                        if (u < (1ULL << 8))
-                        {
-                            v->type = VALUE_UINT8;
-                            return;
-                        }
-                        v->type = VALUE_UINT16;
-                        return;
-                    }
-                    v->type = VALUE_UINT32;
-                    return;
-                }
-                v->type = VALUE_UINT64;
-            }
-            else
-            {
-                if (i >= -(1LL << 31))
-                {
-                    if (i >= -(1LL << 15))
-                    {
-                        if (i >= -(1LL << 7))
-                        {
-                            v->type = VALUE_INT8;
-                            return;
-                        }
-                        v->type = VALUE_INT16;
-                        return;
-                    }
-                    v->type = VALUE_INT32;
-                    return;
-                }
-            }
-            break;
-        }
-        default:
-            break;
+	/* Drop signed */
+	uint64_t u = i;
+	if (u < (1ULL << 32))
+	{
+	    if (u < (1ULL << 16))
+	    {
+		if (u < (1ULL << 8))
+		{
+		    v->type = VALUE_UINT8;
+		    return;
+		}
+		v->type = VALUE_UINT16;
+		return;
+	    }
+	    v->type = VALUE_UINT32;
+	    return;
+	}
+	v->type = VALUE_UINT64;
+    }
+    else
+    {
+	if (i >= -(1LL << 31))
+	{
+	    if (i >= -(1LL << 15))
+	    {
+		if (i >= -(1LL << 7))
+		{
+		    v->type = VALUE_INT8;
+		    return;
+		}
+		v->type = VALUE_INT16;
+		return;
+	    }
+	    v->type = VALUE_INT32;
+	    return;
+	}
+	v->type = VALUE_INT64;
     }
 }
 
@@ -90,12 +88,7 @@ static void _shrink_value_store(value_t *v)
                                                        \
     switch(type)                                       \
     {                                                  \
-        case VALUE_UINT64:                             \
-        {                                              \
-            dst->u64 = value_get(a) _op_ value_get(b); \
-            break;                                     \
-        }                                              \
-        case VALUE_INT64:                              \
+       case VALUE_INT64:                               \
         {                                              \
             dst->i64 = value_get(a) _op_ value_get(b); \
             break;                                     \
@@ -114,7 +107,7 @@ static void _shrink_value_store(value_t *v)
             return false;                              \
     }                                                  \
                                                        \
-    _shrink_value_store(dst);                          \
+    value_compact(dst);                                \
     return true;                                       \
 }
 

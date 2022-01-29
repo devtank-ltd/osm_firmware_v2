@@ -77,6 +77,8 @@ static inline value_t value_from_double(double d) { return (value_t){.type = VAL
 
 #define VALUE_EMPTY   (value_t){.type = VALUE_UNSET}
 
+extern void value_compact(value_t * v);
+
 extern bool value_add(value_t * dst, value_t *a, value_t* b);
 extern bool value_sub(value_t * dst, value_t *a, value_t* b);
 extern bool value_mult(value_t * dst, value_t *a, value_t* b);
