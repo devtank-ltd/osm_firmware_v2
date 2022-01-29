@@ -151,6 +151,7 @@ static bool measurements_arr_append_value(value_t * value)
 {
     if (!value)
         return false;
+    value_compact(value);
     if (!measurements_arr_append_i8(value->type))
         return false;
     switch(value->type)
