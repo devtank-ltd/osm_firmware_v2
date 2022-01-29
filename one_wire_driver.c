@@ -40,7 +40,7 @@ Documents used:
 
 #define W1_DEFAULT_COLLECTION_TIME DELAY_GET_TEMP
 
-static bool _w1_enabled = true;
+static bool _w1_enabled = false;
 
 
 typedef union
