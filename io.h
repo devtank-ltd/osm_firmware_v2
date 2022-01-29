@@ -1,5 +1,4 @@
-#ifndef __GPIOS_IN_OUT__
-#define __GPIOS_IN_OUT__
+#pragma once
 
 #include <stdbool.h>
 
@@ -14,4 +13,3 @@ extern void     io_on(unsigned io, bool on_off);
 extern void     io_log(unsigned io);
 extern void     ios_log();
 
-#endif //__GPIOS_IN_OUT__

@@ -1,5 +1,4 @@
-#ifndef __RING__
-#define __RING__
+#pragma once
 
 #include <stdbool.h>
 #include "config.h"
@@ -31,4 +30,3 @@ typedef unsigned (*ring_buf_consume_cb)(char * buf, unsigned len, void *data);
 
 extern unsigned ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, char * tmp_buf, unsigned len, void * data);
 
-#endif //__RING__

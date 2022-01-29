@@ -1,5 +1,4 @@
-#ifndef __PINMAPS__
-#define __PINMAPS__
+#pragma once
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/dma.h>
@@ -185,6 +184,3 @@ GPIO16 D2
     GPIO_AF13,             \
 }
 
-
-
-#endif //__PINMAPS__

@@ -1,5 +1,4 @@
-#ifndef __CONFIG__
-#define __CONFIG__
+#pragma once
 
 #define CMD_LINELEN 64
 #define LOG_LINELEN 64
@@ -112,4 +111,3 @@
 #define DEBUG_FW            0x800
 #define DEBUG_TMP_HUM      0x1000
 
-#endif //__CONFIG__
