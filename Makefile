@@ -5,6 +5,7 @@ CC = $(TOOLCHAIN)-gcc
 OBJCOPY = $(TOOLCHAIN)-objcopy
 OBJDUMP = $(TOOLCHAIN)-objdump
 SIZE = $(TOOLCHAIN)-size
+NM =$(TOOLCHAIN)-nm
 
 #Target CPU options
 CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -104,7 +105,8 @@ debug_gdb: $(WHOLE_IMG)
 	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
 
 size: $(WHOLE_IMG)
-	$(TOOLCHAIN)-size $(BUILD_DIR)/*.elf
+	$(SIZE) $(BUILD_DIR)/*.elf
+	$(NM) -S --size-sort $(BUILD_DIR)/*.o
 
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
