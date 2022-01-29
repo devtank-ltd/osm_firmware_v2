@@ -1,5 +1,4 @@
-#ifndef __LOG__
-#define __LOG__
+#pragma once
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -44,4 +43,3 @@ extern void log_debug_value(uint32_t flag, const char * prefix, value_t * v);
 #define fw_debug(...)           log_debug(DEBUG_FW, "FW: " __VA_ARGS__)
 #endif
 
-#endif //__LOG__
