@@ -16,6 +16,7 @@ Documents used:
 #include "log.h"
 #include "value.h"
 #include "timers.h"
+#include "io.h"
 
 #define DELAY_READ_START    2
 #define DELAY_READ_WAIT     10
@@ -39,8 +40,6 @@ Documents used:
 #define W1_LEVEL_HIGH       (uint8_t)1
 
 #define W1_DEFAULT_COLLECTION_TIME DELAY_GET_TEMP
-
-static bool _w1_enabled = false;
 
 
 typedef union
@@ -247,13 +246,12 @@ static void _w1_temp_err(void)
 
 void     w1_enable(bool enable)
 {
-    _w1_enabled = enable;
 }
 
 
 bool w1_query_temp(double* temperature)
 {
-    if (!_w1_enabled)
+    if (!io_is_special_now(W1_IO))
         return false;
 
     w1_memory_t d; 
@@ -302,7 +300,7 @@ bool w1_query_temp(double* temperature)
 
 bool w1_measurement_init(char* name)
 {
-    if (!_w1_enabled)
+    if (!io_is_special_now(W1_IO))
         return false;
     if (!_w1_reset())
     {
@@ -317,7 +315,7 @@ bool w1_measurement_init(char* name)
 
 bool w1_measurement_collect(char* name, value_t* value)
 {
-    if (!_w1_enabled)
+    if (!io_is_special_now(W1_IO))
         return false;
     w1_memory_t d;
     if (!_w1_reset())

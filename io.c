@@ -112,15 +112,17 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 
         if (io_type == IO_PULSECOUNT)
         {
+            ios_state[io] &= ~IO_SPECIAL_EN;
             pulsecount_enable(false);
-            io_state &= ~IO_SPECIAL_EN;
             io_debug("%02u : PLSCNT NO LONGER", io);
+            return;
         }
         else if (io_type == IO_ONEWIRE)
         {
+            ios_state[io] &= ~IO_SPECIAL_EN;
             w1_enable(false);
-            io_state &= ~IO_SPECIAL_EN;
             io_debug("%02u : W1 NO LONGER", io);
+            return;
         }
     }
 
@@ -156,15 +158,15 @@ bool     io_enable_special(unsigned io)
 
     if (io_type == IO_PULSECOUNT)
     {
-        pulsecount_enable(true);
         ios_state[io] |= IO_SPECIAL_EN;
+        pulsecount_enable(true);
         io_debug("%02u : USED PLSCNT", io);
         return true;
     }
     else if (io_type == IO_ONEWIRE)
     {
-        w1_enable(true);
         ios_state[io] |= IO_SPECIAL_EN;
+        w1_enable(true);
         io_debug("%02u : USED W1", io);
         return true;
     }
@@ -179,6 +181,15 @@ bool     io_is_input(unsigned io)
         return false;
 
     return (ios_state[io] & IO_AS_INPUT)?true:false;
+}
+
+
+bool     io_is_special_now(unsigned io)
+{
+    if (io >= ARRAY_SIZE(ios_pins))
+        return false;
+
+    return ios_state[io] & IO_SPECIAL_EN;
 }
 
 

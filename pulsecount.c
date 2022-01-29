@@ -8,12 +8,11 @@
 #include "log.h"
 #include "pinmap.h"
 #include "sys_time.h"
-
+#include "io.h"
 
 
 static volatile uint32_t _pulsecount      = 0;
 static uint32_t          _send_pulsecount = 0;
-static bool              _enabled         = false;
 
 
 void PULSE_ISR(void)
@@ -25,7 +24,7 @@ void PULSE_ISR(void)
 
 void pulsecount_init(void)
 {
-    if (!_enabled)
+    if (!io_is_special_now(PULSE_IO))
         return;
     rcc_periph_clock_enable(PORT_TO_RCC(PULSE_PORT));
 
@@ -41,7 +40,7 @@ void pulsecount_init(void)
 
 static void _pulsecount_shutdown(void)
 {
-    if (_enabled)
+    if (io_is_special_now(PULSE_IO))
         return;
     exti_disable_request(PULSE_EXTI);
     nvic_disable_irq(PULSE_EXTI_IRQ);
@@ -51,8 +50,7 @@ static void _pulsecount_shutdown(void)
 
 void     pulsecount_enable(bool enable)
 {
-    _enabled = enable;
-    if (_enabled)
+    if (enable)
         pulsecount_init();
     else
         _pulsecount_shutdown();
@@ -73,7 +71,7 @@ uint32_t pulsecount_collection_time(void)
 
 bool     pulsecount_begin(char* name)
 {
-    if (!_enabled)
+    if (!io_is_special_now(PULSE_IO))
         return false;
     pulsecount_debug("pulsecount at start %"PRIu32, _pulsecount);
     return true;
@@ -82,7 +80,7 @@ bool     pulsecount_begin(char* name)
 
 bool     pulsecount_get(char* name, value_t* value)
 {
-    if (!_enabled || !value)
+    if (!io_is_special_now(PULSE_IO) && !value)
         return false;
 
     _send_pulsecount = _pulsecount;
