@@ -237,6 +237,7 @@ void lw_process(char* message)
         if (lw_msg_is_ack(message))
         {
             lw_state_machine.state = LW_STATE_IDLE;
+            lw_sent_ack();
             return;
         }
 

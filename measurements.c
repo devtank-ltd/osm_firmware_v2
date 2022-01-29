@@ -40,7 +40,6 @@
 
 #define MEASUREMENT_BATMON_NAME "BAT"
 
-
 typedef struct
 {
     value_t     sum;
@@ -207,10 +206,13 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
     return !r;
 }
 
+static unsigned _message_start_pos = 0;
+static unsigned _message_prev_start_pos = 0;
+
+
 
 static void measurements_send(void)
 {
-    static unsigned measurement_pos = 0;
     uint16_t            num_qd = 0;
     measurement_def_t*  def;
     measurement_data_t* data;
@@ -223,7 +225,7 @@ static void measurements_send(void)
         {
             measurements_debug("Not connected to send, dropping readings");
             has_printed_no_con = true;
-            measurement_pos = 0;
+            _message_start_pos = _message_prev_start_pos = 0;
         }
         pending_send = false;
         return;
@@ -239,7 +241,7 @@ static void measurements_send(void)
             {
                 measurements_debug("Pending send timed out.");
                 lw_reconnect();
-                measurement_pos = 0;
+                _message_start_pos = _message_prev_start_pos = 0;
                 pending_send = false;
             }
             return;
@@ -262,12 +264,12 @@ static void measurements_send(void)
         return;
     }
 
-    unsigned i = measurement_pos;
+    unsigned i = _message_start_pos;
 
-    if (measurement_pos)
+    if (_message_start_pos)
         measurements_debug("Resumming previous measurements send.");
 
-    for (; i < measurement_arr.len; i++)
+    for (; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         def = &measurement_arr.def[i];
         data = &measurement_arr.data[i];
@@ -286,7 +288,8 @@ static void measurements_send(void)
             {
                 measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
                 measurements_debug("Failed to queue send of  \"%s\".", def->base.name);
-                measurement_pos = i;
+                _message_prev_start_pos = _message_start_pos;
+                _message_start_pos = i;
                 break;
             }
             num_qd++;
@@ -299,14 +302,22 @@ static void measurements_send(void)
         }
     }
 
-    if (i == measurement_arr.len)
-        measurement_pos = 0;
+    if (i == MEASUREMENTS_MAX_NUMBER)
+    {
+        if (_message_start_pos)
+        {
+            /* Last of fragments */
+            _message_prev_start_pos = _message_start_pos;
+            _message_start_pos = MEASUREMENTS_MAX_NUMBER;
+        }
+        else _message_prev_start_pos = _message_start_pos = 0;
+    }
 
     if (num_qd > 0)
     {
         last_sent_ms = since_boot_ms;
         lw_send(measurements_hex_arr, measurements_hex_arr_pos+1);
-        if (!measurement_pos)
+        if (!_message_start_pos)
         {
             pending_send = false;
             measurements_debug("Complete send");
@@ -317,6 +328,23 @@ static void measurements_send(void)
             measurements_debug("Fragment send, wait to send more.");
         }
     }
+}
+
+
+void lw_sent_ack(void)
+{
+    for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
+    {
+        measurement_def_t* def = &measurement_arr.def[i];
+
+        if (def->acked_cb)
+            def->acked_cb();
+    }
+
+    if (pending_send)
+        measurements_send();
+    else
+        _message_prev_start_pos = _message_start_pos = 0;
 }
 
 
@@ -543,12 +571,6 @@ bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
 
 void measurements_loop_iteration(void)
 {
-    if (pending_send)
-    {
-        measurements_send();
-        return;
-    }
-
     uint32_t now = since_boot_ms;
     if (since_boot_delta(now, check_time.last_checked_time) > check_time.wait_time)
     {
@@ -575,47 +597,48 @@ bool measurements_save(void)
 
 static void _measurement_fixup(measurement_def_t* def)
 {
+    def->acked_cb = NULL;
     switch(def->base.type)
     {
         case PM10:
             def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
-            def->init_cb = hpm_init;
-            def->get_cb = hpm_get_pm10;
+            def->init_cb         = hpm_init;
+            def->get_cb          = hpm_get_pm10;
             break;
         case PM25:
             def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
-            def->init_cb = hpm_init;
-            def->get_cb = hpm_get_pm25;
+            def->init_cb         = hpm_init;
+            def->get_cb          = hpm_get_pm25;
             break;
         case MODBUS:
             def->collection_time = modbus_measurements_collection_time();
-            def->init_cb = modbus_measurements_init;
-            def->get_cb = modbus_measurements_get;
+            def->init_cb         = modbus_measurements_init;
+            def->get_cb          = modbus_measurements_get;
             break;
         case CURRENT_CLAMP:
             def->collection_time = adcs_cc_collection_time();
-            def->init_cb = adcs_cc_begin;
-            def->get_cb = adcs_cc_get;
+            def->init_cb         = adcs_cc_begin;
+            def->get_cb          = adcs_cc_get;
             break;
         case W1_PROBE:
             def->collection_time = w1_collection_time();
-            def->init_cb = w1_measurement_init;
-            def->get_cb = w1_measurement_collect;
+            def->init_cb         = w1_measurement_init;
+            def->get_cb          = w1_measurement_collect;
             break;
         case HTU21D_TMP:
             def->collection_time = htu21d_measurements_collection_time();
-            def->init_cb = htu21d_temp_measurements_init;
-            def->get_cb  = htu21d_temp_measurements_get;
+            def->init_cb         = htu21d_temp_measurements_init;
+            def->get_cb          = htu21d_temp_measurements_get;
             break;
         case HTU21D_HUM:
             def->collection_time = htu21d_measurements_collection_time();
-            def->init_cb = htu21d_humi_measurements_init;
-            def->get_cb  = htu21d_humi_measurements_get;
+            def->init_cb         = htu21d_humi_measurements_init;
+            def->get_cb          = htu21d_humi_measurements_get;
             break;
         case BAT_MON:
             def->collection_time = adcs_bat_collection_time();
-            def->init_cb = adcs_bat_begin;
-            def->get_cb = adcs_bat_get;
+            def->init_cb         = adcs_bat_begin;
+            def->get_cb          = adcs_bat_get;
             break;
         default:
             log_error("Unknown measurement type! : 0x%"PRIx8, def->base.type);
