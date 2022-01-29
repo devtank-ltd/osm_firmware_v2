@@ -52,9 +52,9 @@ static inline value_t value_from_double(double d) { return (value_t){.type = VAL
 
 #define value_from(_d_) _Generic((_d_),                                   \
                                     unsigned char:      value_from_u8,    \
-                                    char:               value_from_u8,    \
+                                    char:               value_from_i8,    \
                                     unsigned short :    value_from_u16,   \
-                                    short :             value_from_u16,   \
+                                    short :             value_from_i16,   \
                                     unsigned long:      value_from_u32,   \
                                     long:               value_from_i32,   \
                                     unsigned long long: value_from_u64,   \
