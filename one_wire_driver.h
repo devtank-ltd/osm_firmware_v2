@@ -4,7 +4,7 @@
 
 extern void     w1_enable(bool enable);
 
-extern bool     w1_query_temp(double* temperature);
+extern bool     w1_query_temp(float* temperature);
 
 extern bool     w1_measurement_init(char* name);
 extern bool     w1_measurement_collect(char* name, value_t* value);

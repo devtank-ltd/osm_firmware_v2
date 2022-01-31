@@ -565,7 +565,7 @@ static void cc_calibrate_cb(char *args)
 
 static void w1_cb(char* args)
 {
-    double w1_temp;
+    float w1_temp;
     if (!w1_query_temp(&w1_temp))
     {
         log_error("Could not get a temperature from the onewire.");

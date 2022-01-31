@@ -33,7 +33,6 @@ typedef struct
         uint64_t u64;
         int64_t  i64;
         float    f;
-        double   r;
     };
 } value_t;
 

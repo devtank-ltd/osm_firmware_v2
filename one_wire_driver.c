@@ -249,7 +249,7 @@ void     w1_enable(bool enable)
 }
 
 
-bool w1_query_temp(double* temperature)
+bool w1_query_temp(float* temperature)
 {
     if (!io_is_special_now(W1_IO))
         return false;
