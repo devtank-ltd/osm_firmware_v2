@@ -61,6 +61,8 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     if (io >= ARRAY_SIZE(ios_pins))
         return;
 
+    char * type = _ios_get_type(io_state);
+
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
     gpio_mode_setup(gpio_pin->port,
@@ -70,10 +72,11 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
-    io_debug("%02u set to %s %s",
+    io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
-            _ios_get_pull_str(io_state));
+            _ios_get_pull_str(io_state),
+            (type[0])?" [":"",type,(type[0])?"]":"");
 }
 
 
