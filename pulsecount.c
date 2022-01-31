@@ -34,6 +34,9 @@ void pulsecount_init(void)
     exti_set_trigger(PULSE_EXTI, EXTI_TRIGGER_FALLING);
     exti_enable_request(PULSE_EXTI);
 
+    _pulsecount = 0;
+    _send_pulsecount = 0;
+
     nvic_enable_irq(PULSE_EXTI_IRQ);
     pulsecount_debug("Pulsecount enabled");
 }
@@ -46,6 +49,7 @@ static void _pulsecount_shutdown(void)
     exti_disable_request(PULSE_EXTI);
     nvic_disable_irq(PULSE_EXTI_IRQ);
     _pulsecount = 0;
+    _send_pulsecount = 0;
     pulsecount_debug("Pulsecount disabled");
 }
 
