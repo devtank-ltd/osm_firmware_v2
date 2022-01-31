@@ -33,11 +33,11 @@ Datasheet: https://eu.mouser.com/datasheet/2/427/VISH_S_A0012091125_1-2572303.pd
 #define VEML7700_PSM_MASK                   0x6
 #define VEML7700_PSM_EN_MASK                0x1
 
-#define VEML7700_CONF_REG_ALS_GAIN(x)       ( VEML7700_CONF_REG_ALS_GAIN_MASK   || (x << 11) )
-#define VEML7700_CONF_REG_ALS_IT(x)         ( VEML7700_CONF_REG_ALS_IT_MASK     || (x << 6)  )
-#define VEML7700_CONF_REG_ALS_PERS(x)       ( VEML7700_CONF_REG_ALS_PERS_MASK   || (x << 4)  )
-#define VEML7700_CONF_REG_ALS_INT_EN(x)     ( VEML7700_CONF_REG_ALS_INT_EN_MASK || (x << 1)  )
-#define VEML7700_CONF_REG_ALS_SD(x)         ( VEML7700_CONF_REG_ALS_SD_MASK     || (x << 0)  )
+#define VEML7700_CONF_REG_ALS_GAIN(x)       ( VEML7700_CONF_REG_ALS_GAIN_MASK   & (x << 11) )
+#define VEML7700_CONF_REG_ALS_IT(x)         ( VEML7700_CONF_REG_ALS_IT_MASK     & (x << 6)  )
+#define VEML7700_CONF_REG_ALS_PERS(x)       ( VEML7700_CONF_REG_ALS_PERS_MASK   & (x << 4)  )
+#define VEML7700_CONF_REG_ALS_INT_EN(x)     ( VEML7700_CONF_REG_ALS_INT_EN_MASK & (x << 1)  )
+#define VEML7700_CONF_REG_ALS_SD(x)         ( VEML7700_CONF_REG_ALS_SD_MASK     & (x << 0)  )
 
 #define VEML7700_ALS_GAIN_1                 VEML7700_CONF_REG_ALS_GAIN(0)
 #define VEML7700_ALS_GAIN_2                 VEML7700_CONF_REG_ALS_GAIN(1)
@@ -62,8 +62,8 @@ Datasheet: https://eu.mouser.com/datasheet/2/427/VISH_S_A0012091125_1-2572303.pd
 #define VEML7700_ALS_SD_ON                  VEML7700_CONF_REG_ALS_SD(0)
 #define VEML7700_ALS_SD_OFF                 VEML7700_CONF_REG_ALS_SD(1)
 
-#define VEML7700_PSM(x)                     ( VEML7700_PSM_MASK    || (x << 1) )
-#define VEML7700_PSM_EN(x)                  ( VEML7700_PSM_EN_MASK || (x << 0) )
+#define VEML7700_PSM(x)                     ( VEML7700_PSM_MASK    & (x << 1) )
+#define VEML7700_PSM_EN(x)                  ( VEML7700_PSM_EN_MASK & (x << 0) )
 
 #define VEML7700_PSM_MODE_1                 VEML7700_PSM(0)
 #define VEML7700_PSM_MODE_2                 VEML7700_PSM(1)
@@ -104,10 +104,10 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
         return false;
     }
     uint8_t reg8 = reg;
-    uint8_t d[3] = {0};
+    uint8_t d[2] = {0};
     log_debug(DEBUG_LIGHT, "Read command 0x%"PRIx8, reg8);
 
-    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 3, 100))
+    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
     {
         veml7700_init();
         return false;
@@ -118,7 +118,7 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
 }
 
 
-static bool _veml7700_write(veml7700_cmd_t reg, uint16_t data)
+static bool _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
 {
     uint8_t reg8 = reg;
     uint8_t data16[2];
@@ -143,7 +143,7 @@ uint32_t veml7700_measurements_collection_time(void)
 
 bool veml7700_light_measurements_init(char* name)
 {
-    if (!_veml7700_write(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON))
+    if (!_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON))
     {
         return false;
     }
@@ -166,19 +166,21 @@ bool veml7700_light_measurements_get(char* name, value_t* value)
 void veml7700_init(void)
 {
     i2c_init(VEML7700_I2C_INDEX);
-    _veml7700_write(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_OFF);
-    _veml7700_write(VEML7700_CMD_POWER_SAVING, veml7700_conf_power);
+    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_OFF);
+    _veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, veml7700_conf_power);
 }
 
 
 bool veml7700_get_lux(uint16_t* lux)
 {
+    log_out("veml7700_conf_reg_val = %"PRIu16, veml7700_conf_reg_val);
+    log_out("veml7700_conf_power = %"PRIu16, veml7700_conf_power);
     if (!lux)
     {
         log_debug(DEBUG_LIGHT, "Handed in null pointer.");
         return false;
     }
-    if (!_veml7700_write(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON))
+    if (!_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON))
     {
         log_debug(DEBUG_LIGHT, "Could not write command to turn on sensor.");
         return false;

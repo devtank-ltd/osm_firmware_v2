@@ -28,6 +28,7 @@
 #include "timers.h"
 #include "htu21d.h"
 #include "i2c.h"
+#include "veml7700.h"
 
 volatile uint32_t since_boot_ms = 0;
 
@@ -82,6 +83,7 @@ int main(void)
     sai_init();
     adcs_init();
     htu21d_init();
+    veml7700_init();
     lorawan_init();
     measurements_init();
     pulsecount_init();
