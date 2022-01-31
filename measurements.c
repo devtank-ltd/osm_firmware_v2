@@ -55,7 +55,6 @@ typedef struct
 {
     measurement_def_t   def[MEASUREMENTS_MAX_NUMBER];
     measurement_data_t  data[MEASUREMENTS_MAX_NUMBER];
-    uint16_t            len;
 } measurement_arr_t;
 
 
@@ -350,8 +349,6 @@ void lw_sent_ack(void)
 
 static void measurements_sample(void)
 {
-    measurement_def_t*  def;
-    measurement_data_t* data;
     uint32_t            sample_interval;
     value_t             new_value = VALUE_EMPTY;
     uint32_t            now = since_boot_ms;
@@ -362,13 +359,13 @@ static void measurements_sample(void)
 
     check_time.last_checked_time = now;
 
-    for (unsigned i = 0; i < measurement_arr.len; i++)
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        def  = &measurement_arr.def[i];
-        data = &measurement_arr.data[i];
+        measurement_def_t*  def  = &measurement_arr.def[i];
+        measurement_data_t* data = &measurement_arr.data[i];
 
-        // Breakout if the interval is 0
-        if (def->base.interval == 0)
+        // Breakout if the interval is 0 or has no name
+        if (def->base.interval == 0 || !def->base.name[0])
         {
             continue;
         }
@@ -450,32 +447,26 @@ static void measurements_sample(void)
 
 uint16_t measurements_num_measurements(void)
 {
-    return measurement_arr.len;
-}
-
-
-static bool measurements_is_all_zero(uint8_t* memory, size_t size)
-{
-    for (size_t i = 0; i < size; i++)
+    uint16_t count = 0;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        if (memory[i] != 0)
-        {
-            return false;
-        }
+        measurement_def_t*  def  = &measurement_arr.def[i];
+
+        // Breakout if the interval is 0 or has no name
+        if (def->base.interval == 0 || !def->base.name[0])
+            continue;
+
+        count++;
     }
-    return true;
+
+    return count;
 }
 
 
 bool measurements_add(measurement_def_t* measurement_def)
 {
-    if (measurement_arr.len >= MEASUREMENTS_MAX_NUMBER)
-    {
-        log_error("Cannot add more measurements. Reached max.");
-        return false;
-    }
     measurement_def_t* measurement_def_iter;
-    for (unsigned i = 0; i < measurement_arr.len; i++)
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurement_def_iter = &measurement_arr.def[i];
         if (strncmp(measurement_def_iter->base.name, measurement_def->base.name, sizeof(measurement_def_iter->base.name)) == 0)
@@ -483,15 +474,11 @@ bool measurements_add(measurement_def_t* measurement_def)
             log_error("Tried to add measurement with the same name: %s", measurement_def->base.name);
             return false;
         }
-    }
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-    {
-        if (measurements_is_all_zero((uint8_t*)&measurement_arr.def[i], sizeof(measurement_arr.def[i])))
+        if (!measurement_arr.def[i].base.name[0])
         {
             measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
             measurement_arr.def[i] = *measurement_def;
             measurement_arr.data[i] = measurement_data;
-            measurement_arr.len++;
             return true;
         }
     }
@@ -502,13 +489,12 @@ bool measurements_add(measurement_def_t* measurement_def)
 
 bool measurements_del(char* name)
 {
-    for (unsigned i = 0; i < measurement_arr.len; i++)
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         if (strcmp(name, measurement_arr.def[i].base.name) == 0)
         {
             memset(&measurement_arr.def[i], 0, sizeof(measurement_def_t));
             memset(&measurement_arr.data[i], 0, sizeof(measurement_data_t));
-            measurement_arr.len--;
             return true;
         }
     }
