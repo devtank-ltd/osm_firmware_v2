@@ -108,6 +108,8 @@
     {GPIOD, GPIO2 },   /* IO 11 */ \
 }
 
+#define IOS_COUNT 12
+
 /*
 Schematic name, STM pin
 GPIO01 C6                   IO 0
@@ -116,8 +118,8 @@ GPIO03 B2                   IO 2
 GPIO04 C9                   IO 3
 GPIO06 B3                   IO 4
 GPIO07 C12  - RE_485
-GPIO08 A11  - ONE WIRE      IO 5
-GPIO09 A12  - PULSE_COUNT   IO 6
+GPIO08 A11  - PULSE2_OUT/1W IO 5
+GPIO09 A12  - PULSE1_OUT    IO 6
 GPIO10 A15  - DE_485
 GPIO11 C7                   IO 7
 GPIO12 B4                   IO 8

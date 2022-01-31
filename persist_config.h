@@ -8,6 +8,9 @@
 
 
 extern void persistent_init();
+
+extern void persist_commit(void);
+
 extern void persist_set_fw_ready(uint32_t size);
 extern void persist_set_log_debug_mask(uint32_t mask);
 extern uint32_t persist_get_log_debug_mask(void);
@@ -26,7 +29,9 @@ extern bool persist_set_mins_interval(uint32_t mins_interval);
 extern bool persist_set_adc_midpoint(uint16_t midpoint);
 extern bool persist_get_adc_midpoint(uint16_t* midpoint);
 
+extern uint16_t* persist_get_ios_state();
+
 extern uint8_t * persist_get_modbus_data(void);
-extern void      persist_commit_modbus_data(void);
+
 
 extern void persistent_wipe();

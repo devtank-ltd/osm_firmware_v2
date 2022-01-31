@@ -963,7 +963,7 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
 
 void modbus_save()
 {
-    persist_commit_modbus_data();
+    persist_commit();
 }
 
 

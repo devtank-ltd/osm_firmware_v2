@@ -5,10 +5,10 @@
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/cm3/scb.h>
 
-#include "log.h"
-#include "persist_config.h"
 #include "config.h"
 #include "pinmap.h"
+#include "log.h"
+#include "persist_config.h"
 #include "timers.h"
 #include "lorawan.h"
 #include "persist_config_header.h"
@@ -70,7 +70,7 @@ void persistent_init(void)
 }
 
 
-static void _persistent_commit(void)
+void persist_commit(void)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
@@ -88,13 +88,13 @@ static void _persistent_commit(void)
 void persist_set_fw_ready(uint32_t size)
 {
     persist_data.pending_fw = size;
-    _persistent_commit();
+    persist_commit();
 }
 
 void persist_set_log_debug_mask(uint32_t mask)
 {
     persist_data.log_debug_mask = mask;
-    _persistent_commit();
+    persist_commit();
 }
 
 
@@ -117,7 +117,7 @@ void persist_set_lw_dev_eui(char* dev_eui)
         return;
     }
     memcpy(persist_data.lw_dev_eui, dev_eui, len);
-    _persistent_commit();
+    persist_commit();
     log_debug(DEBUG_LW, "lw dev set");
     _lw_config_valid();
 }
@@ -146,7 +146,7 @@ void persist_set_lw_app_key(char* app_key)
         return;
     }
     memcpy(persist_data.lw_app_key, app_key, len);
-    _persistent_commit();
+    persist_commit();
     log_debug(DEBUG_LW, "lw app set");
     _lw_config_valid();
 }
@@ -189,7 +189,7 @@ void persist_set_measurements(measurement_def_t * arr)
     for (unsigned i = index; i < MEASUREMENTS_MAX_NUMBER; i++)
         memset(persist_data.measurements_arr + i, 0, sizeof(measurement_def_base_t));
 
-    _persistent_commit();
+    persist_commit();
 }
 
 
@@ -211,7 +211,7 @@ bool persist_set_mins_interval(uint32_t mins_interval)
         return false;
     }
     persist_data.mins_interval = mins_interval;
-    _persistent_commit();
+    persist_commit();
     return true;
 }
 
@@ -224,7 +224,7 @@ bool persist_set_adc_midpoint(uint16_t midpoint)
         return false;
     }
     persist_data.adc_midpoint = midpoint;
-    _persistent_commit();
+    persist_commit();
     return true;
 }
 
@@ -240,15 +240,15 @@ bool persist_get_adc_midpoint(uint16_t* midpoint)
 }
 
 
-uint8_t * persist_get_modbus_data(void)
+uint16_t *  persist_get_ios_state(void)
 {
-    return persist_data.modbus_data;
+    return (uint16_t*)persist_data.ios_state;
 }
 
 
-void      persist_commit_modbus_data(void)
+uint8_t * persist_get_modbus_data(void)
 {
-    _persistent_commit();
+    return persist_data.modbus_data;
 }
 
 

@@ -10,9 +10,10 @@
 #include "pulsecount.h"
 #include "uarts.h"
 #include "one_wire_driver.h"
+#include "persist_config.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
-static uint16_t ios_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
+static uint16_t * ios_state;
 
 
 #define IO_PULL_STR_NONE "NONE"
@@ -82,6 +83,15 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
 void     ios_init()
 {
+    ios_state = persist_get_ios_state();
+
+    if (ios_state[0] == 0 || ios_state[0] == 0xFFFF)
+    {
+        io_debug("No IOs state, setting to default.");
+        uint16_t ios_init_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
+        memcpy(ios_state, ios_init_state, sizeof(ios_init_state));
+    }
+
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
     {
         rcc_periph_clock_enable(PORT_TO_RCC(ios_pins[n].port));
