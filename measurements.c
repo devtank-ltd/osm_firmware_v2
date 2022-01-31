@@ -685,78 +685,81 @@ void measurements_print_persist(void)
 void measurements_init(void)
 {
     measurement_def_base_t * persistent_measurement_arr = NULL;
-    measurement_def_t temp_def;
 
     if (persist_get_measurements(&persistent_measurement_arr) && persistent_measurement_arr != NULL)
     {
         measurements_debug("Loading measurements.");
         for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
         {
-            measurement_def_base_t* def_base = &persistent_measurement_arr[n];
+            measurement_def_base_t* src = &persistent_measurement_arr[n];
+            measurement_def_t     * dst = &measurement_arr.def[n];
 
-            char id_start = def_base->name[0];
+            char id_start = src->name[0];
 
             if (!id_start || id_start == 0xFF)
+            {
+                dst->base.name[0] = 0;
                 continue;
+            }
 
-            temp_def.base = *def_base;
+            dst->base = *src;
 
-            _measurement_fixup(&temp_def);
-
-            measurements_add(&temp_def);
+            _measurement_fixup(dst);
         }
     }
     else
     {
         log_error("No persistent loaded, load defaults.");
         /* Add defaults. */
+        measurement_def_t * dst;
+        unsigned pos = 0;
 
-        strncpy(temp_def.base.name, MEASUREMENT_PM10_NAME, sizeof(temp_def.base.name));
-        temp_def.base.interval = 1;
-        temp_def.base.samplecount = 5;
-        temp_def.base.type = PM10;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_PM10_NAME, sizeof(dst->base.name));
+        dst->base.interval = 1;
+        dst->base.samplecount = 5;
+        dst->base.type = PM10;
+        _measurement_fixup(dst);
 
-        strncpy(temp_def.base.name, MEASUREMENT_PM25_NAME, sizeof(temp_def.base.name));
-        temp_def.base.interval = 1;
-        temp_def.base.samplecount = 5;
-        temp_def.base.type = PM25;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_PM25_NAME, sizeof(dst->base.name));
+        dst->base.interval = 1;
+        dst->base.samplecount = 5;
+        dst->base.type = PM25;
+        _measurement_fixup(dst);
 
-        strncpy(temp_def.base.name, MEASUREMENT_CURRENT_CLAMP_NAME, sizeof(temp_def.base.name));
-        temp_def.base.interval = 1;
-        temp_def.base.samplecount = 25;
-        temp_def.base.type = CURRENT_CLAMP;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_CURRENT_CLAMP_NAME, sizeof(dst->base.name));
+        dst->base.interval = 1;
+        dst->base.samplecount = 25;
+        dst->base.type = CURRENT_CLAMP;
+        _measurement_fixup(dst);
 
-        strncpy(temp_def.base.name, MEASUREMENT_W1_PROBE_NAME, sizeof(temp_def.base.name));
-        temp_def.base.interval = 1;
-        temp_def.base.samplecount = 5;
-        temp_def.base.type = W1_PROBE;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_W1_PROBE_NAME, sizeof(dst->base.name));
+        dst->base.interval = 1;
+        dst->base.samplecount = 5;
+        dst->base.type = W1_PROBE;
+        _measurement_fixup(dst);
 
-        strncpy(temp_def.base.name, MEASUREMENT_HTU21D_TEMP, sizeof(temp_def.base.name));
-        temp_def.base.samplecount = 2;
-        temp_def.base.interval    = 1;
-        temp_def.base.type        = HTU21D_TMP;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_HTU21D_TEMP, sizeof(dst->base.name));
+        dst->base.samplecount = 2;
+        dst->base.interval    = 1;
+        dst->base.type        = HTU21D_TMP;
+        _measurement_fixup(dst);
 
-        strncpy(temp_def.base.name, MEASUREMENT_HTU21D_HUMI, sizeof(temp_def.base.name));
-        temp_def.base.type        = HTU21D_HUM;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_HTU21D_HUMI, sizeof(dst->base.name));
+        dst->base.type        = HTU21D_HUM;
+        _measurement_fixup(dst);
 
-        strncpy(temp_def.base.name, MEASUREMENT_BATMON_NAME, sizeof(temp_def.base.name));
-        temp_def.base.samplecount = 5;
-        temp_def.base.interval    = 1;
-        temp_def.base.type        = BAT_MON;
-        _measurement_fixup(&temp_def);
-        measurements_add(&temp_def);
+        dst = &measurement_arr.def[pos++];
+        strncpy(dst->base.name, MEASUREMENT_BATMON_NAME, sizeof(dst->base.name));
+        dst->base.samplecount = 5;
+        dst->base.interval    = 1;
+        dst->base.type        = BAT_MON;
+        _measurement_fixup(dst);
 
         measurements_save();
     }
