@@ -9,9 +9,11 @@
 #include "log.h"
 #include "pulsecount.h"
 #include "uarts.h"
+#include "one_wire_driver.h"
+#include "persist_config.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
-static uint16_t ios_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
+static uint16_t * ios_state;
 
 
 #define IO_PULL_STR_NONE "NONE"
@@ -36,10 +38,8 @@ static char* _ios_get_type(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
     {
-        case IO_PPS0: return "PPS0";
-        case IO_PPS1: return "PPS1";
-        case IO_RELAY : return "RL";
-        case IO_HIGHSIDE : return "HS";
+        case IO_PULSECOUNT: return "PLSCNT";
+        case IO_ONEWIRE:    return "W1";
         default : return "";
     }
 }
@@ -49,8 +49,8 @@ static bool _io_is_special(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
     {
-        case IO_PPS0:
-        case IO_PPS1:
+        case IO_PULSECOUNT:
+        case IO_ONEWIRE:
             return true;
         default : return false;
     }
@@ -62,6 +62,8 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     if (io >= ARRAY_SIZE(ios_pins))
         return;
 
+    char * type = _ios_get_type(io_state);
+
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
     gpio_mode_setup(gpio_pin->port,
@@ -69,17 +71,27 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
         io_state & IO_PULL_MASK,
         gpio_pin->pins);
 
-    ios_state[io] = (ios_state[io] & (IO_TYPE_MASK | IO_UART_TX)) | io_state;
+    ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
-    io_debug("%02u set to %s %s",
+    io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
-            _ios_get_pull_str(io_state));
+            _ios_get_pull_str(io_state),
+            (type[0])?" [":"",type,(type[0])?"]":"");
 }
 
 
 void     ios_init()
 {
+    ios_state = persist_get_ios_state();
+
+    if (ios_state[0] == 0 || ios_state[0] == 0xFFFF)
+    {
+        io_debug("No IOs state, setting to default.");
+        uint16_t ios_init_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
+        memcpy(ios_state, ios_init_state, sizeof(ios_init_state));
+    }
+
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
     {
         rcc_periph_clock_enable(PORT_TO_RCC(ios_pins[n].port));
@@ -111,21 +123,18 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
     {
         uint16_t io_type = io_state & IO_TYPE_MASK;
 
-        if (io_type == IO_PPS0)
+        if (io_type == IO_PULSECOUNT)
         {
-           // pulsecount_enable(0, false);
-            io_state &= ~IO_SPECIAL_EN;
-            io_debug("%02u : PPS0 NO LONGER", io);
+            ios_state[io] &= ~IO_SPECIAL_EN;
+            pulsecount_enable(false);
+            io_debug("%02u : PLSCNT NO LONGER", io);
+            return;
         }
-        else if (io_type == IO_PPS1)
+        else if (io_type == IO_ONEWIRE)
         {
-            //pulsecount_enable(1, false);
-            io_state &= ~IO_SPECIAL_EN;
-            io_debug("%02u : PPS1 NO LONGER", io);
-        }
-        else
-        {
-            io_debug("%02u : USED %s", io, _ios_get_type(io_state));
+            ios_state[io] &= ~IO_SPECIAL_EN;
+            w1_enable(false);
+            io_debug("%02u : W1 NO LONGER", io);
             return;
         }
     }
@@ -160,18 +169,18 @@ bool     io_enable_special(unsigned io)
 
     uint16_t io_type = io_state & IO_TYPE_MASK;
 
-    if (io_type == IO_PPS0)
+    if (io_type == IO_PULSECOUNT)
     {
-        //pulsecount_enable(0, true);
         ios_state[io] |= IO_SPECIAL_EN;
-        io_debug("%02u : USED PPS0", io);
+        pulsecount_enable(true);
+        io_debug("%02u : USED PLSCNT", io);
         return true;
     }
-    else if (io_type == IO_PPS1)
+    else if (io_type == IO_ONEWIRE)
     {
-        //pulsecount_enable(1, true);
         ios_state[io] |= IO_SPECIAL_EN;
-        io_debug("%02u : USED PPS0", io);
+        w1_enable(true);
+        io_debug("%02u : USED W1", io);
         return true;
     }
 
@@ -185,6 +194,15 @@ bool     io_is_input(unsigned io)
         return false;
 
     return (ios_state[io] & IO_AS_INPUT)?true:false;
+}
+
+
+bool     io_is_special_now(unsigned io)
+{
+    if (io >= ARRAY_SIZE(ios_pins))
+        return false;
+
+    return ios_state[io] & IO_SPECIAL_EN;
 }
 
 

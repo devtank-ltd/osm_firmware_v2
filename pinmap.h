@@ -92,72 +92,80 @@
 #define MODBUS_STOP     UART_4_STOP
 
 
-#define IOS_PORT_N_PINS             \
-{                                   \
+#define IOS_PORT_N_PINS            \
+{                                  \
     {GPIOC, GPIO6 },   /* IO 0  */ \
     {GPIOC, GPIO8 },   /* IO 1  */ \
     {GPIOB, GPIO2 },   /* IO 2  */ \
     {GPIOC, GPIO9 },   /* IO 3  */ \
     {GPIOB, GPIO3 },   /* IO 4  */ \
     {GPIOA, GPIO11 },  /* IO 5  */ \
-    {GPIOC, GPIO7 },   /* IO 6  */ \
-    {GPIOB, GPIO4 },   /* IO 7  */ \
-    {GPIOB, GPIO5 },   /* IO 8  */ \
-    {GPIOB, GPIO14 },  /* IO 9 */ \
-    {GPIOD, GPIO2 },   /* IO 10 */ \
+    {GPIOA, GPIO12 },  /* IO 6  */ \
+    {GPIOC, GPIO7 },   /* IO 7  */ \
+    {GPIOB, GPIO4 },   /* IO 8  */ \
+    {GPIOB, GPIO5 },   /* IO 9  */ \
+    {GPIOB, GPIO14 },  /* IO 10 */ \
+    {GPIOD, GPIO2 },   /* IO 11 */ \
 }
+
+#define IOS_COUNT 12
 
 /*
 Schematic name, STM pin
-GPIO01 C6
-GPIO02 C8
-GPIO03 B2
-GPIO04 C9
-GPIO06 B3
+GPIO01 C6                   IO 0
+GPIO02 C8                   IO 1
+GPIO03 B2                   IO 2
+GPIO04 C9                   IO 3
+GPIO06 B3                   IO 4
 GPIO07 C12  - RE_485
-GPIO08 A11  - PULSE2_OUT
-GPIO09 A12  - PULSE1_OUT
+GPIO08 A11  - PULSE2_OUT/1W IO 5
+GPIO09 A12  - PULSE1_OUT    IO 6
 GPIO10 A15  - DE_485
-GPIO11 C7
-GPIO12 B4
-GPIO13 B5
-GPIO14 B14
+GPIO11 C7                   IO 7
+GPIO12 B4                   IO 8
+GPIO13 B5                   IO 9
+GPIO14 B14                  IO 10
 GPIO15 B15  - HPM_EN
-GPIO16 D2
+GPIO16 D2                   IO 11
 */
 
+
+#define IO_PULL_MASK    0x0003
+#define IO_TYPE_MASK    0xF000
 
 #define IO_AS_INPUT     0x0100
 #define IO_DIR_LOCKED   0x0200
 #define IO_SPECIAL_EN   0x0400
-#define IO_UART_TX      0x0800
-#define IO_RELAY        0x1000
-#define IO_HIGHSIDE     0x2000
-#define IO_PPS0         0x3000
-#define IO_PPS1         0x4000
-#define IO_TYPE_MASK    0xF000
-#define IO_PULL_MASK    0x0003
 
-#define IOS_STATE                                                            \
-{                                                                            \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 0   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 1   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 2   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 3   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 4   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 5   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 6   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 7   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLUP,                   /* GPIO 8   */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 9   */         \
-    IO_DIR_LOCKED | GPIO_PUPD_PULLDOWN | IO_RELAY,    /* GPIO 10  */         \
+#define IO_PULSECOUNT   0x3000
+#define IO_ONEWIRE      0x4000
+
+#define IOS_STATE                                              \
+{                                                              \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 0   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 1   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 2   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 3   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 4   */         \
+    IO_AS_INPUT | IO_ONEWIRE,           /* GPIO 5   */         \
+    IO_AS_INPUT | IO_PULSECOUNT,        /* GPIO 6   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 7   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 8   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 9   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 10  */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 11  */         \
 }
 
-#define PPS0_IO_NUM          26
-#define PPS1_IO_NUM          27
+#define W1_PORT             GPIOA
+#define W1_PIN              GPIO11
+#define W1_IO               5
 
-#define PULSE2_PORT     GPIOA
-#define PULSE2_PIN      GPIO11
+#define PULSE_PORT     GPIOA
+#define PULSE_PIN      GPIO12
+#define PULSE_EXTI     EXTI12
+#define PULSE_EXTI_IRQ NVIC_EXTI15_10_IRQ
+#define PULSE_ISR      exti15_10_isr
+#define PULSE_IO       6
 
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
@@ -183,4 +191,3 @@ GPIO16 D2
     GPIO_AF13,             \
     GPIO_AF13,             \
 }
-

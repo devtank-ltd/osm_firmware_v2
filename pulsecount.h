@@ -1,15 +1,14 @@
-#ifndef __PULSECOUNT__
+#pragma once
+#include <stdbool.h>
+#include "value.h"
 
-extern void     pulsecount_init();
+extern void     pulsecount_init(void);
 
-extern void     pulsecount_enable(unsigned pps, bool enable);
-
-extern void     pulsecount_second_boardary();
-
-extern unsigned pulsecount_get_count();
-
-extern void     pulsecount_pps_log(unsigned pps);
+extern void     pulsecount_enable(bool enable);
 
 extern void     pulsecount_log();
 
-#endif //__PULSECOUNT__
+extern uint32_t pulsecount_collection_time(void);
+extern bool     pulsecount_begin(char* name);
+extern bool     pulsecount_get(char* name, value_t* value);
+extern void     pulsecount_ack(void);

@@ -16,6 +16,7 @@ Documents used:
 #include "log.h"
 #include "value.h"
 #include "timers.h"
+#include "io.h"
 
 #define DELAY_READ_START    2
 #define DELAY_READ_WAIT     10
@@ -32,9 +33,6 @@ Documents used:
 #define W1_CMD_SKIP_ROM     0xCC
 #define W1_CMD_CONV_T       0x44
 #define W1_CMD_READ_SCP     0xBE
-
-#define W1_PORT             PULSE2_PORT
-#define W1_PIN              PULSE2_PIN
 
 #define W1_DIRECTION_OUTPUT true
 #define W1_DIRECTION_INPUT  false
@@ -246,8 +244,16 @@ static void _w1_temp_err(void)
 }
 
 
-bool w1_query_temp(double* temperature)
+void     w1_enable(bool enable)
 {
+}
+
+
+bool w1_query_temp(float* temperature)
+{
+    if (!io_is_special_now(W1_IO))
+        return false;
+
     w1_memory_t d; 
     if (!_w1_reset())
     {
@@ -294,6 +300,8 @@ bool w1_query_temp(double* temperature)
 
 bool w1_measurement_init(char* name)
 {
+    if (!io_is_special_now(W1_IO))
+        return false;
     if (!_w1_reset())
     {
         _w1_temp_err();
@@ -307,6 +315,8 @@ bool w1_measurement_init(char* name)
 
 bool w1_measurement_collect(char* name, value_t* value)
 {
+    if (!io_is_special_now(W1_IO))
+        return false;
     w1_memory_t d;
     if (!_w1_reset())
     {

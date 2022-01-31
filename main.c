@@ -41,15 +41,10 @@ void hard_fault_handler(void)
 
 uint32_t since_boot_delta(uint32_t newer, uint32_t older)
 {
-    if (newer == older)
-        return 0;
-
-    if (newer > older)
-        return newer - older;
-    else
-    {
+    if (newer < older)
         return (0xFFFFFFFF - older) + newer;
-    }
+    else
+        return newer - older;
 }
 
 
@@ -87,6 +82,7 @@ int main(void)
     htu21d_init();
     lorawan_init();
     measurements_init();
+    pulsecount_init();
     modbus_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);

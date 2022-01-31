@@ -17,7 +17,6 @@ typedef enum
     VALUE_INT32   = 3 | VALUE_TYPE_IS_SIGNED,
     VALUE_INT64   = 4 | VALUE_TYPE_IS_SIGNED,
     VALUE_FLOAT   = 5 | VALUE_TYPE_IS_SIGNED,
-    VALUE_DOUBLE  = 6 | VALUE_TYPE_IS_SIGNED,
 } value_type_t;
 
 typedef struct
@@ -34,7 +33,6 @@ typedef struct
         uint64_t u64;
         int64_t  i64;
         float    f;
-        double   r;
     };
 } value_t;
 
@@ -47,7 +45,6 @@ static inline value_t value_from_i32(int32_t d)   { return (value_t){.type = VAL
 static inline value_t value_from_u64(uint64_t d)  { return (value_t){.type = VALUE_UINT64, .u64 = d}; }
 static inline value_t value_from_i64(int64_t d)   { return (value_t){.type = VALUE_INT64,  .i64 = d}; }
 static inline value_t value_from_float(float d)   { return (value_t){.type = VALUE_FLOAT,  .f   = d}; }
-static inline value_t value_from_double(double d) { return (value_t){.type = VALUE_DOUBLE, .r   = d}; }
 
 
 #define value_from(_d_) _Generic((_d_),                                   \
@@ -59,8 +56,7 @@ static inline value_t value_from_double(double d) { return (value_t){.type = VAL
                                     long:               value_from_i32,   \
                                     unsigned long long: value_from_u64,   \
                                     long long:          value_from_i64,   \
-                                    float :             value_from_float, \
-                                    double :            value_from_double \
+                                    float :             value_from_float  \
                                     )(_d_)
 
 #define value_get(_v_) ( (_v_->type == VALUE_UINT8)?_v_->u8:  \
@@ -71,8 +67,7 @@ static inline value_t value_from_double(double d) { return (value_t){.type = VAL
                          (_v_->type == VALUE_INT32)?_v_->i32: \
                          (_v_->type == VALUE_UINT64)?_v_->u64:\
                          (_v_->type == VALUE_INT64)?_v_->i64: \
-                         (_v_->type == VALUE_FLOAT)?_v_->f:   \
-                         (_v_->type == VALUE_DOUBLE)?_v_->r:0 )
+                         (_v_->type == VALUE_FLOAT)?_v_->f:0 )
 
 
 #define VALUE_EMPTY   (value_t){.type = VALUE_UNSET}

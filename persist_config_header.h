@@ -37,5 +37,9 @@ typedef struct
     char                    lw_app_key[LW__APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[MEASUREMENTS_MAX_NUMBER];
     uint16_t                adc_midpoint;
+    uint16_t                _;
+    uint32_t                __;
+    uint64_t                ___;
+    uint8_t                ios_state[IOS_COUNT * 2];
 } __attribute__((__packed__)) persist_storage_t;
 

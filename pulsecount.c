@@ -1,208 +1,103 @@
 #include <inttypes.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/exti.h>
-#include <libopencm3/stm32/timer.h>
 #include <libopencm3/cm3/nvic.h>
 
 #include "log.h"
 #include "pinmap.h"
-#include "timers.h"
+#include "sys_time.h"
 #include "io.h"
 
-typedef struct
+
+static volatile uint32_t _pulsecount      = 0;
+static uint32_t          _send_pulsecount = 0;
+
+
+void PULSE_ISR(void)
 {
-    uint32_t timer;
-    uint32_t exti;
-} pulsecount_exti_t;
-
-
-typedef struct
-{
-    unsigned value;
-    unsigned psp;
-    unsigned tick;
-    bool     is_high;
-    unsigned high_timer_count;
-    unsigned low_timer_count;
-} pulsecount_values_t;
-
-typedef struct
-{
-    uint32_t timer_clk;
-    uint32_t irq;
-} pps_init_t;
-
-
-static const pps_init_t        ppss_init[]        = PPS_INIT;
-static const port_n_pins_t     pps_pins[]         = PPS_PORT_N_PINS;
-static const pulsecount_exti_t pulsecount_extis[] = PPS_EXTI;
-
-static volatile pulsecount_values_t pulsecount_values[ARRAY_SIZE(pps_pins)] = {{0}};
-
-
-static void pulsecount_isr(unsigned pps)
-{
-    const pulsecount_exti_t      * exti   = &pulsecount_extis[pps];
-    volatile pulsecount_values_t * values = &pulsecount_values[pps];
-
-    exti_reset_request(exti->exti);
-
-    if (values->is_high)
-    {
-        values->value++;
-        exti_set_trigger(exti->exti, EXTI_TRIGGER_FALLING);
-    }
-    else exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-
-    values->is_high = !values->is_high;
-
-    unsigned timer_count = timer_get_counter(exti->timer);
-    timer_set_counter(exti->timer, 0);
-
-    if (values->is_high)
-        values->high_timer_count = timer_count;
-    else
-        values->low_timer_count  = timer_count;
+    exti_reset_request(PULSE_EXTI);
+    _pulsecount++;
 }
 
 
-void PPS0_EXTI_ISR() { pulsecount_isr(0); }
-void PPS1_EXTI_ISR() { pulsecount_isr(1); }
-
-
-void pulsecount_second_boardary()
+void pulsecount_init(void)
 {
-    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
-    {
-        pulsecount_values[n].psp   = pulsecount_values[n].value;
-        pulsecount_values[n].value = 0;
-    }
-}
-
-
-unsigned pulsecount_get_count()
-{
-    return ARRAY_SIZE(pps_pins);
-}
-
-
-void pulsecount_get(unsigned pps, unsigned * count)
-{
-    if (pps >= ARRAY_SIZE(pps_pins))
-        *count = 0;
-    else
-        *count = pulsecount_values[pps].psp;
-}
-
-
-static void _pulsecount_init(unsigned pps)
-{
-    const pps_init_t        * pps_init = &ppss_init[pps];
-    const pulsecount_exti_t * exti = &pulsecount_extis[pps];
-
-    rcc_periph_clock_enable(pps_init->timer_clk);
-
-    timer_disable_counter(exti->timer);
-
-    timer_set_mode(exti->timer,
-                   TIM_CR1_CKD_CK_INT,
-                   TIM_CR1_CMS_EDGE,
-                   TIM_CR1_DIR_UP);
-    //-1 because it starts at zero, and interrupts on the overflow
-    timer_set_prescaler(exti->timer, rcc_ahb_frequency / 1000000-1);
-    timer_set_period(exti->timer, 10000000-1);
-
-    timer_enable_preload(exti->timer);
-    timer_continuous_mode(exti->timer);
-
-    timer_set_counter(exti->timer, 0);
-
-    /* -------------------------------------------------------- */
-
-
-    const port_n_pins_t     * pins = &pps_pins[pps];
-
-    rcc_periph_clock_enable(PORT_TO_RCC(pins->port));
-
-    unsigned pull = io_get_bias((pps == 0)?PPS0_IO_NUM:PPS1_IO_NUM);
-
-    gpio_mode_setup(pins->port, GPIO_MODE_INPUT, pull, pins->pins);
-
-    rcc_periph_clock_enable(RCC_SYSCFG_COMP);
-
-    exti_select_source(exti->exti, pins->port);
-    exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-
-    nvic_set_priority(pps_init->irq, PPS_PRIORITY);
-    nvic_enable_irq(pps_init->irq);
-
-
-    volatile pulsecount_values_t * values = &pulsecount_values[pps];
-
-    values->value   = 0;
-    values->psp   = 0;
-    values->is_high = false;
-
-    timer_enable_counter(exti->timer);
-    timer_set_counter(exti->timer, 0);
-    exti_set_trigger(exti->exti, EXTI_TRIGGER_RISING);
-    exti_enable_request(exti->exti);
-}
-
-
-static void _pulsecount_shutdown(unsigned pps)
-{
-    const pps_init_t        * pps_init = &ppss_init[pps];
-    const pulsecount_exti_t * exti = &pulsecount_extis[pps];
-
-    rcc_periph_clock_enable(pps_init->timer_clk);
-
-    timer_disable_counter(exti->timer);
-    exti_disable_request(exti->exti);
-
-    nvic_disable_irq(pps_init->irq);
-
-    memset((pulsecount_values_t*)&pulsecount_values[pps], 0, sizeof(pulsecount_values_t));
-}
-
-
-void pulsecount_init()
-{
-    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
-        _pulsecount_init(n);
-}
-
-
-void     pulsecount_enable(unsigned pps, bool enable)
-{
-    if (pps >= ARRAY_SIZE(pps_pins))
+    if (!io_is_special_now(PULSE_IO))
         return;
+    rcc_periph_clock_enable(PORT_TO_RCC(PULSE_PORT));
 
-    if (enable)
-        _pulsecount_init(pps);
-    else
-        _pulsecount_shutdown(pps);
+    gpio_mode_setup(PULSE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, PULSE_PIN);
+
+    exti_select_source(PULSE_EXTI, PULSE_PORT);
+    exti_set_trigger(PULSE_EXTI, EXTI_TRIGGER_FALLING);
+    exti_enable_request(PULSE_EXTI);
+
+    _pulsecount = 0;
+    _send_pulsecount = 0;
+
+    nvic_enable_irq(PULSE_EXTI_IRQ);
+    pulsecount_debug("Pulsecount enabled");
 }
 
 
-void pulsecount_pps_log(unsigned pps)
+static void _pulsecount_shutdown(void)
 {
-    if (pps < ARRAY_SIZE(pps_pins))
-    {
-        volatile pulsecount_values_t * values = &pulsecount_values[pps];
-        unsigned duty =  (values->high_timer_count * 1000) /
-                (values->high_timer_count + values->low_timer_count);
-        log_out("pulsecount %u : %u : %u", pps, values->psp, duty);
-    }
+    if (io_is_special_now(PULSE_IO))
+        return;
+    exti_disable_request(PULSE_EXTI);
+    nvic_disable_irq(PULSE_EXTI_IRQ);
+    _pulsecount = 0;
+    _send_pulsecount = 0;
+    pulsecount_debug("Pulsecount disabled");
+}
+
+
+void     pulsecount_enable(bool enable)
+{
+    if (enable)
+        pulsecount_init();
+    else
+        _pulsecount_shutdown();
 }
 
 
 void pulsecount_log()
 {
-    for(unsigned n = 0; n < ARRAY_SIZE(pps_pins); n++)
-        pulsecount_pps_log(n);
+    log_out("pulsecount : %"PRIu32, _pulsecount);
+}
+
+
+uint32_t pulsecount_collection_time(void)
+{
+    return 1000;
+}
+
+
+bool     pulsecount_begin(char* name)
+{
+    if (!io_is_special_now(PULSE_IO))
+        return false;
+    pulsecount_debug("pulsecount at start %"PRIu32, _pulsecount);
+    return true;
+}
+
+
+bool     pulsecount_get(char* name, value_t* value)
+{
+    if (!io_is_special_now(PULSE_IO) && !value)
+        return false;
+
+    _send_pulsecount = _pulsecount;
+    pulsecount_debug("pulsecount at end %"PRIu32, _send_pulsecount);
+    *value = value_from(_send_pulsecount);
+    return true;
+}
+
+
+void     pulsecount_ack(void)
+{
+    __sync_sub_and_fetch(&_pulsecount, _send_pulsecount);
+    _send_pulsecount = 0;
 }

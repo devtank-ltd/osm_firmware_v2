@@ -110,4 +110,5 @@
 #define DEBUG_MEASUREMENTS  0x400
 #define DEBUG_FW            0x800
 #define DEBUG_TMP_HUM      0x1000
+#define DEBUG_PULSECOUNT   0x2000
 

@@ -30,6 +30,7 @@ typedef enum
     HTU21D_HUM    = 6,
     HTU21D_TMP    = 7,
     BAT_MON       = 8,
+    PULSE_COUNT   = 9,
 } measurement_def_type_t;
 
 
@@ -48,6 +49,7 @@ typedef struct
     uint16_t collection_time;                           // Time in ms between calling the init function (init_cb) and collecting the value (get_cb)
     bool     (* init_cb)(char* name);                   // Function to start the process of retrieving the data
     bool     (* get_cb)(char* name, value_t* value);    // Function to collect the value
+    void     (* acked_cb)();                            // Function to tell subsystem measurement was successfully sent.
 } measurement_def_t;
 
 

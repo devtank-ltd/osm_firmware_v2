@@ -31,6 +31,7 @@ extern void log_debug_value(uint32_t flag, const char * prefix, value_t * v);
 #define modbus_debug(...)       asm("nop")
 #define measurements_debug(...) asm("nop")
 #define fw_debug(...)           asm("nop")
+#define pulsecount_debug(...)   asm("nop")
 #else
 #define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
 #define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
@@ -41,5 +42,6 @@ extern void log_debug_value(uint32_t flag, const char * prefix, value_t * v);
 #define modbus_debug(...)       log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
 #define measurements_debug(...) log_debug(DEBUG_MEASUREMENTS, "Measure: " __VA_ARGS__)
 #define fw_debug(...)           log_debug(DEBUG_FW, "FW: " __VA_ARGS__)
+#define pulsecount_debug(...)   log_debug(DEBUG_PULSECOUNT, "PLSECNT: " __VA_ARGS__)
 #endif
 
