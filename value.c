@@ -12,9 +12,6 @@ static value_type_t _get_op_max_type(value_t *a, value_t* b)
     if (!a || !b || a->type == VALUE_UNSET || b->type == VALUE_UNSET)
         return VALUE_UNSET;
 
-    if (a->type == VALUE_DOUBLE || b->type == VALUE_DOUBLE)
-        return VALUE_DOUBLE;
-
     if (a->type == VALUE_FLOAT || b->type == VALUE_FLOAT)
         return VALUE_FLOAT;
 
@@ -96,11 +93,6 @@ void value_compact(value_t *v)
         case VALUE_FLOAT:                              \
         {                                              \
             dst->f = value_get(a) _op_ value_get(b);   \
-            break;                                     \
-        }                                              \
-        case VALUE_DOUBLE:                             \
-        {                                              \
-            dst->r = value_get(a) _op_ value_get(b);   \
             break;                                     \
         }                                              \
         default:                                       \
@@ -197,7 +189,6 @@ bool value_from_str(value_t * v, char * str)
             switch(bits)
             {
                 case 32: v->type = VALUE_FLOAT;  v->f  = strtof(splitter + 1, NULL); return true;
-                case 64: v->type = VALUE_DOUBLE; v->r  = strtod(splitter + 1, NULL); return true;
                 default:
                     return false;
             }
@@ -224,7 +215,6 @@ bool value_to_str(value_t * v, char * str, unsigned size)
         case VALUE_INT32  : snprintf(str, size, "I32:%"PRId32, v->i32); break;
         case VALUE_INT64  : snprintf(str, size, "I64:%lld",    v->i64); break;
         case VALUE_FLOAT  : snprintf(str, size, "F32:%f",      v->f);   break;
-        case VALUE_DOUBLE : snprintf(str, size, "F64:%f",      v->r);   break;
         default: return false;
     }
     return true;

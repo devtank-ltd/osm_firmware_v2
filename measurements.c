@@ -141,13 +141,6 @@ static bool measurements_arr_append_float(float val)
 }
 
 
-static bool measurements_arr_append_double(double val)
-{
-    int64_t m_val = val * 1000;
-    return measurements_arr_append_i64(m_val);
-}
-
-
 static bool measurements_arr_append_value(value_t * value)
 {
     if (!value)
@@ -166,7 +159,6 @@ static bool measurements_arr_append_value(value_t * value)
         case VALUE_UINT64 : return measurements_arr_append_i64(value->i64);
         case VALUE_INT64  : return measurements_arr_append_i64(value->i64);
         case VALUE_FLOAT  : return measurements_arr_append_float(value->f);
-        case VALUE_DOUBLE : return measurements_arr_append_double(value->r);
         default: break;
     }
     return false;
