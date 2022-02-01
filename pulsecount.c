@@ -18,7 +18,7 @@ static uint32_t          _send_pulsecount = 0;
 void PULSE_ISR(void)
 {
     exti_reset_request(PULSE_EXTI);
-    _pulsecount++;
+    __sync_add_and_fetch(&_pulsecount, 1);
 }
 
 
