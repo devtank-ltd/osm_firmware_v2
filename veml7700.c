@@ -24,55 +24,6 @@ Datasheet: https://eu.mouser.com/datasheet/2/427/VISH_S_A0012091125_1-2572303.pd
 
 #define MEASUREMENT_COLLECTION_MS  1000
 
-#define VEML7700_CONF_REG_ALS_GAIN_MASK     0x1800
-#define VEML7700_CONF_REG_ALS_IT_MASK       0x3c0
-#define VEML7700_CONF_REG_ALS_PERS_MASK     0x30
-#define VEML7700_CONF_REG_ALS_INT_EN_MASK   0x2
-#define VEML7700_CONF_REG_ALS_SD_MASK       0x1
-
-#define VEML7700_PSM_MASK                   0x6
-#define VEML7700_PSM_EN_MASK                0x1
-
-#define VEML7700_CONF_REG_ALS_GAIN(x)       ( VEML7700_CONF_REG_ALS_GAIN_MASK   & (x << 11) )
-#define VEML7700_CONF_REG_ALS_IT(x)         ( VEML7700_CONF_REG_ALS_IT_MASK     & (x << 6)  )
-#define VEML7700_CONF_REG_ALS_PERS(x)       ( VEML7700_CONF_REG_ALS_PERS_MASK   & (x << 4)  )
-#define VEML7700_CONF_REG_ALS_INT_EN(x)     ( VEML7700_CONF_REG_ALS_INT_EN_MASK & (x << 1)  )
-#define VEML7700_CONF_REG_ALS_SD(x)         ( VEML7700_CONF_REG_ALS_SD_MASK     & (x << 0)  )
-
-#define VEML7700_ALS_GAIN_1                 VEML7700_CONF_REG_ALS_GAIN(0)
-#define VEML7700_ALS_GAIN_2                 VEML7700_CONF_REG_ALS_GAIN(1)
-#define VEML7700_ALS_GAIN_1_8               VEML7700_CONF_REG_ALS_GAIN(2)
-#define VEML7700_ALS_GAIN_1_4               VEML7700_CONF_REG_ALS_GAIN(3)
-
-#define VEML7700_ALS_IT_100                 VEML7700_CONF_REG_ALS_IT(0)
-#define VEML7700_ALS_IT_200                 VEML7700_CONF_REG_ALS_IT(1)
-#define VEML7700_ALS_IT_400                 VEML7700_CONF_REG_ALS_IT(2)
-#define VEML7700_ALS_IT_800                 VEML7700_CONF_REG_ALS_IT(3)
-#define VEML7700_ALS_IT_50                  VEML7700_CONF_REG_ALS_IT(8)
-#define VEML7700_ALS_IT_25                  VEML7700_CONF_REG_ALS_IT(12)
-
-#define VEML7700_ALS_PERS_1                 VEML7700_CONF_REG_ALS_PERS(0)
-#define VEML7700_ALS_PERS_2                 VEML7700_CONF_REG_ALS_PERS(1)
-#define VEML7700_ALS_PERS_4                 VEML7700_CONF_REG_ALS_PERS(2)
-#define VEML7700_ALS_PERS_8                 VEML7700_CONF_REG_ALS_PERS(4)
-
-#define VEML7700_ALS_INT_EN_ENABLED         VEML7700_CONF_REG_ALS_INT_EN(0)
-#define VEML7700_ALS_INT_EN_DISABLED        VEML7700_CONF_REG_ALS_INT_EN(1)
-
-#define VEML7700_ALS_SD_ON                  VEML7700_CONF_REG_ALS_SD(0)
-#define VEML7700_ALS_SD_OFF                 VEML7700_CONF_REG_ALS_SD(1)
-
-#define VEML7700_PSM(x)                     ( VEML7700_PSM_MASK    & (x << 1) )
-#define VEML7700_PSM_EN(x)                  ( VEML7700_PSM_EN_MASK & (x << 0) )
-
-#define VEML7700_PSM_MODE_1                 VEML7700_PSM(0)
-#define VEML7700_PSM_MODE_2                 VEML7700_PSM(1)
-#define VEML7700_PSM_MODE_3                 VEML7700_PSM(2)
-#define VEML7700_PSM_MODE_4                 VEML7700_PSM(3)
-
-#define VEML7700_PSM_EN_DISABLE             VEML7700_PSM_EN(0)
-#define VEML7700_PSM_EN_ENABLE              VEML7700_PSM_EN(1)
-
 
 typedef enum
 {
@@ -85,11 +36,12 @@ typedef enum
     VEML7700_CMD_ALS_INT        = 0x06,
 } veml7700_cmd_t;
 
+
 typedef union
 {
     struct
     {
-        uint16_t ald_sd:1;
+        uint16_t als_sd:1;
         uint16_t als_int_en:1;
         uint16_t _:2;
         uint16_t als_pers:2;
@@ -99,7 +51,31 @@ typedef union
         uint16_t ___:3;
     };
     uint16_t raw;
-} __attribute__((__packed__)) veml7700_cmd_0_t;
+} __attribute__((__packed__)) veml7700_cmd_conf_t;
+
+#define VEML7700_CONF_ALS_SM_GAIN_1              0 /* 0b00 */
+#define VEML7700_CONF_ALS_SM_GAIN_2              1 /* 0b01 */
+#define VEML7700_CONF_ALS_SM_GAIN_1_8            2 /* 0b10 */
+#define VEML7700_CONF_ALS_SM_GAIN_1_4            3 /* 0b11 */
+
+#define VEML7700_CONF_ALS_IT_25                  0xC /* 0b1100 */
+#define VEML7700_CONF_ALS_IT_50                  0x8 /* 0b1000 */
+#define VEML7700_CONF_ALS_IT_100                 0x0 /* 0b0000 */
+#define VEML7700_CONF_ALS_IT_200                 0x1 /* 0b0001 */
+#define VEML7700_CONF_ALS_IT_400                 0x2 /* 0b0010 */
+#define VEML7700_CONF_ALS_IT_800                 0x3 /* 0b0011 */
+
+#define VEML7700_CONF_ALS_PERS_1                 0 /* 0b00 */
+#define VEML7700_CONF_ALS_PERS_2                 1 /* 0b01 */
+#define VEML7700_CONF_ALS_PERS_4                 2 /* 0b10 */
+#define VEML7700_CONF_ALS_PERS_8                 3 /* 0b11 */
+
+#define VEML7700_CONF_ALS_INT_EN_ENABLED         0
+#define VEML7700_CONF_ALS_INT_EN_DISABLED        1
+
+#define VEML7700_CONF_ALS_SD_ON                  0
+#define VEML7700_CONF_ALS_SD_OFF                 1
+
 
 typedef union
 {
@@ -110,12 +86,26 @@ typedef union
         uint16_t _:13;
     };
     uint16_t raw;
-} __attribute__((__packed__)) veml7700_cmd_3_t;
+} __attribute__((__packed__)) veml7700_cmd_pwr_t;
+
+#define VEML7700_PWR_PSM_MODE_1                 0 /* 0b00 */
+#define VEML7700_PWR_PSM_MODE_2                 1 /* 0b01 */
+#define VEML7700_PWR_PSM_MODE_3                 2 /* 0b10 */
+#define VEML7700_PWR_PSM_MODE_4                 3 /* 0b11 */
+
+#define VEML7700_PWR_PSM_EN_DISABLE             0
+#define VEML7700_PWR_PSM_EN_ENABLE              1
 
 
 
-static uint16_t     veml7700_conf_reg_val       = VEML7700_ALS_GAIN_1 | VEML7700_ALS_IT_100 | VEML7700_ALS_PERS_1 | VEML7700_ALS_INT_EN_DISABLED;
-static uint16_t     veml7700_conf_power         = VEML7700_PSM_MODE_4 | VEML7700_PSM_EN_ENABLE;
+
+static veml7700_cmd_conf_t     veml7700_conf_reg_val   = {.als_sd     = VEML7700_CONF_ALS_SD_ON,
+                                                          .als_int_en = VEML7700_CONF_ALS_INT_EN_DISABLED,
+                                                          .als_pers   = VEML7700_CONF_ALS_PERS_1,
+                                                          .als_it     = VEML7700_CONF_ALS_IT_100,
+                                                          .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1};
+static veml7700_cmd_pwr_t     veml7700_conf_power     = {.psm_en = VEML7700_PWR_PSM_EN_ENABLE,
+                                                         .psm    = VEML7700_PWR_PSM_MODE_4};
 
 
 static void _veml7700_get_u16(uint8_t d[2], uint16_t *r)
@@ -170,7 +160,7 @@ uint32_t veml7700_measurements_collection_time(void)
 
 bool veml7700_light_measurements_init(char* name)
 {
-    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON);
+    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val.raw);
 }
 
 
@@ -190,27 +180,24 @@ void veml7700_init(void)
 {
     i2c_init(VEML7700_I2C_INDEX);
 
-    veml7700_cmd_0_t cmd0 = {.ald_sd = 0, .als_int_en = 0, .als_pers = 0, .als_it = 0, .als_sm = 1};
-    veml7700_cmd_3_t cmd3 = {.psm_en = 0, .psm = 2};
-
-    if (_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, cmd0.raw) &&
+    if (_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val.raw) &&
         _veml7700_write_reg16(VEML7700_CMD_ALS_WH, 0x0000) &&
-        _veml7700_write_reg16(VEML7700_CMD_ALS_WL, 0XFFFF) &&
-        _veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, cmd3.raw))
+        _veml7700_write_reg16(VEML7700_CMD_ALS_WL, 0x0000) &&
+        _veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, veml7700_conf_power.raw))
         light_debug("Init'ed");
 }
 
 
 bool veml7700_get_lux(uint16_t* lux)
 {
-    log_out("veml7700_conf_reg_val = %"PRIu16, veml7700_conf_reg_val);
-    log_out("veml7700_conf_power = %"PRIu16, veml7700_conf_power);
+    log_out("veml7700_conf_reg_val = 0x%"PRIx16, veml7700_conf_reg_val.raw);
+    log_out("veml7700_conf_power = 0x%"PRIx16, veml7700_conf_power.raw);
     if (!lux)
     {
         light_debug("Handed in null pointer.");
         return false;
     }
-    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON);
+    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val.raw);
 
     uint32_t start_ms = since_boot_ms;
     light_debug("Waiting 4.2 seconds");
