@@ -61,6 +61,8 @@ int main(void)
     rcc_apb1_frequency = 80e6;
     rcc_apb2_frequency = 80e6;
 
+    i2c_init(0);
+
     uarts_setup();
     uart_rings_init();
 
