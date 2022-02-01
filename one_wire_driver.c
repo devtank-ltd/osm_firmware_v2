@@ -240,7 +240,7 @@ static bool _w1_empty_check(uint8_t* mem, unsigned size)
 
 static void _w1_temp_err(void)
 {
-    log_debug(DEBUG_IO, "Temperature probe did not respond");
+    w1_debug("Temperature probe did not respond");
 }
 
 
@@ -274,13 +274,13 @@ bool w1_query_temp(float* temperature)
 
     if (!_w1_crc_check(d.raw, 8))
     {
-        log_debug(DEBUG_IO, "Temperature data not confirmed by CRC");
+        w1_debug("Temperature data not confirmed by CRC");
         return false;
     }
 
     if (!_w1_empty_check(d.raw, 9))
     {
-        log_debug(DEBUG_IO, "Empty memory.");
+        w1_debug("Empty memory.");
         return false;
     }
 
@@ -293,7 +293,7 @@ bool w1_query_temp(float* temperature)
     }
 
     *temperature = (float)integer_bits + (float)decimal_bits / 16.f;
-    log_debug(DEBUG_IO, "T: %.03f C", *temperature);
+    w1_debug("T: %.03f C", *temperature);
     return true;
 }
 
@@ -329,13 +329,13 @@ bool w1_measurement_collect(char* name, value_t* value)
 
     if (!_w1_crc_check(d.raw, 8))
     {
-        log_debug(DEBUG_IO, "Temperature data not confirmed by CRC");
+        w1_debug("Data not confirmed by CRC");
         return false;
     }
 
     if (!_w1_empty_check(d.raw, 9))
     {
-        log_debug(DEBUG_IO, "Empty memory.");
+        w1_debug("Empty memory.");
         return false;
     }
 
