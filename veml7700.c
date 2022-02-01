@@ -99,13 +99,13 @@ typedef union
 
 
 
-static veml7700_cmd_conf_t     veml7700_conf_reg_val   = {.als_sd     = VEML7700_CONF_ALS_SD_ON,
-                                                          .als_int_en = VEML7700_CONF_ALS_INT_EN_DISABLED,
-                                                          .als_pers   = VEML7700_CONF_ALS_PERS_1,
-                                                          .als_it     = VEML7700_CONF_ALS_IT_100,
-                                                          .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1};
-static veml7700_cmd_pwr_t     veml7700_conf_power     = {.psm_en = VEML7700_PWR_PSM_EN_ENABLE,
-                                                         .psm    = VEML7700_PWR_PSM_MODE_4};
+static veml7700_cmd_conf_t     _veml7700_conf_reg_val   = {.als_sd     = VEML7700_CONF_ALS_SD_ON,
+                                                           .als_int_en = VEML7700_CONF_ALS_INT_EN_DISABLED,
+                                                           .als_pers   = VEML7700_CONF_ALS_PERS_1,
+                                                           .als_it     = VEML7700_CONF_ALS_IT_100,
+                                                           .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1};
+static veml7700_cmd_pwr_t     _veml7700_conf_power     = {.psm_en = VEML7700_PWR_PSM_EN_ENABLE,
+                                                          .psm    = VEML7700_PWR_PSM_MODE_4};
 
 
 static void _veml7700_get_u16(uint8_t d[2], uint16_t *r)
@@ -160,7 +160,7 @@ uint32_t veml7700_measurements_collection_time(void)
 
 bool veml7700_light_measurements_init(char* name)
 {
-    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val.raw);
+    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_conf_reg_val.raw);
 }
 
 
@@ -180,24 +180,24 @@ void veml7700_init(void)
 {
     i2c_init(VEML7700_I2C_INDEX);
 
-    if (_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val.raw) &&
+    if (_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_conf_reg_val.raw) &&
         _veml7700_write_reg16(VEML7700_CMD_ALS_WH, 0x0000) &&
         _veml7700_write_reg16(VEML7700_CMD_ALS_WL, 0x0000) &&
-        _veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, veml7700_conf_power.raw))
+        _veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_conf_power.raw))
         light_debug("Init'ed");
 }
 
 
 bool veml7700_get_lux(uint16_t* lux)
 {
-    log_out("veml7700_conf_reg_val = 0x%"PRIx16, veml7700_conf_reg_val.raw);
-    log_out("veml7700_conf_power = 0x%"PRIx16, veml7700_conf_power.raw);
+    log_out("_veml7700_conf_reg_val = 0x%"PRIx16, _veml7700_conf_reg_val.raw);
+    log_out("_veml7700_conf_power = 0x%"PRIx16, _veml7700_conf_power.raw);
     if (!lux)
     {
         light_debug("Handed in null pointer.");
         return false;
     }
-    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val.raw);
+    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_conf_reg_val.raw);
 
     uint32_t start_ms = since_boot_ms;
     light_debug("Waiting 4.2 seconds");
