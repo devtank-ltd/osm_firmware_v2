@@ -107,25 +107,20 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
     uint8_t d[2] = {0};
     log_debug(DEBUG_LIGHT, "Read command 0x%"PRIx8, reg8);
 
-    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
-    {
-        veml7700_init();
-        return false;
-    }
-
+    i2c_transfer7(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2);
     _veml7700_get_u16(d, r);
     return true;
 }
 
 
-static bool _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
+static void _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
 {
     uint8_t reg8 = reg;
     uint8_t data16[2];
     data16[0] = data && 0x00FF;
     data16[1] = data && 0xFF00;
     log_debug(DEBUG_LIGHT, "Send command 0x%"PRIx8" 0x%"PRIx16, reg8, data);
-    return i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, data16, 2, 100);
+    i2c_transfer7(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, data16, 2);
 }
 
 
@@ -143,10 +138,7 @@ uint32_t veml7700_measurements_collection_time(void)
 
 bool veml7700_light_measurements_init(char* name)
 {
-    if (!_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON))
-    {
-        return false;
-    }
+    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON);
     return true;
 }
 
@@ -180,11 +172,7 @@ bool veml7700_get_lux(uint16_t* lux)
         log_debug(DEBUG_LIGHT, "Handed in null pointer.");
         return false;
     }
-    if (!_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON))
-    {
-        log_debug(DEBUG_LIGHT, "Could not write command to turn on sensor.");
-        return false;
-    }
+    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON);
     timer_delay_us_64(4200 * 1000);
     if (!_veml7700_read_reg16(VEML7700_CMD_ALS, lux))
     {
