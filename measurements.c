@@ -258,6 +258,9 @@ static void measurements_send(void)
         return;
     }
 
+    if (_message_start_pos == MEASUREMENTS_MAX_NUMBER)
+        _message_start_pos = 0;
+
     unsigned i = _message_start_pos;
 
     if (_message_start_pos)
