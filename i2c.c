@@ -5,6 +5,7 @@
 #include "pinmap.h"
 #include "log.h"
 #include "sys_time.h"
+#include "uart_rings.h"
 
 
 static const i2c_def_t i2c_buses[]     = I2C_BUSES;
@@ -77,6 +78,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                         log_error("I2C timeout");
                         return false;
                     }
+                    uart_rings_out_drain();
                 }
             }
             i2c_send_data(i2c, *w++);
@@ -91,6 +93,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                     log_error("I2C timeout");
                     return false;
                 }
+                uart_rings_out_drain();
             }
         }
     }
@@ -113,6 +116,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                     log_error("I2C timeout");
                     return false;
                 }
+                uart_rings_out_drain();
             }
             r[i] = i2c_get_data(i2c);
         }

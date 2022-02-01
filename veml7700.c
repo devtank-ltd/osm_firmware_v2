@@ -19,7 +19,7 @@ Datasheet: https://eu.mouser.com/datasheet/2/427/VISH_S_A0012091125_1-2572303.pd
 #include "measurements.h"
 #include "sys_time.h"
 #include "veml7700.h"
-#include "timers.h"
+#include "uart_rings.h"
 
 
 #define MEASUREMENT_COLLECTION_MS  1000
@@ -211,7 +211,12 @@ bool veml7700_get_lux(uint16_t* lux)
         return false;
     }
     _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, veml7700_conf_reg_val | VEML7700_ALS_SD_ON);
-    timer_delay_us_64(4200 * 1000);
+
+    uint32_t start_ms = since_boot_ms;
+    light_debug("Waiting 4.2 seconds");
+    while (since_boot_delta(since_boot_ms, start_ms) < 4200)
+        uart_rings_out_drain();
+
     if (!_veml7700_read_reg16(VEML7700_CMD_ALS, lux))
     {
         light_debug("Could not read data from sensor.");
