@@ -313,7 +313,7 @@ static void measurements_send(void)
     {
         last_sent_ms = since_boot_ms;
         lw_send(measurements_hex_arr, measurements_hex_arr_pos+1);
-        if (!_message_start_pos)
+        if (i == MEASUREMENTS_MAX_NUMBER)
         {
             pending_send = false;
             measurements_debug("Complete send");
