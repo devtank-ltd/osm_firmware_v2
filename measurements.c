@@ -299,12 +299,11 @@ static void measurements_send(void)
     if (i == MEASUREMENTS_MAX_NUMBER)
     {
         if (_message_start_pos)
-        {
             /* Last of fragments */
             _message_prev_start_pos = _message_start_pos;
-            _message_start_pos = MEASUREMENTS_MAX_NUMBER;
-        }
-        else _message_prev_start_pos = _message_start_pos = 0;
+        else
+            _message_prev_start_pos = 0;
+        _message_start_pos = MEASUREMENTS_MAX_NUMBER;
     }
 
     if (num_qd > 0)
