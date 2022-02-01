@@ -98,6 +98,7 @@ bool     pulsecount_get(char* name, value_t* value)
 
 void     pulsecount_ack(void)
 {
+    pulsecount_debug("Pulsecount ack'ed");
     __sync_sub_and_fetch(&_pulsecount, _send_pulsecount);
     _send_pulsecount = 0;
 }
