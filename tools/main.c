@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <unistd.h>
+
+#include <json-c/json.h>
+#include <json-c/json_util.h>
 
 #include "pinmap.h"
 #include "modbus_mem.h"
@@ -15,7 +19,7 @@ static persist_storage_t _config = {.version = PERSIST__VERSION,
 static void print_help(void)
 {
     fprintf(stderr, "Arguments:\n");
-    fprintf(stderr, "filename: (output filename)\n");
+    fprintf(stderr, "filename: (config img filename)\n");
     exit(EXIT_FAILURE);
 }
 
@@ -52,15 +56,11 @@ extern modbus_bus_t* persist_get_modbus_bus(void)
     return &_config.modbus_bus;
 }
 
+static char _input_buffer[1024*1024];
 
 
-int main(int argc, char *argv[])
+static int _read_config_img(const char * filename)
 {
-    if (argc < 2)
-        print_help();
-
-    const char * filename   = argv[1];
-
     FILE * f = fopen(filename,"r");
 
     if (!f)
@@ -68,10 +68,11 @@ int main(int argc, char *argv[])
         perror("Failed to open file.");
         return EXIT_FAILURE;
     }
-
+    struct json_object * root = json_object_new_object();
     if (fread(&_config, sizeof(_config), 1, f) != 1)
     {
         perror("Failed to read file.");
+        json_object_put(root);
         fclose(f);
         return EXIT_FAILURE;
     }
@@ -85,14 +86,56 @@ int main(int argc, char *argv[])
         modbus_log();
     }
 
+    json_object_to_fd(1, root, JSON_C_TO_STRING_PRETTY);
+    json_object_put(root);
+    fclose(f);
+
+    return EXIT_SUCCESS;
+}
+
+static int _write_config_img(const char * filename)
+{
+    struct json_object * root = json_object_from_fd(0);
+    if (root)
+    {
+        perror("Failed to read json.");
+        return EXIT_FAILURE;
+    }
+
+    FILE * f = fopen(filename,"w");
+
+    if (!f)
+    {
+        json_object_put(root);
+        perror("Failed to open file.");
+        return EXIT_FAILURE;
+    }
+
     if (fwrite(&_config, sizeof(_config), 1, f) != 1)
     {
         perror("Failed to write file.");
+        json_object_put(root);
         fclose(f);
         return EXIT_FAILURE;
     }
 
+    json_object_put(root);
     fclose(f);
 
     return EXIT_SUCCESS;
+}
+
+
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2)
+        print_help();
+
+    const char * filename   = argv[1];
+
+    if (isatty(0))
+        return _read_config_img(filename);
+    else
+        return _write_config_img(filename);
 }
