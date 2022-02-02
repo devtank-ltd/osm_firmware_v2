@@ -81,7 +81,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 }
 
 
-void     ios_init()
+void     ios_init(void)
 {
     ios_state = persist_get_ios_state();
 
@@ -106,7 +106,7 @@ void     ios_init()
 }
 
 
-unsigned ios_get_count()
+unsigned ios_get_count(void)
 {
     return ARRAY_SIZE(ios_pins);
 }
