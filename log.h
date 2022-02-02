@@ -22,17 +22,18 @@ extern void log_debug_data(uint32_t flag, void * data, unsigned size);
 extern void log_debug_value(uint32_t flag, const char * prefix, value_t * v);
 
 #ifdef NOPODEBUG
-#define log_sys_debug(...)      asm("nop")
-#define adc_debug(...)          asm("nop")
-#define lw_debug(...)           asm("nop")
-#define io_debug(...)           asm("nop")
-#define uart_debug(_uart_, ...) asm("nop")
-#define hpm_debug(...)          asm("nop")
-#define modbus_debug(...)       asm("nop")
-#define measurements_debug(...) asm("nop")
-#define fw_debug(...)           asm("nop")
-#define pulsecount_debug(...)   asm("nop")
-#define w1_debug(...)           asm("nop")
+inline static void _empty_log() {}
+#define log_sys_debug(...)      _empty_log(__VA_ARGS__)
+#define adc_debug(...)          _empty_log(__VA_ARGS__)
+#define lw_debug(...)           _empty_log(__VA_ARGS__)
+#define io_debug(...)           _empty_log(__VA_ARGS__)
+#define uart_debug(_uart_, ...) _empty_log(__VA_ARGS__)
+#define hpm_debug(...)          _empty_log(__VA_ARGS__)
+#define modbus_debug(...)       _empty_log(__VA_ARGS__)
+#define measurements_debug(...) _empty_log(__VA_ARGS__)
+#define fw_debug(...)           _empty_log(__VA_ARGS__)
+#define pulsecount_debug(...)   _empty_log(__VA_ARGS__)
+#define w1_debug(...)           _empty_log(__VA_ARGS__)
 #else
 #define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
 #define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
@@ -46,4 +47,3 @@ extern void log_debug_value(uint32_t flag, const char * prefix, value_t * v);
 #define pulsecount_debug(...)   log_debug(DEBUG_PULSECOUNT, "PLSECNT: " __VA_ARGS__)
 #define w1_debug(...)           log_debug(DEBUG_W1, "W1: "  __VA_ARGS__)
 #endif
-
