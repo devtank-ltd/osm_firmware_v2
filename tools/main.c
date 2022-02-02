@@ -84,6 +84,9 @@ static int _read_config_img(const char * filename)
 
     json_object_object_add(root, "mins_interval", json_object_new_int(15));
 
+    json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(_config.lw_dev_eui, LW__DEV_EUI_LEN));
+    json_object_object_add(root, "lw_app_key", json_object_new_string_len(_config.lw_app_key, LW__APP_KEY_LEN));
+
     modbus_bus_t* bus = &_config.modbus_bus;
 
     if (bus->version == MODBUS_BLOB_VERSION &&
@@ -109,6 +112,14 @@ static int _get_defaulted_int(struct json_object * root, char * name, int defaul
     return json_object_get_int(tmp);
 }
 
+static bool _get_string_buf(struct json_object * root, char * name, char * buf, unsigned len)
+{
+    struct json_object * tmp = json_object_object_get(root, name);
+    if (!tmp)
+        return false;
+    snprintf(buf, len, json_object_get_string(tmp));
+    return true;
+}
 
 static int _write_config_img(const char * filename)
 {
@@ -139,6 +150,13 @@ static int _write_config_img(const char * filename)
 
     _config.log_debug_mask =  _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
     _config.mins_interval =  _get_defaulted_int(root, "mins_interval", 15);
+    if (!_get_string_buf(root, "lw_dev_eui", _config.lw_dev_eui, LW__DEV_EUI_LEN) ||
+        !_get_string_buf(root, "lw_app_key", _config.lw_app_key, LW__APP_KEY_LEN))
+    {
+        fprintf(stderr, "No LoRaWAN keys .\n");
+        json_object_put(root);
+        return EXIT_FAILURE;
+    }
 
     FILE * f = fopen(filename,"w");
 
