@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <json-c/json.h>
 #include <json-c/json_util.h>
@@ -77,9 +78,13 @@ static int _read_config_img(const char * filename)
         return EXIT_FAILURE;
     }
 
-    modbus_bus_t* bus = &_config.modbus_bus;
-
     json_object_object_add(root, "version", json_object_new_int(PERSIST__VERSION));
+
+    json_object_object_add(root, "log_debug_mask", json_object_new_int(DEBUG_SYS));
+
+    json_object_object_add(root, "mins_interval", json_object_new_int(15));
+
+    modbus_bus_t* bus = &_config.modbus_bus;
 
     if (bus->version == MODBUS_BLOB_VERSION &&
         bus->max_dev_num == MODBUS_MAX_DEV &&
@@ -94,6 +99,16 @@ static int _read_config_img(const char * filename)
 
     return EXIT_SUCCESS;
 }
+
+
+static int _get_defaulted_int(struct json_object * root, char * name, int default_value) 
+{
+    struct json_object * tmp = json_object_object_get(root, name);
+    if (!tmp)
+        return default_value;
+    return json_object_get_int(tmp);
+}
+
 
 static int _write_config_img(const char * filename)
 {
@@ -112,14 +127,18 @@ static int _write_config_img(const char * filename)
         return EXIT_FAILURE;
     }
 
-    _config.version = json_object_get_int(obj);
+    memset(&_config, 0, sizeof(_config));
 
+    _config.version = json_object_get_int(obj);
     if (_config.version != PERSIST__VERSION)
     {
         fprintf(stderr, "Wrong version.\n");
         json_object_put(root);
         return EXIT_FAILURE;
     }
+
+    _config.log_debug_mask =  _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
+    _config.mins_interval =  _get_defaulted_int(root, "mins_interval", 15);
 
     FILE * f = fopen(filename,"w");
 
