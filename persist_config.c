@@ -246,9 +246,15 @@ uint16_t *  persist_get_ios_state(void)
 }
 
 
-uint8_t * persist_get_modbus_data(void)
+modbus_bus_t * persist_get_modbus_bus(void)
 {
-    return persist_data.modbus_data;
+    return &persist_data.modbus_bus;
+}
+
+
+modbus_dev_t * persist_get_modbus_devs(void)
+{
+    return persist_data.modbus_devices;
 }
 
 

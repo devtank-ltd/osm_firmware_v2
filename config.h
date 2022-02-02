@@ -37,6 +37,7 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
+#define MODBUS_BLOB_VERSION 1
 #define MODBUS_MAX_DEV 4
 #define MODBUS_DEV_REGS 16
 #define MODBUS_BLOB_SIZE 16
@@ -112,4 +113,3 @@
 #define DEBUG_TMP_HUM      0x1000
 #define DEBUG_PULSECOUNT   0x2000
 #define DEBUG_W1           0x4000
-

@@ -10,6 +10,7 @@ firmware_SOURCES := main.c \
            i2c.c \
            htu21d.c \
            modbus.c \
+           modbus_mem.c \
            value.c \
            persist_config.c \
            lorawan.c \

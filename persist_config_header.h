@@ -32,7 +32,8 @@ typedef struct
     uint32_t                log_debug_mask;
     uint32_t                pending_fw;
     uint32_t                mins_interval;
-    uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
+    modbus_bus_t            modbus_bus;
+    modbus_dev_t            modbus_devices[MODBUS_MAX_DEV];
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[MEASUREMENTS_MAX_NUMBER];
@@ -42,4 +43,3 @@ typedef struct
     uint64_t                ___;
     uint8_t                ios_state[IOS_COUNT * 2];
 } __attribute__((__packed__)) persist_storage_t;
-

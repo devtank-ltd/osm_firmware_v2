@@ -6,6 +6,7 @@
 #include "config.h"
 #include "lorawan.h"
 #include "value.h"
+#include "base_types.h"
 
 
 #define MEASUREMENTS__HEX_ARRAY_SIZE            (128-LW_HEADER_SIZE-LW_TAIL_SIZE)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
@@ -18,29 +19,6 @@
 
 
 extern uint32_t transmit_interval;
-
-
-typedef enum
-{
-    MODBUS        = 1,
-    PM10          = 2,
-    PM25          = 3,
-    CURRENT_CLAMP = 4,
-    W1_PROBE      = 5,
-    HTU21D_HUM    = 6,
-    HTU21D_TMP    = 7,
-    BAT_MON       = 8,
-    PULSE_COUNT   = 9,
-} measurement_def_type_t;
-
-
-typedef struct
-{
-    char     name[MEASURE_NAME_LEN + 1];                // Name of the measurement
-    uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
-    uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
-    uint8_t  type;                                      // measurement_def_type_t
-} measurement_def_base_t;
 
 
 typedef struct
