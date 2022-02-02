@@ -79,6 +79,8 @@ static int _read_config_img(const char * filename)
 
     modbus_bus_t* bus = &_config.modbus_bus;
 
+    json_object_object_add(root, "version", json_object_new_int(PERSIST__VERSION));
+
     if (bus->version == MODBUS_BLOB_VERSION &&
         bus->max_dev_num == MODBUS_MAX_DEV &&
         bus->max_reg_num == MODBUS_DEV_REGS)
@@ -99,6 +101,23 @@ static int _write_config_img(const char * filename)
     if (root)
     {
         perror("Failed to read json.");
+        return EXIT_FAILURE;
+    }
+
+    struct json_object * obj = json_object_object_get(root, "version");
+    if (!obj)
+    {
+        fprintf(stderr, "No version given.\n");
+        json_object_put(root);
+        return EXIT_FAILURE;
+    }
+
+    _config.version = json_object_get_int(obj);
+
+    if (_config.version != PERSIST__VERSION)
+    {
+        fprintf(stderr, "Wrong version.\n");
+        json_object_put(root);
         return EXIT_FAILURE;
     }
 
