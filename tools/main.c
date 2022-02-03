@@ -301,9 +301,9 @@ static uint16_t _get_io_dir(const char * str, uint16_t current)
 static int _write_config_img(const char * filename)
 {
     struct json_object * root = json_object_from_fd(0);
-    if (root)
+    if (!root)
     {
-        perror("Failed to read json.");
+        log_error("Failed to read json : %s", json_util_get_last_err());
         return EXIT_FAILURE;
     }
 
