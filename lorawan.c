@@ -266,7 +266,7 @@ void lw_process(char* message)
         else
         {
             lw_debug("Setting not OKed. Retrying.");
-            lw_set_config(init_msgs[lw_state_machine.data.init_step]);
+            lw_set_config(init_msgs[--lw_state_machine.data.init_step]);
         }
         lw_spin_us(LW_MESSAGE_DELAY);
     }
