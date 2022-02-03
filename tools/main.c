@@ -197,7 +197,7 @@ static int _read_config_img(const char * filename)
 
         json_object_object_add(io_node, "pull", json_object_new_string(io_get_pull_str(state)));
 
-        char * dir = (state & IO_AS_INPUT)?"INPUT":"OUTPUT";
+        char * dir = (state & IO_AS_INPUT)?"IN":"OUT";
 
         json_object_object_add(io_node, "direction", json_object_new_string(dir));
 
@@ -293,7 +293,7 @@ static uint16_t _get_io_dir(const char * str, uint16_t current)
     if (strcasecmp(str, "OUT") == 0)
         return 0;
 
-    log_error("Unknown IO direction, default to as was.");
+    log_error("Unknown IO direction \"%s\", default to as was.", str);
     return current;
 }
 
