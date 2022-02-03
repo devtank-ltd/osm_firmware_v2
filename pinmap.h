@@ -132,17 +132,6 @@ GPIO15 B15  - HPM_EN
 GPIO16 D2                   IO 11
 */
 
-
-#define IO_PULL_MASK    0x0003
-#define IO_TYPE_MASK    0xF000
-
-#define IO_AS_INPUT     0x0100
-#define IO_DIR_LOCKED   0x0200
-#define IO_SPECIAL_EN   0x0400
-
-#define IO_PULSECOUNT   0x3000
-#define IO_ONEWIRE      0x4000
-
 #define IOS_STATE                                              \
 {                                                              \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 0   */         \

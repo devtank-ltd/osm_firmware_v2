@@ -1,6 +1,10 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+#ifdef STM32L4
+#include <libopencm3/stm32/gpio.h>
+#endif //STM32L4
+
 #include "base_types.h"
 #include "log.h"
 
@@ -11,6 +15,38 @@ char * skip_space(char * pos)
         pos++;
     return pos;
 }
+
+
+
+#define IO_PULL_STR_NONE "NONE"
+#define IO_PULL_STR_UP   "UP"
+#define IO_PULL_STR_DOWN "DOWN"
+
+
+char* io_get_pull_str(uint16_t io_state)
+{
+    switch(io_state & IO_PULL_MASK)
+    {
+        case GPIO_PUPD_PULLUP:   return IO_PULL_STR_UP;
+        case GPIO_PUPD_PULLDOWN: return IO_PULL_STR_DOWN;
+        default:
+            break;
+    }
+    return IO_PULL_STR_NONE;
+}
+
+
+bool io_is_special(uint16_t io_state)
+{
+    switch(io_state & IO_TYPE_MASK)
+    {
+        case IO_PULSECOUNT:
+        case IO_ONEWIRE:
+            return true;
+        default : return false;
+    }
+}
+
 
 
 bool decompose_uart_str(char             * str,

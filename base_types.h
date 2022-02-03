@@ -31,6 +31,26 @@ extern bool decompose_uart_str(char             * str,
 
 extern char * skip_space(char * pos);
 
+#define IO_PULL_MASK    0x0003
+#define IO_TYPE_MASK    0xF000
+
+#define IO_AS_INPUT     0x0100
+#define IO_DIR_LOCKED   0x0200
+#define IO_SPECIAL_EN   0x0400
+#define IO_OUT_ON       0x0800
+
+#define IO_PULSECOUNT   0x3000
+#define IO_ONEWIRE      0x4000
+
+#ifndef STM32L4
+#define GPIO_PUPD_NONE     0
+#define GPIO_PUPD_PULLUP   1
+#define GPIO_PUPD_PULLDOWN 2
+#endif //STM32L4
+
+extern char* io_get_pull_str(uint16_t io_state);
+extern bool  io_is_special(uint16_t io_state);
+
 #ifdef STM32L4
 #include <libopencm3/stm32/rcc.h>
 
