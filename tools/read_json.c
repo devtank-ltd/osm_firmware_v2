@@ -128,7 +128,7 @@ static bool _read_modbus_json(struct json_object * root)
             osm_config.modbus_bus.stopbits = UART_4_STOP;
         }
 
-        struct json_object * devices = json_object_object_get(root, "modbus_devices");
+        struct json_object * devices = json_object_object_get(modbus_bus, "modbus_devices");
         if (devices)
         {
             json_object_object_foreach(devices, dev_name, dev_node)
@@ -173,8 +173,8 @@ static bool _read_modbus_json(struct json_object * root)
                         }
 
                         modbus_reg_type_t type     = modbus_reg_type_from_str(json_object_get_string(reg_type), NULL);
-                        int               reg_addr = _get_defaulted_int(dev_node, "reg", 0);
-                        int               func     = _get_defaulted_int(dev_node, "func", 0);
+                        int               reg_addr = _get_defaulted_int(reg_node, "reg", 0);
+                        int               func     = _get_defaulted_int(reg_node, "func", 0);
 
                         if (!modbus_dev_add_reg(dev, reg_name, type, (uint8_t)func, (uint16_t)reg_addr))
                             return false;

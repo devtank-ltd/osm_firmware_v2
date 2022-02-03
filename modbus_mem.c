@@ -36,23 +36,23 @@ modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos)
 
     if (type[0] == 'U')
     {
-        if (type[1] == '1' && type[2] == '6' && type[3] == ' ')
+        if (type[1] == '1' && type[2] == '6' && (type[3] == ' '|| type[3] == 0))
         {
             if (pos)
                 *pos = type+3;
             return MODBUS_REG_TYPE_U16;
         }
-        else if (type[1] == '3' && type[2] == '2' && type[3] == ' ')
+        else if (type[1] == '3' && type[2] == '2' && (type[3] == ' '|| type[3] == 0))
         {
             if (pos)
                 *pos = type+3;
             return MODBUS_REG_TYPE_U32;
         }
     }
-    else if (type[0] == 'F' && type[1] == ' ')
+    else if (type[0] == 'F' && (type[1] == ' ' || type[1] == 0))
     {
         if (pos)
-            *pos = type+3;
+            *pos = type+2;
         return MODBUS_REG_TYPE_FLOAT;
     }
 
