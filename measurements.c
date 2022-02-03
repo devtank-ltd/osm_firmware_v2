@@ -755,6 +755,8 @@ void measurements_init(void)
         dst = &measurement_arr.def[pos++];
         strncpy(dst->base.name, MEASUREMENT_HTU21D_HUMI, sizeof(dst->base.name));
         dst->base.type        = HTU21D_HUM;
+        dst->base.samplecount = 5;
+        dst->base.interval    = 1;
         _measurement_fixup(dst);
 
         dst = &measurement_arr.def[pos++];
@@ -764,6 +766,7 @@ void measurements_init(void)
         dst->base.type        = BAT_MON;
         _measurement_fixup(dst);
 
+        dst = &measurement_arr.def[pos++];
         strncpy(dst->base.name, MEASUREMENT_PULSE_COUNT_NAME, sizeof(dst->base.name));
         dst->base.samplecount = 1;
         dst->base.interval    = 1;
