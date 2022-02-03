@@ -46,12 +46,6 @@ extern void log_out(char *fmt, ...)
 }
 
 
-extern modbus_dev_t* persist_get_modbus_devs(void)
-{
-    return _config.modbus_devices;
-}
-
-
 extern modbus_bus_t* persist_get_modbus_bus(void)
 {
     return &_config.modbus_bus;

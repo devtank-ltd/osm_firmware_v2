@@ -12,7 +12,7 @@ void modbus_log()
 
     log_out("Modbus @ %s %"PRIu32" %u%c%s", (bus->binary_protocol)?"BIN":"RTU", bus->baudrate, bus->databits, uart_parity_as_char(bus->parity), uart_stop_bits_as_str(bus->stopbits));
 
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = bus->modbus_devices;
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_dev_t * dev = modbus_devices + n;
@@ -73,7 +73,7 @@ static modbus_reg_t * _modbus_dev_get_reg_by_index(modbus_dev_t * dev, unsigned 
 
 unsigned      modbus_get_device_count(void)
 {
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = persist_get_modbus_bus()->modbus_devices;
     unsigned r = 0;
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
         if (modbus_devices[n].name[0])
@@ -84,7 +84,7 @@ unsigned      modbus_get_device_count(void)
 
 modbus_dev_t * modbus_get_device(unsigned index)
 {
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = persist_get_modbus_bus()->modbus_devices;
     if (index >= MODBUS_MAX_DEV)
         return NULL;
     return &modbus_devices[index];
@@ -92,7 +92,7 @@ modbus_dev_t * modbus_get_device(unsigned index)
 
 modbus_dev_t * modbus_get_device_by_id(unsigned slave_id)
 {
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = persist_get_modbus_bus()->modbus_devices;
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_dev_t * dev = &modbus_devices[n];
@@ -110,7 +110,7 @@ modbus_dev_t * modbus_get_device_by_name(char * name)
     unsigned name_len = strlen(name);
     if (name_len > MODBUS_NAME_LEN)
         return NULL;
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = persist_get_modbus_bus()->modbus_devices;
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_dev_t * dev = &modbus_devices[n];
@@ -185,7 +185,7 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
     if (len > MODBUS_NAME_LEN)
         return NULL;
 
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = persist_get_modbus_bus()->modbus_devices;
     for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_dev_t * dev = &modbus_devices[n];
@@ -348,7 +348,7 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
     if (!reg)
         return NULL;
 
-    modbus_dev_t * modbus_devices = persist_get_modbus_devs();
+    modbus_dev_t * modbus_devices = persist_get_modbus_bus()->modbus_devices;
     for(unsigned n=1; n < MODBUS_MAX_DEV; n++)
     {
         if ((uintptr_t)reg < (uintptr_t)&modbus_devices[n] &&

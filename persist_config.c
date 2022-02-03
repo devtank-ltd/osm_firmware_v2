@@ -252,12 +252,6 @@ modbus_bus_t * persist_get_modbus_bus(void)
 }
 
 
-modbus_dev_t * persist_get_modbus_devs(void)
-{
-    return persist_data.modbus_devices;
-}
-
-
 void    persistent_wipe(void)
 {
     flash_unlock();

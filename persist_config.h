@@ -32,7 +32,6 @@ extern bool persist_get_adc_midpoint(uint16_t* midpoint);
 extern uint16_t* persist_get_ios_state();
 
 extern modbus_bus_t * persist_get_modbus_bus(void);
-extern modbus_dev_t * persist_get_modbus_devs(void);
 
 
 extern void persistent_wipe();

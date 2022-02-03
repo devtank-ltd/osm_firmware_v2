@@ -40,9 +40,7 @@ typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
 
 #define MAX_MODBUS_PACKET_SIZE    127
 
-_Static_assert((sizeof(modbus_bus_t) + (sizeof(modbus_dev_t) * MODBUS_MAX_DEV)) <= MODBUS_MEMORY_SIZE,  "Memory allocated for modbus structure is not enough for limits given.");
-
-static modbus_bus_t * modbus_header = NULL;
+static modbus_bus_t * modbus_bus = NULL;
 static modbus_dev_t * modbus_devices = NULL;
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
@@ -129,11 +127,11 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t
     }
     modbus_debug("Modbus @ %s %u %u%c%s", (do_binary_framing)?"BIN":"RTU", speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_str(stop));
 
-    modbus_header->baudrate    = speed;
-    modbus_header->databits    = databits;
-    modbus_header->parity      = parity;
-    modbus_header->stopbits    = stop;
-    modbus_header->binary_protocol = do_binary_framing;
+    modbus_bus->baudrate    = speed;
+    modbus_bus->databits    = databits;
+    modbus_bus->parity      = parity;
+    modbus_bus->stopbits    = stop;
+    modbus_bus->binary_protocol = do_binary_framing;
 }
 
 
@@ -576,13 +574,13 @@ void modbus_save()
 
 void modbus_init(void)
 {
-    modbus_header = persist_get_modbus_bus();
+    modbus_bus = persist_get_modbus_bus();
 
-    modbus_devices = persist_get_modbus_devs();
+    modbus_devices = modbus_bus->modbus_devices;
 
-    if (modbus_header->version == MODBUS_BLOB_VERSION &&
-        modbus_header->max_dev_num == MODBUS_MAX_DEV      &&
-        modbus_header->max_reg_num == MODBUS_DEV_REGS)
+    if (modbus_bus->version == MODBUS_BLOB_VERSION &&
+        modbus_bus->max_dev_num == MODBUS_MAX_DEV      &&
+        modbus_bus->max_reg_num == MODBUS_DEV_REGS)
     {
         modbus_debug("Loaded modbus defs");
     }
@@ -590,19 +588,19 @@ void modbus_init(void)
     {
         modbus_debug("Failed to load modbus defs");
         memset(modbus_devices, 0, sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
-        modbus_header->version = MODBUS_BLOB_VERSION;
-        modbus_header->max_dev_num = MODBUS_MAX_DEV;
-        modbus_header->max_reg_num = MODBUS_DEV_REGS;
-        modbus_header->baudrate    = MODBUS_SPEED;
-        modbus_header->databits    = MODBUS_DATABITS;
-        modbus_header->parity      = MODBUS_PARITY;
-        modbus_header->stopbits    = MODBUS_STOP;
-        modbus_header->binary_protocol = false;
+        modbus_bus->version = MODBUS_BLOB_VERSION;
+        modbus_bus->max_dev_num = MODBUS_MAX_DEV;
+        modbus_bus->max_reg_num = MODBUS_DEV_REGS;
+        modbus_bus->baudrate    = MODBUS_SPEED;
+        modbus_bus->databits    = MODBUS_DATABITS;
+        modbus_bus->parity      = MODBUS_PARITY;
+        modbus_bus->stopbits    = MODBUS_STOP;
+        modbus_bus->binary_protocol = false;
     }
 
-    modbus_setup(modbus_header->baudrate,
-                 modbus_header->databits,
-                 modbus_header->parity,
-                 modbus_header->stopbits,
-                 modbus_header->binary_protocol);
+    modbus_setup(modbus_bus->baudrate,
+                 modbus_bus->databits,
+                 modbus_bus->parity,
+                 modbus_bus->stopbits,
+                 modbus_bus->binary_protocol);
 }

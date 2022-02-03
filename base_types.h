@@ -105,21 +105,6 @@ typedef enum
 
 typedef struct
 {
-    uint8_t version;
-    uint8_t max_dev_num;
-    uint8_t max_reg_num;
-    uint8_t _;
-    uint32_t __;
-    uint32_t baudrate;
-    uint8_t  binary_protocol; /* BIN or RTU */
-    uint8_t  databits;        /* 8? */
-    uint8_t  stopbits;        /* uart_stop_bits_t */
-    uint8_t  parity;          /* uart_parity_t */
-} __attribute__((__packed__)) modbus_bus_t;
-
-
-typedef struct
-{
     char              name[MODBUS_NAME_LEN];
     uint32_t          class_data_a; /* what ever child class wants */
     uint8_t           type; /*modbus_reg_type_t*/
@@ -137,3 +122,19 @@ typedef struct
     uint16_t       __; /* pad.*/
     modbus_reg_t   regs[MODBUS_DEV_REGS];
 } __attribute__((__packed__)) modbus_dev_t;
+
+
+typedef struct
+{
+    uint8_t version;
+    uint8_t max_dev_num;
+    uint8_t max_reg_num;
+    uint8_t _;
+    uint32_t __;
+    uint32_t baudrate;
+    uint8_t  binary_protocol; /* BIN or RTU */
+    uint8_t  databits;        /* 8? */
+    uint8_t  stopbits;        /* uart_stop_bits_t */
+    uint8_t  parity;          /* uart_parity_t */
+    modbus_dev_t            modbus_devices[MODBUS_MAX_DEV];
+} __attribute__((__packed__)) modbus_bus_t;
