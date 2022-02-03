@@ -165,9 +165,7 @@ static int _write_config_img(const char * filename)
         _config.modbus_bus.version     = MODBUS_BLOB_VERSION;
         _config.modbus_bus.max_dev_num = MODBUS_MAX_DEV;
         _config.modbus_bus.max_reg_num = MODBUS_DEV_REGS;
-
-
-/*binary_protocol*/
+        _config.modbus_bus.binary_protocol = (uint8_t)json_object_get_boolean(json_object_object_get(modbus_bus, "binary_protocol"));
 
 
         char con_str[16];
@@ -245,7 +243,7 @@ static int _write_config_img(const char * filename)
                             goto bad_exit;
                         }
 
-                        reg->type = modbus_reg_type_from_str(json_object_get_string(reg_type));
+                        reg->type = modbus_reg_type_from_str(json_object_get_string(reg_type), NULL);
                         if (reg->type = MODBUS_REG_TYPE_INVALID)
                         {
                             log_error("Invalid reg type for modbus register %s", reg_name);
@@ -269,6 +267,8 @@ static int _write_config_img(const char * filename)
                 }
             }
         }
+        log_out("Loaded modbus.");
+        modbus_log();
     }
 
 
