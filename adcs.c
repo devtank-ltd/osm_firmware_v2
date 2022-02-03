@@ -91,7 +91,6 @@ static all_adcs_buf_t               adcs_buffer;
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
 static uint16_t                     midpoint;
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
-static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
 
 static volatile bool                adcs_cc_running                                        = false;
 static volatile bool                adcs_bat_running                                       = false;
@@ -164,6 +163,7 @@ bool adcs_cc_set_midpoint(uint16_t new_midpoint)
 
 
 #ifdef __ADC_RMS_FULL__
+
 static float _Q_rsqrt( float number )
 {
     long i;
@@ -184,17 +184,22 @@ static float _Q_rsqrt( float number )
     return y;
 }
 
+
 static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms)
 {
     uint64_t sum = 0;
+    int64_t inter_val;
     for (unsigned i = 0; i < buff_len; i++)
     {
-        sum += buff[i] * buff[i];
+        inter_val = buff[i] - midpoint;
+        inter_val *= inter_val;
+        sum += inter_val;
     }
-    *adc_rms = midpoint - 1/_Q_rsqrt( ( sum / ADCS_NUM_SAMPLES ) - midpoint );
+    *adc_rms = midpoint - 1/_Q_rsqrt( sum / ADCS_NUM_SAMPLES ) / 2;
     return true;
 }
 #else
+static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
 static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms)
 {
     /**
