@@ -29,6 +29,37 @@ void modbus_log()
     }
 }
 
+modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos)
+{
+    if (!type)
+        return MODBUS_REG_TYPE_INVALID;
+
+    if (type[0] == 'U')
+    {
+        if (type[1] == '1' && type[2] == '6' && type[3] == ' ')
+        {
+            if (pos)
+                *pos = type+3;
+            return MODBUS_REG_TYPE_U16;
+        }
+        else if (type[1] == '3' && type[2] == '2' && type[3] == ' ')
+        {
+            if (pos)
+                *pos = type+3;
+            return MODBUS_REG_TYPE_U32;
+        }
+    }
+    else if (type[0] == 'F' && type[1] == ' ')
+    {
+        if (pos)
+            *pos = type+3;
+        return MODBUS_REG_TYPE_FLOAT;
+    }
+
+    log_out("Unknown modbus reg type.");
+    return MODBUS_REG_TYPE_INVALID;
+}
+
 
 char * modbus_reg_type_get_str(modbus_reg_type_t type)
 {

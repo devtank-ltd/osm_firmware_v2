@@ -40,12 +40,6 @@ typedef struct
 
 
 
-char * skip_space(char * pos)
-{
-    while(*pos == ' ')
-        pos++;
-    return pos;
-}
 
 static char * skip_to_space(char * pos)
 {
@@ -397,35 +391,11 @@ static void modbus_add_reg_cb(char * args)
 
     pos = skip_space(pos);
 
-    modbus_reg_type_t type = MODBUS_REG_TYPE_INVALID;
-
-    if (pos[0] == 'U')
-    {
-        if (pos[1] == '1' && pos[2] == '6' && pos[3] == ' ')
-        {
-            type = MODBUS_REG_TYPE_U16;
-        }
-        else if (pos[1] == '3' && pos[2] == '2' && pos[3] == ' ')
-        {
-            type = MODBUS_REG_TYPE_U32;
-        }
-        else
-        {
-            log_out("Unknown modbus reg type.");
-            return;
-        }
-        pos = skip_space(pos + 3);
-    }
-    else if (pos[0] == 'F' && pos[1] == ' ')
-    {
-        type = MODBUS_REG_TYPE_FLOAT;
-        pos = skip_space(pos + 1);
-    }
-    else
-    {
-        log_out("Unknown modbus reg type.");
+    modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
+    if (type == MODBUS_REG_TYPE_INVALID)
         return;
-    }
+
+    pos = skip_space(pos);
 
     char * name = pos;
 
@@ -540,7 +510,7 @@ static void cc_cb(char* args)
         log_out("Could not get adc value.");
         return;
     }
-    
+
     char temp[32] = "";
 
     value_to_str(&value, temp, sizeof(temp));

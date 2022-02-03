@@ -1,11 +1,12 @@
 
 BUILD_DIR := build
 
-CFLAGS := -I.. $(shell pkg-config --cflags json-c)
+CFLAGS := -I.. $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 CFLAGS += -MMD -MP
 LDFLAGS := $(shell pkg-config --libs json-c)
 
 SRC := main.c \
+       base.c \
        modbus_mem.c
 
 OBJS := $(SRC:%.c=$(BUILD_DIR)/%.o)

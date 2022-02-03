@@ -1,4 +1,5 @@
 firmware_SOURCES := main.c \
+           base.c \
            log.c \
            sai.c \
            uarts.c \

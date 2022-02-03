@@ -5,6 +5,7 @@
 #include "pinmap.h"
 extern void           modbus_log();
 
+extern modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos);
 extern char *         modbus_reg_type_get_str(modbus_reg_type_t type);
 
 extern unsigned       modbus_get_device_count(void);
