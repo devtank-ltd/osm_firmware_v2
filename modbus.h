@@ -23,6 +23,4 @@ extern uint32_t modbus_stop_delay(void);
 
 extern void  modbus_log();
 
-extern void modbus_save();
-
 extern void modbus_init(void);

@@ -70,7 +70,7 @@ void persistent_init(void)
 }
 
 
-void persist_commit(void)
+void persist_commit()
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
@@ -165,31 +165,9 @@ bool persist_get_lw_app_key(char app_key[LW__APP_KEY_LEN+1])
 }
 
 
-bool persist_get_measurements(measurement_def_base_t** arr)
+measurement_def_t * persist_get_measurements(void)
 {
-    if (!persist_data_valid || !arr)
-    {
-        return false;
-    }
-    *arr = persist_data.measurements_arr;
-    return true;
-}
-
-
-void persist_set_measurements(measurement_def_t * arr)
-{
-    unsigned index = 0;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-    {
-        measurement_def_t * def = arr + i;
-        if (def->base.name[0]) /* Skip holes */
-            persist_data.measurements_arr[index++] = def->base;
-    }
-    /* Wipe unused entries */
-    for (unsigned i = index; i < MEASUREMENTS_MAX_NUMBER; i++)
-        memset(persist_data.measurements_arr + i, 0, sizeof(measurement_def_base_t));
-
-    persist_commit();
+    return persist_data.measurements_arr;
 }
 
 

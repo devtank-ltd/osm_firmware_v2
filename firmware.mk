@@ -16,6 +16,7 @@ firmware_SOURCES := main.c \
            persist_config.c \
            lorawan.c \
            measurements.c \
+           measurements_mem.c \
            modbus_measurements.c \
            update.c \
            adcs.c \

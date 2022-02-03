@@ -38,8 +38,6 @@
 
 #define ADCS_MON_DEFAULT_COLLECTION_TIME    100;
 
-#define ADC_MAX_VAL   4095
-#define ADC_MAX_MV    3300
 
 #define ADC_BAT_MUL   10000UL
 #define ADC_BAT_MAX_MV 1343 /* 1.343 volts */

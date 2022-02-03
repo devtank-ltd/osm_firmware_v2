@@ -75,22 +75,16 @@ bool modbus_measurement_add(modbus_reg_t * reg)
 
     measurement_def_t meas_def;
 
-    modbus_reg_get_name(reg, meas_def.base.name);
+    modbus_reg_get_name(reg, meas_def.name);
 
-    measurements_del(meas_def.base.name);
+    measurements_del(meas_def.name);
 
-    meas_def.base.name[MODBUS_NAME_LEN] = 0;
-    meas_def.base.samplecount = 1;
-    meas_def.base.interval    = 1;
-    meas_def.base.type        = MODBUS;
-    meas_def.collection_time  = MODBUS_COLLECTION_MS;
-    meas_def.init_cb          = modbus_measurements_init;
-    meas_def.get_cb           = modbus_measurements_get;
+    meas_def.name[MODBUS_NAME_LEN] = 0;
+    meas_def.samplecount = 1;
+    meas_def.interval    = 1;
+    meas_def.type        = MODBUS;
 
-    if (!measurements_add(&meas_def))
-        return false;
-
-    return measurements_save();
+    return measurements_add(&meas_def);
 }
 
 
@@ -101,7 +95,6 @@ void modbus_measurement_del_reg(char * name)
         return;
     measurements_del(name);
     modbus_reg_del(reg);
-    measurements_save();
 }
 
 void modbus_measurement_del_dev(char * dev_name)
@@ -120,5 +113,4 @@ void modbus_measurement_del_dev(char * dev_name)
         reg = modbus_dev_get_reg(dev, 0);
     }
     modbus_dev_del(dev);
-    measurements_save();
 }

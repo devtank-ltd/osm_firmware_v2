@@ -20,29 +20,6 @@
 #include "pulsecount.h"
 
 
-#define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
-#define MEASUREMENTS__STR_SIZE      16
-
-#define MEASUREMENTS__PAYLOAD_VERSION       (uint8_t)0x01
-#define MEASUREMENTS__DATATYPE_SINGLE       (uint8_t)0x01
-#define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
-
-#define MEASUREMENT_PM10_NAME "PM10"
-
-#define MEASUREMENT_PM25_NAME "PM25"
-
-#define MEASUREMENT_CURRENT_CLAMP_NAME "CC1"
-
-#define MEASUREMENT_W1_PROBE_NAME "TMP2"
-
-#define MEASUREMENT_HTU21D_TEMP "TEMP"
-
-#define MEASUREMENT_HTU21D_HUMI "HUMI"
-
-#define MEASUREMENT_BATMON_NAME "BAT"
-
-#define MEASUREMENT_PULSE_COUNT_NAME "PCNT"
-
 typedef struct
 {
     value_t     sum;
@@ -56,7 +33,8 @@ typedef struct
 
 typedef struct
 {
-    measurement_def_t   def[MEASUREMENTS_MAX_NUMBER];
+    measurement_def_t * def;
+    measurement_inf_t   inf[MEASUREMENTS_MAX_NUMBER];
     measurement_data_t  data[MEASUREMENTS_MAX_NUMBER];
 } measurement_arr_t;
 
@@ -85,19 +63,10 @@ uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
 
 static bool measurements_get_measurement_def(char* name, measurement_def_t** measurement_def)
 {
-    if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
+    if (!measurement_def)
         return false;
-    measurement_def_t* t_measurement_def;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-    {
-        t_measurement_def = &measurement_arr.def[i];
-        if (strncmp(t_measurement_def->base.name, name, MEASURE_NAME_LEN) == 0)
-        {
-            *measurement_def = t_measurement_def;
-            return true;
-        }
-    }
-    return false;
+    *measurement_def = measurements_array_find(measurement_arr.def, name);
+    return (*measurement_def != NULL);
 }
 
 
@@ -174,17 +143,17 @@ static bool measurements_arr_append_value(value_t * value)
 
 static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_data_t* measurement_data)
 {
-    bool single = measurement_def->base.samplecount == 1;
+    bool single = measurement_def->samplecount == 1;
 
     value_t mean;
     value_t num_samples = value_from(measurement_data->num_samples);
     if (!value_div(&mean, &measurement_data->sum, &num_samples))
     {
-        log_error("Failed to average %s value.", measurement_def->base.name);
+        log_error("Failed to average %s value.", measurement_def->name);
     }
 
     bool r = 0;
-    r |= !measurements_arr_append(*(int32_t*)measurement_def->base.name);
+    r |= !measurements_arr_append(*(int32_t*)measurement_def->name);
     if (single)
     {
         r |= !measurements_arr_append((int8_t)MEASUREMENTS__DATATYPE_SINGLE);
@@ -270,21 +239,21 @@ static void measurements_send(void)
     {
         def = &measurement_arr.def[i];
         data = &measurement_arr.data[i];
-        if (def->base.interval && (interval_count % def->base.interval == 0))
+        if (def->interval && (interval_count % def->interval == 0))
         {
             if (data->sum.type == VALUE_UNSET || data->num_samples == 0)
             {
                 data->num_samples = 0;
                 data->num_samples_init = 0;
                 data->num_samples_collected = 0;
-                log_error("Measurement \"%s\" requested but value not set.", def->base.name);
+                log_error("Measurement \"%s\" requested but value not set.", def->name);
                 continue;
             }
             uint16_t prev_measurements_hex_arr_pos = measurements_hex_arr_pos;
             if (!measurements_to_arr(def, data))
             {
                 measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
-                measurements_debug("Failed to queue send of  \"%s\".", def->base.name);
+                measurements_debug("Failed to queue send of  \"%s\".", def->name);
                 _message_prev_start_pos = _message_start_pos;
                 _message_start_pos = i;
                 break;
@@ -331,10 +300,10 @@ void lw_sent_ack(void)
 {
     for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
     {
-        measurement_def_t* def = &measurement_arr.def[i];
+        measurement_inf_t* inf = &measurement_arr.inf[i];
 
-        if (def->acked_cb)
-            def->acked_cb();
+        if (inf->acked_cb)
+            inf->acked_cb();
     }
 
     if (pending_send)
@@ -359,23 +328,24 @@ static void measurements_sample(void)
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurement_def_t*  def  = &measurement_arr.def[i];
+        measurement_inf_t*  inf  = &measurement_arr.inf[i];
         measurement_data_t* data = &measurement_arr.data[i];
 
         // Breakout if the interval is 0 or has no name
-        if (def->base.interval == 0 || !def->base.name[0])
+        if (def->interval == 0 || !def->name[0])
         {
             continue;
         }
 
-        sample_interval = def->base.interval * INTERVAL__TRANSMIT_MS / def->base.samplecount;
+        sample_interval = def->interval * INTERVAL__TRANSMIT_MS / def->samplecount;
         time_since_interval = since_boot_delta(now, last_sent_ms);
 
         // If it takes time to get a sample, it is begun here.
-        time_init = (data->num_samples_init * sample_interval) + sample_interval/2 - def->collection_time;
+        time_init = (data->num_samples_init * sample_interval) + sample_interval/2 - inf->collection_time;
         if (time_since_interval >= time_init)
         {
             data->num_samples_init++;
-            if (!def->init_cb(def->base.name))
+            if (!inf->init_cb(def->name))
             {
                 data->num_samples_collected++;
             }
@@ -393,9 +363,9 @@ static void measurements_sample(void)
         {
             data->num_samples_collected++;
             new_value = VALUE_EMPTY;
-            if (!def->get_cb(def->base.name, &new_value))
+            if (!inf->get_cb(def->name, &new_value))
             {
-                log_error("Could not get the %s value.", def->base.name);
+                log_error("Could not get the %s value.", def->name);
                 return;
             }
             if (data->min.type == VALUE_UNSET)
@@ -415,7 +385,7 @@ static void measurements_sample(void)
             {
                 if (!value_add(&data->sum, &data->sum, &new_value))
                 {
-                    log_error("Failed to add %s value.", def->base.name);
+                    log_error("Failed to add %s value.", def->name);
                 }
             }
 
@@ -428,7 +398,7 @@ static void measurements_sample(void)
             {
                 data->min = new_value;
             }
-            measurements_debug( "New %s reading", def->base.name);
+            measurements_debug( "New %s reading", def->name);
             log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
             log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
             log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
@@ -450,7 +420,7 @@ uint16_t measurements_num_measurements(void)
         measurement_def_t*  def  = &measurement_arr.def[i];
 
         // Breakout if the interval is 0 or has no name
-        if (def->base.interval == 0 || !def->base.name[0])
+        if (def->interval == 0 || !def->name[0])
             continue;
 
         count++;
@@ -466,12 +436,12 @@ bool measurements_add(measurement_def_t* measurement_def)
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurement_def_iter = &measurement_arr.def[i];
-        if (strncmp(measurement_def_iter->base.name, measurement_def->base.name, sizeof(measurement_def_iter->base.name)) == 0)
+        if (strncmp(measurement_def_iter->name, measurement_def->name, sizeof(measurement_def_iter->name)) == 0)
         {
-            log_error("Tried to add measurement with the same name: %s", measurement_def->base.name);
+            log_error("Tried to add measurement with the same name: %s", measurement_def->name);
             return false;
         }
-        if (!measurement_arr.def[i].base.name[0])
+        if (!measurement_arr.def[i].name[0])
         {
             measurement_data_t measurement_data = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0};
             measurement_arr.def[i] = *measurement_def;
@@ -479,7 +449,7 @@ bool measurements_add(measurement_def_t* measurement_def)
             return true;
         }
     }
-    log_error("Could not find a space to add %s", measurement_def->base.name);
+    log_error("Could not find a space to add %s", measurement_def->name);
     return false;
 }
 
@@ -488,9 +458,10 @@ bool measurements_del(char* name)
 {
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        if (strcmp(name, measurement_arr.def[i].base.name) == 0)
+        if (strcmp(name, measurement_arr.def[i].name) == 0)
         {
             memset(&measurement_arr.def[i], 0, sizeof(measurement_def_t));
+            memset(&measurement_arr.inf[i], 0, sizeof(measurement_inf_t));
             memset(&measurement_arr.data[i], 0, sizeof(measurement_data_t));
             return true;
         }
@@ -506,7 +477,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
     {
         return false;
     }
-    measurement_def->base.interval = interval;
+    measurement_def->interval = interval;
     return true;
 }
 
@@ -518,7 +489,7 @@ bool     measurements_get_interval(char* name, uint8_t * interval)
     {
         return false;
     }
-    *interval = measurement_def->base.interval;
+    *interval = measurement_def->interval;
     return true;
 }
 
@@ -535,7 +506,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
     {
         return false;
     }
-    measurement_def->base.samplecount = samplecount;
+    measurement_def->samplecount = samplecount;
     return true;
 }
 
@@ -547,7 +518,7 @@ bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
     {
         return false;
     }
-    *samplecount = measurement_def->base.samplecount;
+    *samplecount = measurement_def->samplecount;
     return true;
 }
 
@@ -571,66 +542,59 @@ void measurements_loop_iteration(void)
 }
 
 
-bool measurements_save(void)
+static void _measurement_fixup(measurement_def_t * def, measurement_inf_t * inf)
 {
-    persist_set_measurements(measurement_arr.def);
-    return true;
-}
-
-
-static void _measurement_fixup(measurement_def_t* def)
-{
-    def->acked_cb = NULL;
-    switch(def->base.type)
+    inf->acked_cb = NULL;
+    switch(def->type)
     {
         case PM10:
-            def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
-            def->init_cb         = hpm_init;
-            def->get_cb          = hpm_get_pm10;
+            inf->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
+            inf->init_cb         = hpm_init;
+            inf->get_cb          = hpm_get_pm10;
             break;
         case PM25:
-            def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
-            def->init_cb         = hpm_init;
-            def->get_cb          = hpm_get_pm25;
+            inf->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
+            inf->init_cb         = hpm_init;
+            inf->get_cb          = hpm_get_pm25;
             break;
         case MODBUS:
-            def->collection_time = modbus_measurements_collection_time();
-            def->init_cb         = modbus_measurements_init;
-            def->get_cb          = modbus_measurements_get;
+            inf->collection_time = modbus_measurements_collection_time();
+            inf->init_cb         = modbus_measurements_init;
+            inf->get_cb          = modbus_measurements_get;
             break;
         case CURRENT_CLAMP:
-            def->collection_time = adcs_cc_collection_time();
-            def->init_cb         = adcs_cc_begin;
-            def->get_cb          = adcs_cc_get;
+            inf->collection_time = adcs_cc_collection_time();
+            inf->init_cb         = adcs_cc_begin;
+            inf->get_cb          = adcs_cc_get;
             break;
         case W1_PROBE:
-            def->collection_time = w1_collection_time();
-            def->init_cb         = w1_measurement_init;
-            def->get_cb          = w1_measurement_collect;
+            inf->collection_time = w1_collection_time();
+            inf->init_cb         = w1_measurement_init;
+            inf->get_cb          = w1_measurement_collect;
             break;
         case HTU21D_TMP:
-            def->collection_time = htu21d_measurements_collection_time();
-            def->init_cb         = htu21d_temp_measurements_init;
-            def->get_cb          = htu21d_temp_measurements_get;
+            inf->collection_time = htu21d_measurements_collection_time();
+            inf->init_cb         = htu21d_temp_measurements_init;
+            inf->get_cb          = htu21d_temp_measurements_get;
             break;
         case HTU21D_HUM:
-            def->collection_time = htu21d_measurements_collection_time();
-            def->init_cb         = htu21d_humi_measurements_init;
-            def->get_cb          = htu21d_humi_measurements_get;
+            inf->collection_time = htu21d_measurements_collection_time();
+            inf->init_cb         = htu21d_humi_measurements_init;
+            inf->get_cb          = htu21d_humi_measurements_get;
             break;
         case BAT_MON:
-            def->collection_time = adcs_bat_collection_time();
-            def->init_cb         = adcs_bat_begin;
-            def->get_cb          = adcs_bat_get;
+            inf->collection_time = adcs_bat_collection_time();
+            inf->init_cb         = adcs_bat_begin;
+            inf->get_cb          = adcs_bat_get;
             break;
         case PULSE_COUNT:
-            def->collection_time = pulsecount_collection_time();
-            def->init_cb         = pulsecount_begin;
-            def->get_cb          = pulsecount_get;
-            def->acked_cb        = pulsecount_ack;
+            inf->collection_time = pulsecount_collection_time();
+            inf->init_cb         = pulsecount_begin;
+            inf->get_cb          = pulsecount_get;
+            inf->acked_cb        = pulsecount_ack;
             break;
         default:
-            log_error("Unknown measurement type! : 0x%"PRIx8, def->base.type);
+            log_error("Unknown measurement type! : 0x%"PRIx8, def->type);
     }
 }
 
@@ -643,7 +607,7 @@ void measurements_print(void)
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurement_def = &measurement_arr.def[i];
-        char id_start = measurement_def->base.name[0];
+        char id_start = measurement_def->name[0];
         if (!id_start || id_start == 0xFF)
         {
             continue;
@@ -652,126 +616,50 @@ void measurements_print(void)
         {
             ; // Do something
         }
-        log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurement_def->base.name, measurement_def->base.interval, transmit_interval, measurement_def->base.samplecount);
-    }
-}
-
-
-void measurements_print_persist(void)
-{
-    measurement_def_base_t* measurement_def_base;
-    measurement_def_base_t* persistent_measurement_arr;
-    if (!persist_get_measurements(&persistent_measurement_arr))
-    {
-        log_error("Cannot retrieve stored measurements.");
-        return;
-    }
-    log_out("Stored Measurements");
-    log_out("Name\tInterval\tSample Count");
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-    {
-        measurement_def_base = &persistent_measurement_arr[i];
-        char id_start = measurement_def_base->name[0];
-        if (!id_start || id_start == 0xFF)
-        {
-            continue;
-        }
-        if ( 0 /* uart nearly full */ )
-        {
-            ; // Do something
-        }
-        log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, transmit_interval, measurement_def_base->samplecount);
+        log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurement_def->name, measurement_def->interval, transmit_interval, measurement_def->samplecount);
     }
 }
 
 
 void measurements_init(void)
 {
-    measurement_def_base_t * persistent_measurement_arr = NULL;
+    measurement_arr.def = persist_get_measurements();
 
-    if (persist_get_measurements(&persistent_measurement_arr) && persistent_measurement_arr != NULL)
+    unsigned found = 0;
+
+    for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
     {
-        measurements_debug("Loading measurements.");
-        for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
+        measurement_def_t* def = &measurement_arr.def[n];
+        char id_start = def->name[0];
+
+        if (!id_start || id_start == 0xFF)
         {
-            measurement_def_base_t* src = &persistent_measurement_arr[n];
-            measurement_def_t     * dst = &measurement_arr.def[n];
-
-            char id_start = src->name[0];
-
-            if (!id_start || id_start == 0xFF)
-            {
-                dst->base.name[0] = 0;
-                continue;
-            }
-
-            dst->base = *src;
-
-            _measurement_fixup(dst);
+            def->name[0] = 0;
+            continue;
         }
+
+        found++;
     }
-    else
+
+    if (!found)
     {
         log_error("No persistent loaded, load defaults.");
-        /* Add defaults. */
-        measurement_def_t * dst;
-        unsigned pos = 0;
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_PM10_NAME, sizeof(dst->base.name));
-        dst->base.interval = 1;
-        dst->base.samplecount = 5;
-        dst->base.type = PM10;
-        _measurement_fixup(dst);
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_PM25_NAME, sizeof(dst->base.name));
-        dst->base.interval = 1;
-        dst->base.samplecount = 5;
-        dst->base.type = PM25;
-        _measurement_fixup(dst);
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_CURRENT_CLAMP_NAME, sizeof(dst->base.name));
-        dst->base.interval = 1;
-        dst->base.samplecount = 25;
-        dst->base.type = CURRENT_CLAMP;
-        _measurement_fixup(dst);
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_W1_PROBE_NAME, sizeof(dst->base.name));
-        dst->base.interval = 1;
-        dst->base.samplecount = 5;
-        dst->base.type = W1_PROBE;
-        _measurement_fixup(dst);
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_HTU21D_TEMP, sizeof(dst->base.name));
-        dst->base.samplecount = 2;
-        dst->base.interval    = 1;
-        dst->base.type        = HTU21D_TMP;
-        _measurement_fixup(dst);
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_HTU21D_HUMI, sizeof(dst->base.name));
-        dst->base.type        = HTU21D_HUM;
-        _measurement_fixup(dst);
-
-        dst = &measurement_arr.def[pos++];
-        strncpy(dst->base.name, MEASUREMENT_BATMON_NAME, sizeof(dst->base.name));
-        dst->base.samplecount = 5;
-        dst->base.interval    = 1;
-        dst->base.type        = BAT_MON;
-        _measurement_fixup(dst);
-
-        strncpy(dst->base.name, MEASUREMENT_PULSE_COUNT_NAME, sizeof(dst->base.name));
-        dst->base.samplecount = 1;
-        dst->base.interval    = 1;
-        dst->base.type        = PULSE_COUNT;
-        _measurement_fixup(dst);
-
-        measurements_save();
+        measurements_add_defaults(measurement_arr.def);
     }
+    else measurements_debug("Loading measurements.");
+
+    for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
+    {
+        measurement_def_t* def = &measurement_arr.def[n];
+
+        if (!def->name[0])
+            continue;
+
+        _measurement_fixup(def, &measurement_arr.inf[n]);
+    }
+
+    if (!found)
+        persist_commit();
 
     if (persist_get_mins_interval(&transmit_interval))
     {

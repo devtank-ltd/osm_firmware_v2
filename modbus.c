@@ -566,12 +566,6 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 }
 
 
-void modbus_save()
-{
-    persist_commit();
-}
-
-
 void modbus_init(void)
 {
     modbus_bus = persist_get_modbus_bus();

@@ -226,7 +226,6 @@ static void interval_cb(char * args)
 
         if (measurements_set_interval(name, new_interval))
         {
-            measurements_save();
             log_out("Changed %s interval to %"PRIu8, name, new_interval);
         }
         else log_out("Unknown measuremnt");
@@ -262,7 +261,6 @@ static void samplecount_cb(char * args)
 
         if (measurements_set_samplecount(name, new_samplecount))
         {
-            measurements_save();
             log_out("Changed %s samplecount to %"PRIu8, name, new_samplecount);
         }
         else log_out("Unknown measuremnt");
@@ -437,7 +435,6 @@ static void modbus_get_reg_cb(char * args)
 static void measurements_cb(char *args)
 {
     measurements_print();
-    measurements_print_persist();
 }
 
 
@@ -446,11 +443,6 @@ static void measurements_rm_cb(char* args)
     if (!measurements_del(args))
     {
         log_out("Could not remove measurment.");
-        return;
-    }
-    if (!measurements_save())
-    {
-        log_out("Failed to commit remove to persistent.");
         return;
     }
 }
@@ -652,7 +644,7 @@ void cmds_process(char * command, unsigned len)
         { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg},
         { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev},
         { "mb_log",       "Show modbus setup",        modbus_log},
-        { "mb_save",      "Save modbus setup",        modbus_save},
+        { "save",         "Save config",              persist_commit},
         { "measurements", "Print measurements",       measurements_cb},
         { "measurements_rm", "Remove measurement",    measurements_rm_cb},
         { "fw+",          "Add chunk of new fw.",     fw_add},

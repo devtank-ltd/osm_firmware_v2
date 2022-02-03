@@ -19,7 +19,9 @@
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
-#define ADCS_NUM_SAMPLES            480
+#define ADC_MAX_VAL       4095
+#define ADC_MAX_MV        3300
+#define ADCS_NUM_SAMPLES   480
 
 #define UART1_PRIORITY 3
 #define UART2_PRIORITY 1

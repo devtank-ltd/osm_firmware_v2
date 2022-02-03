@@ -7,7 +7,8 @@ LDFLAGS := $(shell pkg-config --libs json-c)
 
 SRC := main.c \
        base.c \
-       modbus_mem.c
+       modbus_mem.c \
+       measurements_mem.c
 
 OBJS := $(SRC:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:%.o=%.d)

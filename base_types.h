@@ -97,7 +97,7 @@ typedef struct
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type;                                      // measurement_def_type_t
-} measurement_def_base_t;
+} measurement_def_t;
 
 #define MODBUS_READ_HOLDING_FUNC 3
 #define MODBUS_READ_INPUT_FUNC 4
