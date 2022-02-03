@@ -16,7 +16,7 @@
 
 static bool                 persist_data_valid = false;
 static bool                 persist_data_lw_valid = false;
-static persist_storage_t    persist_data;
+static persist_storage_t    persist_data __attribute__((aligned (16)));
 
 
 static void _lw_config_valid(void)

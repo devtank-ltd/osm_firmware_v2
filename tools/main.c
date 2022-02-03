@@ -1,8 +1,11 @@
 #include "json_x_img.h"
 
 
-persist_storage_t osm_config = {.version = PERSIST__VERSION,
-                                .log_debug_mask = DEBUG_SYS};
+persist_storage_t osm_config __attribute__((aligned (16))) =
+{
+    .version = PERSIST__VERSION,
+    .log_debug_mask = DEBUG_SYS
+};
 
 
 void log_debug(uint32_t flag, char *fmt, ...)
