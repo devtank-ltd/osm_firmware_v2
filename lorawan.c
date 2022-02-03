@@ -44,7 +44,7 @@
 #define LW_FMT__TEMPERATURE         "%02X%02X%04X"
 
 #define LW_ID_CMD_NAME  "CMD"
-#define LW_ID_CMD       0x444d43
+#define LW_ID_CMD       0x01434d44
 
 
 typedef struct
@@ -479,16 +479,9 @@ static void lw_handle_unsol(char* message)
 
     char* p = incoming_pl.data;
 
-    char pl_loc_s[3] = "";
-    strncpy(pl_loc_s, p, 2);
-    uint8_t pl_loc = strtoul(pl_loc_s, NULL, 16);
-    pl_loc++;
-
-    p += 2;
-
-    char pl_id_s[3] = "";
-    strncpy(pl_id_s, p, 2);
-    uint64_t pl_id = strtoul(pl_id_s, NULL, 16);
+    char pl_id_s[8] = "";
+    strncpy(pl_id_s, p, 8);
+    uint32_t pl_id = strtoul(pl_id_s, NULL, 16);
 
     p += 8;
 
