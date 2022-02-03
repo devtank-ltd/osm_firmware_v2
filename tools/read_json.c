@@ -269,6 +269,7 @@ static bool _read_ios_json(struct json_object * root)
                 state |= (json_object_get_boolean(json_object_object_get(io_node, "out_high")))?IO_OUT_ON:0;
 
             osm_config.ios_state[index] = state | (pull | dir | special);
+            index++;
         }
     }
 
