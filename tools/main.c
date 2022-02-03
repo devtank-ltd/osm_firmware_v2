@@ -61,8 +61,6 @@ extern modbus_bus_t* persist_get_modbus_bus(void)
     return &_config.modbus_bus;
 }
 
-static char _input_buffer[1024*1024];
-
 
 static int _read_config_img(const char * filename)
 {
