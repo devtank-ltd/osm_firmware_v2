@@ -14,7 +14,17 @@ static bool _get_string_buf(struct json_object * root, char * name, char * buf, 
     struct json_object * tmp = json_object_object_get(root, name);
     if (!tmp)
         return false;
-    snprintf(buf, len, json_object_get_string(tmp));
+
+    const char * str = json_object_get_string(tmp);
+    unsigned str_len = strlen(str);
+
+    if (str_len > len)
+        return false;
+
+    memcpy(buf, str, str_len);
+    if (len > str_len)
+        buf[str_len] = 0;
+
     return true;
 }
 
