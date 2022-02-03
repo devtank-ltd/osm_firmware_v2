@@ -40,5 +40,5 @@ typedef struct
     uint16_t                _;
     uint32_t                __;
     uint64_t                ___;
-    uint8_t                ios_state[IOS_COUNT * 2];
+    uint16_t                ios_state[IOS_COUNT];
 } __attribute__((__packed__)) persist_storage_t;

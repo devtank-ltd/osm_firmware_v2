@@ -123,7 +123,7 @@ static bool _write_ios_json(struct json_object * root)
 
         json_object_object_add(io_node, "direction", json_object_new_string(dir));
 
-        if (io_is_special(state))
+        if (io_is_special(state) && state & IO_SPECIAL_EN)
             json_object_object_add(io_node, "use_special", json_object_new_boolean(true));
 
         if (!(state & IO_AS_INPUT) && (state & IO_OUT_ON))

@@ -15,7 +15,7 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
-CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter
+CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
 CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
