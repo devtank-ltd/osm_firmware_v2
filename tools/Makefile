@@ -2,7 +2,7 @@
 BUILD_DIR := build
 
 CFLAGS := -I.. $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
-CFLAGS += -MMD -MP
+CFLAGS += -MMD -MP -g
 LDFLAGS := $(shell pkg-config --libs json-c)
 
 SRC := main.c \
