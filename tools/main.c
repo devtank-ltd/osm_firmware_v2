@@ -3,7 +3,7 @@
 
 persist_storage_t osm_config __attribute__((aligned (16))) =
 {
-    .version = PERSIST__VERSION,
+    .version = PERSIST_VERSION,
     .log_debug_mask = DEBUG_SYS
 };
 

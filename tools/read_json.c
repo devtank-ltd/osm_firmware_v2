@@ -295,7 +295,7 @@ int read_json_to_img(const char * filename)
     memset(&osm_config, 0, sizeof(osm_config));
 
     osm_config.version = json_object_get_int(obj);
-    if (osm_config.version != PERSIST__VERSION)
+    if (osm_config.version != PERSIST_VERSION)
     {
         log_error("Wrong version.");
         goto bad_exit;
@@ -317,8 +317,8 @@ int read_json_to_img(const char * filename)
     }
     osm_config.adc_midpoint   = tmp;
 
-    if (!_get_string_buf(root, "lw_dev_eui", osm_config.lw_dev_eui, LW__DEV_EUI_LEN) ||
-        !_get_string_buf(root, "lw_app_key", osm_config.lw_app_key, LW__APP_KEY_LEN))
+    if (!_get_string_buf(root, "lw_dev_eui", osm_config.lw_dev_eui, LW_DEV_EUI_LEN) ||
+        !_get_string_buf(root, "lw_app_key", osm_config.lw_app_key, LW_APP_KEY_LEN))
     {
         log_error("No LoRaWAN keys.");
         goto bad_exit;

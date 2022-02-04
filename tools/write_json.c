@@ -148,14 +148,14 @@ int write_json_from_img(const char * filename)
 
     struct json_object * root = json_object_new_object();
 
-    json_object_object_add(root, "version", json_object_new_int(PERSIST__VERSION));
+    json_object_object_add(root, "version", json_object_new_int(PERSIST_VERSION));
 
     json_object_object_add(root, "log_debug_mask", json_object_new_int(DEBUG_SYS));
 
     json_object_object_add(root, "mins_interval", json_object_new_int(15));
 
-    json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(osm_config.lw_dev_eui, LW__DEV_EUI_LEN));
-    json_object_object_add(root, "lw_app_key", json_object_new_string_len(osm_config.lw_app_key, LW__APP_KEY_LEN));
+    json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(osm_config.lw_dev_eui, LW_DEV_EUI_LEN));
+    json_object_object_add(root, "lw_app_key", json_object_new_string_len(osm_config.lw_app_key, LW_APP_KEY_LEN));
 
     json_object_object_add(root, "cc_midpoint", json_object_new_int(osm_config.adc_midpoint));
 
