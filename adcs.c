@@ -195,7 +195,7 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
         inter_val *= inter_val;
         sum += inter_val;
     }
-    *adc_rms = midpoint - 1/_Q_rsqrt( sum / ADCS_NUM_SAMPLES ) / 2;
+    *adc_rms = midpoint - 1/_Q_rsqrt( sum / ADCS_NUM_SAMPLES );
     return true;
 }
 #else
