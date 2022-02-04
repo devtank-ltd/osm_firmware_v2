@@ -23,7 +23,7 @@
 #define NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
 
-#define PERSIST__VERSION            1
+#define PERSIST_VERSION            1
 
 
 typedef struct
@@ -33,8 +33,8 @@ typedef struct
     uint32_t                pending_fw;
     uint32_t                mins_interval;
     uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
-    char                    lw_dev_eui[LW__DEV_EUI_LEN];
-    char                    lw_app_key[LW__APP_KEY_LEN];
+    char                    lw_dev_eui[LW_DEV_EUI_LEN];
+    char                    lw_app_key[LW_APP_KEY_LEN];
     measurement_def_base_t  measurements_arr[MEASUREMENTS_MAX_NUMBER];
     uint16_t                adc_midpoint;
     uint16_t                _;

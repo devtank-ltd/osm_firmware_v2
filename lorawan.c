@@ -24,23 +24,23 @@
 #define LW_MESSAGE_DELAY        30000
 #define LW_CONFIG_TIMEOUT_S     30
 
-#define LW_SETTING__JOIN_MODE_OTAA       0
-#define LW_SETTING__JOIN_MODE_ABP        1
-#define LW_SETTING__CLASS_A              0
-#define LW_SETTING__CLASS_C              2
-#define LW_SETTING__UNCONFIRM            0
-#define LW_SETTING__CONFIRM              1
+#define LW_SETTING_JOIN_MODE_OTAA       0
+#define LW_SETTING_JOIN_MODE_ABP        1
+#define LW_SETTING_CLASS_A              0
+#define LW_SETTING_CLASS_C              2
+#define LW_SETTING_UNCONFIRM            0
+#define LW_SETTING_CONFIRM              1
 
 
-#define LW_CONFIG__JOIN_MODE        STR(LW_SETTING__JOIN_MODE_OTAA)
-#define LW_CONFIG__CLASS            STR(LW_SETTING__CLASS_C)
-#define LW_CONFIG__REGION           "EU868"
-#define LW_CONFIG__CONFIRM_TYPE     STR(LW_SETTING__CONFIRM)
+#define LW_CONFIG_JOIN_MODE        STR(LW_SETTING_JOIN_MODE_OTAA)
+#define LW_CONFIG_CLASS            STR(LW_SETTING_CLASS_C)
+#define LW_CONFIG_REGION           "EU868"
+#define LW_CONFIG_CONFIRM_TYPE     STR(LW_SETTING_CONFIRM)
 // TODO: Dev EUI and App Key should not be baked in.
-#define LW_CONFIG__DEV_EUI          "118f875d6994bbfd"
+#define LW_CONFIG_DEV_EUI          "118f875d6994bbfd"
 // For Chirpstack OTAA the App EUI must match the Dev EUI
-#define LW_CONFIG__APP_EUI          LW_CONFIG__DEV_EUI
-#define LW_CONFIG__APP_KEY          "d9597152b1293bb9c0e220cd04fc973c"
+#define LW_CONFIG_APP_EUI          LW_CONFIG_DEV_EUI
+#define LW_CONFIG_APP_KEY          "d9597152b1293bb9c0e220cd04fc973c"
 
 #define LW_ID_CMD       0x01434d44
 
@@ -64,7 +64,7 @@ typedef struct
 
 typedef struct
 {
-    int8_t hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE];
+    int8_t hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE];
     uint16_t len;
 } lw_lora_message_t;
 
@@ -150,19 +150,19 @@ typedef struct
 lw_state_machine_t lw_state_machine = {LW_STATE_INIT, .data={.init_step = 0}};
 
 
-static char lw_dev_eui[LW__DEV_EUI_LEN + 1];
-static char lw_app_key[LW__APP_KEY_LEN + 1];
+static char lw_dev_eui[LW_DEV_EUI_LEN + 1];
+static char lw_app_key[LW_APP_KEY_LEN + 1];
 
 typedef char lw_msg_buf_t[64];
 
 static lw_msg_buf_t init_msgs[] = { "at+set_config=lora:default_parameters",
-                         "at+set_config=lora:join_mode:"LW_CONFIG__JOIN_MODE,
-                         "at+set_config=lora:class:"LW_CONFIG__CLASS,
-                         "at+set_config=lora:region:"LW_CONFIG__REGION,
-                         "at+set_config=lora:confirm:"LW_CONFIG__CONFIRM_TYPE,
-                         "at+set_config=lora:dev_eui:"LW_CONFIG__DEV_EUI,
-                         "at+set_config=lora:app_eui:"LW_CONFIG__APP_EUI,
-                         "at+set_config=lora:app_key:"LW_CONFIG__APP_KEY,
+                         "at+set_config=lora:join_mode:"LW_CONFIG_JOIN_MODE,
+                         "at+set_config=lora:class:"LW_CONFIG_CLASS,
+                         "at+set_config=lora:region:"LW_CONFIG_REGION,
+                         "at+set_config=lora:confirm:"LW_CONFIG_CONFIRM_TYPE,
+                         "at+set_config=lora:dev_eui:"LW_CONFIG_DEV_EUI,
+                         "at+set_config=lora:app_eui:"LW_CONFIG_APP_EUI,
+                         "at+set_config=lora:app_key:"LW_CONFIG_APP_KEY,
                          "at+set_config=device:restart",
                          "at+join" };
 
@@ -197,11 +197,11 @@ void lw_reconnect(void)
 
 enum
 {
-    LW__RECV__ACK,
-    LW__RECV__DATA,
-    LW__RECV_ERR__NOT_START,
-    LW__RECV_ERR__BAD_FMT,
-    LW__RECV_ERR__UNFIN,
+    LW_RECV_ACK,
+    LW_RECV_DATA,
+    LW_RECV_ERR_NOT_START,
+    LW_RECV_ERR_BAD_FMT,
+    LW_RECV_ERR_UNFIN,
 };
 
 
@@ -330,7 +330,7 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
     {
         if (strncmp(lw_leftover, recv_msg, strlen(recv_msg)) != 0)
         {
-            return LW__RECV_ERR__NOT_START;
+            return LW_RECV_ERR_NOT_START;
         }
         strncat(proc_str, lw_leftover, strlen(lw_leftover));
         strncat(proc_str, message, strlen(message));
@@ -347,7 +347,7 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
         payload->header.raw[i] = strtol(pos, &next_pos, 10);
         if ((*next_pos) != ',')
         {
-            return LW__RECV_ERR__BAD_FMT;
+            return LW_RECV_ERR_BAD_FMT;
         }
         pos = next_pos + 1;
     }
@@ -357,9 +357,9 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
         payload->data = NULL;
         if (payload->header.datalen == 0)
         {
-            return LW__RECV__ACK;
+            return LW_RECV_ACK;
         }
-        return LW__RECV_ERR__BAD_FMT;
+        return LW_RECV_ERR_BAD_FMT;
     }
     if (*next_pos == ':')
     {
@@ -368,15 +368,15 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
         if (size_diff < 0)
         {
             strncat(lw_leftover, proc_str, strlen(proc_str));
-            return LW__RECV_ERR__UNFIN;
+            return LW_RECV_ERR_UNFIN;
         }
         if (size_diff > 0)
         {
-            return LW__RECV_ERR__BAD_FMT;
+            return LW_RECV_ERR_BAD_FMT;
         }
-        return LW__RECV__DATA;
+        return LW_RECV_DATA;
     }
-    return LW__RECV_ERR__BAD_FMT;
+    return LW_RECV_ERR_BAD_FMT;
 }
 
 
@@ -412,21 +412,21 @@ static bool lw_msg_is_error(char* message)
 static bool lw_msg_is_ack(char* message)
 {
     lw_payload_t payload;
-    return (lw_parse_recv(message, &payload) == LW__RECV__ACK);
+    return (lw_parse_recv(message, &payload) == LW_RECV_ACK);
 }
 
 enum
 {
-    LW__ERROR__TX_ERROR      =  5,  // more than 256 bytes?
-    LW__ERROR__NOT_CONNECTED =  86, // reconnect
-    LW__ERROR__PACKET_SIZE   =  87, // throw away message
-    LW__ERROR__TIMEOUT_RX1   =  95, // resend
-    LW__ERROR__TIMEOUT_RX2   =  96, // resend
-    LW__ERROR__RECV_RX1      =  97, // to be decided
-    LW__ERROR__RECV_RX2      =  98, // to be decided
-    LW__ERROR__JOIN_FAIL     =  99, // reconnect
-    LW__ERROR__DUP_DOWNLINK  = 100, // probably nothing
-    LW__ERROR__PAYLOAD_SIZE  = 101, // throw away message
+    LW_ERROR_TX_ERROR      =  5,  // more than 256 bytes?
+    LW_ERROR_NOT_CONNECTED =  86, // reconnect
+    LW_ERROR_PACKET_SIZE   =  87, // throw away message
+    LW_ERROR_TIMEOUT_RX1   =  95, // resend
+    LW_ERROR_TIMEOUT_RX2   =  96, // resend
+    LW_ERROR_RECV_RX1      =  97, // to be decided
+    LW_ERROR_RECV_RX2      =  98, // to be decided
+    LW_ERROR_JOIN_FAIL     =  99, // reconnect
+    LW_ERROR_DUP_DOWNLINK  = 100, // probably nothing
+    LW_ERROR_PAYLOAD_SIZE  = 101, // throw away message
 };
 
 
@@ -444,23 +444,23 @@ static void lw_error_handle(char* message)
     err_no = strtol(pos, &next_pos, 10);
     switch (err_no)
     {
-        case LW__ERROR__TX_ERROR:
+        case LW_ERROR_TX_ERROR:
             lw_reconnect();
             lw_debug("Error sending data (too big?)");
             break;
-        case LW__ERROR__NOT_CONNECTED:
+        case LW_ERROR_NOT_CONNECTED:
             lw_reconnect();
             lw_debug("Not connected to a network.");
             break;
-        case LW__ERROR__JOIN_FAIL:
+        case LW_ERROR_JOIN_FAIL:
             lw_reconnect();
             lw_debug("Failed to join network.");
             break;
-        case LW__ERROR__TIMEOUT_RX1:
+        case LW_ERROR_TIMEOUT_RX1:
             lw_resend_message();
             lw_debug("RX1 Window timed out.");
             break;
-        case LW__ERROR__TIMEOUT_RX2:
+        case LW_ERROR_TIMEOUT_RX2:
             lw_resend_message();
             lw_debug("RX1 Window timed out.");
             break;
@@ -474,7 +474,7 @@ static void lw_error_handle(char* message)
 static void lw_handle_unsol(char* message)
 {
     lw_payload_t incoming_pl;
-    if (lw_parse_recv(message, &incoming_pl) != LW__RECV__DATA)
+    if (lw_parse_recv(message, &incoming_pl) != LW_RECV_DATA)
     {
         return;
     }
@@ -539,7 +539,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         else
             lw_debug("Sent %u bytes", sent);
 
-        memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS__HEX_ARRAY_SIZE);
+        memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS_HEX_ARRAY_SIZE);
         lw_message_backup.len = arr_len;
         lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
     }

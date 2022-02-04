@@ -351,7 +351,7 @@ void tim3_isr(void)
 
     if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
     {
-        adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX__CURRENT_CLAMP]);
+        adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX_CURRENT_CLAMP]);
         adc_start_conversion_regular(ADC1);
     }
     else
@@ -451,7 +451,7 @@ bool adcs_bat_begin(char* name)
 
     adc_debug("Started ADC reading for BAT.");
     adcs_bat_running = true;
-    adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX__BAT_MON]);
+    adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX_BAT_MON]);
     adc_start_conversion_regular(ADC1);
     return true;
 }

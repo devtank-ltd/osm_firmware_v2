@@ -25,20 +25,20 @@
     {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
 }
 
-#define ADC1_CHANNEL__CURRENT_CLAMP      6
-#define ADC1_CHANNEL__BAT_MON            1
-#define ADC1_CHANNEL__3V3_RAIL_MON       3
-#define ADC1_CHANNEL__5V_RAIL_MON        4
+#define ADC1_CHANNEL_CURRENT_CLAMP      6
+#define ADC1_CHANNEL_BAT_MON            1
+#define ADC1_CHANNEL_3V3_RAIL_MON       3
+#define ADC1_CHANNEL_5V_RAIL_MON        4
 
-#define ADC_INDEX__CURRENT_CLAMP   0
-#define ADC_INDEX__BAT_MON         1
-#define ADC_INDEX__3V3_RAIL_MON    2
-#define ADC_INDEX__5V_RAIL_MON     3
+#define ADC_INDEX_CURRENT_CLAMP   0
+#define ADC_INDEX_BAT_MON         1
+#define ADC_INDEX_3V3_RAIL_MON    2
+#define ADC_INDEX_5V_RAIL_MON     3
 
-#define ADC_CHANNELS  { ADC1_CHANNEL__CURRENT_CLAMP,    \
-                        ADC1_CHANNEL__BAT_MON,          \
-                        ADC1_CHANNEL__3V3_RAIL_MON,     \
-                        ADC1_CHANNEL__5V_RAIL_MON       }
+#define ADC_CHANNELS  { ADC1_CHANNEL_CURRENT_CLAMP,    \
+                        ADC1_CHANNEL_BAT_MON,          \
+                        ADC1_CHANNEL_3V3_RAIL_MON,     \
+                        ADC1_CHANNEL_5V_RAIL_MON       }
 
 #define ADC_COUNT 4
 

@@ -13,8 +13,8 @@
  *                                                     EXAMPLE UNITS         OWNER
  */
 
-#define LW__DEV_EUI_LEN                     16
-#define LW__APP_KEY_LEN                     32
+#define LW_DEV_EUI_LEN                     16
+#define LW_APP_KEY_LEN                     32
 
 #define LW_HEADER_SIZE          17
 #define LW_TAIL_SIZE             2

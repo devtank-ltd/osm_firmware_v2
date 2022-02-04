@@ -20,12 +20,12 @@
 #include "pulsecount.h"
 
 
-#define MEASUREMENTS__UNSET_VALUE   UINT32_MAX
-#define MEASUREMENTS__STR_SIZE      16
+#define MEASUREMENTS_UNSET_VALUE   UINT32_MAX
+#define MEASUREMENTS_STR_SIZE      16
 
-#define MEASUREMENTS__PAYLOAD_VERSION       (uint8_t)0x01
-#define MEASUREMENTS__DATATYPE_SINGLE       (uint8_t)0x01
-#define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
+#define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x01
+#define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
+#define MEASUREMENTS_DATATYPE_AVERAGED     (uint8_t)0x02
 
 #define MEASUREMENT_PM10_NAME "PM10"
 
@@ -72,14 +72,14 @@ static uint32_t                 last_sent_ms                                    
 static bool                     pending_send                                        = false;
 static measurement_check_time_t check_time                                          = {0, 0};
 static uint32_t                 interval_count                                      =  0;
-static int8_t                   measurements_hex_arr[MEASUREMENTS__HEX_ARRAY_SIZE]  = {0};
+static int8_t                   measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]  = {0};
 static uint16_t                 measurements_hex_arr_pos                            =  0;
 static measurement_arr_t        measurement_arr                                     = {0};
 
 
 uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
 
-#define INTERVAL__TRANSMIT_MS   (transmit_interval * 60 * 1000)
+#define INTERVAL_TRANSMIT_MS   (transmit_interval * 60 * 1000)
 
 
 
@@ -103,7 +103,7 @@ static bool measurements_get_measurement_def(char* name, measurement_def_t** mea
 
 static bool measurements_arr_append_i8(int8_t val)
 {
-    if (measurements_hex_arr_pos >= MEASUREMENTS__HEX_ARRAY_SIZE)
+    if (measurements_hex_arr_pos >= MEASUREMENTS_HEX_ARRAY_SIZE)
     {
         log_error("Measurement array is full.");
         return false;
@@ -195,12 +195,12 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
     r |= !measurements_arr_append(*(int32_t*)measurement_def->base.name);
     if (single)
     {
-        r |= !measurements_arr_append((int8_t)MEASUREMENTS__DATATYPE_SINGLE);
+        r |= !measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
         r |= !measurements_arr_append(&mean);
     }
     else
     {
-        r |= !measurements_arr_append((int8_t)MEASUREMENTS__DATATYPE_AVERAGED);
+        r |= !measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_AVERAGED);
         r |= !measurements_arr_append(&mean);
         r |= !measurements_arr_append(&measurement_data->min);
         r |= !measurements_arr_append(&measurement_data->max);
@@ -239,7 +239,7 @@ static void measurements_send(void)
     {
         if (pending_send)
         {
-            if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL__TRANSMIT_MS/4)
+            if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
                 lw_reconnect();
@@ -253,12 +253,12 @@ static void measurements_send(void)
         return;
     }
 
-    memset(measurements_hex_arr, 0, MEASUREMENTS__HEX_ARRAY_SIZE);
+    memset(measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
     measurements_hex_arr_pos = 0;
 
     measurements_debug( "Attempting to send measurements");
 
-    if (!measurements_arr_append((int8_t)MEASUREMENTS__PAYLOAD_VERSION))
+    if (!measurements_arr_append((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
     {
         log_error("Failed to add even version to measurement hex array.");
         pending_send = false;
@@ -382,7 +382,7 @@ static void measurements_sample(void)
             continue;
         }
 
-        sample_interval = def->base.interval * INTERVAL__TRANSMIT_MS / def->base.samplecount;
+        sample_interval = def->base.interval * INTERVAL_TRANSMIT_MS / def->base.samplecount;
         time_since_interval = since_boot_delta(now, last_sent_ms);
 
         // If it takes time to get a sample, it is begun here.
@@ -574,7 +574,7 @@ void measurements_loop_iteration(void)
     {
         measurements_sample();
     }
-    if (since_boot_delta(now, last_sent_ms) > INTERVAL__TRANSMIT_MS)
+    if (since_boot_delta(now, last_sent_ms) > INTERVAL_TRANSMIT_MS)
     {
         if (interval_count > UINT32_MAX - 1)
         {
@@ -599,12 +599,12 @@ static void _measurement_fixup(measurement_def_t* def)
     switch(def->base.type)
     {
         case PM10:
-            def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
+            def->collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
             def->init_cb         = hpm_init;
             def->get_cb          = hpm_get_pm10;
             break;
         case PM25:
-            def->collection_time = MEASUREMENTS__COLLECT_TIME__HPM__MS;
+            def->collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
             def->init_cb         = hpm_init;
             def->get_cb          = hpm_get_pm25;
             break;
