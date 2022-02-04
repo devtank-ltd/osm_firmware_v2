@@ -292,6 +292,7 @@ void lw_process(char* message)
         {
             lw_state_machine.state = LW_STATE_IDLE;
             lw_connected = true;
+            lw_send_alive();
         }
         else if (lw_msg_is_error(message))
         {
@@ -584,6 +585,12 @@ void lw_send_str(char* str)
     }
     lw_write("at+send=lora:%u:%s", lw_port, str);
     lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
+}
+
+
+void lw_send_alive(void)
+{
+    lw_send_str("");
 }
 
 
