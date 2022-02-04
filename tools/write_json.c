@@ -62,7 +62,7 @@ static bool _write_modbus_json(struct json_object * root)
                         if (!type)
                         {
                             log_error("Config has invalid register type for \"%s\"", name);
-                            goto bad_exit;
+                            return false;
                         }
 
                         json_object_object_add(register_node, "type", json_object_new_string(type));
@@ -74,12 +74,10 @@ static bool _write_modbus_json(struct json_object * root)
         }
     }
     return true;
-bad_exit:
-    return false;
 }
 
 
-static bool _write_measurements_json(struct json_object * root)
+static void _write_measurements_json(struct json_object * root)
 {
     struct json_object * measurements_node = json_object_new_object();
 
@@ -97,12 +95,10 @@ static bool _write_measurements_json(struct json_object * root)
             json_object_object_add(measurement_node, "samplecount", json_object_new_int(def->samplecount));
         }
     }
-
-    return true;
 }
 
 
-static bool _write_ios_json(struct json_object * root)
+static void _write_ios_json(struct json_object * root)
 {
     struct json_object * ios_node = json_object_new_object();
     json_object_object_add(root, "ios", ios_node);
@@ -129,8 +125,6 @@ static bool _write_ios_json(struct json_object * root)
         if (!(state & IO_AS_INPUT) && (state & IO_OUT_ON))
             json_object_object_add(io_node, "out_high", json_object_new_boolean(true));
     }
-
-    return true;
 }
 
 
@@ -168,8 +162,7 @@ int write_json_from_img(const char * filename)
     if (!_write_modbus_json(root))
         goto bad_exit;
 
-    if (!_write_measurements_json(root))
-        goto bad_exit;
+    _write_measurements_json(root);
 
     if (!_write_ios_json(root))
         goto bad_exit;
