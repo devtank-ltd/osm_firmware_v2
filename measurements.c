@@ -178,6 +178,10 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
 
     value_t mean;
     value_t num_samples = value_from(measurement_data->num_samples);
+    if (!single)
+    {
+        mean.type = VALUE_FLOAT;
+    }
     if (!value_div(&mean, &measurement_data->sum, &num_samples))
     {
         log_error("Failed to average %s value.", measurement_def->base.name);
