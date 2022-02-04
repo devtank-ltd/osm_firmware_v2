@@ -42,6 +42,7 @@ extern void lw_reconnect(void);
 extern void lw_process(char* message);
 extern bool lw_get_connected(void);
 extern void lw_send_alive(void);
+extern void lw_loop_iteration(void);
 
 extern void lw_sent_ack(void);
 

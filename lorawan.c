@@ -16,11 +16,13 @@
 #include "cmd.h"
 #include "measurements.h"
 #include "persist_config.h"
+#include "sys_time.h"
 
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
 #define LW_BUFFER_SIZE          512
 #define LW_MESSAGE_DELAY        30000
+#define LW_CONFIG_TIMEOUT_S     30
 
 #define LW_SETTING__JOIN_MODE_OTAA       0
 #define LW_SETTING__JOIN_MODE_ABP        1
@@ -76,6 +78,7 @@ static lw_lora_message_t lw_message_backup = {{0}, 0};
 volatile bool ready = true;
 static uint8_t lw_port = 0;
 static bool lw_connected = false;
+static uint32_t lw_sent_stm32 = 0;
 
 
 static void lw_spin_us(uint32_t time_us)
@@ -99,6 +102,7 @@ static void lw_write_to_uart(char* fmt, va_list args)
     lw_out_buffer[len+1] = '\n';
     uart_ring_out(LW_UART, lw_out_buffer, strlen(lw_out_buffer));
     memset(lw_out_buffer, 0, LW_BUFFER_SIZE);
+    lw_sent_stm32 = since_boot_ms;
 }
 
 
@@ -531,6 +535,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         }
         sent+= uart_ring_out(LW_UART, "\r\n", 2);
         uart_ring_out(CMD_UART, "\r\n", 2);
+        lw_sent_stm32 = since_boot_ms;
 
         if (sent != expected)
             log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
@@ -599,4 +604,15 @@ static void lw_resend_message(void)
     if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
         lw_state_machine.state = LW_STATE_IDLE;
     lw_send(lw_message_backup.hex_arr, lw_message_backup.len);
+}
+
+
+void lw_loop_iteration(void)
+{
+    if (( lw_state_machine.state != LW_STATE_IDLE ) && (since_boot_delta(since_boot_ms, lw_sent_stm32) > LW_CONFIG_TIMEOUT_S * 1000))
+    {
+        lw_state_machine.state = LW_STATE_INIT;
+        lw_state_machine.data.init_step = 0;
+        lorawan_init();
+    }
 }
