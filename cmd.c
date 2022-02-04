@@ -40,12 +40,6 @@ typedef struct
 
 
 
-char * skip_space(char * pos)
-{
-    while(*pos == ' ')
-        pos++;
-    return pos;
-}
 
 static char * skip_to_space(char * pos)
 {
@@ -232,7 +226,6 @@ static void interval_cb(char * args)
 
         if (measurements_set_interval(name, new_interval))
         {
-            measurements_save();
             log_out("Changed %s interval to %"PRIu8, name, new_interval);
         }
         else log_out("Unknown measuremnt");
@@ -268,7 +261,6 @@ static void samplecount_cb(char * args)
 
         if (measurements_set_samplecount(name, new_samplecount))
         {
-            measurements_save();
             log_out("Changed %s samplecount to %"PRIu8, name, new_samplecount);
         }
         else log_out("Unknown measuremnt");
@@ -397,35 +389,11 @@ static void modbus_add_reg_cb(char * args)
 
     pos = skip_space(pos);
 
-    modbus_reg_type_t type = MODBUS_REG_TYPE_INVALID;
-
-    if (pos[0] == 'U')
-    {
-        if (pos[1] == '1' && pos[2] == '6' && pos[3] == ' ')
-        {
-            type = MODBUS_REG_TYPE_U16;
-        }
-        else if (pos[1] == '3' && pos[2] == '2' && pos[3] == ' ')
-        {
-            type = MODBUS_REG_TYPE_U32;
-        }
-        else
-        {
-            log_out("Unknown modbus reg type.");
-            return;
-        }
-        pos = skip_space(pos + 3);
-    }
-    else if (pos[0] == 'F' && pos[1] == ' ')
-    {
-        type = MODBUS_REG_TYPE_FLOAT;
-        pos = skip_space(pos + 1);
-    }
-    else
-    {
-        log_out("Unknown modbus reg type.");
+    modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
+    if (type == MODBUS_REG_TYPE_INVALID)
         return;
-    }
+
+    pos = skip_space(pos);
 
     char * name = pos;
 
@@ -467,24 +435,7 @@ static void modbus_get_reg_cb(char * args)
 static void measurements_cb(char *args)
 {
     measurements_print();
-    measurements_print_persist();
 }
-
-
-static void measurements_rm_cb(char* args)
-{
-    if (!measurements_del(args))
-    {
-        log_out("Could not remove measurment.");
-        return;
-    }
-    if (!measurements_save())
-    {
-        log_out("Failed to commit remove to persistent.");
-        return;
-    }
-}
-
 
 
 static void fw_add(char *args)
@@ -540,7 +491,7 @@ static void cc_cb(char* args)
         log_out("Could not get adc value.");
         return;
     }
-    
+
     char temp[32] = "";
 
     value_to_str(&value, temp, sizeof(temp));
@@ -682,9 +633,8 @@ void cmds_process(char * command, unsigned len)
         { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg},
         { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev},
         { "mb_log",       "Show modbus setup",        modbus_log},
-        { "mb_save",      "Save modbus setup",        modbus_save},
+        { "save",         "Save config",              persist_commit},
         { "measurements", "Print measurements",       measurements_cb},
-        { "measurements_rm", "Remove measurement",    measurements_rm_cb},
         { "fw+",          "Add chunk of new fw.",     fw_add},
         { "fw@",          "Finishing crc of new fw.", fw_fin},
         { "reset",        "Reset device.",            reset_cb},

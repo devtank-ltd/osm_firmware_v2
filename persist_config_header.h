@@ -32,14 +32,13 @@ typedef struct
     uint32_t                log_debug_mask;
     uint32_t                pending_fw;
     uint32_t                mins_interval;
-    uint8_t                 modbus_data[MODBUS_MEMORY_SIZE];
+    modbus_bus_t            modbus_bus;
     char                    lw_dev_eui[LW__DEV_EUI_LEN];
     char                    lw_app_key[LW__APP_KEY_LEN];
-    measurement_def_base_t  measurements_arr[MEASUREMENTS_MAX_NUMBER];
+    measurement_def_t       measurements_arr[MEASUREMENTS_MAX_NUMBER];
     uint16_t                adc_midpoint;
     uint16_t                _;
     uint32_t                __;
     uint64_t                ___;
-    uint8_t                ios_state[IOS_COUNT * 2];
+    uint16_t                ios_state[IOS_COUNT];
 } __attribute__((__packed__)) persist_storage_t;
-

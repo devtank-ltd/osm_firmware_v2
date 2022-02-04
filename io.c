@@ -16,24 +16,6 @@ static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t * ios_state;
 
 
-#define IO_PULL_STR_NONE "NONE"
-#define IO_PULL_STR_UP   "UP"
-#define IO_PULL_STR_DOWN "DOWN"
-
-
-static char* _ios_get_pull_str(uint16_t io_state)
-{
-    switch(io_state & IO_PULL_MASK)
-    {
-        case GPIO_PUPD_PULLUP:   return IO_PULL_STR_UP;
-        case GPIO_PUPD_PULLDOWN: return IO_PULL_STR_DOWN;
-        default:
-            break;
-    }
-    return IO_PULL_STR_NONE;
-}
-
-
 static char* _ios_get_type(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
@@ -41,18 +23,6 @@ static char* _ios_get_type(uint16_t io_state)
         case IO_PULSECOUNT: return "PLSCNT";
         case IO_ONEWIRE:    return "W1";
         default : return "";
-    }
-}
-
-
-static bool _io_is_special(uint16_t io_state)
-{
-    switch(io_state & IO_TYPE_MASK)
-    {
-        case IO_PULSECOUNT:
-        case IO_ONEWIRE:
-            return true;
-        default : return false;
     }
 }
 
@@ -76,7 +46,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
-            _ios_get_pull_str(io_state),
+            io_get_pull_str(io_state),
             (type[0])?" [":"",type,(type[0])?"]":"");
 }
 
@@ -145,6 +115,8 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
         return;
     }
 
+    io_state &= ~IO_OUT_ON;
+
     if (as_input)
         io_state |= IO_AS_INPUT;
     else
@@ -172,6 +144,7 @@ bool     io_enable_special(unsigned io)
     if (io_type == IO_PULSECOUNT)
     {
         ios_state[io] |= IO_SPECIAL_EN;
+        ios_state[io] &= ~IO_OUT_ON;
         pulsecount_enable(true);
         io_debug("%02u : USED PLSCNT", io);
         return true;
@@ -179,6 +152,7 @@ bool     io_enable_special(unsigned io)
     else if (io_type == IO_ONEWIRE)
     {
         ios_state[io] |= IO_SPECIAL_EN;
+        ios_state[io] &= ~IO_OUT_ON;
         w1_enable(true);
         io_debug("%02u : USED W1", io);
         return true;
@@ -222,12 +196,21 @@ void     io_on(unsigned io, bool on_off)
 
     const port_n_pins_t * output = &ios_pins[io];
 
+    if (ios_state[io] & IO_AS_INPUT)
+        return;
+
     io_debug("%02u = %s", io, (on_off)?"ON":"OFF");
 
     if (on_off)
+    {
+        ios_state[io] |= IO_OUT_ON;
         gpio_set(output->port, output->pins);
+    }
     else
+    {
+        ios_state[io] &= ~IO_OUT_ON;
         gpio_clear(output->port, output->pins);
+    }
 }
 
 
@@ -248,7 +231,7 @@ void     io_log(unsigned io)
 
         if (type[0])
         {
-            if (_io_is_special(io_state))
+            if (io_is_special(io_state))
             {
                 pretype = "[";
                 posttype = "] ";
@@ -263,12 +246,12 @@ void     io_log(unsigned io)
         if (io_state & IO_AS_INPUT)
             log_out("IO %02u : %s%s%sIN %s = %s",
                     io, pretype, type, posttype,
-                    _ios_get_pull_str(io_state),
+                    io_get_pull_str(io_state),
                     (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
         else
             log_out("IO %02u : %s%s%sOUT %s = %s",
                     io, pretype, type, posttype,
-                    _ios_get_pull_str(io_state),
+                    io_get_pull_str(io_state),
                     (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
     }
     else log_out("IO %02u : USED %s", io, type);

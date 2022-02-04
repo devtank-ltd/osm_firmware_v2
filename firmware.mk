@@ -1,4 +1,5 @@
 firmware_SOURCES := main.c \
+           base.c \
            log.c \
            sai.c \
            uarts.c \
@@ -10,10 +11,12 @@ firmware_SOURCES := main.c \
            i2c.c \
            htu21d.c \
            modbus.c \
+           modbus_mem.c \
            value.c \
            persist_config.c \
            lorawan.c \
            measurements.c \
+           measurements_mem.c \
            modbus_measurements.c \
            update.c \
            adcs.c \

@@ -1,0 +1,30 @@
+
+BUILD_DIR := build
+
+CFLAGS := -I.. $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+CFLAGS += -MMD -MP -g
+LDFLAGS := $(shell pkg-config --libs json-c)
+
+SRC := main.c \
+       base.c \
+       modbus_mem.c \
+       measurements_mem.c \
+       read_json.c \
+       write_json.c
+
+OBJS := $(SRC:%.c=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:%.o=%.d)
+
+default: $(BUILD_DIR)/json_x_img
+
+$(BUILD_DIR)/%.o: %.c Makefile
+	mkdir -p "$(@D)"
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD_DIR)/json_x_img : $(OBJS)
+	gcc $(OBJS) $(LDFLAGS)  -o $@
+
+clean:
+	rm -rf $(BUILD_DIR)
+
+-include $(DEBS)
