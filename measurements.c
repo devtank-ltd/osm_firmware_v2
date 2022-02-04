@@ -177,10 +177,14 @@ static bool measurements_to_arr(measurement_def_t* measurement_def, measurement_
     bool single = measurement_def->base.samplecount == 1;
 
     value_t mean;
-    value_t num_samples = value_from(measurement_data->num_samples);
+    value_t num_samples;
     if (!single)
     {
-        mean.type = VALUE_FLOAT;
+        num_samples = value_from((float)measurement_data->num_samples);
+    }
+    else
+    {
+        num_samples = value_from(measurement_data->num_samples);
     }
     if (!value_div(&mean, &measurement_data->sum, &num_samples))
     {
