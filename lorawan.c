@@ -42,10 +42,6 @@
 #define LW_CONFIG__APP_EUI          LW_CONFIG__DEV_EUI
 #define LW_CONFIG__APP_KEY          "d9597152b1293bb9c0e220cd04fc973c"
 
-
-#define LW_FMT__TEMPERATURE         "%02X%02X%04X"
-
-#define LW_ID_CMD_NAME  "CMD"
 #define LW_ID_CMD       0x01434d44
 
 
@@ -219,6 +215,7 @@ static void lw_handle_unsol(char* message);
 
 void lw_process(char* message)
 {
+    lw_sent_stm32 = since_boot_ms;
     if (lw_state_machine.state == LW_STATE_WAITING_RSP)
     {
         if (lw_msg_is_ok(message))
@@ -241,7 +238,7 @@ void lw_process(char* message)
         if (lw_msg_is_ack(message))
         {
             lw_state_machine.state = LW_STATE_IDLE;
-            lw_sent_ack();
+            on_lw_sent_ack(true);
             return;
         }
 
@@ -611,6 +608,10 @@ void lw_loop_iteration(void)
 {
     if (( lw_state_machine.state != LW_STATE_IDLE ) && (since_boot_delta(since_boot_ms, lw_sent_stm32) > LW_CONFIG_TIMEOUT_S * 1000))
     {
+        if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
+        {
+            on_lw_sent_ack(false);
+        }
         lw_state_machine.state = LW_STATE_INIT;
         lw_state_machine.data.init_step = 0;
         lorawan_init();

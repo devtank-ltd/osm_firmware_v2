@@ -335,8 +335,15 @@ static void measurements_send(void)
 }
 
 
-void lw_sent_ack(void)
+void on_lw_sent_ack(bool ack)
 {
+    if (!ack)
+    {
+        _message_prev_start_pos = _message_start_pos = 0;
+         pending_send = false;
+        return;
+    }
+
     for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
     {
         measurement_def_t* def = &measurement_arr.def[i];
@@ -690,6 +697,13 @@ void measurements_print_persist(void)
         }
         log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurement_def_base->name, measurement_def_base->interval, transmit_interval, measurement_def_base->samplecount);
     }
+}
+
+
+void measurements_ditch_data(void)
+{
+    _message_start_pos = _message_prev_start_pos = 0;
+    pending_send = false;
 }
 
 
