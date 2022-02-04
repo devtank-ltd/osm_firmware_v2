@@ -160,19 +160,17 @@ int write_json_from_img(const char * filename)
     json_object_object_add(root, "cc_midpoint", json_object_new_int(osm_config.adc_midpoint));
 
     if (!_write_modbus_json(root))
-        goto bad_exit;
+    {
+        json_object_put(root);
+        return EXIT_FAILURE;
+    }
 
     _write_measurements_json(root);
 
-    if (!_write_ios_json(root))
-        goto bad_exit;
+    _write_ios_json(root);
 
     json_object_to_fd(1, root, JSON_C_TO_STRING_PRETTY);
     json_object_put(root);
 
     return EXIT_SUCCESS;
-
-bad_exit:
-    json_object_put(root);
-    return EXIT_FAILURE;
 }
