@@ -26,7 +26,7 @@ static void _lw_config_valid(void)
     if (persist_data_raw->lw_dev_eui[0] && persist_data_raw->lw_app_key[0])
     {
         persist_data_lw_valid = true;
-        for(unsigned n = 0; n < LW__DEV_EUI_LEN; n++)
+        for(unsigned n = 0; n < LW_DEV_EUI_LEN; n++)
         {
             if (!isascii(persist_data_raw->lw_dev_eui[n]))
             {
@@ -35,7 +35,7 @@ static void _lw_config_valid(void)
                 break;
             }
         }
-        for(unsigned n = 0; n < LW__APP_KEY_LEN; n++)
+        for(unsigned n = 0; n < LW_APP_KEY_LEN; n++)
         {
             if (!isascii(persist_data_raw->lw_app_key[n]))
             {
@@ -53,11 +53,11 @@ void persistent_init(void)
     persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
 
     uint32_t vs = persist_data_raw->version;
-    if (vs != PERSIST__VERSION)
+    if (vs != PERSIST_VERSION)
     {
         log_error("Persistent data version unknown.");
         memset(&persist_data, 0, sizeof(persist_data));
-        persist_data.version = PERSIST__VERSION;
+        persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = 5;
         return;
@@ -109,9 +109,9 @@ uint32_t persist_get_log_debug_mask(void)
 
 void persist_set_lw_dev_eui(char* dev_eui)
 {
-    persist_data.version = PERSIST__VERSION;
-    unsigned len = (dev_eui)?strlen(dev_eui):(LW__DEV_EUI_LEN+1);
-    if (len > LW__DEV_EUI_LEN)
+    persist_data.version = PERSIST_VERSION;
+    unsigned len = (dev_eui)?strlen(dev_eui):(LW_DEV_EUI_LEN+1);
+    if (len > LW_DEV_EUI_LEN)
     {
         log_error("LORAWAN DEV EUI invalid.");
         return;
@@ -123,24 +123,24 @@ void persist_set_lw_dev_eui(char* dev_eui)
 }
 
 
-bool persist_get_lw_dev_eui(char dev_eui[LW__DEV_EUI_LEN + 1])
+bool persist_get_lw_dev_eui(char dev_eui[LW_DEV_EUI_LEN + 1])
 {
     if (!persist_data_lw_valid || !dev_eui)
     {
         log_error("LORAWAN DEV EUI get failed.");
         return false;
     }
-    memcpy(dev_eui, persist_data.lw_dev_eui, LW__DEV_EUI_LEN);
-    dev_eui[LW__DEV_EUI_LEN] = 0;
+    memcpy(dev_eui, persist_data.lw_dev_eui, LW_DEV_EUI_LEN);
+    dev_eui[LW_DEV_EUI_LEN] = 0;
     return true;
 }
 
 
 void persist_set_lw_app_key(char* app_key)
 {
-    persist_data.version = PERSIST__VERSION;
-    unsigned len = (app_key)?strlen(app_key):(LW__APP_KEY_LEN+1);
-    if (len > LW__APP_KEY_LEN)
+    persist_data.version = PERSIST_VERSION;
+    unsigned len = (app_key)?strlen(app_key):(LW_APP_KEY_LEN+1);
+    if (len > LW_APP_KEY_LEN)
     {
         log_error("LORAWAN APP KEY invalid.");
         return;
@@ -152,15 +152,15 @@ void persist_set_lw_app_key(char* app_key)
 }
 
 
-bool persist_get_lw_app_key(char app_key[LW__APP_KEY_LEN+1])
+bool persist_get_lw_app_key(char app_key[LW_APP_KEY_LEN+1])
 {
     if (!persist_data_lw_valid || !app_key)
     {
         log_error("LORAWAN APP KEY get failed.");
         return false;
     }
-    memcpy(app_key, persist_data.lw_app_key, LW__APP_KEY_LEN);
-    app_key[LW__APP_KEY_LEN] = 0;
+    memcpy(app_key, persist_data.lw_app_key, LW_APP_KEY_LEN);
+    app_key[LW_APP_KEY_LEN] = 0;
     return true;
 }
 

@@ -13,21 +13,8 @@
  *                                                     EXAMPLE UNITS         OWNER
  */
 
-#define LW_ID__TEMPERATURE                  103     // C (we will use K)   | IPSO Alliance
-#define LW_ID__HUMIDITY                     104     // % Relative Humidity | IPSO Alliance
-
-#define LW_ID__ADDRESSABLE_TEXT_DISPLAY     141     //                     | IPSO Alliance
-
-#define LW_ID__AIR_QUALITY                  228     //                     | uCIFI
-
-
-#define LW_ID__PM10                         105
-#define LW_ID__PM25                         106
-
-
-#define LW__DEV_EUI_LEN                     16
-#define LW__APP_KEY_LEN                     32
-
+#define LW_DEV_EUI_LEN                     16
+#define LW_APP_KEY_LEN                     32
 
 #define LW_HEADER_SIZE          17
 #define LW_TAIL_SIZE             2
@@ -41,6 +28,9 @@ extern bool lw_send_ready(void);
 extern void lw_reconnect(void);
 extern void lw_process(char* message);
 extern bool lw_get_connected(void);
+extern void lw_send_alive(void);
+extern void lw_loop_iteration(void);
 
-extern void lw_sent_ack(void);
+/* To be implemented by caller.*/
+extern void on_lw_sent_ack(bool acked) __attribute__((weak));
 

@@ -4,9 +4,9 @@
 
 #define MEASUREMENTS_MAX_NUMBER                   25
 
-#define MEASUREMENTS__PAYLOAD_VERSION       (uint8_t)0x01
-#define MEASUREMENTS__DATATYPE_SINGLE       (uint8_t)0x01
-#define MEASUREMENTS__DATATYPE_AVERAGED     (uint8_t)0x02
+#define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x01
+#define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
+#define MEASUREMENTS_DATATYPE_AVERAGED     (uint8_t)0x02
 
 #define MEASUREMENT_PM10_NAME          "PM10"
 #define MEASUREMENT_PM25_NAME          "PM25"

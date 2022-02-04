@@ -10,12 +10,12 @@
 
 #include "measurements_mem.h"
 
-#define MEASUREMENTS__HEX_ARRAY_SIZE            (128-LW_HEADER_SIZE-LW_TAIL_SIZE)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
+#define MEASUREMENTS_HEX_ARRAY_SIZE            (128-LW_HEADER_SIZE-LW_TAIL_SIZE)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
 
 
-#define MEASUREMENTS__COLLECT_TIME__TEMPERATURE__MS 10000
-#define MEASUREMENTS__COLLECT_TIME__HUMIDITY__MS    10000
-#define MEASUREMENTS__COLLECT_TIME__HPM__MS         10000
+#define MEASUREMENTS_COLLECT_TIME_TEMPERATURE_MS 10000
+#define MEASUREMENTS_COLLECT_TIME_HUMIDITY_MS    10000
+#define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
 
 
 extern uint32_t transmit_interval;
