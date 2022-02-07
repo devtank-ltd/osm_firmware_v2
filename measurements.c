@@ -241,7 +241,7 @@ static void measurements_send(void)
     unsigned i = _message_start_pos;
 
     if (_message_start_pos)
-        measurements_debug("Resumming previous measurements send.");
+        measurements_debug("Resuming previous measurements send.");
 
     for (; i < MEASUREMENTS_MAX_NUMBER; i++)
     {

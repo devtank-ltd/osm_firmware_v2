@@ -17,11 +17,12 @@
 #include "measurements.h"
 #include "persist_config.h"
 #include "sys_time.h"
+#include "timers.h"
 
 #pragma GCC diagnostic ignored "-Wstack-usage="
 
 #define LW_BUFFER_SIZE          512
-#define LW_MESSAGE_DELAY        30000
+#define LW_MESSAGE_DELAY_MS     30
 #define LW_CONFIG_TIMEOUT_S     30
 
 #define LW_SETTING_JOIN_MODE_OTAA       0
@@ -77,13 +78,17 @@ static bool lw_connected = false;
 static uint32_t lw_sent_stm32 = 0;
 
 
-static void lw_spin_us(uint32_t time_us)
+static void lw_reset_chip(void)
 {
-    uint64_t num_loops = (rcc_ahb_frequency / 1e6) * time_us;
-    for (uint64_t i = 0; i < num_loops; i++)
-    {
-        asm("nop");
-    }
+    // bring gpio line down
+    ;
+}
+
+
+static void lw_update_sent_stm32(void)
+{
+    lw_sent_stm32 = since_boot_ms;
+    lw_debug("UPDATED");
 }
 
 
@@ -98,7 +103,7 @@ static void lw_write_to_uart(char* fmt, va_list args)
     lw_out_buffer[len+1] = '\n';
     uart_ring_out(LW_UART, lw_out_buffer, strlen(lw_out_buffer));
     memset(lw_out_buffer, 0, LW_BUFFER_SIZE);
-    lw_sent_stm32 = since_boot_ms;
+    lw_update_sent_stm32();
 }
 
 
@@ -215,7 +220,7 @@ static void lw_handle_unsol(char* message);
 
 void lw_process(char* message)
 {
-    lw_sent_stm32 = since_boot_ms;
+    lw_update_sent_stm32();
     if (lw_state_machine.state == LW_STATE_WAITING_RSP)
     {
         if (lw_msg_is_ok(message))
@@ -229,7 +234,10 @@ void lw_process(char* message)
     else if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
     {
         if (lw_msg_is_ok(message))
+        {
+            lw_state_machine.state = LW_STATE_IDLE;
             return;
+        }
         if (lw_msg_is_error(message))
         {
             lw_error_handle(message);
@@ -247,9 +255,15 @@ void lw_process(char* message)
     else if (lw_state_machine.state == LW_STATE_WAITING_LW_RSP)
     {
         if (lw_msg_is_ok(message))
+        {
+            lw_state_machine.state = LW_STATE_IDLE;
             return;
+        }
         if (lw_msg_is_error(message))
+        {
+            lw_error_handle(message);
             return; /* Logged in check */
+        }
 
         if (lw_state_machine.data.response_cb)
         {
@@ -269,7 +283,7 @@ void lw_process(char* message)
             lw_debug("Setting not OKed. Retrying.");
             lw_set_config(init_msgs[--lw_state_machine.data.init_step]);
         }
-        lw_spin_us(LW_MESSAGE_DELAY);
+        timer_delay_us_64(LW_MESSAGE_DELAY_MS * 1000);
     }
     else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 9)) /*Restart*/
     {
@@ -466,6 +480,7 @@ static void lw_error_handle(char* message)
             break;
         default:
             lw_debug("Error: %"PRIu8, err_no);
+            lw_state_machine.state = LW_STATE_IDLE;
             break;
     }
 }
@@ -532,7 +547,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         }
         sent+= uart_ring_out(LW_UART, "\r\n", 2);
         uart_ring_out(CMD_UART, "\r\n", 2);
-        lw_sent_stm32 = since_boot_ms;
+        lw_update_sent_stm32();
 
         if (sent != expected)
             log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
@@ -612,6 +627,7 @@ void lw_loop_iteration(void)
         {
             on_lw_sent_ack(false);
         }
+        lw_reset_chip();
         lw_state_machine.state = LW_STATE_INIT;
         lw_state_machine.data.init_step = 0;
         lorawan_init();
