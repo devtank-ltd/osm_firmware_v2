@@ -98,20 +98,19 @@
 #define IOS_PORT_N_PINS            \
 {                                  \
     {GPIOC, GPIO6 },   /* IO 0  */ \
-    {GPIOC, GPIO8 },   /* IO 1  */ \
-    {GPIOB, GPIO2 },   /* IO 2  */ \
-    {GPIOC, GPIO9 },   /* IO 3  */ \
-    {GPIOB, GPIO3 },   /* IO 4  */ \
-    {GPIOA, GPIO11 },  /* IO 5  */ \
-    {GPIOA, GPIO12 },  /* IO 6  */ \
-    {GPIOC, GPIO7 },   /* IO 7  */ \
-    {GPIOB, GPIO4 },   /* IO 8  */ \
-    {GPIOB, GPIO5 },   /* IO 9  */ \
-    {GPIOB, GPIO14 },  /* IO 10 */ \
-    {GPIOD, GPIO2 },   /* IO 11 */ \
+    {GPIOB, GPIO2 },   /* IO 1 */ \
+    {GPIOC, GPIO9 },   /* IO 2  */ \
+    {GPIOB, GPIO3 },   /* IO 3  */ \
+    {GPIOA, GPIO11 },  /* IO 4  */ \
+    {GPIOA, GPIO12 },  /* IO 5  */ \
+    {GPIOC, GPIO7 },   /* IO 6  */ \
+    {GPIOB, GPIO4 },   /* IO 7  */ \
+    {GPIOB, GPIO5 },   /* IO 8  */ \
+    {GPIOB, GPIO14 },  /* IO 9  */ \
+    {GPIOD, GPIO2 },   /* IO 10 */ \
 }
 
-#define IOS_COUNT 12
+#define IOS_COUNT 11
 
 /*
 Schematic name, STM pin
@@ -136,16 +135,15 @@ GPIO16 D2                   IO 11
 {                                                              \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 0   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 1   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 2   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 2  */         \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 3   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 4   */         \
-    IO_AS_INPUT | IO_ONEWIRE,           /* GPIO 5   */         \
-    IO_AS_INPUT | IO_PULSECOUNT,        /* GPIO 6   */         \
+    IO_AS_INPUT | IO_ONEWIRE,           /* GPIO 4   */         \
+    IO_AS_INPUT | IO_PULSECOUNT,        /* GPIO 5   */         \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 6   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 7   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 8   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 9   */         \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 10  */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 11  */         \
 }
 
 #define W1_PORT             GPIOA

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
 
 #include "uart_rings.h"
 #include "uarts.h"
@@ -24,6 +25,7 @@
 #define LW_BUFFER_SIZE          512
 #define LW_MESSAGE_DELAY_MS     30
 #define LW_CONFIG_TIMEOUT_S     30
+#define LW_RESET_GPIO_MS        10
 
 #define LW_SETTING_JOIN_MODE_OTAA       0
 #define LW_SETTING_JOIN_MODE_ABP        1
@@ -69,6 +71,8 @@ typedef struct
     uint16_t len;
 } lw_lora_message_t;
 
+
+static port_n_pins_t lw_reset_gpio = { GPIOC, GPIO8 };
 static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
 static char lw_leftover[LW_BUFFER_SIZE] = {0};
 static lw_lora_message_t lw_message_backup = {{0}, 0};
@@ -80,8 +84,9 @@ static uint32_t lw_sent_stm32 = 0;
 
 static void lw_reset_chip(void)
 {
-    // bring gpio line down
-    ;
+    gpio_clear(lw_reset_gpio.port, lw_reset_gpio.pins);
+    timer_delay_us_64(LW_RESET_GPIO_MS * 1000);
+    gpio_set(lw_reset_gpio.port, lw_reset_gpio.pins);
 }
 
 
@@ -172,8 +177,20 @@ static lw_msg_buf_t init_msgs[] = { "at+set_config=lora:default_parameters",
                          "at+join" };
 
 
+static void lw_reset_gpio_init(void)
+{
+    rcc_periph_clock_enable(PORT_TO_RCC(lw_reset_gpio.port));
+    gpio_mode_setup(lw_reset_gpio.port,
+                    GPIO_MODE_OUTPUT,
+                    GPIO_PUPD_NONE,
+                    lw_reset_gpio.pins);
+    gpio_set(lw_reset_gpio.port, lw_reset_gpio.pins);
+}
+
+
 void lorawan_init(void)
 {
+    lw_reset_gpio_init();
     if (lw_state_machine.state != LW_STATE_INIT || lw_state_machine.data.init_step != 0)
     {
         log_error("LW not expected in init state.");
