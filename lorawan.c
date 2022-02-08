@@ -93,7 +93,6 @@ static void lw_reset_chip(void)
 static void lw_update_sent_stm32(void)
 {
     lw_sent_stm32 = since_boot_ms;
-    lw_debug("UPDATED");
 }
 
 
@@ -252,7 +251,6 @@ void lw_process(char* message)
     {
         if (lw_msg_is_ok(message))
         {
-            lw_state_machine.state = LW_STATE_IDLE;
             return;
         }
         if (lw_msg_is_error(message))
