@@ -10,7 +10,9 @@
 
 #include "measurements_mem.h"
 
-#define MEASUREMENTS_HEX_ARRAY_SIZE            (128-LW_HEADER_SIZE-LW_TAIL_SIZE)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
+#define MEASUREMENTS_HEX_ARRAY_SIZE            ((256-LW_HEADER_SIZE-LW_TAIL_SIZE)/2)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
+
+_Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX, "Measurement send data max longer than LoRaWAN payload max.");
 
 
 #define MEASUREMENTS_COLLECT_TIME_TEMPERATURE_MS 10000

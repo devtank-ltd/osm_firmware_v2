@@ -19,6 +19,8 @@
 #define LW_HEADER_SIZE          17
 #define LW_TAIL_SIZE             2
 
+#define LW_PAYLOAD_MAX         242
+
 
 extern void lorawan_init(void);
 extern void lw_send(int8_t* hex_arr, uint16_t arr_len);
@@ -33,4 +35,3 @@ extern void lw_loop_iteration(void);
 
 /* To be implemented by caller.*/
 extern void on_lw_sent_ack(bool acked) __attribute__((weak));
-

@@ -26,6 +26,7 @@
 #include "sys_time.h"
 #include "htu21d.h"
 #include "log.h"
+#include "uart_rings.h"
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -611,6 +612,13 @@ static void bat_cb(char* args)
 }
 
 
+static void lw_dbg_cb(char* args)
+{
+    uart_ring_out(LW_UART, args, strlen(args));
+    uart_ring_out(LW_UART, "\r\n", 2);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -651,6 +659,7 @@ void cmds_process(char * command, unsigned len)
         { "interval_mins","Get/Set interval minutes", interval_mins_cb},
         { "bat",          "Get battery level.",       bat_cb},
         { "pulsecount",   "Show pulsecount.",         pulsecount_log},
+        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { NULL },
     };
 
