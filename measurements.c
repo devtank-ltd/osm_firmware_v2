@@ -211,7 +211,7 @@ static void measurements_send(void)
             if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
-                lw_reconnect();
+                lw_reset();
                 _message_start_pos = _message_prev_start_pos = 0;
                 pending_send = false;
             }

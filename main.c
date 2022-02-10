@@ -82,7 +82,7 @@ int main(void)
     sai_init();
     adcs_init();
     htu21d_init();
-    lorawan_init();
+    lw_init();
     measurements_init();
     pulsecount_init();
     modbus_init();

@@ -1,6 +1,6 @@
 #pragma once
 
-#define CMD_LINELEN 64
+#define CMD_LINELEN 128
 #define LOG_LINELEN 64
 
 #define MEASURE_NAME_LEN 4
@@ -64,8 +64,8 @@
 #define UART_0_IN_BUF_SIZE  CMD_LINELEN
 #define UART_0_OUT_BUF_SIZE 2048
 
-#define UART_1_IN_BUF_SIZE  128
-#define UART_1_OUT_BUF_SIZE 512
+#define UART_1_IN_BUF_SIZE  256
+#define UART_1_OUT_BUF_SIZE 256
 
 #define UART_2_IN_BUF_SIZE  64
 #define UART_2_OUT_BUF_SIZE 64
