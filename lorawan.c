@@ -181,7 +181,7 @@ static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
 static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
 static char                 _lw_app_key[LW_APP_KEY_LEN + 1];
-static uint8_t              _lw_port                            = 0;
+static uint8_t              _lw_port                            = 7;
 static uint32_t             _lw_chip_off_time                   = 0;
 static uint32_t             _lw_reset_timeout                   = LW_RESET_GPIO_DEFAULT_MS;
 static lw_backup_msg_t      _lw_backup_message                  = {.backup_type=LW_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
@@ -792,7 +792,7 @@ void lw_process(char* message)
 
 static unsigned _lw_send_size(uint16_t arr_len)
 {
-    unsigned next_lw_port = _lw_port + 1;
+    unsigned next_lw_port = _lw_port;
     if (next_lw_port > 223)
         next_lw_port = 0;
 
