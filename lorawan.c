@@ -25,6 +25,8 @@
 #define LW_RESET_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
 
+#define LW_ERROR_PREFIX                 "ERROR: "
+
 #define LW_SETTING_JOIN_MODE_OTAA       0
 #define LW_SETTING_JOIN_MODE_ABP        1
 #define LW_SETTING_CLASS_A              0
@@ -68,7 +70,6 @@ typedef enum
     LW_STATE_WAIT_UCONF_OK,
     LW_STATE_WAIT_CODE_OK,
     LW_STATE_WAIT_CONF_OK,
-    LW_STATE_DISCONNECTED,
     LW_STATE_UNCONFIGURED,
 } lw_states_t;
 
@@ -176,7 +177,7 @@ typedef struct
 } error_code_t;
 
 
-static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0};
+static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_OFF, .init_step=0, .last_message_time=0, .reset_count=0};
 static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
 static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
@@ -207,13 +208,15 @@ static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
 
 static void _lw_chip_off(void)
 {
-    gpio_clear(_lw_reset_gpio.port, _lw_reset_gpio.pins);
     _lw_state_machine.state = LW_STATE_OFF;
+    gpio_clear(_lw_reset_gpio.port, _lw_reset_gpio.pins);
 }
 
 
 static void _lw_chip_on(void)
 {
+    _lw_state_machine.state = LW_STATE_WAIT_INIT;
+    _lw_state_machine.init_step = 0;
     gpio_set(_lw_reset_gpio.port, _lw_reset_gpio.pins);
 }
 
@@ -290,8 +293,6 @@ static void _lw_chip_init(void)
         timer_delay_us_64(LW_RESET_GPIO_DEFAULT_MS * 1000);
     }
     lw_debug("Initialising LoRaWAN chip.");
-    _lw_state_machine.state = LW_STATE_WAIT_INIT;
-    _lw_state_machine.init_step = 0;
     _lw_chip_on();
 }
 
@@ -300,11 +301,13 @@ static void _lw_set_confirmed(bool confirmed)
 {
     if (confirmed)
     {
+        _lw_state_machine.state = LW_STATE_WAIT_CONF_OK;
         lw_debug("Setting to confirmed.");
         _lw_write("at+set_config=lora:confirm:1");
     }
     else
     {
+        _lw_state_machine.state = LW_STATE_WAIT_UCONF_OK;
         lw_debug("Setting to unconfirmed.");
         _lw_write("at+set_config=lora:confirm:0");
     }
@@ -354,7 +357,7 @@ bool lw_send_str(char* str)
 void lw_init(void)
 {
     _lw_reset_gpio_init();
-    if (_lw_state_machine.state != LW_STATE_DISCONNECTED)
+    if (_lw_state_machine.state != LW_STATE_OFF)
     {
         log_error("LoRaWAN chip not in DISCONNECTED state.");
         return;
@@ -366,7 +369,6 @@ void lw_init(void)
         return;
     }
     _lw_chip_init();
-    _lw_state_machine.init_step = 0;
 }
 
 
@@ -544,7 +546,7 @@ static void _lw_retry_write(void)
 
 void lw_reset(void)
 {
-    if (_lw_state_machine.state == LW_STATE_DISCONNECTED)
+    if (_lw_state_machine.state == LW_STATE_OFF)
     {
         lw_debug("Already resetting.");
         return;
@@ -553,7 +555,7 @@ void lw_reset(void)
     _lw_chip_off_time = since_boot_ms;
     if (++_lw_state_machine.reset_count > 2)
     {
-        lw_debug("Going into long reset mode (wait %"PRIi16"mins).", LW_SLOW_RESET_TIMEOUT_MINS);
+        lw_debug("Going into long reset mode (wait %"PRIi16" mins).", LW_SLOW_RESET_TIMEOUT_MINS);
         _lw_reset_timeout = LW_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
     }
     else
@@ -578,11 +580,10 @@ static void _lw_handle_error(char* message)
 {
     char* pos = NULL;
     char* next_pos = NULL;
-    char err_msg[] = "ERROR: ";
-    uint8_t err_no = 0;
+    lw_error_codes_t err_no = 0;
 
-    pos = message + strlen(err_msg);
-    err_no = strtol(pos, &next_pos, 10);
+    pos = message + strlen(LW_ERROR_PREFIX);
+    err_no = (lw_error_codes_t)strtol(pos, &next_pos, 10);
     switch (err_no)
     {
         case LW_ERROR_TRANS_BUSY:
@@ -635,7 +636,6 @@ static void _lw_process_wait_init(char* message)
     if (_lw_msg_is_initialisation(message))
     {
         _lw_state_machine.state = LW_STATE_WAIT_INIT_OK;
-        _lw_state_machine.init_step = 0;
         _lw_write_next_init_step();
     }
 }
@@ -701,7 +701,6 @@ static void _lw_process_idle(char* message)
 {
     if (_lw_msg_is_unsol(message))
     {
-        _lw_state_machine.state = LW_STATE_WAIT_UCONF_OK;
         _lw_handle_unsol(message);
         _lw_set_confirmed(false);
     }
@@ -776,9 +775,6 @@ void lw_process(char* message)
             break;
         case LW_STATE_WAIT_CONF_OK:
             _lw_process_wait_conf_ok(message);
-            break;
-        case LW_STATE_DISCONNECTED:
-            /* Panic? */
             break;
         case LW_STATE_UNCONFIGURED:
             /* Also panic? */
@@ -862,11 +858,9 @@ void lw_loop_iteration(void)
     uint32_t now = since_boot_ms;
     switch(_lw_state_machine.state)
     {
-        case LW_STATE_DISCONNECTED:
+        case LW_STATE_OFF:
             if (since_boot_delta(now, _lw_chip_off_time) > _lw_reset_timeout)
             {
-                _lw_state_machine.state = LW_STATE_WAIT_INIT;
-                _lw_state_machine.init_step = 0;
                 _lw_chip_on();
             }
             break;
@@ -884,5 +878,6 @@ void lw_loop_iteration(void)
                 lw_debug("LoRa chip timed out, resetting.");
                 lw_reset();
             }
+            break;
     }
 }
