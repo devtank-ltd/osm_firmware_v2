@@ -57,6 +57,7 @@
 
 typedef enum
 {
+    LW_STATE_OFF,
     LW_STATE_WAIT_INIT,
     LW_STATE_WAIT_INIT_OK,
     LW_STATE_WAIT_REINIT,
@@ -147,7 +148,6 @@ typedef struct
     unsigned    init_step;
     uint32_t    last_message_time;
     uint8_t     reset_count;
-    bool        chip_is_on;
 } lw_state_machine_t;
 
 
@@ -176,7 +176,7 @@ typedef struct
 } error_code_t;
 
 
-static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0, .chip_is_on=false};
+static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0};
 static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
 static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
@@ -208,14 +208,13 @@ static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
 static void _lw_chip_off(void)
 {
     gpio_clear(_lw_reset_gpio.port, _lw_reset_gpio.pins);
-    _lw_state_machine.chip_is_on = false;
+    _lw_state_machine.state = LW_STATE_OFF;
 }
 
 
 static void _lw_chip_on(void)
 {
     gpio_set(_lw_reset_gpio.port, _lw_reset_gpio.pins);
-    _lw_state_machine.chip_is_on = true;
 }
 
 
@@ -284,15 +283,15 @@ static bool _lw_load_config(void)
 
 static void _lw_chip_init(void)
 {
-    if (_lw_state_machine.chip_is_on)
+    if (_lw_state_machine.state != LW_STATE_OFF)
     {
         lw_debug("Chip already on, restarting chip.");
-        _lw_state_machine.state = LW_STATE_DISCONNECTED;
         _lw_chip_off();
-        timer_delay_us_64(LW_RESET_GPIO_MS * 1000);
+        timer_delay_us_64(LW_RESET_GPIO_DEFAULT_MS * 1000);
     }
     lw_debug("Initialising LoRaWAN chip.");
     _lw_state_machine.state = LW_STATE_WAIT_INIT;
+    _lw_state_machine.init_step = 0;
     _lw_chip_on();
 }
 
@@ -550,7 +549,6 @@ void lw_reset(void)
         lw_debug("Already resetting.");
         return;
     }
-    _lw_state_machine.state = LW_STATE_DISCONNECTED;
     _lw_chip_off();
     _lw_chip_off_time = since_boot_ms;
     if (++_lw_state_machine.reset_count > 2)
@@ -784,6 +782,9 @@ void lw_process(char* message)
             break;
         case LW_STATE_UNCONFIGURED:
             /* Also panic? */
+            break;
+        case LW_STATE_OFF:
+            /* More panic */
             break;
     }
 }
