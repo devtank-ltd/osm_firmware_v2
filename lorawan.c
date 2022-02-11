@@ -20,12 +20,12 @@
 #include "sys_time.h"
 #include "timers.h"
 
-#pragma GCC diagnostic ignored "-Wstack-usage="
+#define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
+#define LW_CONFIG_TIMEOUT_S             30
+#define LW_RESET_GPIO_DEFAULT_MS        10
+#define LW_SLOW_RESET_TIMEOUT_MINS      15
 
-#define LW_BUFFER_SIZE          512
-#define LW_MESSAGE_DELAY_MS     30
-#define LW_CONFIG_TIMEOUT_S     30
-#define LW_RESET_GPIO_MS        10
+#define LW_ERROR_PREFIX                 "ERROR: "
 
 #define LW_SETTING_JOIN_MODE_OTAA       0
 #define LW_SETTING_JOIN_MODE_ABP        1
@@ -33,19 +33,97 @@
 #define LW_SETTING_CLASS_C              2
 #define LW_SETTING_UNCONFIRM            0
 #define LW_SETTING_CONFIRM              1
+#define LW_SETTING_ADR_DISABLED         0
+#define LW_SETTING_ADR_ENABLED          1
+#define LW_SETTING_DR_0                 0
+#define LW_SETTING_DR_1                 1
+#define LW_SETTING_DR_2                 2
+#define LW_SETTING_DR_3                 3
+#define LW_SETTING_DR_4                 4
+#define LW_SETTING_DR_5                 5
+#define LW_SETTING_DR_6                 6
+#define LW_SETTING_DR_7                 7
+#define LW_SETTING_DUTY_CYCLE_DISABLED  0
+#define LW_SETTING_DUTY_CYCLE_ENABLED   1
+
+#define LW_CONFIG_JOIN_MODE             STR(LW_SETTING_JOIN_MODE_OTAA)
+#define LW_CONFIG_CLASS                 STR(LW_SETTING_CLASS_C)
+#define LW_CONFIG_REGION                "EU868"
+#define LW_CONFIG_CONFIRM_TYPE          STR(LW_SETTING_CONFIRM)
+#define LW_CONFIG_ADR                   STR(LW_SETTING_ADR_DISABLED)
+#define LW_CONFIG_DR                    STR(LW_SETTING_DR_4)
+#define LW_CONFIG_DUTY_CYCLE            STR(LW_SETTING_DUTY_CYCLE_DISABLED)
+
+#define LW_ID_CMD                       0x01434d44
 
 
-#define LW_CONFIG_JOIN_MODE        STR(LW_SETTING_JOIN_MODE_OTAA)
-#define LW_CONFIG_CLASS            STR(LW_SETTING_CLASS_C)
-#define LW_CONFIG_REGION           "EU868"
-#define LW_CONFIG_CONFIRM_TYPE     STR(LW_SETTING_CONFIRM)
-// TODO: Dev EUI and App Key should not be baked in.
-#define LW_CONFIG_DEV_EUI          "118f875d6994bbfd"
-// For Chirpstack OTAA the App EUI must match the Dev EUI
-#define LW_CONFIG_APP_EUI          LW_CONFIG_DEV_EUI
-#define LW_CONFIG_APP_KEY          "d9597152b1293bb9c0e220cd04fc973c"
+typedef enum
+{
+    LW_STATE_OFF,
+    LW_STATE_WAIT_INIT,
+    LW_STATE_WAIT_INIT_OK,
+    LW_STATE_WAIT_REINIT,
+    LW_STATE_WAIT_CONN,
+    LW_STATE_WAIT_OK,
+    LW_STATE_WAIT_ACK,
+    LW_STATE_IDLE,
+    LW_STATE_WAIT_UCONF_OK,
+    LW_STATE_WAIT_CODE_OK,
+    LW_STATE_WAIT_CONF_OK,
+    LW_STATE_UNCONFIGURED,
+} lw_states_t;
 
-#define LW_ID_CMD       0x01434d44
+
+typedef enum
+{
+    LW_RECV_ACK,
+    LW_RECV_DATA,
+    LW_RECV_ERR_NOT_START,
+    LW_RECV_ERR_BAD_FMT,
+    LW_RECV_ERR_UNFIN,
+} lw_recv_packet_types_t;
+
+
+typedef enum
+{
+    LW_ERROR_CMD_UNSUPP         =  1,   // reset
+    LW_ERROR_INVALID_CMD        =  2,   // reset
+    LW_ERROR_R_W_FLASH          =  3,   // reset
+    LW_ERROR_UART_ERROR         =  5,   // reset
+    LW_ERROR_TRANS_BUSY         =  80,  //  retry
+    LW_ERROR_SVC_UNKNOWN        =  81,  // reset
+    LW_ERROR_INVLD_LORA_PARA    =  82,  // reset
+    LW_ERROR_INVLD_LORA_FREQ    =  83,  // reset
+    LW_ERROR_INVLD_LORA_DR      =  84,  // reset
+    LW_ERROR_INVLD_LORA_FR_DR   =  85,  // reset
+    LW_ERROR_NOT_CONNECTED      =  86,  // reset
+    LW_ERROR_PACKET_SIZE        =  87,  //  reduce limit, reset, drop data
+    LW_ERROR_SVC_CLOSED         =  88,  // reset
+    LW_ERROR_REGION_UNSUPP      =  89,  // reset
+    LW_ERROR_DUTY_CYCLE_CLSD    =  90,  // reset
+    LW_ERROR_CHAN_NO_VLD_FND    =  91,  // reset
+    LW_ERROR_CHAN_NO_AVLBL_FND  =  92,  // reset
+    LW_ERROR_STATUS_ERROR       =  93,  // reset
+    LW_ERROR_TIMEOUT_LORA_TRANS =  94,  // reset
+    LW_ERROR_TIMEOUT_RX1        =  95,  //  nothing
+    LW_ERROR_TIMEOUT_RX2        =  96,  //  retry
+    LW_ERROR_RECV_RX1           =  97,  //  retry
+    LW_ERROR_RECV_RX2           =  98,  //  retry
+    LW_ERROR_JOIN_FAIL          =  99,  // reset
+    LW_ERROR_DUP_DOWNLINK       = 100,  //  nothing
+    LW_ERROR_PAYLOAD_SIZE       = 101,  //  reduce limit, reset, drop data
+    LW_ERROR_MANY_PKTS_LOST     = 102,  // reset
+    LW_ERROR_ADDR_FAIL          = 103,  // reset
+    LW_ERROR_INVLD_MIC          = 104,  //  nothing
+} lw_error_codes_t;
+
+
+typedef enum
+{
+    LW_BKUP_MSG_BLANK,
+    LW_BKUP_MSG_STR,
+    LW_BKUP_MSG_HEX,
+} lw_backup_msg_types_t;
 
 
 typedef struct
@@ -67,310 +145,247 @@ typedef struct
 
 typedef struct
 {
-    int8_t hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE];
-    uint16_t len;
-} lw_lora_message_t;
+    lw_states_t state;
+    unsigned    init_step;
+    uint32_t    last_message_time;
+    uint8_t     reset_count;
+} lw_state_machine_t;
 
 
-static port_n_pins_t lw_reset_gpio = { GPIOC, GPIO8 };
-static char lw_out_buffer[LW_BUFFER_SIZE] = {0};
-static char lw_leftover[LW_BUFFER_SIZE] = {0};
-static lw_lora_message_t lw_message_backup = {{0}, 0};
-volatile bool ready = true;
-static uint8_t lw_port = 0;
-static bool lw_connected = false;
-static uint32_t lw_sent_stm32 = 0;
-
-
-static void lw_reset_chip(void)
-{
-    gpio_clear(lw_reset_gpio.port, lw_reset_gpio.pins);
-    timer_delay_us_64(LW_RESET_GPIO_MS * 1000);
-    gpio_set(lw_reset_gpio.port, lw_reset_gpio.pins);
-}
-
-
-static void lw_update_sent_stm32(void)
-{
-    lw_sent_stm32 = since_boot_ms;
-}
-
-
-static void lw_write_to_uart(char* fmt, va_list args)
-{
-    size_t len;
-
-    vsnprintf(lw_out_buffer, LW_BUFFER_SIZE, fmt, args);
-    lw_debug("<< %s", lw_out_buffer);
-    len = strlen(lw_out_buffer);
-    lw_out_buffer[len] = '\r';
-    lw_out_buffer[len+1] = '\n';
-    uart_ring_out(LW_UART, lw_out_buffer, strlen(lw_out_buffer));
-    memset(lw_out_buffer, 0, LW_BUFFER_SIZE);
-    lw_update_sent_stm32();
-}
-
-
-static void lw_write(char* cmd_fmt, ...)
-{
-    va_list args;
-
-    va_start(args, cmd_fmt);
-    lw_write_to_uart(cmd_fmt, args);
-    va_end(args);
-}
-
-
-static void lw_set_config(const char* config_fmt, ...)
-{
-    va_list args;
-
-    va_start(args, config_fmt);
-    lw_write_to_uart((char*)config_fmt, args);
-    va_end(args);
-}
-
-
-typedef enum
-{
-    LW_STATE_PREINIT       ,
-    LW_STATE_INIT          ,
-    LW_STATE_IDLE          ,
-    LW_STATE_WAITING_RSP   ,
-    LW_STATE_WAITING_LW_ACK,
-    LW_STATE_WAITING_LW_RSP,
-} lw_states_t;
-
-
-typedef void (*lw_response_cb)(void);
+typedef char lw_msg_buf_t[64];
 
 
 typedef struct
 {
-    lw_states_t state;
+    lw_backup_msg_types_t backup_type;
     union
     {
-        unsigned init_step;
-        lw_response_cb response_cb;
-    } data;
-} lw_state_machine_t;
+        char    string[LW_BUFFER_SIZE];
+        struct
+        {
+            uint8_t len;
+            int8_t arr[MEASUREMENTS_HEX_ARRAY_SIZE];
+        } hex;
+    };
+} lw_backup_msg_t;
 
 
-lw_state_machine_t lw_state_machine = {LW_STATE_INIT, .data={.init_step = 0}};
-
-
-static char lw_dev_eui[LW_DEV_EUI_LEN + 1];
-static char lw_app_key[LW_APP_KEY_LEN + 1];
-
-typedef char lw_msg_buf_t[64];
-
-static lw_msg_buf_t init_msgs[] = { "at+set_config=lora:default_parameters",
-                         "at+set_config=lora:join_mode:"LW_CONFIG_JOIN_MODE,
-                         "at+set_config=lora:class:"LW_CONFIG_CLASS,
-                         "at+set_config=lora:region:"LW_CONFIG_REGION,
-                         "at+set_config=lora:confirm:"LW_CONFIG_CONFIRM_TYPE,
-                         "at+set_config=lora:dev_eui:"LW_CONFIG_DEV_EUI,
-                         "at+set_config=lora:app_eui:"LW_CONFIG_APP_EUI,
-                         "at+set_config=lora:app_key:"LW_CONFIG_APP_KEY,
-                         "at+set_config=device:restart",
-                         "at+join" };
-
-
-static void lw_reset_gpio_init(void)
+typedef struct
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(lw_reset_gpio.port));
-    gpio_mode_setup(lw_reset_gpio.port,
+    uint32_t    code;
+    bool        valid;
+} error_code_t;
+
+
+static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_OFF, .init_step=0, .last_message_time=0, .reset_count=0};
+static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
+static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
+static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
+static char                 _lw_app_key[LW_APP_KEY_LEN + 1];
+static uint8_t              _lw_port                            = 0;
+static uint32_t             _lw_chip_off_time                   = 0;
+static uint32_t             _lw_reset_timeout                   = LW_RESET_GPIO_DEFAULT_MS;
+static lw_backup_msg_t      _lw_backup_message                  = {.backup_type=LW_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
+static error_code_t         _lw_error_code                      = {0, false};
+static char                 _lw_cmd_ascii[CMD_LINELEN]          = "";
+
+
+uint16_t                    lw_packet_max_size                  = LW_PAYLOAD_MAX_DEFAULT;
+
+
+static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
+                                     "at+set_config=lora:join_mode:"LW_CONFIG_JOIN_MODE,
+                                     "at+set_config=lora:class:"LW_CONFIG_CLASS,
+                                     "at+set_config=lora:region:"LW_CONFIG_REGION,
+                                     "at+set_config=lora:confirm:"LW_CONFIG_CONFIRM_TYPE,
+                                     "at+set_config=lora:adr:"LW_CONFIG_ADR,
+                                     "at+set_config=lora:dr:"LW_CONFIG_DR,
+                                     "at+set_config=lora:dutycycle_enable:"LW_CONFIG_DUTY_CYCLE,
+                                     "Dev EUI goes here",
+                                     "App EUI goes here",
+                                     "App Key goes here"};
+
+
+static void _lw_chip_off(void)
+{
+    _lw_state_machine.state = LW_STATE_OFF;
+    gpio_clear(_lw_reset_gpio.port, _lw_reset_gpio.pins);
+}
+
+
+static void _lw_chip_on(void)
+{
+    _lw_state_machine.state = LW_STATE_WAIT_INIT;
+    _lw_state_machine.init_step = 0;
+    gpio_set(_lw_reset_gpio.port, _lw_reset_gpio.pins);
+}
+
+
+static void _lw_update_last_message_time(void)
+{
+    _lw_state_machine.last_message_time = since_boot_ms;
+}
+
+
+static unsigned _lw_write_to_uart(char* string)
+{
+    _lw_update_last_message_time();
+    return uart_ring_out(LW_UART, string, strlen(string));
+}
+
+
+static void _lw_write(char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(_lw_out_buffer, LW_BUFFER_SIZE, fmt, args);
+    lw_debug("<< %s", _lw_out_buffer);
+    size_t len = strlen(_lw_out_buffer);
+    _lw_out_buffer[len] = '\r';
+    _lw_out_buffer[len+1] = '\n';
+    _lw_out_buffer[len+2] = 0;
+    _lw_write_to_uart(_lw_out_buffer);
+}
+
+
+static uint8_t _lw_get_port(void)
+{
+    _lw_port++;
+    if (_lw_port > 223)
+    {
+        _lw_port = 0;
+    }
+    return _lw_port;
+}
+
+
+static void _lw_reset_gpio_init(void)
+{
+    rcc_periph_clock_enable(PORT_TO_RCC(_lw_reset_gpio.port));
+    gpio_mode_setup(_lw_reset_gpio.port,
                     GPIO_MODE_OUTPUT,
                     GPIO_PUPD_NONE,
-                    lw_reset_gpio.pins);
-    gpio_set(lw_reset_gpio.port, lw_reset_gpio.pins);
+                    _lw_reset_gpio.pins);
 }
 
 
-void lorawan_init(void)
+static bool _lw_load_config(void)
 {
-    lw_reset_gpio_init();
-    if (lw_state_machine.state != LW_STATE_INIT || lw_state_machine.data.init_step != 0)
-    {
-        log_error("LW not expected in init state.");
-        return;
-    }
 
-    if (persist_get_lw_dev_eui(lw_dev_eui) && persist_get_lw_app_key(lw_app_key))
+    if (!persist_get_lw_dev_eui(_lw_dev_eui) || !persist_get_lw_app_key(_lw_app_key))
     {
-        snprintf(init_msgs[5], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", lw_dev_eui);
-        snprintf(init_msgs[6], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", lw_dev_eui);
-        snprintf(init_msgs[7], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", lw_app_key);
+        log_error("No LoRaWAN Dev EUI and/or App Key.");
+        return false;
     }
-
-    lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", _lw_dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", _lw_dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", _lw_app_key);
+    return true;
 }
 
 
-void lw_reconnect(void)
+static void _lw_chip_init(void)
 {
-    lw_debug("restarted LoRaWAN connection");
-    lw_state_machine.state = LW_STATE_INIT;
-    lw_state_machine.data.init_step = 0;
-    lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
+    if (_lw_state_machine.state != LW_STATE_OFF)
+    {
+        lw_debug("Chip already on, restarting chip.");
+        _lw_chip_off();
+        timer_delay_us_64(LW_RESET_GPIO_DEFAULT_MS * 1000);
+    }
+    lw_debug("Initialising LoRaWAN chip.");
+    _lw_chip_on();
 }
 
 
-enum
+static void _lw_set_confirmed(bool confirmed)
 {
-    LW_RECV_ACK,
-    LW_RECV_DATA,
-    LW_RECV_ERR_NOT_START,
-    LW_RECV_ERR_BAD_FMT,
-    LW_RECV_ERR_UNFIN,
-};
-
-
-static bool lw_msg_is_unsoclitied(char* message);
-static bool lw_msg_is_ok(char* message);
-static bool lw_msg_is_error(char* message);
-static bool lw_msg_is_ack(char* message);
-static void lw_error_handle(char* message);
-static void lw_handle_unsol(char* message);
-
-
-void lw_process(char* message)
-{
-    lw_update_sent_stm32();
-    if (lw_state_machine.state == LW_STATE_WAITING_RSP)
+    if (confirmed)
     {
-        if (lw_msg_is_ok(message))
-        {
-            lw_debug(">> (UNSOL) %s", message);
-            lw_state_machine.state = LW_STATE_IDLE;
-            return;
-        }
-        /*else error?*/
-    }
-    else if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
-    {
-        if (lw_msg_is_ok(message))
-        {
-            return;
-        }
-        if (lw_msg_is_error(message))
-        {
-            lw_error_handle(message);
-            return; /* Logged in check */
-        }
-        if (lw_msg_is_ack(message))
-        {
-            lw_state_machine.state = LW_STATE_IDLE;
-            on_lw_sent_ack(true);
-            return;
-        }
-
-        /*ERROR*/
-    }
-    else if (lw_state_machine.state == LW_STATE_WAITING_LW_RSP)
-    {
-        if (lw_msg_is_ok(message))
-        {
-            lw_state_machine.state = LW_STATE_IDLE;
-            return;
-        }
-        if (lw_msg_is_error(message))
-        {
-            lw_error_handle(message);
-            return; /* Logged in check */
-        }
-
-        if (lw_state_machine.data.response_cb)
-        {
-            lw_state_machine.data.response_cb();
-            lw_state_machine.data.response_cb = NULL;
-        }
-        lw_state_machine.state = LW_STATE_IDLE;
-    }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step < 9))
-    {
-        if (lw_msg_is_ok(message))
-        {
-            lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
-        }
-        else
-        {
-            lw_debug("Setting not OKed. Retrying.");
-            lw_set_config(init_msgs[--lw_state_machine.data.init_step]);
-        }
-        timer_delay_us_64(LW_MESSAGE_DELAY_MS * 1000);
-    }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 9)) /*Restart*/
-    {
-        if (strstr(message, "UART1") == message ||
-            strstr(message, "Current work") == message)
-        {
-            lw_debug("Valid Init 7 response line");
-        }
-        else if (strcmp(message, "Initialization OK") == 0)
-        {
-            lw_set_config(init_msgs[lw_state_machine.data.init_step++]);
-        }
-        else
-        {
-             /*HANDLE ERROR!*/
-        }
-    }
-    else if ((lw_state_machine.state == LW_STATE_INIT) && (lw_state_machine.data.init_step == 10)) /*Join*/
-    {
-        if (strcmp(message, "OK Join Success") == 0)
-        {
-            lw_state_machine.state = LW_STATE_IDLE;
-            lw_connected = true;
-            lw_send_alive();
-        }
-        else if (lw_msg_is_error(message))
-        {
-            lw_error_handle(message);
-            /*else error*/
-        }
-    }
-    else if (lw_state_machine.state != LW_STATE_WAITING_LW_ACK)
-    {
-        if (lw_msg_is_unsoclitied(message))
-        {
-            /*Done?*/
-            lw_debug(">> (UNSOL) %s", message);
-            lw_handle_unsol(message);
-            return;
-        }
+        _lw_state_machine.state = LW_STATE_WAIT_CONF_OK;
+        lw_debug("Setting to confirmed.");
+        _lw_write("at+set_config=lora:confirm:1");
     }
     else
     {
-        log_error("Unexpected data for LW state.");
+        _lw_state_machine.state = LW_STATE_WAIT_UCONF_OK;
+        lw_debug("Setting to unconfirmed.");
+        _lw_write("at+set_config=lora:confirm:0");
     }
 }
 
 
-static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
+static void _lw_join_network(void)
+{
+    _lw_write("at+join");
+}
+
+
+static void _lw_soft_reset(void)
+{
+    _lw_write("at+set_config=device:restart");
+}
+
+
+bool lw_send_ready(void)
+{
+    return _lw_state_machine.state == LW_STATE_IDLE;
+}
+
+
+ void _lw_send_alive(void)
+{
+    lw_debug("Sending an 'is alive' packet.");
+    _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
+}
+
+
+bool lw_send_str(char* str)
+{
+    if (!lw_send_ready())
+    {
+        lw_debug("Cannot send '%s' as chip is not in IDLE state.", str);
+        return false;
+    }
+    _lw_state_machine.state = LW_STATE_WAIT_OK;
+    _lw_write("at+send=lora:%u:%s", _lw_get_port(), str);
+    _lw_backup_message.backup_type = LW_BKUP_MSG_STR;
+    strncpy(_lw_backup_message.string, str, strlen(str));
+    return true;
+}
+
+
+void lw_init(void)
+{
+    _lw_reset_gpio_init();
+    if (_lw_state_machine.state != LW_STATE_OFF)
+    {
+        log_error("LoRaWAN chip not in DISCONNECTED state.");
+        return;
+    }
+    if (!_lw_load_config())
+    {
+        log_error("Loading LoRaWAN config failed. Not connecting to network.");
+        _lw_state_machine.state = LW_STATE_UNCONFIGURED;
+        return;
+    }
+    _lw_chip_init();
+}
+
+
+static lw_recv_packet_types_t _lw_parse_recv(char* message, lw_payload_t* payload)
 {
     // at+recv=PORT,RSSI,SNR,DATALEN:DATA
-    char recv_msg[] = "at+recv=";
+    const char recv_msg[] = "at+recv=";
     char* pos = NULL;
     char* next_pos = NULL;
-    char proc_str[LW_BUFFER_SIZE] = "";
 
     if (strncmp(message, recv_msg, strlen(recv_msg)) != 0)
     {
-        if (strncmp(lw_leftover, recv_msg, strlen(recv_msg)) != 0)
-        {
-            return LW_RECV_ERR_NOT_START;
-        }
-        strncat(proc_str, lw_leftover, strlen(lw_leftover));
-        strncat(proc_str, message, strlen(message));
-    }
-    else
-    {
-        memset(lw_leftover, 0, LW_BUFFER_SIZE);
-        strncpy(proc_str, message, strlen(message));
+        lw_debug("The message did not being with '%s'.", recv_msg);
+        return LW_RECV_ERR_NOT_START;
     }
 
-    pos = proc_str + strlen(recv_msg);
+    pos = message + strlen(recv_msg);
     for (int i = 0; i < 3; i++)
     {
         payload->header.raw[i] = strtol(pos, &next_pos, 10);
@@ -394,12 +409,7 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
     {
         payload->data = next_pos + 1;
         int size_diff = strlen(payload->data)/2 - (int)payload->header.datalen;
-        if (size_diff < 0)
-        {
-            strncat(lw_leftover, proc_str, strlen(proc_str));
-            return LW_RECV_ERR_UNFIN;
-        }
-        if (size_diff > 0)
+        if (size_diff != 0)
         {
             return LW_RECV_ERR_BAD_FMT;
         }
@@ -409,128 +419,94 @@ static uint8_t lw_parse_recv(char* message, lw_payload_t* payload)
 }
 
 
-static bool lw_msg_is_unsoclitied(char* message)
+static bool _lw_msg_is(const char* ref, char* message)
+{
+    return (bool)(strncmp(message, ref, strlen(ref)) == 0);
+}
+
+
+static bool _lw_msg_is_error(char* message)
+{
+    return _lw_msg_is("ERROR:", message);
+}
+
+
+static bool _lw_msg_is_initialisation(char* message)
+{
+    return _lw_msg_is("Initialization OK", message);
+}
+
+
+static bool _lw_msg_is_ok(char* message)
+{
+    return _lw_msg_is("OK", message);
+}
+
+
+static bool _lw_msg_is_connected(char* message)
+{
+    return _lw_msg_is("OK Join Success", message);
+}
+
+
+static bool _lw_msg_is_ack(char* message)
 {
     lw_payload_t payload;
-    if (!lw_parse_recv(message, &payload))
+    return (_lw_parse_recv(message, &payload) == LW_RECV_ACK);
+}
+
+
+static bool _lw_msg_is_unsol(char* message)
+{
+    lw_payload_t payload;
+    return (_lw_parse_recv(message, &payload) == LW_RECV_DATA);
+}
+
+
+static bool _lw_write_next_init_step(void)
+{
+    if (_lw_state_machine.init_step >= ARRAY_SIZE(_init_msgs))
     {
         return false;
     }
-    if (payload.header.datalen == 0)
-    {
-        // Ack?
-        return false;
-    }
+    _lw_write(_init_msgs[_lw_state_machine.init_step++]);
     return true;
 }
 
 
-static bool lw_msg_is_ok(char* message)
-{
-    return (bool)(strncmp(message, "OK ", strlen(message)) == 0);
-}
-
-
-static bool lw_msg_is_error(char* message)
-{
-    char err_msg[] = "ERROR: ";
-    return (bool)(strncmp(message, err_msg, strlen(err_msg)) == 0);
-}
-
-
-static bool lw_msg_is_ack(char* message)
-{
-    lw_payload_t payload;
-    return (lw_parse_recv(message, &payload) == LW_RECV_ACK);
-}
-
-enum
-{
-    LW_ERROR_TX_ERROR      =  5,  // more than 256 bytes?
-    LW_ERROR_NOT_CONNECTED =  86, // reconnect
-    LW_ERROR_PACKET_SIZE   =  87, // throw away message
-    LW_ERROR_TIMEOUT_RX1   =  95, // resend
-    LW_ERROR_TIMEOUT_RX2   =  96, // resend
-    LW_ERROR_RECV_RX1      =  97, // to be decided
-    LW_ERROR_RECV_RX2      =  98, // to be decided
-    LW_ERROR_JOIN_FAIL     =  99, // reconnect
-    LW_ERROR_DUP_DOWNLINK  = 100, // probably nothing
-    LW_ERROR_PAYLOAD_SIZE  = 101, // throw away message
-};
-
-
-static void lw_resend_message(void);
-
-
-static void lw_error_handle(char* message)
-{
-    char* pos = NULL;
-    char* next_pos = NULL;
-    char err_msg[] = "ERROR: ";
-    uint8_t err_no = 0;
-
-    pos = message + strlen(err_msg);
-    err_no = strtol(pos, &next_pos, 10);
-    switch (err_no)
-    {
-        case LW_ERROR_TX_ERROR:
-            lw_reconnect();
-            lw_debug("Error sending data (too big?)");
-            break;
-        case LW_ERROR_NOT_CONNECTED:
-            lw_reconnect();
-            lw_debug("Not connected to a network.");
-            break;
-        case LW_ERROR_JOIN_FAIL:
-            lw_reconnect();
-            lw_debug("Failed to join network.");
-            break;
-        case LW_ERROR_TIMEOUT_RX1:
-            lw_resend_message();
-            lw_debug("RX1 Window timed out.");
-            break;
-        case LW_ERROR_TIMEOUT_RX2:
-            lw_resend_message();
-            lw_debug("RX1 Window timed out.");
-            break;
-        default:
-            lw_debug("Error: %"PRIu8, err_no);
-            lw_state_machine.state = LW_STATE_IDLE;
-            break;
-    }
-}
-
-
-static void lw_handle_unsol(char* message)
+static void _lw_handle_unsol(char* message)
 {
     lw_payload_t incoming_pl;
-    if (lw_parse_recv(message, &incoming_pl) != LW_RECV_DATA)
+    if (_lw_parse_recv(message, &incoming_pl) != LW_RECV_DATA)
     {
         return;
     }
 
     char* p = incoming_pl.data;
 
-    char pl_id_s[8] = "";
-    strncpy(pl_id_s, p, 8);
-    uint32_t pl_id = strtoul(pl_id_s, NULL, 16);
+    char pl_tmp_buff[8] = "";
+
+    strncpy(pl_tmp_buff, p, 8);
+    uint32_t pl_id = strtoul(pl_tmp_buff, NULL, 16);
 
     p += 8;
 
-    char cmd_ascii[LW_BUFFER_SIZE] = "";
-    char val_str[3] = "";
     uint8_t val;
     for (size_t i = 0; i < strlen(p) / 2; i++)
     {
-        strncpy(val_str, p + 2*i, 2);
-        val = strtoul(val_str, NULL, 16);
-        strncat(cmd_ascii, (char* )&val, 1);
+        strncpy(pl_tmp_buff, p + 2*i, 2);
+        val = strtoul(pl_tmp_buff, NULL, 16);
+        strncat(_lw_cmd_ascii, (char* )&val, 1);
     }
 
     switch (pl_id)
     {
         case LW_ID_CMD:
-            cmds_process(cmd_ascii, strlen(cmd_ascii));
+            cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
+            /* FIXME: Give cmds an exit code.
+            _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
+            _lw_error_code.valid = true;
+            */
             break;
         default:
             break;
@@ -538,54 +514,281 @@ static void lw_handle_unsol(char* message)
 }
 
 
-void lw_send(int8_t* hex_arr, uint16_t arr_len)
+static void _lw_send_error_code(void)
 {
-    char header_str[LW_HEADER_SIZE + 1] = {0};
-    char hex_str[3] = {0};
-    if (lw_state_machine.state == LW_STATE_IDLE)
+    // FIXME: No real protocol or anything is set up with this yet.
+    if (_lw_error_code.valid)
     {
-        unsigned expected = lw_send_size(arr_len);
-        lw_port++;
-        if (lw_port > 223)
-        {
-            lw_port = 0;
-        }
-        unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", lw_port);
-        unsigned sent = 0;
-        sent+= uart_ring_out(LW_UART, header_str, header_size);
-        uart_ring_out(CMD_UART, header_str, header_size);
-        for (uint16_t i = 0; i < arr_len; i++)
-        {
-            snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
-            sent+= uart_ring_out(LW_UART, hex_str, 2);
-            uart_ring_out(CMD_UART, hex_str, 2);
-        }
-        sent+= uart_ring_out(LW_UART, "\r\n", 2);
-        uart_ring_out(CMD_UART, "\r\n", 2);
-        lw_update_sent_stm32();
-
-        if (sent != expected)
-            log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
-        else
-            lw_debug("Sent %u bytes", sent);
-
-        memcpy(lw_message_backup.hex_arr, hex_arr, MEASUREMENTS_HEX_ARRAY_SIZE);
-        lw_message_backup.len = arr_len;
-        lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
+        char err_msg[11] = "";
+        snprintf(err_msg, 11, "%"PRIx32, _lw_error_code.code);
+        lw_send_str(err_msg);
+        _lw_error_code.valid = false;
     }
-    else lw_debug("Incorrect state to send : %u", (unsigned)lw_state_machine.state);
 }
 
 
-bool lw_send_ready(void)
+static void _lw_retry_write(void)
 {
-    return lw_state_machine.state == LW_STATE_IDLE;
+    switch (_lw_backup_message.backup_type)
+    {
+        case LW_BKUP_MSG_STR:
+            lw_send_str(_lw_backup_message.string);
+            break;
+        case LW_BKUP_MSG_HEX:
+            lw_send(_lw_backup_message.hex.arr, _lw_backup_message.hex.len);
+            break;
+        default:
+            lw_debug("Broken backup, cant resend");
+            return;
+    }
 }
 
 
-unsigned lw_send_size(uint16_t arr_len)
+void lw_reset(void)
 {
-    unsigned next_lw_port = lw_port + 1;
+    if (_lw_state_machine.state == LW_STATE_OFF)
+    {
+        lw_debug("Already resetting.");
+        return;
+    }
+    _lw_chip_off();
+    _lw_chip_off_time = since_boot_ms;
+    if (++_lw_state_machine.reset_count > 2)
+    {
+        lw_debug("Going into long reset mode (wait %"PRIi16" mins).", LW_SLOW_RESET_TIMEOUT_MINS);
+        _lw_reset_timeout = LW_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
+    }
+    else
+    {
+        _lw_reset_timeout = 10;
+    }
+}
+
+
+bool lw_reload_config(void)
+{
+    if (!_lw_load_config())
+    {
+        return false;
+    }
+    lw_reset();
+    return true;
+}
+
+
+static void _lw_handle_error(char* message)
+{
+    char* pos = NULL;
+    char* next_pos = NULL;
+    lw_error_codes_t err_no = 0;
+
+    pos = message + strlen(LW_ERROR_PREFIX);
+    err_no = (lw_error_codes_t)strtol(pos, &next_pos, 10);
+    switch (err_no)
+    {
+        case LW_ERROR_TRANS_BUSY:
+            lw_debug("LoRa Transceiver is busy, retrying.");
+            _lw_retry_write();
+            break;
+        case LW_ERROR_PACKET_SIZE:
+            lw_debug("Packet size too large, reducing limit throwing data and resetting chip.");
+            lw_packet_max_size -= 2;
+            on_lw_sent_ack(false);
+            lw_reset();
+            break;
+        case LW_ERROR_TIMEOUT_RX1:
+            lw_debug("Timed out waiting for packet in windox RX1.");
+            break;
+        case LW_ERROR_TIMEOUT_RX2:
+            lw_debug("Timed out waiting for packet in window RX2, retrying.");
+            _lw_retry_write();
+            break;
+        case LW_ERROR_RECV_RX1:
+            lw_debug("Error receiving message in RX1.");
+            _lw_retry_write();
+            break;
+        case LW_ERROR_RECV_RX2:
+            lw_debug("Error receiving message in RX2.");
+            _lw_retry_write();
+            break;
+        case LW_ERROR_DUP_DOWNLINK:
+            lw_debug("Duplicate downlink.");
+            break;
+        case LW_ERROR_PAYLOAD_SIZE:
+            lw_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
+            lw_packet_max_size -= 2;
+            on_lw_sent_ack(false);
+            lw_reset();
+            break;
+        case LW_ERROR_INVLD_MIC:
+            lw_debug("Invalid MIC in LoRa message.");
+            break;
+        default:
+            lw_debug("Error Code %"PRIu8", resetting chip.", err_no);
+            lw_reset();
+            break;
+    }
+}
+
+
+static void _lw_process_wait_init(char* message)
+{
+    if (_lw_msg_is_initialisation(message))
+    {
+        _lw_state_machine.state = LW_STATE_WAIT_INIT_OK;
+        _lw_write_next_init_step();
+    }
+}
+
+
+static void _lw_process_wait_init_ok(char* message)
+{
+    if (_lw_msg_is_ok(message))
+    {
+        if (_lw_state_machine.init_step == ARRAY_SIZE(_init_msgs))
+        {
+            _lw_state_machine.state = LW_STATE_WAIT_REINIT;
+            _lw_soft_reset();
+        }
+        else
+        {
+            _lw_write_next_init_step();
+        }
+    }
+}
+
+
+static void _lw_process_wait_reinit(char* message)
+{
+    if (_lw_msg_is_initialisation(message))
+    {
+        _lw_state_machine.state = LW_STATE_WAIT_CONN;
+        _lw_join_network();
+    }
+}
+
+
+static void _lw_process_wait_conn(char* message)
+{
+    if (_lw_msg_is_connected(message))
+    {
+        _lw_state_machine.state = LW_STATE_WAIT_OK;
+        _lw_send_alive();
+    }
+}
+
+
+static void _lw_process_wait_ok(char* message)
+{
+    if (_lw_msg_is_ok(message))
+    {
+        _lw_state_machine.state = LW_STATE_WAIT_ACK;
+    }
+}
+
+
+static void _lw_process_wait_ack(char* message)
+{
+    if (_lw_msg_is_ack(message))
+    {
+        _lw_state_machine.state = LW_STATE_IDLE;
+        _lw_state_machine.reset_count = 0;
+    }
+}
+
+
+static void _lw_process_idle(char* message)
+{
+    if (_lw_msg_is_unsol(message))
+    {
+        _lw_handle_unsol(message);
+        _lw_set_confirmed(false);
+    }
+}
+
+
+static void _lw_process_wait_uconf_ok(char* message)
+{
+    if (_lw_msg_is_ok(message))
+    {
+        _lw_state_machine.state = LW_STATE_WAIT_CODE_OK;
+        _lw_send_error_code();
+    }
+}
+
+
+static void _lw_process_wait_code_ok(char* message)
+{
+    if (_lw_msg_is_ok(message))
+    {
+        _lw_state_machine.state = LW_STATE_WAIT_CONF_OK;
+        _lw_set_confirmed(true);
+    }
+}
+
+
+static void _lw_process_wait_conf_ok(char* message)
+{
+    if (_lw_msg_is_ok(message))
+    {
+        _lw_state_machine.state = LW_STATE_IDLE;
+    }
+}
+
+
+void lw_process(char* message)
+{
+    _lw_update_last_message_time();
+    if (_lw_msg_is_error(message))
+    {
+        _lw_handle_error(message);
+        return;
+    }
+    switch(_lw_state_machine.state)
+    {
+        case LW_STATE_WAIT_INIT:
+            _lw_process_wait_init(message);
+            break;
+        case LW_STATE_WAIT_INIT_OK:
+            _lw_process_wait_init_ok(message);
+            break;
+        case LW_STATE_WAIT_REINIT:
+            _lw_process_wait_reinit(message);
+            break;
+        case LW_STATE_WAIT_CONN:
+            _lw_process_wait_conn(message);
+            break;
+        case LW_STATE_WAIT_OK:
+            _lw_process_wait_ok(message);
+            break;
+        case LW_STATE_WAIT_ACK:
+            _lw_process_wait_ack(message);
+            break;
+        case LW_STATE_IDLE:
+            _lw_process_idle(message);
+            break;
+        case LW_STATE_WAIT_UCONF_OK:
+            _lw_process_wait_uconf_ok(message);
+            break;
+        case LW_STATE_WAIT_CODE_OK:
+            _lw_process_wait_code_ok(message);
+            break;
+        case LW_STATE_WAIT_CONF_OK:
+            _lw_process_wait_conf_ok(message);
+            break;
+        case LW_STATE_UNCONFIGURED:
+            /* Also panic? */
+            break;
+        case LW_STATE_OFF:
+            /* More panic */
+            break;
+    }
+}
+
+
+static unsigned _lw_send_size(uint16_t arr_len)
+{
+    unsigned next_lw_port = _lw_port;
     if (next_lw_port > 223)
         next_lw_port = 0;
 
@@ -602,49 +805,79 @@ unsigned lw_send_size(uint16_t arr_len)
 }
 
 
+void lw_send(int8_t* hex_arr, uint16_t arr_len)
+{
+    char header_str[LW_HEADER_SIZE + 1] = {0};
+    char hex_str[3] = {0};
+    if (_lw_state_machine.state == LW_STATE_IDLE)
+    {
+        unsigned expected = _lw_send_size(arr_len);
+        unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", _lw_get_port());
+        unsigned sent = 0;
+        sent += _lw_write_to_uart(header_str);
+        const char desc[]  ="LORA >> ";
+        uart_ring_out(CMD_UART, desc, strlen(desc));
+        uart_ring_out(CMD_UART, header_str, header_size);
+        for (uint16_t i = 0; i < arr_len; i++)
+        {
+            snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
+            sent += _lw_write_to_uart(hex_str);
+            uart_ring_out(CMD_UART, hex_str, 2);
+        }
+        sent += _lw_write_to_uart("\r\n");
+        uart_ring_out(CMD_UART, "\r\n", 2);
+        _lw_state_machine.state = LW_STATE_WAIT_OK;
+
+        _lw_backup_message.backup_type = LW_BKUP_MSG_HEX;
+        _lw_backup_message.hex.len = arr_len;
+        memcpy(_lw_backup_message.hex.arr, hex_arr, arr_len);
+
+        if (sent != expected)
+            log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
+        else
+            lw_debug("Sent %u bytes", sent);
+    }
+    else
+    {
+        lw_debug("Incorrect state to send : %u", (unsigned)_lw_state_machine.state);
+    }
+}
+
+
 bool lw_get_connected(void)
 {
-    return lw_connected;
-}
-
-
-void lw_send_str(char* str)
-{
-    lw_port++;
-    if (lw_port > 223)
-    {
-        lw_port = 0;
-    }
-    lw_write("at+send=lora:%u:%s", lw_port, str);
-    lw_state_machine.state = LW_STATE_WAITING_LW_ACK;
-}
-
-
-void lw_send_alive(void)
-{
-    lw_send_str("");
-}
-
-
-static void lw_resend_message(void)
-{
-    if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
-        lw_state_machine.state = LW_STATE_IDLE;
-    lw_send(lw_message_backup.hex_arr, lw_message_backup.len);
+    return (_lw_state_machine.state == LW_STATE_IDLE          ||
+            _lw_state_machine.state == LW_STATE_WAIT_UCONF_OK ||
+            _lw_state_machine.state == LW_STATE_WAIT_CODE_OK  ||
+            _lw_state_machine.state == LW_STATE_WAIT_CONF_OK  );
 }
 
 
 void lw_loop_iteration(void)
 {
-    if (( lw_state_machine.state != LW_STATE_IDLE ) && (since_boot_delta(since_boot_ms, lw_sent_stm32) > LW_CONFIG_TIMEOUT_S * 1000))
+    uint32_t now = since_boot_ms;
+    switch(_lw_state_machine.state)
     {
-        if (lw_state_machine.state == LW_STATE_WAITING_LW_ACK)
-        {
-            on_lw_sent_ack(false);
-        }
-        lw_reset_chip();
-        lw_state_machine.state = LW_STATE_INIT;
-        lw_state_machine.data.init_step = 0;
-        lorawan_init();
+        case LW_STATE_OFF:
+            if (since_boot_delta(now, _lw_chip_off_time) > _lw_reset_timeout)
+            {
+                _lw_chip_on();
+            }
+            break;
+        case LW_STATE_IDLE:
+            break;
+        case LW_STATE_UNCONFIGURED:
+            break;
+        default:
+            if (since_boot_delta(since_boot_ms, _lw_state_machine.last_message_time) > LW_CONFIG_TIMEOUT_S * 1000)
+            {
+                if (_lw_state_machine.state == LW_STATE_WAIT_OK || _lw_state_machine.state == LW_STATE_WAIT_ACK)
+                {
+                    on_lw_sent_ack(false);
+                }
+                lw_debug("LoRa chip timed out, resetting.");
+                lw_reset();
+            }
+            break;
     }
 }

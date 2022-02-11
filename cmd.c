@@ -201,12 +201,14 @@ void lora_config_cb(char * args)
         char eui[LW_DEV_EUI_LEN + 1] = "";
         strncpy(eui, p, strlen(p));
         persist_set_lw_dev_eui(eui);
+        lw_reload_config();
     }
     else if (strncmp(args, "app-key", end_pos_word-1) == 0)
     {
         char key[LW_APP_KEY_LEN + 1] = "";
         strncpy(key, p, strlen(p));
         persist_set_lw_app_key(key);
+        lw_reload_config();
     }
 }
 
@@ -612,13 +614,6 @@ static void bat_cb(char* args)
 }
 
 
-static void lw_dbg_cb(char* args)
-{
-    uart_ring_out(LW_UART, args, strlen(args));
-    uart_ring_out(LW_UART, "\r\n", 2);
-}
-
-
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -659,7 +654,6 @@ void cmds_process(char * command, unsigned len)
         { "interval_mins","Get/Set interval minutes", interval_mins_cb},
         { "bat",          "Get battery level.",       bat_cb},
         { "pulsecount",   "Show pulsecount.",         pulsecount_log},
-        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { NULL },
     };
 
