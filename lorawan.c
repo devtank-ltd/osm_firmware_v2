@@ -21,9 +21,8 @@
 #include "timers.h"
 
 #define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
-#define LW_MESSAGE_DELAY_MS             30
 #define LW_CONFIG_TIMEOUT_S             30
-#define LW_RESET_GPIO_MS                10
+#define LW_RESET_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
 
 #define LW_SETTING_JOIN_MODE_OTAA       0
@@ -148,6 +147,7 @@ typedef struct
     unsigned    init_step;
     uint32_t    last_message_time;
     uint8_t     reset_count;
+    bool        chip_is_on;
 } lw_state_machine_t;
 
 
@@ -176,15 +176,14 @@ typedef struct
 } error_code_t;
 
 
-static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0};
+static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0, .chip_is_on=false};
 static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
-static bool                 _lw_chip_is_on                      = false;
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
 static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
 static char                 _lw_app_key[LW_APP_KEY_LEN + 1];
 static uint8_t              _lw_port                            = 0;
 static uint32_t             _lw_chip_off_time                   = 0;
-static uint32_t             _lw_reset_timeout                   = 10;
+static uint32_t             _lw_reset_timeout                   = LW_RESET_GPIO_DEFAULT_MS;
 static lw_backup_msg_t      _lw_backup_message                  = {.backup_type=LW_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
 static error_code_t         _lw_error_code                      = {0, false};
 static char                 _lw_cmd_ascii[CMD_LINELEN]          = "";
@@ -209,14 +208,14 @@ static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
 static void _lw_chip_off(void)
 {
     gpio_clear(_lw_reset_gpio.port, _lw_reset_gpio.pins);
-    _lw_chip_is_on = false;
+    _lw_state_machine.chip_is_on = false;
 }
 
 
 static void _lw_chip_on(void)
 {
     gpio_set(_lw_reset_gpio.port, _lw_reset_gpio.pins);
-    _lw_chip_is_on = true;
+    _lw_state_machine.chip_is_on = true;
 }
 
 
@@ -285,7 +284,7 @@ static bool _lw_load_config(void)
 
 static void _lw_chip_init(void)
 {
-    if (_lw_chip_is_on)
+    if (_lw_state_machine.chip_is_on)
     {
         lw_debug("Chip already on, restarting chip.");
         _lw_state_machine.state = LW_STATE_DISCONNECTED;
