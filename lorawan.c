@@ -32,11 +32,26 @@
 #define LW_SETTING_CLASS_C              2
 #define LW_SETTING_UNCONFIRM            0
 #define LW_SETTING_CONFIRM              1
+#define LW_SETTING_ADR_DISABLED         0
+#define LW_SETTING_ADR_ENABLED          1
+#define LW_SETTING_DR_0                 0
+#define LW_SETTING_DR_1                 1
+#define LW_SETTING_DR_2                 2
+#define LW_SETTING_DR_3                 3
+#define LW_SETTING_DR_4                 4
+#define LW_SETTING_DR_5                 5
+#define LW_SETTING_DR_6                 6
+#define LW_SETTING_DR_7                 7
+#define LW_SETTING_DUTY_CYCLE_DISABLED  0
+#define LW_SETTING_DUTY_CYCLE_ENABLED   1
 
 #define LW_CONFIG_JOIN_MODE             STR(LW_SETTING_JOIN_MODE_OTAA)
 #define LW_CONFIG_CLASS                 STR(LW_SETTING_CLASS_C)
 #define LW_CONFIG_REGION                "EU868"
 #define LW_CONFIG_CONFIRM_TYPE          STR(LW_SETTING_CONFIRM)
+#define LW_CONFIG_ADR                   STR(LW_SETTING_ADR_DISABLED)
+#define LW_CONFIG_DR                    STR(LW_SETTING_DR_4)
+#define LW_CONFIG_DUTY_CYCLE            STR(LW_SETTING_DUTY_CYCLE_DISABLED)
 
 #define LW_ID_CMD                       0x01434d44
 
@@ -54,6 +69,7 @@ typedef enum
     LW_STATE_WAIT_CODE_OK,
     LW_STATE_WAIT_CONF_OK,
     LW_STATE_DISCONNECTED,
+    LW_STATE_UNCONFIGURED,
 } lw_states_t;
 
 
@@ -132,7 +148,6 @@ typedef struct
     unsigned    init_step;
     uint32_t    last_message_time;
     uint8_t     reset_count;
-    uint32_t    wake_time;
 } lw_state_machine_t;
 
 
@@ -161,7 +176,7 @@ typedef struct
 } error_code_t;
 
 
-static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0, .wake_time=0};
+static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_DISCONNECTED, .init_step=0, .last_message_time=0, .reset_count=0};
 static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
 static bool                 _lw_chip_is_on                      = false;
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
@@ -183,6 +198,9 @@ static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
                                      "at+set_config=lora:class:"LW_CONFIG_CLASS,
                                      "at+set_config=lora:region:"LW_CONFIG_REGION,
                                      "at+set_config=lora:confirm:"LW_CONFIG_CONFIRM_TYPE,
+                                     "at+set_config=lora:adr:"LW_CONFIG_ADR,
+                                     "at+set_config=lora:dr:"LW_CONFIG_DR,
+                                     "at+set_config=lora:dutycycle_enable:"LW_CONFIG_DUTY_CYCLE,
                                      "Dev EUI goes here",
                                      "App EUI goes here",
                                      "App Key goes here"};
@@ -253,14 +271,14 @@ static void _lw_reset_gpio_init(void)
 static bool _lw_load_config(void)
 {
 
-    if (!persist_get_lw_dev_eui(_lw_dev_eui) && !persist_get_lw_app_key(_lw_app_key))
+    if (!persist_get_lw_dev_eui(_lw_dev_eui) || !persist_get_lw_app_key(_lw_app_key))
     {
         log_error("No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
-    snprintf(_init_msgs[5], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", _lw_dev_eui);
-    snprintf(_init_msgs[6], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", _lw_dev_eui);
-    snprintf(_init_msgs[7], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", _lw_app_key);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", _lw_dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", _lw_dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", _lw_app_key);
     return true;
 }
 
@@ -277,13 +295,6 @@ static void _lw_chip_init(void)
     lw_debug("Initialising LoRaWAN chip.");
     _lw_state_machine.state = LW_STATE_WAIT_INIT;
     _lw_chip_on();
-}
-
-
-static void _lw_send_alive(void)
-{
-    lw_debug("Sending an 'is alive' packet.");
-    _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
 }
 
 
@@ -320,6 +331,13 @@ bool lw_send_ready(void)
 }
 
 
+ void _lw_send_alive(void)
+{
+    lw_debug("Sending an 'is alive' packet.");
+    _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
+}
+
+
 bool lw_send_str(char* str)
 {
     if (!lw_send_ready())
@@ -346,7 +364,7 @@ void lw_init(void)
     if (!_lw_load_config())
     {
         log_error("Loading LoRaWAN config failed. Not connecting to network.");
-        _lw_state_machine.state = LW_STATE_DISCONNECTED;
+        _lw_state_machine.state = LW_STATE_UNCONFIGURED;
         return;
     }
     _lw_chip_init();
@@ -409,25 +427,25 @@ static bool _lw_msg_is(const char* ref, char* message)
 
 static bool _lw_msg_is_error(char* message)
 {
-    return _lw_msg_is("ERROR: ", message);
+    return _lw_msg_is("ERROR:", message);
 }
 
 
 static bool _lw_msg_is_initialisation(char* message)
 {
-    return _lw_msg_is("Initialization OK ", message);
+    return _lw_msg_is("Initialization OK", message);
 }
 
 
 static bool _lw_msg_is_ok(char* message)
 {
-    return _lw_msg_is("OK ", message);
+    return _lw_msg_is("OK", message);
 }
 
 
 static bool _lw_msg_is_connected(char* message)
 {
-    return _lw_msg_is("Join Success ", message);
+    return _lw_msg_is("OK Join Success", message);
 }
 
 
@@ -538,12 +556,24 @@ void lw_reset(void)
     _lw_chip_off_time = since_boot_ms;
     if (++_lw_state_machine.reset_count > 2)
     {
+        lw_debug("Going into long reset mode (wait %"PRIi16"mins).", LW_SLOW_RESET_TIMEOUT_MINS);
         _lw_reset_timeout = LW_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
     }
     else
     {
         _lw_reset_timeout = 10;
     }
+}
+
+
+bool lw_reload_config(void)
+{
+    if (!_lw_load_config())
+    {
+        return false;
+    }
+    lw_reset();
+    return true;
 }
 
 
@@ -596,7 +626,7 @@ static void _lw_handle_error(char* message)
             lw_debug("Invalid MIC in LoRa message.");
             break;
         default:
-            lw_debug("Error Code 0x%"PRIx8", resetting chip.", err_no);
+            lw_debug("Error Code %"PRIu8", resetting chip.", err_no);
             lw_reset();
             break;
     }
@@ -753,6 +783,9 @@ void lw_process(char* message)
         case LW_STATE_DISCONNECTED:
             /* Panic? */
             break;
+        case LW_STATE_UNCONFIGURED:
+            /* Also panic? */
+            break;
     }
 }
 
@@ -838,6 +871,8 @@ void lw_loop_iteration(void)
             }
             break;
         case LW_STATE_IDLE:
+            break;
+        case LW_STATE_UNCONFIGURED:
             break;
         default:
             if (since_boot_delta(since_boot_ms, _lw_state_machine.last_message_time) > LW_CONFIG_TIMEOUT_S * 1000)

@@ -30,6 +30,7 @@ extern bool     lw_send_ready(void);
 extern bool     lw_send_str(char* str);
 extern void     lw_init(void);
 extern void     lw_reset(void);
+extern bool     lw_reload_config(void);
 extern void     lw_process(char* message);
 extern void     lw_send(int8_t* hex_arr, uint16_t arr_len);
 extern bool     lw_get_connected(void);

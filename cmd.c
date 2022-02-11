@@ -201,12 +201,14 @@ void lora_config_cb(char * args)
         char eui[LW_DEV_EUI_LEN + 1] = "";
         strncpy(eui, p, strlen(p));
         persist_set_lw_dev_eui(eui);
+        lw_reload_config();
     }
     else if (strncmp(args, "app-key", end_pos_word-1) == 0)
     {
         char key[LW_APP_KEY_LEN + 1] = "";
         strncpy(key, p, strlen(p));
         persist_set_lw_app_key(key);
+        lw_reload_config();
     }
 }
 

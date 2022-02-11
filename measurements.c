@@ -258,7 +258,8 @@ static void measurements_send(void)
                 continue;
             }
             uint16_t prev_measurements_hex_arr_pos = measurements_hex_arr_pos;
-            if (!measurements_to_arr(def, data))
+            if (measurements_hex_arr_pos >= (lw_packet_max_size / 2) ||
+                !measurements_to_arr(def, data))
             {
                 measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
                 measurements_debug("Failed to queue send of  \"%s\".", def->name);
@@ -346,8 +347,8 @@ static void measurements_sample(void)
         measurement_inf_t*  inf  = &measurement_arr.inf[i];
         measurement_data_t* data = &measurement_arr.data[i];
 
-        // Breakout if the interval is 0 or has no name
-        if (def->interval == 0 || !def->name[0])
+        // Breakout if the interval or samplecount is 0 or has no name
+        if (def->interval == 0 || def->samplecount == 0 || !def->name[0])
         {
             continue;
         }
