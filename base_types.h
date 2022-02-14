@@ -108,6 +108,7 @@ typedef enum
     HTU21D_TMP    = 7,
     BAT_MON       = 8,
     PULSE_COUNT   = 9,
+    LIGHT         = 10,
 } measurement_def_type_t;
 
 

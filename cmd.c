@@ -623,13 +623,13 @@ static void lw_dbg_cb(char* args)
 
 static void light_cb(char* args)
 {
-    uint16_t lux;
+    uint32_t lux;
     if (!veml7700_get_lux(&lux))
     {
         log_out("Could not get light level");
         return;
     }
-    log_out("Lux: %"PRIu16, lux);
+    log_out("Lux: %"PRIu32, lux);
 }
 
 

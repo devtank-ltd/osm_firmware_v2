@@ -5,7 +5,7 @@
 
 extern void veml7700_init(void);
 
-extern bool veml7700_get_lux(uint16_t* lux);
+extern bool veml7700_get_lux(uint32_t* lux);
 
 
 extern uint32_t veml7700_measurements_collection_time(void);
