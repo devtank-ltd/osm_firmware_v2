@@ -295,14 +295,6 @@ static uint16_t _veml7700_read_als(void)
 }
 
 
-static uint16_t _veml7700_read_white(void)
-{
-    uint16_t white_data;
-    _veml7700_read_reg16(VEML7700_CMD_WHITE, &white_data);
-    return white_data;
-}
-
-
 static bool _veml7700_dt_correction(uint32_t* lux_dt, uint32_t lux)
 {
     /**
@@ -345,96 +337,6 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
     }
     *lux_corrected = (uint32_t)lux;
     return true;
-}
-
-
-static bool _veml7700_increase_integration_time(void)
-{
-    //light_debug("Increasing the integration time.");
-    switch ((veml7700_als_int_times_t)_veml7700_conf.config.als_it)
-    {
-        case VEML7700_CONF_ALS_IT_25:
-            _veml7700_conf.config.als_it = VEML7700_CONF_ALS_IT_50;
-            break;
-        case VEML7700_CONF_ALS_IT_50:
-            _veml7700_conf.config.als_it = VEML7700_CONF_ALS_IT_100;
-            break;
-        case VEML7700_CONF_ALS_IT_100:
-            _veml7700_conf.config.als_it = VEML7700_CONF_ALS_IT_200;
-            break;
-        case VEML7700_CONF_ALS_IT_200:
-            _veml7700_conf.config.als_it = VEML7700_CONF_ALS_IT_400;
-            break;
-        case VEML7700_CONF_ALS_IT_400:
-            _veml7700_conf.config.als_it = VEML7700_CONF_ALS_IT_800;
-            break;
-        case VEML7700_CONF_ALS_IT_800:
-            //light_debug("Cannot increase the integration time.");
-            return false;
-    }
-    return true;
-}
-
-
-static bool _veml7700_increase_gain(void)
-{
-    light_debug("Increasing the gain.");
-    switch ((veml7700_als_gains_t)_veml7700_conf.config.als_sm)
-    {
-        case VEML7700_CONF_ALS_SM_GAIN_1_8:
-            _veml7700_conf.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_4;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_1_4:
-            _veml7700_conf.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_1:
-            _veml7700_conf.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_2;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_2:
-            light_debug("Cannot increase the gain any more.");
-            return false;
-    }
-    return true;
-}
-
-
-bool veml7700_auto_get_lux(uint32_t* lux)
-{
-    _veml7700_conf.config.als_sd     = VEML7700_CONF_ALS_SD_ON;
-    _veml7700_conf.config.als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED;
-    _veml7700_conf.config.als_pers   = VEML7700_CONF_ALS_PERS_1;
-    _veml7700_conf.config.als_it     = VEML7700_CONF_ALS_IT_100;
-    _veml7700_conf.config.als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_8;
-
-    _veml7700_set_config();
-    _veml7700_turn_on();
-
-    uint32_t lux_local;
-    uint16_t counts = _veml7700_read_als();
-    while (counts <= VEML7700_COUNT_LOWER_THRESHOLD)
-    {
-        light_debug("Count is low (%"PRIu16").", counts);
-        _veml7700_turn_off();
-        if (!_veml7700_increase_gain())
-        {
-            if (!_veml7700_increase_integration_time())
-            {
-                return false;
-            }
-            _veml7700_conf.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_8;
-        }
-        counts = _veml7700_read_als();
-    }
-    light_debug("Count = %"PRIu16", above threshold.", counts);
-    _veml7700_conf.resolution_scaled = _veml7700_get_resolution();
-    light_debug("Gain = %"PRIu16, _veml7700_conf.config.als_sm);
-    light_debug("Integration time = %"PRIu16, _veml7700_conf.config.als_it);
-    light_debug("Resolution = %"PRIu16".%04"PRIu16, _veml7700_conf.resolution_scaled / VEML7700_RES_SCALE, _veml7700_conf.resolution_scaled % VEML7700_RES_SCALE);
-    if (!_veml7700_conv_lux(&lux_local, counts))
-    {
-        return false;
-    }
-    return _veml7700_dt_correction(lux, lux_local);
 }
 
 
