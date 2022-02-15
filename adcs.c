@@ -9,6 +9,7 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/cm3/nvic.h>
 
+#include "common.h"
 #include "log.h"
 #include "adcs.h"
 #include "pinmap.h"
@@ -161,28 +162,6 @@ bool adcs_cc_set_midpoint(uint16_t new_midpoint)
 
 
 #ifdef __ADC_RMS_FULL__
-
-static float _Q_rsqrt( float number )
-{
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
-
-    x2 = number * 0.5F;
-    y  = number;
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
-    y  = * ( float * ) &i;
-    #pragma GCC diagnostic pop
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-//  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-    return y;
-}
-
-
 static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms)
 {
     uint64_t sum = 0;
@@ -193,7 +172,7 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
         inter_val *= inter_val;
         sum += inter_val;
     }
-    *adc_rms = midpoint - 1/_Q_rsqrt( sum / ADCS_NUM_SAMPLES );
+    *adc_rms = midpoint - 1/Q_rsqrt( sum / ADCS_NUM_SAMPLES );
     return true;
 }
 #else
