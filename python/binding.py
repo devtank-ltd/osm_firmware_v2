@@ -195,14 +195,14 @@ class dev_t(object):
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
             "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
-            "PF"        : modbus_reg_t("Power Factor"         , 0xc56e, 3, "U32", "PF"   ),
-            "cVP1"      : modbus_reg_t("Phase 1 centivolts"   , 0xc552, 3, "U32", "cVP1" ),
-            "cVP2"      : modbus_reg_t("Phase 2 centivolts"   , 0xc554, 3, "U32", "cVP2" ),
-            "cVP3"      : modbus_reg_t("Phase 3 centivolts"   , 0xc556, 3, "U32", "cVP3" ),
-            "mAP1"      : modbus_reg_t("Phase 1 milliamps"    , 0xc560, 3, "U32", "mAP1" ),
-            "mAP2"      : modbus_reg_t("Phase 2 milliamps"    , 0xc562, 3, "U32", "mAP2" ),
-            "mAP3"      : modbus_reg_t("Phase 3 milliamps"    , 0xc564, 3, "U32", "mAP3" ),
-            "ImEn"      : modbus_reg_t("Import Energy"        , 0xc652, 3, "U32", "ImEn" ),
+            "PF"        : modbus_reg_t("Power Factor"         , 0x36, 4, "F", "PF"   ),
+            "cVP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
+            "cVP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
+            "cVP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
+            "mAP1"      : modbus_reg_t("Phase 1 amps"    , 0x10, 4, "F", "AP1" ),
+            "mAP2"      : modbus_reg_t("Phase 2 amps"    , 0x12, 4, "F", "AP2" ),
+            "mAP3"      : modbus_reg_t("Phase 3 amps"    , 0x14, 4, "F", "AP3" ),
+            "ImEn"      : modbus_reg_t("Import Energy"   , 0x60, 4, "F", "Imp" ),
         }
 
 
