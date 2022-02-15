@@ -347,6 +347,7 @@ static bool _veml7700_dt_correction(uint32_t* lux_dt, uint32_t lux)
     inter_val =   (A * lux * lux)
                 + (B * lux);
     *lux_dt = (uint32_t)inter_val;
+    light_debug("Lux after dt correction = %"PRIu32, *lux_dt);
     return true;
 }
 
@@ -381,7 +382,6 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
 
 static bool _veml7700_increase_integration_time(void)
 {
-    //light_debug("Increasing the integration time.");
     switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
     {
         case VEML7700_CONF_ALS_IT_25:
@@ -400,7 +400,6 @@ static bool _veml7700_increase_integration_time(void)
             _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_800;
             break;
         case VEML7700_CONF_ALS_IT_800:
-            //light_debug("Cannot increase the integration time.");
             return false;
     }
     return true;
