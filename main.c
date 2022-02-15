@@ -9,6 +9,7 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
 
+#include "common.h"
 #include "pinmap.h"
 #include "cmd.h"
 #include "log.h"
@@ -97,12 +98,9 @@ int main(void)
     {
         while(since_boot_delta(since_boot_ms, prev_now) < 1000)
         {
-            uart_rings_in_drain();
-            uart_rings_out_drain();
-            measurements_loop_iteration();
+            tight_loop_contents();
         }
-        lw_loop_iteration();
-
+        loose_loop_contents();
         gpio_toggle(LED_PORT, LED_PIN);
 
         prev_now = since_boot_ms;
