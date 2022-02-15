@@ -295,11 +295,28 @@ static uint16_t _veml7700_read_als(void)
 }
 
 
-uint16_t _veml7700_read_white(void)
+static uint16_t _veml7700_read_white(void)
 {
     uint16_t white_data;
     _veml7700_read_reg16(VEML7700_CMD_WHITE, &white_data);
     return white_data;
+}
+
+
+static bool _veml7700_dt_correction(uint32_t* lux_dt, uint32_t lux)
+{
+    /**
+     Coeffients calculated with a OSM board and cover.
+     lux_dt = Ax^2 + Bx
+        where x = lux
+     */
+    uint32_t inter_val = lux;
+    const float A = +3.2018E-04f;
+    const float B = +4.3223E+00f;
+    inter_val =   (A * lux * lux)
+                + (B * lux);
+    *lux_dt = (uint32_t)inter_val;
+    return true;
 }
 
 
@@ -312,10 +329,10 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
      */
     uint64_t lux = (counts * _veml7700_conf.resolution_scaled) / VEML7700_RES_SCALE;
     light_debug("Lux before correction = %"PRIu64, lux);
-    const float A =  6.0135E-13f;
+    const float A = +6.0135E-13f;
     const float B = -9.3924E-09f;
-    const float C =  8.1488E-05f;
-    const float D =  1.0023E+00f;
+    const float C = +8.1488E-05f;
+    const float D = +1.0023E+00f;
     lux =   (A * lux * lux * lux * lux)
           + (B * lux * lux * lux)
           + (C * lux * lux)
@@ -392,6 +409,7 @@ bool veml7700_auto_get_lux(uint32_t* lux)
     _veml7700_set_config();
     _veml7700_turn_on();
 
+    uint32_t lux_local;
     uint16_t counts = _veml7700_read_als();
     while (counts <= VEML7700_COUNT_LOWER_THRESHOLD)
     {
@@ -412,7 +430,11 @@ bool veml7700_auto_get_lux(uint32_t* lux)
     light_debug("Gain = %"PRIu16, _veml7700_conf.config.als_sm);
     light_debug("Integration time = %"PRIu16, _veml7700_conf.config.als_it);
     light_debug("Resolution = %"PRIu16".%04"PRIu16, _veml7700_conf.resolution_scaled / VEML7700_RES_SCALE, _veml7700_conf.resolution_scaled % VEML7700_RES_SCALE);
-    return _veml7700_conv_lux(lux, counts);
+    if (!_veml7700_conv_lux(&lux_local, counts))
+    {
+        return false;
+    }
+    return _veml7700_dt_correction(lux, lux_local);
 }
 
 
@@ -423,6 +445,7 @@ bool veml7700_get_lux(uint32_t* lux)
         light_debug("Handed in null pointer.");
         return false;
     }
+    uint32_t lux_local;
     _veml7700_set_config();
     _veml7700_turn_on();
     uint32_t start_ms = since_boot_ms;
@@ -433,7 +456,11 @@ bool veml7700_get_lux(uint32_t* lux)
     uint16_t counts = _veml7700_read_als();
     _veml7700_turn_off();
     light_debug("Raw light count = %"PRIu16, counts);
-    return _veml7700_conv_lux(lux, counts);
+    if (!_veml7700_conv_lux(&lux_local, counts))
+    {
+        return false;
+    }
+    return _veml7700_dt_correction(lux, lux_local);
 }
 
 
@@ -458,6 +485,10 @@ bool veml7700_light_measurements_get(char* name, value_t* value)
     counts = _veml7700_read_als();
     _veml7700_turn_off();
     if (!_veml7700_conv_lux(&lux, counts))
+    {
+        return false;
+    }
+    if (!_veml7700_dt_correction(&lux, lux))
     {
         return false;
     }
