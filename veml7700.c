@@ -150,13 +150,23 @@ typedef struct
 } veml7700_conf_t;
 
 
-static veml7700_conf_t _veml7700_cxt = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
-                                                  .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
-                                                  .als_pers   = VEML7700_CONF_ALS_PERS_1,
-                                                  .als_it     = VEML7700_CONF_ALS_IT_100,
-                                                  .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_4},
-                                         .power={.psm_en = VEML7700_PWR_PSM_EN_DISABLE,
-                                                 .psm    = VEML7700_PWR_PSM_MODE_1}};
+typedef struct
+{
+    uint32_t    lux;
+    bool        is_valid;
+} veml7700_reading_t;
+
+
+static veml7700_conf_t      _veml7700_ctx       = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
+                                                            .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
+                                                            .als_pers   = VEML7700_CONF_ALS_PERS_1,
+                                                            .als_it     = VEML7700_CONF_ALS_IT_100,
+                                                            .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_4},
+                                                   .power={ .psm_en = VEML7700_PWR_PSM_EN_DISABLE,
+                                                            .psm    = VEML7700_PWR_PSM_MODE_1}};
+
+static veml7700_reading_t   _veml7700_reading   = {.lux=0,
+                                                   .is_valid=false};
 
 
 static void _veml7700_get_u16(uint8_t d[2], uint16_t *r)
@@ -202,7 +212,7 @@ static uint16_t _veml7700_get_resolution(void)
 {
     uint16_t resolution_scaled = 0.0036 * VEML7700_RES_SCALE;
     uint8_t multiplier = 1;
-    switch ((veml7700_als_gains_t)_veml7700_cxt.config.als_sm)
+    switch ((veml7700_als_gains_t)_veml7700_ctx.config.als_sm)
     {
         case VEML7700_CONF_ALS_SM_GAIN_1:
             multiplier *= 2;
@@ -217,7 +227,7 @@ static uint16_t _veml7700_get_resolution(void)
             multiplier *= 16;
             break;
     }
-    switch ((veml7700_als_int_times_t)_veml7700_cxt.config.als_it)
+    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
     {
         case VEML7700_CONF_ALS_IT_25:
             multiplier *= 32;
@@ -246,7 +256,7 @@ static uint32_t _veml7700_get_refresh_time(void)
 {
     uint32_t refresh_time = 300;
     uint32_t offset = 0;
-    switch ((veml7700_pwr_psm_t)_veml7700_cxt.power.psm)
+    switch ((veml7700_pwr_psm_t)_veml7700_ctx.power.psm)
     {
         case VEML7700_PWR_PSM_MODE_1:
             offset += 0;
@@ -261,7 +271,7 @@ static uint32_t _veml7700_get_refresh_time(void)
             offset += 3500;
             break;
     }
-    switch ((veml7700_als_int_times_t)_veml7700_cxt.config.als_it)
+    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
     {
         case VEML7700_CONF_ALS_IT_25:
             offset += 0;
@@ -288,37 +298,37 @@ static uint32_t _veml7700_get_refresh_time(void)
 
 static bool _veml7700_set_config(void)
 {
-    if (!_veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_cxt.power.raw ) ||
-        !_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0,   _veml7700_cxt.config.raw) )
+    if (!_veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_ctx.power.raw ) ||
+        !_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0,   _veml7700_ctx.config.raw) )
     {
         light_debug("Set config failed.");
         return false;
     }
-    _veml7700_cxt.resolution_scaled = _veml7700_get_resolution();
-    _veml7700_cxt.refresh_time = _veml7700_get_refresh_time();
+    _veml7700_ctx.resolution_scaled = _veml7700_get_resolution();
+    _veml7700_ctx.refresh_time = _veml7700_get_refresh_time();
     return true;
 }
 
 
 static bool _veml7700_turn_on(void)
 {
-    _veml7700_cxt.state = VEML7700_STATE_BUSY;
-    _veml7700_cxt.config.als_sd = VEML7700_CONF_ALS_SD_ON;
-    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_cxt.config.raw);
+    _veml7700_ctx.state = VEML7700_STATE_BUSY;
+    _veml7700_ctx.config.als_sd = VEML7700_CONF_ALS_SD_ON;
+    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_ctx.config.raw);
 }
 
 
 static bool _veml7700_turn_off(void)
 {
-    _veml7700_cxt.state = VEML7700_STATE_OFF;
-    _veml7700_cxt.config.als_sd = VEML7700_CONF_ALS_SD_OFF;
-    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_cxt.config.raw);
+    _veml7700_ctx.state = VEML7700_STATE_OFF;
+    _veml7700_ctx.config.als_sd = VEML7700_CONF_ALS_SD_OFF;
+    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_ctx.config.raw);
 }
 
 
 static uint16_t _veml7700_read_als(void)
 {
-    uint16_t als_data;
+    uint16_t als_data = 0;
     _veml7700_read_reg16(VEML7700_CMD_ALS, &als_data);
     return als_data;
 }
@@ -348,7 +358,7 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
      lux_corrected = Ax^4 + Bx^3 + Cx^2 + Dx
            where x = lux
      */
-    uint64_t lux = (counts * _veml7700_cxt.resolution_scaled) / VEML7700_RES_SCALE;
+    uint64_t lux = (counts * _veml7700_ctx.resolution_scaled) / VEML7700_RES_SCALE;
     light_debug("Lux before correction = %"PRIu64, lux);
     const float A = +6.0135E-13f;
     const float B = -9.3924E-09f;
@@ -369,18 +379,58 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
 }
 
 
-bool veml7700_get_lux(uint32_t* lux)
+static bool _veml7700_increase_integration_time(void)
 {
-    if (!lux)
+    //light_debug("Increasing the integration time.");
+    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
     {
-        light_debug("Handed in null pointer.");
-        return false;
+        case VEML7700_CONF_ALS_IT_25:
+            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_50;
+            break;
+        case VEML7700_CONF_ALS_IT_50:
+            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_100;
+            break;
+        case VEML7700_CONF_ALS_IT_100:
+            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_200;
+            break;
+        case VEML7700_CONF_ALS_IT_200:
+            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_400;
+            break;
+        case VEML7700_CONF_ALS_IT_400:
+            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_800;
+            break;
+        case VEML7700_CONF_ALS_IT_800:
+            //light_debug("Cannot increase the integration time.");
+            return false;
     }
-    if (_veml7700_cxt.state != VEML7700_STATE_OFF)
+    return true;
+}
+
+
+static bool _veml7700_increase_gain(void)
+{
+    light_debug("Increasing the gain.");
+    switch ((veml7700_als_gains_t)_veml7700_ctx.config.als_sm)
     {
-        return false;
+        case VEML7700_CONF_ALS_SM_GAIN_1_8:
+            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_4;
+            break;
+        case VEML7700_CONF_ALS_SM_GAIN_1_4:
+            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1;
+            break;
+        case VEML7700_CONF_ALS_SM_GAIN_1:
+            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_2;
+            break;
+        case VEML7700_CONF_ALS_SM_GAIN_2:
+            light_debug("Cannot increase the gain any more.");
+            return false;
     }
-    uint32_t lux_local;
+    return true;
+}
+
+
+static bool _veml7700_get_als_count(uint16_t* counts)
+{
     if (!_veml7700_set_config())
     {
         return false;
@@ -394,12 +444,54 @@ bool veml7700_get_lux(uint32_t* lux)
     while (since_boot_delta(since_boot_ms, start_ms) < VEML7700_WAIT_MEASUREMENT_MS)
         uart_rings_out_drain();
 
-    uint16_t counts = _veml7700_read_als();
+    *counts = _veml7700_read_als();
     if (!_veml7700_turn_off())
     {
         return false;
     }
+    return true;
+}
+
+
+bool veml7700_get_lux(uint32_t* lux)
+{
+    if (!lux)
+    {
+        light_debug("Handed in null pointer.");
+        return false;
+    }
+    if (_veml7700_ctx.state != VEML7700_STATE_OFF)
+    {
+        return false;
+    }
+    _veml7700_ctx.config.als_sd     = VEML7700_CONF_ALS_SD_OFF;
+    _veml7700_ctx.config.als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED;
+    _veml7700_ctx.config.als_pers   = VEML7700_CONF_ALS_PERS_1;
+    _veml7700_ctx.config.als_it     = VEML7700_CONF_ALS_IT_100;
+    _veml7700_ctx.config.als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_8;
+    uint16_t counts;
+    if (!_veml7700_get_als_count(&counts))
+    {
+        return false;
+    }
+    while (counts < 100)
+    {
+        if (!_veml7700_increase_gain())
+        {
+            if (!_veml7700_increase_integration_time())
+            {
+                light_debug("Cannot increase count any more.");
+                return false;
+            }
+            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_8;
+        }
+        if (!_veml7700_get_als_count(&counts))
+        {
+            return false;
+        }
+    }
     light_debug("Raw light count = %"PRIu16, counts);
+    uint32_t lux_local;
     if (!_veml7700_conv_lux(&lux_local, counts))
     {
         return false;
@@ -410,51 +502,26 @@ bool veml7700_get_lux(uint32_t* lux)
 
 uint32_t veml7700_measurements_collection_time(void)
 {
-    return VEML7700_WAIT_MEASUREMENT_MS;
+    // Maximum number of iterations of count is 16 from 4x gain settings, 4x integration time settings
+    return VEML7700_WAIT_MEASUREMENT_MS * 16;
 }
 
 
 bool veml7700_light_measurements_init(char* name)
 {
-    if (_veml7700_cxt.state != VEML7700_STATE_OFF)
-    {
-        return false;
-    }
-    if (!_veml7700_set_config())
-    {
-        return false;
-    }
-    if (!_veml7700_turn_on())
-    {
-        return false;
-    }
-    return true;
+    _veml7700_reading.is_valid = veml7700_get_lux(&_veml7700_reading.lux);
+    return _veml7700_reading.is_valid;
 }
 
 
 bool veml7700_light_measurements_get(char* name, value_t* value)
 {
-    uint16_t counts;
-    uint32_t lux;
-    if (_veml7700_cxt.state != VEML7700_STATE_BUSY)
+    if (!_veml7700_reading.is_valid)
     {
         return false;
     }
-    counts = _veml7700_read_als();
-    if (!_veml7700_turn_off())
-    {
-        return false;
-    }
-    if (!_veml7700_conv_lux(&lux, counts))
-    {
-        return false;
-    }
-    if (!_veml7700_dt_correction(&lux, lux))
-    {
-        return false;
-    }
-    light_debug("Lux after dt correction: %"PRIu32, lux);
-    *value = value_from_u32(lux);
+    _veml7700_reading.is_valid = false;
+    *value = value_from(_veml7700_reading.lux);
     return true;
 }
 
