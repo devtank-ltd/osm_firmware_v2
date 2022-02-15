@@ -8,6 +8,33 @@
 #include "measurements.h"
 
 
+static volatile uint32_t since_boot_ms = 0;
+
+
+// Timing Functions
+
+uint32_t since_boot_delta(uint32_t newer, uint32_t older)
+{
+    if (newer < older)
+        return (0xFFFFFFFF - older) + newer;
+    else
+        return newer - older;
+}
+
+
+uint32_t get_since_boot_ms(void)
+{
+    return since_boot_ms;
+}
+
+
+void sys_tick_handler(void)
+{
+    since_boot_ms++;
+}
+
+// Loop Contents Functions
+
 void tight_loop_contents(void)
 {
     // Should be included in while loop when expected to last > 50ms

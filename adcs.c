@@ -15,7 +15,6 @@
 #include "pinmap.h"
 #include "persist_config.h"
 #include "uart_rings.h"
-#include "sys_time.h"
 
 
 #define ADC_CCR_PRESCALE_MASK  (15 << 18)

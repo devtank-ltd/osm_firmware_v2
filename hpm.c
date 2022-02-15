@@ -8,7 +8,7 @@
 #include "hpm.h"
 #include "pinmap.h"
 #include "uart_rings.h"
-#include "sys_time.h"
+#include "common.h"
 
 #define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
 

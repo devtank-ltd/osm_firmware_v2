@@ -23,7 +23,7 @@
 #include "modbus_measurements.h"
 #include "update.h"
 #include "one_wire_driver.h"
-#include "sys_time.h"
+#include "common.h"
 #include "htu21d.h"
 #include "log.h"
 #include "uart_rings.h"
@@ -533,9 +533,9 @@ static void timer_cb(char* args)
 {
     char* pos = skip_space(args);
     uint32_t delay_ms = strtoul(pos, NULL, 10);
-    uint32_t start_time = since_boot_ms;
+    uint32_t start_time = get_since_boot_ms();
     timer_delay_us_64(delay_ms * 1000);
-    log_out("Time elapsed: %"PRIu32, since_boot_delta(since_boot_ms, start_time));
+    log_out("Time elapsed: %"PRIu32, since_boot_delta(get_since_boot_ms(), start_time));
 }
 
 

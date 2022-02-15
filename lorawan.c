@@ -17,7 +17,7 @@
 #include "cmd.h"
 #include "measurements.h"
 #include "persist_config.h"
-#include "sys_time.h"
+#include "common.h"
 #include "timers.h"
 
 #define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
@@ -223,7 +223,7 @@ static void _lw_chip_on(void)
 
 static void _lw_update_last_message_time(void)
 {
-    _lw_state_machine.last_message_time = since_boot_ms;
+    _lw_state_machine.last_message_time = get_since_boot_ms();
 }
 
 
@@ -552,7 +552,7 @@ void lw_reset(void)
         return;
     }
     _lw_chip_off();
-    _lw_chip_off_time = since_boot_ms;
+    _lw_chip_off_time = get_since_boot_ms();
     if (++_lw_state_machine.reset_count > 2)
     {
         lw_debug("Going into long reset mode (wait %"PRIi16" mins).", LW_SLOW_RESET_TIMEOUT_MINS);
@@ -855,7 +855,7 @@ bool lw_get_connected(void)
 
 void lw_loop_iteration(void)
 {
-    uint32_t now = since_boot_ms;
+    uint32_t now = get_since_boot_ms();
     switch(_lw_state_machine.state)
     {
         case LW_STATE_OFF:
@@ -869,7 +869,7 @@ void lw_loop_iteration(void)
         case LW_STATE_UNCONFIGURED:
             break;
         default:
-            if (since_boot_delta(since_boot_ms, _lw_state_machine.last_message_time) > LW_CONFIG_TIMEOUT_S * 1000)
+            if (since_boot_delta(get_since_boot_ms(), _lw_state_machine.last_message_time) > LW_CONFIG_TIMEOUT_S * 1000)
             {
                 if (_lw_state_machine.state == LW_STATE_WAIT_OK || _lw_state_machine.state == LW_STATE_WAIT_ACK)
                 {

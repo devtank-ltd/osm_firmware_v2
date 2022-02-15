@@ -10,7 +10,7 @@
 #include "modbus.h"
 #include "uart_rings.h"
 #include "uarts.h"
-#include "sys_time.h"
+#include "common.h"
 #include "cmd.h"
 #include "persist_config.h"
 
@@ -262,7 +262,7 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     modbuspacket[body_size+1] = crc >> 8;
 
     modbus_want_rx = true;
-    modbus_cur_send_time = since_boot_ms;
+    modbus_cur_send_time = get_since_boot_ms();
 
     if (do_binary_framing)
     {
@@ -293,7 +293,7 @@ bool modbus_start_read(modbus_reg_t * reg)
     {
         if (modbus_has_rx)
         {
-            uint32_t delta = since_boot_delta(since_boot_ms, modbus_read_last_good);
+            uint32_t delta = since_boot_delta(get_since_boot_ms(), modbus_read_last_good);
             if (delta < MODBUS_SENT_TIMEOUT_MS)
             {
                 modbus_debug("No slot free.. comms??");
@@ -343,9 +343,9 @@ static void _modbus_next_message(void)
 static bool _modbus_has_timedout(ring_buf_t * ring)
 {
     uint32_t delta = (modbus_read_timing_init)?
-                    since_boot_delta(since_boot_ms, modbus_read_timing_init)
+                    since_boot_delta(get_since_boot_ms(), modbus_read_timing_init)
                     :
-                    since_boot_delta(since_boot_ms, modbus_cur_send_time);
+                    since_boot_delta(get_since_boot_ms(), modbus_cur_send_time);
 
     if (delta < MODBUS_RESP_TIMEOUT_MS)
         return false;
@@ -369,7 +369,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
         if (ring_buf_get_pending(&_message_queue))
         {
-            uint32_t delta = since_boot_delta(since_boot_ms, modbus_read_last_good);
+            uint32_t delta = since_boot_delta(get_since_boot_ms(), modbus_read_last_good);
             if (delta > MODBUS_TX_GAP_MS)
                 _modbus_next_message();
         }
@@ -432,7 +432,7 @@ void modbus_ring_process(ring_buf_t * ring)
             if (do_binary_framing)
                 modbuspacket_len++;
 
-            modbus_read_timing_init = since_boot_ms;
+            modbus_read_timing_init = get_since_boot_ms();
             modbus_debug("header received, timer started at:%"PRIu32, modbus_read_timing_init);
         }
         else
@@ -440,7 +440,7 @@ void modbus_ring_process(ring_buf_t * ring)
             if (!modbus_read_timing_init)
             {
                 // There is some bytes, but not enough to be a header yet
-                modbus_read_timing_init = since_boot_ms;
+                modbus_read_timing_init = get_since_boot_ms();
                 modbus_debug("bus received, timer started at:%"PRIu32, modbus_read_timing_init);
             }
             else _modbus_has_timedout(ring);
@@ -487,7 +487,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     modbus_debug("Good CRC");
     modbuspacket_len = 0;
-    modbus_read_last_good = since_boot_ms;
+    modbus_read_last_good = get_since_boot_ms();
     modbus_has_rx = true;
     modbus_want_rx = false;
 

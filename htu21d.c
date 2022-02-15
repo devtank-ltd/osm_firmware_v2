@@ -26,7 +26,6 @@ Documents used:
 #include "log.h"
 #include "htu21d.h"
 #include "measurements.h"
-#include "sys_time.h"
 
 #define MEASUREMENT_COLLECTION_MS 50
 
@@ -117,9 +116,9 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
     i2c_send_start(HTU21D_I2C);
     i2c_enable_autoend(HTU21D_I2C);
 
-    uint32_t start_ms = since_boot_ms;
+    uint32_t start_ms = get_since_boot_ms();
 
-    while(since_boot_delta(since_boot_ms, start_ms) < timeout)
+    while(since_boot_delta(get_since_boot_ms(), start_ms) < timeout)
     {
         if (!i2c_nack(HTU21D_I2C))
         {
@@ -127,7 +126,7 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
             for (size_t i = 0; i < 3; i++)
             {
                 while (i2c_received_data(HTU21D_I2C) == 0)
-                    if (since_boot_delta(since_boot_ms, start_ms) > timeout)
+                    if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout)
                         goto timeout;
                 d[i] = i2c_get_data(HTU21D_I2C);
             }

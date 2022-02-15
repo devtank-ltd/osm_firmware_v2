@@ -4,7 +4,7 @@
 
 #include "pinmap.h"
 #include "log.h"
-#include "sys_time.h"
+#include "common.h"
 
 
 static const i2c_def_t i2c_buses[]     = I2C_BUSES;
@@ -47,7 +47,7 @@ void    i2c_init(unsigned i2c_index)
 bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
     /* i2c_transfer7 but with ms timeout. */
-    uint32_t start_ms = since_boot_ms;
+    uint32_t start_ms = get_since_boot_ms();
 
     if (wn)
     {
@@ -72,7 +72,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                 }
                 while (i2c_nack(i2c))
                 {
-                    if (since_boot_delta(since_boot_ms, start_ms) > timeout_ms)
+                    if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                     {
                         log_error("I2C timeout");
                         return false;
@@ -86,7 +86,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
         {
             while (!i2c_transfer_complete(i2c))
             {
-                if (since_boot_delta(since_boot_ms, start_ms) > timeout_ms)
+                if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     log_error("I2C timeout");
                     return false;
@@ -108,7 +108,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
         {
             while (i2c_received_data(i2c) == 0)
             {
-                if (since_boot_delta(since_boot_ms, start_ms) > timeout_ms)
+                if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     log_error("I2C timeout");
                     return false;
