@@ -1,6 +1,10 @@
 /*
-Datasheet: https://eu.mouser.com/datasheet/2/427/VISH_S_A0012091125_1-2572303.pdf
-         (Accessed: 31.01.2022)
+Datasheet:
+    https://eu.mouser.com/datasheet/2/427/VISH_S_A0012091125_1-2572303.pdf
+        (Accessed: 31.01.2022)
+Application Guide:
+    https://www.vishay.com/docs/84323/designingveml7700.pdf
+        (Accessed: 15.02.2022)
 */
 
 
@@ -69,6 +73,7 @@ typedef enum
     VEML7700_CONF_ALS_PERS_8 = 3, /* 0b11 */
 } veml7700_als_persitent_t;
 
+
 typedef enum
 {
     VEML7700_CONF_ALS_INT_EN_DIABLED = 0 ,
@@ -97,6 +102,13 @@ typedef enum
     VEML7700_PWR_PSM_EN_DISABLE = 0 ,
     VEML7700_PWR_PSM_EN_ENABLE  = 1 ,
 } veml7700_pwr_en_t;
+
+
+typedef enum
+{
+    VEML7700_STATE_OFF  ,
+    VEML7700_STATE_BUSY ,
+} veml7700_state_t;
 
 
 typedef union
@@ -134,10 +146,11 @@ typedef struct
     veml7700_cmd_pwr_t      power;
     uint32_t                refresh_time;
     uint16_t                resolution_scaled; // scaled by VEML7700_RES_SCALE
+    veml7700_state_t        state;
 } veml7700_conf_t;
 
 
-static veml7700_conf_t _veml7700_conf = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
+static veml7700_conf_t _veml7700_cxt = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
                                                   .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
                                                   .als_pers   = VEML7700_CONF_ALS_PERS_1,
                                                   .als_it     = VEML7700_CONF_ALS_IT_100,
@@ -162,17 +175,26 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
     uint8_t reg8 = reg;
     uint8_t d[2] = {0};
     light_debug("Read command 0x%"PRIx8, reg8);
-    i2c_transfer7(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2);
+    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
+    {
+        light_debug("Read timed out.");
+        return false;
+    }
     _veml7700_get_u16(d, r);
     return true;
 }
 
 
-static void _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
+static bool _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
 {
     uint8_t payload[3] = { reg, data & 0xFF, data >> 8 };
     light_debug("Send command 0x%"PRIx8" [0x%"PRIx8" 0x%"PRIx8"].", payload[0], payload[1], payload[2]);
-    i2c_transfer7(VEML7700_I2C, I2C_VEML7700_ADDR, payload, 3, NULL, 0);
+    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, payload, 3, NULL, 0, 100))
+    {
+        light_debug("Write timed out.");
+        return false;
+    }
+    return true;
 }
 
 
@@ -180,7 +202,7 @@ static uint16_t _veml7700_get_resolution(void)
 {
     uint16_t resolution_scaled = 0.0036 * VEML7700_RES_SCALE;
     uint8_t multiplier = 1;
-    switch ((veml7700_als_gains_t)_veml7700_conf.config.als_sm)
+    switch ((veml7700_als_gains_t)_veml7700_cxt.config.als_sm)
     {
         case VEML7700_CONF_ALS_SM_GAIN_1:
             multiplier *= 2;
@@ -195,7 +217,7 @@ static uint16_t _veml7700_get_resolution(void)
             multiplier *= 16;
             break;
     }
-    switch ((veml7700_als_int_times_t)_veml7700_conf.config.als_it)
+    switch ((veml7700_als_int_times_t)_veml7700_cxt.config.als_it)
     {
         case VEML7700_CONF_ALS_IT_25:
             multiplier *= 32;
@@ -224,7 +246,7 @@ static uint32_t _veml7700_get_refresh_time(void)
 {
     uint32_t refresh_time = 300;
     uint32_t offset = 0;
-    switch ((veml7700_pwr_psm_t)_veml7700_conf.power.psm)
+    switch ((veml7700_pwr_psm_t)_veml7700_cxt.power.psm)
     {
         case VEML7700_PWR_PSM_MODE_1:
             offset += 0;
@@ -239,7 +261,7 @@ static uint32_t _veml7700_get_refresh_time(void)
             offset += 3500;
             break;
     }
-    switch ((veml7700_als_int_times_t)_veml7700_conf.config.als_it)
+    switch ((veml7700_als_int_times_t)_veml7700_cxt.config.als_it)
     {
         case VEML7700_CONF_ALS_IT_25:
             offset += 0;
@@ -264,26 +286,33 @@ static uint32_t _veml7700_get_refresh_time(void)
 }
 
 
-static void _veml7700_set_config(void)
+static bool _veml7700_set_config(void)
 {
-    _veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_conf.power.raw);
-    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_conf.config.raw);
-    _veml7700_conf.resolution_scaled = _veml7700_get_resolution();
-    _veml7700_conf.refresh_time = _veml7700_get_refresh_time();
+    if (!_veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_cxt.power.raw ) ||
+        !_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0,   _veml7700_cxt.config.raw) )
+    {
+        light_debug("Set config failed.");
+        return false;
+    }
+    _veml7700_cxt.resolution_scaled = _veml7700_get_resolution();
+    _veml7700_cxt.refresh_time = _veml7700_get_refresh_time();
+    return true;
 }
 
 
-static void _veml7700_turn_on(void)
+static bool _veml7700_turn_on(void)
 {
-    _veml7700_conf.config.als_sd = VEML7700_CONF_ALS_SD_ON;
-    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_conf.config.raw);
+    _veml7700_cxt.state = VEML7700_STATE_BUSY;
+    _veml7700_cxt.config.als_sd = VEML7700_CONF_ALS_SD_ON;
+    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_cxt.config.raw);
 }
 
 
-static void _veml7700_turn_off(void)
+static bool _veml7700_turn_off(void)
 {
-    _veml7700_conf.config.als_sd = VEML7700_CONF_ALS_SD_OFF;
-    _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_conf.config.raw);
+    _veml7700_cxt.state = VEML7700_STATE_OFF;
+    _veml7700_cxt.config.als_sd = VEML7700_CONF_ALS_SD_OFF;
+    return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_cxt.config.raw);
 }
 
 
@@ -319,7 +348,7 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
      lux_corrected = Ax^4 + Bx^3 + Cx^2 + Dx
            where x = lux
      */
-    uint64_t lux = (counts * _veml7700_conf.resolution_scaled) / VEML7700_RES_SCALE;
+    uint64_t lux = (counts * _veml7700_cxt.resolution_scaled) / VEML7700_RES_SCALE;
     light_debug("Lux before correction = %"PRIu64, lux);
     const float A = +6.0135E-13f;
     const float B = -9.3924E-09f;
@@ -347,16 +376,29 @@ bool veml7700_get_lux(uint32_t* lux)
         light_debug("Handed in null pointer.");
         return false;
     }
+    if (_veml7700_cxt.state != VEML7700_STATE_OFF)
+    {
+        return false;
+    }
     uint32_t lux_local;
-    _veml7700_set_config();
-    _veml7700_turn_on();
+    if (!_veml7700_set_config())
+    {
+        return false;
+    }
+    if (!_veml7700_turn_on())
+    {
+        return false;
+    }
     uint32_t start_ms = since_boot_ms;
     light_debug("Waiting %"PRIu16".%03"PRIu16" seconds", VEML7700_WAIT_MEASUREMENT_MS/1000, VEML7700_WAIT_MEASUREMENT_MS%1000);
     while (since_boot_delta(since_boot_ms, start_ms) < VEML7700_WAIT_MEASUREMENT_MS)
         uart_rings_out_drain();
 
     uint16_t counts = _veml7700_read_als();
-    _veml7700_turn_off();
+    if (!_veml7700_turn_off())
+    {
+        return false;
+    }
     light_debug("Raw light count = %"PRIu16, counts);
     if (!_veml7700_conv_lux(&lux_local, counts))
     {
@@ -374,8 +416,18 @@ uint32_t veml7700_measurements_collection_time(void)
 
 bool veml7700_light_measurements_init(char* name)
 {
-    _veml7700_set_config();
-    _veml7700_turn_on();
+    if (_veml7700_cxt.state != VEML7700_STATE_OFF)
+    {
+        return false;
+    }
+    if (!_veml7700_set_config())
+    {
+        return false;
+    }
+    if (!_veml7700_turn_on())
+    {
+        return false;
+    }
     return true;
 }
 
@@ -384,8 +436,15 @@ bool veml7700_light_measurements_get(char* name, value_t* value)
 {
     uint16_t counts;
     uint32_t lux;
+    if (_veml7700_cxt.state != VEML7700_STATE_BUSY)
+    {
+        return false;
+    }
     counts = _veml7700_read_als();
-    _veml7700_turn_off();
+    if (!_veml7700_turn_off())
+    {
+        return false;
+    }
     if (!_veml7700_conv_lux(&lux, counts))
     {
         return false;
@@ -394,6 +453,7 @@ bool veml7700_light_measurements_get(char* name, value_t* value)
     {
         return false;
     }
+    light_debug("Lux after dt correction: %"PRIu32, lux);
     *value = value_from_u32(lux);
     return true;
 }
