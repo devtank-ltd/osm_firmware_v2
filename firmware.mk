@@ -23,6 +23,7 @@ firmware_SOURCES := main.c \
            one_wire_driver.c \
            timers.c \
            pulsecount.c \
+           veml7700.c \
            common.c
 
 firmware_LINK_SCRIPT := stm32l452.ld

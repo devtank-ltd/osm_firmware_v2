@@ -16,6 +16,7 @@
 #define MEASUREMENT_HTU21D_HUMI        "HUMI"
 #define MEASUREMENT_BATMON_NAME        "BAT"
 #define MEASUREMENT_PULSE_COUNT_NAME   "PCNT"
+#define MEASUREMENT_LIGHT_NAME         "LGHT"
 
 extern unsigned measurements_add_defaults(measurement_def_t * measurement_arr);
 

@@ -57,6 +57,12 @@ unsigned measurements_add_defaults(measurement_def_t * measurement_arr)
     def->interval    = 1;
     def->type        = PULSE_COUNT;
 
+    def = &measurement_arr[pos++];
+    strncpy(def->name, MEASUREMENT_LIGHT_NAME, MEASURE_NAME_LEN+1);
+    def->samplecount = 5;
+    def->interval    = 1;
+    def->type        = LIGHT;
+
     return pos;
 }
 

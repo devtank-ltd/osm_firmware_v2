@@ -12,7 +12,7 @@
 #include "persist_config.h"
 #include "common.h"
 
-uint32_t log_debug_mask = DEBUG_SYS | DEBUG_LW | DEBUG_MEASUREMENTS;
+uint32_t log_debug_mask = DEBUG_SYS | DEBUG_LW | DEBUG_MEASUREMENTS | DEBUG_LIGHT;
 bool     log_async_log  = false;
 
 

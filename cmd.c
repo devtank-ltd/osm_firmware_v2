@@ -27,6 +27,8 @@
 #include "htu21d.h"
 #include "log.h"
 #include "uart_rings.h"
+#include "veml7700.h"
+
 
 static char   * rx_buffer;
 static unsigned rx_buffer_len = 0;
@@ -614,6 +616,26 @@ static void bat_cb(char* args)
 }
 
 
+static void lw_dbg_cb(char* args)
+{
+    uart_ring_out(LW_UART, args, strlen(args));
+    uart_ring_out(LW_UART, "\r\n", 2);
+}
+
+
+static void light_cb(char* args)
+{
+    uint32_t lux;
+    if (!veml7700_get_lux(&lux))
+    {
+        log_out("Could not get light level");
+        return;
+    }
+    log_out("Lux: %"PRIu32, lux);
+}
+
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -654,6 +676,8 @@ void cmds_process(char * command, unsigned len)
         { "interval_mins","Get/Set interval minutes", interval_mins_cb},
         { "bat",          "Get battery level.",       bat_cb},
         { "pulsecount",   "Show pulsecount.",         pulsecount_log},
+        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
+        { "light",        "Get the light in lux.",    light_cb},
         { NULL },
     };
 
