@@ -32,6 +32,7 @@
 
 void hard_fault_handler(void)
 {
+    /* Special libopencm3 function to handle crashes */
     platform_raw_msg("----big fat crash -----");
     error_state();
 }

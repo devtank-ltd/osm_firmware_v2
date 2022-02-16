@@ -30,6 +30,7 @@ uint32_t get_since_boot_ms(void)
 
 void sys_tick_handler(void)
 {
+    /* Special libopencm3 function to handle system ticks */
     since_boot_ms++;
 }
 
