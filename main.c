@@ -80,9 +80,12 @@ int main(void)
     {
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
-            tight_loop_contents();
+            uart_rings_in_drain();
+            uart_rings_out_drain();
+            measurements_loop_iteration();
         }
-        loose_loop_contents();
+        lw_loop_iteration();
+
         gpio_toggle(LED_PORT, LED_PIN);
 
         prev_now = get_since_boot_ms();

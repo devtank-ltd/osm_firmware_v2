@@ -359,7 +359,7 @@ static void _adcs_cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
     while (adcs_cc_running)
-        tight_loop_contents();
+        uart_rings_out_drain();
 }
 
 
@@ -499,7 +499,7 @@ bool adcs_bat_get_blocking(char* name, value_t* value)
         return false;
     adc_debug("Waiting for ADC BAT");
     while (!adc_eoc(ADC1))
-        tight_loop_contents();
+        uart_rings_out_drain();
     return adcs_bat_get(name, value);
 }
 

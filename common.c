@@ -33,24 +33,6 @@ void sys_tick_handler(void)
     since_boot_ms++;
 }
 
-// Loop Contents Functions
-
-void tight_loop_contents(void)
-{
-    // Should be included in while loop when expected to last > 50ms
-    uart_rings_in_drain();
-    uart_rings_out_drain();
-    measurements_loop_iteration();
-}
-
-
-void loose_loop_contents(void)
-{
-    // Should be looped about once a second
-    lw_loop_iteration();
-}
-
-
 
 // Maths Functions
 
