@@ -32,6 +32,7 @@ typedef struct
     measurements_sensor_state_t     (* init_cb)(char* name);                                        // Function to start the process of retrieving the data
     measurements_sensor_state_t     (* get_cb)(char* name, value_t* value);                         // Function to collect the value
     void                            (* acked_cb)();                                                 // Function to tell subsystem measurement was successfully sent.
+    measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
 } measurement_inf_t;
 
 
