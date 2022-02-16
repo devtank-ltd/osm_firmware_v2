@@ -330,10 +330,93 @@ void on_lw_sent_ack(bool ack)
 }
 
 
+static void measurements_sample_init_iteration(measurement_def_t* def, measurement_inf_t* inf, measurement_data_t* data)
+{
+    if (!inf->init_cb)
+    {
+        // Init functions are optional
+        measurements_debug("%s has no init function (optional).", def->name);
+        return;
+    }
+    measurements_sensor_state_t resp = inf->init_cb(def->name);
+    switch(resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            data->num_samples_init++;
+            measurements_debug("%s successfully init'd.", def->name);
+            break;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("%s could not init, will not collect.", def->name);
+            data->num_samples_init++;
+            data->num_samples_collected++;
+            break;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            measurements_debug("%s was busy and could not init, will retry.", def->name);
+            check_time.wait_time = 0;
+            break;
+    }
+}
+
+
+static bool measurements_sample_get_iteration(measurement_def_t* def, measurement_inf_t* inf, measurement_data_t* data)
+{
+    if (!inf->get_cb)
+    {
+        // Get function is non-optional
+        measurements_debug("%s has no get function.", def->name);
+        return false;
+    }
+    value_t new_value = VALUE_EMPTY;
+    measurements_sensor_state_t resp = inf->get_cb(def->name, &new_value);
+    switch (resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            measurements_debug("%s successfully get'd.", def->name);
+            data->num_samples_collected++;
+            break;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("%s could not get, will not collect.", def->name);
+            data->num_samples_collected++;
+            return false;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            measurements_debug("%s was busy and could not get, will retry.", def->name);
+            check_time.wait_time = 0;
+            return false;
+    }
+    log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
+
+    if (data->num_samples == 0)
+    {
+        // If first measurement
+        data->num_samples++;
+        data->min = new_value;
+        data->max = new_value;
+        data->sum = new_value;
+        return true;
+    }
+
+    if (!value_add(&data->sum, &data->sum, &new_value))
+    {
+        // If this fails, the number of samples shouldn't increase nor the max/min.
+        log_error("Failed to add %s value.", def->name);
+        return false;
+    }
+    data->num_samples++;
+    if (value_grt(&new_value, &data->max))
+    {
+        data->max = new_value;
+    }
+    else if (value_lst(&new_value, &data->min))
+    {
+        data->min = new_value;
+    }
+    return true;
+}
+
+
 static void measurements_sample(void)
 {
     uint32_t            sample_interval;
-    value_t             new_value = VALUE_EMPTY;
     uint32_t            now = get_since_boot_ms();
     uint32_t            time_since_interval;
 
@@ -361,16 +444,7 @@ static void measurements_sample(void)
         time_init = (data->num_samples_init * sample_interval) + sample_interval/2 - inf->collection_time;
         if (time_since_interval >= time_init)
         {
-            data->num_samples_init++;
-            if (!inf->init_cb)
-            {
-                measurements_debug("%s has no init function.", def->name);
-                data->num_samples_collected++;
-            }
-            if (!inf->init_cb(def->name))
-            {
-                data->num_samples_collected++;
-            }
+            measurements_sample_init_iteration(def, inf, data);
         }
         else if (check_time.wait_time > (time_since_interval - time_init))
         {
@@ -383,50 +457,11 @@ static void measurements_sample(void)
         time_collect = (data->num_samples_collected * sample_interval) + sample_interval/2;
         if (time_since_interval >= time_collect)
         {
-            data->num_samples_collected++;
-            new_value = VALUE_EMPTY;
-            if (!inf->get_cb)
-            {
-                measurements_debug("%s has no get function.", def->name);
-                return;
-            }
-            if (!inf->get_cb(def->name, &new_value))
-            {
-                log_error("Could not get the %s value.", def->name);
-                return;
-            }
-            if (data->min.type == VALUE_UNSET)
-            {
-                data->min = new_value;
-            }
-            if (data->max.type == VALUE_UNSET)
-            {
-                data->max = new_value;
-            }
-
-            if (data->sum.type == VALUE_UNSET)
-            {
-                data->sum = new_value;
-            }
-            else
-            {
-                if (!value_add(&data->sum, &data->sum, &new_value))
-                {
-                    log_error("Failed to add %s value.", def->name);
-                }
-            }
-
-            data->num_samples++;
-            if (value_grt(&new_value, &data->max))
-            {
-                data->max = new_value;
-            }
-            else if (value_lst(&new_value, &data->min))
-            {
-                data->min = new_value;
-            }
             measurements_debug( "New %s reading", def->name);
-            log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
+            if (!measurements_sample_get_iteration(def, inf, data))
+            {
+                continue;
+            }
             log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
             log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
             log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
