@@ -537,7 +537,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 4)
         return;
-    uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
+    uint32_t v = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
     _modbus_reg_set(reg, v);
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
