@@ -12,7 +12,7 @@
 #include "config.h"
 #include "hpm.h"
 #include "adcs.h"
-#include "sys_time.h"
+#include "common.h"
 #include "persist_config.h"
 #include "modbus_measurements.h"
 #include "one_wire_driver.h"
@@ -208,7 +208,7 @@ static void measurements_send(void)
     {
         if (pending_send)
         {
-            if (since_boot_delta(since_boot_ms, last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
+            if (since_boot_delta(get_since_boot_ms(), last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
                 lw_reset();
@@ -217,7 +217,7 @@ static void measurements_send(void)
             }
             return;
         }
-        last_sent_ms = since_boot_ms;
+        last_sent_ms = get_since_boot_ms();
         pending_send = true;
         return;
     }
@@ -231,7 +231,7 @@ static void measurements_send(void)
     {
         log_error("Failed to add even version to measurement hex array.");
         pending_send = false;
-        last_sent_ms = since_boot_ms;
+        last_sent_ms = get_since_boot_ms();
         return;
     }
 
@@ -289,7 +289,7 @@ static void measurements_send(void)
 
     if (num_qd > 0)
     {
-        last_sent_ms = since_boot_ms;
+        last_sent_ms = get_since_boot_ms();
         lw_send(measurements_hex_arr, measurements_hex_arr_pos+1);
         if (i == MEASUREMENTS_MAX_NUMBER)
         {
@@ -333,7 +333,7 @@ static void measurements_sample(void)
 {
     uint32_t            sample_interval;
     value_t             new_value = VALUE_EMPTY;
-    uint32_t            now = since_boot_ms;
+    uint32_t            now = get_since_boot_ms();
     uint32_t            time_since_interval;
 
     uint32_t            time_init;
@@ -613,7 +613,7 @@ bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
 
 void measurements_loop_iteration(void)
 {
-    uint32_t now = since_boot_ms;
+    uint32_t now = get_since_boot_ms();
     if (since_boot_delta(now, check_time.last_checked_time) > check_time.wait_time)
     {
         measurements_sample();

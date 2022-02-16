@@ -9,6 +9,7 @@
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
 
+#include "common.h"
 #include "pinmap.h"
 #include "cmd.h"
 #include "log.h"
@@ -22,35 +23,18 @@
 #include "persist_config.h"
 #include "lorawan.h"
 #include "measurements.h"
-#include "sys_time.h"
 #include "modbus.h"
 #include "sos.h"
 #include "timers.h"
 #include "htu21d.h"
 #include "i2c.h"
 
-volatile uint32_t since_boot_ms = 0;
-
 
 void hard_fault_handler(void)
 {
+    /* Special libopencm3 function to handle crashes */
     platform_raw_msg("----big fat crash -----");
     error_state();
-}
-
-
-uint32_t since_boot_delta(uint32_t newer, uint32_t older)
-{
-    if (newer < older)
-        return (0xFFFFFFFF - older) + newer;
-    else
-        return newer - older;
-}
-
-
-void sys_tick_handler(void)
-{
-    since_boot_ms++;
 }
 
 
@@ -95,7 +79,7 @@ int main(void)
     uint32_t prev_now = 0;
     while(true)
     {
-        while(since_boot_delta(since_boot_ms, prev_now) < 1000)
+        while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
             uart_rings_in_drain();
             uart_rings_out_drain();
@@ -105,7 +89,7 @@ int main(void)
 
         gpio_toggle(LED_PORT, LED_PIN);
 
-        prev_now = since_boot_ms;
+        prev_now = get_since_boot_ms();
     }
 
     return 0;

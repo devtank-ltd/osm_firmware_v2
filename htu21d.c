@@ -19,13 +19,13 @@ Documents used:
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 
+#include "common.h"
 #include "config.h"
 #include "pinmap.h"
 #include "i2c.h"
 #include "log.h"
 #include "htu21d.h"
 #include "measurements.h"
-#include "sys_time.h"
 
 #define MEASUREMENT_COLLECTION_MS 50
 
@@ -39,46 +39,6 @@ typedef enum
     HTU21D_READ_USER_REG       = 0xE7,
     HTU21D_SOFT_RESET          = 0xFE,
 } htu21d_reg_t;
-
-
-static int32_t nlz(uint32_t x)
-{
-    int32_t y, m, n;
-
-    y = -(x >> 16);
-    m = (y >> 16) & 16;
-    n = 16 - m;
-    x = x >> m;
-
-    y = x - 0x100;
-    m = (y >> 16) & 8;
-    n = n + m;
-    x = x << m;
-
-    y = x - 0x1000;
-    m = (y >> 16) & 4;
-    n = n + m;
-    x = x << m;
-
-    y = x - 0x4000;
-    m = (y >> 16) & 2;
-    n = n + m;
-    x = x << m;
-
-    y = x >> 14;
-    m = y & ~(y >> 1);
-    return n + 2 - m;
-}
-
-
-int32_t ilog10(uint32_t x)
-{
-    int32_t y;
-    static uint32_t table2[11] = {0, 9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, 0xFFFFFFFF};
-    y = (19 * (31 - nlz(x))) >> 6;
-    y = y + ((table2[y+1] - x) >> 31);
-    return y;
-}
 
 
 // HTU21D(F) sensor provides a CRC-8 checksum for error detection. The polynomial used is X8 + X5 + X4 + 1.
@@ -156,9 +116,9 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
     i2c_send_start(HTU21D_I2C);
     i2c_enable_autoend(HTU21D_I2C);
 
-    uint32_t start_ms = since_boot_ms;
+    uint32_t start_ms = get_since_boot_ms();
 
-    while(since_boot_delta(since_boot_ms, start_ms) < timeout)
+    while(since_boot_delta(get_since_boot_ms(), start_ms) < timeout)
     {
         if (!i2c_nack(HTU21D_I2C))
         {
@@ -166,7 +126,7 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
             for (size_t i = 0; i < 3; i++)
             {
                 while (i2c_received_data(HTU21D_I2C) == 0)
-                    if (since_boot_delta(since_boot_ms, start_ms) > timeout)
+                    if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout)
                         goto timeout;
                 d[i] = i2c_get_data(HTU21D_I2C);
             }

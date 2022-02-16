@@ -15,7 +15,7 @@
 #include "hpm.h"
 #include "modbus.h"
 
-#include "sys_time.h"
+#include "common.h"
 
 
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
@@ -227,11 +227,11 @@ static void uart_ring_out_drain(unsigned uart)
                 if (!rs485_transmit_stopping)
                 {
                     modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
-                    rs485_stop_transmitting = since_boot_ms;
+                    rs485_stop_transmitting = get_since_boot_ms();
                     rs485_transmit_stopping = true;
                     return;
                 }
-                else if (since_boot_delta(since_boot_ms, rs485_stop_transmitting) > modbus_stop_delay())
+                else if (since_boot_delta(get_since_boot_ms(), rs485_stop_transmitting) > modbus_stop_delay())
                 {
                     rs485_transmitting = false;
                     rs485_transmit_stopping = false;
@@ -246,13 +246,13 @@ static void uart_ring_out_drain(unsigned uart)
         {
             rs485_transmitting = true;
             _set_rs485_mode(true);
-            rs485_start_transmitting = since_boot_ms;
+            rs485_start_transmitting = get_since_boot_ms();
             modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
             return;
         }
         else
         {
-            if (since_boot_delta(since_boot_ms, rs485_start_transmitting) < modbus_start_delay())
+            if (since_boot_delta(get_since_boot_ms(), rs485_start_transmitting) < modbus_start_delay())
                 return;
         }
 
