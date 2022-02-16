@@ -506,22 +506,22 @@ uint32_t veml7700_measurements_collection_time(void)
 }
 
 
-bool veml7700_light_measurements_init(char* name)
+measurements_sensor_state_t veml7700_light_measurements_init(char* name)
 {
     _veml7700_reading.is_valid = veml7700_get_lux(&_veml7700_reading.lux);
-    return _veml7700_reading.is_valid;
+    return (_veml7700_reading.is_valid ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
-bool veml7700_light_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t veml7700_light_measurements_get(char* name, value_t* value)
 {
     if (!_veml7700_reading.is_valid)
     {
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     _veml7700_reading.is_valid = false;
     *value = value_from(_veml7700_reading.lux);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

@@ -340,18 +340,18 @@ void tim3_isr(void)
 
 
 
-bool adcs_cc_begin(char* name)
+measurements_sensor_state_t adcs_cc_begin(char* name)
 {
     if (adcs_cc_running || adcs_bat_running)
     {
         adc_debug("ADCs already running.");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     adc_debug("Started ADC reading for CC.");
     adcs_cc_running = true;
     timer_set_counter(TIM3, 0);
     timer_enable_counter(TIM3);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -378,12 +378,12 @@ bool adcs_cc_calibrate(void)
 }
 
 
-bool adcs_cc_get(char* name, value_t* value)
+measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 {
     if (adcs_cc_running)
     {
         adc_debug("ADCs not finished.");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     }
 
     uint16_t adcs_rms = 0;
@@ -391,7 +391,7 @@ bool adcs_cc_get(char* name, value_t* value)
     if (!_adcs_get_rms(adcs_buffer, ARRAY_SIZE(adcs_buffer), &adcs_rms))
     {
         adc_debug("Failed to get RMS");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     uint16_t cc_mA = 0;
@@ -399,12 +399,12 @@ bool adcs_cc_get(char* name, value_t* value)
     if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA))
     {
         adc_debug("Failed to get current clamp");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     *value = value_from_u16(cc_mA);
     adc_debug("CC = %umA", cc_mA);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -417,41 +417,41 @@ bool adcs_cc_get_blocking(char* name, value_t* value)
 }
 
 
-bool adcs_bat_begin(char* name)
+measurements_sensor_state_t adcs_bat_begin(char* name)
 {
     if (adcs_cc_running || adcs_bat_running)
     {
         adc_debug("ADCs already running.");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     adc_debug("Started ADC reading for BAT.");
     adcs_bat_running = true;
     adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX_BAT_MON]);
     adc_start_conversion_regular(ADC1);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool adcs_bat_get(char* name, value_t* value)
+measurements_sensor_state_t adcs_bat_get(char* name, value_t* value)
 {
     if (!adcs_bat_running)
     {
         adc_debug("ADC for Bat not running!");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!adc_eoc(ADC1))
     {
         adc_debug("ADC for Bat not complete!");
         adcs_bat_running = false;
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     }
 
     if (!value)
     {
         adcs_bat_running = false;
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     unsigned raw = adc_read_regular(ADC1);
@@ -483,7 +483,7 @@ bool adcs_bat_get(char* name, value_t* value)
 
     adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

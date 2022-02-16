@@ -16,20 +16,20 @@ uint32_t modbus_measurements_collection_time(void)
     return MODBUS_COLLECTION_MS;
 }
 
-bool modbus_measurements_init(char* name)
+measurements_sensor_state_t modbus_measurements_init(char* name)
 {
     modbus_reg_t * reg = modbus_get_reg(name);
     if (!reg)
-        return false;
-    return modbus_start_read(reg);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    return (modbus_start_read(reg) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
-bool modbus_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t modbus_measurements_get(char* name, value_t* value)
 {
     modbus_reg_t * reg = modbus_get_reg(name);
     if (!reg || !value)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     switch(modbus_reg_get_type(reg))
     {
         case MODBUS_REG_TYPE_U16:
@@ -37,34 +37,34 @@ bool modbus_measurements_get(char* name, value_t* value)
             uint16_t v;
 
             if (!modbus_reg_get_u16(reg, &v))
-                return false;
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             *value = value_from(v);
-            return true;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
         case MODBUS_REG_TYPE_U32:
         {
             uint32_t v;
 
             if (!modbus_reg_get_u32(reg, &v))
-                return false;
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             *value = value_from(v);
-            return true;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
         case MODBUS_REG_TYPE_FLOAT:
         {
             float v;
 
             if (!modbus_reg_get_float(reg, &v))
-                return false;
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             *value = value_from((int64_t)(v * 1000));
-            return true;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
         default: break;
     }
-   return false;
+   return MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 

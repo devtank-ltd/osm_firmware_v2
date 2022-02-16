@@ -23,12 +23,22 @@ _Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX_DEFAULT, "Measu
 extern uint32_t transmit_interval;
 
 
+typedef enum
+{
+    MEASUREMENTS_SENSOR_STATE_SUCCESS,
+    MEASUREMENTS_SENSOR_STATE_BUSY,
+    MEASUREMENTS_SENSOR_STATE_ERROR,
+    MEASUREMENTS_SENSOR_STATE_IDLE,
+    MEASUREMENTS_SENSOR_STATE_DONE,
+} measurements_sensor_state_t;
+
+
 typedef struct
 {
     uint16_t collection_time;                           // Time in ms between calling the init function (init_cb) and collecting the value (get_cb)
-    bool     (* init_cb)(char* name);                   // Function to start the process of retrieving the data
-    bool     (* get_cb)(char* name, value_t* value);    // Function to collect the value
-    void     (* acked_cb)();                            // Function to tell subsystem measurement was successfully sent.
+    measurements_sensor_state_t     (* init_cb)(char* name);                   // Function to start the process of retrieving the data
+    measurements_sensor_state_t     (* get_cb)(char* name, value_t* value);    // Function to collect the value
+    void                            (* acked_cb)();                            // Function to tell subsystem measurement was successfully sent.
 } measurement_inf_t;
 
 
