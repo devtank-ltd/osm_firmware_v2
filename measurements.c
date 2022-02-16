@@ -507,11 +507,6 @@ static void _measurement_fixup(measurement_def_t * def, measurement_inf_t * inf)
             inf->get_cb          = pulsecount_get;
             inf->acked_cb        = pulsecount_ack;
             break;
-        case LIGHT:
-            inf->collection_time = veml7700_measurements_collection_time();
-            inf->init_cb         = veml7700_light_measurements_init;
-            inf->get_cb          = veml7700_light_measurements_get;
-            break;
         default:
             log_error("Unknown measurement type! : 0x%"PRIx8, def->type);
     }
