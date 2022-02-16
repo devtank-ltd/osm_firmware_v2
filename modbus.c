@@ -528,7 +528,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
 {
     if (size != 2)
         return;
-    uint16_t v = data[1] << 8 | data[0];
+    uint16_t v = data[0] << 8 | data[1];
     _modbus_reg_set(reg, v);
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
