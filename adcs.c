@@ -95,12 +95,17 @@ static volatile bool                adcs_bat_running                            
 
 
 
-uint32_t adcs_cc_collection_time(void)
+measurements_sensor_state_t adcs_cc_collection_time(char* name, uint32_t* collection_time)
 {
     /**
     Could calculate how long it should take to get the results. For now use 2 seconds.
     */
-    return ADCS_CC_DEFAULT_COLLECTION_TIME;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = ADCS_CC_DEFAULT_COLLECTION_TIME;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -487,9 +492,17 @@ measurements_sensor_state_t adcs_bat_get(char* name, value_t* value)
 }
 
 
-uint32_t adcs_bat_collection_time(void)
+measurements_sensor_state_t adcs_bat_collection_time(char* name, uint32_t* collection_time)
 {
-    return ADCS_MON_DEFAULT_COLLECTION_TIME;
+    /**
+    Could calculate how long it should take to get the results. For now use 2 seconds.
+    */
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = ADCS_MON_DEFAULT_COLLECTION_TIME;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

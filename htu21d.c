@@ -184,9 +184,15 @@ static bool _htu21d_dew_point(int32_t temp, int32_t humi, int32_t* t_dew)
     return true;
 }
 
-uint32_t htu21d_measurements_collection_time(void)
+
+measurements_sensor_state_t htu21d_measurements_collection_time(char* name, uint32_t* collection_time)
 {
-    return MEASUREMENT_COLLECTION_MS;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = MEASUREMENT_COLLECTION_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

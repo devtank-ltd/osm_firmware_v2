@@ -11,9 +11,14 @@
 #define MODBUS_COLLECTION_MS 20000
 
 
-uint32_t modbus_measurements_collection_time(void)
+measurements_sensor_state_t modbus_measurements_collection_time(char* name, uint32_t* collection_time)
 {
-    return MODBUS_COLLECTION_MS;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = MODBUS_COLLECTION_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 measurements_sensor_state_t modbus_measurements_init(char* name)

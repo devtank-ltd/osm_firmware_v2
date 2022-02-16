@@ -499,10 +499,14 @@ bool veml7700_get_lux(uint32_t* lux)
 }
 
 
-uint32_t veml7700_measurements_collection_time(void)
+measurements_sensor_state_t veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
 {
-    // Maximum number of iterations of count is 16 from 4x gain settings, 4x integration time settings
-    return VEML7700_WAIT_MEASUREMENT_MS * 16;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = VEML7700_WAIT_MEASUREMENT_MS * 16;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

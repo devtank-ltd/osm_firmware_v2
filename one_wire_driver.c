@@ -353,9 +353,14 @@ measurements_sensor_state_t w1_measurement_collect(char* name, value_t* value)
 }
 
 
-uint32_t w1_collection_time(void)
+measurements_sensor_state_t w1_collection_time(char* name, uint32_t* collection_time)
 {
-    return W1_DEFAULT_COLLECTION_TIME;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = W1_DEFAULT_COLLECTION_TIME;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

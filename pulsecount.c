@@ -12,6 +12,9 @@
 #include "pulsecount.h"
 
 
+#define PULSECOUNT_COLLECTION_TIME_MS       1000;
+
+
 static volatile uint32_t _pulsecount      = 0;
 static uint32_t          _send_pulsecount = 0;
 
@@ -70,9 +73,14 @@ void pulsecount_log()
 }
 
 
-uint32_t pulsecount_collection_time(void)
+measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* collection_time)
 {
-    return 1000;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = PULSECOUNT_COLLECTION_TIME_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

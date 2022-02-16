@@ -10,6 +10,9 @@
 #include "uart_rings.h"
 #include "common.h"
 
+
+#define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
+
 #define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
 
 
@@ -251,6 +254,17 @@ bool hpm_get(uint16_t * pm25, uint16_t * pm10)
     *pm10 = pm10_entry.d;
     *pm25 = pm25_entry.d;
     return true;
+}
+
+
+measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection_time)
+{
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

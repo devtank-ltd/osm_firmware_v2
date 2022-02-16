@@ -21,6 +21,9 @@
 #include "veml7700.h"
 
 
+#define MEASUREMENTS_DEFAULT_COLLECTION_TIME  (uint32_t)1000
+
+
 typedef struct
 {
     value_t     sum;
@@ -330,6 +333,30 @@ void on_lw_sent_ack(bool ack)
 }
 
 
+static uint32_t measurements_sample_collection_time_iteration(measurement_def_t* def, measurement_inf_t* inf, measurement_data_t* data)
+{
+    if (!inf->collection_time_cb)
+    {
+        measurements_debug("%s has no collection time iteration, using default of %"PRIu32" ms.", def->name, MEASUREMENTS_DEFAULT_COLLECTION_TIME);
+        return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
+    }
+    uint32_t collection_time;
+    measurements_sensor_state_t resp = inf->collection_time_cb(def->name, &collection_time);
+    switch(resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            break;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("Encountered an error retrieving collection time, using default.");
+            return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            measurements_debug("Sensor is busy, using default.");
+            return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
+    }
+    return collection_time;
+}
+
+
 static void measurements_sample_init_iteration(measurement_def_t* def, measurement_inf_t* inf, measurement_data_t* data)
 {
     if (!inf->init_cb)
@@ -419,6 +446,7 @@ static void measurements_sample(void)
     uint32_t            sample_interval;
     uint32_t            now = get_since_boot_ms();
     uint32_t            time_since_interval;
+    uint32_t            collection_time;
 
     uint32_t            time_init;
     uint32_t            time_collect;
@@ -440,8 +468,10 @@ static void measurements_sample(void)
         sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
         time_since_interval = since_boot_delta(now, last_sent_ms);
 
+        collection_time = measurements_sample_collection_time_iteration(def, inf, data);
+
         // If it takes time to get a sample, it is begun here.
-        time_init = (data->num_samples_init * sample_interval) + sample_interval/2 - inf->collection_time;
+        time_init = (data->num_samples_init * sample_interval) + sample_interval/2 - collection_time;
         if (time_since_interval >= time_init)
         {
             measurements_sample_init_iteration(def, inf, data);
@@ -460,6 +490,7 @@ static void measurements_sample(void)
             measurements_debug( "New %s reading", def->name);
             if (!measurements_sample_get_iteration(def, inf, data))
             {
+                measurements_debug("Could not get a sample.");
                 continue;
             }
             log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
@@ -498,55 +529,55 @@ static void _measurement_fixup(measurement_def_t * def, measurement_inf_t * inf)
     switch(def->type)
     {
         case PM10:
-            inf->collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
-            inf->init_cb         = hpm_init;
-            inf->get_cb          = hpm_get_pm10;
+            inf->collection_time_cb = hpm_collection_time;
+            inf->init_cb            = hpm_init;
+            inf->get_cb             = hpm_get_pm10;
             break;
         case PM25:
-            inf->collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
-            inf->init_cb         = hpm_init;
-            inf->get_cb          = hpm_get_pm25;
+            inf->collection_time_cb = hpm_collection_time;
+            inf->init_cb            = hpm_init;
+            inf->get_cb             = hpm_get_pm25;
             break;
         case MODBUS:
-            inf->collection_time = modbus_measurements_collection_time();
-            inf->init_cb         = modbus_measurements_init;
-            inf->get_cb          = modbus_measurements_get;
+            inf->collection_time_cb = modbus_measurements_collection_time;
+            inf->init_cb            = modbus_measurements_init;
+            inf->get_cb             = modbus_measurements_get;
             break;
         case CURRENT_CLAMP:
-            inf->collection_time = adcs_cc_collection_time();
-            inf->init_cb         = adcs_cc_begin;
-            inf->get_cb          = adcs_cc_get;
+            inf->collection_time_cb = adcs_cc_collection_time;
+            inf->init_cb            = adcs_cc_begin;
+            inf->get_cb             = adcs_cc_get;
             break;
         case W1_PROBE:
-            inf->collection_time = w1_collection_time();
-            inf->init_cb         = w1_measurement_init;
-            inf->get_cb          = w1_measurement_collect;
+            inf->collection_time_cb = w1_collection_time;
+            inf->init_cb            = w1_measurement_init;
+            inf->get_cb             = w1_measurement_collect;
             break;
         case HTU21D_TMP:
-            inf->collection_time = htu21d_measurements_collection_time();
-            inf->init_cb         = htu21d_temp_measurements_init;
-            inf->get_cb          = htu21d_temp_measurements_get;
+            inf->collection_time_cb = htu21d_measurements_collection_time;
+            inf->init_cb            = htu21d_temp_measurements_init;
+            inf->get_cb             = htu21d_temp_measurements_get;
             break;
         case HTU21D_HUM:
-            inf->collection_time = htu21d_measurements_collection_time();
-            inf->init_cb         = htu21d_humi_measurements_init;
-            inf->get_cb          = htu21d_humi_measurements_get;
+            inf->collection_time_cb = htu21d_measurements_collection_time;
+            inf->init_cb            = htu21d_humi_measurements_init;
+            inf->get_cb             = htu21d_humi_measurements_get;
             break;
         case BAT_MON:
-            inf->collection_time = adcs_bat_collection_time();
-            inf->init_cb         = adcs_bat_begin;
-            inf->get_cb          = adcs_bat_get;
+            inf->collection_time_cb = adcs_bat_collection_time;
+            inf->init_cb            = adcs_bat_begin;
+            inf->get_cb             = adcs_bat_get;
             break;
         case PULSE_COUNT:
-            inf->collection_time = pulsecount_collection_time();
-            inf->init_cb         = pulsecount_begin;
-            inf->get_cb          = pulsecount_get;
-            inf->acked_cb        = pulsecount_ack;
+            inf->collection_time_cb = pulsecount_collection_time;
+            inf->init_cb            = pulsecount_begin;
+            inf->get_cb             = pulsecount_get;
+            inf->acked_cb           = pulsecount_ack;
             break;
         case LIGHT:
-            inf->collection_time = veml7700_measurements_collection_time();
-            inf->init_cb         = veml7700_light_measurements_init;
-            inf->get_cb          = veml7700_light_measurements_get;
+            inf->collection_time_cb = veml7700_measurements_collection_time;
+            inf->init_cb            = veml7700_light_measurements_init;
+            inf->get_cb             = veml7700_light_measurements_get;
             break;
         default:
             log_error("Unknown measurement type! : 0x%"PRIx8, def->type);
