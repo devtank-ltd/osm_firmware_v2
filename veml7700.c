@@ -338,14 +338,12 @@ static bool _veml7700_dt_correction(uint32_t* lux_dt, uint32_t lux)
 {
     /**
      Coeffients calculated with a OSM board and cover.
-     lux_dt = Ax^2 + Bx
+     lux_dt = Ax
         where x = lux
      */
     uint32_t inter_val = lux;
-    const float A = +3.2018E-04f;
-    const float B = +4.3223E+00f;
-    inter_val =   (A * lux * lux)
-                + (B * lux);
+    const float A = +6.2607E+00f;
+    inter_val = (A * lux);
     *lux_dt = (uint32_t)inter_val;
     light_debug("Lux after dt correction = %"PRIu32, *lux_dt);
     return true;
