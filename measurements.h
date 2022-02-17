@@ -33,7 +33,7 @@ typedef struct
     measurements_sensor_state_t     (* get_cb)(char* name, value_t* value);                         // Function to collect the value
     void                            (* acked_cb)();                                                 // Function to tell subsystem measurement was successfully sent.
     measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
-} measurement_inf_t;
+} measurements_inf_t;
 
 
 extern uint16_t measurements_num_measurements(void);
@@ -41,7 +41,7 @@ extern char*    measurements_get_name(unsigned index);
 
 extern void     measurements_print(void);
 
-extern bool     measurements_add(measurement_def_t* measurement);
+extern bool     measurements_add(measurements_def_t* measurement);
 extern bool     measurements_del(char* name);
 
 extern bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.

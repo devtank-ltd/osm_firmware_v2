@@ -165,7 +165,7 @@ bool persist_get_lw_app_key(char app_key[LW_APP_KEY_LEN+1])
 }
 
 
-measurement_def_t * persist_get_measurements(void)
+measurements_def_t * persist_get_measurements(void)
 {
     return persist_data.measurements_arr;
 }

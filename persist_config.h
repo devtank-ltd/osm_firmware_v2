@@ -20,7 +20,7 @@ extern bool persist_get_lw_dev_eui(char dev_eui[LW_DEV_EUI_LEN + 1]);
 extern void persist_set_lw_app_key(char* app_key);
 extern bool persist_get_lw_app_key(char app_key[LW_APP_KEY_LEN + 1]);
 
-extern measurement_def_t * persist_get_measurements(void);
+extern measurements_def_t * persist_get_measurements(void);
 
 extern bool persist_get_mins_interval(uint32_t * mins_interval);
 extern bool persist_set_mins_interval(uint32_t mins_interval);

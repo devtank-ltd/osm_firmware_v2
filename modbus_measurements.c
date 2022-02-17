@@ -78,7 +78,7 @@ bool modbus_measurement_add(modbus_reg_t * reg)
     if (!reg)
         return false;
 
-    measurement_def_t meas_def;
+    measurements_def_t meas_def;
 
     modbus_reg_get_name(reg, meas_def.name);
 
