@@ -390,7 +390,7 @@ static void measurements_sample_init_iteration(measurement_def_t* def, measureme
             data->num_samples_collected++;
             break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
-            measurements_debug("%s was busy and could not init, will retry.", def->name);
+            // Sensor was busy, will retry.
             check_time.wait_time = 0;
             break;
     }
@@ -441,7 +441,7 @@ static bool measurements_sample_get_iteration(measurement_def_t* def, measuremen
             data->num_samples_collected++;
             return false;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
-            measurements_debug("%s was busy and could not get, will retry.", def->name);
+            // Sensor was busy, will retry.
             check_time.wait_time = 0;
             return false;
     }
@@ -616,6 +616,7 @@ static void _measurement_fixup(measurement_def_t * def, measurement_inf_t * inf)
             inf->collection_time_cb = veml7700_measurements_collection_time;
             inf->init_cb            = veml7700_light_measurements_init;
             inf->get_cb             = veml7700_light_measurements_get;
+            inf->iteration_cb       = veml7700_iteration;
             break;
         default:
             log_error("Unknown measurement type! : 0x%"PRIx8, def->type);

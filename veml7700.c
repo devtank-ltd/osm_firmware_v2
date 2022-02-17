@@ -27,10 +27,10 @@ Application Guide:
 #include "timers.h"
 
 
-#define VEML7700_WAIT_MEASUREMENT_MS            110
 #define VEML7700_RES_SCALE                      10000
 #define VEML7700_COUNT_LOWER_THRESHOLD          100
 #define VEML7700_COUNT_UPPER_THRESHOLD          10000
+#define VEML7700_DEFAULT_COLLECT_TIME           6600  // Max time in ms
 
 
 typedef enum
@@ -106,8 +106,9 @@ typedef enum
 
 typedef enum
 {
-    VEML7700_STATE_OFF  ,
-    VEML7700_STATE_BUSY ,
+    VEML7700_STATE_OFF      ,
+    VEML7700_STATE_READING  ,
+    VEML7700_STATE_DONE     ,
 } veml7700_state_t;
 
 
@@ -146,7 +147,7 @@ typedef struct
     veml7700_cmd_pwr_t      power;
     uint32_t                refresh_time;
     uint16_t                resolution_scaled; // scaled by VEML7700_RES_SCALE
-    veml7700_state_t        state;
+    uint32_t                wait_time;
 } veml7700_conf_t;
 
 
@@ -157,16 +158,36 @@ typedef struct
 } veml7700_reading_t;
 
 
-static veml7700_conf_t      _veml7700_ctx       = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
-                                                            .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
-                                                            .als_pers   = VEML7700_CONF_ALS_PERS_1,
-                                                            .als_it     = VEML7700_CONF_ALS_IT_100,
-                                                            .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_4},
-                                                   .power={ .psm_en = VEML7700_PWR_PSM_EN_DISABLE,
-                                                            .psm    = VEML7700_PWR_PSM_MODE_1}};
+typedef struct
+{
+    veml7700_state_t        state;
+    uint32_t                last_read;
+} veml7700_sensor_state_t;
 
-static veml7700_reading_t   _veml7700_reading   = {.lux=0,
-                                                   .is_valid=false};
+
+typedef struct
+{
+    uint32_t                start_time;
+    uint32_t                last_time_taken;
+} veml7700_time_t;
+
+
+static veml7700_conf_t          _veml7700_ctx           = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
+                                                                    .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
+                                                                    .als_pers   = VEML7700_CONF_ALS_PERS_1,
+                                                                    .als_it     = VEML7700_CONF_ALS_IT_100,
+                                                                    .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_4},
+                                                           .power={ .psm_en = VEML7700_PWR_PSM_EN_DISABLE,
+                                                                    .psm    = VEML7700_PWR_PSM_MODE_1}};
+
+static veml7700_reading_t       _veml7700_reading       = {.lux=0,
+                                                           .is_valid=false};
+
+static veml7700_sensor_state_t  _veml7700_state_machine = {.state=VEML7700_STATE_OFF,
+                                                           .last_read=0};
+
+static veml7700_time_t          _veml7700_time          = {.start_time=0,
+                                                           .last_time_taken=VEML7700_DEFAULT_COLLECT_TIME};
 
 
 static void _veml7700_get_u16(uint8_t d[2], uint16_t *r)
@@ -296,6 +317,35 @@ static uint32_t _veml7700_get_refresh_time(void)
 }
 
 
+static uint32_t _veml7700_get_wait_time(void)
+{
+    uint32_t wait_time = 0;
+    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
+    {
+        case VEML7700_CONF_ALS_IT_25:
+            wait_time = 25;
+            break;
+        case VEML7700_CONF_ALS_IT_50:
+            wait_time = 50;
+            break;
+        case VEML7700_CONF_ALS_IT_100:
+            wait_time = 100;
+            break;
+        case VEML7700_CONF_ALS_IT_200:
+            wait_time = 200;
+            break;
+        case VEML7700_CONF_ALS_IT_400:
+            wait_time = 400;
+            break;
+        case VEML7700_CONF_ALS_IT_800:
+            wait_time = 800;
+            break;
+    }
+    wait_time *= 1.1;
+    return wait_time;
+}
+
+
 static bool _veml7700_set_config(void)
 {
     if (!_veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_ctx.power.raw ) ||
@@ -306,13 +356,13 @@ static bool _veml7700_set_config(void)
     }
     _veml7700_ctx.resolution_scaled = _veml7700_get_resolution();
     _veml7700_ctx.refresh_time = _veml7700_get_refresh_time();
+    _veml7700_ctx.wait_time = _veml7700_get_wait_time();
     return true;
 }
 
 
 static bool _veml7700_turn_on(void)
 {
-    _veml7700_ctx.state = VEML7700_STATE_BUSY;
     _veml7700_ctx.config.als_sd = VEML7700_CONF_ALS_SD_ON;
     return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_ctx.config.raw);
 }
@@ -320,7 +370,6 @@ static bool _veml7700_turn_on(void)
 
 static bool _veml7700_turn_off(void)
 {
-    _veml7700_ctx.state = VEML7700_STATE_OFF;
     _veml7700_ctx.config.als_sd = VEML7700_CONF_ALS_SD_OFF;
     return _veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0, _veml7700_ctx.config.raw);
 }
@@ -380,6 +429,14 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
 }
 
 
+static bool _veml7700_conv(uint32_t* lux, uint16_t counts)
+{
+    uint32_t lux_local;
+    return (_veml7700_conv_lux(&lux_local, counts)  &&
+            _veml7700_dt_correction(lux, lux_local) );
+}
+
+
 static bool _veml7700_increase_integration_time(void)
 {
     switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
@@ -428,6 +485,21 @@ static bool _veml7700_increase_gain(void)
 }
 
 
+static bool _veml7700_increase_settings(void)
+{
+    if (!_veml7700_increase_gain())
+    {
+        if (!_veml7700_increase_integration_time())
+        {
+            light_debug("Cannot increase count any more.");
+            return false;
+        }
+        _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_8;
+    }
+    return true;
+}
+
+
 static bool _veml7700_get_als_count(uint16_t* counts)
 {
     if (!_veml7700_set_config())
@@ -439,8 +511,8 @@ static bool _veml7700_get_als_count(uint16_t* counts)
         return false;
     }
     uint32_t start_ms = get_since_boot_ms();
-    light_debug("Waiting %"PRIu16".%03"PRIu16" seconds", VEML7700_WAIT_MEASUREMENT_MS/1000, VEML7700_WAIT_MEASUREMENT_MS%1000);
-    while (since_boot_delta(get_since_boot_ms(), start_ms) < VEML7700_WAIT_MEASUREMENT_MS)
+    light_debug("Waiting %"PRIu32".%03"PRIu32" seconds", _veml7700_ctx.wait_time/1000, _veml7700_ctx.wait_time%1000);
+    while (since_boot_delta(get_since_boot_ms(), start_ms) < _veml7700_ctx.wait_time)
         uart_rings_out_drain();
 
     *counts = _veml7700_read_als();
@@ -459,7 +531,7 @@ bool veml7700_get_lux(uint32_t* lux)
         light_debug("Handed in null pointer.");
         return false;
     }
-    if (_veml7700_ctx.state != VEML7700_STATE_OFF)
+    if (_veml7700_state_machine.state != VEML7700_STATE_OFF)
     {
         return false;
     }
@@ -475,14 +547,9 @@ bool veml7700_get_lux(uint32_t* lux)
     }
     while (counts < 100)
     {
-        if (!_veml7700_increase_gain())
+        if (!_veml7700_increase_settings())
         {
-            if (!_veml7700_increase_integration_time())
-            {
-                light_debug("Cannot increase count any more.");
-                return false;
-            }
-            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_8;
+            return false;
         }
         if (!_veml7700_get_als_count(&counts))
         {
@@ -490,12 +557,93 @@ bool veml7700_get_lux(uint32_t* lux)
         }
     }
     light_debug("Raw light count = %"PRIu16, counts);
-    uint32_t lux_local;
-    if (!_veml7700_conv_lux(&lux_local, counts))
+    return _veml7700_conv(lux, counts);
+}
+
+
+static bool _veml7700_get_counts_begin(void)
+{
+    if (!_veml7700_set_config())
     {
         return false;
     }
-    return _veml7700_dt_correction(lux, lux_local);
+    if (!_veml7700_turn_on())
+    {
+        return false;
+    }
+    return true;
+}
+
+
+static bool _veml7700_get_counts_collect(uint16_t* counts)
+{
+    *counts = _veml7700_read_als();
+    if (!_veml7700_turn_off())
+    {
+        return false;
+    }
+    return true;
+}
+
+
+static bool _veml7700_iteration_done(void)
+{
+    return true;
+}
+
+
+static bool _veml7700_iteration_reading(void)
+{
+    if (since_boot_delta(get_since_boot_ms(), _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
+    {
+        uint16_t counts;
+        if (!_veml7700_get_counts_collect(&counts))
+        {
+            return false;
+        }
+        if (counts > VEML7700_COUNT_LOWER_THRESHOLD)
+        {
+            _veml7700_time.last_time_taken = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time);
+            _veml7700_state_machine.state = VEML7700_STATE_DONE;
+            _veml7700_reading.is_valid = true;
+            return _veml7700_conv(&_veml7700_reading.lux, counts);
+        }
+        if (!_veml7700_increase_settings())
+        {
+            _veml7700_time.last_time_taken = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time);
+            _veml7700_state_machine.state = VEML7700_STATE_DONE;
+            _veml7700_reading.is_valid = true;
+            return _veml7700_conv(&_veml7700_reading.lux, counts);
+        }
+        _veml7700_state_machine.last_read = get_since_boot_ms();
+        return _veml7700_get_counts_begin();
+    }
+    return true;
+}
+
+
+static bool _veml7700_iteration_off(void)
+{
+    return true;
+}
+
+
+measurements_sensor_state_t veml7700_iteration(char* name)
+{
+    bool (* iteration_function)(void) = NULL;
+    switch (_veml7700_state_machine.state)
+    {
+        case VEML7700_STATE_DONE:
+            iteration_function = _veml7700_iteration_done;
+            break;
+        case VEML7700_STATE_READING:
+            iteration_function = _veml7700_iteration_reading;
+            break;
+        case VEML7700_STATE_OFF:
+            iteration_function = _veml7700_iteration_off;
+            break;
+    }
+    return ((iteration_function && iteration_function()) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
@@ -505,28 +653,57 @@ measurements_sensor_state_t veml7700_measurements_collection_time(char* name, ui
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = VEML7700_WAIT_MEASUREMENT_MS * 16;
+    *collection_time = _veml7700_time.last_time_taken;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 measurements_sensor_state_t veml7700_light_measurements_init(char* name)
 {
-    _veml7700_reading.is_valid = veml7700_get_lux(&_veml7700_reading.lux);
-    return (_veml7700_reading.is_valid ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
+    switch (_veml7700_state_machine.state)
+    {
+        case VEML7700_STATE_OFF:
+            break;
+        case VEML7700_STATE_READING:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case VEML7700_STATE_DONE:
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    uint32_t now = get_since_boot_ms();
+    _veml7700_time.start_time = now;
+    _veml7700_state_machine.state = VEML7700_STATE_READING;
+    _veml7700_state_machine.last_read = now;
+    _veml7700_ctx.config.als_sd     = VEML7700_CONF_ALS_SD_OFF;
+    _veml7700_ctx.config.als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED;
+    _veml7700_ctx.config.als_pers   = VEML7700_CONF_ALS_PERS_1;
+    _veml7700_ctx.config.als_it     = VEML7700_CONF_ALS_IT_100;
+    _veml7700_ctx.config.als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_8;
+    return (_veml7700_get_counts_begin() ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
 measurements_sensor_state_t veml7700_light_measurements_get(char* name, value_t* value)
 {
+    switch (_veml7700_state_machine.state)
+    {
+        case VEML7700_STATE_OFF:
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        case VEML7700_STATE_READING:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case VEML7700_STATE_DONE:
+            break;
+    }
+    _veml7700_state_machine.state = VEML7700_STATE_OFF;
     if (!_veml7700_reading.is_valid)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     _veml7700_reading.is_valid = false;
+    light_debug("Final lux = %"PRIu32, _veml7700_reading.lux);
     *value = value_from(_veml7700_reading.lux);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
+
 
 
 void veml7700_init(void)
