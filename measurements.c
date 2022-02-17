@@ -424,7 +424,7 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     {
         // Get function is non-optional
         data->state = MEASUREMENT_STATE_IDLE;
-        measurements_debug("%s has no get function.", def->name);
+        measurements_debug("%s has no collect function.", def->name);
         return false;
     }
     value_t new_value = VALUE_EMPTY;
@@ -432,12 +432,12 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            measurements_debug("%s successfully get'd.", def->name);
+            measurements_debug("%s successfully collect'd.", def->name);
             data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_collected++;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s could not get, will not collect.", def->name);
+            measurements_debug("%s could not collect.", def->name);
             data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_collected++;
             return false;
