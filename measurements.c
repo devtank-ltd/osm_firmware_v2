@@ -34,13 +34,14 @@ typedef enum
 
 typedef struct
 {
-    value_t             sum;
-    value_t             max;
-    value_t             min;
-    uint8_t             num_samples;
-    uint8_t             num_samples_init;
-    uint8_t             num_samples_collected;
-    measurements_state_t state;
+    value_t                 sum;
+    value_t                 max;
+    value_t                 min;
+    uint8_t                 num_samples;
+    uint8_t                 num_samples_init;
+    uint8_t                 num_samples_collected;
+    measurements_state_t    state;
+    uint32_t                collection_time_cache;
 } measurements_data_t;
 
 
@@ -342,7 +343,7 @@ void on_lw_sent_ack(bool ack)
 }
 
 
-static uint32_t _measurements_sample_collection_time_iteration(measurements_def_t* def, measurements_inf_t* inf, measurements_data_t* data)
+static uint32_t _measurements_get_collection_time(measurements_def_t* def, measurements_inf_t* inf)
 {
     if (!inf->collection_time_cb)
     {
@@ -481,7 +482,6 @@ static void _measurements_sample(void)
     uint32_t            sample_interval;
     uint32_t            now = get_since_boot_ms();
     uint32_t            time_since_interval;
-    uint32_t            collection_time;
 
     uint32_t            time_init_boundary;
     uint32_t            time_init;
@@ -504,15 +504,13 @@ static void _measurements_sample(void)
         sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
         time_since_interval = since_boot_delta(now, _last_sent_ms);
 
-        collection_time = _measurements_sample_collection_time_iteration(def, inf, data);
-
-        time_init_boundary = (data->num_samples_init       * sample_interval) + sample_interval/2;
-        if (time_init_boundary < collection_time)
+        time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
+        if (time_init_boundary < data->collection_time_cache)
         {
             // Assert that no negative rollover could happen for long collection times. Just do it immediately.
-            collection_time = time_init_boundary;
+            data->collection_time_cache = time_init_boundary;
         }
-        time_init       = time_init_boundary - collection_time;
+        time_init       = time_init_boundary - data->collection_time_cache;
         time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
         // If it takes time to get a sample, it is begun here.
         if (time_since_interval >= time_init)
@@ -535,6 +533,7 @@ static void _measurements_sample(void)
                 log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
                 log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
                 log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
+                data->collection_time_cache = _measurements_get_collection_time(def, inf);
             }
         }
         else if (_check_time.wait_time > (time_since_interval - time_collect))
@@ -563,9 +562,12 @@ uint16_t measurements_num_measurements(void)
 }
 
 
-static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * inf)
+static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * inf, measurements_data_t* data)
 {
-    inf->acked_cb = NULL;
+    // Optional callbacks, get and collection time are not optional.
+    inf->init_cb        = NULL;
+    inf->iteration_cb   = NULL;
+    inf->acked_cb       = NULL;
     switch(def->type)
     {
         case PM10:
@@ -623,6 +625,7 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
     }
+    data->collection_time_cache = _measurements_get_collection_time(def, inf);
 }
 
 
@@ -643,9 +646,9 @@ bool measurements_add(measurements_def_t* measurements_def)
         }
         if (!def->name[0])
         {
-            measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE};
+            measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
             memcpy(def, measurements_def, sizeof(measurements_def_t));
-            _measurements_fixup(def, inf);
+            _measurements_fixup(def, inf, data);
             memcpy(data, &data_empty, sizeof(measurements_data_t));
             return true;
         }
@@ -812,7 +815,7 @@ void measurements_init(void)
         if (!def->name[0])
             continue;
 
-        _measurements_fixup(def, &_measurements_arr.inf[n]);
+        _measurements_fixup(def, &_measurements_arr.inf[n], &_measurements_arr.data[n]);
     }
 
     if (!found)
