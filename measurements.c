@@ -523,12 +523,7 @@ static void _measurements_sample(void)
 
         if (time_since_interval >= time_collect)
         {
-            measurements_debug( "New %s reading", def->name);
-            if (!_measurements_sample_get_iteration(def, inf, data))
-            {
-                measurements_debug("Could not get a sample.");
-            }
-            else
+            if (_measurements_sample_get_iteration(def, inf, data))
             {
                 log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
                 log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
