@@ -40,7 +40,7 @@ Documents used:
 #define W1_LEVEL_LOW        (uint8_t)0
 #define W1_LEVEL_HIGH       (uint8_t)1
 
-#define W1_DEFAULT_COLLECTION_TIME DELAY_GET_TEMP
+#define W1_DEFAULT_COLLECTION_TIME_MS DELAY_GET_TEMP/1000
 
 
 typedef union
@@ -359,7 +359,7 @@ measurements_sensor_state_t w1_collection_time(char* name, uint32_t* collection_
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = W1_DEFAULT_COLLECTION_TIME;
+    *collection_time = W1_DEFAULT_COLLECTION_TIME_MS;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

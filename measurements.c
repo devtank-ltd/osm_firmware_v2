@@ -483,6 +483,7 @@ static void _measurements_sample(void)
     uint32_t            time_since_interval;
     uint32_t            collection_time;
 
+    uint32_t            time_init_boundary;
     uint32_t            time_init;
     uint32_t            time_collect;
 
@@ -505,9 +506,15 @@ static void _measurements_sample(void)
 
         collection_time = _measurements_sample_collection_time_iteration(def, inf, data);
 
-        // If it takes time to get a sample, it is begun here.
-        time_init       = (data->num_samples_init       * sample_interval) + sample_interval/2 - collection_time;
+        time_init_boundary = (data->num_samples_init       * sample_interval) + sample_interval/2;
+        if (time_init_boundary < collection_time)
+        {
+            // Assert that no negative rollover could happen for long collection times. Just do it immediately.
+            collection_time = time_init_boundary;
+        }
+        time_init       = time_init_boundary - collection_time;
         time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
+        // If it takes time to get a sample, it is begun here.
         if (time_since_interval >= time_init)
         {
             _measurements_sample_init_iteration(def, inf, data);
