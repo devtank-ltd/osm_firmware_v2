@@ -112,6 +112,21 @@ typedef enum
 } veml7700_state_t;
 
 
+typedef struct
+{
+    veml7700_als_gains_t        code;
+    uint8_t                     resolution_multiplier;
+} veml7700_gain_t;
+
+
+typedef struct
+{
+    veml7700_als_int_times_t    code;
+    uint8_t                     resolution_multiplier;
+    uint32_t                    wait_time;
+} veml7700_it_ms_t;
+
+
 typedef union
 {
     struct
@@ -145,7 +160,8 @@ typedef struct
 {
     veml7700_cmd_conf_t     config;
     veml7700_cmd_pwr_t      power;
-    uint32_t                refresh_time;
+    uint8_t                 gain_index;
+    uint8_t                 int_index;
     uint16_t                resolution_scaled; // scaled by VEML7700_RES_SCALE
     uint32_t                wait_time;
 } veml7700_conf_t;
@@ -153,8 +169,8 @@ typedef struct
 
 typedef struct
 {
-    uint32_t    lux;
-    bool        is_valid;
+    uint32_t                lux;
+    bool                    is_valid;
 } veml7700_reading_t;
 
 
@@ -172,13 +188,33 @@ typedef struct
 } veml7700_time_t;
 
 
-static veml7700_conf_t          _veml7700_ctx           = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
+
+static const veml7700_gain_t    _veml7700_gains[]               = { { VEML7700_CONF_ALS_SM_GAIN_1_8, 16} ,
+                                                                    { VEML7700_CONF_ALS_SM_GAIN_1_4,  8} ,
+                                                                    { VEML7700_CONF_ALS_SM_GAIN_1  ,  2} ,
+                                                                    { VEML7700_CONF_ALS_SM_GAIN_2  ,  1} };
+
+static const veml7700_it_ms_t   _veml7700_integration_times[]   = { { VEML7700_CONF_ALS_IT_25 , 32,  25 } ,
+                                                                    { VEML7700_CONF_ALS_IT_50 , 16,  50 } ,
+                                                                    { VEML7700_CONF_ALS_IT_100,  8, 100 } ,
+                                                                    { VEML7700_CONF_ALS_IT_200,  4, 200 } ,
+                                                                    { VEML7700_CONF_ALS_IT_400,  2, 400 } ,
+                                                                    { VEML7700_CONF_ALS_IT_800,  1, 800 } };
+
+#define VEML7700_GAINS_COUNT (ARRAY_SIZE(_veml7700_gains))
+#define VEML7700_INT_COUNT (ARRAY_SIZE(_veml7700_integration_times))
+
+static const veml7700_conf_t    _veml7700_default_ctx   = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
                                                                     .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
                                                                     .als_pers   = VEML7700_CONF_ALS_PERS_1,
                                                                     .als_it     = VEML7700_CONF_ALS_IT_100,
-                                                                    .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_4},
+                                                                    .als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_8},
                                                            .power={ .psm_en = VEML7700_PWR_PSM_EN_DISABLE,
-                                                                    .psm    = VEML7700_PWR_PSM_MODE_1}};
+                                                                    .psm    = VEML7700_PWR_PSM_MODE_1},
+                                                           .gain_index = 0,
+                                                           .int_index  = 2 };
+
+static veml7700_conf_t          _veml7700_ctx           = _veml7700_default_ctx;
 
 static veml7700_reading_t       _veml7700_reading       = {.lux=0,
                                                            .is_valid=false};
@@ -233,121 +269,32 @@ static uint16_t _veml7700_get_resolution(void)
 {
     uint16_t resolution_scaled = 0.0036 * VEML7700_RES_SCALE;
     uint8_t multiplier = 1;
-    switch ((veml7700_als_gains_t)_veml7700_ctx.config.als_sm)
-    {
-        case VEML7700_CONF_ALS_SM_GAIN_1:
-            multiplier *= 2;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_2:
-            multiplier *= 1;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_1_4:
-            multiplier *= 8;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_1_8:
-            multiplier *= 16;
-            break;
-    }
-    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
-    {
-        case VEML7700_CONF_ALS_IT_25:
-            multiplier *= 32;
-            break;
-        case VEML7700_CONF_ALS_IT_50:
-            multiplier *= 16;
-            break;
-        case VEML7700_CONF_ALS_IT_100:
-            multiplier *= 8;
-            break;
-        case VEML7700_CONF_ALS_IT_200:
-            multiplier *= 4;
-            break;
-        case VEML7700_CONF_ALS_IT_400:
-            multiplier *= 2;
-            break;
-        case VEML7700_CONF_ALS_IT_800:
-            multiplier *= 1;
-            break;
-    }
+    multiplier *= _veml7700_gains[_veml7700_ctx.gain_index].resolution_multiplier;
+    multiplier *= _veml7700_integration_times[_veml7700_ctx.int_index].resolution_multiplier;
     return resolution_scaled * multiplier;
-}
-
-
-static uint32_t _veml7700_get_refresh_time(void)
-{
-    uint32_t refresh_time = 300;
-    uint32_t offset = 0;
-    switch ((veml7700_pwr_psm_t)_veml7700_ctx.power.psm)
-    {
-        case VEML7700_PWR_PSM_MODE_1:
-            offset += 0;
-            break;
-        case VEML7700_PWR_PSM_MODE_2:
-            offset += 500;
-            break;
-        case VEML7700_PWR_PSM_MODE_3:
-            offset += 1500;
-            break;
-        case VEML7700_PWR_PSM_MODE_4:
-            offset += 3500;
-            break;
-    }
-    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
-    {
-        case VEML7700_CONF_ALS_IT_25:
-            offset += 0;
-            break;
-        case VEML7700_CONF_ALS_IT_50:
-            offset += 150;
-            break;
-        case VEML7700_CONF_ALS_IT_100:
-            offset += 300;
-            break;
-        case VEML7700_CONF_ALS_IT_200:
-            offset += 500;
-            break;
-        case VEML7700_CONF_ALS_IT_400:
-            offset += 700;
-            break;
-        case VEML7700_CONF_ALS_IT_800:
-            offset += 1100;
-            break;
-    }
-    return refresh_time + offset;
 }
 
 
 static uint32_t _veml7700_get_wait_time(void)
 {
-    uint32_t wait_time = 0;
-    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
-    {
-        case VEML7700_CONF_ALS_IT_25:
-            wait_time = 25;
-            break;
-        case VEML7700_CONF_ALS_IT_50:
-            wait_time = 50;
-            break;
-        case VEML7700_CONF_ALS_IT_100:
-            wait_time = 100;
-            break;
-        case VEML7700_CONF_ALS_IT_200:
-            wait_time = 200;
-            break;
-        case VEML7700_CONF_ALS_IT_400:
-            wait_time = 400;
-            break;
-        case VEML7700_CONF_ALS_IT_800:
-            wait_time = 800;
-            break;
-    }
+    uint32_t wait_time = _veml7700_integration_times[_veml7700_ctx.int_index].wait_time;
     wait_time *= 1.1;
     return wait_time;
 }
 
 
+static void _veml7700_reset_ctx(void)
+{
+    _veml7700_ctx = _veml7700_default_ctx;
+}
+
+
 static bool _veml7700_set_config(void)
 {
+    veml7700_als_gains_t gain_code = _veml7700_gains[_veml7700_ctx.gain_index].code;
+    _veml7700_ctx.config.als_sm = gain_code;
+    veml7700_als_int_times_t int_code = _veml7700_integration_times[_veml7700_ctx.int_index].code;
+    _veml7700_ctx.config.als_it = int_code;
     if (!_veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_ctx.power.raw ) ||
         !_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0,   _veml7700_ctx.config.raw) )
     {
@@ -355,7 +302,6 @@ static bool _veml7700_set_config(void)
         return false;
     }
     _veml7700_ctx.resolution_scaled = _veml7700_get_resolution();
-    _veml7700_ctx.refresh_time = _veml7700_get_refresh_time();
     _veml7700_ctx.wait_time = _veml7700_get_wait_time();
     return true;
 }
@@ -439,26 +385,11 @@ static bool _veml7700_conv(uint32_t* lux, uint16_t counts)
 
 static bool _veml7700_increase_integration_time(void)
 {
-    switch ((veml7700_als_int_times_t)_veml7700_ctx.config.als_it)
+    if (_veml7700_ctx.int_index + 1 == VEML7700_INT_COUNT)
     {
-        case VEML7700_CONF_ALS_IT_25:
-            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_50;
-            break;
-        case VEML7700_CONF_ALS_IT_50:
-            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_100;
-            break;
-        case VEML7700_CONF_ALS_IT_100:
-            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_200;
-            break;
-        case VEML7700_CONF_ALS_IT_200:
-            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_400;
-            break;
-        case VEML7700_CONF_ALS_IT_400:
-            _veml7700_ctx.config.als_it = VEML7700_CONF_ALS_IT_800;
-            break;
-        case VEML7700_CONF_ALS_IT_800:
-            return false;
+        return false;
     }
+    _veml7700_ctx.int_index++;
     return true;
 }
 
@@ -466,21 +397,12 @@ static bool _veml7700_increase_integration_time(void)
 static bool _veml7700_increase_gain(void)
 {
     light_debug("Increasing the gain.");
-    switch ((veml7700_als_gains_t)_veml7700_ctx.config.als_sm)
+    if (_veml7700_ctx.gain_index + 1 == VEML7700_GAINS_COUNT)
     {
-        case VEML7700_CONF_ALS_SM_GAIN_1_8:
-            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_4;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_1_4:
-            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_1:
-            _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_2;
-            break;
-        case VEML7700_CONF_ALS_SM_GAIN_2:
-            light_debug("Cannot increase the gain any more.");
-            return false;
+        light_debug("Cannot increase the gain any more.");
+        return false;
     }
+    _veml7700_ctx.gain_index++;
     return true;
 }
 
@@ -494,7 +416,7 @@ static bool _veml7700_increase_settings(void)
             light_debug("Cannot increase count any more.");
             return false;
         }
-        _veml7700_ctx.config.als_sm = VEML7700_CONF_ALS_SM_GAIN_1_8;
+        _veml7700_ctx.gain_index = 0;
     }
     return true;
 }
@@ -535,11 +457,7 @@ bool veml7700_get_lux(uint32_t* lux)
     {
         return false;
     }
-    _veml7700_ctx.config.als_sd     = VEML7700_CONF_ALS_SD_OFF;
-    _veml7700_ctx.config.als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED;
-    _veml7700_ctx.config.als_pers   = VEML7700_CONF_ALS_PERS_1;
-    _veml7700_ctx.config.als_it     = VEML7700_CONF_ALS_IT_100;
-    _veml7700_ctx.config.als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_8;
+    _veml7700_reset_ctx();
     uint16_t counts;
     if (!_veml7700_get_als_count(&counts))
     {
@@ -673,11 +591,7 @@ measurements_sensor_state_t veml7700_light_measurements_init(char* name)
     _veml7700_time.start_time = now;
     _veml7700_state_machine.state = VEML7700_STATE_READING;
     _veml7700_state_machine.last_read = now;
-    _veml7700_ctx.config.als_sd     = VEML7700_CONF_ALS_SD_OFF;
-    _veml7700_ctx.config.als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED;
-    _veml7700_ctx.config.als_pers   = VEML7700_CONF_ALS_PERS_1;
-    _veml7700_ctx.config.als_it     = VEML7700_CONF_ALS_IT_100;
-    _veml7700_ctx.config.als_sm     = VEML7700_CONF_ALS_SM_GAIN_1_8;
+    _veml7700_reset_ctx();
     return (_veml7700_get_counts_begin() ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
