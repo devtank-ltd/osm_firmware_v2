@@ -27,9 +27,9 @@ Application Guide:
 #include "timers.h"
 
 
+#define VEML7700_COLLECTION_TIME_OFFSET_MS      10
 #define VEML7700_RES_SCALE                      10000
 #define VEML7700_COUNT_LOWER_THRESHOLD          100
-#define VEML7700_COUNT_UPPER_THRESHOLD          10000
 #define VEML7700_DEFAULT_COLLECT_TIME           6600  // Max time in ms
 
 
@@ -571,7 +571,7 @@ measurements_sensor_state_t veml7700_measurements_collection_time(char* name, ui
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = _veml7700_time.last_time_taken;
+    *collection_time = _veml7700_time.last_time_taken + VEML7700_COLLECTION_TIME_OFFSET_MS;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
