@@ -49,7 +49,7 @@ typedef struct
     measurement_def_t * def;
     measurement_inf_t   inf[MEASUREMENTS_MAX_NUMBER];
     measurement_data_t  data[MEASUREMENTS_MAX_NUMBER];
-} _measurement_arr_t;
+} measurement_arr_t;
 
 
 typedef struct
@@ -65,7 +65,7 @@ static measurement_check_time_t _check_time                                     
 static uint32_t                 _interval_count                                      =  0;
 static int8_t                   _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
 static uint16_t                 _measurements_hex_arr_pos                            =  0;
-static _measurement_arr_t        _measurement_arr                                    = {0};
+static measurement_arr_t        _measurement_arr                                     = {0};
 
 
 uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
