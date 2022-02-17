@@ -571,6 +571,7 @@ bool lw_reload_config(void)
     {
         return false;
     }
+    _lw_state_machine.reset_count = 0;
     lw_reset();
     return true;
 }
