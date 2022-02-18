@@ -224,7 +224,7 @@ measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* va
 measurements_sensor_state_t htu21d_humi_measurements_init(char* name)
 {
     if (!last_temp_reading)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     _htu21d_send(HTU21D_TRIG_HUMI_MEAS);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -235,7 +235,7 @@ measurements_sensor_state_t htu21d_humi_measurements_get(char* name, value_t* va
     if (!value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!last_temp_reading)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     int32_t temp = last_temp_reading;
     last_temp_reading = 0; /*Release*/
     uint16_t s_humi;

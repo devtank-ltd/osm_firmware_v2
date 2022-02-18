@@ -411,6 +411,10 @@ static void _measurements_sample_iteration_iteration(measurements_def_t* def, me
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             return;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("%s errored on iterate, will not collect.", def->name);
+            data->state = MEASUREMENT_STATE_IDLE;
+            data->num_samples_init++;
+            data->num_samples_collected++;
             return;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             return;
