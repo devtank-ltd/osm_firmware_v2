@@ -609,11 +609,13 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
             inf->collection_time_cb = htu21d_measurements_collection_time;
             inf->init_cb            = htu21d_temp_measurements_init;
             inf->get_cb             = htu21d_temp_measurements_get;
+            inf->iteration_cb       = htu21d_measurements_iteration;
             break;
         case HTU21D_HUM:
             inf->collection_time_cb = htu21d_measurements_collection_time;
             inf->init_cb            = htu21d_humi_measurements_init;
             inf->get_cb             = htu21d_humi_measurements_get;
+            inf->iteration_cb       = htu21d_measurements_iteration;
             break;
         case BAT_MON:
             inf->collection_time_cb = adcs_bat_collection_time;

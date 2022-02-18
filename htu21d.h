@@ -16,6 +16,7 @@ extern bool htu21d_read_dew_temp(int32_t* dew_temp);
 
 
 extern measurements_sensor_state_t htu21d_measurements_collection_time(char* name, uint32_t* collection_time);
+extern measurements_sensor_state_t htu21d_measurements_iteration(char* name);
 
 extern measurements_sensor_state_t htu21d_temp_measurements_init(char* name);
 extern measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* value);
