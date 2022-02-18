@@ -87,12 +87,24 @@ typedef uint16_t all_adcs_buf_t[ADCS_NUM_SAMPLES];
 
 static all_adcs_buf_t               adcs_buffer;
 static uint8_t                      adc_channel_array[ADC_COUNT]                        = ADC_CHANNELS;
-static uint16_t                     midpoint;
+static uint16_t                     cc_midpoints[ADC_CC_COUNT];
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
 
-static volatile bool                adcs_cc_running                                        = false;
-static volatile bool                adcs_bat_running                                       = false;
+static volatile bool                three_phase_enabled                                 = false;
 
+static volatile bool                adcs_cc_running                                     = false;
+static volatile bool                adcs_bat_running                                    = false;
+
+
+bool adcs_set_three_phase(bool enable)
+{
+    if (adcs_cc_running || adcs_bat_running)
+    {
+        return false;
+    }
+    three_phase_enabled = enable;
+    return true;
+}
 
 
 measurements_sensor_state_t adcs_cc_collection_time(char* name, uint32_t* collection_time)
@@ -153,10 +165,10 @@ static void _adcs_setup_adc(void)
 }
 
 
-bool adcs_cc_set_midpoint(uint16_t new_midpoint)
+bool adcs_cc_set_midpoints(uint16_t new_midpoints[ADC_CC_COUNT])
 {
-    midpoint = new_midpoint;
-    if (!persist_set_adc_midpoint(new_midpoint))
+    memcpy(cc_midpoints, new_midpoints, ADC_CC_COUNT * sizeof(cc_midpoints[0]));
+    if (!persist_set_cc_midpoints(new_midpoints))
     {
         adc_debug("Could not set the persistent storage for the midpoint.");
         return false;
@@ -165,12 +177,30 @@ bool adcs_cc_set_midpoint(uint16_t new_midpoint)
 }
 
 
+bool adcs_cc_set_midpoint(uint16_t midpoint, uint8_t index)
+{
+    if (index > ADC_CC_COUNT)
+    {
+        return false;
+    }
+    cc_midpoints[index] = midpoint;
+    if (!persist_set_cc_midpoints(cc_midpoints))
+    {
+        adc_debug("Could not set the persistent storage for the midpoint.");
+        return false;
+    }
+    return true;
+}
+
+
+/* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
+ * buffer, the step and start index are required to find the correct RMS.*/
 #ifdef __ADC_RMS_FULL__
-static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms)
+static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms, uint8_t start_index, uint8_t step, uint16_t midpoint)
 {
     uint64_t sum = 0;
     int64_t inter_val;
-    for (unsigned i = 0; i < buff_len; i++)
+    for (unsigned i = start_index; i < buff_len; i+=step)
     {
         inter_val = buff[i] - midpoint;
         inter_val *= inter_val;
@@ -181,7 +211,7 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
 }
 #else
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
-static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms)
+static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_rms, uint8_t start_index, uint8_t step, uint16_t midpoint)
 {
     /**
     Four major steps:
@@ -199,10 +229,10 @@ static bool _adcs_get_rms(all_adcs_buf_t buff, unsigned buff_len, uint16_t* adc_
 
     uint32_t sum = 0;
     uint16_t peak_pos = 0;
-    peak_vals[0] = buff[0];
+    peak_vals[0] = buff[start_index];
 
     // Find the peaks in the data
-    for (unsigned i = 1; i < buff_len; i++)
+    for (unsigned i = (start_index + step); i < buff_len; i+=step)
     {
         if (buff[i] < buff[i-1])
         {
@@ -255,7 +285,7 @@ static bool _adcs_to_mV(uint16_t value, uint16_t* mV)
 }
 
 
-static bool _adcs_current_clamp_conv(uint16_t adc_val, uint16_t* cc_mA)
+static bool _adcs_current_clamp_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint)
 {
     /**
      First must calculate the peak voltage
@@ -332,7 +362,14 @@ void tim3_isr(void)
 
     if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
     {
-        adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX_CURRENT_CLAMP]);
+        if (three_phase_enabled)
+        {
+            adc_set_regular_sequence(ADC1, 3, &adc_channel_array[ADC_INDEX_CURRENT_CLAMP_1]);
+        }
+        else
+        {
+            adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX_CURRENT_CLAMP_1]);
+        }
         adc_start_conversion_regular(ADC1);
     }
     else
@@ -344,19 +381,80 @@ void tim3_isr(void)
 }
 
 
+static bool _adcs_get_index(uint8_t* index, char* name)
+{
+    if (strncmp(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_LEN) == 0)
+    {
+        *index = 0;
+    }
+    else if (strncmp(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_LEN) == 0)
+    {
+        *index = 1;
+    }
+    else if (strncmp(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_LEN) == 0)
+    {
+        *index = 2;
+    }
+    else
+    {
+        adc_debug("'%s' is not a current clamp name.", name);
+        return false;
+    }
+    return true;
+}
 
-measurements_sensor_state_t adcs_cc_begin(char* name)
+
+static measurements_sensor_state_t _adcs_cc_begin_single_phase(void)
 {
     if (adcs_cc_running || adcs_bat_running)
     {
         adc_debug("ADCs already running.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     }
     adc_debug("Started ADC reading for CC.");
     adcs_cc_running = true;
     timer_set_counter(TIM3, 0);
     timer_enable_counter(TIM3);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+static measurements_sensor_state_t _adcs_cc_begin_three_phase(void)
+{
+    if (adcs_cc_running)
+    {
+        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    }
+    if (adcs_bat_running)
+    {
+        adc_debug("ADCs already running.");
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
+    }
+    adc_debug("Started ADC reading for CC.");
+    adcs_cc_running = true;
+    timer_set_counter(TIM3, 0);
+    timer_enable_counter(TIM3);
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+measurements_sensor_state_t adcs_cc_begin(char* name)
+{
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    if (three_phase_enabled)
+    {
+        return _adcs_cc_begin_three_phase();
+    }
+    if (index != 0)
+    {
+        adc_debug("Three phase is not enabled, cannot init %s", name);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    return _adcs_cc_begin_single_phase();
 }
 
 
@@ -370,15 +468,25 @@ static void _adcs_cc_wait(void)
 
 bool adcs_cc_calibrate(void)
 {
-    if (!adcs_cc_begin(""))
+    bool prev_phase_setting = three_phase_enabled;
+    three_phase_enabled = true;
+    if (_adcs_cc_begin_three_phase() != MEASUREMENTS_SENSOR_STATE_SUCCESS)
         return false;
     _adcs_cc_wait();
-    uint64_t sum = 0;
-    for (unsigned i = 0; i < ARRAY_SIZE(adcs_buffer); i++)
+    uint64_t sum;
+    uint16_t midpoints[ADC_CC_COUNT];
+    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
     {
-        sum += adcs_buffer[i];
+        sum = 0;
+        for (unsigned j = 0; j < ADCS_NUM_SAMPLES; j+=ADC_CC_COUNT)
+        {
+            sum += adcs_buffer[i+j];
+        }
+        midpoints[i] = sum / (ADCS_NUM_SAMPLES / ADC_CC_COUNT);
+        adc_debug("Midpoint[%u] = %"PRIu16, i, midpoints[i]);
     }
-    adcs_cc_set_midpoint(sum / ARRAY_SIZE(adcs_buffer));
+    adcs_cc_set_midpoints(midpoints);
+    three_phase_enabled = prev_phase_setting;
     return true;
 }
 
@@ -393,7 +501,14 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
     uint16_t adcs_rms = 0;
 
-    if (!_adcs_get_rms(adcs_buffer, ARRAY_SIZE(adcs_buffer), &adcs_rms))
+    uint8_t step = (three_phase_enabled?3:1);
+    uint8_t start_index;
+
+    _adcs_get_index(&start_index, name);
+
+    uint16_t* midpoint = &cc_midpoints[start_index];
+
+    if (!_adcs_get_rms(adcs_buffer, ARRAY_SIZE(adcs_buffer), &adcs_rms, start_index, step, *midpoint))
     {
         adc_debug("Failed to get RMS");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -401,7 +516,7 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
     uint16_t cc_mA = 0;
 
-    if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA))
+    if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA, *midpoint))
     {
         adc_debug("Failed to get current clamp");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -520,11 +635,12 @@ bool adcs_bat_get_blocking(char* name, value_t* value)
 void adcs_init(void)
 {
     // Get the midpoint
-    if (!persist_get_adc_midpoint(&midpoint))
+    if (!persist_get_cc_midpoints(cc_midpoints))
     {
         // Assume it to be the theoretical midpoint
         adc_debug("Failed to load persistent midpoint.");
-        adcs_cc_set_midpoint(ADC_MAX_VAL / 2);
+        uint16_t midpoints[ADC_CC_COUNT] = {ADC_MAX_VAL / 2};
+        adcs_cc_set_midpoints(midpoints);
     }
 
     // Setup the clock and gpios

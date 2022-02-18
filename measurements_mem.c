@@ -22,7 +22,19 @@ unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
     def->type        = PM25;
 
     def = &measurements_arr[pos++];
-    strncpy(def->name, MEASUREMENTS_CURRENT_CLAMP_NAME, MEASURE_NAME_LEN+1);
+    strncpy(def->name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_LEN+1);
+    def->interval    = 1;
+    def->samplecount = 25;
+    def->type        = CURRENT_CLAMP;
+    def = &measurements_arr[pos++];
+
+    strncpy(def->name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_LEN+1);
+    def->interval    = 1;
+    def->samplecount = 25;
+    def->type        = CURRENT_CLAMP;
+    def = &measurements_arr[pos++];
+
+    strncpy(def->name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_LEN+1);
     def->interval    = 1;
     def->samplecount = 25;
     def->type        = CURRENT_CLAMP;

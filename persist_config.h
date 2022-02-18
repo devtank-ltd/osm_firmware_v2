@@ -25,8 +25,8 @@ extern measurements_def_t * persist_get_measurements(void);
 extern bool persist_get_mins_interval(uint32_t * mins_interval);
 extern bool persist_set_mins_interval(uint32_t mins_interval);
 
-extern bool persist_set_adc_midpoint(uint16_t midpoint);
-extern bool persist_get_adc_midpoint(uint16_t* midpoint);
+extern bool persist_set_cc_midpoints(uint16_t midpoints[3]);
+extern bool persist_get_cc_midpoints(uint16_t midpoints[3]);
 
 extern uint16_t* persist_get_ios_state();
 

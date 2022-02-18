@@ -505,17 +505,24 @@ static void cc_cb(char* args)
 }
 
 
-static void cc_midpoint_cb(char *args)
-{
-    char* pos = skip_space(args);
-    uint16_t new_mp = (uint16_t)strtoul(pos, NULL, 10);
-    adcs_cc_set_midpoint(new_mp);
-}
-
-
 static void cc_calibrate_cb(char *args)
 {
     adcs_cc_calibrate();
+}
+
+
+static void cc_3_phase(char* args)
+{
+    uint32_t r = strtoul(args, NULL, 10);
+    if (r)
+    {
+        adcs_set_three_phase(true);
+        return;
+    }
+    if (!adcs_set_three_phase(false))
+    {
+        log_out("Could not change. ADC sampling in progress.");
+    }
 }
 
 
@@ -664,8 +671,8 @@ void cmds_process(char * command, unsigned len)
         { "fw@",          "Finishing crc of new fw.", fw_fin},
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
-        { "cc_mp",        "Set the cc midpoint",      cc_midpoint_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
+        { "cc_3",         "Enable/disable 3 phase",   cc_3_phase},
         { "w1",           "Get temperature with w1",  w1_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
