@@ -195,25 +195,25 @@ bool persist_set_mins_interval(uint32_t mins_interval)
 
 
 
-bool persist_set_cc_midpoints(uint16_t midpoints[NUM_ADC_CC_MIDPOINTS])
+bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
         return false;
     }
-    memcpy(persist_data.cc_midpoints, midpoints, NUM_ADC_CC_MIDPOINTS * sizeof(persist_data.cc_midpoints[0]));
+    memcpy(persist_data.cc_midpoints, midpoints, ADC_CC_COUNT * sizeof(persist_data.cc_midpoints[0]));
     persist_commit();
     return true;
 }
 
 
-bool persist_get_cc_midpoints(uint16_t midpoints[3])
+bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
         return false;
     }
-    memcpy(midpoints, persist_data.cc_midpoints, NUM_ADC_CC_MIDPOINTS * sizeof(persist_data.cc_midpoints[0]));
+    memcpy(midpoints, persist_data.cc_midpoints, ADC_CC_COUNT * sizeof(persist_data.cc_midpoints[0]));
     return true;
 }
 

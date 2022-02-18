@@ -5,6 +5,7 @@
 
 #include "measurements.h"
 #include "config.h"
+#include "pinmap.h"
 
 
 #define FLASH_ADDRESS               0x8000000
@@ -24,7 +25,6 @@
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
 
 #define PERSIST_VERSION            1
-#define NUM_ADC_CC_MIDPOINTS       3
 
 
 typedef struct
@@ -37,7 +37,7 @@ typedef struct
     char                    lw_dev_eui[LW_DEV_EUI_LEN];
     char                    lw_app_key[LW_APP_KEY_LEN];
     measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
-    uint16_t                cc_midpoints[NUM_ADC_CC_MIDPOINTS];
+    uint16_t                cc_midpoints[ADC_CC_COUNT];
     uint16_t                __;
     uint64_t                ___;
     uint16_t                ios_state[IOS_COUNT];

@@ -5,6 +5,7 @@
 
 
 #include "measurements.h"
+#include "pinmap.h"
 
 
 extern void persistent_init(void);
@@ -25,8 +26,8 @@ extern measurements_def_t * persist_get_measurements(void);
 extern bool persist_get_mins_interval(uint32_t * mins_interval);
 extern bool persist_set_mins_interval(uint32_t mins_interval);
 
-extern bool persist_set_cc_midpoints(uint16_t midpoints[3]);
-extern bool persist_get_cc_midpoints(uint16_t midpoints[3]);
+extern bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT]);
+extern bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT]);
 
 extern uint16_t* persist_get_ios_state();
 
