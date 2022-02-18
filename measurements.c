@@ -640,13 +640,25 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
 
 static void _measurements_derive_cc_phase(void)
 {
+    unsigned len = 0;
+    uint8_t channels[ADC_COUNT] = {0};
     measurements_def_t* def;
-    bool cc2_active, cc3_active;
-    cc2_active = (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def) &&
-                  _measurements_def_is_active(def) );
-    cc3_active = (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def) &&
-                  _measurements_def_is_active(def) );
-    adcs_set_three_phase(cc2_active || cc3_active);
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def) &&
+        _measurements_def_is_active(def) )
+    {
+        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_1;
+    }
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def) &&
+        _measurements_def_is_active(def) )
+    {
+        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_2;
+    }
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def) &&
+        _measurements_def_is_active(def) )
+    {
+        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_3;
+    }
+    adcs_cc_set_channels_active(channels, len);
 }
 
 

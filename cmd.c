@@ -511,21 +511,6 @@ static void cc_calibrate_cb(char *args)
 }
 
 
-static void cc_3_phase(char* args)
-{
-    uint32_t r = strtoul(args, NULL, 10);
-    if (r)
-    {
-        adcs_set_three_phase(true);
-        return;
-    }
-    if (!adcs_set_three_phase(false))
-    {
-        log_out("Could not change. ADC sampling in progress.");
-    }
-}
-
-
 static void w1_cb(char* args)
 {
     float w1_temp;
@@ -672,7 +657,6 @@ void cmds_process(char * command, unsigned len)
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
-        { "cc_3",         "Enable/disable 3 phase",   cc_3_phase},
         { "w1",           "Get temperature with w1",  w1_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},

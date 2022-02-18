@@ -55,6 +55,11 @@
                         ADC1_CHANNEL_5V_RAIL_MON       }
 
 #define ADC_COUNT       6
+
+#define ADC_CC_CHANNELS { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
+                          ADC1_CHANNEL_CURRENT_CLAMP_2,  \
+                          ADC1_CHANNEL_CURRENT_CLAMP_3   }
+
 #define ADC_CC_COUNT    3
 
 #define ADC_DMA_CHANNELS                                                        \

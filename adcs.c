@@ -82,6 +82,13 @@ typedef struct
 } adc_dma_channel_t;
 
 
+typedef struct
+{
+    uint8_t     channels[ADC_CC_COUNT];
+    unsigned    len;
+} adcs_channels_active_t;
+
+
 typedef uint16_t all_adcs_buf_t[ADCS_NUM_SAMPLES];
 
 
@@ -90,27 +97,27 @@ static uint8_t                      adc_channel_array[ADC_COUNT]                
 static uint16_t                     cc_midpoints[ADC_CC_COUNT];
 static volatile adc_value_status_t  adc_value_status                                    = ADCS_VAL_STATUS_IDLE;
 
-static volatile bool                three_phase_enabled                                 = false;
+static adcs_channels_active_t       adc_cc_channels_active                              = {0};
 
 static volatile bool                adcs_cc_running                                     = false;
 static volatile bool                adcs_bat_running                                    = false;
 
 
-bool adcs_set_three_phase(bool enable)
+bool adcs_cc_set_channels_active(uint8_t* active_channels, unsigned len)
 {
     if (adcs_cc_running || adcs_bat_running)
     {
+        adc_debug("Cannot change phase, ADC reading in progress.");
         return false;
     }
-    if (enable && !three_phase_enabled)
+    if (len > ADC_CC_COUNT)
     {
-        adc_debug("Setting to 3-phase.");
+        adc_debug("Not possible length of array.");
+        return false;
     }
-    else if (!enable && three_phase_enabled)
-    {
-        adc_debug("Setting to single phase.");
-    }
-    three_phase_enabled = enable;
+    memcpy(adc_cc_channels_active.channels, active_channels, len * sizeof(uint8_t));
+    adc_cc_channels_active.len = len;
+    adc_debug("Setting %"PRIu8" active channels.", len);
     return true;
 }
 
@@ -370,14 +377,7 @@ void tim3_isr(void)
 
     if (adcs_buffer_pos < ARRAY_SIZE(adcs_buffer))
     {
-        if (three_phase_enabled)
-        {
-            adc_set_regular_sequence(ADC1, 3, &adc_channel_array[ADC_INDEX_CURRENT_CLAMP_1]);
-        }
-        else
-        {
-            adc_set_regular_sequence(ADC1, 1, &adc_channel_array[ADC_INDEX_CURRENT_CLAMP_1]);
-        }
+        adc_set_regular_sequence(ADC1, adc_cc_channels_active.len, adc_cc_channels_active.channels);
         adc_start_conversion_regular(ADC1);
     }
     else
@@ -386,6 +386,21 @@ void tim3_isr(void)
         started = false;
         timer_disable_counter(TIM3);
     }
+}
+
+
+static bool _adcs_find_active_channel_index(uint8_t* active_channel_index, uint8_t index)
+{
+    uint8_t adc_channel = adc_channel_array[index];
+    for (unsigned i = 0; i < adc_cc_channels_active.len; i++)
+    {
+        if (adc_cc_channels_active.channels[i] == adc_channel)
+        {
+            *active_channel_index = i;
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -412,57 +427,22 @@ static bool _adcs_get_index(uint8_t* index, char* name)
 }
 
 
-static measurements_sensor_state_t _adcs_cc_begin_single_phase(void)
+measurements_sensor_state_t adcs_cc_begin(char* name)
 {
-    if (adcs_cc_running || adcs_bat_running)
-    {
-        adc_debug("ADCs already running.");
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
-    }
-    adc_debug("Started ADC reading for CC.");
-    adcs_cc_running = true;
-    timer_set_counter(TIM3, 0);
-    timer_enable_counter(TIM3);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
-
-
-static measurements_sensor_state_t _adcs_cc_begin_three_phase(void)
-{
-    if (adcs_cc_running)
-    {
-        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-    }
     if (adcs_bat_running)
     {
         adc_debug("ADCs already running.");
         return MEASUREMENTS_SENSOR_STATE_BUSY;
     }
+    if (adcs_cc_running)
+    {
+        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    }
     adc_debug("Started ADC reading for CC.");
     adcs_cc_running = true;
     timer_set_counter(TIM3, 0);
     timer_enable_counter(TIM3);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
-
-
-measurements_sensor_state_t adcs_cc_begin(char* name)
-{
-    uint8_t index;
-    if (!_adcs_get_index(&index, name))
-    {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
-    if (three_phase_enabled)
-    {
-        return _adcs_cc_begin_three_phase();
-    }
-    if (index != 0)
-    {
-        adc_debug("Three phase is not enabled, cannot init %s", name);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
-    return _adcs_cc_begin_single_phase();
 }
 
 
@@ -476,10 +456,18 @@ static void _adcs_cc_wait(void)
 
 bool adcs_cc_calibrate(void)
 {
-    bool prev_phase_setting = three_phase_enabled;
-    three_phase_enabled = true;
-    if (_adcs_cc_begin_three_phase() != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
+    adcs_channels_active_t prev_adc_cc_channels_active = {0};
+    memcpy(prev_adc_cc_channels_active.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len * sizeof(adc_cc_channels_active.channels[0]));
+    prev_adc_cc_channels_active.len = adc_cc_channels_active.len;
+
+    memcpy(adc_cc_channels_active.channels, all_cc_channels, ADC_CC_COUNT);
+    adc_cc_channels_active.len = ADC_CC_COUNT;
+
+    if (adcs_cc_begin("") != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
         return false;
+    }
     _adcs_cc_wait();
     uint64_t sum;
     uint16_t midpoints[ADC_CC_COUNT];
@@ -494,7 +482,8 @@ bool adcs_cc_calibrate(void)
         adc_debug("Midpoint[%u] = %"PRIu16, i, midpoints[i]);
     }
     adcs_cc_set_midpoints(midpoints);
-    three_phase_enabled = prev_phase_setting;
+    memcpy(adc_cc_channels_active.channels, prev_adc_cc_channels_active.channels, prev_adc_cc_channels_active.len);
+    adc_cc_channels_active.len = prev_adc_cc_channels_active.len;
     return true;
 }
 
@@ -509,18 +498,23 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
     uint16_t adcs_rms = 0;
 
-    uint8_t step = (three_phase_enabled?3:1);
-    uint8_t start_index;
+    uint8_t index, active_index;
 
-    if (!_adcs_get_index(&start_index, name))
+    if (!_adcs_get_index(&index, name))
     {
         adc_debug("Cannot get index.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    uint16_t* midpoint = &cc_midpoints[start_index];
+    if (!_adcs_find_active_channel_index(&active_index, index))
+    {
+        adc_debug("Not in active channel.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
-    if (!_adcs_get_rms(adcs_buffer, ARRAY_SIZE(adcs_buffer), &adcs_rms, start_index, step, *midpoint))
+    uint16_t midpoint = cc_midpoints[index];
+
+    if (!_adcs_get_rms(adcs_buffer, ARRAY_SIZE(adcs_buffer), &adcs_rms, active_index, adc_cc_channels_active.len, midpoint))
     {
         adc_debug("Failed to get RMS");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -528,7 +522,7 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
     uint16_t cc_mA = 0;
 
-    if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA, *midpoint))
+    if (!_adcs_current_clamp_conv(adcs_rms, &cc_mA, midpoint))
     {
         adc_debug("Failed to get current clamp");
         return MEASUREMENTS_SENSOR_STATE_ERROR;

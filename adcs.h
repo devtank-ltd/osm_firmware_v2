@@ -1,6 +1,7 @@
 #pragma once
 
 #include "measurements.h"
+#include "config.h"
 
 
 extern void                         adcs_init(void);
@@ -14,7 +15,7 @@ extern bool                         adcs_cc_get_blocking(char* name, value_t* va
 extern bool                         adcs_cc_set_midpoint(uint16_t midpoint, uint8_t index);
 extern bool                         adcs_cc_calibrate(void);
 
-extern bool                         adcs_set_three_phase(bool enable);
+extern bool                         adcs_cc_set_channels_active(uint8_t* active_channels, unsigned len);
 
 extern measurements_sensor_state_t  adcs_bat_collection_time(char* name, uint32_t* collection_time);
 extern measurements_sensor_state_t  adcs_bat_begin(char* name);
