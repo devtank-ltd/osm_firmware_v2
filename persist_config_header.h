@@ -35,7 +35,7 @@ typedef struct
     modbus_bus_t            modbus_bus;
     char                    lw_dev_eui[LW_DEV_EUI_LEN];
     char                    lw_app_key[LW_APP_KEY_LEN];
-    measurement_def_t       measurements_arr[MEASUREMENTS_MAX_NUMBER];
+    measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
     uint16_t                adc_midpoint;
     uint16_t                _;
     uint32_t                __;

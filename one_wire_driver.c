@@ -17,6 +17,7 @@ Documents used:
 #include "value.h"
 #include "timers.h"
 #include "io.h"
+#include "one_wire_driver.h"
 
 #define DELAY_READ_START    2
 #define DELAY_READ_WAIT     10
@@ -39,7 +40,7 @@ Documents used:
 #define W1_LEVEL_LOW        (uint8_t)0
 #define W1_LEVEL_HIGH       (uint8_t)1
 
-#define W1_DEFAULT_COLLECTION_TIME DELAY_GET_TEMP
+#define W1_DEFAULT_COLLECTION_TIME_MS DELAY_GET_TEMP/1000
 
 
 typedef union
@@ -298,30 +299,30 @@ bool w1_query_temp(float* temperature)
 }
 
 
-bool w1_measurement_init(char* name)
+measurements_sensor_state_t w1_measurements_init(char* name)
 {
     if (!io_is_special_now(W1_IO))
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!_w1_reset())
     {
         _w1_temp_err();
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     _w1_send_byte(W1_CMD_SKIP_ROM);
     _w1_send_byte(W1_CMD_CONV_T);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool w1_measurement_collect(char* name, value_t* value)
+measurements_sensor_state_t w1_measurements_collect(char* name, value_t* value)
 {
     if (!io_is_special_now(W1_IO))
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     w1_memory_t d;
     if (!_w1_reset())
     {
         _w1_temp_err();
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     _w1_send_byte(W1_CMD_SKIP_ROM);
     _w1_send_byte(W1_CMD_READ_SCP);
@@ -330,13 +331,13 @@ bool w1_measurement_collect(char* name, value_t* value)
     if (!_w1_crc_check(d.raw, 8))
     {
         w1_debug("Data not confirmed by CRC");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!_w1_empty_check(d.raw, 9))
     {
         w1_debug("Empty memory.");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     int16_t integer_bits = d.t >> 4;
@@ -348,13 +349,18 @@ bool w1_measurement_collect(char* name, value_t* value)
     }
 
     *value = value_from_float((float)integer_bits + (float)decimal_bits / 16.f);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-uint32_t w1_collection_time(void)
+measurements_sensor_state_t w1_collection_time(char* name, uint32_t* collection_time)
 {
-    return W1_DEFAULT_COLLECTION_TIME;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = W1_DEFAULT_COLLECTION_TIME_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

@@ -184,63 +184,69 @@ static bool _htu21d_dew_point(int32_t temp, int32_t humi, int32_t* t_dew)
     return true;
 }
 
-uint32_t htu21d_measurements_collection_time(void)
+
+measurements_sensor_state_t htu21d_measurements_collection_time(char* name, uint32_t* collection_time)
 {
-    return MEASUREMENT_COLLECTION_MS;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = MEASUREMENT_COLLECTION_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 static int32_t last_temp_reading = 0;
 
-bool htu21d_temp_measurements_init(char* name)
+measurements_sensor_state_t htu21d_temp_measurements_init(char* name)
 {
     if (last_temp_reading)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     _htu21d_send(HTU21D_TRIG_TEMP_MEAS);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool htu21d_temp_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* value)
 {
     if (!value)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     uint16_t s_temp;
     if (!_htu21d_read_data(&s_temp, 10))
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     _htu21d_temp_conv(s_temp, &last_temp_reading);
     htu21d_debug("temperature: %i.%02udegC", (int)last_temp_reading/100, (unsigned)abs(last_temp_reading%100));
     *value = value_from(last_temp_reading);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool htu21d_humi_measurements_init(char* name)
+measurements_sensor_state_t htu21d_humi_measurements_init(char* name)
 {
     if (!last_temp_reading)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     _htu21d_send(HTU21D_TRIG_HUMI_MEAS);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool htu21d_humi_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t htu21d_humi_measurements_get(char* name, value_t* value)
 {
     if (!value)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!last_temp_reading)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     int32_t temp = last_temp_reading;
     last_temp_reading = 0; /*Release*/
     uint16_t s_humi;
     if (!_htu21d_read_data(&s_humi, 10))
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     int32_t humi;
     if (!_htu21d_humi_full(temp, s_humi, &humi))
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     htu21d_debug("Humidity: %i.%02u%%", (int)humi/100, (unsigned)abs(humi%100));
     *value = value_from(humi);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

@@ -10,6 +10,9 @@
 #include "uart_rings.h"
 #include "common.h"
 
+
+#define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
+
 #define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
 
 
@@ -254,36 +257,47 @@ bool hpm_get(uint16_t * pm25, uint16_t * pm10)
 }
 
 
-bool hpm_get_pm10(char* name, value_t* val)
+measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection_time)
+{
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+measurements_sensor_state_t hpm_get_pm10(char* name, value_t* val)
 {
     bool was_valid = hpm_valid;
     hpm_enable(false);
     if (!val || !was_valid)
     {
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     val->type = VALUE_UINT16;
     val->u16 = pm10_entry.d;
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool hpm_get_pm25(char* name, value_t* val)
+measurements_sensor_state_t hpm_get_pm25(char* name, value_t* val)
 {
     bool was_valid = hpm_valid;
     hpm_enable(false);
     if (!val || !was_valid)
     {
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     val->type = VALUE_UINT16;
     val->u16 = pm25_entry.d;
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool hpm_init(char* name)
+measurements_sensor_state_t hpm_init(char* name)
 {
     hpm_enable(true);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }

@@ -9,6 +9,10 @@
 #include "pinmap.h"
 #include "common.h"
 #include "io.h"
+#include "pulsecount.h"
+
+
+#define PULSECOUNT_COLLECTION_TIME_MS       1000;
 
 
 static volatile uint32_t _pulsecount      = 0;
@@ -69,30 +73,35 @@ void pulsecount_log()
 }
 
 
-uint32_t pulsecount_collection_time(void)
+measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* collection_time)
 {
-    return 1000;
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = PULSECOUNT_COLLECTION_TIME_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool     pulsecount_begin(char* name)
+measurements_sensor_state_t pulsecount_begin(char* name)
 {
     if (!io_is_special_now(PULSE_IO))
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     pulsecount_debug("pulsecount at start %"PRIu32, _pulsecount);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool     pulsecount_get(char* name, value_t* value)
+measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
 {
     if (!io_is_special_now(PULSE_IO) && !value)
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     _send_pulsecount = _pulsecount;
     pulsecount_debug("pulsecount at end %"PRIu32, _send_pulsecount);
     *value = value_from(_send_pulsecount);
-    return true;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
