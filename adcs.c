@@ -512,7 +512,11 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
     uint8_t step = (three_phase_enabled?3:1);
     uint8_t start_index;
 
-    _adcs_get_index(&start_index, name);
+    if (!_adcs_get_index(&start_index, name))
+    {
+        adc_debug("Cannot get index.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     uint16_t* midpoint = &cc_midpoints[start_index];
 
