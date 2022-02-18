@@ -343,6 +343,12 @@ void on_lw_sent_ack(bool ack)
 }
 
 
+static bool _measurements_def_is_active(measurements_def_t* def)
+{
+    return !(def->interval == 0 || def->samplecount == 0 || !def->name[0]);
+}
+
+
 static uint32_t _measurements_get_collection_time(measurements_def_t* def, measurements_inf_t* inf)
 {
     if (!inf->collection_time_cb)
@@ -500,7 +506,7 @@ static void _measurements_sample(void)
         measurements_data_t* data = &_measurements_arr.data[i];
 
         // Breakout if the interval or samplecount is 0 or has no name
-        if (def->interval == 0 || def->samplecount == 0 || !def->name[0])
+        if (!_measurements_def_is_active(def))
         {
             continue;
         }
@@ -632,6 +638,29 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
     data->collection_time_cache = _measurements_get_collection_time(def, inf);
 }
 
+static void _measurements_derive_cc_phase(void)
+{
+    unsigned len = 0;
+    uint8_t channels[ADC_COUNT] = {0};
+    measurements_def_t* def;
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def) &&
+        _measurements_def_is_active(def) )
+    {
+        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_1;
+    }
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def) &&
+        _measurements_def_is_active(def) )
+    {
+        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_2;
+    }
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def) &&
+        _measurements_def_is_active(def) )
+    {
+        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_3;
+    }
+    adcs_cc_set_channels_active(channels, len);
+}
+
 
 bool measurements_add(measurements_def_t* measurements_def)
 {
@@ -654,6 +683,7 @@ bool measurements_add(measurements_def_t* measurements_def)
             memcpy(def, measurements_def, sizeof(measurements_def_t));
             _measurements_fixup(def, inf, data);
             memcpy(data, &data_empty, sizeof(measurements_data_t));
+            _measurements_derive_cc_phase();
             return true;
         }
     }
@@ -671,6 +701,7 @@ bool measurements_del(char* name)
             memset(&_measurements_arr.def[i], 0, sizeof(measurements_def_t));
             memset(&_measurements_arr.inf[i], 0, sizeof(measurements_inf_t));
             memset(&_measurements_arr.data[i], 0, sizeof(measurements_data_t));
+            _measurements_derive_cc_phase();
             return true;
         }
     }
@@ -686,6 +717,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
         return false;
     }
     measurements_def->interval = interval;
+    _measurements_derive_cc_phase();
     return true;
 }
 
@@ -715,6 +747,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurements_def->samplecount = samplecount;
+    _measurements_derive_cc_phase();
     return true;
 }
 
@@ -837,4 +870,5 @@ void measurements_init(void)
         log_error("Could not load measurements interval.");
         transmit_interval = 5;
     }
+    _measurements_derive_cc_phase();
 }

@@ -26,27 +26,41 @@
 #define ADCS_PORT_N_PINS                            \
 {                                                   \
     {GPIOA, GPIO1},      /* ADC 1  = Channel 6  */  \
+    {GPIOA, GPIO4},      /* ADC 1  = Channel 9  */  \
+    {GPIOB, GPIO1},      /* ADC 1  = Channel 16 */  \
     {GPIOC, GPIO0},      /* ADC 1  = Channel 1  */  \
     {GPIOC, GPIO2},      /* ADC 1  = Channel 3  */  \
     {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
 }
 
-#define ADC1_CHANNEL_CURRENT_CLAMP      6
+#define ADC1_CHANNEL_CURRENT_CLAMP_1    6
+#define ADC1_CHANNEL_CURRENT_CLAMP_2    9
+#define ADC1_CHANNEL_CURRENT_CLAMP_3    16
 #define ADC1_CHANNEL_BAT_MON            1
 #define ADC1_CHANNEL_3V3_RAIL_MON       3
 #define ADC1_CHANNEL_5V_RAIL_MON        4
 
-#define ADC_INDEX_CURRENT_CLAMP   0
-#define ADC_INDEX_BAT_MON         1
-#define ADC_INDEX_3V3_RAIL_MON    2
-#define ADC_INDEX_5V_RAIL_MON     3
+#define ADC_INDEX_CURRENT_CLAMP_1 0
+#define ADC_INDEX_CURRENT_CLAMP_2 1
+#define ADC_INDEX_CURRENT_CLAMP_3 2
+#define ADC_INDEX_BAT_MON         3
+#define ADC_INDEX_3V3_RAIL_MON    4
+#define ADC_INDEX_5V_RAIL_MON     5
 
-#define ADC_CHANNELS  { ADC1_CHANNEL_CURRENT_CLAMP,    \
+#define ADC_CHANNELS  { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
+                        ADC1_CHANNEL_CURRENT_CLAMP_2,  \
+                        ADC1_CHANNEL_CURRENT_CLAMP_3,  \
                         ADC1_CHANNEL_BAT_MON,          \
                         ADC1_CHANNEL_3V3_RAIL_MON,     \
                         ADC1_CHANNEL_5V_RAIL_MON       }
 
-#define ADC_COUNT 4
+#define ADC_COUNT       6
+
+#define ADC_CC_CHANNELS { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
+                          ADC1_CHANNEL_CURRENT_CLAMP_2,  \
+                          ADC1_CHANNEL_CURRENT_CLAMP_3   }
+
+#define ADC_CC_COUNT    3
 
 #define ADC_DMA_CHANNELS                                                        \
 {                                                                               \

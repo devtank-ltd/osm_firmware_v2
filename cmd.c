@@ -505,14 +505,6 @@ static void cc_cb(char* args)
 }
 
 
-static void cc_midpoint_cb(char *args)
-{
-    char* pos = skip_space(args);
-    uint16_t new_mp = (uint16_t)strtoul(pos, NULL, 10);
-    adcs_cc_set_midpoint(new_mp);
-}
-
-
 static void cc_calibrate_cb(char *args)
 {
     adcs_cc_calibrate();
@@ -664,7 +656,6 @@ void cmds_process(char * command, unsigned len)
         { "fw@",          "Finishing crc of new fw.", fw_fin},
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
-        { "cc_mp",        "Set the cc midpoint",      cc_midpoint_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
         { "w1",           "Get temperature with w1",  w1_cb},
         { "timer",        "Test usecs timer",         timer_cb},
