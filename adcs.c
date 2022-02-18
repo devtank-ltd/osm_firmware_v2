@@ -102,6 +102,14 @@ bool adcs_set_three_phase(bool enable)
     {
         return false;
     }
+    if (enable && !three_phase_enabled)
+    {
+        adc_debug("Setting to 3-phase.");
+    }
+    else if (!enable && three_phase_enabled)
+    {
+        adc_debug("Setting to single phase.");
+    }
     three_phase_enabled = enable;
     return true;
 }
