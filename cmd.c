@@ -173,12 +173,6 @@ void version_cb(char * args)
 }
 
 
-void audio_dump_cb(char * args)
-{
-    start_audio_dumping = true;
-}
-
-
 void lora_cb(char * args)
 {
     char * pos = skip_space(args);
@@ -636,7 +630,6 @@ void cmds_process(char * command, unsigned len)
         { "sio",          "Enable Special IO.",       special_cb},
         { "count",        "Counts of controls.",      count_cb},
         { "version",      "Print version.",           version_cb},
-        { "audio_dump",   "Do audiodump",             audio_dump_cb},
         { "lora",         "Send lora message",        lora_cb},
         { "lora_config",  "Set lora config",          lora_config_cb},
         { "interval",     "Set the interval",         interval_cb},

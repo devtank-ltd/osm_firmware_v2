@@ -68,6 +68,7 @@ int main(void)
     adcs_init();
     htu21d_init();
     veml7700_init();
+    sai_init();
     lw_init();
     measurements_init();
     pulsecount_init();

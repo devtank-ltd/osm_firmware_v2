@@ -19,6 +19,7 @@
 #include "htu21d.h"
 #include "pulsecount.h"
 #include "veml7700.h"
+#include "sai.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME  (uint32_t)1000
@@ -635,6 +636,12 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
             inf->init_cb            = veml7700_light_measurements_init;
             inf->get_cb             = veml7700_light_measurements_get;
             inf->iteration_cb       = veml7700_iteration;
+            break;
+        case SOUND:
+            inf->collection_time_cb = sai_collection_time;
+            inf->init_cb            = sai_measurements_init;
+            inf->get_cb             = sai_measurements_get;
+            inf->iteration_cb       = sai_iteration_callback;
             break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);

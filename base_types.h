@@ -109,6 +109,7 @@ typedef enum
     BAT_MON       = 8,
     PULSE_COUNT   = 9,
     LIGHT         = 10,
+    SOUND         = 11,
 } measurements_def_type_t;
 
 
