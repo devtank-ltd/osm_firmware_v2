@@ -71,11 +71,16 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                 {
                     wait = false;
                 }
+                if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
+                {
+                    log_error("I2C timeout WAITing");
+                    return false;
+                }
                 while (i2c_nack(i2c))
                 {
                     if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                     {
-                        log_error("I2C timeout");
+                        log_error("I2C timeout NACKing");
                         return false;
                     }
                     uart_rings_out_drain();
@@ -90,7 +95,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
             {
                 if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                 {
-                    log_error("I2C timeout");
+                    log_error("I2C timeout READing");
                     return false;
                 }
                 uart_rings_out_drain();
