@@ -85,7 +85,7 @@ static void _write_measurements_json(struct json_object * root)
 
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurement_def_t * def = &osm_config.measurements_arr[i];
+        measurements_def_t * def = &osm_config.measurements_arr[i];
         if (def->name[0])
         {
             struct json_object * measurement_node = json_object_new_object();
@@ -128,6 +128,21 @@ static void _write_ios_json(struct json_object * root)
 }
 
 
+static void _write_cc_midpoints_json(struct json_object * root)
+{
+    struct json_object * cc_midpoints_node = json_object_new_object();
+    json_object_object_add(root, "cc_midpoints", cc_midpoints_node);
+    uint16_t* midpoint;
+    char name[4];
+    for (unsigned n = 0; n < ADC_CC_COUNT; n++)
+    {
+        midpoint = &osm_config.cc_midpoints[n];
+        snprintf(name, 4, "CC%u", n+1);
+        json_object_object_add(cc_midpoints_node, name, json_object_new_int(*midpoint));
+    }
+}
+
+
 
 int write_json_from_img(const char * filename)
 {
@@ -152,12 +167,12 @@ int write_json_from_img(const char * filename)
 
     json_object_object_add(root, "log_debug_mask", json_object_new_int(DEBUG_SYS));
 
-    json_object_object_add(root, "mins_interval", json_object_new_int(15));
+    json_object_object_add(root, "mins_interval", json_object_new_int(osm_config.mins_interval));
 
     json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(osm_config.lw_dev_eui, LW_DEV_EUI_LEN));
     json_object_object_add(root, "lw_app_key", json_object_new_string_len(osm_config.lw_app_key, LW_APP_KEY_LEN));
 
-    json_object_object_add(root, "cc_midpoint", json_object_new_int(osm_config.adc_midpoint));
+    _write_cc_midpoints_json(root);
 
     if (!_write_modbus_json(root))
     {

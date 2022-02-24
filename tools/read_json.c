@@ -43,11 +43,11 @@ static void _measurement_del(const char * name)
 }
 
 
-measurement_def_t* _measurement_get_free(measurement_def_t * measurement_arr)
+measurements_def_t* _measurement_get_free(measurements_def_t * measurement_arr)
 {
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurement_def_t * def = &measurement_arr[i];
+        measurements_def_t * def = &measurement_arr[i];
         if (!def->name[0])
             return def;
     }
@@ -181,7 +181,7 @@ static bool _read_modbus_json(struct json_object * root)
 
                         _measurement_del(reg_name);
 
-                        measurement_def_t * def = _measurement_get_free(osm_config.measurements_arr);
+                        measurements_def_t * def = _measurement_get_free(osm_config.measurements_arr);
                         if (!def)
                             return false;
                         memcpy(def->name, reg_name, MODBUS_NAME_LEN);
@@ -207,7 +207,7 @@ static bool _read_measurements_json(struct json_object * root)
     {
         json_object_object_foreach(measurements_node, measurement_name, measurement_node)
         {
-            measurement_def_t * def = measurements_array_find(osm_config.measurements_arr, measurement_name);
+            measurements_def_t * def = measurements_array_find(osm_config.measurements_arr, measurement_name);
             if (!def)
             {
                 log_error("Unknown measurement \"%s\"", measurement_name);
@@ -276,6 +276,39 @@ static bool _read_ios_json(struct json_object * root)
 }
 
 
+static bool _read_cc_midpoints_json(struct json_object * root)
+{
+    struct json_object * cc_midpoints_node = json_object_object_get(root, "cc_midpoints");
+    if (cc_midpoints_node)
+    {
+        json_object_object_foreach(cc_midpoints_node, cc_midpoints_name, cc_midpoint_node)
+        {
+            char* p = cc_midpoints_name;
+            if (strncmp(p, "CC", 2) != 0)
+            {
+                log_error("Bad name midpoint for \"%s\"", cc_midpoints_name);
+                return false;
+            }
+            p += 2;
+            int index = strtoul(p, NULL, 10);
+            if (index < 1 || index > 3)
+            {
+                log_error("Bad name midpoint for \"%s\"", cc_midpoints_name);
+                return false;
+            }
+            int midpoint = _get_defaulted_int(cc_midpoint_node, "interval", 1);
+            if (midpoint < 0 || midpoint > 0xFFFF)
+            {
+                log_error("Bad midpoint for \"%s\"", cc_midpoints_name);
+                return false;
+            }
+            osm_config.cc_midpoints[index-1] = midpoint;
+        }
+    }
+    return true;
+}
+
+
 int read_json_to_img(const char * filename)
 {
     struct json_object * root = json_object_from_fd(0);
@@ -309,13 +342,6 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
     osm_config.mins_interval  = tmp;
-    tmp = _get_defaulted_int(root, "cc_midpoint",    ADC_MAX_VAL/2);
-    if (tmp < 0 || tmp > ADC_MAX_VAL)
-    {
-        log_error("Unsupported cc_midpoint");
-        goto bad_exit;
-    }
-    osm_config.adc_midpoint   = tmp;
 
     if (!_get_string_buf(root, "lw_dev_eui", osm_config.lw_dev_eui, LW_DEV_EUI_LEN) ||
         !_get_string_buf(root, "lw_app_key", osm_config.lw_app_key, LW_APP_KEY_LEN))
@@ -333,6 +359,9 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
 
     if (!_read_ios_json(root))
+        goto bad_exit;
+
+    if (!_read_cc_midpoints_json(root))
         goto bad_exit;
 
     FILE * f = fopen(filename,"w");
