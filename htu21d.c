@@ -2,12 +2,9 @@
 A driver for a HPP845E131R5 temperature and humidity sensor by Devtank Ltd.
 
 Documents used:
-- DS18B20 Programmable Resolution 1-Wire Digital Thermometer
+- HPP845E131R5 Temperature and Humidity Sensor
     : https://www.te.com/commerce/DocumentDelivery/DDEController?Action=showdoc&DocId=Data+Sheet%7FHPC199_6%7FA6%7Fpdf%7FEnglish%7FENG_DS_HPC199_6_A6.pdf%7FHPP845E131R5
       (Accessed: 10.01.22)
-- Understanding and Using Cyclic Redunancy Checks With maxim 1-Wire and iButton products
-    : https://maximintegrated.com/en/design/technical-documents/app-notes/2/27.html
-      (Accessed: 25.03.21)
 */
 
 
@@ -224,7 +221,7 @@ measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* va
 measurements_sensor_state_t htu21d_humi_measurements_init(char* name)
 {
     if (!last_temp_reading)
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     _htu21d_send(HTU21D_TRIG_HUMI_MEAS);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -235,7 +232,7 @@ measurements_sensor_state_t htu21d_humi_measurements_get(char* name, value_t* va
     if (!value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!last_temp_reading)
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     int32_t temp = last_temp_reading;
     last_temp_reading = 0; /*Release*/
     uint16_t s_humi;
