@@ -222,14 +222,14 @@ class dev_t(object):
             "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
             "temp"      : measurement_t("Temperature"        , float , "tmp"       , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
-            "PF"        : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
-            "cVP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
-            "cVP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
-            "cVP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
-            "mAP1"      : modbus_reg_t("Phase 1 amps"    , 0x10, 4, "F", "AP1" ),
-            "mAP2"      : modbus_reg_t("Phase 2 amps"    , 0x12, 4, "F", "AP2" ),
-            "mAP3"      : modbus_reg_t("Phase 3 amps"    , 0x14, 4, "F", "AP3" ),
-            "ImEn"      : modbus_reg_t("Import Energy"   , 0x60, 4, "F", "Imp" ),
+            "PF"       : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
+            "VP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
+            "VP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
+            "VP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
+            "AP1"      : modbus_reg_t("Phase 1 amps"    , 0x10, 4, "F", "AP1" ),
+            "AP2"      : modbus_reg_t("Phase 2 amps"    , 0x12, 4, "F", "AP2" ),
+            "AP3"      : modbus_reg_t("Phase 3 amps"    , 0x14, 4, "F", "AP3" ),
+            "Imp"      : modbus_reg_t("Import Energy"   , 0x60, 4, "F", "Imp" ),
         }
 
 
@@ -304,16 +304,22 @@ class dev_t(object):
     def generate_lora_config():
         app_key = app_key_generator()
         dev_eui = dev_eui_generator()
-        os.system("echo Hello from the other side!")
-        with open("tools/memory_template.json", "r+") as jfile:
+
+        #Save an OSM's config as JSON
+        os.system("./scripts/config_save.sh /tmp/my_osm_config.img")
+        os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")
+
+        #Generate a random dev eui and app key
+        with open("tmp/my_osm_config.json", "r+") as jfile:
             data = json.load(jfile)
             data["lw_dev_eui"] = dev_eui
             data["lw_app_key"] = app_key
-            #for item in data['measurements']:
-            #    if data['measurements'][item]['interval'] == 1:
-            #        data['measurements'][item]['interval'] = 0
-            with open("new_file.json", 'w') as nfile:
+            with open("tmp/my_osm_config.json", 'w') as nfile:
                 json.dump(data, nfile, indent=2)
+
+        #Write out the JSON to the OSM
+        os.system("./tools/build/json_x_img /tmp/my_osm_config.img < /tmp/my_osm_config.json")
+        os.system("./scripts/config_load.sh /tmp/my_osm_config.img")
 
                     
 
