@@ -6,7 +6,16 @@ import sys
 import io
 import os
 import re
+import string
+import random
+import json
 
+
+def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def dev_eui_generator(size=16, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 def default_print(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -25,6 +34,22 @@ def set_debug_print(_func):
 
 def get_debug_print():
     return _debug_fnc
+
+def parse_temp(r_str: str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return float(r[-1])
+    return False
+
+def parse_humidity(r_str: str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return float(r[-1])
+    return False
 
 
 def parse_one_wire(r_str:str):
@@ -195,7 +220,9 @@ class dev_t(object):
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
             "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
-            "PF"        : modbus_reg_t("Power Factor"         , 0x36, 4, "F", "PF"   ),
+            "temp"      : measurement_t("Temperature"        , float , "tmp"       , parse_temp           ),
+            "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
+            "PF"        : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
             "cVP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
             "cVP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
             "cVP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
@@ -273,4 +300,26 @@ class dev_t(object):
 
     def current_clamp_calibrate(self):
         self._ll.write("adcs_cal")
+    
+    def generate_lora_config():
+        app_key = app_key_generator()
+        dev_eui = dev_eui_generator()
+        os.system("echo Hello from the other side!")
+        with open("tools/memory_template.json", "r+") as jfile:
+            data = json.load(jfile)
+            data["lw_dev_eui"] = dev_eui
+            data["lw_app_key"] = app_key
+            #for item in data['measurements']:
+            #    if data['measurements'][item]['interval'] == 1:
+            #        data['measurements'][item]['interval'] = 0
+            with open("new_file.json", 'w') as nfile:
+                json.dump(data, nfile, indent=2)
 
+                    
+
+    generate_lora_config()                
+    #os.system(./scripts/config_save.sh /tmp/my_osm_config.img)
+    #os.system(./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json)
+        
+        
+        
