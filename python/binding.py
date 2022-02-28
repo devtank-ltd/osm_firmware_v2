@@ -11,12 +11,6 @@ import random
 import json
 
 
-def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
-
-def dev_eui_generator(size=16, chars=string.ascii_lowercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
-
 def default_print(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     print("[%s] %s\r"% (now, msg), file=sys.stderr)
@@ -150,7 +144,7 @@ class reader_child_t(object):
     @property
     def value(self):
         self._parent.get_val(self._measurement)
-        return self._measurement .value
+        return self._measurement.value
 
 
 class log_t(object):
@@ -299,33 +293,4 @@ class dev_t(object):
         self._ll.write(f"mb_dev_del {device}")
 
     def current_clamp_calibrate(self):
-        self._ll.write("adcs_cal")
-    
-    def generate_lora_config():
-        app_key = app_key_generator()
-        dev_eui = dev_eui_generator()
-
-        #Save an OSM's config as JSON
-        os.system("./scripts/config_save.sh /tmp/my_osm_config.img")
-        os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")
-
-        #Generate a random dev eui and app key
-        with open("tmp/my_osm_config.json", "r+") as jfile:
-            data = json.load(jfile)
-            data["lw_dev_eui"] = dev_eui
-            data["lw_app_key"] = app_key
-            with open("tmp/my_osm_config.json", 'w') as nfile:
-                json.dump(data, nfile, indent=2)
-
-        #Write out the JSON to the OSM
-        os.system("./tools/build/json_x_img /tmp/my_osm_config.img < /tmp/my_osm_config.json")
-        os.system("./scripts/config_load.sh /tmp/my_osm_config.img")
-
-                    
-
-    generate_lora_config()                
-    #os.system(./scripts/config_save.sh /tmp/my_osm_config.img)
-    #os.system(./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json)
-        
-        
-        
+        self._ll.write("cc_cal")
