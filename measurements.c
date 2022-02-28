@@ -379,6 +379,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
     {
         // Init functions are optional
         data->state = MEASUREMENT_STATE_INITED;
+        data->num_samples_init++;
         measurements_debug("%s has no init function (optional).", def->name);
         return;
     }
@@ -434,6 +435,7 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     {
         // Get function is non-optional
         data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_collected++;
         measurements_debug("%s has no collect function.", def->name);
         return false;
     }
