@@ -492,12 +492,16 @@ static void _lw_handle_unsol(char* message)
     p += 8;
 
     uint8_t val;
+    memset(pl_tmp_buff, 0, 3 * sizeof(char));
+    char* lw_p = _lw_cmd_ascii;
     for (size_t i = 0; i < strlen(p) / 2; i++)
     {
         strncpy(pl_tmp_buff, p + 2*i, 2);
         val = strtoul(pl_tmp_buff, NULL, 16);
-        strncat(_lw_cmd_ascii, (char* )&val, 1);
+        if (val != 0)
+            *lw_p++ = (char)val;
     }
+    *lw_p++ = 0;
 
     switch (pl_id)
     {
