@@ -621,6 +621,17 @@ static void light_cb(char* args)
 }
 
 
+static void sound_cb(char* args)
+{
+    uint32_t dB;
+    if (!sai_get_sound(&dB))
+    {
+        log_out("Can not get the sound.");
+        return;
+    }
+    log_out("Sound = %"PRIu32".%"PRIu32" dB", dB/10, dB%10);
+}
+
 
 void cmds_process(char * command, unsigned len)
 {
@@ -662,6 +673,7 @@ void cmds_process(char * command, unsigned len)
         { "pulsecount",   "Show pulsecount.",         pulsecount_log},
         { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { "light",        "Get the light in lux.",    light_cb},
+        { "sound",        "Get the sound in lux.",    sound_cb},
         { NULL },
     };
 

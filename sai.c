@@ -2,7 +2,10 @@
 A driver for a ICS 43434 microphone using the STM32 SAI by Devtank Ltd.
 
 Documents used:
-- STM32 SAI (Serial Audio Interface) to a ICS-43434 Microphone
+- STM32 SAI for STM32L4XXX Reference Manual RM0394
+    : https://usermanual.wiki/Document/STM32L420Reference20manual.1774855139/view
+      (Accessed: 07.09.21
+- ICS-43434 Microphone Datasheet
     : https://invensense.tdk.com/wp-content/uploads/2016/02/DS-000069-ICS-43434-v1.2.pdf
       (Accessed: 21.02.22)
 */
@@ -233,26 +236,42 @@ enum sai_xsr_flvl {
 #define SAI_FRL                             64
 
 #define SAI_DEFAULT_COLLECTION_TIME         1000
-#define SAI_TIMER_DELAY                     10
+#define SAI_INIT_DELAY                      25
 
+// Default offset (sine-wave RMS vs. dBFS). Modify this value for
+// linear calibration
+#define SAI_ICS43434_OFFSET_DB              3.0103
 
-#define SAI_ICS43434_OFFSET_DB              3.0103      // Default offset (sine-wave RMS vs. dBFS). Modify this value for linear calibration
-#define SAI_ICS43434_REF_DB                 94.0        // Value at which point sensitivity is specified in datasheet (dB)
+// Value at which point sensitivity is specified in datasheet (dB)
+#define SAI_ICS43434_REF_DB                 94.0
+#define SAI_ICS43434_LIN_OFFSET             (SAI_ICS43434_OFFSET_DB + SAI_ICS43434_REF_DB)
 
-#define SAI_ICS43434_REF_AMPL               420426.2736316371f
+// Derived from the -log10(Reference Amplitude) with Reference Amplitude calculated from the datasheet.
+#define SAI_ICS43434_LOG_OFFSET             -5.623689848499628f
 
 #define SAI_NUM_SAMPLES                     10
-#define SAI_ARRAY_SIZE                      SAI_NUM_SAMPLES * SAI_NB_SLOTS
+#define SAI_ARRAY_SIZE                      (SAI_NUM_SAMPLES * SAI_NB_SLOTS)
+#define SAI_NUM_OFLOW_SCALES                5
 
 
-typedef volatile int32_t    sai_arr_t[SAI_ARRAY_SIZE];
+typedef volatile    int32_t     sai_arr_t[SAI_ARRAY_SIZE];
+typedef const       uint32_t    sai_overflow_arr[SAI_NUM_OFLOW_SCALES];
 
 
-static sai_arr_t            _sai_array              = {0};
+typedef struct
+{
+    uint64_t    rolling_rms;
+    uint32_t    num_rms;
+    bool        finished;
+} sai_sample_t;
 
-static volatile bool        _sai_sample_finished    = false;
-static volatile uint32_t    _sai_rolling_rms        = 0;
-static volatile uint32_t    _sai_len_rms            = 0;
+
+static sai_arr_t             _sai_array           = {0};
+static sai_overflow_arr      _sai_overflow_scales = { 1, 10, 100, 1000, 10000 };
+
+static volatile sai_sample_t _sai_sample          = {.rolling_rms=0,
+                                                     .num_rms=0,
+                                                     .finished=false};
 
 
 static void _sai_clock_off(void)
@@ -266,6 +285,18 @@ static void _sai_clock_on(void)
 {
     RCC_CR |= RCC_CR_PLLSAI1ON;
     while(!(RCC_CR & RCC_CR_PLLSAI1RDY));
+}
+
+
+static void _sai_dma_off(void)
+{
+    dma_disable_channel(DMA2, DMA_CHANNEL1);
+}
+
+
+static void _sai_dma_on(void)
+{
+    dma_enable_channel(DMA2, DMA_CHANNEL1);
 }
 
 
@@ -283,8 +314,6 @@ static void _sai_dma_init(void)
     dma_set_priority(DMA2, DMA_CHANNEL1, DMA_CCR_PL_LOW);
 
     dma_enable_transfer_complete_interrupt(DMA2, DMA_CHANNEL1);
-
-    dma_enable_channel(DMA2, DMA_CHANNEL1);
 }
 
 
@@ -309,7 +338,7 @@ void sai_init(void)
     SAI1_AFRCR  = (( (   SAI_FRL-1)             & SAI_xFRCR_FRL_MASK        ) << SAI_xFRCR_FRL_SHIFT     )|
                   ((((SAI_FRL/2)-1)             & SAI_xFRCR_FSALL_MASK      ) << SAI_xFRCR_FSALL_SHIFT   )|
                   ( SAI_xFRCR_FSOFF                                                                      );
-                  
+
     SAI1_ASLOTR = (( (   SAI_NB_SLOTS  -1)      & SAI_xSLOTR_NBSLOT_MASK    ) << SAI_xSLOTR_NBSLOT_SHIFT )|
                   (( SAI_xSLOTR_SLOTEN_ALL      & SAI_xSLOTR_SLOTEN_MASK    ) << SAI_xSLOTR_SLOTEN_SHIFT )|
                   (( SAI_xSLOTR_SLOTSZ_32BIT    & SAI_xSLOTR_SLOTSZ_MASK    ) << SAI_xSLOTR_SLOTSZ_SHIFT );
@@ -320,7 +349,9 @@ void sai_init(void)
 • f(PLLSAI1_Q) = f(VCOSAI1 clock) / PLLSAI1Q
 • f(PLLSAI1_R) = f(VCOSAI1 clock) / PLLSAI1R */
 
-    RCC_PLLSAI1_CFGR = (8 << RCC_PLLSAIx_CFGR_PLLSAI1PDIV_SHIFT) | (16 << RCC_PLLSAIx_CFGR_PLLSAI1N_SHIFT) | RCC_PLLSAIx_CFGR_PLLSAI1PEN;
+    RCC_PLLSAI1_CFGR = (8 << RCC_PLLSAIx_CFGR_PLLSAI1PDIV_SHIFT) |
+                       (16 << RCC_PLLSAIx_CFGR_PLLSAI1N_SHIFT) |
+                       RCC_PLLSAIx_CFGR_PLLSAI1PEN;
 
     _sai_clock_on();
 
@@ -341,92 +372,161 @@ void sai_init(void)
     nvic_enable_irq(NVIC_DMA2_CHANNEL1_IRQ);
     dma_set_channel_request(DMA2, DMA_CHANNEL1, 1); /*SAI1_A*/
 
-    dma_channel_reset(DMA2, DMA_CHANNEL1);
-
-    dma_set_peripheral_address(DMA2, DMA_CHANNEL1, (uint32_t)&SAI1_ADR);
-    dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)_sai_array);
-    dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(_sai_array));
-    dma_set_read_from_peripheral(DMA2, DMA_CHANNEL1);
-    dma_enable_memory_increment_mode(DMA2, DMA_CHANNEL1);
-    dma_set_peripheral_size(DMA2, DMA_CHANNEL1, DMA_CCR_PSIZE_32BIT);
-    dma_set_memory_size(DMA2, DMA_CHANNEL1, DMA_CCR_MSIZE_32BIT);
-    dma_set_priority(DMA2, DMA_CHANNEL1, DMA_CCR_PL_LOW);
-
-    dma_enable_transfer_complete_interrupt(DMA2, DMA_CHANNEL1);
-
-    dma_enable_channel(DMA2, DMA_CHANNEL1);
-
     _sai_dma_init();
 
     SAI1_ACR1 |= SAI_xCR1_DMAEN;
 }
 
 
-static uint32_t _sai_rms(sai_arr_t arr, unsigned len)
+static bool _sai_rms(uint32_t* rms, sai_arr_t arr, unsigned len, uint32_t downscale)
 {
-    /**
-     This is a bad way of calculating RMS. Need to look at convoltion to minimise
-     cycles and memory usage.
+    /*
+     This is a bad way of calculating RMS. Need to look at convoltion
+     to minimise cycles and memory usage.
      */
-    uint32_t    rms;
     int32_t     val;
-    uint64_t    sum = 0;
+    uint64_t    val_sqr;
+    uint64_t    sum     = 0;
     for (unsigned i = 0; i < len; i++)
     {
         // convert to signed 24 bit number
         val = arr[i];
         if (val & 0xC00000)
             val |= 0xFF000000;
-        sum += val * val;
+
+        // scale down to avoid overflowing
+        val /= downscale;
+
+        // See if the square is larger than max uint64
+        val_sqr = abs_i64(val);
+        if (val_sqr >= UINT64_MAX / val_sqr)
+        {
+            sound_debug("Overflow with scale %"PRIu32, downscale);
+            return false;
+        }
+        val_sqr *= val_sqr;
+
+        // See if the sum is larger than max uint64
+        if (sum > UINT64_MAX - val_sqr)
+        {
+            sound_debug("Overflow with scale %"PRIu32, downscale);
+            return false;
+        }
+        sum = sum + val_sqr;
     }
-    rms = sqrt(sum/len);
-    return rms;
+    *rms = sqrt(sum/len) * downscale;
+    return true;
 }
 
 
-static uint64_t _sai_conv_dB(uint32_t rms)
+static bool _sai_rms_adaptive(uint32_t* rms, sai_arr_t arr, unsigned len)
 {
-    double inter_val = rms / SAI_ICS43434_REF_AMPL;
-    sound_debug("inter_val = %lf", inter_val);
-    uint64_t dB = 10*SAI_ICS43434_OFFSET_DB + 10*SAI_ICS43434_REF_DB + (200 * log10(inter_val));
-    sound_debug("dB = %"PRIu64".%"PRIu64, dB/10, dB%10);
-    return dB;
+    /*
+     This function uses a scale to downscale the amplitudes before
+     calculating the RMS to ensure the value doesn't overflow.
+     */
+    uint32_t rms_local;
+    uint32_t overflow_scale_index = 0;
+    while (!_sai_rms(&rms_local, arr, len, _sai_overflow_scales[overflow_scale_index]))
+    {
+        if (overflow_scale_index >= SAI_NUM_OFLOW_SCALES)
+        {
+            sound_debug("Cannot downscale any more.");
+            return false;
+        }
+        overflow_scale_index++;
+    }
+    *rms = rms_local;
+    return true;
 }
 
 
-static uint64_t _sai_get_dB(sai_arr_t arr, unsigned len)
+static uint32_t _sai_conv_dB(uint64_t rms)
 {
-    return _sai_conv_dB(_sai_rms(_sai_array, SAI_ARRAY_SIZE));
+    /*
+     The real unit calculated here is centibel as everything is
+     multiplied by 10 for higher precision in the reading.
+     Conversion formula:
+        dB = 20 * log₁₀ (amp_rms/amp_ref)
+     */
+    return 10*SAI_ICS43434_LIN_OFFSET + 200 * (log10(rms) + SAI_ICS43434_LOG_OFFSET);
 }
 
 
-static void _sai_collect(void)
+static bool _sai_collect(void)
 {
-    uint32_t prev_rms_cmp, new_rms_cmp, rms;
-    prev_rms_cmp = _sai_rolling_rms * (_sai_len_rms++);
-    prev_rms_cmp *= prev_rms_cmp;
-    new_rms_cmp = _sai_rms(_sai_array, SAI_ARRAY_SIZE);
-    new_rms_cmp *= new_rms_cmp;
-    rms = (prev_rms_cmp + new_rms_cmp) / _sai_len_rms;
+    /*
+     * Calculate the rolling RMS with an adaptive window size of the
+     * number of samples.
+     * Total RMS =    _________________________________
+     *               /old_rms² x num_old_rms + new_rms²
+     *              / ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     *             V         num_old_rms + 1
+     *
+     */
+    uint64_t prev_rms_cmp, new_rms_cmp, rms;
+    uint32_t rms_32;
+
+    _sai_sample.num_rms++;
+
+    if (!u64_multiply_overflow_check(&prev_rms_cmp, _sai_sample.rolling_rms, _sai_sample.rolling_rms))
+    {
+        goto overflow_exit;
+    }
+
+    if (!u64_multiply_overflow_check(&prev_rms_cmp, prev_rms_cmp, (_sai_sample.num_rms-1)))
+    {
+        goto overflow_exit;
+    }
+
+    if (!_sai_rms_adaptive(&rms_32, _sai_array, SAI_ARRAY_SIZE))
+    {
+        sound_debug("Cannot collect RMS.");
+        return false;
+    }
+    new_rms_cmp = rms_32;
+
+    if (!u64_multiply_overflow_check(&new_rms_cmp, new_rms_cmp, new_rms_cmp))
+    {
+        goto overflow_exit;
+    }
+
+    if (!u64_addition_overflow_check(&rms, prev_rms_cmp, new_rms_cmp))
+    {
+        goto overflow_exit;
+    }
+
+    rms /= _sai_sample.num_rms;
     rms = sqrt(rms);
-    _sai_rolling_rms = rms;
+    _sai_sample.rolling_rms = rms;
+    return true;
+overflow_exit:
+    sound_debug("Overflow issue.");
+    return false;
 }
+
 
 void dma2_channel1_isr(void)
 {
     DMA2_IFCR |= DMA_IFCR_CTCIF(DMA_CHANNEL1);
-    _sai_sample_finished = true;
-    dma_disable_channel(DMA2, DMA_CHANNEL1);
+    _sai_sample.finished = true;
 }
 
 
 measurements_sensor_state_t sai_iteration_callback(char* name)
 {
-    if (_sai_sample_finished)
+    if (_sai_sample.finished)
     {
-        _sai_collect();
-        _sai_sample_finished = false;
-        _sai_dma_init();
+        _sai_sample.finished = false;
+        if (!_sai_collect())
+        {
+            sound_debug("Failed to collect.");
+        }
+        else
+        {
+            _sai_dma_init();
+            _sai_dma_on();
+        }
     }
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -441,30 +541,39 @@ measurements_sensor_state_t sai_collection_time(char* name, uint32_t* collection
 
 measurements_sensor_state_t sai_measurements_init(char* name)
 {
+    _sai_dma_init();
+    _sai_dma_on();
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 measurements_sensor_state_t sai_measurements_get(char* name, value_t* value)
 {
-    if (_sai_len_rms == 0)
+    _sai_dma_off();
+    if (_sai_sample.num_rms == 0)
     {
         sound_debug("No samples computed.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    uint32_t num_samples = _sai_len_rms * SAI_ARRAY_SIZE;
-    uint64_t dB = _sai_conv_dB(_sai_rolling_rms);
+    uint32_t num_samples = _sai_sample.num_rms * SAI_ARRAY_SIZE;
+    uint32_t dB = _sai_conv_dB(_sai_sample.rolling_rms);
 
     // Reset the rolling RMS
-    _sai_len_rms = 0;
+    _sai_sample.num_rms = 0;
 
-    sound_debug("%"PRIu64".%"PRIu64" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
+    sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
     *value = value_from_u64(dB);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-uint64_t sai_get_sound(void)
+bool sai_get_sound(uint32_t* dB)
 {
-    return _sai_get_dB(_sai_array, SAI_ARRAY_SIZE);
+    uint32_t rms;
+    if (!_sai_rms_adaptive(&rms, _sai_array, SAI_ARRAY_SIZE))
+    {
+        return false;
+    }
+    *dB = _sai_conv_dB(rms);
+    return true;
 }
