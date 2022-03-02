@@ -1,16 +1,16 @@
 
 BUILD_DIR := build
 
-CFLAGS := -I../core/include -I../sensors/include $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+CFLAGS := -I../../core/include -I../../sensors/include -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 CFLAGS += -MMD -MP -g
 LDFLAGS := $(shell pkg-config --libs json-c)
 
-SRC := main.c \
-       base.c \
-       modbus_mem.c \
-       measurements_mem.c \
-       read_json.c \
-       write_json.c
+SRC := src/main.c \
+       src/base.c \
+       src/modbus_mem.c \
+       src/measurements_mem.c \
+       src/read_json.c \
+       src/write_json.c
 
 OBJS := $(SRC:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:%.o=%.d)
