@@ -1,1 +1,1 @@
-../value.c
+../core/src/value.c

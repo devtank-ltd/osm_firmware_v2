@@ -1,4 +1,4 @@
-CFLAGS:=-Os -I../ --coverage
+CFLAGS:=-Os -I../core/include -I../sensors/include --coverage
 LDFLAGS:= -lgcov
 
 BUILD_DIR := build
