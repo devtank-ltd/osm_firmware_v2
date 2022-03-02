@@ -414,7 +414,9 @@ static bool _sai_rms(uint32_t* rms, sai_arr_t arr, unsigned len, uint32_t downsc
         }
         sum = sum + val_sqr;
     }
-    *rms = sqrt(sum/len) * downscale;
+    // Difference due to fast sqrt is +-0.1%. This is
+    // +-(0.1 * 1/ln(10))% = 0.04% after logging the RMS.
+    *rms = 1/Q_rsqrt(sum/len) * downscale;
     return true;
 }
 
@@ -448,6 +450,8 @@ static uint32_t _sai_conv_dB(uint64_t rms)
      multiplied by 10 for higher precision in the reading.
      Conversion formula:
         dB = 20 * log₁₀ (amp_rms/amp_ref)
+     Cannot afford to do an integer log₁₀ as fidelity of the precision
+     is too low.
      */
     return 10*SAI_ICS43434_LIN_OFFSET + 200 * (log10(rms) + SAI_ICS43434_LOG_OFFSET);
 }
@@ -462,7 +466,6 @@ static bool _sai_collect(void)
      *               /old_rms² x num_old_rms + new_rms²
      *              / ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      *             V         num_old_rms + 1
-     *
      */
     uint64_t prev_rms_cmp, new_rms_cmp, rms;
     uint32_t rms_32;
@@ -497,7 +500,11 @@ static bool _sai_collect(void)
     }
 
     rms /= _sai_sample.num_rms;
-    rms = sqrt(rms);
+    /* Difference due to fast sqrt is +-0.1%. This is
+     * +-(0.1 * 1/ln(10))% = 0.04% after logging the RMS.
+     * Companding of the errors are small enough to ignore.
+     */
+    rms = 1/Q_rsqrt(rms);
     _sai_sample.rolling_rms = rms;
     return true;
 overflow_exit:
