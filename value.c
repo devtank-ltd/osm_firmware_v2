@@ -31,43 +31,43 @@ void value_compact(value_t *v)
     v->i64 = i;
     if (i >= 0)
     {
-    /* Drop signed */
-    uint64_t u = i;
-    if (u < (1ULL << 32))
-    {
-        if (u < (1ULL << 16))
+        /* Drop signed */
+        uint64_t u = i;
+        if (u < (1ULL << 32))
         {
-        if (u < (1ULL << 8))
-        {
-            v->type = VALUE_UINT8;
+            if (u < (1ULL << 16))
+            {
+                if (u < (1ULL << 8))
+                {
+                    v->type = VALUE_UINT8;
+                    return;
+                }
+                v->type = VALUE_UINT16;
+                return;
+            }
+            v->type = VALUE_UINT32;
             return;
         }
-        v->type = VALUE_UINT16;
-        return;
-        }
-        v->type = VALUE_UINT32;
-        return;
-    }
-    v->type = VALUE_UINT64;
+        v->type = VALUE_UINT64;
     }
     else
     {
-    if (i >= -(1LL << 31))
-    {
-        if (i >= -(1LL << 15))
+        if (i >= -(1LL << 31))
         {
-        if (i >= -(1LL << 7))
-        {
-            v->type = VALUE_INT8;
+            if (i >= -(1LL << 15))
+            {
+                if (i >= -(1LL << 7))
+                {
+                    v->type = VALUE_INT8;
+                    return;
+                }
+                v->type = VALUE_INT16;
+                return;
+            }
+            v->type = VALUE_INT32;
             return;
         }
-        v->type = VALUE_INT16;
-        return;
-        }
-        v->type = VALUE_INT32;
-        return;
-    }
-    v->type = VALUE_INT64;
+        v->type = VALUE_INT64;
     }
 }
 
