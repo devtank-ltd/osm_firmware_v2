@@ -110,7 +110,7 @@
 #define DEBUG_FW            0x800
 #define DEBUG_TMP_HUM      0x1000
 #define DEBUG_PULSECOUNT   0x2000
-#define DEBUG_W1           0x4000
+#define DEBUG_EXTTEMP      0x4000
 #define DEBUG_LIGHT        0x8000
 #define DEBUG_SOUND        0x10000
 

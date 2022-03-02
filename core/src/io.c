@@ -9,7 +9,7 @@
 #include "log.h"
 #include "pulsecount.h"
 #include "uarts.h"
-#include "one_wire_driver.h"
+#include "ds18b20.h"
 #include "persist_config.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
@@ -147,7 +147,7 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
             return;
         }
         ios_state[io] &= ~IO_ONEWIRE;
-        w1_enable(false);
+        ds18b20_enable(false);
         io_debug("%02u : W1 NO LONGER", io);
         return;
     }

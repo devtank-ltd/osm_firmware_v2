@@ -15,7 +15,7 @@
 #include "common.h"
 #include "persist_config.h"
 #include "modbus_measurements.h"
-#include "one_wire_driver.h"
+#include "ds18b20.h"
 #include "htu21d.h"
 #include "pulsecount.h"
 #include "veml7700.h"
@@ -638,9 +638,9 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
             inf->get_cb             = adcs_cc_get;
             break;
         case W1_PROBE:
-            inf->collection_time_cb = w1_collection_time;
-            inf->init_cb            = w1_measurements_init;
-            inf->get_cb             = w1_measurements_collect;
+            inf->collection_time_cb = ds18b20_collection_time;
+            inf->init_cb            = ds18b20_measurements_init;
+            inf->get_cb             = ds18b20_measurements_collect;
             break;
         case HTU21D_TMP:
             inf->collection_time_cb = htu21d_measurements_collection_time;

@@ -22,7 +22,7 @@
 #include "hpm.h"
 #include "modbus_measurements.h"
 #include "update.h"
-#include "one_wire_driver.h"
+#include "ds18b20.h"
 #include "common.h"
 #include "htu21d.h"
 #include "log.h"
@@ -517,15 +517,15 @@ static void cc_calibrate_cb(char *args)
 }
 
 
-static void w1_cb(char* args)
+static void ds18b20_cb(char* args)
 {
-    float w1_temp;
-    if (!w1_query_temp(&w1_temp))
+    float ds18b20_temp;
+    if (!ds18b20_query_temp(&ds18b20_temp))
     {
         log_error("Could not get a temperature from the onewire.");
         return;
     }
-    log_out("Temp: %.03f degC.", w1_temp);
+    log_out("Temp: %.03f degC.", ds18b20_temp);
 }
 
 
@@ -674,7 +674,7 @@ void cmds_process(char * command, unsigned len)
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
-        { "w1",           "Get temperature with w1",  w1_cb},
+        { "w1",           "Get temperature with w1",  ds18b20_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
         { "humi",         "Get the humidity",         humidity_cb},
