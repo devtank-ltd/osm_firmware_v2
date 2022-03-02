@@ -28,4 +28,4 @@ firmware_SOURCES := \
            sensors/src/sai.c
 
 
-firmware_LINK_SCRIPT := stm32l452.ld
+firmware_LINK_SCRIPT := core/stm32l452.ld
