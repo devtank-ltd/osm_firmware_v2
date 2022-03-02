@@ -19,6 +19,7 @@
 #define MEASUREMENTS_BATMON_NAME            "BAT"
 #define MEASUREMENTS_PULSE_COUNT_NAME       "PCNT"
 #define MEASUREMENTS_LIGHT_NAME             "LGHT"
+#define MEASUREMENTS_SOUND_NAME             "SND"
 
 extern unsigned measurements_add_defaults(measurements_def_t * measurements_arr);
 

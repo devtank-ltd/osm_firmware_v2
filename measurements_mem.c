@@ -75,6 +75,12 @@ unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
     def->interval    = 1;
     def->type        = LIGHT;
 
+    def = &measurements_arr[pos++];
+    strncpy(def->name, MEASUREMENTS_SOUND_NAME, MEASURE_NAME_LEN+1);
+    def->samplecount = 5;
+    def->interval    = 1;
+    def->type        = SOUND;
+
     return pos;
 }
 

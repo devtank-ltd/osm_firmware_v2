@@ -96,3 +96,33 @@ int32_t ilog10(uint32_t x)
     y = y + ((table2[y+1] - x) >> 31);
     return y;
 }
+
+
+uint64_t abs_i64(int64_t val)
+{
+    if (val < 0)
+        return -val;
+    return val;
+}
+
+
+bool u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2)
+{
+    if (arg_1 >= UINT64_MAX / arg_2)
+    {
+        return false;
+    }
+    *result = arg_1 * arg_2;
+    return true;
+}
+
+
+bool u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2)
+{
+    if (arg_1 >= UINT64_MAX - arg_2)
+    {
+        return false;
+    }
+    *result = arg_1 + arg_2;
+    return true;
+}

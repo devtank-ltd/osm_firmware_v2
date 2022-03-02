@@ -173,12 +173,6 @@ void version_cb(char * args)
 }
 
 
-void audio_dump_cb(char * args)
-{
-    start_audio_dumping = true;
-}
-
-
 void lora_cb(char * args)
 {
     char * pos = skip_space(args);
@@ -627,6 +621,17 @@ static void light_cb(char* args)
 }
 
 
+static void sound_cb(char* args)
+{
+    uint32_t dB;
+    if (!sai_get_sound(&dB))
+    {
+        log_out("Can not get the sound.");
+        return;
+    }
+    log_out("Sound = %"PRIu32".%"PRIu32" dB", dB/10, dB%10);
+}
+
 
 void cmds_process(char * command, unsigned len)
 {
@@ -636,7 +641,6 @@ void cmds_process(char * command, unsigned len)
         { "sio",          "Enable Special IO.",       special_cb},
         { "count",        "Counts of controls.",      count_cb},
         { "version",      "Print version.",           version_cb},
-        { "audio_dump",   "Do audiodump",             audio_dump_cb},
         { "lora",         "Send lora message",        lora_cb},
         { "lora_config",  "Set lora config",          lora_config_cb},
         { "interval",     "Set the interval",         interval_cb},
@@ -669,6 +673,7 @@ void cmds_process(char * command, unsigned len)
         { "pulsecount",   "Show pulsecount.",         pulsecount_log},
         { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { "light",        "Get the light in lux.",    light_cb},
+        { "sound",        "Get the sound in lux.",    sound_cb},
         { NULL },
     };
 
