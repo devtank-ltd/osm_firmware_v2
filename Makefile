@@ -24,7 +24,7 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\"
 
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -I.
+INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4

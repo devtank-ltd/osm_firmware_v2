@@ -1,7 +1,7 @@
 
 BUILD_DIR := build
 
-CFLAGS := -I.. $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+CFLAGS := -I../core/include -I../sensors/include $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 CFLAGS += -MMD -MP -g
 LDFLAGS := $(shell pkg-config --libs json-c)
 

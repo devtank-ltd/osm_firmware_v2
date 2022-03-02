@@ -1,1 +1,1 @@
-../ring.c
+../core/src/ring.c
