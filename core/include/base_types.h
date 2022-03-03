@@ -110,6 +110,7 @@ typedef enum
     PULSE_COUNT   = 9,
     LIGHT         = 10,
     SOUND         = 11,
+    FW_VERSION    = 12,
 } measurements_def_type_t;
 
 

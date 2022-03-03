@@ -3,7 +3,8 @@
 #include <stdbool.h>
 
 
-#define VALUE_TYPE_IS_SIGNED 0x10
+#define VALUE_TYPE_IS_SIGNED    0x10
+#define VALUE_STR_LEN           8
 
 typedef enum
 {
@@ -17,6 +18,7 @@ typedef enum
     VALUE_INT32   = 3 | VALUE_TYPE_IS_SIGNED,
     VALUE_INT64   = 4 | VALUE_TYPE_IS_SIGNED,
     VALUE_FLOAT   = 5 | VALUE_TYPE_IS_SIGNED,
+    VALUE_STR     = 0x20,
 } value_type_t;
 
 typedef struct
@@ -33,6 +35,7 @@ typedef struct
         uint64_t u64;
         int64_t  i64;
         float    f;
+        char     str[VALUE_STR_LEN];
     };
 } value_t;
 
@@ -45,6 +48,9 @@ static inline value_t value_from_i32(int32_t d)   { return (value_t){.type = VAL
 static inline value_t value_from_u64(uint64_t d)  { return (value_t){.type = VALUE_UINT64, .u64 = d}; }
 static inline value_t value_from_i64(int64_t d)   { return (value_t){.type = VALUE_INT64,  .i64 = d}; }
 static inline value_t value_from_float(float d)   { return (value_t){.type = VALUE_FLOAT,  .f   = d}; }
+
+
+extern bool value_as_str(value_t* value, char* d, unsigned len);
 
 
 #define value_from(_d_) _Generic((_d_),                                   \

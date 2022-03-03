@@ -125,6 +125,19 @@ static bool _measurements_arr_append_float(float val)
 }
 
 
+static bool _measurements_arr_append_str(char* val, unsigned len)
+{
+    for (unsigned i = 0; i < len; i++)
+    {
+        if (!_measurements_arr_append_i8((int8_t)(val[i])))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 static bool _measurements_arr_append_value(value_t * value)
 {
     if (!value)
@@ -143,6 +156,7 @@ static bool _measurements_arr_append_value(value_t * value)
         case VALUE_UINT64 : return _measurements_arr_append_i64(value->i64);
         case VALUE_INT64  : return _measurements_arr_append_i64(value->i64);
         case VALUE_FLOAT  : return _measurements_arr_append_float(value->f);
+        case VALUE_STR    : return _measurements_arr_append_str(value->str, VALUE_STR_LEN);
         default: break;
     }
     return false;
@@ -159,31 +173,24 @@ static bool _measurements_arr_append_value(value_t * value)
 static bool _measurements_to_arr(measurements_def_t* measurements_def, measurements_data_t* measurements_data)
 {
     bool single = measurements_def->samplecount == 1;
-
     value_t mean;
-    value_t num_samples;
-    if (!single)
-    {
-        num_samples = value_from((float)measurements_data->num_samples);
-    }
-    else
-    {
-        num_samples = value_from(measurements_data->num_samples);
-    }
-    if (!value_div(&mean, &measurements_data->sum, &num_samples))
-    {
-        log_error("Failed to average %s value.", measurements_def->name);
-    }
 
     bool r = 0;
     r |= !_measurements_arr_append(*(int32_t*)measurements_def->name);
     if (single)
     {
         r |= !_measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
-        r |= !_measurements_arr_append(&mean);
+        r |= !_measurements_arr_append(&measurements_data->sum);
     }
     else
     {
+        value_t num_samples;
+        num_samples = value_from((float)measurements_data->num_samples);
+        if (!value_div(&mean, &measurements_data->sum, &num_samples))
+        {
+            log_error("Failed to average %s value.", measurements_def->name);
+            return false;
+        }
         r |= !_measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_AVERAGED);
         r |= !_measurements_arr_append(&mean);
         r |= !_measurements_arr_append(&measurements_data->min);
@@ -355,6 +362,9 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 {
     if (!inf->collection_time_cb)
     {
+        if (!inf->init_cb)
+            // If no init is required, neither is a collection time cb.
+            return 0;
         measurements_debug("%s has no collection time iteration, using default of %"PRIu32" ms.", def->name, MEASUREMENTS_DEFAULT_COLLECTION_TIME);
         return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
     }
@@ -462,6 +472,12 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     }
     log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
 
+    if (new_value.type == VALUE_STR)
+    {
+        data->num_samples++;
+        data->sum = new_value;
+        return true;
+    }
     if (data->num_samples == 0)
     {
         // If first measurements
@@ -575,15 +591,32 @@ uint16_t measurements_num_measurements(void)
     return count;
 }
 
+#define FW_SHA_LEN                          7
+
+
+static char fw_sha1[FW_SHA_LEN+1] = GIT_SHA1;
+
+
+measurements_sensor_state_t fw_version_get(char* name, value_t* value)
+{
+    if (!value_as_str(value, fw_sha1, FW_SHA_LEN))
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
 
 static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * inf, measurements_data_t* data)
 {
     // Optional callbacks, get and collection time are not optional.
-    inf->init_cb        = NULL;
-    inf->iteration_cb   = NULL;
-    inf->acked_cb       = NULL;
+    inf->init_cb                = NULL;
+    inf->collection_time_cb     = NULL;
+    inf->iteration_cb           = NULL;
+    inf->acked_cb               = NULL;
     switch(def->type)
     {
+        case FW_VERSION:
+            inf->get_cb             = fw_version_get;
+            break;
         case PM10:
             inf->collection_time_cb = hpm_collection_time;
             inf->init_cb            = hpm_init;

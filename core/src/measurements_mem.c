@@ -10,6 +10,12 @@ unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
     unsigned pos = 0;
     measurements_def_t * def = &measurements_arr[pos++];
 
+    strncpy(def->name, MEASUREMENTS_FW_VERSION, MEASURE_NAME_LEN+1);
+    def->interval    = 4;
+    def->samplecount = 1;
+    def->type        = FW_VERSION;
+
+    def = &measurements_arr[pos++];
     strncpy(def->name, MEASUREMENTS_PM10_NAME, MEASURE_NAME_LEN+1);
     def->interval    = 1;
     def->samplecount = 5;

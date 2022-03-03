@@ -149,6 +149,7 @@ void log_debug_value(uint32_t flag, const char * prefix, value_t * v)
         case VALUE_UINT64 : log_debug(flag, "%s%"PRIu64, prefix, v->u64); break;
         case VALUE_INT64  : log_debug(flag, "%s%lld",    prefix, v->i64); break;
         case VALUE_FLOAT  : log_debug(flag, "%s%f",      prefix, v->f);   break;
+        case VALUE_STR    : log_debug(flag, "%s:%s",     prefix, v->str); break;
         default: log_debug(flag, "%sINVALID", prefix); break;
     }
 }
