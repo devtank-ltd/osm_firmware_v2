@@ -271,7 +271,7 @@ class dev_t(object):
         r = self.do_cmd(f"mb_dev_add {slave_id} {device}", timeout=3)
         return "Added modbus device" in r
 
-    def modbus_reg_add(self, reg:modbus_reg_t)->bool:
+    def modbus_reg_add(self, slave_id:int, reg:modbus_reg_t)->bool:
         if not isinstance(reg, modbus_reg_t):
             self._log("Registers should be an object of register")
             return False
