@@ -8,6 +8,7 @@
 #define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
 #define MEASUREMENTS_DATATYPE_AVERAGED     (uint8_t)0x02
 
+#define MEASUREMENTS_FW_VERSION             "FW"
 #define MEASUREMENTS_PM10_NAME              "PM10"
 #define MEASUREMENTS_PM25_NAME              "PM25"
 #define MEASUREMENTS_CURRENT_CLAMP_1_NAME   "CC1"

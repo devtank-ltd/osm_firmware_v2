@@ -12,6 +12,7 @@ CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
+GIT_SHA1 := $(shell git log -n 1 --format="%h")
 
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
@@ -20,7 +21,7 @@ CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
-CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\"
+CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
 
 BUILD_DIR := build
 
@@ -79,7 +80,7 @@ $(foreach file_mk,$(PROGRAMS_MKS),$(eval $(call PROGRAM_template,$(file_mk),$(fi
 	$(OBJCOPY) -O binary $< $@
 
 serial_program: $(WHOLE_IMG)
-	KEEPCONFIG=1 ./scripts/program.sh $<
+	KEEPCONFIG=1 ./tools/config_scripts/program.sh $<
 
 
 flash: $(WHOLE_IMG)

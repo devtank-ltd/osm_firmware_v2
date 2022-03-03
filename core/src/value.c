@@ -1,15 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <strings.h>
+#include <string.h>
 #include <ctype.h>
 
 #include "value.h"
 
 
+bool value_as_str(value_t* value, char* d, unsigned len)
+{
+    if (len > VALUE_STR_LEN)
+    {
+        return false;
+    }
+    memset(value->str, 0, VALUE_STR_LEN*sizeof(char));
+    memcpy(value->str, d, len*sizeof(char));
+    value->type = VALUE_STR;
+    return true;
+}
+
+
 static value_type_t _get_op_max_type(value_t *a, value_t* b)
 {
-    if (!a || !b || a->type == VALUE_UNSET || b->type == VALUE_UNSET)
+    if (!a || a->type == VALUE_UNSET || a->type == VALUE_STR ||
+        !b || b->type == VALUE_UNSET || b->type == VALUE_STR)
         return VALUE_UNSET;
 
     if (a->type == VALUE_FLOAT || b->type == VALUE_FLOAT)
@@ -215,6 +229,7 @@ bool value_to_str(value_t * v, char * str, unsigned size)
         case VALUE_INT32  : snprintf(str, size, "I32:%"PRId32, v->i32); break;
         case VALUE_INT64  : snprintf(str, size, "I64:%lld",    v->i64); break;
         case VALUE_FLOAT  : snprintf(str, size, "F32:%f",      v->f);   break;
+        case VALUE_STR    : snprintf(str, size, "STR:%s",      v->str); break;
         default: return false;
     }
     return true;

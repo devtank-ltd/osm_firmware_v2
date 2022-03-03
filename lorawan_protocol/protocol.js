@@ -93,6 +93,17 @@ function Decode_double(bytes, pos)
 }
 
 
+function Decode_string(bytes, pos)
+{
+    var val = "";
+    for (var i = 0; i < 8; i++)
+    {
+        val += String.fromCharCode(bytes[pos+i]);
+    }
+    return val;
+}
+
+
 function Decode_value(value_type, bytes, pos)
 {
     switch (value_type)
@@ -117,6 +128,8 @@ function Decode_value(value_type, bytes, pos)
             return Decode_float(bytes, pos);
         case 0x16:
             return Decode_double(bytes, pos);
+        case 0x20:
+            return Decode_string(bytes, pos);
         default:
             return false;
     }
@@ -146,6 +159,8 @@ function Value_sizes(value_type)
         case 0x15:
             return 4;
         case 0x16:
+            return 8;
+        case 0x20:
             return 8;
         default:
             return false;
@@ -268,5 +283,5 @@ function Encode(fPort, obj, variables)
     return bytes;
 }
 //0x01, 0x50,  4d 31 30 020104020400020600504d323502010302030002050000
-console.log(Decode(0, [1, 80, 77, 49, 48, 2, 1, 3, 2, 3, 0, 2, 5, 0, 80, 77, 50, 53, 2, 1, 2, 2, 2, 0, 2, 4, 0, 84, 77, 80, 50, 2, 21, 187, 73, 0, 0, 21, 187, 73, 0, 0, 21, 187, 73, 0, 0, 0], 0));
+console.log(Decode(0, [1, 70, 87, 0, 0, 1, 32, 102, 97, 55, 101, 54, 54, 54, 0, 80, 77, 49, 48, 2, 21, 136, 19, 0, 0, 1, 4, 1, 6, 80, 77, 50, 53, 2, 21, 160, 15, 0, 0, 1, 3, 1, 5, 67, 67, 49, 0, 2, 21, 0, 0, 0, 0, 1, 0, 1, 0, 67, 67, 50, 0, 2, 21, 0, 0, 0, 0, 1, 0, 1, 0, 67, 67, 51, 0, 2, 21, 0, 0, 0, 0, 1, 0, 1, 0, 84, 69, 77, 80, 2, 21, 8, 122, 35, 0, 2, 21, 9, 2, 21, 9, 72, 85, 77, 73, 2, 21, 32, 242, 56, 0, 2, 146, 14, 2, 150, 14, 66], 0));
 //console.log(Encode(0, {"CMD" : "How are you?"}, 0));
