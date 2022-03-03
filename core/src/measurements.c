@@ -304,7 +304,8 @@ static void measurements_send(void)
 
     if (num_qd > 0)
     {
-        _last_sent_ms = get_since_boot_ms();
+        if (!_pending_send)
+            _last_sent_ms = get_since_boot_ms();
         lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
         if (i == MEASUREMENTS_MAX_NUMBER)
         {
