@@ -256,19 +256,26 @@ static bool _read_ios_json(struct json_object * root)
             uint16_t state = osm_config.ios_state[index];
             uint16_t pull    = _get_io_pull(json_object_get_string(json_object_object_get(io_node, "pull")), state & IO_PULL_MASK);
             uint16_t dir     = _get_io_dir(json_object_get_string(json_object_object_get(io_node, "direction")), state & IO_AS_INPUT);
-            uint16_t special = (json_object_get_boolean(json_object_object_get(io_node, "use_special")))?IO_SPECIAL_EN:0;
-            if (special && (!(state & IO_TYPE_MASK)))
+            uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_ONEWIRE:0;
+            uint16_t pcnt_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_pcnt")))?IO_PULSE:0;
+            if (w1_mode && (!(state & IO_ONEWIRE)))
             {
-                log_error("IO %s has no special", io_name);
+                log_error("IO %s has no w1 mode", io_name);
                 return false;
             }
 
-            state &= ~(IO_PULL_MASK|IO_AS_INPUT|IO_SPECIAL_EN);
+            if (pcnt_mode && (!(state & IO_PULSE)))
+            {
+                log_error("IO %s has no pulse counter mode", io_name);
+                return false;
+            }
+
+            state &= ~(IO_PULL_MASK|IO_AS_INPUT|IO_ONEWIRE|IO_PULSE);
 
             if (!dir)
                 state |= (json_object_get_boolean(json_object_object_get(io_node, "out_high")))?IO_OUT_ON:0;
 
-            osm_config.ios_state[index] = state | (pull | dir | special);
+            osm_config.ios_state[index] = state | (pull | dir | w1_mode | pcnt_mode);
         }
     }
 
