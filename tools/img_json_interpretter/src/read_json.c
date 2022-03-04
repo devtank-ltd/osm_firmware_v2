@@ -258,13 +258,13 @@ static bool _read_ios_json(struct json_object * root)
             uint16_t dir     = _get_io_dir(json_object_get_string(json_object_object_get(io_node, "direction")), state & IO_AS_INPUT);
             uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_ONEWIRE:0;
             uint16_t pcnt_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_pcnt")))?IO_PULSE:0;
-            if (w1_mode && (!(state & IO_ONEWIRE)))
+            if (w1_mode && (!(state & IO_TYPE_MASK)))
             {
                 log_error("IO %s has no w1 mode", io_name);
                 return false;
             }
 
-            if (pcnt_mode && (!(state & IO_PULSE)))
+            if (pcnt_mode && (!(state & IO_TYPE_MASK)))
             {
                 log_error("IO %s has no pulse counter mode", io_name);
                 return false;

@@ -38,15 +38,14 @@ char* io_get_pull_str(uint16_t io_state)
 
 bool io_is_special(uint16_t io_state)
 {
-    switch(io_state & IO_TYPE_MASK)
+    switch(io_state & IO_STATE_MASK)
     {
-        case IO_TYPE_PULSECOUNT:
-        case IO_TYPE_ONEWIRE:
+        case IO_PULSE:
+        case IO_ONEWIRE:
             return true;
         default : return false;
     }
 }
-
 
 
 bool decompose_uart_str(char             * str,
