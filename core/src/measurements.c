@@ -875,7 +875,8 @@ static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name
 
 static void _measurements_update_def(measurements_def_t* def)
 {
-    _measurements_replace_name_if_legacy(def->name, MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, MEASUREMENTS_PULSE_COUNT_NAME_1);
+    if (def->type == PULSE_COUNT)
+        _measurements_replace_name_if_legacy(def->name, MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, MEASUREMENTS_PULSE_COUNT_NAME_1);
 }
 
 
