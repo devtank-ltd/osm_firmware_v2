@@ -3,9 +3,10 @@
 #define CMD_LINELEN 128
 #define LOG_LINELEN 64
 
-#define MEASURE_NAME_LEN 4
+#define MEASURE_NAME_LEN            4
+#define MEASURE_NAME_NULLED_LEN     (MEASURE_NAME_LEN+1)
 
-#define MODBUS_NAME_LEN MEASURE_NAME_LEN
+#define MODBUS_NAME_LEN             MEASURE_NAME_LEN
 
 
 /* On some versions of gcc this header isn't defining it. Quick fix. */

@@ -866,9 +866,9 @@ void measurements_print(void)
 
 static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name, char* new_name)
 {
-    if (strncmp(dest_name, old_name, MEASURE_NAME_LEN+1) == 0)
+    if (strncmp(dest_name, old_name, MEASURE_NAME_LEN) == 0)
     {
-        strncpy(dest_name, new_name, MEASURE_NAME_LEN+1);
+        strncpy(dest_name, new_name, MEASURE_NAME_NULLED_LEN);
     }
 }
 
