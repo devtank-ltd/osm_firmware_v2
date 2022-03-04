@@ -864,6 +864,21 @@ void measurements_print(void)
 }
 
 
+static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name, char* new_name)
+{
+    if (strncmp(dest_name, old_name, MEASURE_NAME_LEN+1) == 0)
+    {
+        strncpy(dest_name, new_name, MEASURE_NAME_LEN+1);
+    }
+}
+
+
+static void _measurements_update_def(measurements_def_t* def)
+{
+    _measurements_replace_name_if_legacy(def->name, MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, MEASUREMENTS_PULSE_COUNT_NAME_1);
+}
+
+
 void measurements_init(void)
 {
     _measurements_arr.def = persist_get_measurements();
@@ -882,6 +897,7 @@ void measurements_init(void)
         }
 
         found++;
+        _measurements_update_def(def);
     }
 
     if (!found)

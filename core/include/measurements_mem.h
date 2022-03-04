@@ -24,6 +24,9 @@
 #define MEASUREMENTS_LIGHT_NAME             "LGHT"
 #define MEASUREMENTS_SOUND_NAME             "SND"
 
+#define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
+
+
 extern unsigned measurements_add_defaults(measurements_def_t * measurements_arr);
 
 extern measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name);
