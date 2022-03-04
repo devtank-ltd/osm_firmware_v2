@@ -16,7 +16,7 @@ static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t * ios_state;
 
 
-static char* _ios_get_type(uint16_t io_state)
+static char* _ios_get_type_active(uint16_t io_state)
 {
     switch(io_state & IO_STATE_MASK)
     {
@@ -27,12 +27,24 @@ static char* _ios_get_type(uint16_t io_state)
 }
 
 
+static char* _ios_get_type_possible(uint16_t io_state)
+{
+    switch(io_state & IO_TYPE_MASK)
+    {
+        case IO_TYPE_PULSECOUNT: return "PLSCNT";
+        case IO_TYPE_ONEWIRE:    return "W1";
+        case IO_TYPE_ONEWIRE | IO_TYPE_PULSECOUNT: return "PLSCNT | W1";
+        default : return "";
+    }
+}
+
+
 static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
 
-    char * type = _ios_get_type(io_state);
+    char * type = _ios_get_type_possible(io_state);
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
@@ -69,7 +81,7 @@ void     ios_init(void)
         uint16_t io_state = ios_state[n];
 
         if (io_state & IO_PULSE || io_state & IO_ONEWIRE)
-            io_debug("%02u : USED %s", n, _ios_get_type(io_state));
+            io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         else
             _ios_setup_gpio(n, io_state);
     }
@@ -243,7 +255,7 @@ void     io_log(unsigned io)
     const port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
 
-    char * type = _ios_get_type(io_state);
+    char * type = _ios_get_type_active(io_state);
 
     if (!(io_state & IO_ONEWIRE || io_state & IO_PULSE))
     {
