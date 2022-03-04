@@ -252,7 +252,7 @@ void     w1_enable(bool enable)
 
 bool w1_query_temp(float* temperature)
 {
-    if (!io_is_special_now(W1_IO))
+    if (!io_is_w1_now(W1_IO))
         return false;
 
     w1_memory_t d; 
@@ -301,7 +301,7 @@ bool w1_query_temp(float* temperature)
 
 measurements_sensor_state_t w1_measurements_init(char* name)
 {
-    if (!io_is_special_now(W1_IO))
+    if (!io_is_w1_now(W1_IO))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!_w1_reset())
     {
@@ -316,7 +316,7 @@ measurements_sensor_state_t w1_measurements_init(char* name)
 
 measurements_sensor_state_t w1_measurements_collect(char* name, value_t* value)
 {
-    if (!io_is_special_now(W1_IO))
+    if (!io_is_w1_now(W1_IO))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     w1_memory_t d;
     if (!_w1_reset())

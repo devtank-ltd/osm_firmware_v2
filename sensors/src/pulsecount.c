@@ -28,7 +28,7 @@ void PULSE_ISR(void)
 
 void pulsecount_init(void)
 {
-    if (!io_is_special_now(PULSE_IO))
+    if (!io_is_pulsecount_now(PULSE_IO))
         return;
     rcc_periph_clock_enable(PORT_TO_RCC(PULSE_PORT));
 
@@ -48,7 +48,7 @@ void pulsecount_init(void)
 
 static void _pulsecount_shutdown(void)
 {
-    if (io_is_special_now(PULSE_IO))
+    if (io_is_pulsecount_now(PULSE_IO))
         return;
     exti_disable_request(PULSE_EXTI);
     nvic_disable_irq(PULSE_EXTI_IRQ);
@@ -86,7 +86,7 @@ measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* col
 
 measurements_sensor_state_t pulsecount_begin(char* name)
 {
-    if (!io_is_special_now(PULSE_IO))
+    if (!io_is_pulsecount_now(PULSE_IO))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     pulsecount_debug("pulsecount at start %"PRIu32, _pulsecount);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
@@ -95,7 +95,7 @@ measurements_sensor_state_t pulsecount_begin(char* name)
 
 measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
 {
-    if (!io_is_special_now(PULSE_IO) && !value)
+    if (!io_is_pulsecount_now(PULSE_IO) && !value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     _send_pulsecount = _pulsecount;

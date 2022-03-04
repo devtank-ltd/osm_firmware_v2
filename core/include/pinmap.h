@@ -148,19 +148,19 @@ GPIO15 B15  - HPM_EN
 GPIO16 D2                   IO 11
 */
 
-#define IOS_STATE                                              \
-{                                                              \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 0   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 1   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 2  */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 3   */         \
-    IO_AS_INPUT | IO_ONEWIRE,           /* GPIO 4   */         \
-    IO_AS_INPUT | IO_PULSECOUNT,        /* GPIO 5   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 6   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 7   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 8   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 9   */         \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,   /* GPIO 10  */         \
+#define IOS_STATE                                                      \
+{                                                                      \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
+    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 4   */ \
+    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 5   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 10  */ \
 }
 
 #define W1_PORT             GPIOA

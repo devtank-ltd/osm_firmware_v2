@@ -20,8 +20,8 @@ static char* _ios_get_type(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
     {
-        case IO_PULSECOUNT: return "PLSCNT";
-        case IO_ONEWIRE:    return "W1";
+        case IO_TYPE_PULSECOUNT: return "PLSCNT";
+        case IO_TYPE_ONEWIRE:    return "W1";
         default : return "";
     }
 }
@@ -68,7 +68,7 @@ void     ios_init(void)
 
         uint16_t io_state = ios_state[n];
 
-        if (io_state & IO_SPECIAL_EN)
+        if (io_state & IO_PULSE || io_state & IO_ONEWIRE)
             io_debug("%02u : USED %s", n, _ios_get_type(io_state));
         else
             _ios_setup_gpio(n, io_state);
@@ -82,31 +82,74 @@ unsigned ios_get_count(void)
 }
 
 
+bool io_enable_w1(unsigned io)
+{
+    if (io >= ARRAY_SIZE(ios_pins))
+        return false;
+
+    if (!(ios_state[io] & IO_TYPE_ONEWIRE))
+        return false;
+
+    ios_state[io] &= ~IO_PULSE;
+    ios_state[io] &= ~IO_OUT_ON;
+
+    ios_state[io] |= IO_ONEWIRE;
+    w1_enable(true);
+    io_debug("%02u : USED W1", io);
+    return true;
+}
+
+
+bool io_enable_pulsecount(unsigned io)
+{
+    if (io >= ARRAY_SIZE(ios_pins))
+        return false;
+
+    if (!(ios_state[io] & IO_TYPE_PULSECOUNT))
+        return false;
+
+    ios_state[io] &= ~IO_ONEWIRE;
+    ios_state[io] &= ~IO_OUT_ON;
+
+    ios_state[io] |= IO_PULSE;
+    pulsecount_enable(true);
+    io_debug("%02u : USED PLSCNT", io);
+    return true;
+}
+
+
 void     io_configure(unsigned io, bool as_input, unsigned pull)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
 
     uint16_t io_state = ios_state[io];
+    uint16_t io_type = io_state & IO_TYPE_MASK;
 
-    if (io_state & IO_SPECIAL_EN)
+    if (io_state & IO_PULSE)
     {
-        uint16_t io_type = io_state & IO_TYPE_MASK;
+        if (!(io_type & IO_TYPE_PULSECOUNT))
+        {
+            // Error?
+            return;
+        }
+        ios_state[io] &= ~IO_PULSE;
+        pulsecount_enable(false);
+        io_debug("%02u : PLSCNT NO LONGER", io);
+        return;
+    }
 
-        if (io_type == IO_PULSECOUNT)
+    else if (io_state & IO_ONEWIRE)
+    {
+        if (!(io_type & IO_TYPE_ONEWIRE))
         {
-            ios_state[io] &= ~IO_SPECIAL_EN;
-            pulsecount_enable(false);
-            io_debug("%02u : PLSCNT NO LONGER", io);
+            // Error?
             return;
         }
-        else if (io_type == IO_ONEWIRE)
-        {
-            ios_state[io] &= ~IO_SPECIAL_EN;
-            w1_enable(false);
-            io_debug("%02u : W1 NO LONGER", io);
-            return;
-        }
+        ios_state[io] &= ~IO_ONEWIRE;
+        w1_enable(false);
+        io_debug("%02u : W1 NO LONGER", io);
+        return;
     }
 
     if (io_state & IO_DIR_LOCKED)
@@ -129,54 +172,30 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
 }
 
 
-bool     io_enable_special(unsigned io)
+bool io_is_input(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    uint16_t io_state = ios_state[io];
-
-    if (io_state & IO_SPECIAL_EN)
-        return true;
-
-    uint16_t io_type = io_state & IO_TYPE_MASK;
-
-    if (io_type == IO_PULSECOUNT)
-    {
-        ios_state[io] |= IO_SPECIAL_EN;
-        ios_state[io] &= ~IO_OUT_ON;
-        pulsecount_enable(true);
-        io_debug("%02u : USED PLSCNT", io);
-        return true;
-    }
-    else if (io_type == IO_ONEWIRE)
-    {
-        ios_state[io] |= IO_SPECIAL_EN;
-        ios_state[io] &= ~IO_OUT_ON;
-        w1_enable(true);
-        io_debug("%02u : USED W1", io);
-        return true;
-    }
-
-    return false;
+    return ios_state[io] & IO_AS_INPUT;
 }
 
 
-bool     io_is_input(unsigned io)
+bool io_is_w1_now(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    return (ios_state[io] & IO_AS_INPUT)?true:false;
+    return ios_state[io] & IO_ONEWIRE;
 }
 
 
-bool     io_is_special_now(unsigned io)
+bool io_is_pulsecount_now(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    return ios_state[io] & IO_SPECIAL_EN;
+    return ios_state[io] & IO_PULSE;
 }
 
 
@@ -224,7 +243,7 @@ void     io_log(unsigned io)
 
     char * type = _ios_get_type(io_state);
 
-    if (!(io_state & IO_SPECIAL_EN))
+    if (!(io_state & IO_ONEWIRE || io_state & IO_PULSE))
     {
         char * pretype = "";
         char * posttype = "";

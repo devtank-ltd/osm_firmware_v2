@@ -149,15 +149,27 @@ void io_cb(char *args)
 }
 
 
-void special_cb(char * args)
+void cmd_enable_pulsecount_cb(char * args)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
 
-    if (io_enable_special(io))
-        log_out("IO %02u special enabled", io);
+    if (io_enable_pulsecount(io))
+        log_out("IO %02u pulsecount enabled", io);
     else
-        log_out("IO %02u has no special", io);
+        log_out("IO %02u has no pulsecount", io);
+}
+
+
+void cmd_enable_onewire_cb(char * args)
+{
+    char * pos = NULL;
+    unsigned io = strtoul(args, &pos, 10);
+
+    if (io_enable_w1(io))
+        log_out("IO %02u onewire enabled", io);
+    else
+        log_out("IO %02u has no onewire", io);
 }
 
 
@@ -638,7 +650,8 @@ void cmds_process(char * command, unsigned len)
     static cmd_t cmds[] = {
         { "ios",          "Print all IOs.",           ios_log},
         { "io",           "Get/set IO set.",          io_cb},
-        { "sio",          "Enable Special IO.",       special_cb},
+        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb},
+        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb},
         { "count",        "Counts of controls.",      count_cb},
         { "version",      "Print version.",           version_cb},
         { "lora",         "Send lora message",        lora_cb},

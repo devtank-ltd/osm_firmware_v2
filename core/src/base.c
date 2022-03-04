@@ -40,8 +40,8 @@ bool io_is_special(uint16_t io_state)
 {
     switch(io_state & IO_TYPE_MASK)
     {
-        case IO_PULSECOUNT:
-        case IO_ONEWIRE:
+        case IO_TYPE_PULSECOUNT:
+        case IO_TYPE_ONEWIRE:
             return true;
         default : return false;
     }
