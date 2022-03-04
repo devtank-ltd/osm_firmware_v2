@@ -520,7 +520,7 @@ static void cc_calibrate_cb(char *args)
 static void ds18b20_cb(char* args)
 {
     float ds18b20_temp;
-    if (!ds18b20_query_temp(&ds18b20_temp))
+    if (!ds18b20_query_temp(&ds18b20_temp, args))
     {
         log_error("Could not get a temperature from the onewire.");
         return;

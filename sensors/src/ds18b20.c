@@ -7,19 +7,32 @@ Documents used:
 - Understanding and Using Cyclic Redunancy Checks With maxim 1-Wire and iButton products
     : https://maximintegrated.com/en/design/technical-documents/app-notes/2/27.html     (Accessed: 25.03.21)
 */
+#include <string.h>
+
 #include "pinmap.h"
 #include "log.h"
 #include "value.h"
+#include "common.h"
+#include "io.h"
 #include "w1.h"
 #include "ds18b20.h"
 
-#define DS18B20_DELAY_GET_TEMP   750000
 
-#define DS18B20_CMD_SKIP_ROM     0xCC
-#define DS18B20_CMD_CONV_T       0x44
-#define DS18B20_CMD_READ_SCP     0xBE
+#define DS18B20_INSTANCES   {                                          \
+    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+      { { W1_PULSE_PORT, W1_PULSE_1_PIN } } } ,                        \
+                                                                       \
+    { { MEASUREMENTS_W1_PROBE_NAME_2, W1_PULSE_2_IO} ,                 \
+      { { W1_PULSE_PORT, W1_PULSE_2_PIN } } }                          \
+}
 
-#define DS18B20_DEFAULT_COLLECTION_TIME_MS DS18B20_DELAY_GET_TEMP/1000
+#define DS18B20_DELAY_GET_TEMP_US   750000
+
+#define DS18B20_CMD_SKIP_ROM        0xCC
+#define DS18B20_CMD_CONV_T          0x44
+#define DS18B20_CMD_READ_SCP        0xBE
+
+#define DS18B20_DEFAULT_COLLECTION_TIME_MS DS18B20_DELAY_GET_TEMP_US/1000
 
 
 typedef union
@@ -38,30 +51,30 @@ typedef union
 } ds18b20_memory_t;
 
 
-static bool _ds18b20_reset(void)
+typedef struct
 {
-    return w1_reset(W1_PORT, W1_PIN);
-}
+    special_io_info_t   info;
+    w1_instance_t       w1_instance;
+} ds18b20_instance_t;
 
 
-static uint8_t _ds18b20_read_byte(void)
-{
-    return w1_read_byte(W1_PORT, W1_PIN);
-}
+static ds18b20_instance_t _ds18b20_instances[] = DS18B20_INSTANCES;
 
 
-static void _ds18b20_send_byte(uint8_t byte)
-{
-    return w1_send_byte(W1_PORT, W1_PIN, byte);
-}
-
-
-static void _ds18b20_read_scpad(ds18b20_memory_t* d)
+static void _ds18b20_read_scpad(ds18b20_memory_t* d, w1_instance_t* instance)
 {
     for (int i = 0; i < 9; i++)
     {
-        d->raw[i] = _ds18b20_read_byte();
+        d->raw[i] = w1_read_byte(instance);
     }
+}
+
+
+static void _ds18b20_delay_us(uint32_t delay)
+{
+    uint32_t start = get_since_boot_ms();
+    while (since_boot_delta(get_since_boot_ms(), start) < (delay/1000));
+    return;
 }
 
 
@@ -106,39 +119,56 @@ static bool _ds18b20_empty_check(uint8_t* mem, unsigned size)
 }
 
 
-static void _ds18b20_temp_err(void)
-{
-    exttemp_debug("Temperature probe did not respond");
-}
-
-
 void ds18b20_enable(bool enable)
 {
 }
 
 
-bool ds18b20_query_temp(float* temperature)
+static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 {
-    if (!io_is_w1_now(W1_IO))
+    ds18b20_instance_t* inst;
+    for (unsigned i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
+    {
+        inst = &_ds18b20_instances[i];
+        if (strncmp(name, inst->info.name, sizeof(inst->info.name) * sizeof(char)) == 0)
+        {
+            *instance = inst;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool ds18b20_query_temp(float* temperature, char* name)
+{
+    ds18b20_instance_t* instance;
+    if (!_ds18b20_get_instance(&instance, name))
+    {
+        exttemp_debug("Cannot get instance.");
         return false;
+    }
+    if (!io_is_w1_now(instance->info.io))
+    {
+        exttemp_debug("IO not set.");
+        return false;
+    }
 
     ds18b20_memory_t d; 
-    if (!_ds18b20_reset())
+    if (!w1_reset(&instance->w1_instance))
     {
-        _ds18b20_temp_err();
-        return false;
+        goto bad_exit;
     }
-    _ds18b20_send_byte(DS18B20_CMD_SKIP_ROM);
-    _ds18b20_send_byte(DS18B20_CMD_CONV_T);
-    _ds18b20_delay_us(DELAY_GET_TEMP);
-    if (!_ds18b20_reset())
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_CONV_T);
+    _ds18b20_delay_us(DS18B20_DELAY_GET_TEMP_US);
+    if (!w1_reset(&instance->w1_instance))
     {
-        _ds18b20_temp_err();
-        return false;
+        goto bad_exit;
     }
-    _ds18b20_send_byte(W1_CMD_SKIP_ROM);
-    _ds18b20_send_byte(W1_CMD_READ_SCP);
-    _ds18b20_read_scpad(&d);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_READ_SCP);
+    _ds18b20_read_scpad(&d, &instance->w1_instance);
 
     if (!_ds18b20_crc_check(d.raw, 8))
     {
@@ -163,37 +193,46 @@ bool ds18b20_query_temp(float* temperature)
     *temperature = (float)integer_bits + (float)decimal_bits / 16.f;
     exttemp_debug("T: %.03f C", *temperature);
     return true;
+bad_exit:
+    exttemp_debug("Temperature probe did not respond");
+    return false;
 }
 
 
 measurements_sensor_state_t ds18b20_measurements_init(char* name)
 {
-    if (!io_is_w1_now(W1_IO))
+    ds18b20_instance_t* instance;
+    if (!_ds18b20_get_instance(&instance, name))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!_ds18b20_reset())
+    if (!io_is_w1_now(instance->info.io))
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!w1_reset(&instance->w1_instance))
     {
-        _ds18b20_temp_err();
+        exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    _ds18b20_send_byte(DS18B20_CMD_SKIP_ROM);
-    _ds18b20_send_byte(DS18B20_CMD_CONV_T);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_CONV_T);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 measurements_sensor_state_t ds18b20_measurements_collect(char* name, value_t* value)
 {
-    if (!io_is_w1_now(W1_IO))
+    ds18b20_instance_t* instance;
+    if (!_ds18b20_get_instance(&instance, name))
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!io_is_w1_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     ds18b20_memory_t d;
-    if (!_ds18b20_reset())
+    if (!w1_reset(&instance->w1_instance))
     {
-        _ds18b20_temp_err();
+        exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    _ds18b20_send_byte(DS18B20_CMD_SKIP_ROM);
-    _ds18b20_send_byte(DS18B20_CMD_READ_SCP);
-    _ds18b20_read_scpad(&d);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(&instance->w1_instance, DS18B20_CMD_READ_SCP);
+    _ds18b20_read_scpad(&d, &instance->w1_instance);
 
     if (!_ds18b20_crc_check(d.raw, 8))
     {
@@ -231,7 +270,16 @@ measurements_sensor_state_t ds18b20_collection_time(char* name, uint32_t* collec
 }
 
 
+static void _ds18b20_init_instance(ds18b20_instance_t* instance)
+{
+    rcc_periph_clock_enable(PORT_TO_RCC(W1_PULSE_PORT));
+}
+
+
 void ds18b20_temp_init(void)
 {
-    _ds18b20_reset();
+    for (unsigned i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
+    {
+        _ds18b20_init_instance(&_ds18b20_instances[i]);
+    }
 }

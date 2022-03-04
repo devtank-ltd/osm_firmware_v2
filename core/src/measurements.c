@@ -340,9 +340,10 @@ void on_lw_sent_ack(bool ack)
     for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
     {
         measurements_inf_t* inf = &_measurements_arr.inf[i];
+        measurements_def_t* def = &_measurements_arr.def[i];
 
         if (inf->acked_cb)
-            inf->acked_cb();
+            inf->acked_cb(def->name);
     }
 
     if (_pending_send)

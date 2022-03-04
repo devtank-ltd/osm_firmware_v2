@@ -7,7 +7,7 @@
 
 extern void                         ds18b20_enable(bool enable);
 
-extern bool                         ds18b20_query_temp(float* temperature);
+extern bool                         ds18b20_query_temp(float* temperature, char* name);
 
 extern measurements_sensor_state_t  ds18b20_measurements_init(char* name);
 extern measurements_sensor_state_t  ds18b20_measurements_collect(char* name, value_t* value);

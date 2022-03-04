@@ -33,6 +33,7 @@ extern char * skip_space(char * pos);
 
 #define IO_PULL_MASK    0x0003
 #define IO_TYPE_MASK    0xF000
+#define IO_STATE_MASK   0x0F00
 
 #define IO_AS_INPUT     0x0100
 #define IO_DIR_LOCKED   0x0200

@@ -18,10 +18,10 @@ static uint16_t * ios_state;
 
 static char* _ios_get_type(uint16_t io_state)
 {
-    switch(io_state & IO_TYPE_MASK)
+    switch(io_state & IO_STATE_MASK)
     {
-        case IO_TYPE_PULSECOUNT: return "PLSCNT";
-        case IO_TYPE_ONEWIRE:    return "W1";
+        case IO_PULSE: return "PLSCNT";
+        case IO_ONEWIRE:    return "W1";
         default : return "";
     }
 }
@@ -92,9 +92,10 @@ bool io_enable_w1(unsigned io)
 
     ios_state[io] &= ~IO_PULSE;
     ios_state[io] &= ~IO_OUT_ON;
+    ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] |= IO_ONEWIRE;
-    w1_enable(true);
+    ds18b20_enable(true);
     io_debug("%02u : USED W1", io);
     return true;
 }
@@ -110,6 +111,7 @@ bool io_enable_pulsecount(unsigned io)
 
     ios_state[io] &= ~IO_ONEWIRE;
     ios_state[io] &= ~IO_OUT_ON;
+    ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] |= IO_PULSE;
     pulsecount_enable(true);

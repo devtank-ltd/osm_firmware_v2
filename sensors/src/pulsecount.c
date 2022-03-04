@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <string.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -14,51 +15,104 @@
 
 #define PULSECOUNT_COLLECTION_TIME_MS       1000;
 
+#define PULSECOUNT_INSTANCES   {                                       \
+    { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
+        W1_PULSE_1_PIN  , W1_PULSE_1_EXTI,                             \
+        W1_PULSE_1_EXTI_IRQ,                                           \
+        0, 0 },                                                        \
+    { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
+        W1_PULSE_2_PIN , W1_PULSE_2_EXTI,                              \
+        W1_PULSE_2_EXTI_IRQ,                                           \
+        0, 0 }                                                         \
+}
 
-static volatile uint32_t _pulsecount      = 0;
-static uint32_t          _send_pulsecount = 0;
 
-
-void PULSE_ISR(void)
+typedef struct
 {
-    exti_reset_request(PULSE_EXTI);
-    __sync_add_and_fetch(&_pulsecount, 1);
+    special_io_info_t   info;
+    uint16_t            pin;
+    uint32_t            exti;
+    uint8_t             exti_irq;
+    volatile uint32_t   count;
+    uint32_t            send_count;
+} pulsecount_instance_t;
+
+
+static pulsecount_instance_t _pulsecount_instances[] = PULSECOUNT_INSTANCES;
+
+
+void W1_PULSE_ISR(void)
+{
+    uint16_t gpio_state = gpio_get(W1_PULSE_PORT, W1_PULSE_1_PIN | W1_PULSE_2_PIN);
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        pulsecount_instance_t* inst = &_pulsecount_instances[i];
+        if (!io_is_pulsecount_now(inst->info.io))
+            continue;
+        if (gpio_state & inst->pin)
+        {
+            __sync_add_and_fetch(&inst->count, 1);
+        }
+        exti_reset_request(inst->exti);
+    }
+}
+
+
+static void _pulsecount_init_instance(pulsecount_instance_t* instance)
+{
+    if (!instance)
+        return;
+    if (!io_is_pulsecount_now(instance->info.io))
+        return;
+    rcc_periph_clock_enable(PORT_TO_RCC(W1_PULSE_PORT));
+
+    gpio_mode_setup(W1_PULSE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, instance->pin);
+
+    exti_select_source(instance->exti, W1_PULSE_PORT);
+    exti_set_trigger(instance->exti, EXTI_TRIGGER_RISING);
+    exti_enable_request(instance->exti);
+
+    instance->count = 0;
+    instance->send_count = 0;
+
+    nvic_enable_irq(instance->exti_irq);
+    pulsecount_debug("Pulsecount '%s' enabled", instance->info.name);
 }
 
 
 void pulsecount_init(void)
 {
-    if (!io_is_pulsecount_now(PULSE_IO))
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        _pulsecount_init_instance(&_pulsecount_instances[i]);
+    }
+}
+
+
+static void _pulsecount_shutdown_instance(pulsecount_instance_t* instance)
+{
+    if (!instance)
         return;
-    rcc_periph_clock_enable(PORT_TO_RCC(PULSE_PORT));
-
-    gpio_mode_setup(PULSE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, PULSE_PIN);
-
-    exti_select_source(PULSE_EXTI, PULSE_PORT);
-    exti_set_trigger(PULSE_EXTI, EXTI_TRIGGER_FALLING);
-    exti_enable_request(PULSE_EXTI);
-
-    _pulsecount = 0;
-    _send_pulsecount = 0;
-
-    nvic_enable_irq(PULSE_EXTI_IRQ);
-    pulsecount_debug("Pulsecount enabled");
+    if (io_is_pulsecount_now(instance->info.io))
+        return;
+    exti_disable_request(instance->exti);
+    nvic_disable_irq(instance->exti_irq);
+    instance->count = 0;
+    instance->send_count = 0;
+    pulsecount_debug("Pulsecount disabled");
 }
 
 
 static void _pulsecount_shutdown(void)
 {
-    if (io_is_pulsecount_now(PULSE_IO))
-        return;
-    exti_disable_request(PULSE_EXTI);
-    nvic_disable_irq(PULSE_EXTI_IRQ);
-    _pulsecount = 0;
-    _send_pulsecount = 0;
-    pulsecount_debug("Pulsecount disabled");
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        _pulsecount_shutdown_instance(&_pulsecount_instances[i]);
+    }
 }
 
 
-void     pulsecount_enable(bool enable)
+void pulsecount_enable(bool enable)
 {
     if (enable)
         pulsecount_init();
@@ -67,9 +121,20 @@ void     pulsecount_enable(bool enable)
 }
 
 
+void _pulsecount_log_instance(pulsecount_instance_t* instance)
+{
+    if (!io_is_pulsecount_now(instance->info.io))
+        return;
+    log_out("%s : %"PRIu32, instance->info.name, instance->count);
+}
+
+
 void pulsecount_log()
 {
-    log_out("pulsecount : %"PRIu32, _pulsecount);
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        _pulsecount_log_instance(&_pulsecount_instances[i]);
+    }
 }
 
 
@@ -84,30 +149,59 @@ measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* col
 }
 
 
+static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* name)
+{
+    if (!instance)
+        return false;
+    pulsecount_instance_t* inst;
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        inst = &_pulsecount_instances[i];
+        if (strncmp(name, inst->info.name, sizeof(inst->info.name) * sizeof(char)) == 0)
+        {
+            *instance = inst;
+            return true;
+        }
+    }
+    return false;
+}
+
+
 measurements_sensor_state_t pulsecount_begin(char* name)
 {
-    if (!io_is_pulsecount_now(PULSE_IO))
+    pulsecount_instance_t* instance;
+    if (!_pulsecount_get_instance(&instance, name))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    pulsecount_debug("pulsecount at start %"PRIu32, _pulsecount);
+    if (!io_is_pulsecount_now(instance->info.io))
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    pulsecount_debug("%s at start %"PRIu32, instance->info.name, instance->count);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
 {
-    if (!io_is_pulsecount_now(PULSE_IO) && !value)
+    if (!value)
+        return false;
+    pulsecount_instance_t* instance;
+    if (!_pulsecount_get_instance(&instance, name))
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!io_is_pulsecount_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    _send_pulsecount = _pulsecount;
-    pulsecount_debug("pulsecount at end %"PRIu32, _send_pulsecount);
-    *value = value_from(_send_pulsecount);
+    instance->send_count = instance->count;
+    pulsecount_debug("%s at end %"PRIu32, instance->info.name, instance->send_count);
+    *value = value_from(instance->send_count);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-void     pulsecount_ack(void)
+void pulsecount_ack(char* name)
 {
-    pulsecount_debug("Pulsecount ack'ed");
-    __sync_sub_and_fetch(&_pulsecount, _send_pulsecount);
-    _send_pulsecount = 0;
+    pulsecount_instance_t* instance;
+    if (!_pulsecount_get_instance(&instance, name))
+        return;
+    pulsecount_debug("%s ack'ed", instance->info.name);
+    __sync_sub_and_fetch(&instance->count, instance->send_count);
+    instance->send_count = 0;
 }

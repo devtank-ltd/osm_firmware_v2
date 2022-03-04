@@ -4,6 +4,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/dma.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/stm32/gpio.h>
 #endif
 
 #include <stdint.h>
@@ -163,16 +164,22 @@ GPIO16 D2                   IO 11
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 10  */ \
 }
 
-#define W1_PORT             GPIOA
-#define W1_PIN              GPIO11
-#define W1_IO               4
 
-#define PULSE_PORT     GPIOA
-#define PULSE_PIN      GPIO12
-#define PULSE_EXTI     EXTI12
-#define PULSE_EXTI_IRQ NVIC_EXTI15_10_IRQ
-#define PULSE_ISR      exti15_10_isr
-#define PULSE_IO       5
+#define W1_PULSE_PORT               GPIOA
+
+#define W1_PULSE_1_PIN              GPIO11
+#define W1_PULSE_1_IO               4
+
+#define W1_PULSE_1_EXTI     EXTI11
+#define W1_PULSE_1_EXTI_IRQ NVIC_EXTI15_10_IRQ
+
+#define W1_PULSE_2_PIN              GPIO12
+#define W1_PULSE_2_IO               5
+
+#define W1_PULSE_2_EXTI     EXTI12
+#define W1_PULSE_2_EXTI_IRQ NVIC_EXTI15_10_IRQ
+
+#define W1_PULSE_ISR                exti15_10_isr
 
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 

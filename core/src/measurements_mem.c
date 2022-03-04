@@ -46,7 +46,13 @@ unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
     def->type        = CURRENT_CLAMP;
 
     def = &measurements_arr[pos++];
-    strncpy(def->name, MEASUREMENTS_W1_PROBE_NAME, MEASURE_NAME_LEN+1);
+    strncpy(def->name, MEASUREMENTS_W1_PROBE_NAME_1, MEASURE_NAME_LEN+1);
+    def->interval    = 1;
+    def->samplecount = 5;
+    def->type = W1_PROBE;
+
+    def = &measurements_arr[pos++];
+    strncpy(def->name, MEASUREMENTS_W1_PROBE_NAME_2, MEASURE_NAME_LEN+1);
     def->interval    = 1;
     def->samplecount = 5;
     def->type = W1_PROBE;
@@ -70,7 +76,13 @@ unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
     def->type        = BAT_MON;
 
     def = &measurements_arr[pos++];
-    strncpy(def->name, MEASUREMENTS_PULSE_COUNT_NAME, MEASURE_NAME_LEN+1);
+    strncpy(def->name, MEASUREMENTS_PULSE_COUNT_NAME_1, MEASURE_NAME_LEN+1);
+    def->samplecount = 1;
+    def->interval    = 1;
+    def->type        = PULSE_COUNT;
+
+    def = &measurements_arr[pos++];
+    strncpy(def->name, MEASUREMENTS_PULSE_COUNT_NAME_2, MEASURE_NAME_LEN+1);
     def->samplecount = 1;
     def->interval    = 1;
     def->type        = PULSE_COUNT;
