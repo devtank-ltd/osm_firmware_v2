@@ -33,14 +33,16 @@ extern char * skip_space(char * pos);
 
 #define IO_PULL_MASK    0x0003
 #define IO_TYPE_MASK    0xF000
+#define IO_STATE_MASK   0x0F00
 
 #define IO_AS_INPUT     0x0100
 #define IO_DIR_LOCKED   0x0200
-#define IO_SPECIAL_EN   0x0400
-#define IO_OUT_ON       0x0800
+#define IO_PULSE        0x0400
+#define IO_ONEWIRE      0x0800
+#define IO_OUT_ON       0x0C00
 
-#define IO_PULSECOUNT   0x3000
-#define IO_ONEWIRE      0x4000
+#define IO_TYPE_PULSECOUNT   0x3000
+#define IO_TYPE_ONEWIRE      0x4000
 
 #ifndef STM32L4
 #define GPIO_PUPD_NONE     0
@@ -116,7 +118,7 @@ typedef enum
 
 typedef struct
 {
-    char     name[MEASURE_NAME_LEN + 1];                // Name of the measurement
+    char     name[MEASURE_NAME_NULLED_LEN];             // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type;                                      // measurement_def_type_t

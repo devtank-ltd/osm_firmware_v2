@@ -3,9 +3,10 @@
 #define CMD_LINELEN 128
 #define LOG_LINELEN 64
 
-#define MEASURE_NAME_LEN 4
+#define MEASURE_NAME_LEN            4
+#define MEASURE_NAME_NULLED_LEN     (MEASURE_NAME_LEN+1)
 
-#define MODBUS_NAME_LEN MEASURE_NAME_LEN
+#define MODBUS_NAME_LEN             MEASURE_NAME_LEN
 
 
 /* On some versions of gcc this header isn't defining it. Quick fix. */
@@ -110,7 +111,7 @@
 #define DEBUG_FW            0x800
 #define DEBUG_TMP_HUM      0x1000
 #define DEBUG_PULSECOUNT   0x2000
-#define DEBUG_W1           0x4000
+#define DEBUG_EXTTEMP      0x4000
 #define DEBUG_LIGHT        0x8000
 #define DEBUG_SOUND        0x10000
 

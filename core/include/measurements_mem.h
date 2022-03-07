@@ -14,13 +14,18 @@
 #define MEASUREMENTS_CURRENT_CLAMP_1_NAME   "CC1"
 #define MEASUREMENTS_CURRENT_CLAMP_2_NAME   "CC2"
 #define MEASUREMENTS_CURRENT_CLAMP_3_NAME   "CC3"
-#define MEASUREMENTS_W1_PROBE_NAME          "TMP2"
+#define MEASUREMENTS_W1_PROBE_NAME_1        "TMP2"
+#define MEASUREMENTS_W1_PROBE_NAME_2        "TMP3"
 #define MEASUREMENTS_HTU21D_TEMP            "TEMP"
 #define MEASUREMENTS_HTU21D_HUMI            "HUMI"
 #define MEASUREMENTS_BATMON_NAME            "BAT"
-#define MEASUREMENTS_PULSE_COUNT_NAME       "PCNT"
+#define MEASUREMENTS_PULSE_COUNT_NAME_1     "CNT1"
+#define MEASUREMENTS_PULSE_COUNT_NAME_2     "CNT2"
 #define MEASUREMENTS_LIGHT_NAME             "LGHT"
 #define MEASUREMENTS_SOUND_NAME             "SND"
+
+#define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
+
 
 extern unsigned measurements_add_defaults(measurements_def_t * measurements_arr);
 

@@ -22,7 +22,7 @@
 #include "hpm.h"
 #include "modbus_measurements.h"
 #include "update.h"
-#include "one_wire_driver.h"
+#include "ds18b20.h"
 #include "common.h"
 #include "htu21d.h"
 #include "log.h"
@@ -149,15 +149,27 @@ void io_cb(char *args)
 }
 
 
-void special_cb(char * args)
+void cmd_enable_pulsecount_cb(char * args)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
 
-    if (io_enable_special(io))
-        log_out("IO %02u special enabled", io);
+    if (io_enable_pulsecount(io))
+        log_out("IO %02u pulsecount enabled", io);
     else
-        log_out("IO %02u has no special", io);
+        log_out("IO %02u has no pulsecount", io);
+}
+
+
+void cmd_enable_onewire_cb(char * args)
+{
+    char * pos = NULL;
+    unsigned io = strtoul(args, &pos, 10);
+
+    if (io_enable_w1(io))
+        log_out("IO %02u onewire enabled", io);
+    else
+        log_out("IO %02u has no onewire", io);
 }
 
 
@@ -505,15 +517,15 @@ static void cc_calibrate_cb(char *args)
 }
 
 
-static void w1_cb(char* args)
+static void ds18b20_cb(char* args)
 {
-    float w1_temp;
-    if (!w1_query_temp(&w1_temp))
+    float ds18b20_temp;
+    if (!ds18b20_query_temp(&ds18b20_temp, args))
     {
         log_error("Could not get a temperature from the onewire.");
         return;
     }
-    log_out("Temp: %.03f degC.", w1_temp);
+    log_out("Temp: %.03f degC.", ds18b20_temp);
 }
 
 
@@ -638,7 +650,8 @@ void cmds_process(char * command, unsigned len)
     static cmd_t cmds[] = {
         { "ios",          "Print all IOs.",           ios_log},
         { "io",           "Get/set IO set.",          io_cb},
-        { "sio",          "Enable Special IO.",       special_cb},
+        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb},
+        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb},
         { "count",        "Counts of controls.",      count_cb},
         { "version",      "Print version.",           version_cb},
         { "lora",         "Send lora message",        lora_cb},
@@ -661,7 +674,7 @@ void cmds_process(char * command, unsigned len)
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
-        { "w1",           "Get temperature with w1",  w1_cb},
+        { "w1",           "Get temperature with w1",  ds18b20_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
         { "humi",         "Get the humidity",         humidity_cb},

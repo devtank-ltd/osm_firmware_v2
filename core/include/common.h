@@ -1,5 +1,16 @@
 #pragma once
 
+#include "w1.h"
+#include "pulsecount.h"
+
+
+typedef struct
+{
+    char        name[MEASURE_NAME_LEN];
+    unsigned    io;
+} special_io_info_t;
+
+
 extern uint32_t get_since_boot_ms(void);
 extern uint32_t since_boot_delta(uint32_t newer, uint32_t older);
 

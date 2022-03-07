@@ -31,7 +31,7 @@ typedef struct
     measurements_sensor_state_t     (* collection_time_cb)(char* name, uint32_t* collection_time);  // Function to retrieve the time in ms between calling the init function (init_cb) and collecting the value (get_cb)
     measurements_sensor_state_t     (* init_cb)(char* name);                                        // Function to start the process of retrieving the data
     measurements_sensor_state_t     (* get_cb)(char* name, value_t* value);                         // Function to collect the value
-    void                            (* acked_cb)();                                                 // Function to tell subsystem measurement was successfully sent.
+    void                            (* acked_cb)(char* name);                                       // Function to tell subsystem measurement was successfully sent.
     measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
 } measurements_inf_t;
 

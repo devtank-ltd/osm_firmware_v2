@@ -19,10 +19,11 @@ firmware_SOURCES := \
            core/src/adcs.c \
            core/src/timers.c \
            core/src/common.c \
+           core/src/w1.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \
-           sensors/src/one_wire_driver.c \
+           sensors/src/ds18b20.c \
            sensors/src/pulsecount.c \
            sensors/src/veml7700.c \
            sensors/src/sai.c

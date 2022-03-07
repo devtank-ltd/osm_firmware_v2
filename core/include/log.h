@@ -33,7 +33,7 @@ inline static void _empty_log() {}
 #define measurements_debug(...) _empty_log(__VA_ARGS__)
 #define fw_debug(...)           _empty_log(__VA_ARGS__)
 #define pulsecount_debug(...)   _empty_log(__VA_ARGS__)
-#define w1_debug(...)           _empty_log(__VA_ARGS__)
+#define exttemp_debug(...)      _empty_log(__VA_ARGS__)
 #define light_debug(...)        _empty_log(__VA_ARGS__)
 #define sound_debug(...)        _empty_log(__VA_ARGS__)
 #else
@@ -47,7 +47,7 @@ inline static void _empty_log() {}
 #define measurements_debug(...) log_debug(DEBUG_MEASUREMENTS, "Measure: " __VA_ARGS__)
 #define fw_debug(...)           log_debug(DEBUG_FW, "FW: " __VA_ARGS__)
 #define pulsecount_debug(...)   log_debug(DEBUG_PULSECOUNT, "PLSECNT: " __VA_ARGS__)
-#define w1_debug(...)           log_debug(DEBUG_W1, "W1: "  __VA_ARGS__)
+#define exttemp_debug(...)      log_debug(DEBUG_EXTTEMP, "EXTTEMP: "  __VA_ARGS__)
 #define light_debug(...)        log_debug(DEBUG_LIGHT, "LIGHT: "  __VA_ARGS__)
 #define sound_debug(...)        log_debug(DEBUG_SOUND, "SOUND: "  __VA_ARGS__)
 #endif

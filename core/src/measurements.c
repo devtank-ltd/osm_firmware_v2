@@ -15,7 +15,7 @@
 #include "common.h"
 #include "persist_config.h"
 #include "modbus_measurements.h"
-#include "one_wire_driver.h"
+#include "ds18b20.h"
 #include "htu21d.h"
 #include "pulsecount.h"
 #include "veml7700.h"
@@ -340,9 +340,10 @@ void on_lw_sent_ack(bool ack)
     for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
     {
         measurements_inf_t* inf = &_measurements_arr.inf[i];
+        measurements_def_t* def = &_measurements_arr.def[i];
 
         if (inf->acked_cb)
-            inf->acked_cb();
+            inf->acked_cb(def->name);
     }
 
     if (_pending_send)
@@ -638,9 +639,9 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
             inf->get_cb             = adcs_cc_get;
             break;
         case W1_PROBE:
-            inf->collection_time_cb = w1_collection_time;
-            inf->init_cb            = w1_measurements_init;
-            inf->get_cb             = w1_measurements_collect;
+            inf->collection_time_cb = ds18b20_collection_time;
+            inf->init_cb            = ds18b20_measurements_init;
+            inf->get_cb             = ds18b20_measurements_collect;
             break;
         case HTU21D_TMP:
             inf->collection_time_cb = htu21d_measurements_collection_time;
@@ -863,6 +864,22 @@ void measurements_print(void)
 }
 
 
+static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name, char* new_name)
+{
+    if (strncmp(dest_name, old_name, MEASURE_NAME_LEN) == 0)
+    {
+        strncpy(dest_name, new_name, MEASURE_NAME_NULLED_LEN);
+    }
+}
+
+
+static void _measurements_update_def(measurements_def_t* def)
+{
+    if (def->type == PULSE_COUNT)
+        _measurements_replace_name_if_legacy(def->name, MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, MEASUREMENTS_PULSE_COUNT_NAME_1);
+}
+
+
 void measurements_init(void)
 {
     _measurements_arr.def = persist_get_measurements();
@@ -881,6 +898,7 @@ void measurements_init(void)
         }
 
         found++;
+        _measurements_update_def(def);
     }
 
     if (!found)

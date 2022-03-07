@@ -119,10 +119,13 @@ static void _write_ios_json(struct json_object * root)
 
         json_object_object_add(io_node, "direction", json_object_new_string(dir));
 
-        if (io_is_special(state) && state & IO_SPECIAL_EN)
-            json_object_object_add(io_node, "use_special", json_object_new_boolean(true));
+        if (io_is_special(state) && ((state & IO_STATE_MASK) == IO_ONEWIRE))
+            json_object_object_add(io_node, "use_w1", json_object_new_boolean(true));
 
-        if (!(state & IO_AS_INPUT) && (state & IO_OUT_ON))
+        if (io_is_special(state) && ((state & IO_STATE_MASK) == IO_PULSE))
+            json_object_object_add(io_node, "use_pcnt", json_object_new_boolean(true));
+
+        if (!(state & IO_AS_INPUT) && ((state & IO_STATE_MASK) == IO_OUT_ON))
             json_object_object_add(io_node, "out_high", json_object_new_boolean(true));
     }
 }
