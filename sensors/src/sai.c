@@ -452,9 +452,35 @@ static uint32_t _sai_conv_dB(uint64_t rms)
         dB = 20 * log₁₀ (amp_rms/amp_ref)
      Cannot afford to do an integer log₁₀ as fidelity of the precision
      is too low.
+     
+        f(x) = A·x⁴ + B·x³ + C·x² + F·x + E
+     Where: A = -1.4476694634028
+            B = +32.842913823748
+            C = -277.21914042017
+            D = +1051.3790253415
+            E = -1443.2063094441
      */
-    return 10*SAI_ICS43434_LIN_OFFSET + 200 * (log10(rms) + SAI_ICS43434_LOG_OFFSET);
+    float A = -1.4476694634028f;
+    float B = +32.842913823748f;
+    float C = -277.21914042017f;
+    float D = +1051.3790253415f;
+    float E = -1443.2063094441f;
+    float x = log10(rms);
+    uint32_t dB = 10 * (A * x * x * x * x + B * x * x * x + C * x * x + D * x + E);
+    /* As the minimum value for calibration was 35dB any numbers below
+       will be ignored, setting a hard minimum of 35dB. Expected values
+       will be above this anyway.
+       The maximum value calibrated with was 122.5dB, so if a value is
+       over, unknown behaviour, limiting to 122.5dB. Expected values
+       should be below this anyway.
+    */
+    if (dB < 350)
+        dB = 350;
+    if (dB > 1225)
+        dB = 1225;
+    return dB;
 }
+
 
 
 static bool _sai_collect(void)
@@ -568,6 +594,7 @@ measurements_sensor_state_t sai_measurements_get(char* name, value_t* value)
     // Reset the rolling RMS
     _sai_sample.num_rms = 0;
 
+    sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
     sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
     *value = value_from_u64(dB);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
