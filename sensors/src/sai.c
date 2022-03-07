@@ -239,22 +239,9 @@ enum sai_xsr_flvl {
 #define SAI_DEFAULT_COLLECTION_TIME         1000
 #define SAI_INIT_DELAY                      25
 
-// Default offset (sine-wave RMS vs. dBFS). Modify this value for
-// linear calibration
-#define SAI_ICS43434_OFFSET_DB              3.0103
-
-// Value at which point sensitivity is specified in datasheet (dB)
-#define SAI_ICS43434_REF_DB                 94.0
-#define SAI_ICS43434_LIN_OFFSET             (SAI_ICS43434_OFFSET_DB + SAI_ICS43434_REF_DB)
-
-// Derived from the -log10(Reference Amplitude) with Reference Amplitude calculated from the datasheet.
-#define SAI_ICS43434_LOG_OFFSET             -5.623689848499628f
-
 #define SAI_NUM_SAMPLES                     10
 #define SAI_ARRAY_SIZE                      (SAI_NUM_SAMPLES * SAI_NB_SLOTS)
 #define SAI_NUM_OFLOW_SCALES                5
-
-
 
 #define SAI_DEFAULT_COEFFS     {                                       \
     -1.4476694634028f ,                                                \
