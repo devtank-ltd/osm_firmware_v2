@@ -49,11 +49,11 @@ void W1_PULSE_ISR(void)
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         if (!io_is_pulsecount_now(inst->info.io))
             continue;
-        if (gpio_state & inst->pin)
+        if (!(gpio_state & inst->pin))
         {
+            exti_reset_request(inst->exti);
             __sync_add_and_fetch(&inst->count, 1);
         }
-        exti_reset_request(inst->exti);
     }
 }
 
@@ -69,7 +69,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     gpio_mode_setup(W1_PULSE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, instance->pin);
 
     exti_select_source(instance->exti, W1_PULSE_PORT);
-    exti_set_trigger(instance->exti, EXTI_TRIGGER_RISING);
+    exti_set_trigger(instance->exti, EXTI_TRIGGER_FALLING);
     exti_enable_request(instance->exti);
 
     instance->count = 0;
