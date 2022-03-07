@@ -644,7 +644,7 @@ void sai_print_coeffs(void)
 {
     for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
     {
-        sound_debug("Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
+        log_out("Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
     }
 }
 
@@ -652,7 +652,6 @@ void sai_print_coeffs(void)
 bool sai_get_sound(uint32_t* dB)
 {
     uint32_t rms;
-    sai_print_coeffs();
     if (!_sai_rms_adaptive(&rms, _sai_array, SAI_ARRAY_SIZE))
     {
         return false;
