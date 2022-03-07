@@ -50,6 +50,8 @@
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 
+#define VEML7700_DEVTANK_CORRECTED 1
+
 #define LOG_START_SPACER  "============{"
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
