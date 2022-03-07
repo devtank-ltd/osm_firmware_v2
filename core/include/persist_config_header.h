@@ -41,4 +41,7 @@ typedef struct
     uint16_t                __;
     uint64_t                ___;
     uint16_t                ios_state[IOS_COUNT];
+    float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
 } __attribute__((__packed__)) persist_storage_t;
+
+_Static_assert(sizeof(persist_storage_t) % 16, "Persistent memory misaligned.");

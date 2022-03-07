@@ -23,6 +23,8 @@
 #define ADC_MAX_MV        3300
 #define ADCS_NUM_SAMPLES   480
 
+#define SAI_NUM_CAL_COEFFS   5
+
 #define UART1_PRIORITY 3
 #define UART2_PRIORITY 1
 #define UART3_PRIORITY 1

@@ -25,6 +25,7 @@ Documents used:
 #include "log.h"
 #include "uart_rings.h"
 #include "measurements.h"
+#include "persist_config.h"
 
 #define SAI1   SAI1_BASE
 
@@ -254,6 +255,16 @@ enum sai_xsr_flvl {
 #define SAI_NUM_OFLOW_SCALES                5
 
 
+
+#define SAI_DEFAULT_COEFFS     {                                       \
+    -1.4476694634028f ,                                                \
+    +32.842913823748f ,                                                \
+    -277.21914042017f ,                                                \
+    +1051.3790253415f ,                                                \
+    -1443.2063094441f                                                  \
+    }
+
+
 typedef volatile    int32_t     sai_arr_t[SAI_ARRAY_SIZE];
 typedef const       uint32_t    sai_overflow_arr[SAI_NUM_OFLOW_SCALES];
 
@@ -268,6 +279,7 @@ typedef struct
 
 static sai_arr_t             _sai_array           = {0};
 static sai_overflow_arr      _sai_overflow_scales = { 1, 10, 100, 1000, 10000 };
+static float                 _sai_calibration_coeffs[SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
 
 static volatile sai_sample_t _sai_sample          = {.rolling_rms=0,
                                                      .num_rms=0,
@@ -372,6 +384,11 @@ void sai_init(void)
     nvic_enable_irq(NVIC_DMA2_CHANNEL1_IRQ);
     dma_set_channel_request(DMA2, DMA_CHANNEL1, 1); /*SAI1_A*/
 
+    if (!persist_get_sai_cal_coeffs(_sai_calibration_coeffs))
+    {
+        sound_debug("No calibration values found, using default.");
+    }
+
     _sai_dma_init();
 
     SAI1_ACR1 |= SAI_xCR1_DMAEN;
@@ -452,7 +469,11 @@ static uint32_t _sai_conv_dB(uint64_t rms)
         dB = 20 * log₁₀ (amp_rms/amp_ref)
      Cannot afford to do an integer log₁₀ as fidelity of the precision
      is too low.
-     
+
+     The calibration was found by getting the RMS of the amplitudes
+     for dB between the range of 35.1 and 122.5. The log₁₀ (RMS) is
+     plotted against the dB on the soundmeter, a polynomial fit of order
+     4 was used to generate the following values.
         f(x) = A·x⁴ + B·x³ + C·x² + F·x + E
      Where: A = -1.4476694634028
             B = +32.842913823748
@@ -460,13 +481,12 @@ static uint32_t _sai_conv_dB(uint64_t rms)
             D = +1051.3790253415
             E = -1443.2063094441
      */
-    float A = -1.4476694634028f;
-    float B = +32.842913823748f;
-    float C = -277.21914042017f;
-    float D = +1051.3790253415f;
-    float E = -1443.2063094441f;
     float x = log10(rms);
-    uint32_t dB = 10 * (A * x * x * x * x + B * x * x * x + C * x * x + D * x + E);
+    uint32_t dB = 10 * (  _sai_calibration_coeffs[0] * x * x * x * x
+                        + _sai_calibration_coeffs[1] * x * x * x
+                        + _sai_calibration_coeffs[2] * x * x
+                        + _sai_calibration_coeffs[3] * x
+                        + _sai_calibration_coeffs[4]);
     /* As the minimum value for calibration was 35dB any numbers below
        will be ignored, setting a hard minimum of 35dB. Expected values
        will be above this anyway.
@@ -474,8 +494,8 @@ static uint32_t _sai_conv_dB(uint64_t rms)
        over, unknown behaviour, limiting to 122.5dB. Expected values
        should be below this anyway.
     */
-    if (dB < 350)
-        dB = 350;
+    if (dB < 351)
+        dB = 351;
     if (dB > 1225)
         dB = 1225;
     return dB;
@@ -610,4 +630,13 @@ bool sai_get_sound(uint32_t* dB)
     }
     *dB = _sai_conv_dB(rms);
     return true;
+}
+
+
+bool sai_set_coeff(uint8_t index, float coeff)
+{
+    if (index > SAI_NUM_CAL_COEFFS)
+        return false;
+    _sai_calibration_coeffs[index] = coeff;
+    return persist_set_sai_cal_coeffs(_sai_calibration_coeffs);
 }
