@@ -267,6 +267,7 @@ enum sai_xsr_flvl {
 
 typedef volatile    int32_t     sai_arr_t[SAI_ARRAY_SIZE];
 typedef const       uint32_t    sai_overflow_arr[SAI_NUM_OFLOW_SCALES];
+typedef             float       sai_coeff_arr[SAI_NUM_CAL_COEFFS];
 
 
 typedef struct
@@ -279,7 +280,8 @@ typedef struct
 
 static sai_arr_t             _sai_array           = {0};
 static sai_overflow_arr      _sai_overflow_scales = { 1, 10, 100, 1000, 10000 };
-static float                 _sai_calibration_coeffs[SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
+static const sai_coeff_arr   _sai_default_calibration_coeffs = SAI_DEFAULT_COEFFS;
+static sai_coeff_arr         _sai_calibration_coeffs;
 
 static volatile sai_sample_t _sai_sample          = {.rolling_rms=0,
                                                      .num_rms=0,
@@ -326,6 +328,21 @@ static void _sai_dma_init(void)
     dma_set_priority(DMA2, DMA_CHANNEL1, DMA_CCR_PL_LOW);
 
     dma_enable_transfer_complete_interrupt(DMA2, DMA_CHANNEL1);
+}
+
+
+static bool _sai_load_coeffs(void)
+{
+    if (!persist_get_sai_cal_coeffs(_sai_calibration_coeffs))
+    {
+        return false;
+    }
+    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    {
+        if (_sai_calibration_coeffs[i] != 0)
+            return true;
+    }
+    return false;
 }
 
 
@@ -384,9 +401,10 @@ void sai_init(void)
     nvic_enable_irq(NVIC_DMA2_CHANNEL1_IRQ);
     dma_set_channel_request(DMA2, DMA_CHANNEL1, 1); /*SAI1_A*/
 
-    if (!persist_get_sai_cal_coeffs(_sai_calibration_coeffs))
+    if (!_sai_load_coeffs())
     {
         sound_debug("No calibration values found, using default.");
+        memcpy(_sai_calibration_coeffs, _sai_default_calibration_coeffs, SAI_NUM_CAL_COEFFS * sizeof(_sai_default_calibration_coeffs[0]));
     }
 
     _sai_dma_init();
@@ -574,6 +592,7 @@ measurements_sensor_state_t sai_iteration_callback(char* name)
         if (!_sai_collect())
         {
             sound_debug("Failed to collect.");
+            persist_set_sai_cal_coeffs(_sai_calibration_coeffs);
         }
         else
         {
@@ -621,9 +640,19 @@ measurements_sensor_state_t sai_measurements_get(char* name, value_t* value)
 }
 
 
+void sai_print_coeffs(void)
+{
+    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    {
+        sound_debug("Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
+    }
+}
+
+
 bool sai_get_sound(uint32_t* dB)
 {
     uint32_t rms;
+    sai_print_coeffs();
     if (!_sai_rms_adaptive(&rms, _sai_array, SAI_ARRAY_SIZE))
     {
         return false;
