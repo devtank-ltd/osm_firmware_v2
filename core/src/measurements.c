@@ -720,15 +720,19 @@ bool measurements_add(measurements_def_t* measurements_def)
         def = &_measurements_arr.def[i];
         inf = &_measurements_arr.inf[i];
         data = &_measurements_arr.data[i];
+        if (!def->name[0])
+        {
+            if (!found_space)
+            {
+                found_space = true;
+                space = i;
+            }
+            continue;
+        }
         if (strncmp(def->name, measurements_def->name, sizeof(def->name)) == 0)
         {
             log_error("Tried to add measurements with the same name: %s", measurements_def->name);
             return false;
-        }
-        if (!found_space && !def->name[0])
-        {
-            found_space = true;
-            space = i;
         }
     }
     if (found_space)
@@ -947,112 +951,37 @@ void measurements_init(void)
 }
 
 
-bool measurements_repopulate(void)
+void measurements_repopulate(void)
 {
     measurements_def_t def;
-    strncpy(def.name, MEASUREMENTS_FW_VERSION, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 4;
-    def.samplecount = 1;
-    def.type        = FW_VERSION;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_PM10_NAME, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 5;
-    def.type        = PM10;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_PM25_NAME, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 5;
-    def.type        = PM25;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 25;
-    def.type        = CURRENT_CLAMP;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 25;
-    def.type        = CURRENT_CLAMP;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 25;
-    def.type        = CURRENT_CLAMP;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_W1_PROBE_NAME_1, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 5;
-    def.type = W1_PROBE;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_W1_PROBE_NAME_2, MEASURE_NAME_NULLED_LEN);
-    def.interval    = 1;
-    def.samplecount = 5;
-    def.type = W1_PROBE;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_HTU21D_TEMP, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 2;
-    def.interval    = 1;
-    def.type        = HTU21D_TMP;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_HTU21D_HUMI, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 2;
-    def.interval    = 1;
-    def.type        = HTU21D_HUM;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_BATMON_NAME, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 5;
-    def.interval    = 1;
-    def.type        = BAT_MON;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_PULSE_COUNT_NAME_1, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 1;
-    def.interval    = 1;
-    def.type        = PULSE_COUNT;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_PULSE_COUNT_NAME_2, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 1;
-    def.interval    = 1;
-    def.type        = PULSE_COUNT;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_LIGHT_NAME, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 5;
-    def.interval    = 1;
-    def.type        = LIGHT;
-    if (!measurements_add(&def))
-        return false;
-
-    strncpy(def.name, MEASUREMENTS_SOUND_NAME, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 5;
-    def.interval    = 1;
-    def.type        = SOUND;
-    if (!measurements_add(&def))
-        return false;
-    return true;
+    measurements_setup_default(&def, MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_BATMON_NAME,          1,  5,  BAT_MON         );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
+    measurements_add(&def);
+    measurements_setup_default(&def, MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
+    measurements_add(&def);
 }

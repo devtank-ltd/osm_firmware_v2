@@ -647,11 +647,7 @@ static void sound_cb(char* args)
 
 static void repop_cb(char* args)
 {
-    if (!measurements_repopulate())
-    {
-        log_out("Failed to repopulate.");
-        return;
-    }
+    measurements_repopulate();
     log_out("Repopulated measurements.");
 }
 
