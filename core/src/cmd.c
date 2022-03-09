@@ -645,6 +645,17 @@ static void sound_cb(char* args)
 }
 
 
+static void repop_cb(char* args)
+{
+    if (!measurements_repopulate())
+    {
+        log_out("Failed to repopulate.");
+        return;
+    }
+    log_out("Repopulated measurements.");
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -687,6 +698,7 @@ void cmds_process(char * command, unsigned len)
         { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { "light",        "Get the light in lux.",    light_cb},
         { "sound",        "Get the sound in lux.",    sound_cb},
+        { "repop",        "Repopulate measurements.", repop_cb},
         { NULL },
     };
 
