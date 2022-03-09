@@ -710,8 +710,10 @@ static void _measurements_derive_cc_phase(void)
 
 bool measurements_add(measurements_def_t* measurements_def)
 {
-    measurements_def_t* def;
-    measurements_inf_t* inf;
+    bool                    found_space = false;
+    unsigned                space;
+    measurements_def_t*     def;
+    measurements_inf_t*     inf;
     measurements_data_t* data;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -723,15 +725,23 @@ bool measurements_add(measurements_def_t* measurements_def)
             log_error("Tried to add measurements with the same name: %s", measurements_def->name);
             return false;
         }
-        if (!def->name[0])
+        if (!found_space && !def->name[0])
         {
-            measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
-            memcpy(def, measurements_def, sizeof(measurements_def_t));
-            _measurements_fixup(def, inf, data);
-            memcpy(data, &data_empty, sizeof(measurements_data_t));
-            _measurements_derive_cc_phase();
-            return true;
+            found_space = true;
+            space = i;
         }
+    }
+    if (found_space)
+    {
+        def = &_measurements_arr.def[space];
+        inf = &_measurements_arr.inf[space];
+        data = &_measurements_arr.data[space];
+        measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
+        memcpy(def, measurements_def, sizeof(measurements_def_t));
+        _measurements_fixup(def, inf, data);
+        memcpy(data, &data_empty, sizeof(measurements_data_t));
+        _measurements_derive_cc_phase();
+        return true;
     }
     log_error("Could not find a space to add %s", measurements_def->name);
     return false;
