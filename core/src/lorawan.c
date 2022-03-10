@@ -852,7 +852,9 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
 
 bool lw_get_connected(void)
 {
-    return (_lw_state_machine.state == LW_STATE_IDLE          ||
+    return (_lw_state_machine.state == LW_STATE_WAIT_OK       ||
+            _lw_state_machine.state == LW_STATE_WAIT_ACK      ||
+            _lw_state_machine.state == LW_STATE_IDLE          ||
             _lw_state_machine.state == LW_STATE_WAIT_UCONF_OK ||
             _lw_state_machine.state == LW_STATE_WAIT_CODE_OK  ||
             _lw_state_machine.state == LW_STATE_WAIT_CONF_OK  );
