@@ -24,6 +24,8 @@
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME  (uint32_t)1000
 
+#define FW_SHA_LEN                          7
+
 
 typedef enum
 {
@@ -60,6 +62,8 @@ typedef struct
     uint32_t wait_time;
 } measurements_check_time_t;
 
+
+static char fw_sha1[FW_SHA_LEN+1] = GIT_SHA1;
 
 static uint32_t                     _last_sent_ms                                        = 0;
 static bool                         _pending_send                                        = false;
@@ -592,11 +596,6 @@ uint16_t measurements_num_measurements(void)
     return count;
 }
 
-#define FW_SHA_LEN                          7
-
-
-static char fw_sha1[FW_SHA_LEN+1] = GIT_SHA1;
-
 
 measurements_sensor_state_t fw_version_get(char* name, value_t* value)
 {
@@ -838,7 +837,28 @@ static void _measurements_iterate_callbacks(void)
 
 void measurements_loop_iteration(void)
 {
+    static bool has_printed_no_con = false;
+
+    if (!lw_get_connected())
+    {
+        if (!has_printed_no_con)
+        {
+            measurements_debug("Not connected to send, dropping readings");
+            has_printed_no_con = true;
+            _message_start_pos = _message_prev_start_pos = 0;
+            _pending_send = false;
+        }
+        return;
+    }
     uint32_t now = get_since_boot_ms();
+
+    if (has_printed_no_con)
+    {
+        _last_sent_ms = now;
+        has_printed_no_con = false;
+        return;
+    }
+
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
     {
         _measurements_sample();
