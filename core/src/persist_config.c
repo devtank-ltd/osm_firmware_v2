@@ -230,26 +230,9 @@ modbus_bus_t * persist_get_modbus_bus(void)
 }
 
 
-bool persist_set_sai_cal_coeffs(float coeffs[SAI_NUM_CAL_COEFFS])
+float* persist_get_sai_cal_coeffs(void)
 {
-    if (!persist_data_valid)
-    {
-        return false;
-    }
-    memcpy(persist_data.sai_cal_coeffs, coeffs, SAI_NUM_CAL_COEFFS * sizeof(persist_data.sai_cal_coeffs[0]));
-    persist_commit();
-    return true;
-}
-
-
-bool persist_get_sai_cal_coeffs(float coeffs[SAI_NUM_CAL_COEFFS])
-{
-    if (!persist_data_valid)
-    {
-        return false;
-    }
-    memcpy(coeffs, persist_data.sai_cal_coeffs, SAI_NUM_CAL_COEFFS * sizeof(persist_data.sai_cal_coeffs[0]));
-    return true;
+    return persist_data.sai_cal_coeffs;
 }
 
 

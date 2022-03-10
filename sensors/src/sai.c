@@ -254,7 +254,6 @@ enum sai_xsr_flvl {
 
 typedef volatile    int32_t     sai_arr_t[SAI_ARRAY_SIZE];
 typedef const       uint32_t    sai_overflow_arr[SAI_NUM_OFLOW_SCALES];
-typedef             float       sai_coeff_arr[SAI_NUM_CAL_COEFFS];
 
 
 typedef struct
@@ -265,10 +264,9 @@ typedef struct
 } sai_sample_t;
 
 
-static sai_arr_t             _sai_array           = {0};
-static sai_overflow_arr      _sai_overflow_scales = { 1, 10, 100, 1000, 10000 };
-static const sai_coeff_arr   _sai_default_calibration_coeffs = SAI_DEFAULT_COEFFS;
-static sai_coeff_arr         _sai_calibration_coeffs;
+static sai_arr_t             _sai_array              = {0};
+static sai_overflow_arr      _sai_overflow_scales    = { 1, 10, 100, 1000, 10000 };
+static float               * _sai_calibration_coeffs = NULL;
 
 static volatile sai_sample_t _sai_sample          = {.rolling_rms=0,
                                                      .num_rms=0,
@@ -320,16 +318,13 @@ static void _sai_dma_init(void)
 
 static bool _sai_load_coeffs(void)
 {
-    if (!persist_get_sai_cal_coeffs(_sai_calibration_coeffs))
-    {
-        return false;
-    }
+    _sai_calibration_coeffs = persist_get_sai_cal_coeffs();
     for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
     {
         if (_sai_calibration_coeffs[i] != 0)
             return true;
     }
-    return false;
+    return false; /* If the coeffs are all zero, it's not valid/set. */
 }
 
 
@@ -390,8 +385,9 @@ void sai_init(void)
 
     if (!_sai_load_coeffs())
     {
+        const float _sai_default_calibration_coeffs[SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
         sound_debug("No calibration values found, using default.");
-        memcpy(_sai_calibration_coeffs, _sai_default_calibration_coeffs, SAI_NUM_CAL_COEFFS * sizeof(_sai_default_calibration_coeffs[0]));
+        memcpy(_sai_calibration_coeffs, _sai_default_calibration_coeffs, sizeof(_sai_default_calibration_coeffs));
     }
 
     _sai_dma_init();
@@ -576,16 +572,12 @@ measurements_sensor_state_t sai_iteration_callback(char* name)
     if (_sai_sample.finished)
     {
         _sai_sample.finished = false;
-        if (!_sai_collect())
-        {
-            sound_debug("Failed to collect.");
-            persist_set_sai_cal_coeffs(_sai_calibration_coeffs);
-        }
-        else
+        if (_sai_collect())
         {
             _sai_dma_init();
             _sai_dma_on();
         }
+        else sound_debug("Failed to collect.");
     }
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -653,5 +645,5 @@ bool sai_set_coeff(uint8_t index, float coeff)
     if (index > SAI_NUM_CAL_COEFFS)
         return false;
     _sai_calibration_coeffs[index] = coeff;
-    return persist_set_sai_cal_coeffs(_sai_calibration_coeffs);
+    return true;
 }
