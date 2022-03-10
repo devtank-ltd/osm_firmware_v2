@@ -329,23 +329,8 @@ static uint16_t _veml7700_read_als(void)
 }
 
 
-static bool _veml7700_dt_correction(uint32_t* lux_dt, uint32_t lux)
-{
-    /**
-     Coeffients calculated with a OSM board and cover.
-     lux_dt = Ax
-        where x = lux
-     */
-    uint32_t inter_val = lux;
-    const float A = +6.2607E+00f;
-    inter_val = (A * lux);
-    *lux_dt = (uint32_t)inter_val;
-    light_debug("Lux after dt correction = %"PRIu32, *lux_dt);
-    return true;
-}
-
-
-static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
+#ifndef VEML7700_DEVTANK_CORRECTED
+static bool _veml7700_conv(uint32_t* lux_corrected, uint16_t counts)
 {
     /**
      lux = counts * resolution
@@ -371,14 +356,27 @@ static bool _veml7700_conv_lux(uint32_t* lux_corrected, uint16_t counts)
     *lux_corrected = (uint32_t)lux;
     return true;
 }
-
-
-static bool _veml7700_conv(uint32_t* lux, uint16_t counts)
+#else
+static bool _veml7700_conv(uint32_t* lux_dt, uint16_t counts)
 {
-    uint32_t lux_local;
-    return (_veml7700_conv_lux(&lux_local, counts)  &&
-            _veml7700_dt_correction(lux, lux_local) );
+    /**
+     Coeffients calculated with a OSM board and cover.
+     */
+    float inter_val = counts * _veml7700_ctx.resolution_scaled  / VEML7700_RES_SCALE;
+    // Same values as above, but multiplied by +6.2607E+00 as devtank offset
+    const float A = +3.7649E-12f;
+    const float B = -5.8803E-08f;
+    const float C = +5.1017E-04f;
+    const float D = +6.2751E+00f;
+    inter_val =   (A * inter_val * inter_val * inter_val * inter_val)
+                + (B * inter_val * inter_val * inter_val)
+                + (C * inter_val * inter_val)
+                + (D * inter_val);
+    *lux_dt = (uint32_t)inter_val;
+    light_debug("Lux after dt correction = %"PRIu32, *lux_dt);
+    return true;
 }
+#endif
 
 
 static bool _veml7700_increase_integration_time(void)
