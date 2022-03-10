@@ -843,7 +843,7 @@ void measurements_loop_iteration(void)
     {
         if (!has_printed_no_con)
         {
-            measurements_debug("Not connected to send, dropping readings");
+            measurements_debug("Not connected to send, not taking readings.");
             has_printed_no_con = true;
             _message_start_pos = _message_prev_start_pos = 0;
             _pending_send = false;
@@ -854,6 +854,7 @@ void measurements_loop_iteration(void)
 
     if (has_printed_no_con)
     {
+        measurements_debug("Connected to send, starting readings.");
         _last_sent_ms = now;
         has_printed_no_con = false;
         return;
