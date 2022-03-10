@@ -32,7 +32,7 @@ extern bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT]);
 extern bool persist_set_sai_cal_coeffs(float coeffs[SAI_NUM_CAL_COEFFS]);
 extern bool persist_get_sai_cal_coeffs(float coeffs[SAI_NUM_CAL_COEFFS]);
 
-extern uint16_t* persist_get_ios_state();
+extern uint16_t* persist_get_ios_state(void);
 
 extern modbus_bus_t * persist_get_modbus_bus(void);
 
