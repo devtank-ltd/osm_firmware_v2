@@ -25,6 +25,7 @@ Documents used:
 #include "log.h"
 #include "uart_rings.h"
 #include "measurements.h"
+#include "persist_config.h"
 
 #define SAI1   SAI1_BASE
 
@@ -238,20 +239,17 @@ enum sai_xsr_flvl {
 #define SAI_DEFAULT_COLLECTION_TIME         1000
 #define SAI_INIT_DELAY                      25
 
-// Default offset (sine-wave RMS vs. dBFS). Modify this value for
-// linear calibration
-#define SAI_ICS43434_OFFSET_DB              3.0103
-
-// Value at which point sensitivity is specified in datasheet (dB)
-#define SAI_ICS43434_REF_DB                 94.0
-#define SAI_ICS43434_LIN_OFFSET             (SAI_ICS43434_OFFSET_DB + SAI_ICS43434_REF_DB)
-
-// Derived from the -log10(Reference Amplitude) with Reference Amplitude calculated from the datasheet.
-#define SAI_ICS43434_LOG_OFFSET             -5.623689848499628f
-
 #define SAI_NUM_SAMPLES                     10
 #define SAI_ARRAY_SIZE                      (SAI_NUM_SAMPLES * SAI_NB_SLOTS)
 #define SAI_NUM_OFLOW_SCALES                5
+
+#define SAI_DEFAULT_COEFFS     {                                       \
+    -1.4476694634028f ,                                                \
+    +32.842913823748f ,                                                \
+    -277.21914042017f ,                                                \
+    +1051.3790253415f ,                                                \
+    -1443.2063094441f                                                  \
+    }
 
 
 typedef volatile    int32_t     sai_arr_t[SAI_ARRAY_SIZE];
@@ -266,8 +264,9 @@ typedef struct
 } sai_sample_t;
 
 
-static sai_arr_t             _sai_array           = {0};
-static sai_overflow_arr      _sai_overflow_scales = { 1, 10, 100, 1000, 10000 };
+static sai_arr_t             _sai_array              = {0};
+static sai_overflow_arr      _sai_overflow_scales    = { 1, 10, 100, 1000, 10000 };
+static float               * _sai_calibration_coeffs = NULL;
 
 static volatile sai_sample_t _sai_sample          = {.rolling_rms=0,
                                                      .num_rms=0,
@@ -314,6 +313,18 @@ static void _sai_dma_init(void)
     dma_set_priority(DMA2, DMA_CHANNEL1, DMA_CCR_PL_LOW);
 
     dma_enable_transfer_complete_interrupt(DMA2, DMA_CHANNEL1);
+}
+
+
+static bool _sai_load_coeffs(void)
+{
+    _sai_calibration_coeffs = persist_get_sai_cal_coeffs();
+    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    {
+        if (_sai_calibration_coeffs[i] != 0)
+            return true;
+    }
+    return false; /* If the coeffs are all zero, it's not valid/set. */
 }
 
 
@@ -371,6 +382,13 @@ void sai_init(void)
     rcc_periph_clock_enable(RCC_DMA2);
     nvic_enable_irq(NVIC_DMA2_CHANNEL1_IRQ);
     dma_set_channel_request(DMA2, DMA_CHANNEL1, 1); /*SAI1_A*/
+
+    if (!_sai_load_coeffs())
+    {
+        const float _sai_default_calibration_coeffs[SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
+        sound_debug("No calibration values found, using default.");
+        memcpy(_sai_calibration_coeffs, _sai_default_calibration_coeffs, sizeof(_sai_default_calibration_coeffs));
+    }
 
     _sai_dma_init();
 
@@ -452,9 +470,38 @@ static uint32_t _sai_conv_dB(uint64_t rms)
         dB = 20 * log₁₀ (amp_rms/amp_ref)
      Cannot afford to do an integer log₁₀ as fidelity of the precision
      is too low.
+
+     The calibration was found by getting the RMS of the amplitudes
+     for dB between the range of 35.1 and 122.5. The log₁₀ (RMS) is
+     plotted against the dB on the soundmeter, a polynomial fit of order
+     4 was used to generate the following values.
+        f(x) = A·x⁴ + B·x³ + C·x² + F·x + E
+     Where: A = -1.4476694634028
+            B = +32.842913823748
+            C = -277.21914042017
+            D = +1051.3790253415
+            E = -1443.2063094441
      */
-    return 10*SAI_ICS43434_LIN_OFFSET + 200 * (log10(rms) + SAI_ICS43434_LOG_OFFSET);
+    float x = log10(rms);
+    uint32_t dB = 10 * (  _sai_calibration_coeffs[0] * x * x * x * x
+                        + _sai_calibration_coeffs[1] * x * x * x
+                        + _sai_calibration_coeffs[2] * x * x
+                        + _sai_calibration_coeffs[3] * x
+                        + _sai_calibration_coeffs[4]);
+    /* As the minimum value for calibration was 35dB any numbers below
+       will be ignored, setting a hard minimum of 35dB. Expected values
+       will be above this anyway.
+       The maximum value calibrated with was 122.5dB, so if a value is
+       over, unknown behaviour, limiting to 122.5dB. Expected values
+       should be below this anyway.
+    */
+    if (dB < 351)
+        dB = 351;
+    if (dB > 1225)
+        dB = 1225;
+    return dB;
 }
+
 
 
 static bool _sai_collect(void)
@@ -525,15 +572,12 @@ measurements_sensor_state_t sai_iteration_callback(char* name)
     if (_sai_sample.finished)
     {
         _sai_sample.finished = false;
-        if (!_sai_collect())
-        {
-            sound_debug("Failed to collect.");
-        }
-        else
+        if (_sai_collect())
         {
             _sai_dma_init();
             _sai_dma_on();
         }
+        else sound_debug("Failed to collect.");
     }
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -568,9 +612,19 @@ measurements_sensor_state_t sai_measurements_get(char* name, value_t* value)
     // Reset the rolling RMS
     _sai_sample.num_rms = 0;
 
+    sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
     sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
     *value = value_from_u64(dB);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+void sai_print_coeffs(void)
+{
+    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    {
+        log_out("Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
+    }
 }
 
 
@@ -582,5 +636,14 @@ bool sai_get_sound(uint32_t* dB)
         return false;
     }
     *dB = _sai_conv_dB(rms);
+    return true;
+}
+
+
+bool sai_set_coeff(uint8_t index, float coeff)
+{
+    if (index > SAI_NUM_CAL_COEFFS)
+        return false;
+    _sai_calibration_coeffs[index] = coeff;
     return true;
 }

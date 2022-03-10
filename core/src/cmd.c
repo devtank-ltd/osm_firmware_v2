@@ -645,6 +645,22 @@ static void sound_cb(char* args)
 }
 
 
+static void sound_cal_cb(char* args)
+{
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    if (index < 1 || index > SAI_NUM_CAL_COEFFS)
+    {
+        log_out("Index out of range.");
+        return;
+    }
+    p = skip_space(p);
+    float coeff = strtof(p, NULL);
+    if (!sai_set_coeff(index-1, coeff))
+        log_out("Could not set the coefficient.");
+}
+
+
 static void repop_cb(char* args)
 {
     measurements_repopulate();
@@ -694,6 +710,7 @@ void cmds_process(char * command, unsigned len)
         { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { "light",        "Get the light in lux.",    light_cb},
         { "sound",        "Get the sound in lux.",    sound_cb},
+        { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
         { "repop",        "Repopulate measurements.", repop_cb},
         { NULL },
     };

@@ -230,6 +230,12 @@ modbus_bus_t * persist_get_modbus_bus(void)
 }
 
 
+float* persist_get_sai_cal_coeffs(void)
+{
+    return persist_data.sai_cal_coeffs;
+}
+
+
 void    persistent_wipe(void)
 {
     flash_unlock();
