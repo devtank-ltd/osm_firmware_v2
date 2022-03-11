@@ -683,6 +683,13 @@ static void repop_cb(char* args)
 }
 
 
+static void no_lw_cb(char* args)
+{
+    bool enable = strtoul(args, NULL, 10);
+    measurements_set_debug_mode(enable);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -727,6 +734,7 @@ void cmds_process(char * command, unsigned len)
         { "sound",        "Get the sound in lux.",    sound_cb},
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
         { "repop",        "Repopulate measurements.", repop_cb},
+        { "no_lw",        "Dont need LW for measurements", no_lw_cb},
         { NULL },
     };
 

@@ -70,7 +70,8 @@ static measurements_check_time_t    _check_time                                 
 static uint32_t                     _interval_count                                      =  0;
 static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
 static uint16_t                     _measurements_hex_arr_pos                            =  0;
-static measurements_arr_t           _measurements_arr                                     = {0};
+static measurements_arr_t           _measurements_arr                                    = {0};
+static bool                         _measurements_debug_mode                             = false;
 
 
 uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
@@ -872,7 +873,7 @@ void measurements_loop_iteration(void)
 {
     static bool has_printed_no_con = false;
 
-    if (!lw_get_connected())
+    if (!lw_get_connected() && !_measurements_debug_mode)
     {
         if (!has_printed_no_con)
         {
@@ -1041,4 +1042,15 @@ void measurements_repopulate(void)
     measurements_add(&def);
     measurements_setup_default(&def, MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
     measurements_add(&def);
+}
+
+
+void measurements_set_debug_mode(bool enable)
+{
+    if (enable)
+        measurements_debug("Enabling measurements debug mode.");
+    else
+        measurements_debug("Disabling measurements debug mode.");
+    _measurements_debug_mode = enable;
+    _measurements_sample();
 }
