@@ -107,7 +107,7 @@ debug_gdb: $(WHOLE_IMG)
 
 size: $(WHOLE_IMG)
 	$(SIZE) $(BUILD_DIR)/*.elf
-	$(NM) -S --size-sort $(BUILD_DIR)/*.o
+	$(NM) -S --size-sort $(shell find $(BUILD_DIR) -name "*.o")
 
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
