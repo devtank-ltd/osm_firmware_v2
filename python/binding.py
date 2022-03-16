@@ -11,6 +11,18 @@ import random
 import json
 
 
+
+def load_config_json():
+    with open("/tmp/my_osm_config.json", "r+") as jfile:
+        data = json.load(jfile)
+        return data
+
+def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def dev_eui_generator(size=16, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
 def default_print(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     print("[%s] %s\r"% (now, msg), file=sys.stderr)
@@ -164,7 +176,7 @@ class log_t(object):
 
 class low_level_dev_t(object):
     def __init__(self, serial_obj, log_obj):
-        self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\r\n")
+        self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\n")
         self._log_obj = log_obj
 
     def write(self, msg):
@@ -189,6 +201,7 @@ class low_level_dev_t(object):
         while msg != None:
             msgs.append(msg)
             msg = self.read()
+            print(msg)
         return msgs
 
 
@@ -232,7 +245,46 @@ class dev_t(object):
         if child:
             return reader_child_t(self, child)
         raise AttributeError
+    
+    def save_config(self):
+        #Save an OSM's config as JSON
+        os.system("sudo ./tools/config_scripts/config_save.sh /tmp/my_osm_config.img")
+        os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")    
+        #Generate a random dev eui and app key
+        app_key = app_key_generator()
+        dev_eui = dev_eui_generator()    
+        data = load_config_json()
+        data["lw_dev_eui"] = dev_eui
+        data["lw_app_key"] = app_key
+        for item in data['measurements']:
+            if data['measurements'][item]['interval'] == 1:
+                data['measurements'][item]['interval'] = 0
+        with open("/tmp/my_osm_config.json", 'w') as nfile:
+            json.dump(data, nfile, indent=2)
 
+    @property
+    def interval_mins(self):
+        return int(self.do_cmd("interval_mins"))
+
+    def set_pulse_count_special(self):
+        data = load_config_json()
+        for item in data['ios']:
+            if data['ios'][item] == 4:
+                data['ios'][item]['pull'] = 'NONE'
+                data['ios'][item]['direction'] = 'IN'
+                data['ios'][item]['use_special'] = True
+                with open("/tmp/my_osm_config.json", 'w') as nfile:
+                    json.dump(data, nfile, indent=2)
+
+    def set_onewire_special(self):
+        data = load_config_json()
+        for item in data['ios']:
+            if data['ios'][item] == 5:
+                data['ios'][item]['pull'] = 'NONE'
+                data['ios'][item]['direction'] = 'IN'
+                data['ios'][item]['use_special'] = True
+                with open("/tmp/my_osm_config.json", 'w') as nfile:
+                    json.dump(data, nfile, indent=2)
 
     def do_cmd(self, cmd:str, timeout:float=1.5)->str:
         self._ll.write(cmd)
@@ -246,6 +298,56 @@ class dev_t(object):
             line = r[i]
             r_str += str(line)
         return r_str
+
+    def do_cmd_multi(self, cmd:str, timeout:float=1.5)->str:
+        self._ll.write(cmd)
+        end_time = time.monotonic() + timeout
+        r = []
+        while time.monotonic() < end_time:
+            r += self._ll.readlines()
+        start_pos = None
+        end_pos   = None
+        for n in range(0, len(r)):
+            line = r[n]
+            if line == "============{":
+                start_pos = n+1
+            elif line == "}============":
+                end_pos = n-1
+        if start_pos is not None and end_pos is not None:
+            return r[start_pos:end_pos] 
+        return None
+
+    def measurements(self):
+        r = self.do_cmd_multi("measurements")
+        r = r[2:]
+        return [ line.replace("\t\t","\t").split("\t") for line in r]
+
+    def wipe_clean(self):
+        self.do_cmd("wipe")
+
+    def add_mb_dev(self):
+        self.do_cmd("mb_dev_add 1 RIF")
+
+    def add_modbus_reg(self):
+        regs = ["1 0x36 4 F PF",
+                "1 0x00 4 F VP1",
+                "1 0x02 4 F VP2",
+                "1 0x04 4 F VP3",
+                "1 0x10 4 F AP1",
+                "1 0x12 4 F AP2",
+                "1 0x14 4 F AP3",
+                "1 0x60 4 F Imp"]
+        for reg in regs:
+            self.do_cmd(f"mb_reg_add {reg}")
+
+    def see_mb_setup(self):
+        self.do_cmd("mb_log")
+    
+    def modbus_debug(self):
+        self.do_cmd("debug 0x200")
+    
+    def save_cmd(self):
+        self.do_cmd("save")
 
     def get_val(self, cmd:measurement_t):
         cmd.value = self.do_cmd(cmd.cmd)
@@ -275,7 +377,7 @@ class dev_t(object):
         if not isinstance(reg, modbus_reg_t):
             self._log("Registers should be an object of register")
             return False
-        self.do_cmd(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
+        r = self.do_cmd(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
         return "Added modbus reg" in r
 
     def setup_modbus_dev(self, slave_id:int, device:str, regs:list)->bool:
@@ -294,3 +396,15 @@ class dev_t(object):
 
     def current_clamp_calibrate(self):
         self._ll.write("cc_cal")
+
+    def restore_config(self):
+        data = load_config_json()
+        for item in data['measurements'][item]['interval']:
+            if data['measurements'][item]['interval'] == 0:
+                data['measurements'][item]['interval'] = 1
+                with open("/tmp/my_osm_config.json", 'w') as nfile:
+                    json.dump(data, nfile, indent=2)
+        #Write out the JSON to the OSM
+        os.system("./tools/build/json_x_img /tmp/my_osm_config.img < /tmp/my_osm_config.json")
+        os.system("./tools/config_scripts/config_load.sh /tmp/my_osm_config.img")
+        
