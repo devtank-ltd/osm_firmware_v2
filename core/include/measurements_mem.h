@@ -2,7 +2,7 @@
 
 #include "base_types.h"
 
-#define MEASUREMENTS_MAX_NUMBER                   25
+#define MEASUREMENTS_MAX_NUMBER                   30
 
 #define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x01
 #define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
