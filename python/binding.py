@@ -264,7 +264,7 @@ class dev_t(object):
 
     @property
     def interval_mins(self):
-        return int(self.do_cmd("interval_mins"))
+        return self.do_cmd("interval_mins")
 
     def set_pulse_count_special(self):
         data = load_config_json()

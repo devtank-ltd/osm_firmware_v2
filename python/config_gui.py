@@ -11,6 +11,8 @@ import re
 import io
 import random
 import string
+
+from sqlalchemy import column
 import binding
 
 class Window(Frame):
@@ -19,7 +21,7 @@ class Window(Frame):
         self.master = master
 
         usb_label = Label(master, text="Select a device", pady=1)
-        usb_label.pack()
+        usb_label.grid(column=1, row=0)
 
         returned_ports = []
         active_ports = serial.tools.list_ports.comports(include_links=True)
@@ -30,51 +32,39 @@ class Window(Frame):
         for item in active_ports:
             if "tty" in item.device:
                 self.dropdown.set(item.device)
-        self.dropdown.pack(padx = 5, pady = 5)
+        self.dropdown.grid(column=1, row=1)
 
         self.dev = binding.dev_t()
 
         self.device_to_use = self.dropdown.get()
 
-        self.conf_btn = Button(master, text="Confirm device", command=self.query_value)
-        self.conf_btn.pack(padx=3, pady=3)
-
         self.wipe_dev = Button(master, text="Wipe device", command = self.dev.wipe_clean)
-        self.wipe_dev.pack(padx=3, pady=3)       
-
-        self.reg_added = Label(master, text="", pady=1)
-        self.reg_added.pack(padx=3, pady=3)
+        self.wipe_dev.grid(column=0, row=2)       
 
         self.debug_mb_btn = Button(master, text="Set debug to modbus", command=self.dev.modbus_debug)
-        self.debug_mb_btn.pack(padx=3, pady=3)
+        self.debug_mb_btn.grid(column=0, row=3)
 
         self.mb_setup_btn = Button(master, text="See modbus setup", command=self.dev.see_mb_setup)
-        self.mb_setup_btn.pack(padx=3, pady=3)
+        self.mb_setup_btn.grid(column=1, row=2)
 
         self.add_dev_btn = Button(master, text="Add RIF device", command=self.dev.add_mb_dev)
-        self.add_dev_btn.pack(padx=3, pady=3)
+        self.add_dev_btn.grid(column=1, row=3)
 
         self.add_rif_btn = Button(master, text="Add RIF registers", command=self.dev.add_modbus_reg)
-        self.add_rif_btn.pack(padx=3, pady=3)
+        self.add_rif_btn.grid(column=2, row=2)
+        
+        self.add_binary_btn = Button(master, text="Add Binary setting", command=self.dev.do_cmd("mb_setup BIN 9600 8N1"))
+        self.add_binary_btn.grid(column=2, row=3)
 
         self.countis_w_btn = Button(master, text="Set intervals and Sample count", command=self.open_rif_reg)
-        self.countis_w_btn.pack(padx=3, pady=3)   
+        self.countis_w_btn.grid(column=1, row=4)   
 
-    def query_value(self):
-        print("Selected Option: {}".format(self.dropdown.get()))
-        self.device_to_use = self.dropdown.get()
-        self.reg_added.configure(text="Device in use: {}".format(self.device_to_use))
-
-    def see_measurements(self):
-        self.measurements = self.dev.measurements()
-        self.reg_added.configure(text=self.measurements)
 
     def refresh(self):
         self.rifWindow.destroy()
         self.open_rif_reg()
     
     def save_cmd(self, args):
-
         #retrieve current entry value
         widget = self.e.focus_get()
         #convert widget class to string
@@ -85,16 +75,13 @@ class Window(Frame):
         last_two_widget = widget_str[length - 2 :]
         #get inner value of entry
         widget_spec = widget.get()
-        print(widget_spec)
-      
         #get widget value of the measurement in the same row
         for i in range(len(self.entries)):
-            for j in self.entries[i]:
-                entry = j
+            for row in self.entries[i]:
+                entry = row
                 if entry == widget:
                     msmnt_to_change = self.entries[i][0]
                     msmnt_to_change = msmnt_to_change.get()
-                    print(msmnt_to_change)
 
         if length > 18:
             if int(last_two_widget) % 3 == 0:
@@ -113,10 +100,15 @@ class Window(Frame):
         self.rifWindow.title("Configure Device Settings")
         self.rifWindow.geometry("800x800")
 
+        interval_min = 0
+
         interval_mins = self.dev.interval_mins
- 
+        for char in interval_mins[15:]:
+            if char.isdigit():
+                interval_min = int(char)
+  
         # loop list of measurements and append them to list
-        lst = [('Measurement','Interval (%umin)' % interval_mins,'Sample Count')]
+        lst = [('Measurement','Interval (%umin)' % interval_min,'Sample Count')]
         self.mmnts = self.dev.measurements()
         self.mmnts[:]=[tuple(i) for i in self.mmnts]
         for i in range(len(self.mmnts)):
@@ -128,9 +120,6 @@ class Window(Frame):
                     row[n] = entry[0:pos]
             lst.append(row)
 
-        for i in range(len(lst)):
-            for j in lst[i]:
-                print(j)
         # find total number of rows and
         # columns in list
         total_rows = len(lst)
@@ -150,14 +139,15 @@ class Window(Frame):
             self.entries.append(newrow)
             #print(type(self.newrow[0]))
         self.save = Button(self.rifWindow, text="Save settings", command=self.save_cmd)
-        self.save.place(x=450, y=600)
+        self.save.place(x=400, y=600)
 
         self.refresh_page = Button(self.rifWindow, text="Refresh page", command=self.refresh)
-        self.refresh_page.place(x=350, y=600)
+        self.refresh_page.place(x=200, y=600)
 
 
 # create root window
 root = Tk()
 t = Window(root)
-root.geometry("800x800")
+root.geometry("600x200")
+root.eval('tk::PlaceWindow . center')
 root.mainloop()
