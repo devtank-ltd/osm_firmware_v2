@@ -51,7 +51,6 @@ typedef struct
 typedef struct
 {
     measurements_def_t * def;
-    measurements_inf_t   inf[MEASUREMENTS_MAX_NUMBER];
     measurements_data_t  data[MEASUREMENTS_MAX_NUMBER];
 } measurements_arr_t;
 
@@ -332,44 +331,18 @@ static void measurements_send(void)
 }
 
 
-void on_lw_sent_ack(bool ack)
-{
-    if (!ack)
-    {
-        _message_prev_start_pos = _message_start_pos = 0;
-         _pending_send = false;
-        return;
-    }
-
-    for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
-    {
-        measurements_inf_t* inf = &_measurements_arr.inf[i];
-        measurements_def_t* def = &_measurements_arr.def[i];
-
-        if (inf->acked_cb)
-            inf->acked_cb(def->name);
-    }
-
-    if (_pending_send)
-        measurements_send();
-    else
-        _message_prev_start_pos = _message_start_pos = 0;
-}
-
-
-static bool _measurements_def_is_active(measurements_def_t* def)
-{
-    return !(def->interval == 0 || def->samplecount == 0 || !def->name[0]);
-}
-
-
 static uint32_t _measurements_get_collection_time(measurements_def_t* def, measurements_inf_t* inf)
 {
+    if (!def || !inf)
+        // Doesnt exist
+        return 0;
     if (!inf->collection_time_cb)
     {
         if (!inf->init_cb)
+        {
             // If no init is required, neither is a collection time cb.
             return 0;
+        }
         measurements_debug("%s has no collection time iteration, using default of %"PRIu32" ms.", def->name, MEASUREMENTS_DEFAULT_COLLECTION_TIME);
         return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
     }
@@ -390,210 +363,12 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 }
 
 
-static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_inf_t* inf, measurements_data_t* data)
+measurements_sensor_state_t fw_version_collection_time(char* name, uint32_t* collection_time)
 {
-    if (!inf->init_cb)
-    {
-        // Init functions are optional
-        data->state = MEASUREMENT_STATE_INITED;
-        data->num_samples_init++;
-        measurements_debug("%s has no init function (optional).", def->name);
-        return;
-    }
-    measurements_sensor_state_t resp = inf->init_cb(def->name);
-    switch(resp)
-    {
-        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            measurements_debug("%s successfully init'd.", def->name);
-            data->state = MEASUREMENT_STATE_INITED;
-            data->num_samples_init++;
-            break;
-        case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s could not init, will not collect.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
-            data->num_samples_init++;
-            data->num_samples_collected++;
-            break;
-        case MEASUREMENTS_SENSOR_STATE_BUSY:
-            // Sensor was busy, will retry.
-            _check_time.wait_time = 0;
-            break;
-    }
-}
-
-
-static void _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_inf_t* inf, measurements_data_t* data)
-{
-    if (!inf->iteration_cb)
-    {
-        // Iteration callbacks are optional
-        return;
-    }
-    measurements_sensor_state_t resp = inf->iteration_cb(def->name);
-    switch (resp)
-    {
-        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            return;
-        case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s errored on iterate, will not collect.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
-            data->num_samples_init++;
-            data->num_samples_collected++;
-            return;
-        case MEASUREMENTS_SENSOR_STATE_BUSY:
-            return;
-    }
-}
-
-
-static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_inf_t* inf, measurements_data_t* data)
-{
-    if (!inf->get_cb)
-    {
-        // Get function is non-optional
-        data->state = MEASUREMENT_STATE_IDLE;
-        data->num_samples_collected++;
-        measurements_debug("%s has no collect function.", def->name);
-        return false;
-    }
-    value_t new_value = VALUE_EMPTY;
-    measurements_sensor_state_t resp = inf->get_cb(def->name, &new_value);
-    switch (resp)
-    {
-        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            measurements_debug("%s successfully collect'd.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
-            data->num_samples_collected++;
-            break;
-        case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s could not collect.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
-            data->num_samples_collected++;
-            return false;
-        case MEASUREMENTS_SENSOR_STATE_BUSY:
-            // Sensor was busy, will retry.
-            _check_time.wait_time = 0;
-            return false;
-    }
-    log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
-
-    if (new_value.type == VALUE_STR)
-    {
-        data->num_samples++;
-        data->sum = new_value;
-        return true;
-    }
-    if (data->num_samples == 0)
-    {
-        // If first measurements
-        data->num_samples++;
-        data->min = new_value;
-        data->max = new_value;
-        data->sum = new_value;
-        return true;
-    }
-
-    if (!value_add(&data->sum, &data->sum, &new_value))
-    {
-        // If this fails, the number of samples shouldn't increase nor the max/min.
-        log_error("Failed to add %s value.", def->name);
-        return false;
-    }
-    data->num_samples++;
-    if (value_grt(&new_value, &data->max))
-    {
-        data->max = new_value;
-    }
-    else if (value_lst(&new_value, &data->min))
-    {
-        data->min = new_value;
-    }
-    return true;
-}
-
-
-static void _measurements_sample(void)
-{
-    uint32_t            sample_interval;
-    uint32_t            now = get_since_boot_ms();
-    uint32_t            time_since_interval;
-
-    uint32_t            time_init_boundary;
-    uint32_t            time_init;
-    uint32_t            time_collect;
-
-    _check_time.last_checked_time = now;
-
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-    {
-        measurements_def_t*  def  = &_measurements_arr.def[i];
-        measurements_inf_t*  inf  = &_measurements_arr.inf[i];
-        measurements_data_t* data = &_measurements_arr.data[i];
-
-        // Breakout if the interval or samplecount is 0 or has no name
-        if (!_measurements_def_is_active(def))
-        {
-            continue;
-        }
-
-        sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
-        time_since_interval = since_boot_delta(now, _last_sent_ms);
-
-        time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
-        if (time_init_boundary < data->collection_time_cache)
-        {
-            // Assert that no negative rollover could happen for long collection times. Just do it immediately.
-            data->collection_time_cache = time_init_boundary;
-        }
-        time_init       = time_init_boundary - data->collection_time_cache;
-        time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
-        // If it takes time to get a sample, it is begun here.
-        if (time_since_interval >= time_init)
-        {
-            _measurements_sample_init_iteration(def, inf, data);
-        }
-        else if (_check_time.wait_time > (time_since_interval - time_init))
-        {
-            _check_time.wait_time = time_since_interval - time_init;
-        }
-
-        // The sample is collected every interval/samplecount but offset by 1/2.
-        // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
-        //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
-
-        if (time_since_interval >= time_collect)
-        {
-            if (_measurements_sample_get_iteration(def, inf, data))
-            {
-                log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
-                log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
-                log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
-                data->collection_time_cache = _measurements_get_collection_time(def, inf);
-            }
-        }
-        else if (_check_time.wait_time > (time_since_interval - time_collect))
-        {
-            _check_time.wait_time = time_since_interval - time_collect;
-        }
-    }
-}
-
-
-uint16_t measurements_num_measurements(void)
-{
-    uint16_t count = 0;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-    {
-        measurements_def_t*  def  = &_measurements_arr.def[i];
-
-        // Breakout if the interval is 0 or has no name
-        if (def->interval == 0 || !def->name[0])
-            continue;
-
-        count++;
-    }
-
-    return count;
+    if (!collection_time)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    *collection_time = 0;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -605,13 +380,16 @@ measurements_sensor_state_t fw_version_get(char* name, value_t* value)
 }
 
 
-static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * inf, measurements_data_t* data)
+static bool _measurements_get_inf(measurements_def_t * def, measurements_inf_t* inf)
 {
-    // Optional callbacks, get and collection time are not optional.
-    inf->init_cb                = NULL;
-    inf->collection_time_cb     = NULL;
-    inf->iteration_cb           = NULL;
-    inf->acked_cb               = NULL;
+    if (!def || !inf)
+    {
+        measurements_debug("Handed NULL pointer.");
+        return false;
+    }
+    // Optional callbacks: get is not optional, neither is collection
+    // time if init given are not optional.
+    memset(inf, 0, sizeof(measurements_inf_t));
     switch(def->type)
     {
         case FW_VERSION:
@@ -680,8 +458,260 @@ static void _measurements_fixup(measurements_def_t * def, measurements_inf_t * i
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
     }
-    data->collection_time_cache = _measurements_get_collection_time(def, inf);
+    return true;
 }
+
+
+void on_lw_sent_ack(bool ack)
+{
+    if (!ack)
+    {
+        _message_prev_start_pos = _message_start_pos = 0;
+         _pending_send = false;
+        return;
+    }
+
+    for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
+    {
+        measurements_def_t* def = &_measurements_arr.def[i];
+        if (!def->name[0])
+            continue;
+        measurements_inf_t inf;
+        if (!_measurements_get_inf(def, &inf))
+            continue;
+
+        if (inf.acked_cb)
+            inf.acked_cb(def->name);
+    }
+
+    if (_pending_send)
+        measurements_send();
+    else
+        _message_prev_start_pos = _message_start_pos = 0;
+}
+
+
+static bool _measurements_def_is_active(measurements_def_t* def)
+{
+    return !(def->interval == 0 || def->samplecount == 0 || !def->name[0]);
+}
+
+
+static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
+{
+    measurements_inf_t inf;
+    if (!_measurements_get_inf(def, &inf))
+        return;
+    if (!inf.init_cb)
+    {
+        // Init functions are optional
+        data->state = MEASUREMENT_STATE_INITED;
+        data->num_samples_init++;
+        measurements_debug("%s has no init function (optional).", def->name);
+        return;
+    }
+    measurements_sensor_state_t resp = inf.init_cb(def->name);
+    switch(resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            measurements_debug("%s successfully init'd.", def->name);
+            data->state = MEASUREMENT_STATE_INITED;
+            data->num_samples_init++;
+            break;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("%s could not init, will not collect.", def->name);
+            data->state = MEASUREMENT_STATE_IDLE;
+            data->num_samples_init++;
+            data->num_samples_collected++;
+            break;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            // Sensor was busy, will retry.
+            _check_time.wait_time = 0;
+            break;
+    }
+}
+
+
+static void _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
+{
+    measurements_inf_t inf;
+    if (!_measurements_get_inf(def, &inf))
+        return;
+    if (!inf.iteration_cb)
+    {
+        // Iteration callbacks are optional
+        return;
+    }
+    measurements_sensor_state_t resp = inf.iteration_cb(def->name);
+    switch (resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            return;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("%s errored on iterate, will not collect.", def->name);
+            data->state = MEASUREMENT_STATE_IDLE;
+            data->num_samples_init++;
+            data->num_samples_collected++;
+            return;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            return;
+    }
+}
+
+
+static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
+{
+    measurements_inf_t inf;
+    if (!_measurements_get_inf(def, &inf))
+        return false;
+    if (!inf.get_cb)
+    {
+        // Get function is non-optional
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_collected++;
+        measurements_debug("%s has no collect function.", def->name);
+        return false;
+    }
+    value_t new_value = VALUE_EMPTY;
+    measurements_sensor_state_t resp = inf.get_cb(def->name, &new_value);
+    switch (resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            measurements_debug("%s successfully collect'd.", def->name);
+            data->state = MEASUREMENT_STATE_IDLE;
+            data->num_samples_collected++;
+            break;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("%s could not collect.", def->name);
+            data->state = MEASUREMENT_STATE_IDLE;
+            data->num_samples_collected++;
+            return false;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            // Sensor was busy, will retry.
+            _check_time.wait_time = 0;
+            return false;
+    }
+    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+
+    log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
+
+    if (new_value.type == VALUE_STR)
+    {
+        data->num_samples++;
+        data->sum = new_value;
+        return true;
+    }
+    if (data->num_samples == 0)
+    {
+        // If first measurements
+        data->num_samples++;
+        data->min = new_value;
+        data->max = new_value;
+        data->sum = new_value;
+        return true;
+    }
+
+    if (!value_add(&data->sum, &data->sum, &new_value))
+    {
+        // If this fails, the number of samples shouldn't increase nor the max/min.
+        log_error("Failed to add %s value.", def->name);
+        return false;
+    }
+    data->num_samples++;
+    if (value_grt(&new_value, &data->max))
+    {
+        data->max = new_value;
+    }
+    else if (value_lst(&new_value, &data->min))
+    {
+        data->min = new_value;
+    }
+    return true;
+}
+
+
+static void _measurements_sample(void)
+{
+    uint32_t            sample_interval;
+    uint32_t            now = get_since_boot_ms();
+    uint32_t            time_since_interval;
+
+    uint32_t            time_init_boundary;
+    uint32_t            time_init;
+    uint32_t            time_collect;
+
+    _check_time.last_checked_time = now;
+
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        measurements_def_t*  def  = &_measurements_arr.def[i];
+        measurements_data_t* data = &_measurements_arr.data[i];
+
+        // Breakout if the interval or samplecount is 0 or has no name
+        if (!_measurements_def_is_active(def))
+        {
+            continue;
+        }
+
+        sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
+        time_since_interval = since_boot_delta(now, _last_sent_ms);
+
+        time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
+        if (time_init_boundary < data->collection_time_cache)
+        {
+            // Assert that no negative rollover could happen for long collection times. Just do it immediately.
+            data->collection_time_cache = time_init_boundary;
+        }
+        time_init       = time_init_boundary - data->collection_time_cache;
+        time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
+        // If it takes time to get a sample, it is begun here.
+        if (time_since_interval >= time_init)
+        {
+            _measurements_sample_init_iteration(def, data);
+        }
+        else if (_check_time.wait_time > (time_since_interval - time_init))
+        {
+            _check_time.wait_time = time_since_interval - time_init;
+        }
+
+        // The sample is collected every interval/samplecount but offset by 1/2.
+        // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
+        //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
+
+        if (time_since_interval >= time_collect)
+        {
+            if (_measurements_sample_get_iteration(def, data))
+            {
+                log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
+                log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
+                log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
+            }
+        }
+        else if (_check_time.wait_time > (time_since_interval - time_collect))
+        {
+            _check_time.wait_time = time_since_interval - time_collect;
+        }
+    }
+}
+
+
+uint16_t measurements_num_measurements(void)
+{
+    uint16_t count = 0;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        measurements_def_t*  def  = &_measurements_arr.def[i];
+
+        // Breakout if the interval is 0 or has no name
+        if (def->interval == 0 || !def->name[0])
+            continue;
+
+        count++;
+    }
+
+    return count;
+}
+
 
 static void _measurements_derive_cc_phase(void)
 {
@@ -712,12 +742,10 @@ bool measurements_add(measurements_def_t* measurements_def)
     bool                    found_space = false;
     unsigned                space;
     measurements_def_t*     def;
-    measurements_inf_t*     inf;
-    measurements_data_t* data;
+    measurements_data_t*    data;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         def = &_measurements_arr.def[i];
-        inf = &_measurements_arr.inf[i];
         data = &_measurements_arr.data[i];
         if (!def->name[0])
         {
@@ -737,12 +765,18 @@ bool measurements_add(measurements_def_t* measurements_def)
     if (found_space)
     {
         def = &_measurements_arr.def[space];
-        inf = &_measurements_arr.inf[space];
         data = &_measurements_arr.data[space];
-        measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
         memcpy(def, measurements_def, sizeof(measurements_def_t));
-        _measurements_fixup(def, inf, data);
-        memcpy(data, &data_empty, sizeof(measurements_data_t));
+        {
+            measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
+            memcpy(data, &data_empty, sizeof(measurements_data_t));
+        }
+        {
+            measurements_inf_t inf;
+            if (!_measurements_get_inf(def, &inf))
+                return false;
+            data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+        }
         _measurements_derive_cc_phase();
         return true;
     }
@@ -758,7 +792,6 @@ bool measurements_del(char* name)
         if (strcmp(name, _measurements_arr.def[i].name) == 0)
         {
             memset(&_measurements_arr.def[i], 0, sizeof(measurements_def_t));
-            memset(&_measurements_arr.inf[i], 0, sizeof(measurements_inf_t));
             memset(&_measurements_arr.data[i], 0, sizeof(measurements_data_t));
             _measurements_derive_cc_phase();
             return true;
@@ -829,7 +862,7 @@ static void _measurements_iterate_callbacks(void)
     {
         if (_measurements_arr.data[i].state == MEASUREMENT_STATE_INITED)
         {
-            _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.inf[i], &_measurements_arr.data[i]);
+            _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
         }
     }
 }
@@ -950,7 +983,10 @@ void measurements_init(void)
         if (!def->name[0])
             continue;
 
-        _measurements_fixup(def, &_measurements_arr.inf[n], &_measurements_arr.data[n]);
+        measurements_inf_t inf;
+        if (!_measurements_get_inf(def, &inf))
+            continue;
+        _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
     }
 
     if (!found)
