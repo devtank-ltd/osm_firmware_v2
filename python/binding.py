@@ -11,7 +11,6 @@ import random
 import json
 
 
-
 def load_config_json():
     with open("/tmp/my_osm_config.json", "r+") as jfile:
         data = json.load(jfile)
@@ -183,7 +182,7 @@ class low_level_dev_t(object):
         self._log_obj.send(msg)
         self._serial.write("%s\n"% msg)
         self._serial.flush()
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     def read(self):
         try:
@@ -290,8 +289,15 @@ class dev_t(object):
         self._ll.write(cmd)
         end_time = time.monotonic() + timeout
         r = []
+        done = False
         while time.monotonic() < end_time:
-            r += self._ll.readlines()
+            new_lines = self._ll.readlines()
+            for line in new_lines:
+                if "}============" in line:
+                    done = True
+            r += new_lines
+            if done:
+                break
             assert not "ERROR" in r, "OSM Error"
         r_str = ""
         for i in range(0, len(r)):
@@ -303,8 +309,15 @@ class dev_t(object):
         self._ll.write(cmd)
         end_time = time.monotonic() + timeout
         r = []
+        done = False
         while time.monotonic() < end_time:
-            r += self._ll.readlines()
+            new_lines = self._ll.readlines()
+            for line in new_lines:
+                if "}============" in line:
+                    done = True
+            r += new_lines
+            if done:
+                break
         start_pos = None
         end_pos   = None
         for n in range(0, len(r)):
@@ -316,17 +329,41 @@ class dev_t(object):
         if start_pos is not None and end_pos is not None:
             return r[start_pos:end_pos] 
         return None
+    
+    def wipe_clean(self):
+        self.do_cmd("wipe")
+
+    def debug_mb(self):
+        self.do_cmd("debug 0x200")
+    
+    def mb_log(self):
+        self.do_cmd("mb_log")
+
+    def add_rif_dev(self):
+        self.do_cmd("mb_dev_add 1 RIF")
+    
+    def mb_setup(self):
+        self.do_cmd("mb_setup RTU 9600 8N1")
+    
+    def add_e53_dev(self):
+        self.do_cmd("mb_dev_add 5 E53")
 
     def measurements(self):
         r = self.do_cmd_multi("measurements")
         r = r[2:]
         return [ line.replace("\t\t","\t").split("\t") for line in r]
 
-    def wipe_clean(self):
-        self.do_cmd("wipe")
-
-    def add_mb_dev(self):
-        self.do_cmd("mb_dev_add 1 RIF")
+    def add_e53_reg(self):
+        regs = ["5 0xC56E 3 U32 PF",
+                "5 0xC552 3 U32 cVP1",
+                "5 0xC554 3 U32 cVP2",
+                "5 0xC556 3 U32 cVP3",
+                "5 0xC560 3 U32 mAP1",
+                "5 0xC562 3 U32 mAP2",
+                "5 0xC564 3 U32 mAP3",
+                "5 0xC652 3 U32 ImEn"]
+        for reg in regs:
+            self.do_cmd(f"mb_reg_add {reg}")
 
     def add_modbus_reg(self):
         regs = ["1 0x36 4 F PF",
@@ -339,15 +376,6 @@ class dev_t(object):
                 "1 0x60 4 F Imp"]
         for reg in regs:
             self.do_cmd(f"mb_reg_add {reg}")
-
-    def see_mb_setup(self):
-        self.do_cmd("mb_log")
-    
-    def modbus_debug(self):
-        self.do_cmd("debug 0x200")
-    
-    def save_cmd(self):
-        self.do_cmd("save")
 
     def get_val(self, cmd:measurement_t):
         cmd.value = self.do_cmd(cmd.cmd)

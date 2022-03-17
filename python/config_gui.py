@@ -11,9 +11,8 @@ import re
 import io
 import random
 import string
-
-from sqlalchemy import column
 import binding
+import time
 
 class Window(Frame):
     def __init__(self, master=None):
@@ -41,23 +40,29 @@ class Window(Frame):
         self.wipe_dev = Button(master, text="Wipe device", command = self.dev.wipe_clean)
         self.wipe_dev.grid(column=0, row=2)       
 
-        self.debug_mb_btn = Button(master, text="Set debug to modbus", command=self.dev.modbus_debug)
+        self.debug_mb_btn = Button(master, text="Set debug to modbus", command=self.dev.debug_mb)
         self.debug_mb_btn.grid(column=0, row=3)
 
-        self.mb_setup_btn = Button(master, text="See modbus setup", command=self.dev.see_mb_setup)
+        self.mb_setup_btn = Button(master, text="See modbus setup", command=self.dev.mb_log)
         self.mb_setup_btn.grid(column=1, row=2)
 
-        self.add_dev_btn = Button(master, text="Add RIF device", command=self.dev.add_mb_dev)
+        self.add_dev_btn = Button(master, text="Add RI-F220 device", command=self.dev.add_rif_dev)
         self.add_dev_btn.grid(column=1, row=3)
 
-        self.add_rif_btn = Button(master, text="Add RIF registers", command=self.dev.add_modbus_reg)
+        self.add_rif_btn = Button(master, text="Add RI-F220 registers", command=self.dev.add_modbus_reg)
         self.add_rif_btn.grid(column=2, row=2)
         
-        self.add_binary_btn = Button(master, text="Add Binary setting", command=self.dev.do_cmd("mb_setup BIN 9600 8N1"))
+        self.add_binary_btn = Button(master, text="mb_setup RTU 9600 8N1", command=self.dev.mb_setup)
         self.add_binary_btn.grid(column=2, row=3)
 
+        self.add_e53_btn = Button(master, text="Add Countis E53 device", command=self.dev.add_e53_dev)
+        self.add_e53_btn.grid(column=1, row=4)
+
+        self.add_rif_btn = Button(master, text="Add Countis E53 registers", command=self.dev.add_e53_reg)
+        self.add_rif_btn.grid(column=2, row=4)
+
         self.countis_w_btn = Button(master, text="Set intervals and Sample count", command=self.open_rif_reg)
-        self.countis_w_btn.grid(column=1, row=4)   
+        self.countis_w_btn.grid(column=1, row=5)
 
 
     def refresh(self):
@@ -102,14 +107,20 @@ class Window(Frame):
 
         interval_min = 0
 
+        start_time = time.monotonic()
         interval_mins = self.dev.interval_mins
         for char in interval_mins[15:]:
             if char.isdigit():
                 interval_min = int(char)
-  
+        print("time taken for loop one: ", time.monotonic() - start_time)
+
+        start_time = time.monotonic()
         # loop list of measurements and append them to list
         lst = [('Measurement','Interval (%umin)' % interval_min,'Sample Count')]
         self.mmnts = self.dev.measurements()
+        print("time taken to get measurements: ", time.monotonic() - start_time)
+
+        start_time = time.monotonic()
         self.mmnts[:]=[tuple(i) for i in self.mmnts]
         for i in range(len(self.mmnts)):
             row = list(self.mmnts[i])
@@ -119,7 +130,9 @@ class Window(Frame):
                 if pos != -1:
                     row[n] = entry[0:pos]
             lst.append(row)
+        print("time taken for loop two: ", time.monotonic() - start_time)
 
+        start_time = time.monotonic()
         # find total number of rows and
         # columns in list
         total_rows = len(lst)
@@ -137,8 +150,9 @@ class Window(Frame):
                 newrow.append(self.e)
                 self.e.bind("<Return>", self.save_cmd)
             self.entries.append(newrow)
+        print("time taken for loop three: ", time.monotonic() - start_time)
             #print(type(self.newrow[0]))
-        self.save = Button(self.rifWindow, text="Save settings", command=self.save_cmd)
+        self.save = Button(self.rifWindow, text="Save settings", command=self.dev.do_cmd("save"))
         self.save.place(x=400, y=600)
 
         self.refresh_page = Button(self.rifWindow, text="Refresh page", command=self.refresh)
