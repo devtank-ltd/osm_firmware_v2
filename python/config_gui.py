@@ -2,6 +2,7 @@ from asyncio import base_tasks
 from cgitb import text
 from logging import exception
 from shutil import ExecError
+from subprocess import CompletedProcess
 from tkinter import *
 from tkinter.ttk import Combobox
 from click import command
@@ -42,6 +43,9 @@ class Window(Frame):
 
         self.debug_mb_btn = Button(master, text="Set debug to modbus", command=self.dev.debug_mb)
         self.debug_mb_btn.grid(column=0, row=3)
+
+        self.man_config_btn = Button(master, text="Configure device manually", command=self.manual_config)
+        self.man_config_btn.grid(column=0, row=4)        
 
         self.mb_setup_btn = Button(master, text="See modbus setup", command=self.dev.mb_log)
         self.mb_setup_btn.grid(column=1, row=2)
@@ -103,7 +107,10 @@ class Window(Frame):
     def open_rif_reg(self):
         self.rifWindow = Toplevel(self.master)
         self.rifWindow.title("Configure Device Settings")
-        self.rifWindow.geometry("800x800")
+        self.rifWindow.geometry("750x800")
+
+        self.config_label = Label(self.rifWindow, text="Adjust measurements and hit return to confirm.")
+        self.config_label.place(x=200, y=600)
 
         interval_min = 0
 
@@ -153,15 +160,98 @@ class Window(Frame):
         print("time taken for loop three: ", time.monotonic() - start_time)
             #print(type(self.newrow[0]))
         self.save = Button(self.rifWindow, text="Save settings", command=self.dev.do_cmd("save"))
-        self.save.place(x=400, y=600)
+        self.save.place(x=400, y=700)
 
         self.refresh_page = Button(self.rifWindow, text="Refresh page", command=self.refresh)
-        self.refresh_page.place(x=200, y=600)
+        self.refresh_page.place(x=200, y=700)
+    
+    def manual_config(self):
+        self.man_window = Toplevel(self.master)
+        self.man_window.title("Add measurements")
+        self.man_window.geometry("600x850")
 
+        self.man_label = Label(self.man_window, text="Enter a command and hit return to send.")
+        self.man_label.grid(row=2, column=2)
+
+        self.cmd = Entry(self.man_window, width=50, fg='blue', font=('Arial',16, 'bold'))
+        self.cmd.grid(row=3, column=2)
+        self.cmd.bind("<Return>", self.enter_cmd)
+
+        self.confirmed_cmd = Label(self.man_window, text="")
+        self.confirmed_cmd.grid(row=4, column=2)
+
+        self.refresh_cmd_btn = Button(self.man_window, text="New command", command=self.refresh_cmd)
+        self.refresh_cmd_btn.grid(row=5, column=2)
+
+        self.list_of_cmds = Label(self.man_window, text="", font=('Arial',11, 'bold'))
+        self.list_of_cmds.grid(row=1, column=2)
+
+        display = self.display_cmds()
+
+    def enter_cmd(self, args):
+        cmd = self.cmd.get()
+        self.dev.do_cmd(cmd)
+
+        self.confirmed_cmd.config(text="Command sent")
+
+    def refresh_cmd(self):
+        self.cmd.delete(0, END)
+        self.confirmed_cmd.config(text="")
+    
+    def display_cmds(self):
+
+        list_of_cmds = ""
+
+        for cmd in cmds:
+            cmd = str(cmd)
+            list_of_cmds += cmd
+            list_of_cmds += "\n"
+
+
+        self.list_of_cmds.config(text=list_of_cmds)
+
+cmds = [ "ios - Print all IOs.",
+ "io - Get/set IO set.", 
+ "sio - Enable Special IO.", 
+ "count - Counts of controls.", 
+ "version - Print version.", 
+ "lora - Send lora message", 
+ "lora_config - Set lora config", 
+ "interval - Set the interval", 
+ "samplecount - Set the samplecount",
+ "debug - Set hex debug mask",
+ "hpm - Enable/Disable HPM", 
+ "mb_setup - Change Modbus comms",
+ "mb_dev_add - Add modbus dev",
+ "mb_reg_add - Add modbus reg",
+ "mb_get_reg - Get modbus reg",
+ "mb_reg_del - Delete modbus reg",
+ "mb_dev_del - Delete modbus dev",
+ "mb_log - Show modbus setup",
+ "save - Save config",
+ "measurements - Print measurements",
+ "fw+ - Add chunk of new fw.",
+ "fw@ - Finishing crc of new fw.",
+ "reset - Reset device.",
+ "cc - CC value",
+ "cc_cal - Calibrate the cc",
+ "w1 - Get temperature with w1",
+ "timer - Test usecs timer",
+ "temp - Get the temperature",
+ "humi - Get the humidity",
+ "dew - Get the dew temperature",
+ "lora_conn - LoRa connected",
+ "wipe - Factory Reset",
+ "interval_min - Get/Set interval minutes",
+ "bat - Get battery level.",
+ "pulsecount - Show pulsecount.",
+ "lw_dbg - LoraWAN Chip Debug",
+ "light - Get the light in lux.",
+ "sound - Get the sound in lux."]
 
 # create root window
 root = Tk()
 t = Window(root)
-root.geometry("600x200")
+root.geometry("650x200")
 root.eval('tk::PlaceWindow . center')
 root.mainloop()

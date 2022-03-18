@@ -11,6 +11,7 @@ import random
 import json
 
 
+
 def load_config_json():
     with open("/tmp/my_osm_config.json", "r+") as jfile:
         data = json.load(jfile)
