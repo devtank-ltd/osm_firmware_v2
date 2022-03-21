@@ -358,8 +358,8 @@ static void hpm_cb(char *args)
 
 static void modbus_setup_cb(char *args)
 {
-    /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
-     * EXAMPLE: RTU 115200 8N1
+    /*<BIN/RTU> <LSB/MSB> <LSW/MSW> <SPEED> <BITS><PARITY><STOP>
+     * EXAMPLE: RTU MSB LSW 115200 8N1
      */
     modbus_setup_from_str(args);
 }

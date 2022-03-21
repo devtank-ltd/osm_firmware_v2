@@ -148,6 +148,9 @@ void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_s
 
 bool modbus_setup_from_str(char * str)
 {
+    /*<BIN/RTU> <LSB/MSB> <LSW/MSW> <SPEED> <BITS><PARITY><STOP>
+     * EXAMPLE: RTU MSB LSW 115200 8N1
+     */
     char * pos = skip_space(str);
 
     bool binary_framing = false;
@@ -166,8 +169,35 @@ bool modbus_setup_from_str(char * str)
     }
     else
     {
-        log_error("Unknown modbus protocol.");
-        return false;
+        goto bad_exit;
+    }
+    if (!toupper(pos[1]) == 'S' &&
+        !toupper(pos[2]) == 'B')
+    {
+        goto bad_exit;
+    }
+    bool msb_first;
+    if (toupper(pos[0]) == 'L')
+    {
+        msb_first = false;
+    }
+    else if (toupper(pos[0]) == 'M')
+    {
+        msb_first = true;
+    }
+    if (!toupper(pos[1]) == 'S' &&
+        !toupper(pos[2]) == 'W')
+    {
+        goto bad_exit;
+    }
+    bool msw_first;
+    if (toupper(pos[0]) == 'L')
+    {
+        msw_first = false;
+    }
+    else if (toupper(pos[0]) == 'M')
+    {
+        msw_first = true;
     }
 
     pos+=3;
@@ -187,6 +217,9 @@ bool modbus_setup_from_str(char * str)
     _modbus_setup_delays(speed, databits, parity, stop);
 
     return true;
+bad_exit:
+    log_error("Unknown modbus protocol.");
+    return false;
 }
 
 
