@@ -330,7 +330,8 @@ class dev_t(object):
             elif line == "}============":
                 end_pos = n-1
         if start_pos is not None and end_pos is not None:
-            return r[start_pos:end_pos] 
+            return r[start_pos:end_pos]
+        self.terminal.run_command('echo %s \n' % r) 
         return None
     
     def terminal_gen(self):
