@@ -23,6 +23,7 @@ class Window(Frame):
         usb_label = Label(master, text="Select a device", pady=1)
         usb_label.grid(column=1, row=0)
 
+        #dropdown menu to select USB device
         returned_ports = []
         active_ports = serial.tools.list_ports.comports(include_links=True)
         for item in active_ports:
@@ -34,10 +35,10 @@ class Window(Frame):
                 self.dropdown.set(item.device)
         self.dropdown.grid(column=1, row=1)
 
+        #open the serial device
         self.dev = binding.dev_t()
 
-        self.device_to_use = self.dropdown.get()
-
+        #buttons on the home page
         self.wipe_dev = Button(master, text="Wipe device", command = self.dev.wipe_clean)
         self.wipe_dev.grid(column=0, row=2)       
 
@@ -68,12 +69,14 @@ class Window(Frame):
         self.countis_w_btn = Button(master, text="Set intervals and Sample count", command=self.open_rif_reg)
         self.countis_w_btn.grid(column=1, row=5)
 
+        self.lora_config_btn = Button(master, text="Add lora config and app key", command=self.open_lora_config)
+        self.lora_config_btn.grid(column=1, row=6)
 
     def refresh(self):
         self.rifWindow.destroy()
         self.open_rif_reg()
     
-    def save_cmd(self, args):
+    def change_sample_interval(self, args):
         #retrieve current entry value
         widget = self.e.focus_get()
         #convert widget class to string
@@ -92,11 +95,14 @@ class Window(Frame):
                     msmnt_to_change = self.entries[i][0]
                     msmnt_to_change = msmnt_to_change.get()
 
+        #if value of widget is over 18 characters then we need the last 2 digits
         if length > 18:
+            #if widget is divisible by 3 then it's in the 3rd column (samplecount column)
             if int(last_two_widget) % 3 == 0:
                 self.dev.do_cmd(f"samplecount {msmnt_to_change} {widget_spec}")
             else:
                 self.dev.do_cmd(f"interval {msmnt_to_change} {widget_spec}")
+        #if value of widget is 18 characters we need last digit
         elif length == 18:
             if int(last_char_widget) % 3 == 0:
                 self.dev.do_cmd(f"samplecount {msmnt_to_change} {widget_spec}")
@@ -114,6 +120,7 @@ class Window(Frame):
 
         interval_min = 0
 
+        #retrieve interval minute value and extract the digit to append to interval header
         start_time = time.monotonic()
         interval_mins = self.dev.interval_mins
         for char in interval_mins[15:]:
@@ -155,7 +162,7 @@ class Window(Frame):
                 self.e.grid(row=i, column=j)
                 self.e.insert(END, lst[i][j])
                 newrow.append(self.e)
-                self.e.bind("<Return>", self.save_cmd)
+                self.e.bind("<Return>", self.change_sample_interval)
             self.entries.append(newrow)
         print("time taken for loop three: ", time.monotonic() - start_time)
             #print(type(self.newrow[0]))
@@ -209,6 +216,21 @@ class Window(Frame):
 
 
         self.list_of_cmds.config(text=list_of_cmds)
+    
+    def open_lora_config(self):
+        self.lora_window = Toplevel(self.master)
+        self.lora_window.title("Add app key and dev eui")
+        self.lora_window.geometry("250x200")
+
+        self.add_app_btn = Button(self.lora_window, text="Set application key", command=self.dev.write_lora)
+        self.add_app_btn.pack()
+
+        self.add_eui_btn = Button(self.lora_window, text="Set device eui", command=self.dev.write_eui)
+        self.add_eui_btn.pack()
+
+        save = Button(self.lora_window, text="Save settings", command=self.dev.do_cmd("save"))
+        save.pack()
+
 
 cmds = [ "ios - Print all IOs.",
  "io - Get/set IO set.", 

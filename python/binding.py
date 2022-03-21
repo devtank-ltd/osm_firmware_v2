@@ -11,7 +11,6 @@ import random
 import json
 
 
-
 def load_config_json():
     with open("/tmp/my_osm_config.json", "r+") as jfile:
         data = json.load(jfile)
@@ -348,6 +347,15 @@ class dev_t(object):
     
     def add_e53_dev(self):
         self.do_cmd("mb_dev_add 5 E53")
+    
+    def write_lora(self):
+        app_key = app_key_generator()
+        self.do_cmd("lora config app-key %s" % app_key)
+    
+    def write_eui(self):
+        dev_eui = dev_eui_generator()
+        self.do_cmd("lora_config dev-eui %s" % dev_eui)
+
 
     def measurements(self):
         r = self.do_cmd_multi("measurements")
