@@ -260,6 +260,7 @@ class dev_t(object):
                 data['measurements'][item]['interval'] = 0
         with open("/tmp/my_osm_config.json", 'w') as nfile:
             json.dump(data, nfile, indent=2)
+ 
 
     @property
     def interval_mins(self):
@@ -329,7 +330,17 @@ class dev_t(object):
         if start_pos is not None and end_pos is not None:
             return r[start_pos:end_pos] 
         return None
+
+    def save_json_img(self):
+        os.system("sudo ./tools/config_scripts/config_save.sh /tmp/my_osm_config.img")
+        os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")
+
+    def lora_debug(self):
+        self.do_cmd("debug 4")
     
+    def see_meas(self):
+        self.do_cmd("measurements")
+
     def wipe_clean(self):
         self.do_cmd("wipe")
 
@@ -355,7 +366,6 @@ class dev_t(object):
     def write_eui(self):
         dev_eui = dev_eui_generator()
         self.do_cmd("lora_config dev-eui %s" % dev_eui)
-
 
     def measurements(self):
         r = self.do_cmd_multi("measurements")
@@ -444,4 +454,3 @@ class dev_t(object):
         #Write out the JSON to the OSM
         os.system("./tools/build/json_x_img /tmp/my_osm_config.img < /tmp/my_osm_config.json")
         os.system("./tools/config_scripts/config_load.sh /tmp/my_osm_config.img")
-        

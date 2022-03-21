@@ -45,7 +45,7 @@ class Window(Frame):
         self.debug_mb_btn = Button(master, text="Set debug to modbus", command=self.dev.debug_mb)
         self.debug_mb_btn.grid(column=0, row=3)
 
-        self.man_config_btn = Button(master, text="Configure device manually", command=self.manual_config)
+        self.man_config_btn = Button(master, text="List of commands", command=self.manual_config)
         self.man_config_btn.grid(column=0, row=4)        
 
         self.mb_setup_btn = Button(master, text="See modbus setup", command=self.dev.mb_log)
@@ -68,9 +68,28 @@ class Window(Frame):
 
         self.countis_w_btn = Button(master, text="Set intervals and Sample count", command=self.open_rif_reg)
         self.countis_w_btn.grid(column=1, row=5)
+      
+        self.lora_debug_btn = Button(master, text="Set lora debug", command=self.dev.lora_debug)
+        self.lora_debug_btn.grid(column=0, row=5)
+
+        self.meas_btn = Button(master, text="Measurements", command=self.dev.see_meas)
+        self.meas_btn.grid(column=2, row=5)
 
         self.lora_config_btn = Button(master, text="Add lora config and app key", command=self.open_lora_config)
         self.lora_config_btn.grid(column=1, row=6)
+
+        self.man_label = Label(master, text="Enter a command and hit return to send. Click new command to clear text.")
+        self.man_label.grid(column=1, row=9)
+
+        self.cmd = Entry(master, width=50, fg='blue', font=('Arial',16, 'bold'))
+        self.cmd.grid(column=1, row=10)
+        self.cmd.bind("<Return>", self.enter_cmd)
+
+        self.confirmed_cmd = Label(master, text="")
+        self.confirmed_cmd.grid(column=1, row=11)
+
+        self.refresh_cmd_btn = Button(master, text="New command", command=self.refresh_cmd)
+        self.refresh_cmd_btn.grid(column=1, row=12)
 
     def refresh(self):
         self.rifWindow.destroy()
@@ -174,24 +193,11 @@ class Window(Frame):
     
     def manual_config(self):
         self.man_window = Toplevel(self.master)
-        self.man_window.title("Add measurements")
+        self.man_window.title("List of commands")
         self.man_window.geometry("600x850")
 
-        self.man_label = Label(self.man_window, text="Enter a command and hit return to send.")
-        self.man_label.grid(row=2, column=2)
-
-        self.cmd = Entry(self.man_window, width=50, fg='blue', font=('Arial',16, 'bold'))
-        self.cmd.grid(row=3, column=2)
-        self.cmd.bind("<Return>", self.enter_cmd)
-
-        self.confirmed_cmd = Label(self.man_window, text="")
-        self.confirmed_cmd.grid(row=4, column=2)
-
-        self.refresh_cmd_btn = Button(self.man_window, text="New command", command=self.refresh_cmd)
-        self.refresh_cmd_btn.grid(row=5, column=2)
-
         self.list_of_cmds = Label(self.man_window, text="", font=('Arial',11, 'bold'))
-        self.list_of_cmds.grid(row=1, column=2)
+        self.list_of_cmds.pack()
 
         display = self.display_cmds()
 
@@ -274,6 +280,6 @@ cmds = [ "ios - Print all IOs.",
 # create root window
 root = Tk()
 t = Window(root)
-root.geometry("650x200")
+root.geometry("1050x350")
 root.eval('tk::PlaceWindow . center')
 root.mainloop()
