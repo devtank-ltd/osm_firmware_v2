@@ -9,7 +9,8 @@ import re
 import string
 import random
 import json
-
+from tkinter import *
+from tkterminal import Terminal
 
 def load_config_json():
     with open("/tmp/my_osm_config.json", "r+") as jfile:
@@ -180,7 +181,7 @@ class low_level_dev_t(object):
 
     def write(self, msg):
         self._log_obj.send(msg)
-        self._serial.write("%s\n"% msg)
+        self._serial.write("%s\n" % msg)
         self._serial.flush()
         time.sleep(0.05)
 
@@ -304,6 +305,7 @@ class dev_t(object):
         for i in range(0, len(r)):
             line = r[i]
             r_str += str(line)
+        self.terminal.run_command('echo %s \n' % r_str)
         return r_str
 
     def do_cmd_multi(self, cmd:str, timeout:float=1.5)->str:
@@ -330,10 +332,18 @@ class dev_t(object):
         if start_pos is not None and end_pos is not None:
             return r[start_pos:end_pos] 
         return None
+    
+    def terminal_gen(self):
+        self.terminal = Terminal(pady=5, padx=5, background='black', foreground='white')
+        self.terminal.grid(column=1, row=13)
+        self.terminal.linebar = True
+        self.terminal.shell = True
+        self.terminal.basename = "OSMdev"
 
     def save_json_img(self):
         os.system("sudo ./tools/config_scripts/config_save.sh /tmp/my_osm_config.img")
         os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")
+
 
     def lora_debug(self):
         self.do_cmd("debug 4")

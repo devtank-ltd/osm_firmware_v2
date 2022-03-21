@@ -14,6 +14,7 @@ import random
 import string
 import binding
 import time
+from tkterminal import Terminal
 
 class Window(Frame):
     def __init__(self, master=None):
@@ -91,6 +92,9 @@ class Window(Frame):
         self.refresh_cmd_btn = Button(master, text="New command", command=self.refresh_cmd)
         self.refresh_cmd_btn.grid(column=1, row=12)
 
+        self.terminal = self.dev.terminal_gen()
+    
+
     def refresh(self):
         self.rifWindow.destroy()
         self.open_rif_reg()
@@ -133,6 +137,7 @@ class Window(Frame):
         self.rifWindow = Toplevel(self.master)
         self.rifWindow.title("Configure Device Settings")
         self.rifWindow.geometry("750x800")
+        root.eval(f'tk::PlaceWindow {str(self.rifWindow)} center')
 
         self.config_label = Label(self.rifWindow, text="Adjust measurements and hit return to confirm.")
         self.config_label.place(x=200, y=600)
@@ -195,6 +200,7 @@ class Window(Frame):
         self.man_window = Toplevel(self.master)
         self.man_window.title("List of commands")
         self.man_window.geometry("600x850")
+        root.eval(f'tk::PlaceWindow {str(self.man_window)} center')
 
         self.list_of_cmds = Label(self.man_window, text="", font=('Arial',11, 'bold'))
         self.list_of_cmds.pack()
@@ -227,6 +233,7 @@ class Window(Frame):
         self.lora_window = Toplevel(self.master)
         self.lora_window.title("Add app key and dev eui")
         self.lora_window.geometry("250x200")
+        root.eval(f'tk::PlaceWindow {str(self.lora_window)} center')
 
         self.add_app_btn = Button(self.lora_window, text="Set application key", command=self.dev.write_lora)
         self.add_app_btn.pack()
@@ -236,6 +243,7 @@ class Window(Frame):
 
         save = Button(self.lora_window, text="Save settings", command=self.dev.do_cmd("save"))
         save.pack()
+
 
 
 cmds = [ "ios - Print all IOs.",
@@ -280,6 +288,6 @@ cmds = [ "ios - Print all IOs.",
 # create root window
 root = Tk()
 t = Window(root)
-root.geometry("1050x350")
+root.geometry("1050x750")
 root.eval('tk::PlaceWindow . center')
 root.mainloop()
