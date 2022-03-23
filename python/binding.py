@@ -12,11 +12,6 @@ import json
 from tkinter import *
 from tkterminal import Terminal
 
-def load_config_json():
-    with open("/tmp/my_osm_config.json", "r+") as jfile:
-        data = json.load(jfile)
-        return data
-
 def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
@@ -246,46 +241,10 @@ class dev_t(object):
             return reader_child_t(self, child)
         raise AttributeError
     
-    def save_config(self):
-        #Save an OSM's config as JSON
-        os.system("sudo ./tools/config_scripts/config_save.sh /tmp/my_osm_config.img")
-        os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")    
-        #Generate a random dev eui and app key
-        app_key = app_key_generator()
-        dev_eui = dev_eui_generator()    
-        data = load_config_json()
-        data["lw_dev_eui"] = dev_eui
-        data["lw_app_key"] = app_key
-        for item in data['measurements']:
-            if data['measurements'][item]['interval'] == 1:
-                data['measurements'][item]['interval'] = 0
-        with open("/tmp/my_osm_config.json", 'w') as nfile:
-            json.dump(data, nfile, indent=2)
  
-
     @property
     def interval_mins(self):
         return self.do_cmd("interval_mins")
-
-    def set_pulse_count_special(self):
-        data = load_config_json()
-        for item in data['ios']:
-            if data['ios'][item] == 4:
-                data['ios'][item]['pull'] = 'NONE'
-                data['ios'][item]['direction'] = 'IN'
-                data['ios'][item]['use_special'] = True
-                with open("/tmp/my_osm_config.json", 'w') as nfile:
-                    json.dump(data, nfile, indent=2)
-
-    def set_onewire_special(self):
-        data = load_config_json()
-        for item in data['ios']:
-            if data['ios'][item] == 5:
-                data['ios'][item]['pull'] = 'NONE'
-                data['ios'][item]['direction'] = 'IN'
-                data['ios'][item]['use_special'] = True
-                with open("/tmp/my_osm_config.json", 'w') as nfile:
-                    json.dump(data, nfile, indent=2)
 
     def do_cmd(self, cmd:str, timeout:float=1.5)->str:
         self._ll.write(cmd)
@@ -295,6 +254,7 @@ class dev_t(object):
         while time.monotonic() < end_time:
             new_lines = self._ll.readlines()
             for line in new_lines:
+                #self.terminal.run_command('echo %s \n' % line)
                 if "}============" in line:
                     done = True
             r += new_lines
@@ -305,7 +265,6 @@ class dev_t(object):
         for i in range(0, len(r)):
             line = r[i]
             r_str += str(line)
-        self.terminal.run_command('echo %s \n' % r_str)
         return r_str
 
     def do_cmd_multi(self, cmd:str, timeout:float=1.5)->str:
@@ -316,6 +275,7 @@ class dev_t(object):
         while time.monotonic() < end_time:
             new_lines = self._ll.readlines()
             for line in new_lines:
+                self.terminal.run_command('echo %s \n' % line)
                 if "}============" in line:
                     done = True
             r += new_lines
@@ -331,7 +291,6 @@ class dev_t(object):
                 end_pos = n-1
         if start_pos is not None and end_pos is not None:
             return r[start_pos:end_pos]
-        self.terminal.run_command('echo %s \n' % r) 
         return None
     
     def terminal_gen(self):
@@ -344,7 +303,6 @@ class dev_t(object):
     def save_json_img(self):
         os.system("sudo ./tools/config_scripts/config_save.sh /tmp/my_osm_config.img")
         os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")
-
 
     def lora_debug(self):
         self.do_cmd("debug 4")
@@ -369,14 +327,6 @@ class dev_t(object):
     
     def add_e53_dev(self):
         self.do_cmd("mb_dev_add 5 E53")
-    
-    def write_lora(self):
-        app_key = app_key_generator()
-        self.do_cmd("lora config app-key %s" % app_key)
-    
-    def write_eui(self):
-        dev_eui = dev_eui_generator()
-        self.do_cmd("lora_config dev-eui %s" % dev_eui)
 
     def measurements(self):
         r = self.do_cmd_multi("measurements")
@@ -406,6 +356,12 @@ class dev_t(object):
                 "1 0x60 4 F Imp"]
         for reg in regs:
             self.do_cmd(f"mb_reg_add {reg}")
+
+    def get_value(self, cmd):
+        cmd = self.do_cmd(cmd)
+        if cmd is False:
+            time.sleep(4)
+            cmd = self.do_cmd(cmd)
 
     def get_val(self, cmd:measurement_t):
         cmd.value = self.do_cmd(cmd.cmd)
@@ -455,13 +411,4 @@ class dev_t(object):
     def current_clamp_calibrate(self):
         self._ll.write("cc_cal")
 
-    def restore_config(self):
-        data = load_config_json()
-        for item in data['measurements'][item]['interval']:
-            if data['measurements'][item]['interval'] == 0:
-                data['measurements'][item]['interval'] = 1
-                with open("/tmp/my_osm_config.json", 'w') as nfile:
-                    json.dump(data, nfile, indent=2)
-        #Write out the JSON to the OSM
-        os.system("./tools/build/json_x_img /tmp/my_osm_config.img < /tmp/my_osm_config.json")
-        os.system("./tools/config_scripts/config_load.sh /tmp/my_osm_config.img")
+
