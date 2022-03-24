@@ -153,11 +153,26 @@ void cmd_enable_pulsecount_cb(char * args)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
+    if (args == pos)
+        goto bad_exit;
+    pos = skip_space(pos);
+    uint8_t pupd;
+    if (pos[0] == 'U')
+        pupd = GPIO_PUPD_PULLUP;
+    else if (pos[0] == 'D')
+        pupd = GPIO_PUPD_PULLDOWN;
+    else if (pos[0] == 'N')
+        pupd = GPIO_PUPD_NONE;
+    else
+        goto bad_exit;
 
-    if (io_enable_pulsecount(io))
+    if (io_enable_pulsecount(io, pupd))
         log_out("IO %02u pulsecount enabled", io);
     else
         log_out("IO %02u has no pulsecount", io);
+    return;
+bad_exit:
+    log_out("<io> <U/D/N>");
 }
 
 

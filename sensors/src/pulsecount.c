@@ -41,6 +41,17 @@ typedef struct
 static pulsecount_instance_t _pulsecount_instances[] = PULSECOUNT_INSTANCES;
 
 
+static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
+{
+    if (!inst || !pupd)
+    {
+        pulsecount_debug("Handed NULL pointer.");
+        return false;
+    }
+    return ios_get_pupd(inst->info.io, pupd);
+}
+
+
 void W1_PULSE_ISR(void)
 {
     uint16_t gpio_state = gpio_get(W1_PULSE_PORT, W1_PULSE_1_PIN | W1_PULSE_2_PIN);
@@ -49,7 +60,25 @@ void W1_PULSE_ISR(void)
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         if (!io_is_pulsecount_now(inst->info.io))
             continue;
-        if (!(gpio_state & inst->pin))
+        uint8_t pupd;
+        if (!_pulsecount_get_pupd(inst, &pupd))
+            continue;
+        bool found_pulse = false;
+        switch(pupd)
+        {
+            case GPIO_PUPD_PULLDOWN:
+                found_pulse = gpio_state & inst->pin;
+                break;
+            case GPIO_PUPD_PULLUP:
+                found_pulse = !(gpio_state & inst->pin);
+                break;
+            case GPIO_PUPD_NONE:
+                found_pulse = !(gpio_state & inst->pin);
+                break;
+            default:
+                continue;
+        }
+        if (found_pulse)
         {
             exti_reset_request(inst->exti);
             __sync_add_and_fetch(&inst->count, 1);
@@ -64,12 +93,34 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
         return;
     if (!io_is_pulsecount_now(instance->info.io))
         return;
-    rcc_periph_clock_enable(PORT_TO_RCC(W1_PULSE_PORT));
 
-    gpio_mode_setup(W1_PULSE_PORT, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, instance->pin);
+
+    uint8_t pupd;
+    if (!_pulsecount_get_pupd(instance, &pupd))
+        return;
+
+    uint8_t trig;
+    switch(pupd)
+    {
+        case GPIO_PUPD_PULLDOWN:
+            trig = EXTI_TRIGGER_RISING;
+            break;
+        case GPIO_PUPD_PULLUP:
+            trig = EXTI_TRIGGER_FALLING;
+            break;
+        case GPIO_PUPD_NONE:
+            trig = EXTI_TRIGGER_FALLING;
+            break;
+        default:
+            pulsecount_debug("Cannot find a trigger for '%"PRIu8"' pull configuration.", pupd);
+            return;
+    }
+
+    rcc_periph_clock_enable(PORT_TO_RCC(W1_PULSE_PORT));
+    gpio_mode_setup(W1_PULSE_PORT, GPIO_MODE_INPUT, pupd, instance->pin);
 
     exti_select_source(instance->exti, W1_PULSE_PORT);
-    exti_set_trigger(instance->exti, EXTI_TRIGGER_FALLING);
+    exti_set_trigger(instance->exti, trig);
     exti_enable_request(instance->exti);
 
     instance->count = 0;
