@@ -239,8 +239,11 @@ class dev_t(object):
         child = self._children.get(attr, None)
         if child:
             return reader_child_t(self, child)
+        self._log('No attribute "%s"' % attr)
         raise AttributeError
-    
+
+    def _log(self, msg):
+        self._log_obj.emit(msg)
  
     @property
     def interval_mins(self):
