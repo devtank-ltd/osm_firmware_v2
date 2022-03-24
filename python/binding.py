@@ -414,4 +414,12 @@ class dev_t(object):
     def current_clamp_calibrate(self):
         self._ll.write("cc_cal")
 
+    def write_lora(self):
+        app_key = app_key_generator()
+        self.do_cmd("lora_config app-key %s" % app_key)
+
+    def write_eui(self):
+        dev_eui = dev_eui_generator()
+        self.do_cmd("lora_config dev-eui %s" % dev_eui)
+
 
