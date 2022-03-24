@@ -567,24 +567,23 @@ measurements_sensor_state_t adcs_bat_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
+    adcs_bat_running = false;
+
     if (!adc_eoc(ADC1))
     {
         adc_debug("ADC for Bat not complete!");
-        adcs_bat_running = false;
         return MEASUREMENTS_SENSOR_STATE_BUSY;
     }
 
     if (!value)
     {
-        adcs_bat_running = false;
+        adc_debug("Handed NULL Pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     unsigned raw = adc_read_regular(ADC1);
 
     adc_debug("Bat raw ADC:%u", raw);
-
-    adcs_bat_running = false;
 
     raw *= ADC_BAT_MUL;
 

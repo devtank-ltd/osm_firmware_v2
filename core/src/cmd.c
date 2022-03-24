@@ -497,7 +497,7 @@ static void reset_cb(char *args)
 static void cc_cb(char* args)
 {
     value_t value;
-    if (!adcs_cc_get_blocking("None", &value))
+    if (!adcs_cc_get_blocking(args, &value))
     {
         log_out("Could not get adc value.");
         return;
