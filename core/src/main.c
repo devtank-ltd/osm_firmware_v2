@@ -6,6 +6,8 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/timer.h>
+#include <stddef.h>
+
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
 
@@ -29,6 +31,7 @@
 #include "htu21d.h"
 #include "i2c.h"
 #include "veml7700.h"
+#include "debug_mode.h"
 
 
 void hard_fault_handler(void)
@@ -69,15 +72,20 @@ int main(void)
     htu21d_init();
     veml7700_init();
     sai_init();
-    lw_init();
-    measurements_init();
     pulsecount_init();
     modbus_init();
+    lw_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
     log_async_log = true;
+
+    bool* is_debug_mode = persist_get_debug_mode();
+    if (*is_debug_mode)
+        debug_mode();
+
+    measurements_init();
 
     uint32_t prev_now = 0;
     while(true)

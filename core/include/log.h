@@ -51,5 +51,5 @@ inline static void _empty_log() {}
 #define exttemp_debug(...)      log_debug(DEBUG_EXTTEMP, "EXTTEMP: "  __VA_ARGS__)
 #define light_debug(...)        log_debug(DEBUG_LIGHT, "LIGHT: "  __VA_ARGS__)
 #define sound_debug(...)        log_debug(DEBUG_SOUND, "SOUND: "  __VA_ARGS__)
-#define dm_debug(...)           log_debug(DEBUG_MODE, "SOUND: "  __VA_ARGS__)
+#define dm_debug(...)           log_debug(DEBUG_MODE, "DEBUG: "  __VA_ARGS__)
 #endif

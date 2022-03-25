@@ -28,6 +28,7 @@
 #include "log.h"
 #include "uart_rings.h"
 #include "veml7700.h"
+#include "debug_mode.h"
 
 
 static char   * rx_buffer;
@@ -668,6 +669,13 @@ static void repop_cb(char* args)
 }
 
 
+static void debug_mode_cb(char* args)
+{
+    bool enabled = strtoul(args, NULL, 10);
+    debug_mode_enable(enabled);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -712,6 +720,7 @@ void cmds_process(char * command, unsigned len)
         { "sound",        "Get the sound in lux.",    sound_cb},
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
         { "repop",        "Repopulate measurements.", repop_cb},
+        { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
         { NULL },
     };
 
