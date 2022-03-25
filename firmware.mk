@@ -20,6 +20,7 @@ firmware_SOURCES := \
            core/src/timers.c \
            core/src/common.c \
            core/src/w1.c \
+           core/src/debug_mode.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \
