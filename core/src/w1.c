@@ -39,11 +39,11 @@ static void _w1_set_direction(w1_instance_t* instance, bool out)
 {
     if (out)
     {
-        gpio_mode_setup(instance->port_n_pins.port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, instance->port_n_pins.pins);
+        gpio_mode_setup(instance->port_n_pins.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, instance->port_n_pins.pins);
     }
     else
     {
-        gpio_mode_setup(instance->port_n_pins.port, GPIO_MODE_INPUT, GPIO_PUPD_NONE, instance->port_n_pins.pins);
+        gpio_mode_setup(instance->port_n_pins.port, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, instance->port_n_pins.pins);
     }
 }
 
