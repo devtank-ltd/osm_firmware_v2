@@ -39,6 +39,23 @@ static char* _ios_get_type_possible(uint16_t io_state)
 }
 
 
+bool ios_get_pupd(unsigned io, uint8_t* pupd)
+{
+    if (!pupd)
+    {
+        io_debug("Handed NULL pointer.");
+        return false;
+    }
+    if (io >= IOS_COUNT)
+    {
+        io_debug("IO '%u' out of range.", io);
+        return false;
+    }
+    *pupd = ios_state[io] & IO_PULL_MASK;
+    return true;
+}
+
+
 static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 {
     if (io >= ARRAY_SIZE(ios_pins))
@@ -113,7 +130,7 @@ bool io_enable_w1(unsigned io)
 }
 
 
-bool io_enable_pulsecount(unsigned io)
+bool io_enable_pulsecount(unsigned io, uint8_t pupd)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -124,6 +141,9 @@ bool io_enable_pulsecount(unsigned io)
     ios_state[io] &= ~IO_ONEWIRE;
     ios_state[io] &= ~IO_OUT_ON;
     ios_state[io] &= ~IO_AS_INPUT;
+
+    ios_state[io] &= ~IO_PULL_MASK;
+    ios_state[io] |= (pupd & IO_PULL_MASK);
 
     ios_state[io] |= IO_PULSE;
     pulsecount_enable(true);
@@ -287,7 +307,19 @@ void     io_log(unsigned io)
                     io_get_pull_str(io_state),
                     (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
     }
-    else log_out("IO %02u : USED %s", io, type);
+    else
+    {
+        char pupd_char;
+        if ((io_state & IO_PULL_MASK) == GPIO_PUPD_PULLUP)
+            pupd_char = 'U';
+        else if ((io_state & IO_PULL_MASK) == GPIO_PUPD_PULLDOWN)
+            pupd_char = 'D';
+        else if ((io_state & IO_PULL_MASK) == GPIO_PUPD_NONE)
+            pupd_char = 'N';
+        else
+            pupd_char = ' ';
+        log_out("IO %02u : USED %s %c", io, type, pupd_char);
+    }
 }
 
 
