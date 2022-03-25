@@ -6,7 +6,17 @@ import sys
 import io
 import os
 import re
+import string
+import random
+import json
+from tkinter import *
+from tkterminal import Terminal
 
+def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def dev_eui_generator(size=16, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 def default_print(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -25,6 +35,22 @@ def set_debug_print(_func):
 
 def get_debug_print():
     return _debug_fnc
+
+def parse_temp(r_str: str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return float(r[-1])
+    return False
+
+def parse_humidity(r_str: str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return float(r[-1])
+    return False
 
 
 def parse_one_wire(r_str:str):
@@ -125,7 +151,7 @@ class reader_child_t(object):
     @property
     def value(self):
         self._parent.get_val(self._measurement)
-        return self._measurement .value
+        return self._measurement.value
 
 
 class log_t(object):
@@ -145,31 +171,38 @@ class log_t(object):
 
 class low_level_dev_t(object):
     def __init__(self, serial_obj, log_obj):
-        self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\r\n")
+        self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\n")
         self._log_obj = log_obj
 
     def write(self, msg):
         self._log_obj.send(msg)
-        self._serial.write("%s\n"% msg)
+        self._serial.write("%s\n" % msg)
         self._serial.flush()
-        time.sleep(0.1)
+        time.sleep(0.05)
 
     def read(self):
         try:
-            msg = self._serial.readline().strip("\r\n")
+            msg = self._serial.readline()
         except UnicodeDecodeError:
             return None
         if msg == '':
             return None
-        self._log_obj.recv(msg)
+        if len(msg) == 0:
+            return None
+        self._log_obj.recv(msg.strip("\n\r"))
         return msg
 
     def readlines(self):
-        msg = self.read()
-        msgs = []
-        while msg != None:
-            msgs.append(msg)
-            msg = self.read()
+        new_msg = self.read()
+        msg = ""
+        while new_msg != None:
+            msg += new_msg
+            new_msg = self.read()
+            print(msg)
+        msgs = msg.split("\n\r")
+        if len(msgs) == 1 and msgs[0] == '':
+            return []
+        print(msgs)
         return msgs
 
 
@@ -195,14 +228,16 @@ class dev_t(object):
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
             "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
-            "PF"        : modbus_reg_t("Power Factor"         , 0xc56e, 3, "U32", "PF"   ),
-            "cVP1"      : modbus_reg_t("Phase 1 centivolts"   , 0xc552, 3, "U32", "cVP1" ),
-            "cVP2"      : modbus_reg_t("Phase 2 centivolts"   , 0xc554, 3, "U32", "cVP2" ),
-            "cVP3"      : modbus_reg_t("Phase 3 centivolts"   , 0xc556, 3, "U32", "cVP3" ),
-            "mAP1"      : modbus_reg_t("Phase 1 milliamps"    , 0xc560, 3, "U32", "mAP1" ),
-            "mAP2"      : modbus_reg_t("Phase 2 milliamps"    , 0xc562, 3, "U32", "mAP2" ),
-            "mAP3"      : modbus_reg_t("Phase 3 milliamps"    , 0xc564, 3, "U32", "mAP3" ),
-            "ImEn"      : modbus_reg_t("Import Energy"        , 0xc652, 3, "U32", "ImEn" ),
+            "temp"      : measurement_t("Temperature"        , float , "tmp"       , parse_temp           ),
+            "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
+            "PF"       : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
+            "VP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
+            "VP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
+            "VP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
+            "AP1"      : modbus_reg_t("Phase 1 amps"    , 0x10, 4, "F", "AP1" ),
+            "AP2"      : modbus_reg_t("Phase 2 amps"    , 0x12, 4, "F", "AP2" ),
+            "AP3"      : modbus_reg_t("Phase 3 amps"    , 0x14, 4, "F", "AP3" ),
+            "Imp"      : modbus_reg_t("Import Energy"   , 0x60, 4, "F", "Imp" ),
         }
 
 
@@ -210,21 +245,174 @@ class dev_t(object):
         child = self._children.get(attr, None)
         if child:
             return reader_child_t(self, child)
+        self._log('No attribute "%s"' % attr)
         raise AttributeError
 
+    def _log(self, msg):
+        self._log_obj.emit(msg)
+ 
+    @property
+    def interval_mins(self):
+        return self.do_cmd("interval_mins")
+
+    def get_modbus_val(self, val_name, timeout:float=1.5):
+        self._ll.write(f"mb_get_reg {val_name}")
+        end_time = time.monotonic() + timeout
+        last_line = ""
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            if not new_lines:
+                continue
+            new_lines[0] = last_line + new_lines[0]
+            last_line = new_lines[-1]
+            for line in new_lines:
+                if (f"Modbus: reg:{val_name}") in line:
+                    try:
+                        return int(line.split(':')[-1])
+                    except ValueError:
+                        pass                 
+        return False
+    
+    def get_lora_val(self, cmd, timeout:float=1.5):
+        self._ll.write(cmd)
+        end_time = time.monotonic() + timeout
+        r = []
+        done = False
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            for line in new_lines:
+                if "}============" in line:
+                    done = True
+            r += new_lines
+            if done:
+                break
+        start_pos = None
+        end_pos   = None
+        for n in range(0, len(r)):
+            line = r[n]
+            if line == "============{":
+                start_pos = n+1
+            elif line == "}============":
+                end_pos = n-1
+        print(r[start_pos:end_pos])
+        return r[start_pos:end_pos]
 
     def do_cmd(self, cmd:str, timeout:float=1.5)->str:
         self._ll.write(cmd)
         end_time = time.monotonic() + timeout
         r = []
+        done = False
         while time.monotonic() < end_time:
-            r += self._ll.readlines()
+            new_lines = self._ll.readlines()
+            for line in new_lines:
+                #self.terminal.run_command('echo %s \n' % line)
+                if "}============" in line:
+                    done = True
+            r += new_lines
+            if done:
+                break
             assert not "ERROR" in r, "OSM Error"
         r_str = ""
         for i in range(0, len(r)):
             line = r[i]
             r_str += str(line)
         return r_str
+
+    def do_cmd_multi(self, cmd:str, timeout:float=1.5)->str:
+        self._ll.write(cmd)
+        end_time = time.monotonic() + timeout
+        r = []
+        done = False
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            for line in new_lines:
+                self.terminal.run_command('echo %s \n' % line)
+                if "}============" in line:
+                    done = True
+            r += new_lines
+            if done:
+                break
+        start_pos = None
+        end_pos   = None
+        for n in range(0, len(r)):
+            line = r[n]
+            if line == "============{":
+                start_pos = n+1
+            elif line == "}============":
+                end_pos = n-1
+        if start_pos is not None and end_pos is not None:
+            return r[start_pos:end_pos]
+        return None
+    
+    def terminal_gen(self):
+        self.terminal = Terminal(pady=5, padx=5, background='black', foreground='white')
+        self.terminal.grid(column=1, row=13)
+        self.terminal.linebar = True
+        self.terminal.shell = True
+        self.terminal.basename = "OSMdev"
+
+    def save_json_img(self):
+        os.system("sudo ./tools/config_scripts/config_save.sh /tmp/my_osm_config.img")
+        os.system("./tools/build/json_x_img /tmp/my_osm_config.img > /tmp/my_osm_config.json")
+
+    def lora_debug(self):
+        self.do_cmd("debug 4")
+    
+    def see_meas(self):
+        self.do_cmd("measurements")
+
+    def wipe_clean(self):
+        self.do_cmd("wipe")
+
+    def debug_mb(self):
+        self.do_cmd("debug 0x200")
+    
+    def mb_log(self):
+        self.do_cmd("mb_log")
+
+    def add_rif_dev(self):
+        self.do_cmd("mb_dev_add 1 RIF")
+    
+    def mb_setup(self):
+        self.do_cmd("mb_setup RTU 9600 8N1")
+    
+    def add_e53_dev(self):
+        self.do_cmd("mb_dev_add 5 E53")
+
+    def measurements(self):
+        r = self.do_cmd_multi("measurements")
+        r = r[2:]
+        return [ line.replace("\t\t","\t").split("\t") for line in r]
+
+    def add_e53_reg(self):
+        regs = ["5 0xC56E 3 U32 PF",
+                "5 0xC552 3 U32 cVP1",
+                "5 0xC554 3 U32 cVP2",
+                "5 0xC556 3 U32 cVP3",
+                "5 0xC560 3 U32 mAP1",
+                "5 0xC562 3 U32 mAP2",
+                "5 0xC564 3 U32 mAP3",
+                "5 0xC652 3 U32 ImEn"]
+        for reg in regs:
+            self.do_cmd(f"mb_reg_add {reg}")
+
+    def add_modbus_reg(self):
+        regs = ["1 0x36 4 F PF",
+                "1 0x00 4 F VP1",
+                "1 0x02 4 F VP2",
+                "1 0x04 4 F VP3",
+                "1 0x10 4 F AP1",
+                "1 0x12 4 F AP2",
+                "1 0x14 4 F AP3",
+                "1 0x60 4 F Imp"]
+        for reg in regs:
+            self.do_cmd(f"mb_reg_add {reg}")
+
+    def get_value(self, cmd):
+        cmd = self.do_cmd(cmd)
+        if cmd is False:
+            time.sleep(4)
+            cmd = self.do_cmd(cmd)
 
     def get_val(self, cmd:measurement_t):
         cmd.value = self.do_cmd(cmd.cmd)
@@ -250,11 +438,11 @@ class dev_t(object):
         r = self.do_cmd(f"mb_dev_add {slave_id} {device}", timeout=3)
         return "Added modbus device" in r
 
-    def modbus_reg_add(self, reg:modbus_reg_t)->bool:
+    def modbus_reg_add(self, slave_id:int, reg:modbus_reg_t)->bool:
         if not isinstance(reg, modbus_reg_t):
             self._log("Registers should be an object of register")
             return False
-        self.do_cmd(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
+        r = self.do_cmd(f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
         return "Added modbus reg" in r
 
     def setup_modbus_dev(self, slave_id:int, device:str, regs:list)->bool:
@@ -272,5 +460,14 @@ class dev_t(object):
         self._ll.write(f"mb_dev_del {device}")
 
     def current_clamp_calibrate(self):
-        self._ll.write("adcs_cal")
+        self._ll.write("cc_cal")
+
+    def write_lora(self):
+        app_key = app_key_generator()
+        self.do_cmd("lora_config app-key %s" % app_key)
+
+    def write_eui(self):
+        dev_eui = dev_eui_generator()
+        self.do_cmd("lora_config dev-eui %s" % dev_eui)
+
 
