@@ -182,21 +182,27 @@ class low_level_dev_t(object):
 
     def read(self):
         try:
-            msg = self._serial.readline().strip("\r\n")
+            msg = self._serial.readline()
         except UnicodeDecodeError:
             return None
         if msg == '':
             return None
-        self._log_obj.recv(msg)
+        if len(msg) == 0:
+            return None
+        self._log_obj.recv(msg.strip("\n\r"))
         return msg
 
     def readlines(self):
-        msg = self.read()
-        msgs = []
-        while msg != None:
-            msgs.append(msg)
-            msg = self.read()
+        new_msg = self.read()
+        msg = ""
+        while new_msg != None:
+            msg += new_msg
+            new_msg = self.read()
             print(msg)
+        msgs = msg.split("\n\r")
+        if len(msgs) == 1 and msgs[0] == '':
+            return []
+        print(msgs)
         return msgs
 
 
@@ -248,6 +254,48 @@ class dev_t(object):
     @property
     def interval_mins(self):
         return self.do_cmd("interval_mins")
+
+    def get_modbus_val(self, val_name, timeout:float=1.5):
+        self._ll.write(f"mb_get_reg {val_name}")
+        end_time = time.monotonic() + timeout
+        last_line = ""
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            if not new_lines:
+                continue
+            new_lines[0] = last_line + new_lines[0]
+            last_line = new_lines[-1]
+            for line in new_lines:
+                if (f"Modbus: reg:{val_name}") in line:
+                    try:
+                        return int(line.split(':')[-1])
+                    except ValueError:
+                        pass                 
+        return False
+    
+    def get_lora_val(self, cmd, timeout:float=1.5):
+        self._ll.write(cmd)
+        end_time = time.monotonic() + timeout
+        r = []
+        done = False
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            for line in new_lines:
+                if "}============" in line:
+                    done = True
+            r += new_lines
+            if done:
+                break
+        start_pos = None
+        end_pos   = None
+        for n in range(0, len(r)):
+            line = r[n]
+            if line == "============{":
+                start_pos = n+1
+            elif line == "}============":
+                end_pos = n-1
+        print(r[start_pos:end_pos])
+        return r[start_pos:end_pos]
 
     def do_cmd(self, cmd:str, timeout:float=1.5)->str:
         self._ll.write(cmd)
