@@ -236,12 +236,6 @@ float* persist_get_sai_cal_coeffs(void)
 }
 
 
-bool* persist_get_debug_mode(void)
-{
-    return &persist_data.debug_mode_enabled;
-}
-
-
 void    persistent_wipe(void)
 {
     flash_unlock();

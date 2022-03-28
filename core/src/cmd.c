@@ -671,8 +671,7 @@ static void repop_cb(char* args)
 
 static void debug_mode_cb(char* args)
 {
-    bool enabled = strtoul(args, NULL, 10);
-    debug_mode_enable(enabled);
+    debug_mode();
 }
 
 

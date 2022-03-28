@@ -31,7 +31,6 @@
 #include "htu21d.h"
 #include "i2c.h"
 #include "veml7700.h"
-#include "debug_mode.h"
 
 
 void hard_fault_handler(void)
@@ -80,10 +79,6 @@ int main(void)
     gpio_clear(LED_PORT, LED_PIN);
 
     log_async_log = true;
-
-    //bool* is_debug_mode = persist_get_debug_mode();
-    //if (*is_debug_mode)
-    debug_mode();
 
     measurements_init();
 

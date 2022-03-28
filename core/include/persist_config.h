@@ -35,6 +35,4 @@ extern uint16_t* persist_get_ios_state(void);
 
 extern modbus_bus_t * persist_get_modbus_bus(void);
 
-extern bool* persist_get_debug_mode(void);
-
 extern void persistent_wipe();

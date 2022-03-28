@@ -21,9 +21,6 @@
 #define DEBUG_MODE_STR_LEN   10
 
 
-//static bool* _debug_mode_enabled;
-
-
 static void _debug_mode_init_iteration(void)
 {
     htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_TEMP);
@@ -69,12 +66,6 @@ static void _debug_mode_collect_iteration(void)
 }
 
 
-//static void _debug_mode_init(void)
-//{
-    //_debug_mode_enabled = persist_get_debug_mode();
-//}
-
-
 static void _debug_mode_fast_iteration(void)
 {
     htu21d_measurements_iteration(MEASUREMENTS_HTU21D_TEMP);
@@ -110,12 +101,9 @@ static void _debug_mode_iteration(void)
 
 void debug_mode(void)
 {
-    //_debug_mode_init();
-
     log_out(LOG_START_SPACER"DEBUG_MODE"LOG_END_SPACER);
 
     uint32_t prev_now = 0;
-    //uint32_t long_wait = 0;
     while(true)
     {
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
@@ -127,17 +115,5 @@ void debug_mode(void)
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
-        //while
     }
-}
-
-
-void debug_mode_enable(bool enabled)
-{
-    //if (*_debug_mode_enabled != enabled)
-    //{
-        //*_debug_mode_enabled = enabled;
-        //persist_commit();
-        //scb_reset_system();
-    //}
 }
