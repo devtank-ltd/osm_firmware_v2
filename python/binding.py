@@ -147,6 +147,7 @@ class low_level_dev_t(object):
     def __init__(self, serial_obj, log_obj):
         self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\r\n")
         self._log_obj = log_obj
+        self.fileno = self.serial_obj.fileno
 
     def write(self, msg):
         self._log_obj.send(msg)
@@ -190,7 +191,7 @@ class dev_base_t(object):
         self._log_obj = log_t("PC", "OSM")
         self._log = self._log_obj.emit
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
-    
+        self.fileno = self._ll.file_no
 
 
 class dev_t(dev_base_t):
@@ -281,7 +282,7 @@ class dev_t(dev_base_t):
         self._ll.write("adcs_cal")
 
 
-class debug_dev_t(dev_base_t):
+class dev_debug_t(dev_base_t):
     def __init__(self, port="/dev/ttyUSB0"):
         super().__init__(port)
 
@@ -307,6 +308,3 @@ class debug_dev_t(dev_base_t):
             return (name, float(value))
         # Cannot find regular expression matching template
         return None
-        
-
-    
