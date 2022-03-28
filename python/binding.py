@@ -147,7 +147,7 @@ class low_level_dev_t(object):
     def __init__(self, serial_obj, log_obj):
         self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\r\n")
         self._log_obj = log_obj
-        self.fileno = self.serial_obj.fileno
+        self.fileno = serial_obj.fileno
 
     def write(self, msg):
         self._log_obj.send(msg)
@@ -157,20 +157,25 @@ class low_level_dev_t(object):
 
     def read(self):
         try:
-            msg = self._serial.readline().strip("\r\n")
+            msg = self._serial.readline()
         except UnicodeDecodeError:
             return None
         if msg == '':
             return None
-        self._log_obj.recv(msg)
+        if len(msg) == 0:
+            return None
+        self._log_obj.recv(msg.strip("\n\r"))
         return msg
 
     def readlines(self):
-        msg = self.read()
-        msgs = []
-        while msg != None:
-            msgs.append(msg)
-            msg = self.read()
+        new_msg = self.read()
+        msg = ""
+        while new_msg != None:
+            msg += new_msg
+            new_msg = self.read()
+        msgs = msg.split("\n\r")
+        if len(msgs) == 1 and msgs[0] == '':
+            return []
         return msgs
 
 
@@ -191,7 +196,7 @@ class dev_base_t(object):
         self._log_obj = log_t("PC", "OSM")
         self._log = self._log_obj.emit
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
-        self.fileno = self._ll.file_no
+        self.fileno = self._ll.fileno
 
 
 class dev_t(dev_base_t):
@@ -285,20 +290,21 @@ class dev_t(dev_base_t):
 class dev_debug_t(dev_base_t):
     def __init__(self, port="/dev/ttyUSB0"):
         super().__init__(port)
+        self._leftover = ""
 
     def parse_msg(self, msg):
         """
         IN:  'DEBUG:0000036805:DEBUG:TEMP:2113'
         OUT: ('TEMP', 2113)
         """
-        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:FAILED", msg) 
-        if r and r.group(1):
-            _,ts,_,name,type_,value = r.group(1).split(":")
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:FAILED", msg)
+        if r and r.group(0):
+            _,ts,_,name,_ = r.group(0).split(":")
             self._log(f"{name} failed.")
-            return False
+            return (name, False)
         r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F]+:[1-9]+", msg)
-        if r and r.group(1):
-            _,ts,_,name,type_,value = r.group(1).split(":")
+        if r and r.group(0):
+            _,ts,_,name,type_,value = r.group(0).split(":")
             try:
                 value = float(value)
             except ValueError:
@@ -307,4 +313,27 @@ class dev_debug_t(dev_base_t):
             self._log(f"{name} = {value}")
             return (name, float(value))
         # Cannot find regular expression matching template
+        return None
+
+    def parse_msgs(self, msgs):
+        resp = []
+        for msg in msgs:
+            resp.append(self.parse_msg(msg))
+        return resp
+
+    def read_msgs(self, timeout=1.5):
+        end_time = time.monotonic() + timeout
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            if len(new_lines) == 0:
+                continue
+            new_lines[0] = (self._leftover + new_lines[0]).strip("\n\r")
+            self._leftover = new_lines[-1]
+            p_arr = []
+            for line in new_lines:
+                p = self.parse_msg(line)
+                if p:
+                    p_arr.append(p)
+            if p_arr:
+                return p_arr
         return None

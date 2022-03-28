@@ -1,10 +1,12 @@
 import select
 import sys
 import os
+import datetime
 
+from influxdb import InfluxDBClient
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../python"))
-from binding import debug_dev_t, dev_base_t, log_t
+from binding import dev_debug_t, dev_base_t, log_t
 
 
 class low_level_fake_t(object):
@@ -38,6 +40,10 @@ class dev_fake_t(dev_base_t):
         return msgs
 
 
+def ts():
+    return datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
 def main(argv, argc):
     debug_mode = False
     if argc and argv[0] == "debug":
@@ -50,16 +56,20 @@ def main(argv, argc):
         print("Not connected")
         d = dev_fake_t(port)
 
-    
+    database_name = "sf_debug"
+    db_client = InfluxDBClient('localhost', port=8086)
+    db_client.switch_database(database_name)
 
     while True:
         r = select.select([d],[],[], 1)
         if len(r[0]):
-            msg = d.read_msg()
-            s = d.parse_msg(msg)
-            if s:
-                name, value = s
-                print(f"{name} = {value}")
+            msgs = d.read_msgs()
+            if msgs:
+                for t in msgs:
+                    name, value = t
+                    print(f"{name} = {value}")
+                    json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": float(value)}}]
+                    db_client.write_points(json)
 
 
 if __name__ == "__main__":

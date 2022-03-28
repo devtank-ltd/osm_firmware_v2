@@ -81,9 +81,9 @@ int main(void)
 
     log_async_log = true;
 
-    bool* is_debug_mode = persist_get_debug_mode();
-    if (*is_debug_mode)
-        debug_mode();
+    //bool* is_debug_mode = persist_get_debug_mode();
+    //if (*is_debug_mode)
+    debug_mode();
 
     measurements_init();
 

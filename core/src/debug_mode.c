@@ -21,7 +21,7 @@
 #define DEBUG_MODE_STR_LEN   10
 
 
-static bool* _debug_mode_enabled;
+//static bool* _debug_mode_enabled;
 
 
 static void _debug_mode_init_iteration(void)
@@ -47,10 +47,10 @@ static void _debug_mode_collect_sensor(char* name, measurements_sensor_state_t (
         goto bad_exit;
     char char_arr[DEBUG_MODE_STR_LEN] = "";
     if (value_to_str(&value, char_arr, DEBUG_MODE_STR_LEN))
-        dm_debug("%s\t: %s", name, char_arr);
+        dm_debug("%s:%s", name, char_arr);
         return;
 bad_exit:
-    dm_debug("%s\t: FAILED", name);
+    dm_debug("%s:FAILED", name);
 }
 
 
@@ -69,10 +69,10 @@ static void _debug_mode_collect_iteration(void)
 }
 
 
-static void _debug_mode_init(void)
-{
-    _debug_mode_enabled = persist_get_debug_mode();
-}
+//static void _debug_mode_init(void)
+//{
+    //_debug_mode_enabled = persist_get_debug_mode();
+//}
 
 
 static void _debug_mode_fast_iteration(void)
@@ -94,6 +94,15 @@ static void _debug_mode_iteration(void)
     }
     else
     {
+        bool now_connected = lw_get_connected();
+        if (!now_connected)
+        {
+            dm_debug("LORA:FAILED");
+        }
+        else
+        {
+            dm_debug("LORA:CONNECTED");
+        }
         _debug_mode_collect_iteration();
     }
 }
@@ -101,38 +110,23 @@ static void _debug_mode_iteration(void)
 
 void debug_mode(void)
 {
-    _debug_mode_init();
+    //_debug_mode_init();
 
     log_out(LOG_START_SPACER"DEBUG_MODE"LOG_END_SPACER);
 
-    bool prev_connected = false;
     uint32_t prev_now = 0;
     //uint32_t long_wait = 0;
     while(true)
     {
-        bool now_connected = lw_get_connected();
-        if (!now_connected && prev_connected)
-        {
-            dm_debug("LORA\t: FAILED");
-            prev_connected = false;
-            continue;
-        }
-        else if (!now_connected)
-            continue;
-        else if (!prev_connected)
-        {
-            dm_debug("LORA\t: CONNECTED");
-            prev_connected = true;
-        }
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
             uart_rings_in_drain();
             uart_rings_out_drain();
             _debug_mode_fast_iteration();
         }
+        prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
-        prev_now = get_since_boot_ms();
         //while
     }
 }
@@ -140,10 +134,10 @@ void debug_mode(void)
 
 void debug_mode_enable(bool enabled)
 {
-    if (*_debug_mode_enabled != enabled)
-    {
-        *_debug_mode_enabled = enabled;
-        persist_commit();
-        scb_reset_system();
-    }
+    //if (*_debug_mode_enabled != enabled)
+    //{
+        //*_debug_mode_enabled = enabled;
+        //persist_commit();
+        //scb_reset_system();
+    //}
 }
