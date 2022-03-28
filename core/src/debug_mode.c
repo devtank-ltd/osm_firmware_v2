@@ -8,6 +8,7 @@
 #include "log.h"
 #include "common.h"
 #include "uart_rings.h"
+#include "lorawan.h"
 
 #include "ds18b20.h"
 #include "hpm.h"
@@ -104,9 +105,25 @@ void debug_mode(void)
 
     log_out(LOG_START_SPACER"DEBUG_MODE"LOG_END_SPACER);
 
+    bool prev_connected = false;
     uint32_t prev_now = 0;
+    //uint32_t long_wait = 0;
     while(true)
     {
+        bool now_connected = lw_get_connected();
+        if (!now_connected && prev_connected)
+        {
+            dm_debug("LORA\t: FAILED");
+            prev_connected = false;
+            continue;
+        }
+        else if (!now_connected)
+            continue;
+        else if (!prev_connected)
+        {
+            dm_debug("LORA\t: CONNECTED");
+            prev_connected = true;
+        }
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
             uart_rings_in_drain();
@@ -116,6 +133,7 @@ void debug_mode(void)
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
         prev_now = get_since_boot_ms();
+        //while
     }
 }
 
@@ -129,5 +147,3 @@ void debug_mode_enable(bool enabled)
         scb_reset_system();
     }
 }
-
-

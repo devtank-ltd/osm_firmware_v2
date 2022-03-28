@@ -173,7 +173,7 @@ class low_level_dev_t(object):
         return msgs
 
 
-class dev_t(object):
+class dev_base_t(object):
     def __init__(self, port="/dev/ttyUSB0"):
         self._serial_obj = serial.Serial(port=port,
                                          baudrate=115200,
@@ -188,8 +188,14 @@ class dev_t(object):
                                          inter_byte_timeout=None,
                                          exclusive=None)
         self._log_obj = log_t("PC", "OSM")
+        self._log = self._log_obj.emit
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
+    
 
+
+class dev_t(dev_base_t):
+    def __init__(self, port="/dev/ttyUSB0"):
+        super().__init__(port)
         self._children = {
             "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
@@ -274,3 +280,33 @@ class dev_t(object):
     def current_clamp_calibrate(self):
         self._ll.write("adcs_cal")
 
+
+class debug_dev_t(dev_base_t):
+    def __init__(self, port="/dev/ttyUSB0"):
+        super().__init__(port)
+
+    def parse_msg(self, msg):
+        """
+        IN:  'DEBUG:0000036805:DEBUG:TEMP:2113'
+        OUT: ('TEMP', 2113)
+        """
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:FAILED", msg) 
+        if r and r.group(1):
+            _,ts,_,name,type_,value = r.group(1).split(":")
+            self._log(f"{name} failed.")
+            return False
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F]+:[1-9]+", msg)
+        if r and r.group(1):
+            _,ts,_,name,type_,value = r.group(1).split(":")
+            try:
+                value = float(value)
+            except ValueError:
+                self._log(f"{value} is not a float.")
+                return None
+            self._log(f"{name} = {value}")
+            return (name, float(value))
+        # Cannot find regular expression matching template
+        return None
+        
+
+    
