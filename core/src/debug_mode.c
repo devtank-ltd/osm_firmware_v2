@@ -20,6 +20,9 @@
 
 #define DEBUG_MODE_STR_LEN   10
 
+static bool _debug_mode_enabled = false;
+
+
 
 static void _debug_mode_init_iteration(void)
 {
@@ -101,10 +104,21 @@ static void _debug_mode_iteration(void)
 
 void debug_mode(void)
 {
+    if (_debug_mode_enabled)
+    {
+        /* This has been called by uart_rings_in_drain below.
+         * So rather than enter the loop again, just use this as toggle.
+         */
+        _debug_mode_enabled = false;
+        return;
+    }
+
+    _debug_mode_enabled = true;
+
     log_out(LOG_START_SPACER"DEBUG_MODE"LOG_END_SPACER);
 
     uint32_t prev_now = 0;
-    while(true)
+    while(_debug_mode_enabled)
     {
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
