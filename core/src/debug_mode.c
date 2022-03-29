@@ -24,6 +24,7 @@
 
 static bool _debug_mode_enabled = false;
 
+static unsigned _debug_mode_modbus_waiting = 0;
 
 
 static void _debug_mode_init_iteration(void)
@@ -66,7 +67,10 @@ static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
 {
     (void)userdata;
     value_t value;
-    _debug_mode_send_value(modbus_measurements_get2(reg, &value), reg->name, &value);
+    measurements_sensor_state_t r = modbus_measurements_get2(reg, &value);
+    _debug_mode_send_value(r, reg->name, &value);
+    if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        _debug_mode_modbus_waiting--;
     return true;
 }
 
@@ -90,7 +94,8 @@ static void _debug_mode_collect_iteration(void)
 static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
 {
     (void)userdata;
-    modbus_start_read(reg);
+    if (modbus_start_read(reg))
+        _debug_mode_modbus_waiting++;
     return true;
 }
 
@@ -101,7 +106,8 @@ static void _debug_mode_fast_iteration(void)
     htu21d_measurements_iteration(MEASUREMENTS_HTU21D_HUMI);
     sai_iteration_callback(MEASUREMENTS_SOUND_NAME);
     veml7700_iteration(MEASUREMENTS_LIGHT_NAME);
-    modbus_for_all_regs(_debug_modbus_init, NULL);
+    if (!_debug_mode_modbus_waiting)
+        modbus_for_all_regs(_debug_modbus_init, NULL);
 }
 
 
