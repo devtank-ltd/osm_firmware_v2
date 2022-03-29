@@ -4,6 +4,7 @@
 void can_impl_init(void)
 {
     can_comm_init();
+    can_comm_enable(true);
 }
 
 

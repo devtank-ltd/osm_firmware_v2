@@ -29,6 +29,7 @@
 #include "uart_rings.h"
 #include "veml7700.h"
 #include "debug_mode.h"
+#include "can_impl.h"
 
 
 static char   * rx_buffer;
@@ -675,6 +676,12 @@ static void debug_mode_cb(char* args)
 }
 
 
+static void can_impl_cb(char* args)
+{
+    can_impl_send_example();
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -720,6 +727,7 @@ void cmds_process(char * command, unsigned len)
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
         { "repop",        "Repopulate measurements.", repop_cb},
         { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
+        { "can_impl",     "Send example CAN message", can_impl_cb},
         { NULL },
     };
 
