@@ -27,3 +27,25 @@ void can_impl_send_example(void)
     uint8_t some_data[] = { 1, 2, 3, 4, 5, 6 };
     can_impl_send(12345, some_data, ARRAY_SIZE(some_data));
 }
+
+
+static void _can_impl_parse_pkt(can_comm_packet_t* pkt) { }
+
+
+void can_drain_array(void)
+{
+    can_comm_packet_t pkt;
+    can_comm_data_t data;
+    pkt.data = &data;
+    unsigned n;
+    unsigned header_size = sizeof(can_comm_header_t);
+    n = ring_buf_read(&can_comm_ring_data, (char*)&pkt.header, header_size);
+    if (n != header_size)
+        // Not finished writing to buffer?
+        return;
+    n = ring_buf_read(&can_comm_ring_data, (char*)*pkt.data, pkt.header.length);
+    if (n != pkt.header.length)
+        // Not finished writing to buffer?
+        return;
+    _can_impl_parse_pkt(&pkt);
+}

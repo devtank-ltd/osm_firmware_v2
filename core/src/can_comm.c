@@ -152,8 +152,8 @@ void tim2_isr(void)
     timer_clear_flag(TIM2, TIM_SR_CC1IF);
 
     can_comm_packet_t pkt;
-    static can_comm_data_t _can_comm_pkt_data;
-    pkt.data = &_can_comm_pkt_data;
+    can_comm_data_t data;
+    pkt.data = &data;
 
     can_receive(CAN1, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, *pkt.data, NULL);
 
