@@ -25,8 +25,6 @@
 
 #define MODBUS_SLOTS  (MODBUS_MAX_DEV * MODBUS_DEV_REGS)
 
-typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
-
 
 /*         <               ADU                         >
             addr(1), func(1), reg(2), count(2) , crc(2)

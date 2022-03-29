@@ -1,4 +1,4 @@
-
+#include <stdlib.h>
 #include <libopencm3/cm3/scb.h>
 
 #include "measurements.h"
@@ -16,6 +16,8 @@
 #include "pulsecount.h"
 #include "sai.h"
 #include "veml7700.h"
+
+#include "modbus_measurements.h"
 
 
 #define DEBUG_MODE_STR_LEN   10
@@ -39,18 +41,33 @@ static void _debug_mode_init_iteration(void)
 }
 
 
-static void _debug_mode_collect_sensor(char* name, measurements_sensor_state_t (* function)(char* name, value_t* value))
+static void _debug_mode_send_value(measurements_sensor_state_t state, char* name, value_t * value)
 {
-    value_t value;
-    measurements_sensor_state_t r = function(name, &value);
-    if (r != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (state != MEASUREMENTS_SENSOR_STATE_SUCCESS)
         goto bad_exit;
+
     char char_arr[DEBUG_MODE_STR_LEN] = "";
-    if (value_to_str(&value, char_arr, DEBUG_MODE_STR_LEN))
+    if (value_to_str(value, char_arr, DEBUG_MODE_STR_LEN))
         dm_debug("%s:%s", name, char_arr);
         return;
 bad_exit:
     dm_debug("%s:FAILED", name);
+}
+
+
+static void _debug_mode_collect_sensor(char* name, measurements_sensor_state_t (* function)(char* name, value_t* value))
+{
+    value_t value;
+    _debug_mode_send_value(function(name, &value), name, &value);
+}
+
+
+static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
+{
+    (void)userdata;
+    value_t value;
+    _debug_mode_send_value(modbus_measurements_get2(reg, &value), reg->name, &value);
+    return true;
 }
 
 
@@ -66,6 +83,15 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_LIGHT_NAME, veml7700_light_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, pulsecount_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, pulsecount_get);
+    modbus_for_all_regs(_debug_modbus_get, NULL);
+}
+
+
+static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
+{
+    (void)userdata;
+    modbus_start_read(reg);
+    return true;
 }
 
 
@@ -75,6 +101,7 @@ static void _debug_mode_fast_iteration(void)
     htu21d_measurements_iteration(MEASUREMENTS_HTU21D_HUMI);
     sai_iteration_callback(MEASUREMENTS_SOUND_NAME);
     veml7700_iteration(MEASUREMENTS_LIGHT_NAME);
+    modbus_for_all_regs(_debug_modbus_init, NULL);
 }
 
 
