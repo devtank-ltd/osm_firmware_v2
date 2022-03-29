@@ -27,6 +27,15 @@ static bool _debug_mode_enabled = false;
 static unsigned _debug_mode_modbus_waiting = 0;
 
 
+static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
+{
+    (void)userdata;
+    if (modbus_start_read(reg))
+        _debug_mode_modbus_waiting++;
+    return true;
+}
+
+
 static void _debug_mode_init_iteration(void)
 {
     htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_TEMP);
@@ -39,6 +48,8 @@ static void _debug_mode_init_iteration(void)
     veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_2);
+    if (!_debug_mode_modbus_waiting)
+        modbus_for_all_regs(_debug_modbus_init, NULL);
 }
 
 
@@ -91,23 +102,12 @@ static void _debug_mode_collect_iteration(void)
 }
 
 
-static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
-{
-    (void)userdata;
-    if (modbus_start_read(reg))
-        _debug_mode_modbus_waiting++;
-    return true;
-}
-
-
 static void _debug_mode_fast_iteration(void)
 {
     htu21d_measurements_iteration(MEASUREMENTS_HTU21D_TEMP);
     htu21d_measurements_iteration(MEASUREMENTS_HTU21D_HUMI);
     sai_iteration_callback(MEASUREMENTS_SOUND_NAME);
     veml7700_iteration(MEASUREMENTS_LIGHT_NAME);
-    if (!_debug_mode_modbus_waiting)
-        modbus_for_all_regs(_debug_modbus_init, NULL);
 }
 
 
