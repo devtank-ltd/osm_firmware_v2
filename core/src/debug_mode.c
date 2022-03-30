@@ -1,4 +1,4 @@
-
+#include <stdlib.h>
 #include <libopencm3/cm3/scb.h>
 
 #include "measurements.h"
@@ -18,11 +18,25 @@
 #include "sai.h"
 #include "veml7700.h"
 
+#include "modbus_measurements.h"
+
 
 #define DEBUG_MODE_STR_LEN   10
 
 static bool _debug_mode_enabled = false;
 
+static unsigned _debug_mode_modbus_waiting = 0;
+
+static bool _debug_mode_init_get_toggle = true;
+
+
+static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
+{
+    (void)userdata;
+    if (modbus_start_read(reg))
+        _debug_mode_modbus_waiting++;
+    return true;
+}
 
 
 static void _debug_mode_init_iteration(void)
@@ -37,21 +51,41 @@ static void _debug_mode_init_iteration(void)
     veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_2);
+    if (!_debug_mode_modbus_waiting)
+        modbus_for_all_regs(_debug_modbus_init, NULL);
+}
+
+
+static void _debug_mode_send_value(measurements_sensor_state_t state, char* name, value_t * value)
+{
+    if (state != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        goto bad_exit;
+
+    char char_arr[DEBUG_MODE_STR_LEN] = "";
+    if (value_to_str(value, char_arr, DEBUG_MODE_STR_LEN))
+        dm_debug("%s:%s", name, char_arr);
+        return;
+bad_exit:
+    dm_debug("%s:FAILED", name);
 }
 
 
 static void _debug_mode_collect_sensor(char* name, measurements_sensor_state_t (* function)(char* name, value_t* value))
 {
     value_t value;
-    measurements_sensor_state_t r = function(name, &value);
-    if (r != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        goto bad_exit;
-    char char_arr[DEBUG_MODE_STR_LEN] = "";
-    if (value_to_str(&value, char_arr, DEBUG_MODE_STR_LEN))
-        dm_debug("%s:%s", name, char_arr);
-        return;
-bad_exit:
-    dm_debug("%s:FAILED", name);
+    _debug_mode_send_value(function(name, &value), name, &value);
+}
+
+
+static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
+{
+    (void)userdata;
+    value_t value;
+    measurements_sensor_state_t r = modbus_measurements_get2(reg, &value);
+    _debug_mode_send_value(r, reg->name, &value);
+    if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        _debug_mode_modbus_waiting--;
+    return true;
 }
 
 
@@ -68,6 +102,7 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, pulsecount_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, pulsecount_get);
     can_impl_send_example();
+    modbus_for_all_regs(_debug_modbus_get, NULL);
 }
 
 
@@ -82,9 +117,7 @@ static void _debug_mode_fast_iteration(void)
 
 static void _debug_mode_iteration(void)
 {
-    static bool _debug_mode_toggle = false;
-    _debug_mode_toggle = !_debug_mode_toggle;
-    if (_debug_mode_toggle)
+    if (_debug_mode_init_get_toggle)
     {
         _debug_mode_init_iteration();
     }
@@ -101,6 +134,7 @@ static void _debug_mode_iteration(void)
         }
         _debug_mode_collect_iteration();
     }
+    _debug_mode_init_get_toggle = !_debug_mode_init_get_toggle;
 }
 
 
@@ -128,7 +162,7 @@ void debug_mode(void)
     _debug_mode_init();
 
     uint32_t prev_now = 0;
-    while(_debug_mode_enabled)
+    while(_debug_mode_enabled || !_debug_mode_init_get_toggle) /* Do extra loop if waiting to collect sensors so not to confuse when rejoining measurements.*/
     {
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {

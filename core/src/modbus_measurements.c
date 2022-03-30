@@ -23,7 +23,11 @@ measurements_sensor_state_t modbus_measurements_collection_time(char* name, uint
 
 measurements_sensor_state_t modbus_measurements_init(char* name)
 {
-    modbus_reg_t * reg = modbus_get_reg(name);
+    return modbus_measurements_init2(modbus_get_reg(name));
+}
+
+measurements_sensor_state_t modbus_measurements_init2(modbus_reg_t * reg)
+{
     if (!reg)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     return (modbus_start_read(reg) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
@@ -32,7 +36,12 @@ measurements_sensor_state_t modbus_measurements_init(char* name)
 
 measurements_sensor_state_t modbus_measurements_get(char* name, value_t* value)
 {
-    modbus_reg_t * reg = modbus_get_reg(name);
+    return modbus_measurements_get2(modbus_get_reg(name), value);
+}
+
+
+measurements_sensor_state_t modbus_measurements_get2(modbus_reg_t * reg, value_t* value)
+{
     if (!reg || !value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     switch(modbus_reg_get_type(reg))
