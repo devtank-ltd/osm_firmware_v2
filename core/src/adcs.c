@@ -430,6 +430,18 @@ bool adcs_cc_set_midpoint(uint16_t midpoint, char* name)
 }
 
 
+bool adcs_cc_get_midpoint(uint16_t* midpoint, char* name)
+{
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
+        return false;
+    if (index > ADC_CC_COUNT)
+        return false;
+    *midpoint = cc_midpoints[index];
+    return true;
+}
+
+
 measurements_sensor_state_t adcs_cc_begin(char* name)
 {
     if (adcs_bat_running)

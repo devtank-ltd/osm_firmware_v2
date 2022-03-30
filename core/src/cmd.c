@@ -537,8 +537,15 @@ static void cc_mp_cb(char* args)
     // 2046 CC1
     char* p;
     uint16_t new_mp = strtoul(args, &p, 10);
+    if (p == args)
+    {
+        adcs_cc_get_midpoint(&new_mp, p);
+        log_out("MP: %"PRIu16, new_mp);
+        return;
+    }
     p = skip_space(p);
-    adcs_cc_set_midpoint(new_mp, p);
+    if (!adcs_cc_set_midpoint(new_mp, p))
+        log_out("Failed to set the midpoint.");
 }
 
 
