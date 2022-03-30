@@ -10,6 +10,7 @@
 #include "uart_rings.h"
 #include "lorawan.h"
 
+#include "can_impl.h"
 #include "ds18b20.h"
 #include "hpm.h"
 #include "htu21d.h"
@@ -66,6 +67,7 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_LIGHT_NAME, veml7700_light_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, pulsecount_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, pulsecount_get);
+    can_impl_send_example();
 }
 
 
@@ -99,6 +101,12 @@ static void _debug_mode_iteration(void)
         }
         _debug_mode_collect_iteration();
     }
+}
+
+
+static void _debug_mode_init(void)
+{
+    can_impl_init();
 }
 
 
