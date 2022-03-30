@@ -1,4 +1,6 @@
 import select
+import socket
+import struct
 import sys
 import os
 import datetime
@@ -44,11 +46,21 @@ def ts():
     return datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
+def db_add_measurement(db, name, value):
+    print(f"{name} = {value}")
+    json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": value}}]
+    db.write_points(json)
+
+
+CAN_DATA_REF = []
+
+
 def main(argv, argc):
     debug_mode = False
     if argc and argv[0] == "debug":
         debug_mode = True
 
+    # Serial
     port = "/dev/ttyUSB0"
     if os.path.exists(port):
         d = dev_debug_t(port)
@@ -56,20 +68,38 @@ def main(argv, argc):
         print("Not connected")
         d = dev_fake_t(port)
 
+    # CAN
+    can_network = "can0"
+    c = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
+    c.bind((can_network,))
+
+    # Database
     database_name = "sf_debug"
     db_client = InfluxDBClient('localhost', port=8086)
     db_client.switch_database(database_name)
 
     while True:
-        r = select.select([d],[],[], 1)
-        if len(r[0]):
+        r = select.select([d, c],[],[], 1)
+        if d in r[0]:
             msgs = d.read_msgs()
             if msgs:
                 for t in msgs:
                     name, value = t
-                    print(f"{name} = {value}")
-                    json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": float(value)}}]
-                    db_client.write_points(json)
+                    db_add_measurement(db_client, name, value)
+        elif c in r[0]:
+            can_pkt = c.recv(16)
+            base_fmt = "<IB3x"
+            can_id, length = struct.unpack(base_fmt, can_pkt)
+            fmt = base_fmt + "B" * length
+            can_id, length, *data = struct.unpack(base_fmt, can_pkt)
+            for i in range(0, len(data)):
+                if len(CAN_DATA_REF) <= i:
+                    print(f"Extra data: {data[i]}")
+                elif CAN_DATA_REF[i] == data[i]:
+                    print(f"Matches reference: {data[i]}")
+                else:
+                    print(f"Doesn't match reference: {data[i]} != {CAN_DATA_REF[i]}")
+            # db_add_measurement(db_client, "CAN", 1)
 
 
 if __name__ == "__main__":
