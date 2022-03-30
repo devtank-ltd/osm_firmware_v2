@@ -26,7 +26,7 @@ bool can_impl_send(uint32_t id, uint8_t* data, unsigned len)
 void can_impl_send_example(void)
 {
     uint8_t some_data[] = { 1, 2, 3, 4, 5, 6 };
-    can_impl_send(12345, some_data, ARRAY_SIZE(some_data));
+    can_impl_send(123, some_data, ARRAY_SIZE(some_data));
 }
 
 
