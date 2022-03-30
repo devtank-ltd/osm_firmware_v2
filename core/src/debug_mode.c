@@ -26,6 +26,8 @@ static bool _debug_mode_enabled = false;
 
 static unsigned _debug_mode_modbus_waiting = 0;
 
+static bool _debug_mode_init_get_toggle = true;
+
 
 static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
 {
@@ -113,9 +115,7 @@ static void _debug_mode_fast_iteration(void)
 
 static void _debug_mode_iteration(void)
 {
-    static bool _debug_mode_toggle = false;
-    _debug_mode_toggle = !_debug_mode_toggle;
-    if (_debug_mode_toggle)
+    if (_debug_mode_init_get_toggle)
     {
         _debug_mode_init_iteration();
     }
@@ -132,6 +132,7 @@ static void _debug_mode_iteration(void)
         }
         _debug_mode_collect_iteration();
     }
+    _debug_mode_init_get_toggle = !_debug_mode_init_get_toggle;
 }
 
 
@@ -151,7 +152,7 @@ void debug_mode(void)
     log_out(LOG_START_SPACER"DEBUG_MODE"LOG_END_SPACER);
 
     uint32_t prev_now = 0;
-    while(_debug_mode_enabled)
+    while(_debug_mode_enabled || !_debug_mode_init_get_toggle) /* Do extra loop if waiting to collect sensors so not to confuse when rejoining measurements.*/
     {
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
