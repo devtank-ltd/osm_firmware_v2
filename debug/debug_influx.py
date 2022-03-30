@@ -52,7 +52,7 @@ def db_add_measurement(db, name, value):
     db.write_points(json)
 
 
-CAN_DATA_REF = []
+CAN_DATA_REF = [1,2,3,4,5,6]
 
 
 def main(argv, argc):
@@ -89,16 +89,20 @@ def main(argv, argc):
         elif c in r[0]:
             can_pkt = c.recv(16)
             base_fmt = "<IB3x"
-            can_id, length = struct.unpack(base_fmt, can_pkt)
+            base_len = struct.calcsize(base_fmt)
+            can_id, length = struct.unpack(base_fmt, can_pkt[:base_len])
             fmt = base_fmt + "B" * length
-            can_id, length, *data = struct.unpack(base_fmt, can_pkt)
-            for i in range(0, len(data)):
-                if len(CAN_DATA_REF) <= i:
-                    print(f"Extra data: {data[i]}")
-                elif CAN_DATA_REF[i] == data[i]:
-                    print(f"Matches reference: {data[i]}")
-                else:
-                    print(f"Doesn't match reference: {data[i]} != {CAN_DATA_REF[i]}")
+            fmt_len = struct.calcsize(fmt)
+            failed = False
+            if len(data) != len(CAN_DATA_REF):
+                failed = True
+            else:
+                for i in range(0, len(data)):
+                    if CAN_DATA_REF[i] != data[i]:
+                        failed = True
+            pass_str = "PASSED" if not failed else "FAILED"
+            print(f"CAN = {pass_str}")
+
             # db_add_measurement(db_client, "CAN", 1)
 
 
