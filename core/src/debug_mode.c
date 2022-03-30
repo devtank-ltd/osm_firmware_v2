@@ -103,6 +103,7 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, pulsecount_get);
     can_impl_send_example();
     modbus_for_all_regs(_debug_modbus_get, NULL);
+    measurements_send_test();
 }
 
 
