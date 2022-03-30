@@ -244,7 +244,9 @@ bool measurements_send_test(void)
 
     value_t v;
 
-    bool r = _measurements_arr_append(*(int32_t*)MEASUREMENTS_FW_VERSION);
+    char id[4] = MEASUREMENTS_FW_VERSION;
+
+    bool r = _measurements_arr_append(*(int32_t*)id);
     r &= _measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
     r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
     r &= _measurements_arr_append(&v);
