@@ -286,6 +286,29 @@ class dev_t(dev_base_t):
     def current_clamp_calibrate(self):
         self._ll.write("adcs_cal")
 
+    def fw_upload(self, filmware):
+        from crccheck.crc import CrcModbus
+        data = open(filmware, "rb").read()
+        crc = CrcModbus.calc(data)
+        hdata = ["%02x" % x for x in data]
+        hdata = "".join(hdata)
+        mtu=56
+        for n in range(0, len(hdata), mtu):
+            debug_print("Chunk %u/%u" % (n/2, len(hdata)/2))
+            chunk=hdata[n:n + mtu]
+        r = self.do_cmd("fw+ "+chunk)
+            expect= "FW %u chunk added" % (len(chunk)/2)
+            assert expect in r
+        r = self.do_cmd("fw@ %04x" % crc)
+        assert "FW added" in r
+
+    def reset(self):
+        self._ll.write('reset')
+        while True:
+            line = self._ll.read()
+            if '----start----' in line:
+                return
+
 
 class dev_debug_t(dev_base_t):
     def __init__(self, port="/dev/ttyUSB0"):
