@@ -44,6 +44,57 @@ class dev_fake_t(dev_base_t):
         return msgs
 
 
+can_data_flags=[
+[],[
+("CAN_ERR_CRTL_RX_OVERFLOW", 0x01, "RX buffer overflow"),
+("CAN_ERR_CRTL_TX_OVERFLOW", 0x02, "TX buffer overflow"),
+("CAN_ERR_CRTL_RX_WARNING" , 0x04, "reached warning level for RX errors"),
+("CAN_ERR_CRTL_TX_WARNING" , 0x08, "reached warning level for TX errors"),
+("CAN_ERR_CRTL_RX_PASSIVE" , 0x10, "reached error passive status RX"),
+("CAN_ERR_CRTL_TX_PASSIVE" , 0x20, "reached error passive status TX"),
+("CAN_ERR_CRTL_ACTIVE"     , 0x40, "recovered to error active state"),
+],[
+("CAN_ERR_PROT_BIT",         0x01, "single bit error"),
+("CAN_ERR_PROT_FORM",        0x02, "frame format error"),
+("CAN_ERR_PROT_STUFF",       0x04, "bit stuffing error"),
+("CAN_ERR_PROT_BIT0",        0x08, "unable to send dominant bit"),
+("CAN_ERR_PROT_BIT1",        0x10, "unable to send recessive bit"),
+("CAN_ERR_PROT_OVERLOAD",    0x20, "bus overload"),
+("CAN_ERR_PROT_ACTIVE",      0x40, "active error announcement"),
+("CAN_ERR_PROT_TX",          0x80, "error occurred on transmission"),
+],[
+("CAN_ERR_PROT_LOC_SOF",     0x03, "start of frame"),
+("CAN_ERR_PROT_LOC_ID28_21", 0x02, "ID bits 28 - 21 (SFF: 10 - 3)"),
+("CAN_ERR_PROT_LOC_ID20_18", 0x06, "ID bits 20 - 18 (SFF: 2 - 0 )"),
+("CAN_ERR_PROT_LOC_SRTR",    0x04, "substitute RTR (SFF: RTR)"),
+("CAN_ERR_PROT_LOC_IDE",     0x05, "identifier extension"),
+("CAN_ERR_PROT_LOC_ID17_13", 0x07, "ID bits 17-13"),
+("CAN_ERR_PROT_LOC_ID12_05", 0x0F, "ID bits 12-5"),
+("CAN_ERR_PROT_LOC_ID04_00", 0x0E, "ID bits 4-0"),
+("CAN_ERR_PROT_LOC_RTR",     0x0C, "RTR"),
+("CAN_ERR_PROT_LOC_RES1",    0x0D, "reserved bit 1"),
+("CAN_ERR_PROT_LOC_RES0",    0x09, "reserved bit 0"),
+("CAN_ERR_PROT_LOC_DLC",     0x0B, "data length code"),
+("CAN_ERR_PROT_LOC_DATA",    0x0A, "data section"),
+("CAN_ERR_PROT_LOC_CRC_SEQ", 0x08, "CRC sequence"),
+("CAN_ERR_PROT_LOC_CRC_DEL", 0x18, "CRC delimiter"),
+("CAN_ERR_PROT_LOC_ACK",     0x19, "ACK slot"),
+("CAN_ERR_PROT_LOC_ACK_DEL", 0x1B, "ACK delimiter"),
+("CAN_ERR_PROT_LOC_EOF",     0x1A, "end of frame"),
+("CAN_ERR_PROT_LOC_INTERM",  0x12, "intermission"),
+],[
+("CAN_ERR_TRX_CANH_NO_WIRE",       0x04, "CANH:0000 CANL:0100"),
+("CAN_ERR_TRX_CANH_SHORT_TO_BAT",  0x05, "CANH:0000 CANL:0101"),
+("CAN_ERR_TRX_CANH_SHORT_TO_VCC",  0x06, "CANH:0000 CANL:0110"),
+("CAN_ERR_TRX_CANH_SHORT_TO_GND",  0x07, "CANH:0000 CANL:0111"),
+("CAN_ERR_TRX_CANL_NO_WIRE",       0x40, "CANH:0100 CANL:0000"),
+("CAN_ERR_TRX_CANL_SHORT_TO_BAT",  0x50, "CANH:0101 CANL:0000"),
+("CAN_ERR_TRX_CANL_SHORT_TO_VCC",  0x60, "CANH:0110 CANL:0000"),
+("CAN_ERR_TRX_CANL_SHORT_TO_GND",  0x70, "CANH:0111 CANL:0000"),
+("CAN_ERR_TRX_CANL_SHORT_TO_CANH", 0x80, "CANH:1000 CANL:0000"),
+]]
+
+
 def ts():
     return datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -57,6 +108,24 @@ def db_add_measurement(db, name, value):
         json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": float(value)}}]
         db.write_points(json)
 
+
+def time_as_str(timestamp):
+    localtime = time.localtime(timestamp)
+    return time.strftime("%d/%m/%Y %H:%M:%S", localtime) + ("%0.3f" % (timestamp % 1.0))[1:]
+
+
+def print_can_error_frame(msg):
+    print("%s : CAN ERROR FRAME" % time_as_str(msg.timestamp))
+
+    for e in can_error_flags:
+        if msg.arbitration_id & e[1]:
+            print("CAN ERROR ID FLAG: %s : %s" % (e[0], e[2]))
+    for n in range(0, len(can_data_flags)):
+        n_can_data_flags = can_data_flags[n]
+        d = msg.data[n]
+        for e in n_can_data_flags:
+            if d == e[1]:
+                print("CAN ERROR DATA FLAG: %s : %s" % (e[0], e[2]))
 
 
 CAN_DATA_REF = [1,2,3,4,5,6]
@@ -95,7 +164,7 @@ def main(argv, argc):
         elif c in r[0]:
             can_pkt = c.recv()
             if can_pkt.is_error_frame:
-                libsocketcan.print_can_error_frame(can_pkt)
+                print_can_error_frame(can_pkt)
             else:
                 failed = False
                 if len(can_pkt.data) != len(CAN_DATA_REF):
