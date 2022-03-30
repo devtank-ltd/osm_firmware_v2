@@ -125,6 +125,8 @@ void debug_mode(void)
 
     log_out(LOG_START_SPACER"DEBUG_MODE"LOG_END_SPACER);
 
+    _debug_mode_init();
+
     uint32_t prev_now = 0;
     while(_debug_mode_enabled)
     {
