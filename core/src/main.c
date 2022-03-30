@@ -31,6 +31,7 @@
 #include "htu21d.h"
 #include "i2c.h"
 #include "veml7700.h"
+#include "can_impl.h"
 
 
 void hard_fault_handler(void)
@@ -73,6 +74,7 @@ int main(void)
     sai_init();
     pulsecount_init();
     modbus_init();
+    can_impl_init();
     lw_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);

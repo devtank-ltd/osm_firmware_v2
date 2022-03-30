@@ -119,5 +119,6 @@
 #define DEBUG_LIGHT        0x8000
 #define DEBUG_SOUND        0x10000
 #define DEBUG_MODE         0x20000
+#define DEBUG_CAN          0x40000
 
 #define __ADC_RMS_FULL__
