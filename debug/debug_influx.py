@@ -107,11 +107,9 @@ def main(argv, argc):
                 pass_str = "PASSED" if not failed else "FAILED"
                 print(f"CAN = {pass_str}")
             num_errs = libsocketcan.can_get_berr_counter(can_network)
-            if num_errs:
-                print(num_errs)
-                print(type(num_errs))
-                print(dir(num_errs))
-                db_add_measurement(db_client, "CAN_ERR", num_errs)
+            if num_errs is None:
+                num_errs = 0
+            db_add_measurement(db_client, "CAN_ERR", num_errs)
 
 
 if __name__ == "__main__":
