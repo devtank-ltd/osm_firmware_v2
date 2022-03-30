@@ -16,7 +16,7 @@ bool can_impl_send(uint32_t id, uint8_t* data, unsigned len)
     pkt.header.id = id;
     pkt.header.ext = false;
     pkt.header.rtr = false;
-    pkt.header.length = len + sizeof(can_comm_header_t);
+    pkt.header.length = len;
     pkt.data = data;
     can_comm_send(&pkt);
     return true;

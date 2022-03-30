@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -180,8 +181,13 @@ void can_comm_enable(bool enabled)
         timer_enable_counter(TIM2);
 }
 
+    bool                ext;
+    bool                rtr;
+    uint8_t             fmi;
 
 void can_comm_send(can_comm_packet_t* pkt)
 {
+    can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
+    log_debug_data(DEBUG_CAN, pkt->data, pkt->header.length);
     can_transmit(CAN1, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
 }

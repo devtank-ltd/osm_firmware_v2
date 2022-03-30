@@ -37,6 +37,7 @@ inline static void _empty_log() {}
 #define light_debug(...)        _empty_log(__VA_ARGS__)
 #define sound_debug(...)        _empty_log(__VA_ARGS__)
 #define dm_debug(...)           _empty_log(__VA_ARGS__)
+#define can_debug(...)           _empty_log(__VA_ARGS__)
 #else
 #define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
 #define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
@@ -52,4 +53,5 @@ inline static void _empty_log() {}
 #define light_debug(...)        log_debug(DEBUG_LIGHT, "LIGHT: "  __VA_ARGS__)
 #define sound_debug(...)        log_debug(DEBUG_SOUND, "SOUND: "  __VA_ARGS__)
 #define dm_debug(...)           log_debug(DEBUG_MODE, "DEBUG:"  __VA_ARGS__)
+#define can_debug(...)          log_debug(DEBUG_CAN, "CAN:"  __VA_ARGS__)
 #endif
