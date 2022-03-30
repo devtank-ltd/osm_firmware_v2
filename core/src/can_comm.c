@@ -158,14 +158,10 @@ void tim2_isr(void)
 
     can_receive(CAN1, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, pkt.data, NULL);
 
-    if (pkt.header.length < sizeof(can_comm_header_t))
-        return;
-
     can_fifo_release(CAN1, 0);
 
-    uint8_t max_pkt_size = sizeof(can_comm_header_t) + CAN_COMM_MAX_DATA_SIZE;
-    if (pkt.header.length > max_pkt_size)
-        pkt.header.length = max_pkt_size;
+    if (pkt.header.length > CAN_COMM_MAX_DATA_SIZE)
+        pkt.header.length = CAN_COMM_MAX_DATA_SIZE;
 
     // Unused bool func
     _can_comm_new_data(&pkt);
