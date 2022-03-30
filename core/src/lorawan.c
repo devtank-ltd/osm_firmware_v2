@@ -373,6 +373,79 @@ void lw_init(void)
     _lw_chip_init();
 }
 
+static uint64_t _lw_handle_unsol_consume(char *p, unsigned len)
+{
+    if (len > 16 || (len % 1))
+        return 0;
+
+    char tmp = p[len];
+    p[len] = 0;
+    uint64_t r = strtoull(p, NULL, 16);
+    p[len] = tmp;
+    return r;
+}
+
+
+static unsigned _lw_handle_unsol_2_lw_cmd_ascii(char *p)
+{
+    char* lw_p = _lw_cmd_ascii;
+    char* lw_p_last = lw_p + CMD_LINELEN - 1;
+
+    while(*p && lw_p < lw_p_last)
+    {
+        uint8_t val = _lw_handle_unsol_consume(p, 2);
+        p+=2;
+        if (val != 0)
+            *lw_p++ = (char)val;
+        else
+            break;
+    }
+    *lw_p = 0;
+    return (uintptr_t)lw_p - (uintptr_t)_lw_cmd_ascii;
+}
+
+
+static void _lw_handle_unsol(lw_payload_t * incoming_pl)
+{
+    char* p = incoming_pl->data;
+
+    unsigned len = strlen(p);
+
+    if (len % 1 || len < 10)
+    {
+        lw_debug("Invalid unsol msg");
+        return;
+    }
+
+    if (_lw_handle_unsol_consume(p, 2) != LW_UNSOL_VERSION)
+    {
+        lw_debug("Couldn't parse unsol msg");
+        return;
+    }
+    p += 2;
+    uint32_t pl_id = (uint32_t)_lw_handle_unsol_consume(p, 8);
+    p += 8;
+
+    switch (pl_id)
+    {
+        case LW_ID_CMD:
+        {
+            unsigned cmd_len = _lw_handle_unsol_2_lw_cmd_ascii(p);
+            cmds_process(_lw_cmd_ascii, cmd_len);
+            /* FIXME: Give cmds an exit code.
+            _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
+            _lw_error_code.valid = true;
+            */
+            break;
+        }
+        default:
+        {
+            lw_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
+            break;
+        }
+    }
+}
+
 
 static lw_recv_packet_types_t _lw_parse_recv(char* message, lw_payload_t* payload)
 {
@@ -415,6 +488,7 @@ static lw_recv_packet_types_t _lw_parse_recv(char* message, lw_payload_t* payloa
         {
             return LW_RECV_ERR_BAD_FMT;
         }
+        _lw_handle_unsol(payload);
         return LW_RECV_DATA;
     }
     return LW_RECV_ERR_BAD_FMT;
@@ -458,13 +532,6 @@ static bool _lw_msg_is_ack(char* message)
 }
 
 
-static bool _lw_msg_is_unsol(char* message)
-{
-    lw_payload_t payload;
-    return (_lw_parse_recv(message, &payload) == LW_RECV_DATA);
-}
-
-
 static bool _lw_write_next_init_step(void)
 {
     if (_lw_state_machine.init_step >= ARRAY_SIZE(_init_msgs))
@@ -473,87 +540,6 @@ static bool _lw_write_next_init_step(void)
     }
     _lw_write(_init_msgs[_lw_state_machine.init_step++]);
     return true;
-}
-
-
-static uint64_t _lw_handle_unsol_consume(char *p, unsigned len)
-{
-    if (len > 16 || (len % 1))
-        return 0;
-
-    char tmp = p[len];
-    p[len] = 0;
-    uint64_t r = strtoull(p, NULL, 16);
-    p[len] = tmp;
-    return r;
-}
-
-
-static unsigned _lw_handle_unsol_2_lw_cmd_ascii(char *p)
-{
-    char* lw_p = _lw_cmd_ascii;
-    char* lw_p_last = lw_p + CMD_LINELEN - 1;
-
-    while(*p && lw_p < lw_p_last)
-    {
-        uint8_t val = _lw_handle_unsol_consume(p, 2);
-        p+=2;
-        if (val != 0)
-            *lw_p++ = (char)val;
-        else
-            break;
-    }
-    *lw_p = 0;
-    return (uintptr_t)lw_p - (uintptr_t)_lw_cmd_ascii;
-}
-
-
-static void _lw_handle_unsol(char* message)
-{
-    lw_payload_t incoming_pl;
-    if (_lw_parse_recv(message, &incoming_pl) != LW_RECV_DATA)
-    {
-        lw_debug("Couldn't parse unsol msg");
-        return;
-    }
-
-    char* p = incoming_pl.data;
-
-    unsigned len = strlen(p);
-
-    if (len % 1 || len < 10)
-    {
-        lw_debug("Invalid unsol msg");
-        return;
-    }
-
-    if (_lw_handle_unsol_consume(p, 2) != LW_UNSOL_VERSION)
-    {
-        lw_debug("Couldn't parse unsol msg");
-        return;
-    }
-    p += 2;
-    uint32_t pl_id = (uint32_t)_lw_handle_unsol_consume(p, 8);
-    p += 8;
-
-    switch (pl_id)
-    {
-        case LW_ID_CMD:
-        {
-            unsigned cmd_len = _lw_handle_unsol_2_lw_cmd_ascii(p);
-            cmds_process(_lw_cmd_ascii, cmd_len);
-            /* FIXME: Give cmds an exit code.
-            _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
-            _lw_error_code.valid = true;
-            */
-            break;
-        }
-        default:
-        {
-            lw_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
-            break;
-        }
-    }
 }
 
 
@@ -744,11 +730,9 @@ static void _lw_process_wait_ack(char* message)
 
 static void _lw_process_idle(char* message)
 {
-    if (_lw_msg_is_unsol(message))
-    {
-        _lw_handle_unsol(message);
-        _lw_set_confirmed(false);
-    }
+    lw_payload_t payload;
+    if (_lw_parse_recv(message, &payload) != LW_RECV_DATA)
+        lw_debug("Idle got non unsol msg?");
 }
 
 
