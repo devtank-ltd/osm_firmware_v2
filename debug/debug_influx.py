@@ -1,12 +1,14 @@
 import select
-import socket
+import can
 import struct
 import sys
 import os
 import datetime
 
 from influxdb import InfluxDBClient
+from influxdb.exceptions import InfluxDBClientError
 
+import libsocketcan
 sys.path.append(os.path.join(os.path.dirname(__file__), "../python"))
 from binding import dev_debug_t, dev_base_t, log_t
 
@@ -48,8 +50,13 @@ def ts():
 
 def db_add_measurement(db, name, value):
     print(f"{name} = {value}")
-    json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": value}}]
-    db.write_points(json)
+    try:
+        json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": value}}]
+        db.write_points(json)
+    except InfluxDBClientError:
+        json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": float(value)}}]
+        db.write_points(json)
+
 
 
 CAN_DATA_REF = [1,2,3,4,5,6]
@@ -70,8 +77,7 @@ def main(argv, argc):
 
     # CAN
     can_network = "can0"
-    c = socket.socket(socket.PF_CAN, socket.SOCK_RAW, socket.CAN_RAW)
-    c.bind((can_network,))
+    c = can.interface.Bus(bustype='socketcan', channel=can_network)
 
     # Database
     database_name = "sf_debug"
@@ -87,23 +93,25 @@ def main(argv, argc):
                     name, value = t
                     db_add_measurement(db_client, name, value)
         elif c in r[0]:
-            can_pkt = c.recv(16)
-            base_fmt = "<IB3x"
-            base_len = struct.calcsize(base_fmt)
-            can_id, length = struct.unpack(base_fmt, can_pkt[:base_len])
-            fmt = base_fmt + "B" * length
-            fmt_len = struct.calcsize(fmt)
-            failed = False
-            if len(data) != len(CAN_DATA_REF):
-                failed = True
+            can_pkt = c.recv()
+            if can_pkt.is_error_frame:
+                libsocketcan.print_can_error_frame(can_pkt)
             else:
-                for i in range(0, len(data)):
-                    if CAN_DATA_REF[i] != data[i]:
-                        failed = True
-            pass_str = "PASSED" if not failed else "FAILED"
-            print(f"CAN = {pass_str}")
-
-            # db_add_measurement(db_client, "CAN", 1)
+                failed = False
+                if len(can_pkt.data) != len(CAN_DATA_REF):
+                    failed = True
+                else:
+                    for i in range(0, len(can_pkt.data)):
+                        if CAN_DATA_REF[i] != can_pkt.data[i]:
+                            failed = True
+                pass_str = "PASSED" if not failed else "FAILED"
+                print(f"CAN = {pass_str}")
+            num_errs = libsocketcan.can_get_berr_counter(can_network)
+            if num_errs:
+                print(num_errs)
+                print(type(num_errs))
+                print(dir(num_errs))
+                db_add_measurement(db_client, "CAN_ERR", num_errs)
 
 
 if __name__ == "__main__":
