@@ -181,9 +181,6 @@ void can_comm_enable(bool enabled)
         timer_enable_counter(TIM2);
 }
 
-    bool                ext;
-    bool                rtr;
-    uint8_t             fmi;
 
 void can_comm_send(can_comm_packet_t* pkt)
 {
