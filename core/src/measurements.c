@@ -247,7 +247,7 @@ bool measurements_send_test(void)
     bool r = _measurements_arr_append(*(int32_t*)MEASUREMENTS_FW_VERSION);
     r &= _measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
     r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
-    r &= !_measurements_arr_append(&v);
+    r &= _measurements_arr_append(&v);
 
     lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
 
