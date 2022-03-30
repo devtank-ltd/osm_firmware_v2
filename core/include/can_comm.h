@@ -21,7 +21,7 @@ typedef struct
 typedef struct
 {
     can_comm_header_t   header;
-    can_comm_data_t*    data;
+    uint8_t*            data;
 } can_comm_packet_t;
 
 

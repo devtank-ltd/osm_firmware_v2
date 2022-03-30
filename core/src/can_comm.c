@@ -143,7 +143,7 @@ static bool _can_comm_new_data(can_comm_packet_t* pkt)
     // Need to check if length is size of packet or the size of data.
     if (!ring_buf_add_data(&can_comm_ring_data, &pkt->header, sizeof(can_comm_header_t)))
         return false;
-    return ring_buf_add_data(&can_comm_ring_data, *pkt->data, pkt->header.length);
+    return ring_buf_add_data(&can_comm_ring_data, pkt->data, pkt->header.length);
 }
 
 
@@ -152,10 +152,10 @@ void tim2_isr(void)
     timer_clear_flag(TIM2, TIM_SR_CC1IF);
 
     can_comm_packet_t pkt;
-    can_comm_data_t data;
-    pkt.data = &data;
+    uint8_t data[CAN_COMM_MAX_DATA_SIZE];
+    pkt.data = data;
 
-    can_receive(CAN1, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, *pkt.data, NULL);
+    can_receive(CAN1, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, pkt.data, NULL);
 
     if (pkt.header.length < sizeof(can_comm_header_t))
         return;
@@ -183,5 +183,5 @@ void can_comm_enable(bool enabled)
 
 void can_comm_send(can_comm_packet_t* pkt)
 {
-    can_transmit(CAN1, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, *pkt->data);
+    can_transmit(CAN1, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
 }

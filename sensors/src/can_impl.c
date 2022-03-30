@@ -17,7 +17,7 @@ bool can_impl_send(uint32_t id, uint8_t* data, unsigned len)
     pkt.header.ext = false;
     pkt.header.rtr = false;
     pkt.header.length = len + sizeof(can_comm_header_t);
-    pkt.data = (can_comm_data_t*)&data;
+    pkt.data = data;
     can_comm_send(&pkt);
     return true;
 }
@@ -37,14 +37,14 @@ void can_drain_array(void)
 {
     can_comm_packet_t pkt;
     can_comm_data_t data;
-    pkt.data = &data;
+    pkt.data = data;
     unsigned n;
     unsigned header_size = sizeof(can_comm_header_t);
     n = ring_buf_read(&can_comm_ring_data, (char*)&pkt.header, header_size);
     if (n != header_size)
         // Not finished writing to buffer?
         return;
-    n = ring_buf_read(&can_comm_ring_data, (char*)*pkt.data, pkt.header.length);
+    n = ring_buf_read(&can_comm_ring_data, (char*)pkt.data, pkt.header.length);
     if (n != pkt.header.length)
         // Not finished writing to buffer?
         return;
