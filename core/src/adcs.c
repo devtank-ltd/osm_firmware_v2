@@ -192,22 +192,6 @@ bool adcs_cc_set_midpoints(uint16_t new_midpoints[ADC_CC_COUNT])
 }
 
 
-bool adcs_cc_set_midpoint(uint16_t midpoint, uint8_t index)
-{
-    if (index > ADC_CC_COUNT)
-    {
-        return false;
-    }
-    cc_midpoints[index] = midpoint;
-    if (!persist_set_cc_midpoints(cc_midpoints))
-    {
-        adc_debug("Could not set the persistent storage for the midpoint.");
-        return false;
-    }
-    return true;
-}
-
-
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
  * buffer, the step and start index are required to find the correct RMS.*/
 #ifdef __ADC_RMS_FULL__
@@ -421,6 +405,25 @@ static bool _adcs_get_index(uint8_t* index, char* name)
     else
     {
         adc_debug("'%s' is not a current clamp name.", name);
+        return false;
+    }
+    return true;
+}
+
+
+bool adcs_cc_set_midpoint(uint16_t midpoint, char* name)
+{
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
+        return false;
+    if (index > ADC_CC_COUNT)
+    {
+        return false;
+    }
+    cc_midpoints[index] = midpoint;
+    if (!persist_set_cc_midpoints(cc_midpoints))
+    {
+        adc_debug("Could not set the persistent storage for the midpoint.");
         return false;
     }
     return true;

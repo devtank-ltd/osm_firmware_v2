@@ -532,6 +532,16 @@ static void cc_calibrate_cb(char *args)
 }
 
 
+static void cc_mp_cb(char* args)
+{
+    // 2046 CC1
+    char* p;
+    uint16_t new_mp = strtoul(args, &p, 10);
+    p = skip_space(p);
+    adcs_cc_set_midpoint(new_mp, p);
+}
+
+
 static void ds18b20_cb(char* args)
 {
     float ds18b20_temp;
@@ -719,6 +729,7 @@ void cmds_process(char * command, unsigned len)
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
+        { "cc_mp",        "Set the CC midpoint",      cc_mp_cb},
         { "w1",           "Get temperature with w1",  ds18b20_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
