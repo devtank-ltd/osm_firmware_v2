@@ -54,7 +54,9 @@
 #define LW_CONFIG_DR                    STR(LW_SETTING_DR_4)
 #define LW_CONFIG_DUTY_CYCLE            STR(LW_SETTING_DUTY_CYCLE_DISABLED)
 
-#define LW_ID_CMD                       0x01434d44
+#define LW_UNSOL_VERSION                0x01
+
+#define LW_ID_CMD                       0x434d4400 /* CMD */
 
 
 typedef enum
@@ -474,46 +476,83 @@ static bool _lw_write_next_init_step(void)
 }
 
 
+static uint64_t _lw_handle_unsol_consume(char *p, unsigned len)
+{
+    if (len > 16 || (len % 1))
+        return 0;
+
+    char tmp = p[len];
+    p[len] = 0;
+    uint64_t r = strtoull(p, NULL, 16);
+    p[len] = tmp;
+    return r;
+}
+
+
+static unsigned _lw_handle_unsol_2_lw_cmd_ascii(char *p)
+{
+    char* lw_p = _lw_cmd_ascii;
+    char* lw_p_last = lw_p + CMD_LINELEN - 1;
+
+    while(*p && lw_p < lw_p_last)
+    {
+        uint8_t val = _lw_handle_unsol_consume(p, 2);
+        p+=2;
+        if (val != 0)
+            *lw_p++ = (char)val;
+        else
+            break;
+    }
+    *lw_p = 0;
+    return (uintptr_t)lw_p - (uintptr_t)_lw_cmd_ascii;
+}
+
+
 static void _lw_handle_unsol(char* message)
 {
     lw_payload_t incoming_pl;
     if (_lw_parse_recv(message, &incoming_pl) != LW_RECV_DATA)
     {
+        lw_debug("Couldn't parse unsol msg");
         return;
     }
 
     char* p = incoming_pl.data;
 
-    char pl_tmp_buff[8] = "";
+    unsigned len = strlen(p);
 
-    strncpy(pl_tmp_buff, p, 8);
-    uint32_t pl_id = strtoul(pl_tmp_buff, NULL, 16);
-
-    p += 8;
-
-    uint8_t val;
-    memset(pl_tmp_buff, 0, 3 * sizeof(char));
-    char* lw_p = _lw_cmd_ascii;
-    for (size_t i = 0; i < strlen(p) / 2; i++)
+    if (len % 1 || len < 10)
     {
-        strncpy(pl_tmp_buff, p + 2*i, 2);
-        val = strtoul(pl_tmp_buff, NULL, 16);
-        if (val != 0)
-            *lw_p++ = (char)val;
+        lw_debug("Invalid unsol msg");
+        return;
     }
-    *lw_p++ = 0;
+
+    if (_lw_handle_unsol_consume(p, 2) != LW_UNSOL_VERSION)
+    {
+        lw_debug("Couldn't parse unsol msg");
+        return;
+    }
+    p += 2;
+    uint32_t pl_id = (uint32_t)_lw_handle_unsol_consume(p, 8);
+    p += 8;
 
     switch (pl_id)
     {
         case LW_ID_CMD:
-            cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
+        {
+            unsigned cmd_len = _lw_handle_unsol_2_lw_cmd_ascii(p);
+            cmds_process(_lw_cmd_ascii, cmd_len);
             /* FIXME: Give cmds an exit code.
             _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
             _lw_error_code.valid = true;
             */
             break;
+        }
         default:
+        {
+            lw_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
             break;
+        }
     }
 }
 
