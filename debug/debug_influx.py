@@ -44,6 +44,19 @@ class dev_fake_t(dev_base_t):
         return msgs
 
 
+can_error_flags = [
+("CAN_ERR_TX_TIMEOUT", 0x00000001, "TX timeout (by netdevice driver)"),
+("CAN_ERR_LOSTARB"   , 0x00000002, "lost arbitration"),
+("CAN_ERR_CRTL"      , 0x00000004, "controller problems"),
+("CAN_ERR_PROT"      , 0x00000008, "protocol violations"),
+("CAN_ERR_TRX"       , 0x00000010, "transceiver status"),
+("CAN_ERR_ACK"       , 0x00000020, "received no ACK on transmission"),
+("CAN_ERR_BUSOFF"    , 0x00000040, "bus off"),
+("CAN_ERR_BUSERROR"  , 0x00000080, "bus error (may flood!)"),
+("CAN_ERR_RESTARTED" , 0x00000100, "controller restarted"),
+]
+
+
 can_data_flags=[
 [],[
 ("CAN_ERR_CRTL_RX_OVERFLOW", 0x01, "RX buffer overflow"),
