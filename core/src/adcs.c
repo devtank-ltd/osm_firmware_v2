@@ -551,10 +551,13 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
 bool adcs_cc_get_blocking(char* name, value_t* value)
 {
-    if (!adcs_cc_begin(name))
+    if (adcs_cc_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Can not begin ADC.");
         return false;
+    }
     _adcs_cc_wait();
-    return adcs_cc_get(name, value);
+    return adcs_cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
