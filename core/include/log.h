@@ -36,6 +36,7 @@ inline static void _empty_log() {}
 #define exttemp_debug(...)      _empty_log(__VA_ARGS__)
 #define light_debug(...)        _empty_log(__VA_ARGS__)
 #define sound_debug(...)        _empty_log(__VA_ARGS__)
+#define sleep_debug(...)        _empty_log(__VA_ARGS__)
 #else
 #define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
 #define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
@@ -50,4 +51,5 @@ inline static void _empty_log() {}
 #define exttemp_debug(...)      log_debug(DEBUG_EXTTEMP, "EXTTEMP: "  __VA_ARGS__)
 #define light_debug(...)        log_debug(DEBUG_LIGHT, "LIGHT: "  __VA_ARGS__)
 #define sound_debug(...)        log_debug(DEBUG_SOUND, "SOUND: "  __VA_ARGS__)
+#define sleep_debug(...)        log_debug(DEBUG_SLEEP, "SLEEP: "  __VA_ARGS__)
 #endif

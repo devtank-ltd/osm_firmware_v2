@@ -30,6 +30,7 @@
 #include "veml7700.h"
 #include "cc.h"
 #include "bat.h"
+#include "sleep.h"
 
 
 static char   * rx_buffer;
@@ -724,6 +725,20 @@ static void no_lw_cb(char* args)
 }
 
 
+void sleep_cb(char* args)
+{
+    char* p;
+    uint32_t sleep_ms = strtoul(args, &p, 10);
+    if (p == args)
+    {
+        log_out("<TIME(MS)>");
+        return;
+    }
+    log_out("Sleeping for %"PRIu32"ms.", sleep_ms);
+    sleep_for_ms(sleep_ms);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -770,6 +785,7 @@ void cmds_process(char * command, unsigned len)
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
         { "repop",        "Repopulate measurements.", repop_cb},
         { "no_lw",        "Dont need LW for measurements", no_lw_cb},
+        { "sleep",        "Sleep",                    sleep_cb},
         { NULL },
     };
 

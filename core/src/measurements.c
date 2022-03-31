@@ -21,6 +21,8 @@
 #include "pulsecount.h"
 #include "veml7700.h"
 #include "sai.h"
+#include "sleep.h"
+#include "uart_rings.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
@@ -543,30 +545,31 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 }
 
 
-static void _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
+static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
-        return;
+        return false;
     if (!inf.iteration_cb)
     {
         // Iteration callbacks are optional
-        return;
+        return false;
     }
     measurements_sensor_state_t resp = inf.iteration_cb(def->name);
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            return;
+            return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s errored on iterate, will not collect.", def->name);
             data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_init++;
             data->num_samples_collected++;
-            return;
+            return false;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
-            return;
+            return true;
     }
+    return false;
 }
 
 
@@ -652,6 +655,7 @@ static void _measurements_sample(void)
     uint32_t            time_collect;
 
     _check_time.last_checked_time = now;
+    _check_time.wait_time = UINT32_MAX;
 
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -680,9 +684,13 @@ static void _measurements_sample(void)
         {
             _measurements_sample_init_iteration(def, data);
         }
-        else if (_check_time.wait_time > (time_since_interval - time_init))
+        else
         {
-            _check_time.wait_time = time_since_interval - time_init;
+            uint32_t t_diff = since_boot_delta(time_init, time_since_interval);
+            if (_check_time.wait_time > t_diff)
+            {
+                _check_time.wait_time = t_diff;
+            }
         }
 
         // The sample is collected every interval/samplecount but offset by 1/2.
@@ -698,11 +706,17 @@ static void _measurements_sample(void)
                 log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
             }
         }
-        else if (_check_time.wait_time > (time_since_interval - time_collect))
+        else
         {
-            _check_time.wait_time = time_since_interval - time_collect;
+            uint32_t t_diff = since_boot_delta(time_collect, time_since_interval);
+            if (_check_time.wait_time > t_diff)
+            {
+                _check_time.wait_time = t_diff;
+            }
         }
     }
+    if (_check_time.wait_time == UINT32_MAX)
+        _check_time.wait_time = 0;
 }
 
 
@@ -867,15 +881,18 @@ bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
 }
 
 
-static void _measurements_iterate_callbacks(void)
+static uint16_t _measurements_iterate_callbacks(void)
 {
+    uint16_t active_count = 0;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        if (_measurements_arr.data[i].state == MEASUREMENT_STATE_INITED)
-        {
-            _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
-        }
+        if (_measurements_arr.data[i].state != MEASUREMENT_STATE_INITED)
+            continue;
+        if (_measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]))
+            /* Number of measurements that require active calls */
+            active_count++;
     }
+    return active_count;
 }
 
 
@@ -917,7 +934,38 @@ void measurements_loop_iteration(void)
         _interval_count++;
         measurements_send();
     }
-    _measurements_iterate_callbacks();
+    uint16_t count_active = _measurements_iterate_callbacks();
+    /* If no measurements require active calls. */
+    if (count_active == 0)
+    {
+        uint32_t sleep_time;
+        /* Get new now as above functions may have taken a while */
+        uint32_t new_now = get_since_boot_ms();
+        {
+            /* If the time passed between now and new now is larger than the wait time dont sleep */
+            uint32_t time_passed = since_boot_delta(new_now, now);
+            if (time_passed >= _check_time.wait_time ||
+                time_passed >= since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now))
+                return;
+        }
+        {
+            uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, new_now);
+            uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, new_now);
+            if (next_sample_time < next_send_time)
+                sleep_time = next_sample_time;
+            else
+                sleep_time = next_send_time;
+        }
+
+        if (sleep_time < SLEEP_MIN_SLEEP_TIME_MS)
+            /* No point sleeping for short amount of time */
+            return;
+
+        /* Make sure to wake up before required */
+        sleep_time -= SLEEP_MIN_SLEEP_TIME_MS;
+        uart_rings_out_drain();
+        sleep_for_ms(sleep_time);
+    }
 }
 
 

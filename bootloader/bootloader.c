@@ -77,6 +77,8 @@ static void clock_setup(void)
     rcc_ahb_frequency = 80e6;
     rcc_apb1_frequency = 80e6;
     rcc_apb2_frequency = 80e6;
+
+    rcc_osc_on(RCC_LSI);
 }
 
 
