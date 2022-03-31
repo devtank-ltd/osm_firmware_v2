@@ -646,12 +646,12 @@ measurements_sensor_state_t adcs_bat_collection_time(char* name, uint32_t* colle
 
 bool adcs_bat_get_blocking(char* name, value_t* value)
 {
-    if (!adcs_bat_begin(name))
+    if (adcs_bat_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
         return false;
     adc_debug("Waiting for ADC BAT");
     while (!adc_eoc(ADC1))
         uart_rings_out_drain();
-    return adcs_bat_get(name, value);
+    return adcs_bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
