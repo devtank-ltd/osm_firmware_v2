@@ -34,6 +34,10 @@ def _send_command_bin(port, cmd, bin_payload):
 
 
 def _send_firmware(port, fw_path):
+
+    _send_command_json(port, '{"FW-":""}')
+    port+=1
+
     data = open(fw_path, "rb").read()
     crc = CrcModbus.calc(data)
 

@@ -58,6 +58,7 @@
 #define LW_UNSOL_VERSION                0x01
 
 #define LW_ID_CMD                       0x434d4400 /* CMD */
+#define LW_ID_FW_START                  0x46572d00 /* FW- */
 #define LW_ID_FW_CHUNK                  0x46572b00 /* FW+ */
 #define LW_ID_FW_COMPLETE               0x46574000 /* FW@ */
 
@@ -440,9 +441,16 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
             */
             break;
         }
+        case LW_ID_FW_START:
+        {
+            fw_ota_reset();
+            break;
+        }
         case LW_ID_FW_CHUNK:
         {
-            char * p_end = p + (len - 10);
+            unsigned chunk_len = len - 10;
+            lw_debug("FW chunk of %u", chunk_len);
+            char * p_end = p + chunk_len;
             while(p < p_end)
             {
                 uint8_t b = (uint8_t)_lw_handle_unsol_consume(p, 2);
