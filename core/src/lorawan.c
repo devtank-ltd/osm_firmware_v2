@@ -445,7 +445,7 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
         case LW_ID_FW_START:
         {
             uint16_t count = (uint16_t)_lw_handle_unsol_consume(p, 4);
-            lw_debug("FW of %"PRIu16" cunks", count);
+            lw_debug("FW of %"PRIu16" chunks", count);
             _next_fw_chunk_id = 0;
             fw_ota_reset();
             break;
@@ -453,15 +453,15 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
         case LW_ID_FW_CHUNK:
         {
             uint16_t chunk_id = (uint16_t)_lw_handle_unsol_consume(p, 4);
+            _next_fw_chunk_id = chunk_id + 1;
+            p += 4;
+            unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)incoming_pl->data);
+            lw_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             if (_next_fw_chunk_id != chunk_id)
             {
                 log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _next_fw_chunk_id);
                 return;
             }
-            _next_fw_chunk_id = chunk_id + 1;
-            p += 4;
-            unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)incoming_pl->data);
-            lw_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             char * p_end = p + chunk_len;
             while(p < p_end)
             {
