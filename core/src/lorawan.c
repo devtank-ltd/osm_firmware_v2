@@ -21,6 +21,8 @@
 #include "timers.h"
 #include "update.h"
 
+/* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
+
 #define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
 #define LW_CONFIG_TIMEOUT_S             30
 #define LW_RESET_GPIO_DEFAULT_MS        10
