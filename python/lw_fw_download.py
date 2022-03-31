@@ -2,6 +2,7 @@
 from crccheck.crc import CrcModbus
 import os
 import sys
+import math
 import time
 import struct
 
@@ -39,25 +40,27 @@ def _send_firmware(port, fw_path):
     data = open(fw_path, "rb").read()
     crc = CrcModbus.calc(data)
 
-    mtu = 4
+    mtu = 32
 
-    count = len(data)/mtu
+    count = int(math.ceil(len(data)/mtu))
 
     print("Update chunks:", count)
 
-    _send_command_bin(port, "FW-", struct.pack("<H", count))
+    _send_command_bin(port, "FW-", struct.pack(">H", count))
     port+=1
+    chunk_id = 0
 
     for n in range(0, len(data), mtu):
         chunk = data[n:n + mtu]
-        _send_command_bin(port, "FW+", chunk)
+        _send_command_bin(port, "FW+", struct.pack(">H", chunk_id) + chunk)
+        chunk_id+=1
         port += 1
         if port > 127:
             port = 1
-        time.sleep(0.25)
+        time.sleep(1)
 
     print("Closing CRC:", crc)
-    _send_command_bin(port, "FW@", struct.pack("<H", crc))
+    _send_command_bin(port, "FW@", struct.pack(">H", crc))
 
 
 if __name__ == "__main__":
@@ -76,5 +79,4 @@ if __name__ == "__main__":
 
     auth_token = [("authorization", "Bearer %s" % api_token)]
 
-    _send_command_json(1, '{"CMD":"debug 804"}')
     _send_firmware(2, fw_path)

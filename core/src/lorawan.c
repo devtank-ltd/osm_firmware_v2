@@ -193,6 +193,7 @@ static uint32_t             _lw_reset_timeout                   = LW_RESET_GPIO_
 static lw_backup_msg_t      _lw_backup_message                  = {.backup_type=LW_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
 static error_code_t         _lw_error_code                      = {0, false};
 static char                 _lw_cmd_ascii[CMD_LINELEN]          = "";
+static uint16_t             _next_fw_chunk_id                   = 0;
 
 
 uint16_t                    lw_packet_max_size                  = LW_PAYLOAD_MAX_DEFAULT;
@@ -445,13 +446,22 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
         {
             uint16_t count = (uint16_t)_lw_handle_unsol_consume(p, 4);
             lw_debug("FW of %"PRIu16" cunks", count);
+            _next_fw_chunk_id = 0;
             fw_ota_reset();
             break;
         }
         case LW_ID_FW_CHUNK:
         {
-            unsigned chunk_len = len - 10;
-            lw_debug("FW chunk of %u", chunk_len/2);
+            uint16_t chunk_id = (uint16_t)_lw_handle_unsol_consume(p, 4);
+            if (_next_fw_chunk_id != chunk_id)
+            {
+                log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _next_fw_chunk_id);
+                return;
+            }
+            _next_fw_chunk_id = chunk_id + 1;
+            p += 4;
+            unsigned chunk_len = (uintptr_t)p - (uintptr_t)incoming_pl->data;
+            lw_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             char * p_end = p + chunk_len;
             while(p < p_end)
             {
@@ -557,13 +567,6 @@ static bool _lw_msg_is_ok(char* message)
 static bool _lw_msg_is_connected(char* message)
 {
     return _lw_msg_is("OK Join Success", message);
-}
-
-
-static bool _lw_msg_is_ack(char* message)
-{
-    lw_payload_t payload;
-    return (_lw_parse_recv(message, &payload) == LW_RECV_ACK);
 }
 
 
@@ -752,22 +755,11 @@ static void _lw_process_wait_ok(char* message)
 }
 
 
-static void _lw_process_wait_ack(char* message)
+static void _lw_process_wait_acked(void)
 {
-    if (_lw_msg_is_ack(message))
-    {
-        _lw_state_machine.state = LW_STATE_IDLE;
-        _lw_state_machine.reset_count = 0;
-        on_lw_sent_ack(true);
-    }
-}
-
-
-static void _lw_process_idle(char* message)
-{
-    lw_payload_t payload;
-    if (_lw_parse_recv(message, &payload) != LW_RECV_DATA)
-        lw_debug("Idle got non unsol msg?");
+    _lw_state_machine.state = LW_STATE_IDLE;
+    _lw_state_machine.reset_count = 0;
+    on_lw_sent_ack(true);
 }
 
 
@@ -808,6 +800,10 @@ void lw_process(char* message)
         _lw_handle_error(message);
         return;
     }
+
+    lw_payload_t payload;
+    lw_recv_packet_types_t recv_type = _lw_parse_recv(message, &payload);
+
     switch(_lw_state_machine.state)
     {
         case LW_STATE_WAIT_INIT:
@@ -826,10 +822,10 @@ void lw_process(char* message)
             _lw_process_wait_ok(message);
             break;
         case LW_STATE_WAIT_ACK:
-            _lw_process_wait_ack(message);
+            if (recv_type == LW_RECV_ACK)
+                _lw_process_wait_acked();
             break;
         case LW_STATE_IDLE:
-            _lw_process_idle(message);
             break;
         case LW_STATE_WAIT_UCONF_OK:
             _lw_process_wait_uconf_ok(message);
