@@ -8,15 +8,46 @@ import grpc
 from chirpstack_api.as_pb.external import api
 
 
-def _send_command(client, dev_eui, port, json):
-    print("JSON:",json)
+def _send_command_json(port, json):
     req = api.EnqueueDeviceQueueItemRequest()
     req.device_queue_item.confirmed = True
     req.device_queue_item.json_object = json
     req.device_queue_item.dev_eui = dev_eui
     req.device_queue_item.f_port = port
     resp = client.Enqueue(req, metadata=auth_token)
-    print(resp.f_cnt)
+    print("resp", resp.f_cnt)
+
+
+def _send_command_bin(port, cmd, bin_payload):
+    data = b'\x01' + cmd.encode()
+    data += int(5 - len(data)) * b'\x00'
+    data += bin_payload
+    req = api.EnqueueDeviceQueueItemRequest()
+    req.device_queue_item.confirmed = True
+    req.device_queue_item.data = data
+    req.device_queue_item.dev_eui = dev_eui
+    req.device_queue_item.f_port = port
+    resp = client.Enqueue(req, metadata=auth_token)
+    print("resp", resp.f_cnt)
+
+
+def _send_firmware(port, fw_path):
+    data = open(fw_path, "rb").read()
+    crc = CrcModbus.calc(data)
+
+    mtu = 4
+
+    print("Update chunks:", len(data)/mtu)
+
+    for n in range(0, len(data), mtu):
+        chunk = data[n:n + mtu]
+        _send_command_bin(port, "FW+", chunk)
+        port += 1
+        if port > 127:
+            port = 1
+
+    print("Closing CRC:", crc)
+    _send_command_bin(port, "FW@", struct.pack(">H", crc))
 
 
 if __name__ == "__main__":
@@ -35,23 +66,5 @@ if __name__ == "__main__":
 
     auth_token = [("authorization", "Bearer %s" % api_token)]
 
-    data = open(fw_path, "rb").read()
-    crc = CrcModbus.calc(data)
-
-    mtu = 64
-    port = 1
-
-    print("Update chunks:", len(data)/mtu)
-
-    for n in range(0, len(data), mtu):
-        chunk = data[n:n + mtu]
-        chunk = chunk[::-1]
-        json = b'{"FW+":"%s"}' % chunk
-        _send_command(client, dev_eui, port, json)
-        port += 1
-        if port > 127:
-            port = 1
-
-    print("Closing CRC:", crc)
-    json = b'{"FW@":"%s"}' % struct.pack(">H", crc)
-    _send_command(client, dev_eui, port, json)
+    _send_command_json(1, '{"CMD":"debug 804"}')
+    _send_firmware(2, fw_path)
