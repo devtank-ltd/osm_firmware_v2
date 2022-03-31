@@ -7,6 +7,8 @@ import struct
 import grpc
 from chirpstack_api.as_pb.external import api
 
+protocol_version = b'\x01'
+
 
 def _send_command_json(port, json):
     req = api.EnqueueDeviceQueueItemRequest()
@@ -19,7 +21,7 @@ def _send_command_json(port, json):
 
 
 def _send_command_bin(port, cmd, bin_payload):
-    data = b'\x01' + cmd.encode()
+    data = protocol_version + cmd[0:4].encode()
     data += int(5 - len(data)) * b'\x00'
     data += bin_payload
     req = api.EnqueueDeviceQueueItemRequest()
