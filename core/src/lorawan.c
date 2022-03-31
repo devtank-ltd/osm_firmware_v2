@@ -443,13 +443,15 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
         }
         case LW_ID_FW_START:
         {
+            uint16_t count = (uint16_t)_lw_handle_unsol_consume(p, 4);
+            lw_debug("FW of %"PRIu16" cunks", count);
             fw_ota_reset();
             break;
         }
         case LW_ID_FW_CHUNK:
         {
             unsigned chunk_len = len - 10;
-            lw_debug("FW chunk of %u", chunk_len);
+            lw_debug("FW chunk of %u", chunk_len/2);
             char * p_end = p + chunk_len;
             while(p < p_end)
             {
