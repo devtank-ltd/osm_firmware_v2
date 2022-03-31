@@ -551,13 +551,26 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
 bool adcs_cc_get_blocking(char* name, value_t* value)
 {
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
+        return false;
+    adcs_channels_active_t prev_active_channels;
+    memcpy(prev_active_channels.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len);
+    prev_active_channels.len = adc_cc_channels_active.len;
+    if (!adcs_cc_set_channels_active(&index, 1))
+    {
+        adc_debug("Cannot set active channel.");
+        return false;
+    }
     if (adcs_cc_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
     _adcs_cc_wait();
-    return adcs_cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    bool r = (adcs_cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
+    adcs_cc_set_channels_active(prev_active_channels.channels, prev_active_channels.len);
+    return r;
 }
 
 
@@ -651,7 +664,7 @@ bool adcs_bat_get_blocking(char* name, value_t* value)
     adc_debug("Waiting for ADC BAT");
     while (!adc_eoc(ADC1))
         uart_rings_out_drain();
-    return adcs_bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return (adcs_bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
 }
 
 
