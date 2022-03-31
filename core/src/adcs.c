@@ -411,6 +411,30 @@ static bool _adcs_get_index(uint8_t* index, char* name)
 }
 
 
+static bool _adcs_get_channel(uint8_t* channel, uint8_t index)
+{
+    if (!channel)
+    {
+        adc_debug("Handed NULL pointer.");
+        return false;
+    }
+    switch (index)
+    {
+        case 1:
+            *channel = ADC1_CHANNEL_CURRENT_CLAMP_1;
+            return true;
+        case 2:
+            *channel = ADC1_CHANNEL_CURRENT_CLAMP_2;
+            return true;
+        case 3:
+            *channel = ADC1_CHANNEL_CURRENT_CLAMP_3;
+            return true;
+        default:
+            return false;
+    }
+}
+
+
 bool adcs_cc_set_midpoint(uint16_t midpoint, char* name)
 {
     uint8_t index;
@@ -554,10 +578,13 @@ bool adcs_cc_get_blocking(char* name, value_t* value)
     uint8_t index;
     if (!_adcs_get_index(&index, name))
         return false;
+    uint8_t channel;
+    if (!_adcs_get_channel(&channel, index))
+        return false;
     adcs_channels_active_t prev_active_channels;
     memcpy(prev_active_channels.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len);
     prev_active_channels.len = adc_cc_channels_active.len;
-    if (!adcs_cc_set_channels_active(&index, 1))
+    if (!adcs_cc_set_channels_active(&channel, 1))
     {
         adc_debug("Cannot set active channel.");
         return false;
