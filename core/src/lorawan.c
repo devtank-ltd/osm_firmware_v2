@@ -19,6 +19,7 @@
 #include "persist_config.h"
 #include "common.h"
 #include "timers.h"
+#include "update.h"
 
 #define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
 #define LW_CONFIG_TIMEOUT_S             30
@@ -57,7 +58,8 @@
 #define LW_UNSOL_VERSION                0x01
 
 #define LW_ID_CMD                       0x434d4400 /* CMD */
-
+#define LW_ID_FW_CHUNK                  0x46572b00 /* FW+ */
+#define LW_ID_FW_COMPLETE               0x46574000 /* FW@ */
 
 typedef enum
 {
@@ -413,13 +415,13 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
 
     if (len % 1 || len < 10)
     {
-        lw_debug("Invalid unsol msg");
+        log_error("Invalid LW unsol msg");
         return;
     }
 
     if (_lw_handle_unsol_consume(p, 2) != LW_UNSOL_VERSION)
     {
-        lw_debug("Couldn't parse unsol msg");
+        log_error("Couldn't parse LW unsol msg");
         return;
     }
     p += 2;
@@ -436,6 +438,29 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
             _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
             _lw_error_code.valid = true;
             */
+            break;
+        }
+        case LW_ID_FW_CHUNK:
+        {
+            char * p_end = p + (len - 10);
+            while(p < p_end)
+            {
+                uint8_t b = (uint8_t)_lw_handle_unsol_consume(p, 2);
+                p += 2;
+                if (!fw_ota_add_chunk(&b, 1))
+                    break;
+            }
+            break;
+        }
+        case LW_ID_FW_COMPLETE:
+        {
+            if (len < 12)
+            {
+                log_error("LW FW Finish invalid");
+                return;
+            }
+            uint16_t crc = (uint16_t)_lw_handle_unsol_consume(p, 4);
+            fw_ota_complete(crc);
             break;
         }
         default:
