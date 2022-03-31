@@ -47,6 +47,7 @@ def _send_firmware(port, fw_path):
     print("Update chunks:", count)
 
     _send_command_bin(port, "FW-", struct.pack(">H", count))
+    time.sleep(1)
     port+=1
     chunk_id = 0
 

@@ -460,7 +460,7 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
             }
             _next_fw_chunk_id = chunk_id + 1;
             p += 4;
-            unsigned chunk_len = (uintptr_t)p - (uintptr_t)incoming_pl->data;
+            unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)incoming_pl->data);
             lw_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             char * p_end = p + chunk_len;
             while(p < p_end)
@@ -501,7 +501,6 @@ static lw_recv_packet_types_t _lw_parse_recv(char* message, lw_payload_t* payloa
 
     if (strncmp(message, recv_msg, strlen(recv_msg)) != 0)
     {
-        lw_debug("The message did not being with '%s'.", recv_msg);
         return LW_RECV_ERR_NOT_START;
     }
 
@@ -533,7 +532,6 @@ static lw_recv_packet_types_t _lw_parse_recv(char* message, lw_payload_t* payloa
         {
             return LW_RECV_ERR_BAD_FMT;
         }
-        _lw_handle_unsol(payload);
         return LW_RECV_DATA;
     }
     return LW_RECV_ERR_BAD_FMT;
@@ -803,6 +801,25 @@ void lw_process(char* message)
 
     lw_payload_t payload;
     lw_recv_packet_types_t recv_type = _lw_parse_recv(message, &payload);
+
+    if (recv_type == LW_RECV_ERR_BAD_FMT)
+    {
+        log_error("Invalid recv");
+        return;
+    }
+
+    if (recv_type == LW_RECV_DATA)
+    {
+        _lw_handle_unsol(&payload);
+        return;
+    }
+
+    if (recv_type == LW_RECV_ACK &&
+        _lw_state_machine.state != LW_STATE_WAIT_ACK)
+    {
+        lw_debug("Unexpected ACK");
+        return;
+    }
 
     switch(_lw_state_machine.state)
     {
