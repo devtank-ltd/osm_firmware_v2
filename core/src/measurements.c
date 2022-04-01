@@ -283,7 +283,7 @@ static void _measurements_send(void)
     {
         if (lw_is_recv_fw())
         {
-            measurements_debug("Tried to send but receiving FW.");
+            // Tried to send but receiving FW
             return;
         }
         if (_pending_send)
