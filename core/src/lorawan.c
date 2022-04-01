@@ -411,6 +411,13 @@ static unsigned _lw_handle_unsol_2_lw_cmd_ascii(char *p)
 }
 
 
+bool lw_is_recv_fw(void)
+{
+    // TODO: This function could probably be done better.
+    return (_next_fw_chunk_id != 0);
+}
+
+
 static void _lw_handle_unsol(lw_payload_t * incoming_pl)
 {
     char* p = incoming_pl->data;

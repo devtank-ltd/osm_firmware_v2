@@ -281,6 +281,11 @@ static void _measurements_send(void)
 
     if (!lw_send_ready())
     {
+        if (lw_is_recv_fw())
+        {
+            measurements_debug("Tried to send but receiving FW.");
+            return;
+        }
         if (_pending_send)
         {
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
