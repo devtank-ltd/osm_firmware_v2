@@ -48,11 +48,16 @@ def _send_firmware(port, fw_path):
 
     _send_command_bin(port, "FW-", struct.pack(">H", count))
     time.sleep(1)
+    _send_command_bin(port, "FW-", struct.pack(">H", count))
+    time.sleep(1)
     port+=1
     chunk_id = 0
 
     for n in range(0, len(data), mtu):
         chunk = data[n:n + mtu]
+
+        _send_command_bin(port, "FW+", struct.pack(">H", chunk_id) + chunk)
+        time.sleep(1)
         _send_command_bin(port, "FW+", struct.pack(">H", chunk_id) + chunk)
         chunk_id+=1
         port += 1
@@ -61,6 +66,8 @@ def _send_firmware(port, fw_path):
         time.sleep(1)
 
     print("Closing CRC:", crc)
+    _send_command_bin(port, "FW@", struct.pack(">H", crc))
+    time.sleep(1)
     _send_command_bin(port, "FW@", struct.pack(">H", crc))
 
 
