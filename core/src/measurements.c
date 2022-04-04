@@ -251,6 +251,7 @@ bool measurements_send_test(void)
     r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
     r &= _measurements_arr_append(&v);
 
+    measurements_debug("Sending test array.");
     lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
 
     return r;

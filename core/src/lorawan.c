@@ -596,6 +596,7 @@ static void _lw_send_error_code(void)
     {
         char err_msg[11] = "";
         snprintf(err_msg, 11, "%"PRIx32, _lw_error_code.code);
+        lw_debug("Sending error message '%s'", err_msg);
         lw_send_str(err_msg);
         _lw_error_code.valid = false;
     }
@@ -604,6 +605,7 @@ static void _lw_send_error_code(void)
 
 static void _lw_retry_write(void)
 {
+    lw_debug("Retrying message...");
     switch (_lw_backup_message.backup_type)
     {
         case LW_BKUP_MSG_STR:
