@@ -198,11 +198,11 @@ class low_level_dev_t(object):
         while new_msg != None:
             msg += new_msg
             new_msg = self.read()
-            print(msg)
+            
         msgs = msg.split("\n\r")
         if len(msgs) == 1 and msgs[0] == '':
             return []
-        print(msgs)
+        
         return msgs
 
 
@@ -272,31 +272,30 @@ class dev_t(object):
                     except ValueError:
                         pass                 
         return False
-    
-    def get_lora_val(self, cmd, timeout:float=1.5):
-        self._ll.write(cmd)
+        
+    def extract_val(self, val_name, timeout:float=1.5):
+        self._ll.write(val_name)
         end_time = time.monotonic() + timeout
-        r = []
-        done = False
+        last_line = ""
         while time.monotonic() < end_time:
             new_lines = self._ll.readlines()
+            if not new_lines:
+                continue
+            new_lines[0] = last_line + new_lines[0]
+            last_line = new_lines[-1]  
             for line in new_lines:
-                if "}============" in line:
-                    done = True
-            r += new_lines
-            if done:
-                break
-        start_pos = None
-        end_pos   = None
-        for n in range(0, len(r)):
-            line = r[n]
-            if line == "============{":
-                start_pos = n+1
-            elif line == "}============":
-                end_pos = n-1
-        print(r[start_pos:end_pos])
-        return r[start_pos:end_pos]
-
+                if ("Sound = ") in line:
+                    try:
+                        regex = re.findall(r"\d+\.", line)
+                        print(regex)
+                        new_r = regex[0]
+                        new_str = new_r[:-1]
+                        return int(new_str)
+                    except ValueError:
+                        pass
+        return False
+            
+    
     def do_cmd(self, cmd:str, timeout:float=1.5)->str:
         self._ll.write(cmd)
         end_time = time.monotonic() + timeout
