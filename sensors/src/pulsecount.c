@@ -82,6 +82,7 @@ void W1_PULSE_ISR(void)
         {
             exti_reset_request(inst->exti);
             __sync_add_and_fetch(&inst->count, 1);
+            break;
         }
     }
 }
