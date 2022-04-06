@@ -198,11 +198,11 @@ class low_level_dev_t(object):
         while new_msg != None:
             msg += new_msg
             new_msg = self.read()
-            
+
         msgs = msg.split("\n\r")
         if len(msgs) == 1 and msgs[0] == '':
             return []
-        
+
         return msgs
 
 
@@ -273,6 +273,7 @@ class dev_t(object):
                         pass                 
         return False
         
+        
     def extract_val(self, val_name, timeout:float=1.5):
         self._ll.write(val_name)
         end_time = time.monotonic() + timeout
@@ -293,9 +294,59 @@ class dev_t(object):
                         return int(new_str)
                     except ValueError:
                         pass
+                elif ("Lux: ") in line:
+                    try:
+                        return int(line.split(':')[-1])
+                    except ValueError:
+                        pass
+                elif ("PM25:") in line:
+                    try:
+                        pm_values = re.split('[:,]', line)
+                        return pm_values[1], pm_values[3]
+                    except ValueError:
+                        pass
         return False
             
+    def extract_pm25(self, val_name, timeout:float=1.5):
+        self._ll.write(val_name)
+        end_time = time.monotonic() + timeout
+        last_line = ""
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            if not new_lines:
+                continue
+            new_lines[0] = last_line + new_lines[0]
+            last_line = new_lines[-1]  
+            for line in new_lines:
+                if ("PM25:") in line:
+                    try:
+                        self.pm_values = re.split('[:,]', line)
+                        return int(self.pm_values[1])
+                    except ValueError:
+                        pass
+        return False
     
+    def extract_pm10(self, val_name, timeout:float=1.5):
+        self._ll.write(val_name)
+        end_time = time.monotonic() + timeout
+        last_line = ""
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            if not new_lines:
+                continue
+            new_lines[0] = last_line + new_lines[0]
+            last_line = new_lines[-1]  
+            for line in new_lines:
+                if ("PM25:") in line:
+                    try:
+                        pm_values = re.split('[:,]', line)
+                        return int(pm_values[3])
+                    except ValueError:
+                        pass
+        return False
+        
+        
+        
     def do_cmd(self, cmd:str, timeout:float=1.5)->str:
         self._ll.write(cmd)
         end_time = time.monotonic() + timeout
