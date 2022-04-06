@@ -290,7 +290,5 @@ root = Tk()
 t = Window(root)
 root.geometry("1050x750")
 root.eval('tk::PlaceWindow . center')
-
 binding.set_debug_print(binding.default_print)
-
 root.mainloop()
