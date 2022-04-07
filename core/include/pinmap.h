@@ -170,13 +170,13 @@ GPIO16 D2                   IO 11
 #define W1_PULSE_1_PIN              GPIO11
 #define W1_PULSE_1_IO               4
 
-#define W1_PULSE_1_EXTI     EXTI11
+#define W1_PULSE_1_EXTI             EXTI11
 #define W1_PULSE_1_EXTI_IRQ NVIC_EXTI15_10_IRQ
 
 #define W1_PULSE_2_PIN              GPIO12
 #define W1_PULSE_2_IO               5
 
-#define W1_PULSE_2_EXTI     EXTI12
+#define W1_PULSE_2_EXTI             EXTI12
 #define W1_PULSE_2_EXTI_IRQ NVIC_EXTI15_10_IRQ
 
 #define W1_PULSE_ISR                exti15_10_isr
