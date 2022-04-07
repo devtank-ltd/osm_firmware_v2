@@ -60,7 +60,6 @@ void W1_PULSE_ISR(void)
         if (!io_is_pulsecount_now(inst->info.io))
             continue;
         uint32_t exti_state = exti_get_flag_status(inst->exti);
-        pulsecount_debug("exti_state = %"PRIu32, exti_state);
         if (!exti_state)
             continue;
         exti_reset_request(inst->exti);
