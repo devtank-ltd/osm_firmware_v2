@@ -54,36 +54,16 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 
 void W1_PULSE_ISR(void)
 {
-    uint16_t gpio_state = gpio_get(W1_PULSE_PORT, W1_PULSE_1_PIN | W1_PULSE_2_PIN);
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         if (!io_is_pulsecount_now(inst->info.io))
             continue;
-        uint8_t pupd;
-        if (!_pulsecount_get_pupd(inst, &pupd))
+        uint32_t exti_state = exti_get_flag_status(inst->exti);
+        if (!exti_state)
             continue;
-        bool found_pulse = false;
-        switch(pupd)
-        {
-            case GPIO_PUPD_PULLDOWN:
-                found_pulse = gpio_state & inst->pin;
-                break;
-            case GPIO_PUPD_PULLUP:
-                found_pulse = !(gpio_state & inst->pin);
-                break;
-            case GPIO_PUPD_NONE:
-                found_pulse = !(gpio_state & inst->pin);
-                break;
-            default:
-                continue;
-        }
-        if (found_pulse)
-        {
-            exti_reset_request(inst->exti);
-            __sync_add_and_fetch(&inst->count, 1);
-            break;
-        }
+        exti_reset_request(inst->exti);
+        __sync_add_and_fetch(&inst->count, 1);
     }
 }
 
