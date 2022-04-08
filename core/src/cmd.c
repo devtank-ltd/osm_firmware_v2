@@ -511,8 +511,17 @@ static void reset_cb(char *args)
 
 static void cc_cb(char* args)
 {
+    char* p;
+    uint8_t cc_num = strtoul(args, &p, 10);
+    if (p == args || cc_num > 3 || cc_num == 0)
+    {
+        log_out("cc <1/2/3>");
+        return;
+    }
+    char name[4];
+    snprintf(name, 4, "CC%"PRIu8, cc_num);
     value_t value;
-    if (!adcs_cc_get_blocking(args, &value))
+    if (!adcs_cc_get_blocking(name, &value))
     {
         log_out("Could not get adc value.");
         return;

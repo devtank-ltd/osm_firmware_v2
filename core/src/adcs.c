@@ -420,16 +420,17 @@ static bool _adcs_get_channel(uint8_t* channel, uint8_t index)
     }
     switch (index)
     {
-        case 1:
+        case 0:
             *channel = ADC1_CHANNEL_CURRENT_CLAMP_1;
             return true;
-        case 2:
+        case 1:
             *channel = ADC1_CHANNEL_CURRENT_CLAMP_2;
             return true;
-        case 3:
+        case 2:
             *channel = ADC1_CHANNEL_CURRENT_CLAMP_3;
             return true;
         default:
+            adc_debug("No channel for %"PRIu8, index);
             return false;
     }
 }
@@ -580,7 +581,10 @@ bool adcs_cc_get_blocking(char* name, value_t* value)
         return false;
     uint8_t channel;
     if (!_adcs_get_channel(&channel, index))
+    {
+        adc_debug("Could not get channel.");
         return false;
+    }
     adcs_channels_active_t prev_active_channels;
     memcpy(prev_active_channels.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len);
     prev_active_channels.len = adc_cc_channels_active.len;
