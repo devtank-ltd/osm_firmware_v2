@@ -513,9 +513,21 @@ static void cc_cb(char* args)
 {
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
-    if (p == args || cc_num > 3 || cc_num == 0)
+    if (p == args)
     {
-        log_out("cc <1/2/3>");
+        value_t value_1, value_2, value_3;
+        if (!adcs_cc_get_all_blocking(&value_1, &value_2, &value_3))
+        {
+            log_out("Could not get CC values.");
+        }
+        log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
+        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_1.u16%1000);
+        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_1.u16%1000);
+        return;
+    }
+    if (cc_num > 3 || cc_num == 0)
+    {
+        log_out("cc [1/2/3]");
         return;
     }
     char name[4];

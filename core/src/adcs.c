@@ -605,6 +605,46 @@ bool adcs_cc_get_blocking(char* name, value_t* value)
 }
 
 
+bool adcs_cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
+{
+    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
+    adcs_channels_active_t prev_adc_cc_channels_active = {0};
+    memcpy(prev_adc_cc_channels_active.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len * sizeof(adc_cc_channels_active.channels[0]));
+    prev_adc_cc_channels_active.len = adc_cc_channels_active.len;
+
+    if (!adcs_cc_set_channels_active(all_cc_channels, ADC_CC_COUNT))
+    {
+        adc_debug("Cannot set active channel.");
+        return false;
+    }
+
+    if (adcs_cc_begin("") != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Can not begin ADC.");
+        return false;
+    }
+
+    _adcs_cc_wait();
+    if (!adcs_cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_1_NAME" value.");
+        return false;
+    }
+    if (!adcs_cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_2_NAME" value.");
+        return false;
+    }
+    if (!adcs_cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_3_NAME" value.");
+        return false;
+    }
+
+    return adcs_cc_set_channels_active(prev_adc_cc_channels_active.channels, prev_adc_cc_channels_active.len);
+}
+
+
 measurements_sensor_state_t adcs_bat_begin(char* name)
 {
     if (adcs_cc_running || adcs_bat_running)
