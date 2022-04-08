@@ -570,17 +570,29 @@ void modbus_ring_process(ring_buf_t * ring)
 }
 
 
-static uint16_t _modbus_data_to_u16(uint8_t byte_1, uint8_t byte_2, modbus_byte_orders_t byte_order)
+static bool _modbus_data_to_u16(uint16_t* value, uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order)
 {
+    if (!value)
+    {
+        modbus_debug("Handed NULL pointer.");
+        return false;
+    }
+    if (size != 2)
+    {
+        modbus_debug("Not given array of size 2.");
+        return false;
+    }
     switch (byte_order)
     {
         case MODBUS_BYTE_ORDER_MSB:
-            return ((byte_1 << 8) | byte_2);
+            *value = ((data[0] << 8) | data[1]);
+            return true;
         case MODBUS_BYTE_ORDER_LSB:
-            return ((byte_2 << 8) | byte_1);
+            *value = ((data[1] << 8) | data[0]);
+            return true;
         default:
-            modbus_debug("Unknown byte order, assuming MSB");
-            return ((byte_1 << 8) | byte_2);
+            modbus_debug("Unknown byte order.");
+            return false;
     }
 }
 
@@ -594,11 +606,14 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
     }
     if (size != 4)
     {
-        modbus_debug("Not given array size of 4");
+        modbus_debug("Not given array size of 4.");
         return false;
     }
-    uint16_t word_1 = _modbus_data_to_u16(data[0], data[1], byte_order);
-    uint16_t word_2 = _modbus_data_to_u16(data[2], data[3], byte_order);
+    uint16_t word_1, word_2;
+    if (!_modbus_data_to_u16(&word_1, data  , 2, byte_order))
+        return false;
+    if (!_modbus_data_to_u16(&word_2, data+2, 2, byte_order))
+        return false;
     switch (word_order)
     {
         case MODBUS_WORD_ORDER_MSW:
@@ -608,9 +623,8 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
             *value = (word_2 << 16) | word_1;
             return true;
         default:
-            modbus_debug("Unknown word order, assuming MSW.");
-            *value = (word_1 << 16) | word_2;
-            return true;
+            modbus_debug("Unknown word order.");
+            return false;
     }
 }
 
@@ -625,7 +639,9 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
 {
     if (size != 2)
         return;
-    uint16_t v = _modbus_data_to_u16(data[0], data[1], byte_order);
+    uint16_t v;
+    if (!_modbus_data_to_u16(&v, data, size, byte_order))
+        return;
     _modbus_reg_set(reg, v);
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
