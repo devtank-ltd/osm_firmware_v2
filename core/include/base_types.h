@@ -137,6 +137,20 @@ typedef enum
 } modbus_reg_type_t;
 
 
+typedef enum
+{
+    MODBUS_BYTE_ORDER_MSB,
+    MODBUS_BYTE_ORDER_LSB,
+} modbus_byte_orders_t;
+
+
+typedef enum
+{
+    MODBUS_WORD_ORDER_MSW,
+    MODBUS_WORD_ORDER_LSW,
+} modbus_word_orders_t;
+
+
 typedef struct
 {
     char              name[MODBUS_NAME_LEN];
@@ -152,8 +166,9 @@ typedef struct
 {
     char           name[MODBUS_NAME_LEN];
     uint8_t        slave_id;
-    uint8_t        _;
-    uint16_t       __; /* pad.*/
+    uint8_t        byte_order; /* modbus_byte_orders_t */
+    uint8_t        word_order; /* modbus_word_orders_t */
+    uint8_t        _; /* pad.*/
     modbus_reg_t   regs[MODBUS_DEV_REGS];
 } __attribute__((__packed__)) modbus_dev_t;
 

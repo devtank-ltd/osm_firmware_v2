@@ -13,7 +13,7 @@ extern modbus_dev_t * modbus_get_device(unsigned index);
 extern modbus_dev_t * modbus_get_device_by_id(unsigned slave_id);
 extern modbus_dev_t * modbus_get_device_by_name(char * name);
 
-extern modbus_dev_t * modbus_add_device(unsigned slave_id, char *name);
+extern modbus_dev_t * modbus_add_device(unsigned slave_id, char *name, uint8_t byte_order, uint8_t word_order);
 
 extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr);
 extern unsigned       modbus_dev_get_reg_num(modbus_dev_t * dev);
