@@ -31,6 +31,11 @@
 #include "veml7700.h"
 
 
+#define SLOW_FLASHING_TIME_SEC              3000
+#define NORMAL_FLASHING_TIME_SEC            1000
+
+
+
 void hard_fault_handler(void)
 {
     /* Special libopencm3 function to handle crashes */
@@ -80,16 +85,17 @@ int main(void)
     log_async_log = true;
 
     uint32_t prev_now = 0;
+    uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;
     while(true)
     {
-        while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
+        while(since_boot_delta(get_since_boot_ms(), prev_now) < flashing_delay)
         {
             uart_rings_in_drain();
             uart_rings_out_drain();
             measurements_loop_iteration();
         }
         lw_loop_iteration();
-
+        flashing_delay = lw_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
         gpio_toggle(LED_PORT, LED_PIN);
 
         prev_now = get_since_boot_ms();
