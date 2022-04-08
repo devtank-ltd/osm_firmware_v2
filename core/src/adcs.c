@@ -192,22 +192,6 @@ bool adcs_cc_set_midpoints(uint16_t new_midpoints[ADC_CC_COUNT])
 }
 
 
-bool adcs_cc_set_midpoint(uint16_t midpoint, uint8_t index)
-{
-    if (index > ADC_CC_COUNT)
-    {
-        return false;
-    }
-    cc_midpoints[index] = midpoint;
-    if (!persist_set_cc_midpoints(cc_midpoints))
-    {
-        adc_debug("Could not set the persistent storage for the midpoint.");
-        return false;
-    }
-    return true;
-}
-
-
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
  * buffer, the step and start index are required to find the correct RMS.*/
 #ifdef __ADC_RMS_FULL__
@@ -427,6 +411,62 @@ static bool _adcs_get_index(uint8_t* index, char* name)
 }
 
 
+static bool _adcs_get_channel(uint8_t* channel, uint8_t index)
+{
+    if (!channel)
+    {
+        adc_debug("Handed NULL pointer.");
+        return false;
+    }
+    switch (index)
+    {
+        case 0:
+            *channel = ADC1_CHANNEL_CURRENT_CLAMP_1;
+            return true;
+        case 1:
+            *channel = ADC1_CHANNEL_CURRENT_CLAMP_2;
+            return true;
+        case 2:
+            *channel = ADC1_CHANNEL_CURRENT_CLAMP_3;
+            return true;
+        default:
+            adc_debug("No channel for %"PRIu8, index);
+            return false;
+    }
+}
+
+
+bool adcs_cc_set_midpoint(uint16_t midpoint, char* name)
+{
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
+        return false;
+    if (index > ADC_CC_COUNT)
+    {
+        return false;
+    }
+    cc_midpoints[index] = midpoint;
+    if (!persist_set_cc_midpoints(cc_midpoints))
+    {
+        adc_debug("Could not set the persistent storage for the midpoint.");
+        return false;
+    }
+    return true;
+}
+
+
+bool adcs_cc_get_midpoint(uint16_t* midpoint, char* name)
+{
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
+        return false;
+    if (index > ADC_CC_COUNT)
+        return false;
+    *midpoint = cc_midpoints[index];
+    return true;
+}
+
+
 measurements_sensor_state_t adcs_cc_begin(char* name)
 {
     if (adcs_bat_running)
@@ -536,10 +576,72 @@ measurements_sensor_state_t adcs_cc_get(char* name, value_t* value)
 
 bool adcs_cc_get_blocking(char* name, value_t* value)
 {
-    if (!adcs_cc_begin(name))
+    uint8_t index;
+    if (!_adcs_get_index(&index, name))
         return false;
+    uint8_t channel;
+    if (!_adcs_get_channel(&channel, index))
+    {
+        adc_debug("Could not get channel.");
+        return false;
+    }
+    adcs_channels_active_t prev_active_channels;
+    memcpy(prev_active_channels.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len);
+    prev_active_channels.len = adc_cc_channels_active.len;
+    if (!adcs_cc_set_channels_active(&channel, 1))
+    {
+        adc_debug("Cannot set active channel.");
+        return false;
+    }
+    if (adcs_cc_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Can not begin ADC.");
+        return false;
+    }
     _adcs_cc_wait();
-    return adcs_cc_get(name, value);
+    bool r = (adcs_cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
+    adcs_cc_set_channels_active(prev_active_channels.channels, prev_active_channels.len);
+    return r;
+}
+
+
+bool adcs_cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
+{
+    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
+    adcs_channels_active_t prev_adc_cc_channels_active = {0};
+    memcpy(prev_adc_cc_channels_active.channels, adc_cc_channels_active.channels, adc_cc_channels_active.len * sizeof(adc_cc_channels_active.channels[0]));
+    prev_adc_cc_channels_active.len = adc_cc_channels_active.len;
+
+    if (!adcs_cc_set_channels_active(all_cc_channels, ADC_CC_COUNT))
+    {
+        adc_debug("Cannot set active channel.");
+        return false;
+    }
+
+    if (adcs_cc_begin("") != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Can not begin ADC.");
+        return false;
+    }
+
+    _adcs_cc_wait();
+    if (!adcs_cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_1_NAME" value.");
+        return false;
+    }
+    if (!adcs_cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_2_NAME" value.");
+        return false;
+    }
+    if (!adcs_cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_3_NAME" value.");
+        return false;
+    }
+
+    return adcs_cc_set_channels_active(prev_adc_cc_channels_active.channels, prev_adc_cc_channels_active.len);
 }
 
 
@@ -628,12 +730,12 @@ measurements_sensor_state_t adcs_bat_collection_time(char* name, uint32_t* colle
 
 bool adcs_bat_get_blocking(char* name, value_t* value)
 {
-    if (!adcs_bat_begin(name))
+    if (adcs_bat_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
         return false;
     adc_debug("Waiting for ADC BAT");
     while (!adc_eoc(ADC1))
         uart_rings_out_drain();
-    return adcs_bat_get(name, value);
+    return (adcs_bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
 }
 
 

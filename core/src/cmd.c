@@ -511,8 +511,29 @@ static void reset_cb(char *args)
 
 static void cc_cb(char* args)
 {
+    char* p;
+    uint8_t cc_num = strtoul(args, &p, 10);
+    if (p == args)
+    {
+        value_t value_1, value_2, value_3;
+        if (!adcs_cc_get_all_blocking(&value_1, &value_2, &value_3))
+        {
+            log_out("Could not get CC values.");
+        }
+        log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
+        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_1.u16%1000);
+        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_1.u16%1000);
+        return;
+    }
+    if (cc_num > 3 || cc_num == 0)
+    {
+        log_out("cc [1/2/3]");
+        return;
+    }
+    char name[4];
+    snprintf(name, 4, "CC%"PRIu8, cc_num);
     value_t value;
-    if (!adcs_cc_get_blocking(args, &value))
+    if (!adcs_cc_get_blocking(name, &value))
     {
         log_out("Could not get adc value.");
         return;
@@ -529,6 +550,23 @@ static void cc_cb(char* args)
 static void cc_calibrate_cb(char *args)
 {
     adcs_cc_calibrate();
+}
+
+
+static void cc_mp_cb(char* args)
+{
+    // 2046 CC1
+    char* p;
+    uint16_t new_mp = strtoul(args, &p, 10);
+    if (p == args)
+    {
+        adcs_cc_get_midpoint(&new_mp, p);
+        log_out("MP: %"PRIu16, new_mp);
+        return;
+    }
+    p = skip_space(p);
+    if (!adcs_cc_set_midpoint(new_mp, p))
+        log_out("Failed to set the midpoint.");
 }
 
 
@@ -719,6 +757,7 @@ void cmds_process(char * command, unsigned len)
         { "reset",        "Reset device.",            reset_cb},
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
+        { "cc_mp",        "Set the CC midpoint",      cc_mp_cb},
         { "w1",           "Get temperature with w1",  ds18b20_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
