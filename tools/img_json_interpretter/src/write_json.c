@@ -1,5 +1,7 @@
 #include "json_x_img.h"
 
+#define WORD_BYTE_ORDER_TXT_SIZE            3
+
 
 static bool _write_modbus_json(struct json_object * root)
 {
@@ -38,6 +40,36 @@ static bool _write_modbus_json(struct json_object * root)
                 name[MODBUS_NAME_LEN] = 0;
 
                 json_object_object_add(modbus_devices_node, name, dev_node);
+
+                char w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE + 1];
+                switch(dev->word_order)
+                {
+                    case MODBUS_WORD_ORDER_LSW:
+                        strncpy(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE);
+                        break;
+                    case MODBUS_WORD_ORDER_MSW:
+                        strncpy(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE);
+                        break;
+                    default:
+                        strncpy(w_b_order_txt, "NA ", WORD_BYTE_ORDER_TXT_SIZE);
+                        break;
+                }
+                w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
+                json_object_object_add(dev_node, "word_order", json_object_new_string(w_b_order_txt));
+                switch(dev->byte_order)
+                {
+                    case MODBUS_WORD_ORDER_LSW:
+                        strncpy(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE);
+                        break;
+                    case MODBUS_WORD_ORDER_MSW:
+                        strncpy(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE);
+                        break;
+                    default:
+                        strncpy(w_b_order_txt, "NA", WORD_BYTE_ORDER_TXT_SIZE);
+                        break;
+                }
+                w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
+                json_object_object_add(dev_node, "byte_order", json_object_new_string(w_b_order_txt));
 
                 json_object_object_add(dev_node, "unit_id", json_object_new_int(dev->slave_id));
 
