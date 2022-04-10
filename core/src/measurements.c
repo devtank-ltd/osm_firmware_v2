@@ -225,12 +225,15 @@ static void measurements_send(void)
             _message_start_pos = _message_prev_start_pos = 0;
         }
         _pending_send = false;
-        return;
+        if (_measurements_debug_mode)
+            _last_sent_ms = get_since_boot_ms();
+        else
+            return;
     }
 
     has_printed_no_con = false;
 
-    if (!lw_send_ready())
+    if (!lw_send_ready() && !_measurements_debug_mode)
     {
         if (_pending_send)
         {
@@ -317,7 +320,13 @@ static void measurements_send(void)
     {
         if (!_pending_send)
             _last_sent_ms = get_since_boot_ms();
-        lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+        if (_measurements_debug_mode)
+        {
+            for (unsigned i = 0; i < _measurements_hex_arr_pos; i++)
+                measurements_debug("Packet %u = 0x%"PRIx8, i, _measurements_hex_arr[i]);
+        }
+        else
+            lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
         if (i == MEASUREMENTS_MAX_NUMBER)
         {
             _pending_send = false;
