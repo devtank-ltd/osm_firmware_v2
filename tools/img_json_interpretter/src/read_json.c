@@ -1,6 +1,9 @@
 #include "json_x_img.h"
 
 
+#define WORD_BYTE_ORDER_TXT_SIZE            3
+
+
 static int _get_defaulted_int(struct json_object * root, char * name, int default_value)
 {
     struct json_object * tmp = json_object_object_get(root, name);
@@ -139,6 +142,38 @@ static bool _read_modbus_json(struct json_object * root)
                     return false;
                 }
 
+                char w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE];
+                if (!_get_string_buf(dev_node, "word_order", w_b_order_txt, WORD_BYTE_ORDER_TXT_SIZE))
+                {
+                    log_error("Could not interpret word order.");
+                    return false;
+                }
+                uint8_t word_order;
+                if (strncmp(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE) == 0)
+                    word_order = MODBUS_WORD_ORDER_LSW;
+                else if (strncmp(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE) == 0)
+                    word_order = MODBUS_WORD_ORDER_MSW;
+                else
+                {
+                    log_error("Word order not recognised.");
+                    return false;
+                }
+                if (!_get_string_buf(dev_node, "byte_order", w_b_order_txt, WORD_BYTE_ORDER_TXT_SIZE))
+                {
+                    log_error("Could not interpret byte order.");
+                    return false;
+                }
+                uint8_t byte_order;
+                if (strncmp(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE) == 0)
+                    byte_order = MODBUS_WORD_ORDER_LSW;
+                else if (strncmp(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE) == 0)
+                    byte_order = MODBUS_WORD_ORDER_MSW;
+                else
+                {
+                    log_error("Byte order not recognised.");
+                    return false;
+                }
+
                 int unit_id =  _get_defaulted_int(dev_node, "unit_id", 0);
                 if (unit_id < 1 || unit_id > 255)
                 {
@@ -146,7 +181,7 @@ static bool _read_modbus_json(struct json_object * root)
                     return false;
                 }
 
-                modbus_dev_t * dev = modbus_add_device(unit_id, dev_name);
+                modbus_dev_t * dev = modbus_add_device(unit_id, dev_name, byte_order, word_order);
 
                 if (!dev)
                     return false;

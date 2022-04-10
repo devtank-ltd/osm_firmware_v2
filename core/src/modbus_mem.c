@@ -18,7 +18,13 @@ void modbus_log()
         modbus_dev_t * dev = modbus_devices + n;
         if (dev->name[0])
         {
-            log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", dev->slave_id, dev->name);
+            char byte_char = 'M';
+            char word_char = 'M';
+            if (dev->byte_order == MODBUS_BYTE_ORDER_LSB)
+                byte_char = 'L';
+            if (dev->word_order == MODBUS_WORD_ORDER_LSW)
+                word_char = 'L';
+            log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->slave_id, dev->name, byte_char, word_char);
             for (unsigned i = 0; i < MODBUS_DEV_REGS; i++)
             {
                 modbus_reg_t * reg = &dev->regs[i];
@@ -206,7 +212,7 @@ void modbus_reg_del(modbus_reg_t * reg)
 }
 
 
-modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
+modbus_dev_t * modbus_add_device(unsigned slave_id, char *name, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     if (!name || !slave_id)
         return NULL;
@@ -225,6 +231,8 @@ modbus_dev_t * modbus_add_device(unsigned slave_id, char *name)
             memset(dev->name, 0, MODBUS_NAME_LEN);
             memcpy(dev->name, name, len);
             dev->slave_id = slave_id;
+            dev->byte_order = byte_order;
+            dev->word_order = word_order;
             modbus_debug("Added device 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", slave_id, name);
             return dev;
         }

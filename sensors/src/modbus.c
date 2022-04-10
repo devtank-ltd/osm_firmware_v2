@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <libopencm3/cm3/systick.h>
 
@@ -148,6 +149,9 @@ void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_s
 
 bool modbus_setup_from_str(char * str)
 {
+    /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
+     * EXAMPLE: RTU 115200 8N1
+     */
     char * pos = skip_space(str);
 
     bool binary_framing = false;
@@ -190,6 +194,54 @@ bool modbus_setup_from_str(char * str)
 }
 
 
+bool modbus_add_dev_from_str(char* str)
+{
+    /*<slave_id> <LSB/MSB> <LSW/MSW> <name>
+     * (name can only be 4 char long)
+     * EXAMPLES:
+     * 0x1 MSB MSW TEST
+     */
+    char * pos = skip_space(str);
+
+    uint16_t slave_id = strtoul(pos, &pos, 16);
+    pos = skip_space(pos);
+
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'B'))
+        goto bad_exit;
+    modbus_byte_orders_t byte_order;
+    if (toupper(pos[0]) == 'L')
+        byte_order = MODBUS_BYTE_ORDER_LSB;
+    else if (toupper(pos[0]) == 'M')
+        byte_order = MODBUS_BYTE_ORDER_MSB;
+    else
+        goto bad_exit;
+    pos += 3;
+    pos = skip_space(pos);
+
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'W'))
+        goto bad_exit;
+    modbus_word_orders_t word_order;
+    if (toupper(pos[0]) == 'L')
+        word_order = MODBUS_WORD_ORDER_LSW;
+    else if (toupper(pos[0]) == 'M')
+        word_order = MODBUS_WORD_ORDER_MSW;
+    else
+        goto bad_exit;
+    pos += 3;
+
+    char * name = skip_space(pos);
+
+    if (modbus_add_device(slave_id, name, byte_order, word_order))
+        log_out("Added modbus device");
+    else
+        log_out("Failed to add modbus device.");
+    return true;
+bad_exit:
+    modbus_debug("Unknown format.");
+    return false;
+}
 
 
 uint32_t modbus_start_delay(void)
@@ -359,7 +411,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     return true;
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size);
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, uint8_t byte_order, uint8_t word_order);
 
 void modbus_ring_process(ring_buf_t * ring)
 {
@@ -514,7 +566,66 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
-    _modbus_reg_cb(current_reg, modbuspacket + 3, modbuspacket[2]);
+    _modbus_reg_cb(current_reg, modbuspacket + 3, modbuspacket[2], dev->byte_order, dev->word_order);
+}
+
+
+static bool _modbus_data_to_u16(uint16_t* value, uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order)
+{
+    if (!value)
+    {
+        modbus_debug("Handed NULL pointer.");
+        return false;
+    }
+    if (size != 2)
+    {
+        modbus_debug("Not given array of size 2.");
+        return false;
+    }
+    switch (byte_order)
+    {
+        case MODBUS_BYTE_ORDER_MSB:
+            *value = ((data[0] << 8) | data[1]);
+            return true;
+        case MODBUS_BYTE_ORDER_LSB:
+            *value = ((data[1] << 8) | data[0]);
+            return true;
+        default:
+            modbus_debug("Unknown byte order.");
+            return false;
+    }
+}
+
+
+static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+{
+    if (!value)
+    {
+        modbus_debug("Handed NULL pointer.");
+        return false;
+    }
+    if (size != 4)
+    {
+        modbus_debug("Not given array size of 4.");
+        return false;
+    }
+    uint16_t word_1, word_2;
+    if (!_modbus_data_to_u16(&word_1, data  , 2, byte_order))
+        return false;
+    if (!_modbus_data_to_u16(&word_2, data+2, 2, byte_order))
+        return false;
+    switch (word_order)
+    {
+        case MODBUS_WORD_ORDER_MSW:
+            *value = (word_1 << 16) | word_2;
+            return true;
+        case MODBUS_WORD_ORDER_LSW:
+            *value = (word_2 << 16) | word_1;
+            return true;
+        default:
+            modbus_debug("Unknown word order.");
+            return false;
+    }
 }
 
 
@@ -524,29 +635,35 @@ static void _modbus_reg_set(modbus_reg_t * reg, uint32_t v)
     reg->class_data_b = true;
 }
 
-static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)
 {
     if (size != 2)
         return;
-    uint16_t v = data[0] << 8 | data[1];
+    uint16_t v;
+    if (!_modbus_data_to_u16(&v, data, size, byte_order))
+        return;
     _modbus_reg_set(reg, v);
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
-static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
-    uint32_t v = data[0] << 24 | data[1] << 16 | data[2] << 8 | data[3];
+    uint32_t v;
+    if (!_modbus_data_to_u32(&v, data, size, byte_order, word_order))
+        return;
     _modbus_reg_set(reg, v);
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
-static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
-    uint32_t v = data[2] << 24 | data[3] << 16 | data[0] << 8 | data[1];
+    uint32_t v;
+    if (!_modbus_data_to_u32(&v, data, size, byte_order, word_order))
+        return;
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstrict-aliasing"
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s F32:%f", reg->name, *(float*)&v);
@@ -554,13 +671,13 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
     _modbus_reg_set(reg, v);
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size)
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     switch(reg->type)
     {
-        case MODBUS_REG_TYPE_U16:    _modbus_reg_u16_cb(reg, data, size); break;
-        case MODBUS_REG_TYPE_U32:    _modbus_reg_u32_cb(reg, data, size); break;
-        case MODBUS_REG_TYPE_FLOAT:  _modbus_reg_float_cb(reg, data, size); break;
+        case MODBUS_REG_TYPE_U16:    _modbus_reg_u16_cb(reg, data, size, byte_order); break;
+        case MODBUS_REG_TYPE_U32:    _modbus_reg_u32_cb(reg, data, size, byte_order, word_order); break;
+        case MODBUS_REG_TYPE_FLOAT:  _modbus_reg_float_cb(reg, data, size, byte_order, word_order); break;
         default: log_error("Unknown modbus reg type."); break;
     }
 }

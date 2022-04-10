@@ -367,21 +367,15 @@ static void modbus_setup_cb(char *args)
 
 static void modbus_add_dev_cb(char * args)
 {
-    /*<slave_id> <name>
+    /*<slave_id> <LSB/MSB> <LSW/MSW> <name>
      * (name can only be 4 char long)
      * EXAMPLES:
-     * 0x1 TEST
+     * 0x1 MSB MSW TEST
      */
-    char * pos = skip_space(args);
-
-    uint16_t slave_id = strtoul(pos, &pos, 16);
-
-    char * name = skip_space(pos);
-
-    if (modbus_add_device(slave_id, name))
-        log_out("Added modbus device");
-    else
-        log_out("Failed to add modbus device.");
+    if (!modbus_add_dev_from_str(args))
+    {
+        log_out("<slave_id> <LSB/MSB> <LSW/MSW> <name>");
+    }
 }
 
 
