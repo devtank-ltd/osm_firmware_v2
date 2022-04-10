@@ -22,7 +22,7 @@
 #include "sai.h"
 
 
-#define MEASUREMENTS_DEFAULT_COLLECTION_TIME  (uint32_t)1000
+#define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
 
 #define FW_SHA_LEN                          7
 
@@ -74,7 +74,7 @@ static measurements_arr_t           _measurements_arr                           
 static bool                         _measurements_debug_mode                             = false;
 
 
-uint32_t transmit_interval = 5; /* in minutes, defaulting to 5 minutes */
+uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60 * 1000)
 
@@ -996,14 +996,14 @@ void measurements_init(void)
     if (persist_get_mins_interval(&transmit_interval))
     {
         if (!transmit_interval)
-            transmit_interval = 5;
+            transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
 
         measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval);
     }
     else
     {
         log_error("Could not load measurements interval.");
-        transmit_interval = 5;
+        transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     }
     _measurements_derive_cc_phase();
 }
