@@ -332,13 +332,6 @@ bool lw_send_ready(void)
 }
 
 
- void _lw_send_alive(void)
-{
-    lw_debug("Sending an 'is alive' packet.");
-    _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
-}
-
-
 bool lw_send_str(char* str)
 {
     if (!lw_send_ready())
@@ -351,6 +344,54 @@ bool lw_send_str(char* str)
     _lw_backup_message.backup_type = LW_BKUP_MSG_STR;
     strncpy(_lw_backup_message.string, str, strlen(str));
     return true;
+}
+
+
+static void _lw_clear_backup(void)
+{
+    _lw_backup_message.backup_type = LW_BKUP_MSG_BLANK;
+}
+
+
+static void _lw_retry_write(void)
+{
+    switch (_lw_backup_message.backup_type)
+    {
+        case LW_BKUP_MSG_STR:
+            lw_send_str(_lw_backup_message.string);
+            break;
+        case LW_BKUP_MSG_HEX:
+            lw_send(_lw_backup_message.hex.arr, _lw_backup_message.hex.len);
+            break;
+        default:
+            lw_debug("Broken backup, cant resend");
+            return;
+    }
+}
+
+
+ void _lw_send_alive(void)
+{
+    lw_debug("Sending an 'is alive' packet.");
+    switch (_lw_backup_message.backup_type)
+    {
+        case LW_BKUP_MSG_HEX:
+            if (_lw_backup_message.hex.len > 0)
+                goto send_backup_data;
+            break;
+        case LW_BKUP_MSG_STR:
+            if (strlen(_lw_backup_message.string) > 0)
+                goto send_backup_data;
+            break;
+        case LW_BKUP_MSG_BLANK:
+            break;
+    }
+    _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
+    return;
+
+send_backup_data:
+    lw_debug("Data in backup, resending data.");
+    _lw_retry_write();
 }
 
 
@@ -531,23 +572,6 @@ static void _lw_send_error_code(void)
 }
 
 
-static void _lw_retry_write(void)
-{
-    switch (_lw_backup_message.backup_type)
-    {
-        case LW_BKUP_MSG_STR:
-            lw_send_str(_lw_backup_message.string);
-            break;
-        case LW_BKUP_MSG_HEX:
-            lw_send(_lw_backup_message.hex.arr, _lw_backup_message.hex.len);
-            break;
-        default:
-            lw_debug("Broken backup, cant resend");
-            return;
-    }
-}
-
-
 void lw_reset(void)
 {
     if (_lw_state_machine.state == LW_STATE_OFF)
@@ -698,6 +722,7 @@ static void _lw_process_wait_ack(char* message)
     {
         _lw_state_machine.state = LW_STATE_IDLE;
         _lw_state_machine.reset_count = 0;
+        _lw_clear_backup();
         on_lw_sent_ack(true);
     }
 }
