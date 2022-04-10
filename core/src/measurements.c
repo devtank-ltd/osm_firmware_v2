@@ -664,7 +664,7 @@ static void _measurements_sample(void)
         }
 
         sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
-        time_since_interval = since_boot_delta(now, _last_sent_ms);
+        time_since_interval = since_boot_delta(now, _last_sent_ms) + (_interval_count % def->interval) * INTERVAL_TRANSMIT_MS;
 
         time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
         if (time_init_boundary < data->collection_time_cache)
