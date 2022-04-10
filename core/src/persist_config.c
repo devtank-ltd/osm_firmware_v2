@@ -59,7 +59,7 @@ void persistent_init(void)
         memset(&persist_data, 0, sizeof(persist_data));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
-        persist_data.mins_interval = 5;
+        persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
         return;
     }
 
