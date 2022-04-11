@@ -120,6 +120,12 @@ typedef enum
 
 typedef enum
 {
+    LW_CMD_ERROR_NO_ERROR       = 0,
+} lw_cmd_error_codes_t;
+
+
+typedef enum
+{
     LW_BKUP_MSG_BLANK,
     LW_BKUP_MSG_STR,
     LW_BKUP_MSG_HEX,
@@ -172,8 +178,8 @@ typedef struct
 
 typedef struct
 {
-    uint32_t    code;
-    bool        valid;
+    lw_cmd_error_codes_t    code;
+    bool                    valid;
 } error_code_t;
 
 
@@ -552,12 +558,14 @@ static void _lw_handle_unsol(char* message)
             cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
             /* FIXME: Give cmds an exit code.
             _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
-            _lw_error_code.valid = true;
             */
+            _lw_error_code.code = LW_CMD_ERROR_NO_ERROR;
+            _lw_error_code.valid = true;
             break;
         default:
             break;
     }
+    return;
 }
 
 
@@ -567,7 +575,7 @@ static void _lw_send_error_code(void)
     if (_lw_error_code.valid)
     {
         char err_msg[11] = "";
-        snprintf(err_msg, 11, "%"PRIx32, _lw_error_code.code);
+        snprintf(err_msg, 11, "%"PRIx8, _lw_error_code.code);
         lw_send_str(err_msg);
         _lw_error_code.valid = false;
     }
@@ -735,7 +743,11 @@ static void _lw_process_idle(char* message)
     if (_lw_msg_is_unsol(message))
     {
         _lw_handle_unsol(message);
-        _lw_set_confirmed(false);
+        if (_lw_error_code.valid &&
+            _lw_error_code.code != LW_CMD_ERROR_NO_ERROR)
+        {
+            _lw_set_confirmed(false);
+        }
     }
 }
 
