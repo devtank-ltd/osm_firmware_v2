@@ -5,6 +5,7 @@
 #include <libopencm3/stm32/dma.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/timer.h>
 #endif
 
 #include <stdint.h>
@@ -173,13 +174,21 @@ GPIO16 D2                   IO 11
 #define W1_PULSE_1_IO               4
 
 #define W1_PULSE_1_EXTI             EXTI11
-#define W1_PULSE_1_EXTI_IRQ NVIC_EXTI15_10_IRQ
+#define W1_PULSE_1_EXTI_IRQ         NVIC_EXTI15_10_IRQ
+#define W1_PULSE_1_TIM              TIM15
+#define W1_PULSE_1_TIM_RCC          RCC_TIM15
+#define W1_PULSE_1_TIM_IRQ          NVIC_TIM1_BRK_TIM15_IRQ
+#define W1_PULSE_1_TIM_ISR          tim1_brk_tim15_isr
 
 #define W1_PULSE_2_PIN              GPIO12
 #define W1_PULSE_2_IO               5
 
 #define W1_PULSE_2_EXTI             EXTI12
-#define W1_PULSE_2_EXTI_IRQ NVIC_EXTI15_10_IRQ
+#define W1_PULSE_2_EXTI_IRQ         NVIC_EXTI15_10_IRQ
+#define W1_PULSE_2_TIM              TIM16
+#define W1_PULSE_2_TIM_RCC          RCC_TIM16
+#define W1_PULSE_2_TIM_IRQ          NVIC_TIM1_UP_TIM16_IRQ
+#define W1_PULSE_2_TIM_ISR          tim1_up_tim16_isr
 
 #define W1_PULSE_ISR                exti15_10_isr
 
