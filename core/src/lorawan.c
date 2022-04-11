@@ -358,9 +358,11 @@ static void _lw_retry_write(void)
     switch (_lw_backup_message.backup_type)
     {
         case LW_BKUP_MSG_STR:
+            _lw_state_machine.state = LW_STATE_IDLE;
             lw_send_str(_lw_backup_message.string);
             break;
         case LW_BKUP_MSG_HEX:
+            _lw_state_machine.state = LW_STATE_IDLE;
             lw_send(_lw_backup_message.hex.arr, _lw_backup_message.hex.len);
             break;
         default:
