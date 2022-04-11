@@ -523,12 +523,12 @@ static bool _lw_write_next_init_step(void)
 }
 
 
-static uint8_t _lw_handle_unsol(char* message)
+static void _lw_handle_unsol(char* message)
 {
     lw_payload_t incoming_pl;
     if (_lw_parse_recv(message, &incoming_pl) != LW_RECV_DATA)
     {
-        return LW_CMD_ERROR_NO_ERROR;
+        return;
     }
 
     char* p = incoming_pl.data;
@@ -558,14 +558,14 @@ static uint8_t _lw_handle_unsol(char* message)
             cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
             /* FIXME: Give cmds an exit code.
             _lw_error_code.code = cmds_process(_lw_cmd_ascii, strlen(_lw_cmd_ascii));
-            _lw_error_code.valid = true;
             */
+            _lw_error_code.code = LW_CMD_ERROR_NO_ERROR;
+            _lw_error_code.valid = true;
             break;
         default:
             break;
     }
-    // Will return error code
-    return LW_CMD_ERROR_NO_ERROR;
+    return;
 }
 
 
@@ -742,8 +742,12 @@ static void _lw_process_idle(char* message)
 {
     if (_lw_msg_is_unsol(message))
     {
-        if (_lw_handle_unsol(message) != LW_CMD_ERROR_NO_ERROR)
+        _lw_handle_unsol(message);
+        if (_lw_error_code.valid &&
+            _lw_error_code.code != LW_CMD_ERROR_NO_ERROR)
+        {
             _lw_set_confirmed(false);
+        }
     }
 }
 
