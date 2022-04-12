@@ -11,6 +11,8 @@
 #include "sleep.h"
 #include "log.h"
 #include "common.h"
+#include "uart_rings.h"
+#include "measurements.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32
@@ -78,6 +80,12 @@ static void _sleep_setup_tim(uint16_t count, uint32_t prescaler)
 
 bool sleep_for_ms(uint32_t ms)
 {
+    uint32_t    before_time = get_since_boot_ms();
+    sleep_debug("Sleeping for %"PRIu32"ms.", ms);
+    while (uart_rings_out_busy())
+        uart_rings_out_drain();
+    uint32_t    time_passed = since_boot_delta(get_since_boot_ms(), before_time);
+    ms -= time_passed;
     if (ms < SLEEP_MIN_SLEEP_TIME_MS)
     {
         return false;
@@ -97,8 +105,6 @@ bool sleep_for_ms(uint32_t ms)
     }
     count = (ms * 1000) / (SLEEP_LSI_CLK_FREQ_KHZ * (1 << div_shift));
     uint16_t count16 = count;
-    sleep_debug("Sleeping for %"PRIu32"ms.", ms);
-    uint32_t before_time = get_since_boot_ms();
     _sleep_setup_tim(count16, (div_shift << LPTIM_CFGR_PRESC_SHIFT));
     _sleep_enter_sleep_mode();
     sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));

@@ -938,6 +938,8 @@ void measurements_loop_iteration(void)
     /* If no measurements require active calls. */
     if (count_active == 0)
     {
+        static bool _measurements_print_sleep = false;
+
         uint32_t sleep_time;
         /* Get new now as above functions may have taken a while */
         uint32_t new_now = get_since_boot_ms();
@@ -948,14 +950,12 @@ void measurements_loop_iteration(void)
                 time_passed >= since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now))
                 return;
         }
-        {
-            uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, new_now);
-            uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, new_now);
-            if (next_sample_time < next_send_time)
-                sleep_time = next_sample_time;
-            else
-                sleep_time = next_send_time;
-        }
+        uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, new_now);
+        uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, new_now);
+        if (next_sample_time < next_send_time)
+            sleep_time = next_sample_time;
+        else
+            sleep_time = next_send_time;
 
         if (sleep_time < SLEEP_MIN_SLEEP_TIME_MS)
             /* No point sleeping for short amount of time */
@@ -963,8 +963,15 @@ void measurements_loop_iteration(void)
 
         /* Make sure to wake up before required */
         sleep_time -= SLEEP_MIN_SLEEP_TIME_MS;
-        uart_rings_out_drain();
-        sleep_for_ms(sleep_time);
+        if (_measurements_print_sleep)
+        {
+            _measurements_print_sleep = false;
+            measurements_debug("next_sample_time = %"PRIu32, next_sample_time);
+            measurements_debug("next_send_time = %"PRIu32, next_send_time);
+            measurements_debug("Sleeping for %"PRIu32, sleep_time);
+        }
+        if (sleep_for_ms(sleep_time))
+            _measurements_print_sleep = true;
     }
 }
 
