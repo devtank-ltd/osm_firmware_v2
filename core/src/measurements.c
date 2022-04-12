@@ -654,6 +654,8 @@ static void _measurements_sample(void)
     uint32_t            time_init;
     uint32_t            time_collect;
 
+    uint32_t            wait_time;
+
     _check_time.last_checked_time = now;
     _check_time.wait_time = UINT32_MAX;
 
@@ -683,15 +685,13 @@ static void _measurements_sample(void)
         if (time_since_interval >= time_init)
         {
             _measurements_sample_init_iteration(def, data);
+            wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
         }
         else
-        {
-            uint32_t t_diff = since_boot_delta(time_init, time_since_interval);
-            if (_check_time.wait_time > t_diff)
-            {
-                _check_time.wait_time = t_diff;
-            }
-        }
+            wait_time = since_boot_delta(time_init, time_since_interval);
+
+        if (_check_time.wait_time > wait_time)
+            _check_time.wait_time = wait_time;
 
         // The sample is collected every interval/samplecount but offset by 1/2.
         // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
@@ -705,15 +705,13 @@ static void _measurements_sample(void)
                 log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
                 log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
             }
+            wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
         }
         else
-        {
-            uint32_t t_diff = since_boot_delta(time_collect, time_since_interval);
-            if (_check_time.wait_time > t_diff)
-            {
-                _check_time.wait_time = t_diff;
-            }
-        }
+            wait_time = since_boot_delta(time_collect, time_since_interval);
+
+        if (_check_time.wait_time > wait_time)
+            _check_time.wait_time = wait_time;
     }
     if (_check_time.wait_time == UINT32_MAX)
         _check_time.wait_time = 0;
