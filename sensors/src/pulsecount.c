@@ -70,6 +70,7 @@ void W1_PULSE_ISR(void)
         uint32_t exti_state = exti_get_flag_status(inst->exti);
         if (!exti_state)
             continue;
+        exti_reset_request(inst->exti);
         exti_disable_request(inst->exti);
         __sync_add_and_fetch(&inst->count, 1);
         timer_set_counter(inst->tim, 0);
@@ -130,12 +131,13 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
                    TIM_CR1_DIR_UP);
 
     timer_set_prescaler(instance->tim, rcc_ahb_frequency / 10000-1);//-1 because it starts at zero, and interrupts on the overflow
-    timer_set_period(instance->tim, PULSECOUNT_EDGE_COOLDOWN_MS);
+    timer_set_period(instance->tim, PULSECOUNT_EDGE_COOLDOWN_MS * 10);
     timer_enable_preload(instance->tim);
     timer_one_shot_mode(instance->tim);
     timer_enable_irq(instance->tim, TIM_DIER_CC1IE);
 
     nvic_enable_irq(instance->tim_irq);
+    nvic_set_priority(instance->tim_irq, 1);
 
     pulsecount_debug("Pulsecount '%s' enabled", instance->info.name);
 }
@@ -152,6 +154,7 @@ void pulsecount_init(void)
 
 void W1_PULSE_1_TIM_ISR(void)
 {
+    timer_clear_flag(W1_PULSE_1_TIM, TIM_SR_CC1IF);
     pulsecount_instance_t* inst = &_pulsecount_instances[0];
     exti_enable_request(inst->exti);
     timer_disable_counter(inst->tim);
@@ -160,6 +163,7 @@ void W1_PULSE_1_TIM_ISR(void)
 
 void W1_PULSE_2_TIM_ISR(void)
 {
+    timer_clear_flag(W1_PULSE_2_TIM, TIM_SR_CC1IF);
     pulsecount_instance_t* inst = &_pulsecount_instances[1];
     exti_enable_request(inst->exti);
     timer_disable_counter(inst->tim);
