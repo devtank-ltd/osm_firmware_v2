@@ -85,26 +85,29 @@ bool sleep_for_ms(uint32_t ms)
     while (uart_rings_out_busy())
         uart_rings_out_drain();
     uint32_t    time_passed = since_boot_delta(get_since_boot_ms(), before_time);
+    if (ms <= time_passed)
+        return false;
     ms -= time_passed;
     if (ms < SLEEP_MIN_SLEEP_TIME_MS)
-    {
         return false;
-    }
     /* Must sort out count and prescale depending on size of count */
     uint32_t    div_shift   = 0;
     uint64_t    count       = ms;
+    uint16_t    count16;
     while (count >= (SLEEP_LSI_CLK_FREQ_KHZ * UINT16_MAX / 1000))
     {
         count /= 2;
         div_shift += 1;
         if (div_shift > 7)
         {
-            //sleep_debug("Divider can not go large enough to compensate.");
-            return false;
+            count16 = 0xFFFF;
+            div_shift = 7;
+            goto turn_on_sleep;
         }
     }
     count = (ms * 1000) / (SLEEP_LSI_CLK_FREQ_KHZ * (1 << div_shift));
-    uint16_t count16 = count;
+    count16 = count;
+turn_on_sleep:
     _sleep_setup_tim(count16, (div_shift << LPTIM_CFGR_PRESC_SHIFT));
     _sleep_enter_sleep_mode();
     sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));
