@@ -26,7 +26,9 @@ firmware_SOURCES := \
            sensors/src/ds18b20.c \
            sensors/src/pulsecount.c \
            sensors/src/veml7700.c \
-           sensors/src/sai.c
+           sensors/src/sai.c \
+           sensors/src/cc.c \
+           sensors/src/bat.c
 
 
 firmware_LINK_SCRIPT := core/stm32l452.ld

@@ -28,6 +28,8 @@
 #include "log.h"
 #include "uart_rings.h"
 #include "veml7700.h"
+#include "cc.h"
+#include "bat.h"
 
 
 static char   * rx_buffer;
