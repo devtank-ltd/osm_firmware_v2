@@ -691,6 +691,14 @@ static void _measurements_sample(void)
         }
         time_init       = time_init_boundary - data->collection_time_cache;
         time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
+        /*
+        if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN) == 0)
+        {
+            measurements_debug("time_since_interval = %"PRIu32, time_since_interval);
+            measurements_debug("time_init = %"PRIu32, time_init);
+            measurements_debug("time_collect = %"PRIu32, time_collect);
+        }
+        */
         // If it takes time to get a sample, it is begun here.
         if (time_since_interval >= time_init)
         {
@@ -698,10 +706,14 @@ static void _measurements_sample(void)
             wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
         }
         else
+        {
             wait_time = since_boot_delta(time_init, time_since_interval);
+        }
 
         if (_check_time.wait_time > wait_time)
+        {
             _check_time.wait_time = wait_time;
+        }
 
         // The sample is collected every interval/samplecount but offset by 1/2.
         // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
@@ -718,10 +730,14 @@ static void _measurements_sample(void)
             wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
         }
         else
+        {
             wait_time = since_boot_delta(time_collect, time_since_interval);
+        }
 
         if (_check_time.wait_time > wait_time)
+        {
             _check_time.wait_time = wait_time;
+        }
     }
     if (_check_time.wait_time == UINT32_MAX)
         _check_time.wait_time = 0;
@@ -908,10 +924,13 @@ static void _measurements_sleep_iteration(void)
 {
     static bool _measurements_print_sleep = false;
 
+    bool on_bat;
     switch (_measurements_sleep_mode)
     {
         case MEASUREMENTS_SLEEP_MODE_NORMAL:
-            if (!adcs_on_battery())
+            if (!bat_on_battery(&on_bat))
+                return;
+            if (!on_bat)
                 return;
             break;
         case MEASUREMENTS_SLEEP_MODE_BATTERY:
@@ -946,9 +965,11 @@ static void _measurements_sleep_iteration(void)
     if (_measurements_print_sleep)
     {
         _measurements_print_sleep = false;
+        /*
         measurements_debug("next_sample_time = %"PRIu32, next_sample_time);
         measurements_debug("next_send_time = %"PRIu32, next_send_time);
         measurements_debug("Sleeping for %"PRIu32, sleep_time);
+        */
     }
     if (sleep_for_ms(sleep_time))
         _measurements_print_sleep = true;

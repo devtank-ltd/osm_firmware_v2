@@ -14,15 +14,23 @@
 #include "pinmap.h"
 
 
-#define ADC_CCR_PRESCALE_MASK  (15 << 18)
-#define ADC_CCR_PRESCALE_64    ( 9 << 18)
+#define ADC_CCR_PRESCALE_1     0x0  /* 0b0000 */
+#define ADC_CCR_PRESCALE_2     0x1  /* 0b0001 */
+#define ADC_CCR_PRESCALE_4     0x2  /* 0b0010 */
+#define ADC_CCR_PRESCALE_6     0x3  /* 0b0011 */
+#define ADC_CCR_PRESCALE_8     0x4  /* 0b0100 */
+#define ADC_CCR_PRESCALE_10    0x5  /* 0b0101 */
+#define ADC_CCR_PRESCALE_12    0x6  /* 0b0110 */
+#define ADC_CCR_PRESCALE_16    0x7  /* 0b0111 */
+#define ADC_CCR_PRESCALE_32    0x8  /* 0b1000 */
+#define ADC_CCR_PRESCALE_64    0x9  /* 0b1001 */
+#define ADC_CCR_PRESCALE_128   0xA  /* 0b1010 */
+#define ADC_CCR_PRESCALE_256   0xB  /* 0b1011 */
+#define ADC_CCR_PRESCALE_MASK  0xF
+#define ADC_CCR_PRESCALE_SHIFT 18
 
-
-#define ADCS_CONFIG_PRESCALE        ADC_CCR_PRESCALE_64
-#define ADCS_CONFIG_SAMPLE_TIME     ADC_SMPR_SMP_640DOT5CYC /* 640.5 + 12.5 cycles of (80Mhz / 64) clock */
-/* (640.5 + 12.5) * (1000000 / (80000000 / 64)) = 522.4 microseconds
- *
- * 480 samples
+/* 640.5 + 12.5 cycles of (80Mhz / 64) clock
+ * (640.5 + 12.5) * (1000000 / (80000000 / 64)) = 522.4 microseconds
  *
  * 522.4 * 480 = 250752 microseconds
  *
@@ -123,19 +131,10 @@ static bool _adcs_get_avg(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_
 }
 
 
-static bool _adcs_set_prescale(uint32_t adc, uint32_t prescale)
+static void _adcs_set_prescale(uint32_t adc, uint32_t prescale)
 {
-    if (((ADC_CR(adc) & ADC_CR_ADCAL    )==0) &&
-        ((ADC_CR(adc) & ADC_CR_JADSTART )==0) &&
-        ((ADC_CR(adc) & ADC_CR_ADSTART  )==0) &&
-        ((ADC_CR(adc) & ADC_CR_ADSTP    )==0) &&
-        ((ADC_CR(adc) & ADC_CR_ADDIS    )==0) &&
-        ((ADC_CR(adc) & ADC_CR_ADEN     )==0) )
-    {
-        ADC_CCR(adc) = (ADC_CCR(adc) & ADC_CCR_PRESCALE_MASK) | prescale;
-        return true;
-    }
-    return false;
+    ADC_CCR(adc) &= ~(ADC_CCR_PRESCALE_MASK << ADC_CCR_PRESCALE_SHIFT);
+    ADC_CCR(adc) |= (prescale & ADC_CCR_PRESCALE_MASK) << ADC_CCR_PRESCALE_SHIFT;
 }
 
 
@@ -148,14 +147,11 @@ static void _adcs_setup_adc(void)
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
     }
 
-    if (!_adcs_set_prescale(ADC1, ADCS_CONFIG_PRESCALE))
-    {
-        adc_debug("Could not set prescale value.");
-    }
+    _adcs_set_prescale(ADC1, ADC_CCR_PRESCALE_64);
 
     adc_enable_regulator(ADC1);
     adc_set_right_aligned(ADC1);
-    adc_set_sample_time_on_all_channels(ADC1, ADCS_CONFIG_SAMPLE_TIME);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_640DOT5CYC);
     adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
 
     adc_calibrate(ADC1);
