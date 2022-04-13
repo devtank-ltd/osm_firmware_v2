@@ -38,6 +38,14 @@ typedef enum
 } measurements_state_t;
 
 
+typedef enum
+{
+    MEASUREMENTS_SLEEP_MODE_NORMAL  = 0,
+    MEASUREMENTS_SLEEP_MODE_BATTERY = 1,
+    MEASUREMENTS_SLEEP_MODE_PLUGGED = 2,
+} measurements_sleep_mode_t;
+
+
 typedef struct
 {
     value_t                 sum;
@@ -75,6 +83,8 @@ static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY
 static uint16_t                     _measurements_hex_arr_pos                            =  0;
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
+
+static measurements_sleep_mode_t    _measurements_sleep_mode                             = MEASUREMENTS_SLEEP_MODE_NORMAL;
 
 
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
@@ -898,6 +908,18 @@ static void _measurements_sleep_iteration(void)
 {
     static bool _measurements_print_sleep = false;
 
+    switch (_measurements_sleep_mode)
+    {
+        case MEASUREMENTS_SLEEP_MODE_NORMAL:
+            if (!adcs_on_battery())
+                return;
+            break;
+        case MEASUREMENTS_SLEEP_MODE_BATTERY:
+            break;
+        case MEASUREMENTS_SLEEP_MODE_PLUGGED:
+            return;
+    }
+
     uint32_t sleep_time;
     /* Get new now as above functions may have taken a while */
     uint32_t now = get_since_boot_ms();
@@ -1122,4 +1144,10 @@ void measurements_set_debug_mode(bool enable)
         measurements_debug("Disabling measurements debug mode.");
     _measurements_debug_mode = enable;
     _measurements_sample();
+}
+
+
+void measurements_sleep_mode(uint8_t mode)
+{
+    _measurements_sleep_mode = mode;
 }

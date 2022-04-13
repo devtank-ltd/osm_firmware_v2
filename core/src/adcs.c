@@ -33,6 +33,7 @@
 
 typedef uint16_t adcs_all_buf_t[ADCS_NUM_SAMPLES];
 
+#define ADCS_MON_DEFAULT_COLLECTION_TIME    100;
 
 static adcs_all_buf_t       _adcs_buffer;
 static volatile bool        _adcs_in_use        = false;

@@ -54,3 +54,5 @@ extern bool     measurements_get_samplecount(char* name, uint8_t * samplecount);
 extern void     measurements_loop_iteration(void);
 extern void     measurements_init(void);
 extern void     measurements_set_debug_mode(bool enable);
+
+extern void     measurements_sleep_mode(uint8_t mode);
