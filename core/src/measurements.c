@@ -894,6 +894,45 @@ static uint16_t _measurements_iterate_callbacks(void)
 }
 
 
+static void _measurements_sleep_iteration(void)
+{
+    static bool _measurements_print_sleep = false;
+
+    uint32_t sleep_time;
+    /* Get new now as above functions may have taken a while */
+    uint32_t now = get_since_boot_ms();
+
+    if (_check_time.last_checked_time + _check_time.wait_time <= now)
+        return;
+
+    if (_last_sent_ms + INTERVAL_TRANSMIT_MS <= now)
+        return;
+
+    uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, now);
+    uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now);
+    if (next_sample_time < next_send_time)
+        sleep_time = next_sample_time;
+    else
+        sleep_time = next_send_time;
+
+    if (sleep_time < SLEEP_MIN_SLEEP_TIME_MS)
+        /* No point sleeping for short amount of time */
+        return;
+
+    /* Make sure to wake up before required */
+    sleep_time -= SLEEP_MIN_SLEEP_TIME_MS;
+    if (_measurements_print_sleep)
+    {
+        _measurements_print_sleep = false;
+        measurements_debug("next_sample_time = %"PRIu32, next_sample_time);
+        measurements_debug("next_send_time = %"PRIu32, next_send_time);
+        measurements_debug("Sleeping for %"PRIu32, sleep_time);
+    }
+    if (sleep_for_ms(sleep_time))
+        _measurements_print_sleep = true;
+}
+
+
 void measurements_loop_iteration(void)
 {
     static bool has_printed_no_con = false;
@@ -936,40 +975,7 @@ void measurements_loop_iteration(void)
     /* If no measurements require active calls. */
     if (count_active == 0)
     {
-        static bool _measurements_print_sleep = false;
-
-        uint32_t sleep_time;
-        /* Get new now as above functions may have taken a while */
-        uint32_t new_now = get_since_boot_ms();
-        {
-            /* If the time passed between now and new now is larger than the wait time dont sleep */
-            uint32_t time_passed = since_boot_delta(new_now, now);
-            if (time_passed >= _check_time.wait_time ||
-                time_passed >= since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now))
-                return;
-        }
-        uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, new_now);
-        uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, new_now);
-        if (next_sample_time < next_send_time)
-            sleep_time = next_sample_time;
-        else
-            sleep_time = next_send_time;
-
-        if (sleep_time < SLEEP_MIN_SLEEP_TIME_MS)
-            /* No point sleeping for short amount of time */
-            return;
-
-        /* Make sure to wake up before required */
-        sleep_time -= SLEEP_MIN_SLEEP_TIME_MS;
-        if (_measurements_print_sleep)
-        {
-            _measurements_print_sleep = false;
-            measurements_debug("next_sample_time = %"PRIu32, next_sample_time);
-            measurements_debug("next_send_time = %"PRIu32, next_send_time);
-            measurements_debug("Sleeping for %"PRIu32, sleep_time);
-        }
-        if (sleep_for_ms(sleep_time))
-            _measurements_print_sleep = true;
+        _measurements_sleep_iteration();
     }
 }
 
