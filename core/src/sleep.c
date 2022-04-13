@@ -13,6 +13,7 @@
 #include "common.h"
 #include "uart_rings.h"
 #include "measurements.h"
+#include "pinmap.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32

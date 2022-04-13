@@ -143,7 +143,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 }
 
 
-static void uart_ring_in_drain(unsigned uart)
+void uart_ring_in_drain(unsigned uart)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
