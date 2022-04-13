@@ -83,7 +83,12 @@ bool sleep_for_ms(uint32_t ms)
     uint32_t    before_time = get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (uart_rings_out_busy())
+    {
         uart_rings_out_drain();
+        uart_ring_in_drain(LW_UART);
+        uart_ring_in_drain(HPM_UART);
+        uart_ring_in_drain(RS485_UART);
+    }
     uint32_t    time_passed = since_boot_delta(get_since_boot_ms(), before_time);
     if (ms <= time_passed)
         return false;
