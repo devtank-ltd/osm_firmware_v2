@@ -4,6 +4,8 @@
 #include "measurements.h"
 
 
+extern void                         cc_init(void);
+
 extern measurements_sensor_state_t  adcs_cc_collection_time(char* name, uint32_t* collection_time);
 extern measurements_sensor_state_t  adcs_cc_begin(char* name);
 extern measurements_sensor_state_t  adcs_cc_get(char* name, value_t* value);

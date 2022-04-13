@@ -17,22 +17,6 @@
 #define CC_TIMEOUT_MS                       1000
 
 
-typedef enum
-{
-    ADCS_ADC_INDEX_ADC1    = 0 ,
-    ADCS_ADC_INDEX_ADC2    = 1 ,
-} adcs_adc_index_enum_t;
-
-
-typedef enum
-{
-    ADCS_CHAN_INDEX_CURRENT_CLAMP  = 0 ,
-    ADCS_CHAN_INDEX_BAT_MON        = 1 ,
-    ADCS_CHAN_INDEX_3V3_MON        = 2 ,
-    ADCS_CHAN_INDEX_5V_MON         = 3 ,
-} adcs_chan_index_enum_t;
-
-
 typedef struct
 {
     uint8_t     channels[ADC_CC_COUNT];
@@ -442,3 +426,15 @@ bool adcs_cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value
     return adcs_cc_set_channels_active(prev_adc_cc_channels_active.channels, prev_adc_cc_channels_active.len);
 }
 
+
+void cc_init(void)
+{
+    // Get the midpoints
+    if (!persist_get_cc_midpoints(cc_midpoints))
+    {
+        // Assume it to be the theoretical midpoint
+        adc_debug("Failed to load persistent midpoint.");
+        uint16_t midpoints[ADC_CC_COUNT] = {ADC_MAX_VAL / 2};
+        adcs_cc_set_midpoints(midpoints);
+    }
+}
