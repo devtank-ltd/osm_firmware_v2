@@ -15,6 +15,7 @@
 
 #define CC_DEFAULT_COLLECTION_TIME          1000
 #define CC_TIMEOUT_MS                       2000
+#define CC_NUM_SAMPLES                      ADCS_NUM_SAMPLES
 
 
 typedef struct
@@ -243,7 +244,7 @@ measurements_sensor_state_t cc_begin(char* name)
         }
     }
 
-    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, ADCS_KEY_CC))
+    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC))
         return MEASUREMENTS_SENSOR_STATE_BUSY;
 
     _cc_running[index] = true;
@@ -278,7 +279,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
     uint16_t adcs_rms;
     uint16_t midpoint = _cc_midpoints[index];
 
-    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, active_index, ADCS_KEY_CC))
+    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC))
     {
         adc_debug("Failed to get RMS");
         return MEASUREMENTS_SENSOR_STATE_BUSY;
@@ -351,7 +352,7 @@ bool cc_calibrate(void)
     memcpy(_cc_adc_channels_active.channels, all_cc_channels, ADC_CC_COUNT);
     _cc_adc_channels_active.len = ADC_CC_COUNT;
 
-    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, ADCS_KEY_CC))
+    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC))
     {
         adc_debug("Could not begin the ADC.");
         return false;
@@ -359,7 +360,7 @@ bool cc_calibrate(void)
     if (!_cc_wait())
         return false;
     uint16_t midpoints[ADC_CC_COUNT];
-    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, ADCS_KEY_CC))
+    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC))
     {
         adc_debug("Could not average the ADC.");
         return false;
@@ -418,7 +419,19 @@ bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
         return false;
     }
 
-    if (cc_begin(NULL) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Can not begin ADC.");
+        return false;
+    }
+
+    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        adc_debug("Can not begin ADC.");
+        return false;
+    }
+
+    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;

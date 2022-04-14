@@ -12,6 +12,7 @@
 
 #define BAT_MON_DEFAULT_COLLECTION_TIME     1000
 #define BAT_TIMEOUT_MS                      1000
+#define BAT_NUM_SAMPLES                     20
 
 
 #define BAT_MUL     10000UL
@@ -61,7 +62,7 @@ measurements_sensor_state_t bat_begin(char* name)
 
     adc_debug("Started ADC reading for BAT.");
     uint8_t bat_channel = ADC1_CHANNEL_BAT_MON;
-    if (!adcs_begin(&bat_channel, 1, ADCS_KEY_BAT))
+    if (!adcs_begin(&bat_channel, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT))
         return MEASUREMENTS_SENSOR_STATE_BUSY;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -84,7 +85,7 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
     }
 
     uint16_t raw16;
-    if (!adcs_collect_avgs(&raw16, 1, ADCS_KEY_BAT))
+    if (!adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT))
     {
         adc_debug("ADC for Bat not complete!");
         return MEASUREMENTS_SENSOR_STATE_BUSY;

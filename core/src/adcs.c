@@ -52,7 +52,7 @@ static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_
         inter_val *= inter_val;
         sum += inter_val;
     }
-    *adc_rms = midpoint - 1/Q_rsqrt( sum / (ADCS_NUM_SAMPLES/step) );
+    *adc_rms = midpoint - 1/Q_rsqrt( sum / (buff_len/step) );
     adc_debug("RMS = %"PRIu16, *adc_rms);
     return true;
 }
@@ -114,7 +114,7 @@ static bool _adcs_get_avg(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_
     {
         sum += buff[i];
     }
-    *adc_avg = sum * step / ADCS_NUM_SAMPLES;
+    *adc_avg = sum * step / buff_len;
     adc_debug("AVG = %"PRIu16, *adc_avg);
     return true;
 }
@@ -197,22 +197,33 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
 }
 
 
-bool adcs_begin(uint8_t* channels, unsigned size, adcs_keys_t key)
+bool adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
 {
-    if (!channels || !size)
+    if (!channels || !num_channels)
         return false;
 
     if (_adcs_in_use)
         return false;
+
+    if (num_samples > ADCS_NUM_SAMPLES)
+    {
+        adc_debug("ADC buffer too small for that many samples.");
+        return false;
+    }
+
     _adcs_in_use = true;
     _adcs_active_key = key;
-    adc_set_regular_sequence(ADC1, size, channels);
+
+    dma_disable_channel(DMA1, DMA_CHANNEL1);
+    dma_set_number_of_data(DMA1, DMA_CHANNEL1, num_samples);
+    dma_enable_channel(DMA1, DMA_CHANNEL1);
+    adc_set_regular_sequence(ADC1, num_channels, channels);
     adc_start_conversion_regular(ADC1);
     return true;
 }
 
 
-bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned cc_index, adcs_keys_t key)
+bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key)
 {
     if (!rms)
     {
@@ -226,7 +237,7 @@ bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned 
     }
     if (_adcs_active_key != key)
         return false;
-    if (!_adcs_get_rms(_adcs_buffer, ADCS_NUM_SAMPLES, rms, cc_index, size, midpoint))
+    if (!_adcs_get_rms(_adcs_buffer, num_samples, rms, cc_index, num_channels, midpoint))
     {
         adc_debug("Could not get RMS value for pos %u", cc_index);
         return false;
@@ -235,7 +246,7 @@ bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned 
 }
 
 
-bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size, adcs_keys_t key)
+bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
 {
     if (!rmss || !midpoints)
     {
@@ -249,14 +260,14 @@ bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size, adcs_
     }
     if (_adcs_active_key != key)
         return false;
-    for (unsigned i = 0; i < size; i++)
+    for (unsigned i = 0; i < num_channels; i++)
     {
         if (!rmss || !midpoints)
         {
             adc_debug("Handed NULL pointer.");
             return false;
         }
-        if (!_adcs_get_rms(_adcs_buffer, ADCS_NUM_SAMPLES, rmss, i, size, midpoints[i]))
+        if (!_adcs_get_rms(_adcs_buffer, num_samples, rmss, i, num_channels, midpoints[i]))
         {
             adc_debug("Could not get RMS value for pos %u", i);
             return false;
@@ -266,7 +277,7 @@ bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size, adcs_
 }
 
 
-bool adcs_collect_avgs(uint16_t* avgs, unsigned size, adcs_keys_t key)
+bool adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
 {
     if (!avgs)
     {
@@ -280,14 +291,14 @@ bool adcs_collect_avgs(uint16_t* avgs, unsigned size, adcs_keys_t key)
     }
     if (_adcs_active_key != key)
         return false;
-    for (unsigned i = 0; i < size; i++)
+    for (unsigned i = 0; i < num_channels; i++)
     {
         if (!avgs)
         {
             adc_debug("Handed NULL pointer.");
             return false;
         }
-        if (!_adcs_get_avg(_adcs_buffer, ADCS_NUM_SAMPLES, avgs++, i, size))
+        if (!_adcs_get_avg(_adcs_buffer, num_samples, avgs++, i, num_channels))
         {
             adc_debug("Could not get RMS value for pos %u", i);
             return false;
