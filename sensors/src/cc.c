@@ -405,23 +405,27 @@ bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
 
     if (!_cc_wait())
         return false;
+    char name[MEASURE_NAME_NULLED_LEN] = {0};
     if (!cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_1_NAME" value.");
-        return false;
+        strncpy(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
+        goto bad_exit;
     }
     if (!cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_2_NAME" value.");
-        return false;
+        strncpy(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
+        goto bad_exit;
     }
     if (!cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        adc_debug("Couldnt get "MEASUREMENTS_CURRENT_CLAMP_3_NAME" value.");
-        return false;
+        strncpy(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
+        goto bad_exit;
     }
 
     return cc_set_channels_active(prev_cc_adc_channels_active.channels, prev_cc_adc_channels_active.len);
+bad_exit:
+    adc_debug("Couldnt get %s value.", name);
+    return false;
 }
 
 
