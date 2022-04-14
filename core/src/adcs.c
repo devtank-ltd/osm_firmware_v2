@@ -212,7 +212,7 @@ bool adcs_begin(uint8_t* channels, unsigned size, adcs_keys_t key)
 }
 
 
-bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned index, adcs_keys_t key)
+bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned cc_index, adcs_keys_t key)
 {
     if (!rms)
     {
@@ -226,9 +226,9 @@ bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned 
     }
     if (_adcs_active_key != key)
         return false;
-    if (!_adcs_get_rms(_adcs_buffer, ADCS_NUM_SAMPLES, rms, index, size, midpoint))
+    if (!_adcs_get_rms(_adcs_buffer, ADCS_NUM_SAMPLES, rms, cc_index, size, midpoint))
     {
-        adc_debug("Could not get RMS value for pos %u", index);
+        adc_debug("Could not get RMS value for pos %u", cc_index);
         return false;
     }
     return true;
