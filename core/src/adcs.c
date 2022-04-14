@@ -34,8 +34,9 @@
 typedef uint16_t adcs_all_buf_t[ADCS_NUM_SAMPLES];
 
 
-static adcs_all_buf_t           _adcs_buffer;
-static volatile bool            _adcs_in_use             = false;
+static adcs_all_buf_t   _adcs_buffer;
+static volatile bool    _adcs_in_use        = false;
+static adcs_keys_t      _adcs_active_key    = ADCS_KEY_NONE;
 
 
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
@@ -196,7 +197,7 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
 }
 
 
-bool adcs_begin(uint8_t* channels, unsigned size)
+bool adcs_begin(uint8_t* channels, unsigned size, adcs_keys_t key)
 {
     if (!channels || !size)
         return false;
@@ -204,13 +205,14 @@ bool adcs_begin(uint8_t* channels, unsigned size)
     if (_adcs_in_use)
         return false;
     _adcs_in_use = true;
+    _adcs_active_key = key;
     adc_set_regular_sequence(ADC1, size, channels);
     adc_start_conversion_regular(ADC1);
     return true;
 }
 
 
-bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned index)
+bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned index, adcs_keys_t key)
 {
     if (!rms)
     {
@@ -222,6 +224,8 @@ bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned 
         adc_debug("ADC in use");
         return false;
     }
+    if (_adcs_active_key != key)
+        return false;
     if (!_adcs_get_rms(_adcs_buffer, ADCS_NUM_SAMPLES, rms, index, size, midpoint))
     {
         adc_debug("Could not get RMS value for pos %u", index);
@@ -231,7 +235,7 @@ bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned size, unsigned 
 }
 
 
-bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size)
+bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size, adcs_keys_t key)
 {
     if (!rmss || !midpoints)
     {
@@ -243,6 +247,8 @@ bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size)
         adc_debug("ADC in use");
         return false;
     }
+    if (_adcs_active_key != key)
+        return false;
     for (unsigned i = 0; i < size; i++)
     {
         if (!rmss || !midpoints)
@@ -260,7 +266,7 @@ bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned size)
 }
 
 
-bool adcs_collect_avgs(uint16_t* avgs, unsigned size)
+bool adcs_collect_avgs(uint16_t* avgs, unsigned size, adcs_keys_t key)
 {
     if (!avgs)
     {
@@ -272,6 +278,8 @@ bool adcs_collect_avgs(uint16_t* avgs, unsigned size)
         adc_debug("ADC in use");
         return false;
     }
+    if (_adcs_active_key != key)
+        return false;
     for (unsigned i = 0; i < size; i++)
     {
         if (!avgs)
@@ -289,9 +297,11 @@ bool adcs_collect_avgs(uint16_t* avgs, unsigned size)
 }
 
 
-bool adcs_wait_done(uint32_t timeout)
+bool adcs_wait_done(uint32_t timeout, adcs_keys_t key)
 {
     uint32_t start = get_since_boot_ms();
+    if (_adcs_active_key != key)
+        return false;
     while (_adcs_in_use)
     {
         if (since_boot_delta(get_since_boot_ms(), start) > timeout)

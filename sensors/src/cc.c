@@ -174,7 +174,7 @@ static bool _cc_get_channel(uint8_t* channel, uint8_t index)
 static bool _cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
-    if (!adcs_wait_done(CC_TIMEOUT_MS))
+    if (!adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_BAT))
     {
         adc_debug("Timed out waiting for CC ADC.");
         return false;
@@ -224,7 +224,7 @@ measurements_sensor_state_t cc_begin(char* name)
     if (!_cc_adc_channels_active.len)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len))
+    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, ADCS_KEY_CC))
         return MEASUREMENTS_SENSOR_STATE_BUSY;
 
     adc_debug("Started ADC reading for CC.");
@@ -257,7 +257,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
     uint16_t adcs_rms;
     uint16_t midpoint = _cc_midpoints[index];
 
-    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, active_index))
+    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, active_index, ADCS_KEY_CC))
     {
         adc_debug("Failed to get RMS");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -338,7 +338,7 @@ bool cc_calibrate(void)
     if (!_cc_wait())
         return false;
     uint16_t midpoints[ADC_CC_COUNT];
-    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT))
+    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, ADCS_KEY_BAT))
     {
         adc_debug("Could not average the ADC.");
         return false;
