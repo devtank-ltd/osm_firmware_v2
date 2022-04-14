@@ -13,8 +13,8 @@
 #include "uart_rings.h"
 
 
-#define CC_DEFAULT_COLLECTION_TIME          1000;
-#define CC_TIMEOUT_MS                       1000
+#define CC_DEFAULT_COLLECTION_TIME          1000
+#define CC_TIMEOUT_MS                       2000
 
 
 typedef struct
@@ -27,7 +27,7 @@ typedef struct
 static uint8_t              _cc_adc_channel_array[ADC_CC_COUNT] = ADC_CC_CHANNELS;
 static uint16_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_channels_active_t _cc_adc_channels_active             = {0};
-static volatile bool        _cc_running                         = false;
+static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 
 
 static bool _cc_to_mV(uint16_t value, uint16_t* mV)
@@ -174,7 +174,7 @@ static bool _cc_get_channel(uint8_t* channel, uint8_t index)
 static bool _cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
-    if (!adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_BAT))
+    if (!adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC))
     {
         adc_debug("Timed out waiting for CC ADC.");
         return false;
@@ -185,10 +185,13 @@ static bool _cc_wait(void)
 
 bool cc_set_channels_active(uint8_t* active_channels, unsigned len)
 {
-    if (_cc_running)
+    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
     {
-        adc_debug("Cannot change phase, ADC reading in progress.");
-        return false;
+        if (_cc_running[i])
+        {
+            adc_debug("Cannot change phase, ADC reading in progress.");
+            return false;
+        }
     }
     if (len > ADC_CC_COUNT)
     {
@@ -218,15 +221,32 @@ measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_
 
 measurements_sensor_state_t cc_begin(char* name)
 {
-    if (_cc_running)
-        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-
     if (!_cc_adc_channels_active.len)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+    uint8_t index;
+
+    if (!_cc_get_index(&index, name))
+    {
+        adc_debug("Cannot get index.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+
+    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+    {
+        if (i == index)
+            continue;
+        if (_cc_running[i])
+        {
+            _cc_running[index] = true;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+        }
+    }
 
     if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, ADCS_KEY_CC))
         return MEASUREMENTS_SENSOR_STATE_BUSY;
 
+    _cc_running[index] = true;
     adc_debug("Started ADC reading for CC.");
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -234,12 +254,6 @@ measurements_sensor_state_t cc_begin(char* name)
 
 measurements_sensor_state_t cc_get(char* name, value_t* value)
 {
-    if (_cc_running)
-    {
-        adc_debug("ADCs not finished.");
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
-    }
-
     uint8_t index, active_index;
 
     if (!_cc_get_index(&index, name))
@@ -254,13 +268,20 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
+    if (!_cc_running[index])
+    {
+        adc_debug("ADCs were not running.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    _cc_running[index] = false;
+
     uint16_t adcs_rms;
     uint16_t midpoint = _cc_midpoints[index];
 
     if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, active_index, ADCS_KEY_CC))
     {
         adc_debug("Failed to get RMS");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
     }
 
     uint16_t cc_mA = 0;
@@ -330,7 +351,7 @@ bool cc_calibrate(void)
     memcpy(_cc_adc_channels_active.channels, all_cc_channels, ADC_CC_COUNT);
     _cc_adc_channels_active.len = ADC_CC_COUNT;
 
-    if (cc_begin(NULL) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, ADCS_KEY_CC))
     {
         adc_debug("Could not begin the ADC.");
         return false;
@@ -338,7 +359,7 @@ bool cc_calibrate(void)
     if (!_cc_wait())
         return false;
     uint16_t midpoints[ADC_CC_COUNT];
-    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, ADCS_KEY_BAT))
+    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, ADCS_KEY_CC))
     {
         adc_debug("Could not average the ADC.");
         return false;
