@@ -444,9 +444,9 @@ static bool _measurements_get_inf(measurements_def_t * def, measurements_inf_t* 
             inf->iteration_cb       = htu21d_measurements_iteration;
             break;
         case BAT_MON:
-            inf->collection_time_cb = adcs_bat_collection_time;
-            inf->init_cb            = adcs_bat_begin;
-            inf->get_cb             = adcs_bat_get;
+            inf->collection_time_cb = bat_collection_time;
+            inf->init_cb            = bat_begin;
+            inf->get_cb             = bat_get;
             break;
         case PULSE_COUNT:
             inf->collection_time_cb = pulsecount_collection_time;

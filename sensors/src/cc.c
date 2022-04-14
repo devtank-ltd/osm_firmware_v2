@@ -174,7 +174,7 @@ static bool _cc_get_channel(uint8_t* channel, uint8_t index)
 static bool _cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
-    if (!adc_wait_done(CC_TIMEOUT_MS))
+    if (!adcs_wait_done(CC_TIMEOUT_MS))
     {
         adc_debug("Timed out waiting for CC ADC.");
         return false;

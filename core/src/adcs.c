@@ -289,7 +289,7 @@ bool adcs_collect_avgs(uint16_t* avgs, unsigned size)
 }
 
 
-bool adc_wait_done(uint32_t timeout)
+bool adcs_wait_done(uint32_t timeout)
 {
     uint32_t start = get_since_boot_ms();
     while (_adcs_in_use)

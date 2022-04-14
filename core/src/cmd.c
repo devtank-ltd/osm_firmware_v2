@@ -653,7 +653,7 @@ static void interval_mins_cb(char* args)
 static void bat_cb(char* args)
 {
     value_t value;
-    if (!adcs_bat_get_blocking(NULL, &value))
+    if (!bat_get_blocking(NULL, &value))
     {
         log_out("Could not get bat value.");
         return;
