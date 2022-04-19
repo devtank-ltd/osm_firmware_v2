@@ -517,8 +517,8 @@ static void cc_cb(char* args)
             log_out("Could not get CC values.");
         }
         log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
-        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_1.u16%1000);
-        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_1.u16%1000);
+        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_2.u16%1000);
+        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_3.u16%1000);
         return;
     }
     if (cc_num > 3 || cc_num == 0)
