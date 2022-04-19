@@ -202,12 +202,18 @@ static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint
 static bool _cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
-    if (!adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC))
+    adcs_resp_t resp = adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC);
+    switch (resp)
     {
-        adc_debug("Timed out waiting for CC ADC.");
-        return false;
+        case ADCS_RESP_FAIL:
+            break;
+        case ADCS_RESP_WAIT:
+            break;
+        case ADCS_RESP_OK:
+            return true;
     }
-    return true;
+    adc_debug("Timed out waiting for CC ADC.");
+    return false;
 }
 
 
@@ -422,7 +428,10 @@ bool cc_calibrate(void)
             break;
     }
     if (!_cc_wait())
+    {
+        _cc_release_all();
         return false;
+    }
     uint16_t midpoints[ADC_CC_COUNT];
     resp = adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
     _cc_release_all();

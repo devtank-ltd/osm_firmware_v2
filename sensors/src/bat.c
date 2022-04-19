@@ -29,12 +29,18 @@ static uint32_t         _bat_collection_time    = BAT_MON_DEFAULT_COLLECTION_TIM
 static bool _bat_wait(void)
 {
     adc_debug("Waiting for ADC BAT");
-    if (!adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT))
+    adcs_resp_t resp = adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT);
+    switch (resp)
     {
-        adc_debug("Timed out waiting for BAT ADC.");
-        return false;
+        case ADCS_RESP_FAIL:
+            break;
+        case ADCS_RESP_WAIT:
+            break;
+        case ADCS_RESP_OK:
+            return true;
     }
-    return true;
+    adc_debug("Timed out waiting for BAT ADC.");
+    return false;
 }
 
 
