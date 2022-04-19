@@ -22,7 +22,7 @@
 
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300
-#define ADCS_NUM_SAMPLES   480
+#define ADCS_NUM_SAMPLES   900
 
 #define SAI_NUM_CAL_COEFFS   5
 
