@@ -22,7 +22,8 @@
 #define BAT_MIN     (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
 
 
-static volatile bool    _bat_running    = false;
+static volatile bool    _bat_running            = false;
+static uint32_t         _bat_collection_time    = BAT_MON_DEFAULT_COLLECTION_TIME;
 
 
 static bool _bat_wait(void)
@@ -46,7 +47,7 @@ measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = BAT_MON_DEFAULT_COLLECTION_TIME;
+    *collection_time = _bat_collection_time * 1.1;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -85,7 +86,7 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
     }
 
     uint16_t raw16;
-    if (!adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT))
+    if (!adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time))
     {
         adc_debug("ADC for Bat not complete!");
         return MEASUREMENTS_SENSOR_STATE_BUSY;

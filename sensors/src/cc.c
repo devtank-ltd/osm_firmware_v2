@@ -29,6 +29,7 @@ static uint8_t              _cc_adc_channel_array[ADC_CC_COUNT] = ADC_CC_CHANNEL
 static uint16_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_channels_active_t _cc_adc_channels_active             = {0};
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
+static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
 
 
 static bool _cc_to_mV(uint16_t value, uint16_t* mV)
@@ -215,7 +216,7 @@ measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = CC_DEFAULT_COLLECTION_TIME;
+    *collection_time = _cc_collection_time * 1.1;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -279,7 +280,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
     uint16_t adcs_rms;
     uint16_t midpoint = _cc_midpoints[index];
 
-    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC))
+    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time))
     {
         adc_debug("Failed to get RMS");
         return MEASUREMENTS_SENSOR_STATE_BUSY;
@@ -360,7 +361,7 @@ bool cc_calibrate(void)
     if (!_cc_wait())
         return false;
     uint16_t midpoints[ADC_CC_COUNT];
-    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC))
+    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL))
     {
         adc_debug("Could not average the ADC.");
         return false;

@@ -34,9 +34,11 @@
 typedef uint16_t adcs_all_buf_t[ADCS_NUM_SAMPLES];
 
 
-static adcs_all_buf_t   _adcs_buffer;
-static volatile bool    _adcs_in_use        = false;
-static adcs_keys_t      _adcs_active_key    = ADCS_KEY_NONE;
+static adcs_all_buf_t       _adcs_buffer;
+static volatile bool        _adcs_in_use        = false;
+static adcs_keys_t          _adcs_active_key    = ADCS_KEY_NONE;
+static uint32_t             _adcs_start_time    = 0;
+static volatile uint32_t    _adcs_end_time      = 0;
 
 
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
@@ -193,6 +195,7 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
         _adcs_in_use = false;
+        _adcs_end_time = get_since_boot_ms();
     }
 }
 
@@ -213,6 +216,7 @@ bool adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, 
 
     _adcs_in_use = true;
     _adcs_active_key = key;
+    _adcs_start_time = get_since_boot_ms();
 
     dma_disable_channel(DMA1, DMA_CHANNEL1);
     dma_set_number_of_data(DMA1, DMA_CHANNEL1, num_samples);
@@ -223,7 +227,7 @@ bool adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, 
 }
 
 
-bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key)
+bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rms)
     {
@@ -242,11 +246,13 @@ bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, u
         adc_debug("Could not get RMS value for pos %u", cc_index);
         return false;
     }
+    if (time_taken)
+        *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
     return true;
 }
 
 
-bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
+bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rmss || !midpoints)
     {
@@ -273,11 +279,13 @@ bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channel
             return false;
         }
     }
+    if (time_taken)
+        *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
     return true;
 }
 
 
-bool adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
+bool adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avgs)
     {
@@ -304,6 +312,8 @@ bool adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_sampl
             return false;
         }
     }
+    if (time_taken)
+        *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
     return true;
 }
 
