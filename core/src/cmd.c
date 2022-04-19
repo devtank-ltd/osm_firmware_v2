@@ -28,6 +28,8 @@
 #include "log.h"
 #include "uart_rings.h"
 #include "veml7700.h"
+#include "cc.h"
+#include "bat.h"
 
 
 static char   * rx_buffer;
@@ -510,7 +512,7 @@ static void cc_cb(char* args)
     if (p == args)
     {
         value_t value_1, value_2, value_3;
-        if (!adcs_cc_get_all_blocking(&value_1, &value_2, &value_3))
+        if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             log_out("Could not get CC values.");
         }
@@ -527,7 +529,7 @@ static void cc_cb(char* args)
     char name[4];
     snprintf(name, 4, "CC%"PRIu8, cc_num);
     value_t value;
-    if (!adcs_cc_get_blocking(name, &value))
+    if (!cc_get_blocking(name, &value))
     {
         log_out("Could not get adc value.");
         return;
@@ -543,7 +545,7 @@ static void cc_cb(char* args)
 
 static void cc_calibrate_cb(char *args)
 {
-    adcs_cc_calibrate();
+    cc_calibrate();
 }
 
 
@@ -554,12 +556,12 @@ static void cc_mp_cb(char* args)
     uint16_t new_mp = strtoul(args, &p, 10);
     if (p == args)
     {
-        adcs_cc_get_midpoint(&new_mp, p);
+        cc_get_midpoint(&new_mp, p);
         log_out("MP: %"PRIu16, new_mp);
         return;
     }
     p = skip_space(p);
-    if (!adcs_cc_set_midpoint(new_mp, p))
+    if (!cc_set_midpoint(new_mp, p))
         log_out("Failed to set the midpoint.");
 }
 
@@ -651,7 +653,7 @@ static void interval_mins_cb(char* args)
 static void bat_cb(char* args)
 {
     value_t value;
-    if (!adcs_bat_get_blocking(NULL, &value))
+    if (!bat_get_blocking(NULL, &value))
     {
         log_out("Could not get bat value.");
         return;

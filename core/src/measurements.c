@@ -11,7 +11,8 @@
 #include "log.h"
 #include "config.h"
 #include "hpm.h"
-#include "adcs.h"
+#include "cc.h"
+#include "bat.h"
 #include "common.h"
 #include "persist_config.h"
 #include "modbus_measurements.h"
@@ -421,9 +422,9 @@ static bool _measurements_get_inf(measurements_def_t * def, measurements_inf_t* 
             inf->get_cb             = modbus_measurements_get;
             break;
         case CURRENT_CLAMP:
-            inf->collection_time_cb = adcs_cc_collection_time;
-            inf->init_cb            = adcs_cc_begin;
-            inf->get_cb             = adcs_cc_get;
+            inf->collection_time_cb = cc_collection_time;
+            inf->init_cb            = cc_begin;
+            inf->get_cb             = cc_get;
             break;
         case W1_PROBE:
             inf->collection_time_cb = ds18b20_collection_time;
@@ -443,9 +444,9 @@ static bool _measurements_get_inf(measurements_def_t * def, measurements_inf_t* 
             inf->iteration_cb       = htu21d_measurements_iteration;
             break;
         case BAT_MON:
-            inf->collection_time_cb = adcs_bat_collection_time;
-            inf->init_cb            = adcs_bat_begin;
-            inf->get_cb             = adcs_bat_get;
+            inf->collection_time_cb = bat_collection_time;
+            inf->init_cb            = bat_begin;
+            inf->get_cb             = bat_get;
             break;
         case PULSE_COUNT:
             inf->collection_time_cb = pulsecount_collection_time;
@@ -743,7 +744,7 @@ static void _measurements_derive_cc_phase(void)
     {
         channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_3;
     }
-    adcs_cc_set_channels_active(channels, len);
+    cc_set_channels_active(channels, len);
 }
 
 

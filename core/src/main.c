@@ -29,6 +29,7 @@
 #include "htu21d.h"
 #include "i2c.h"
 #include "veml7700.h"
+#include "cc.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -71,6 +72,7 @@ int main(void)
     ios_init();
     sai_init();
     adcs_init();
+    cc_init();
     htu21d_init();
     veml7700_init();
     sai_init();
