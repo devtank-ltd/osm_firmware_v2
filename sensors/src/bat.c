@@ -10,7 +10,7 @@
 #include "uart_rings.h"
 
 
-#define BAT_MON_DEFAULT_COLLECTION_TIME     1000
+#define BAT_MON_DEFAULT_COLLECTION_TIME     40
 #define BAT_TIMEOUT_MS                      1000
 #define BAT_NUM_SAMPLES                     20
 
@@ -29,12 +29,24 @@ static uint32_t         _bat_collection_time    = BAT_MON_DEFAULT_COLLECTION_TIM
 static bool _bat_wait(void)
 {
     adc_debug("Waiting for ADC BAT");
-    if (!adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT))
+    adcs_resp_t resp = adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT);
+    switch (resp)
     {
-        adc_debug("Timed out waiting for BAT ADC.");
-        return false;
+        case ADCS_RESP_FAIL:
+            break;
+        case ADCS_RESP_WAIT:
+            break;
+        case ADCS_RESP_OK:
+            return true;
     }
-    return true;
+    adc_debug("Timed out waiting for BAT ADC.");
+    return false;
+}
+
+
+static void _cc_release(void)
+{
+    adcs_release(ADCS_KEY_BAT);
 }
 
 
@@ -59,12 +71,21 @@ measurements_sensor_state_t bat_begin(char* name)
         adc_debug("Already beginning BAT ADC.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    _bat_running = true;
 
-    adc_debug("Started ADC reading for BAT.");
     uint8_t bat_channel = ADC1_CHANNEL_BAT_MON;
-    if (!adcs_begin(&bat_channel, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT))
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+    adcs_resp_t resp = adcs_begin(&bat_channel, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT);
+    switch(resp)
+    {
+        case ADCS_RESP_FAIL:
+            adc_debug("Failed to begin BAT ADC.");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        case ADCS_RESP_WAIT:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_OK:
+            break;
+    }
+    adc_debug("Started ADC reading for BAT.");
+    _bat_running = true;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -77,8 +98,6 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    _bat_running = false;
-
     if (!value)
     {
         adc_debug("Handed NULL Pointer.");
@@ -86,10 +105,20 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
     }
 
     uint16_t raw16;
-    if (!adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time))
+    adcs_resp_t resp = adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time);
+    switch(resp)
     {
-        adc_debug("ADC for Bat not complete!");
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_FAIL:
+            _bat_running = false;
+            _cc_release();
+            adc_debug("ADC for Bat not complete!");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        case ADCS_RESP_WAIT:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_OK:
+            _bat_running = false;
+            _cc_release();
+            break;
     }
 
     adc_debug("Bat raw ADC:%"PRIu16, raw16);

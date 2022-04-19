@@ -200,18 +200,24 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
 }
 
 
-bool adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
+adcs_resp_t adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
 {
     if (!channels || !num_channels)
-        return false;
+        return ADCS_RESP_FAIL;
 
     if (_adcs_in_use)
-        return false;
+        return ADCS_RESP_WAIT;
+
+    if (_adcs_active_key != ADCS_KEY_NONE)
+    {
+        //adc_debug("Still locked.");
+        return ADCS_RESP_WAIT;
+    }
 
     if (num_samples > ADCS_NUM_SAMPLES)
     {
         adc_debug("ADC buffer too small for that many samples.");
-        return false;
+        return ADCS_RESP_FAIL;
     }
 
     _adcs_in_use = true;
@@ -223,112 +229,117 @@ bool adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, 
     dma_enable_channel(DMA1, DMA_CHANNEL1);
     adc_set_regular_sequence(ADC1, num_channels, channels);
     adc_start_conversion_regular(ADC1);
-    return true;
+    return ADCS_RESP_OK;
 }
 
 
-bool adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rms)
     {
         adc_debug("Handed NULL pointer.");
-        return false;
+        return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        adc_debug("ADC in use");
-        return false;
+        return ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return false;
+        return ADCS_RESP_WAIT;
     if (!_adcs_get_rms(_adcs_buffer, num_samples, rms, cc_index, num_channels, midpoint))
     {
         adc_debug("Could not get RMS value for pos %u", cc_index);
-        return false;
+        return ADCS_RESP_FAIL;
     }
     if (time_taken)
         *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return true;
+    return ADCS_RESP_OK;
 }
 
 
-bool adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rmss || !midpoints)
     {
         adc_debug("Handed NULL pointer.");
-        return false;
+        return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        adc_debug("ADC in use");
-        return false;
+        return ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return false;
+        return ADCS_RESP_WAIT;
     for (unsigned i = 0; i < num_channels; i++)
     {
         if (!rmss || !midpoints)
         {
             adc_debug("Handed NULL pointer.");
-            return false;
+            return ADCS_RESP_FAIL;
         }
         if (!_adcs_get_rms(_adcs_buffer, num_samples, rmss, i, num_channels, midpoints[i]))
         {
             adc_debug("Could not get RMS value for pos %u", i);
-            return false;
+            return ADCS_RESP_FAIL;
         }
     }
     if (time_taken)
         *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return true;
+    return ADCS_RESP_OK;
 }
 
 
-bool adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avgs)
     {
         adc_debug("Handed NULL pointer.");
-        return false;
+        return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        adc_debug("ADC in use");
-        return false;
+        return ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return false;
+        return ADCS_RESP_WAIT;
     for (unsigned i = 0; i < num_channels; i++)
     {
         if (!avgs)
         {
             adc_debug("Handed NULL pointer.");
-            return false;
+            return ADCS_RESP_FAIL;
         }
         if (!_adcs_get_avg(_adcs_buffer, num_samples, avgs++, i, num_channels))
         {
             adc_debug("Could not get RMS value for pos %u", i);
-            return false;
+            return ADCS_RESP_FAIL;
         }
     }
     if (time_taken)
         *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return true;
+    return ADCS_RESP_OK;
 }
 
 
-bool adcs_wait_done(uint32_t timeout, adcs_keys_t key)
+adcs_resp_t adcs_wait_done(uint32_t timeout, adcs_keys_t key)
 {
     uint32_t start = get_since_boot_ms();
     if (_adcs_active_key != key)
-        return false;
+        return ADCS_RESP_FAIL;
     while (_adcs_in_use)
     {
         if (since_boot_delta(get_since_boot_ms(), start) > timeout)
-            return false;
+            return ADCS_RESP_FAIL;
     }
-    return true;
+    return ADCS_RESP_OK;
+}
+
+
+void adcs_release(adcs_keys_t key)
+{
+    if (_adcs_active_key != key)
+        return;
+    _adcs_active_key = ADCS_KEY_NONE;
 }
 
 

@@ -173,15 +173,47 @@ static bool _cc_get_channel(uint8_t* channel, uint8_t index)
 }
 
 
+static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint8_t* channel)
+{
+    uint8_t index_local;
+    if (!_cc_get_index(&index_local, name))
+    {
+        adc_debug("Cannot get index.");
+        return false;
+    }
+    if (active_index &&
+        !_cc_find_active_channel_index(active_index, index_local))
+    {
+        adc_debug("Not in active channel.");
+        return false;
+    }
+    if (channel &&
+        !_cc_get_channel(channel, index_local))
+    {
+        adc_debug("Not in active channel.");
+        return false;
+    }
+    if (index)
+        *index = index_local;
+    return true;
+}
+
+
 static bool _cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
-    if (!adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC))
+    adcs_resp_t resp = adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC);
+    switch (resp)
     {
-        adc_debug("Timed out waiting for CC ADC.");
-        return false;
+        case ADCS_RESP_FAIL:
+            break;
+        case ADCS_RESP_WAIT:
+            break;
+        case ADCS_RESP_OK:
+            return true;
     }
-    return true;
+    adc_debug("Timed out waiting for CC ADC.");
+    return false;
 }
 
 
@@ -204,6 +236,27 @@ bool cc_set_channels_active(uint8_t* active_channels, unsigned len)
     _cc_adc_channels_active.len = len;
     adc_debug("Setting %"PRIu8" active channels.", len);
     return true;
+}
+
+
+static void _cc_release_auto(void)
+{
+    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+    {
+        if (_cc_running[i])
+            return;
+    }
+    adcs_release(ADCS_KEY_CC);
+}
+
+
+static void _cc_release_all(void)
+{
+    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+    {
+        _cc_running[i] = false;
+    }
+    adcs_release(ADCS_KEY_CC);
 }
 
 
@@ -244,9 +297,17 @@ measurements_sensor_state_t cc_begin(char* name)
             return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
-
-    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC))
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+    adcs_resp_t resp = adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    switch(resp)
+    {
+        case ADCS_RESP_FAIL:
+            adc_debug("Failed to begin CC ADC.");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        case ADCS_RESP_WAIT:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_OK:
+            break;
+    }
 
     _cc_running[index] = true;
     adc_debug("Started ADC reading for CC.");
@@ -257,16 +318,9 @@ measurements_sensor_state_t cc_begin(char* name)
 measurements_sensor_state_t cc_get(char* name, value_t* value)
 {
     uint8_t index, active_index;
-
-    if (!_cc_get_index(&index, name))
+    if (!_cc_get_info(name, &index, &active_index, NULL))
     {
-        adc_debug("Cannot get index.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
-
-    if (!_cc_find_active_channel_index(&active_index, index))
-    {
-        adc_debug("Not in active channel.");
+        adc_debug("Cannot get info.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -275,15 +329,24 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
         adc_debug("ADCs were not running.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    _cc_running[index] = false;
 
     uint16_t adcs_rms;
     uint16_t midpoint = _cc_midpoints[index];
 
-    if (!adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time))
+    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+    switch (resp)
     {
-        adc_debug("Failed to get RMS");
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_FAIL:
+            _cc_running[index] = false;
+            _cc_release_auto();
+            adc_debug("Failed to get RMS");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        case ADCS_RESP_WAIT:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_OK:
+            _cc_running[index] = false;
+            _cc_release_auto();
+            break;
     }
 
     uint16_t cc_mA = 0;
@@ -353,18 +416,35 @@ bool cc_calibrate(void)
     memcpy(_cc_adc_channels_active.channels, all_cc_channels, ADC_CC_COUNT);
     _cc_adc_channels_active.len = ADC_CC_COUNT;
 
-    if (!adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC))
+    adcs_resp_t resp = adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    switch(resp)
     {
-        adc_debug("Could not begin the ADC.");
-        return false;
+        case ADCS_RESP_FAIL:
+            adc_debug("Failed to begin CC ADC.");
+            return false;
+        case ADCS_RESP_WAIT:
+            return false;
+        case ADCS_RESP_OK:
+            break;
     }
     if (!_cc_wait())
-        return false;
-    uint16_t midpoints[ADC_CC_COUNT];
-    if (!adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL))
     {
-        adc_debug("Could not average the ADC.");
+        _cc_release_all();
         return false;
+    }
+    uint16_t midpoints[ADC_CC_COUNT];
+    resp = adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
+    _cc_release_all();
+    switch(resp)
+    {
+        case ADCS_RESP_FAIL:
+            adc_debug("Could not average the ADC.");
+            return false;
+        case ADCS_RESP_WAIT:
+            adc_debug("Could not average the ADC.");
+            return false;
+        case ADCS_RESP_OK:
+            break;
     }
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         adc_debug("MP CC%u: %"PRIu16, i+1, midpoints[i]);
@@ -377,13 +457,10 @@ bool cc_calibrate(void)
 
 bool cc_get_blocking(char* name, value_t* value)
 {
-    uint8_t index;
-    if (!_cc_get_index(&index, name))
-        return false;
     uint8_t channel;
-    if (!_cc_get_channel(&channel, index))
+    if (!_cc_get_info(name, NULL, NULL, &channel))
     {
-        adc_debug("Could not get channel.");
+        adc_debug("Cannot get info.");
         return false;
     }
     cc_channels_active_t prev_active_channels;
@@ -402,6 +479,7 @@ bool cc_get_blocking(char* name, value_t* value)
     if (!_cc_wait())
         return false;
     bool r = (cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
+    _cc_release_all();
     cc_set_channels_active(prev_active_channels.channels, prev_active_channels.len);
     return r;
 }
@@ -441,21 +519,22 @@ bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
     if (!_cc_wait())
         return false;
     char name[MEASURE_NAME_NULLED_LEN] = {0};
-    if (!cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (!cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (!cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
+    _cc_release_all();
 
     return cc_set_channels_active(prev_cc_adc_channels_active.channels, prev_cc_adc_channels_active.len);
 bad_exit:
