@@ -710,12 +710,12 @@ static void _measurements_sample(void)
         time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
         if (time_since_interval >= time_init)
         {
-            _measurements_sample_init_iteration(def, data);
             if (data->num_samples_collected < data->num_samples_init)
             {
                 data->num_samples_collected++;
                 measurements_debug("Could not collect before next init.");
             }
+            _measurements_sample_init_iteration(def, data);
             wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
         }
         else
