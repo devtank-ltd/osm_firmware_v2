@@ -1171,7 +1171,6 @@ void measurements_set_debug_mode(bool enable)
     else
         measurements_debug("Disabling measurements debug mode.");
     _measurements_debug_mode = enable;
-    _measurements_sample();
 }
 
 
