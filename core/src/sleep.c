@@ -14,12 +14,25 @@
 #include "uart_rings.h"
 #include "measurements.h"
 #include "pinmap.h"
+#include "adcs.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32
 
 
 static volatile uint16_t _sleep_compare = 0;
+
+
+void _sleep_before_sleep(void)
+{
+    adcs_off();
+}
+
+
+void _sleep_on_wakeup(void)
+{
+    adcs_init();
+}
 
 
 static void _sleep_enter_sleep_mode(void)
@@ -114,8 +127,10 @@ bool sleep_for_ms(uint32_t ms)
     count = (ms * 1000) / (SLEEP_LSI_CLK_FREQ_KHZ * (1 << div_shift));
     count16 = count;
 turn_on_sleep:
+    _sleep_before_sleep();
     _sleep_setup_tim(count16, (div_shift << LPTIM_CFGR_PRESC_SHIFT));
     _sleep_enter_sleep_mode();
+    _sleep_on_wakeup();
     sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));
     return true;
 }

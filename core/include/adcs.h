@@ -21,6 +21,7 @@ typedef enum
 } adcs_resp_t;
 
 
+extern void adcs_off(void);
 extern void adcs_init(void);
 
 extern adcs_resp_t adcs_begin(uint8_t* channels, unsigned num_channels, unsigned num_samples, adcs_keys_t key);

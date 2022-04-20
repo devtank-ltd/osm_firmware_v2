@@ -340,6 +340,12 @@ void adcs_release(adcs_keys_t key)
 }
 
 
+void adcs_off(void)
+{
+    adc_power_off(ADC1);
+}
+
+
 void adcs_init(void)
 {
     // Setup the clock and gpios
