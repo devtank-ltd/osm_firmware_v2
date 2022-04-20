@@ -739,7 +739,7 @@ void sleep_cb(char* args)
 }
 
 
-void sleep_mode_cb(char* args)
+void power_mode_cb(char* args)
 {
     uint8_t mode;
     if (args[0] == 'N')
@@ -750,7 +750,7 @@ void sleep_mode_cb(char* args)
         mode = 2;
     else
         return;
-    measurements_sleep_mode(mode);
+    measurements_power_mode(mode);
 }
 
 
@@ -801,7 +801,7 @@ void cmds_process(char * command, unsigned len)
         { "repop",        "Repopulate measurements.", repop_cb},
         { "no_lw",        "Dont need LW for measurements", no_lw_cb},
         { "sleep",        "Sleep",                    sleep_cb},
-        { "sleep_mode",   "Sleep mode setting",       sleep_mode_cb},
+        { "power_mode",   "Power mode setting",       power_mode_cb},
         { NULL },
     };
 

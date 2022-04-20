@@ -40,10 +40,10 @@ typedef enum
 
 typedef enum
 {
-    MEASUREMENTS_SLEEP_MODE_NORMAL  = 0,
-    MEASUREMENTS_SLEEP_MODE_BATTERY = 1,
-    MEASUREMENTS_SLEEP_MODE_PLUGGED = 2,
-} measurements_sleep_mode_t;
+    MEASUREMENTS_POWER_MODE_NORMAL  = 0,
+    MEASUREMENTS_POWER_MODE_BATTERY = 1,
+    MEASUREMENTS_POWER_MODE_PLUGGED = 2,
+} measurements_power_mode_t;
 
 
 typedef struct
@@ -84,7 +84,7 @@ static uint16_t                     _measurements_hex_arr_pos                   
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
-static measurements_sleep_mode_t    _measurements_sleep_mode                             = MEASUREMENTS_SLEEP_MODE_NORMAL;
+static measurements_power_mode_t    _measurements_power_mode                             = MEASUREMENTS_POWER_MODE_NORMAL;
 
 
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
@@ -937,17 +937,17 @@ static void _measurements_sleep_iteration(void)
     static bool _measurements_print_sleep = false;
 
     bool on_bat;
-    switch (_measurements_sleep_mode)
+    switch (_measurements_power_mode)
     {
-        case MEASUREMENTS_SLEEP_MODE_NORMAL:
+        case MEASUREMENTS_POWER_MODE_NORMAL:
             if (!bat_on_battery(&on_bat))
                 return;
             if (!on_bat)
                 return;
             break;
-        case MEASUREMENTS_SLEEP_MODE_BATTERY:
+        case MEASUREMENTS_POWER_MODE_BATTERY:
             break;
-        case MEASUREMENTS_SLEEP_MODE_PLUGGED:
+        case MEASUREMENTS_POWER_MODE_PLUGGED:
             return;
     }
 
@@ -1174,7 +1174,7 @@ void measurements_set_debug_mode(bool enable)
 }
 
 
-void measurements_sleep_mode(uint8_t mode)
+void measurements_power_mode(uint8_t mode)
 {
-    _measurements_sleep_mode = mode;
+    _measurements_power_mode = mode;
 }
