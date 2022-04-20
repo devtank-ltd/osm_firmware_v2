@@ -708,18 +708,14 @@ static void _measurements_sample(void)
         }
         time_init       = time_init_boundary - data->collection_time_cache;
         time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
-        /*
-        if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN) == 0)
-        {
-            measurements_debug("time_since_interval = %"PRIu32, time_since_interval);
-            measurements_debug("time_init = %"PRIu32, time_init);
-            measurements_debug("time_collect = %"PRIu32, time_collect);
-        }
-        */
-        // If it takes time to get a sample, it is begun here.
         if (time_since_interval >= time_init)
         {
             _measurements_sample_init_iteration(def, data);
+            if (data->num_samples_collected < data->num_samples_init)
+            {
+                data->num_samples_collected++;
+                measurements_debug("Could not collect before next init.");
+            }
             wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
         }
         else
