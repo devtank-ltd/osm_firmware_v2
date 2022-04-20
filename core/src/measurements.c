@@ -524,7 +524,13 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_init++;
+        data->num_samples_collected++;
         return;
+    }
     if (!inf.init_cb)
     {
         // Init functions are optional
@@ -559,7 +565,13 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_init++;
+        data->num_samples_collected++;
         return false;
+    }
     if (!inf.iteration_cb)
     {
         // Iteration callbacks are optional
@@ -587,7 +599,12 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_collected++;
         return false;
+    }
     if (!inf.get_cb)
     {
         // Get function is non-optional
