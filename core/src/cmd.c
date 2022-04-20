@@ -741,13 +741,13 @@ void sleep_cb(char* args)
 
 void power_mode_cb(char* args)
 {
-    uint8_t mode;
-    if (args[0] == 'N')
-        mode = 0;
+    measurements_power_mode_t mode;
+    if (args[0] == 'A')
+        mode = MEASUREMENTS_POWER_MODE_AUTO;
     else if (args[0] == 'B')
-        mode = 1;
+        mode = MEASUREMENTS_POWER_MODE_BATTERY;
     else if (args[0] == 'P')
-        mode = 2;
+        mode = MEASUREMENTS_POWER_MODE_PLUGGED;
     else
         return;
     measurements_power_mode(mode);

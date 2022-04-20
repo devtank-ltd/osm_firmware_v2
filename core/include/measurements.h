@@ -27,6 +27,14 @@ typedef enum
 } measurements_sensor_state_t;
 
 
+typedef enum
+{
+    MEASUREMENTS_POWER_MODE_AUTO,
+    MEASUREMENTS_POWER_MODE_BATTERY,
+    MEASUREMENTS_POWER_MODE_PLUGGED,
+} measurements_power_mode_t;
+
+
 typedef struct
 {
     measurements_sensor_state_t     (* collection_time_cb)(char* name, uint32_t* collection_time);  // Function to retrieve the time in ms between calling the init function (init_cb) and collecting the value (get_cb)
@@ -55,4 +63,4 @@ extern void     measurements_loop_iteration(void);
 extern void     measurements_init(void);
 extern void     measurements_set_debug_mode(bool enable);
 
-extern void     measurements_power_mode(uint8_t mode);
+extern void     measurements_power_mode(measurements_power_mode_t mode);

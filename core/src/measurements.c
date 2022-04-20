@@ -38,14 +38,6 @@ typedef enum
 } measurements_state_t;
 
 
-typedef enum
-{
-    MEASUREMENTS_POWER_MODE_NORMAL  = 0,
-    MEASUREMENTS_POWER_MODE_BATTERY = 1,
-    MEASUREMENTS_POWER_MODE_PLUGGED = 2,
-} measurements_power_mode_t;
-
-
 typedef struct
 {
     value_t                 sum;
@@ -84,7 +76,7 @@ static uint16_t                     _measurements_hex_arr_pos                   
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
-static measurements_power_mode_t    _measurements_power_mode                             = MEASUREMENTS_POWER_MODE_NORMAL;
+static measurements_power_mode_t    _measurements_power_mode                             = MEASUREMENTS_POWER_MODE_AUTO;
 
 
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
@@ -939,7 +931,7 @@ static void _measurements_sleep_iteration(void)
     bool on_bat;
     switch (_measurements_power_mode)
     {
-        case MEASUREMENTS_POWER_MODE_NORMAL:
+        case MEASUREMENTS_POWER_MODE_AUTO:
             if (!bat_on_battery(&on_bat))
                 return;
             if (!on_bat)
@@ -1174,7 +1166,7 @@ void measurements_set_debug_mode(bool enable)
 }
 
 
-void measurements_power_mode(uint8_t mode)
+void measurements_power_mode(measurements_power_mode_t mode)
 {
     _measurements_power_mode = mode;
 }
