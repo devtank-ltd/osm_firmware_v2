@@ -947,10 +947,10 @@ static void _measurements_sleep_iteration(void)
     /* Get new now as above functions may have taken a while */
     uint32_t now = get_since_boot_ms();
 
-    if (_check_time.last_checked_time + _check_time.wait_time <= now)
+    if (since_boot_delta(now, _check_time.last_checked_time) >= _check_time.wait_time)
         return;
 
-    if (_last_sent_ms + INTERVAL_TRANSMIT_MS <= now)
+    if (since_boot_delta(now, _last_sent_ms) >= INTERVAL_TRANSMIT_MS)
         return;
 
     uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, now);
