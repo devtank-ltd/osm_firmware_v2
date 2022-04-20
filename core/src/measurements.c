@@ -925,9 +925,8 @@ static uint16_t _measurements_iterate_callbacks(void)
     {
         if (_measurements_arr.data[i].state != MEASUREMENT_STATE_INITED)
             continue;
-        if (_measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]))
-            /* Number of measurements that require active calls */
-            active_count++;
+        _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
+        active_count++;
     }
     return active_count;
 }
@@ -978,11 +977,6 @@ static void _measurements_sleep_iteration(void)
     if (_measurements_print_sleep)
     {
         _measurements_print_sleep = false;
-        /*
-        measurements_debug("next_sample_time = %"PRIu32, next_sample_time);
-        measurements_debug("next_send_time = %"PRIu32, next_send_time);
-        measurements_debug("Sleeping for %"PRIu32, sleep_time);
-        */
     }
     if (sleep_for_ms(sleep_time))
         _measurements_print_sleep = true;
