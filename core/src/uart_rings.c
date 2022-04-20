@@ -58,12 +58,7 @@ bool uart_ring_out_busy(unsigned uart)
         return 0;
 
     ring_buf_t * ring = &ring_out_bufs[uart];
-    if (ring_buf_get_pending(ring))
-        return true;
-    if (ring->r_pos < ring->w_pos)
-        return ((ring->r_pos + ring->size - ring->w_pos) > 1);
-    else
-        return ((ring->r_pos - ring->w_pos) > 1);
+    return ring_buf_get_pending(ring);
 }
 
 
