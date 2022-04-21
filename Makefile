@@ -97,7 +97,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 cppcheck:
-	cppcheck --enable=all --std=c99 *.[ch]
+	cppcheck --enable=all --std=c11 `find core -name "*.[ch]"` `find sensors -name "*.[ch]"`
 
 debug_mon: $(WHOLE_IMG)
 	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
