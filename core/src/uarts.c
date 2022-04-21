@@ -15,6 +15,7 @@
 #include "ring.h"
 #include "uart_rings.h"
 #include "uarts.h"
+#include "sleep.h"
 
 
 static uart_channel_t uart_channels[] = UART_CHANNELS;
@@ -261,6 +262,11 @@ static void process_serial(unsigned uart)
         return;
 
     uart_ring_in(uart, &c, 1);
+    if (c == '\n' || c == '\r')
+    {
+        sleep_debug("Waking up.");
+        sleep_exit_sleep_mode();
+    }
 }
 
 

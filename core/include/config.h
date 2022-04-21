@@ -22,7 +22,7 @@
 
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300
-#define ADCS_NUM_SAMPLES   900
+#define ADCS_NUM_SAMPLES   480
 
 #define SAI_NUM_CAL_COEFFS   5
 
@@ -118,5 +118,6 @@
 #define DEBUG_EXTTEMP      0x4000
 #define DEBUG_LIGHT        0x8000
 #define DEBUG_SOUND        0x10000
+#define DEBUG_SLEEP        0x20000
 
 #define __ADC_RMS_FULL__

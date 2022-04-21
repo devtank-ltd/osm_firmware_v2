@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <stddef.h>
 
 #include "bat.h"
 
@@ -12,18 +13,29 @@
 
 #define BAT_MON_DEFAULT_COLLECTION_TIME     40
 #define BAT_TIMEOUT_MS                      1000
-#define BAT_NUM_SAMPLES                     20
+#define BAT_NUM_SAMPLES                     ADCS_NUM_SAMPLES
+#define BAT_IS_VALID_FOR_MS                 120 * 1000
 
 
-#define BAT_MUL     10000UL
-#define BAT_MAX_MV  1343 /* 1.343 volts */
-#define BAT_MIN_MV  791  /* 0.791 volts */
-#define BAT_MAX     (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MAX_MV)
-#define BAT_MIN     (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
+#define BAT_MUL                             10000UL
+#define BAT_MAX_MV                          1343 /* 1.343 volts */
+#define BAT_MIN_MV                          791  /* 0.791 volts */
+#define BAT_MAX                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MAX_MV)
+#define BAT_MIN                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
+#define BAT_ON_BAT_THRESHOLD                BAT_MAX * 1.1
+
+
+typedef struct
+{
+    bool        on_battery;
+    bool        is_valid;
+    uint32_t    last_checked;
+} bat_on_battery_t;
 
 
 static volatile bool    _bat_running            = false;
 static uint32_t         _bat_collection_time    = BAT_MON_DEFAULT_COLLECTION_TIME;
+static bat_on_battery_t _bat_on_battery         = {false, false, 0};
 
 
 static bool _bat_wait(void)
@@ -44,9 +56,18 @@ static bool _bat_wait(void)
 }
 
 
-static void _cc_release(void)
+static void _bat_release(void)
 {
     adcs_release(ADCS_KEY_BAT);
+}
+
+
+static void _bat_update_on_battery(bool on_battery)
+{
+    _bat_on_battery.on_battery = on_battery;
+    _bat_on_battery.is_valid = true;
+    _bat_on_battery.last_checked = get_since_boot_ms();
+    adc_debug("BAT status updated.");
 }
 
 
@@ -110,14 +131,14 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
     {
         case ADCS_RESP_FAIL:
             _bat_running = false;
-            _cc_release();
+            _bat_release();
             adc_debug("ADC for Bat not complete!");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case ADCS_RESP_OK:
             _bat_running = false;
-            _cc_release();
+            _bat_release();
             break;
     }
 
@@ -127,6 +148,7 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
 
     uint16_t perc;
 
+    _bat_update_on_battery(raw <= BAT_ON_BAT_THRESHOLD);
     if (raw > BAT_MAX)
     {
         perc = BAT_MUL;
@@ -166,6 +188,78 @@ bool bat_get_blocking(char* name, value_t* value)
     {
         adc_debug("Failed get BAT.");
         return false;
+    }
+    return true;
+}
+
+
+static bool _bat_get_on_battery(bool* on_battery)
+{
+    if (!on_battery)
+    {
+        adc_debug("Handed a NULL pointer.");
+        return false;
+    }
+
+    measurements_sensor_state_t resp = bat_begin(NULL);
+    switch (resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            break;
+        default:
+            return false;
+    }
+    if (!_bat_wait())
+    {
+        adc_debug("Couldn't wait for the battery adc value to be ready.");
+        return false;
+    }
+
+    if (!_bat_running)
+    {
+        adc_debug("ADC for Bat not running!");
+        return false;
+    }
+
+    _bat_running = false;
+
+    uint16_t raw16;
+    adcs_resp_t adc_resp = adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, NULL);
+    _bat_release();
+    switch (adc_resp)
+    {
+        case ADCS_RESP_OK:
+            break;
+        default:
+            adc_debug("ADC for Bat not complete!");
+            return false;
+    }
+    *on_battery = raw16 < BAT_ON_BAT_THRESHOLD;
+    _bat_update_on_battery(*on_battery);
+    return true;
+}
+
+
+bool bat_on_battery(bool* on_battery)
+{
+    if (!on_battery)
+    {
+        adc_debug("Handed a NULL pointer.");
+        return false;
+    }
+
+    if (_bat_on_battery.is_valid &&
+        since_boot_delta(get_since_boot_ms(), _bat_on_battery.last_checked) <= BAT_IS_VALID_FOR_MS)
+    {
+        *on_battery = _bat_on_battery.on_battery;
+        return true;
+    }
+    adc_debug("Valid battery status timed out. Getting new one.");
+    if (!_bat_get_on_battery(on_battery))
+    {
+        /* Assumes on battery */
+        _bat_update_on_battery(true);
+        *on_battery = true;
     }
     return true;
 }

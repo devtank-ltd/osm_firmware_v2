@@ -21,6 +21,8 @@
 #include "pulsecount.h"
 #include "veml7700.h"
 #include "sai.h"
+#include "sleep.h"
+#include "uart_rings.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
@@ -73,6 +75,8 @@ static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY
 static uint16_t                     _measurements_hex_arr_pos                            =  0;
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
+
+static measurements_power_mode_t    _measurements_power_mode                             = MEASUREMENTS_POWER_MODE_AUTO;
 
 
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
@@ -512,7 +516,13 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_init++;
+        data->num_samples_collected++;
         return;
+    }
     if (!inf.init_cb)
     {
         // Init functions are optional
@@ -543,30 +553,37 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 }
 
 
-static void _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
+static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
-        return;
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_init++;
+        data->num_samples_collected++;
+        return false;
+    }
     if (!inf.iteration_cb)
     {
         // Iteration callbacks are optional
-        return;
+        return false;
     }
     measurements_sensor_state_t resp = inf.iteration_cb(def->name);
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            return;
+            return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s errored on iterate, will not collect.", def->name);
             data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_init++;
             data->num_samples_collected++;
-            return;
+            return false;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
-            return;
+            return true;
     }
+    return false;
 }
 
 
@@ -574,7 +591,12 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
 {
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, &inf))
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->state = MEASUREMENT_STATE_IDLE;
+        data->num_samples_collected++;
         return false;
+    }
     if (!inf.get_cb)
     {
         // Get function is non-optional
@@ -651,7 +673,10 @@ static void _measurements_sample(void)
     uint32_t            time_init;
     uint32_t            time_collect;
 
+    uint32_t            wait_time;
+
     _check_time.last_checked_time = now;
+    _check_time.wait_time = UINT32_MAX;
 
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -675,14 +700,24 @@ static void _measurements_sample(void)
         }
         time_init       = time_init_boundary - data->collection_time_cache;
         time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
-        // If it takes time to get a sample, it is begun here.
         if (time_since_interval >= time_init)
         {
+            if (data->num_samples_collected < data->num_samples_init)
+            {
+                data->num_samples_collected++;
+                measurements_debug("Could not collect before next init.");
+            }
             _measurements_sample_init_iteration(def, data);
+            wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
         }
-        else if (_check_time.wait_time > (time_since_interval - time_init))
+        else
         {
-            _check_time.wait_time = time_since_interval - time_init;
+            wait_time = since_boot_delta(time_init, time_since_interval);
+        }
+
+        if (_check_time.wait_time > wait_time)
+        {
+            _check_time.wait_time = wait_time;
         }
 
         // The sample is collected every interval/samplecount but offset by 1/2.
@@ -697,12 +732,20 @@ static void _measurements_sample(void)
                 log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
                 log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
             }
+            wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
         }
-        else if (_check_time.wait_time > (time_since_interval - time_collect))
+        else
         {
-            _check_time.wait_time = time_since_interval - time_collect;
+            wait_time = since_boot_delta(time_collect, time_since_interval);
+        }
+
+        if (_check_time.wait_time > wait_time)
+        {
+            _check_time.wait_time = wait_time;
         }
     }
+    if (_check_time.wait_time == UINT32_MAX)
+        _check_time.wait_time = 0;
 }
 
 
@@ -867,15 +910,68 @@ bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
 }
 
 
-static void _measurements_iterate_callbacks(void)
+static uint16_t _measurements_iterate_callbacks(void)
 {
+    uint16_t active_count = 0;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        if (_measurements_arr.data[i].state == MEASUREMENT_STATE_INITED)
-        {
-            _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
-        }
+        if (_measurements_arr.data[i].state != MEASUREMENT_STATE_INITED)
+            continue;
+        _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
+        active_count++;
     }
+    return active_count;
+}
+
+
+static void _measurements_sleep_iteration(void)
+{
+    static bool _measurements_print_sleep = false;
+
+    bool on_bat;
+    switch (_measurements_power_mode)
+    {
+        case MEASUREMENTS_POWER_MODE_AUTO:
+            if (!bat_on_battery(&on_bat))
+                return;
+            if (!on_bat)
+                return;
+            break;
+        case MEASUREMENTS_POWER_MODE_BATTERY:
+            break;
+        case MEASUREMENTS_POWER_MODE_PLUGGED:
+            return;
+    }
+
+    uint32_t sleep_time;
+    /* Get new now as above functions may have taken a while */
+    uint32_t now = get_since_boot_ms();
+
+    if (since_boot_delta(now, _check_time.last_checked_time) >= _check_time.wait_time)
+        return;
+
+    if (since_boot_delta(now, _last_sent_ms) >= INTERVAL_TRANSMIT_MS)
+        return;
+
+    uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, now);
+    uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now);
+    if (next_sample_time < next_send_time)
+        sleep_time = next_sample_time;
+    else
+        sleep_time = next_send_time;
+
+    if (sleep_time < SLEEP_MIN_SLEEP_TIME_MS)
+        /* No point sleeping for short amount of time */
+        return;
+
+    /* Make sure to wake up before required */
+    sleep_time -= SLEEP_MIN_SLEEP_TIME_MS;
+    if (_measurements_print_sleep)
+    {
+        _measurements_print_sleep = false;
+    }
+    if (sleep_for_ms(sleep_time))
+        _measurements_print_sleep = true;
 }
 
 
@@ -917,7 +1013,12 @@ void measurements_loop_iteration(void)
         _interval_count++;
         measurements_send();
     }
-    _measurements_iterate_callbacks();
+    uint16_t count_active = _measurements_iterate_callbacks();
+    /* If no measurements require active calls. */
+    if (count_active == 0)
+    {
+        _measurements_sleep_iteration();
+    }
 }
 
 
@@ -1062,5 +1163,10 @@ void measurements_set_debug_mode(bool enable)
     else
         measurements_debug("Disabling measurements debug mode.");
     _measurements_debug_mode = enable;
-    _measurements_sample();
+}
+
+
+void measurements_power_mode(measurements_power_mode_t mode)
+{
+    _measurements_power_mode = mode;
 }

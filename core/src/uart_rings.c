@@ -52,6 +52,27 @@ static char command[CMD_LINELEN];
 static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
 
+bool uart_ring_out_busy(unsigned uart)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return 0;
+
+    ring_buf_t * ring = &ring_out_bufs[uart];
+    return ring_buf_get_pending(ring);
+}
+
+
+bool uart_rings_out_busy(void)
+{
+    for (unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    {
+        if (uart_ring_out_busy(n))
+            return true;
+    }
+    return false;
+}
+
+
 unsigned uart_ring_in(unsigned uart, const char* s, unsigned len)
 {
     if (uart >= UART_CHANNELS_COUNT)
@@ -117,7 +138,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 }
 
 
-static void uart_ring_in_drain(unsigned uart)
+void uart_ring_in_drain(unsigned uart)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;

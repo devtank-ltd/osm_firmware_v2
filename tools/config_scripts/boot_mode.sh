@@ -1,6 +1,9 @@
 #! /bin/bash
 
-dev=$(basename $(readlink /dev/serial/by-id/*CP210*))
+if [[ -z "$dev" ]]
+then
+  dev=$(basename $(readlink /dev/serial/by-id/*CP210*))
+fi
 
 echo Using /dev/$dev
 
