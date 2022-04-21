@@ -9,8 +9,6 @@ import re
 import string
 import random
 import json
-from tkinter import *
-from tkterminal import Terminal
 
 def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
