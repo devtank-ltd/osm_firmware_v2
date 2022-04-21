@@ -1,7 +1,6 @@
 import select
 import can
 import struct
-import sys
 import os
 import datetime
 
@@ -114,10 +113,7 @@ def ts():
 
 def db_add_measurement(db, name, value):
     print(f"{name} = {value}")
-    try:
-        json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": value}}]
-        db.write_points(json)
-    except InfluxDBClientError:
+    if value is not False:
         json = [{"measurement": name, "tags": {}, "time": ts(), "fields": {"value": float(value)}}]
         db.write_points(json)
 
@@ -195,4 +191,5 @@ def main(argv, argc):
 
 
 if __name__ == "__main__":
+    import sys
     main(sys.argv, len(sys.argv))
