@@ -148,7 +148,7 @@ static bool _can_comm_new_data(can_comm_packet_t* pkt)
 }
 
 
-void tim2_isr(void)
+void tim3_isr(void)
 {
     timer_clear_flag(CAN_TIM, TIM_SR_CC1IF);
 
