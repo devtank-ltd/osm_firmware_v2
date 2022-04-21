@@ -538,7 +538,7 @@ class dev_t(dev_base_t):
         for n in range(0, len(hdata), mtu):
             debug_print("Chunk %u/%u" % (n/2, len(hdata)/2))
             chunk=hdata[n:n + mtu]
-        r = self.do_cmd("fw+ "+chunk)
+            r = self.do_cmd("fw+ "+chunk)
             expect= "FW %u chunk added" % (len(chunk)/2)
             assert expect in r
         r = self.do_cmd("fw@ %04x" % crc)
