@@ -109,7 +109,7 @@ can_data_flags=[
 
 
 def ts():
-    return datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+    return datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 def db_add_measurement(db, name, value):
@@ -163,7 +163,7 @@ def main(argv, argc):
 
     # Database
     database_name = "sf_debug"
-    db_client = InfluxDBClient('localhost', port=8086)
+    db_client = InfluxDBClient('localhost', port=8087)
     db_client.switch_database(database_name)
 
     while True:
