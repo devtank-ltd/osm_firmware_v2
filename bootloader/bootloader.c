@@ -8,7 +8,7 @@
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/cm3/scb.h>
 
-#define IOS_COUNT 11
+#define IOS_COUNT 10
 
 #include "config.h"
 #include "pinmap.h"

@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <inttypes.h>
+#include <stddef.h>
+
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/nvic.h>
@@ -30,6 +32,7 @@
 #include "i2c.h"
 #include "veml7700.h"
 #include "cc.h"
+#include "can_impl.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -76,15 +79,17 @@ int main(void)
     htu21d_init();
     veml7700_init();
     sai_init();
-    lw_init();
-    measurements_init();
     pulsecount_init();
     modbus_init();
+    can_impl_init();
+    lw_init();
 
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
     log_async_log = true;
+
+    measurements_init();
 
     uint32_t prev_now = 0;
     uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;

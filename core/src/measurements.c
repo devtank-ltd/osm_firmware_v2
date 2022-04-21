@@ -78,11 +78,21 @@ static bool                         _measurements_debug_mode                    
 
 static measurements_power_mode_t    _measurements_power_mode                             = MEASUREMENTS_POWER_MODE_AUTO;
 
+static unsigned _measurements_chunk_start_pos = 0;
+static unsigned _measurements_chunk_prev_start_pos = 0;
+
 
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60 * 1000)
 
+
+measurements_sensor_state_t fw_version_get(char* name, value_t* value)
+{
+    if (!value_as_str(value, fw_sha1, FW_SHA_LEN))
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
 
 
 static bool _measurements_get_measurements_def(char* name, measurements_def_t** measurements_def)
@@ -208,12 +218,52 @@ static bool _measurements_to_arr(measurements_def_t* measurements_def, measureme
     return !r;
 }
 
-static unsigned _message_start_pos = 0;
-static unsigned _message_prev_start_pos = 0;
+
+static bool _measurements_send_start(void)
+{
+    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
+    _measurements_hex_arr_pos = 0;
+
+    if (!_measurements_arr_append((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    {
+        log_error("Failed to add even version to measurements hex array.");
+        _pending_send = false;
+        _last_sent_ms = get_since_boot_ms();
+        return false;
+    }
+
+    return true;
+}
 
 
+bool measurements_send_test(void)
+{
+    if (!lw_get_connected() || !lw_send_ready())
+        return false;
 
-static void measurements_send(void)
+    if (_measurements_hex_arr_pos)
+        return false;
+
+    if (!_measurements_send_start())
+        return false;
+
+    value_t v;
+
+    char id[4] = MEASUREMENTS_FW_VERSION;
+
+    bool r = _measurements_arr_append(*(int32_t*)id);
+    r &= _measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
+    r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    r &= _measurements_arr_append(&v);
+
+    measurements_debug("Sending test array.");
+    lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+
+    return r;
+}
+
+
+static void _measurements_send(void)
 {
     uint16_t            num_qd = 0;
     measurements_def_t*  def;
@@ -227,7 +277,7 @@ static void measurements_send(void)
         {
             measurements_debug("Not connected to send, dropping readings");
             has_printed_no_con = true;
-            _message_start_pos = _message_prev_start_pos = 0;
+            _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
         }
         _pending_send = false;
         if (_measurements_debug_mode)
@@ -240,13 +290,18 @@ static void measurements_send(void)
 
     if (!lw_send_ready() && !_measurements_debug_mode)
     {
+        if (lw_is_recv_fw())
+        {
+            // Tried to send but receiving FW
+            return;
+        }
         if (_pending_send)
         {
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
                 lw_reset();
-                _message_start_pos = _message_prev_start_pos = 0;
+                _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
                 _pending_send = false;
             }
             return;
@@ -256,25 +311,15 @@ static void measurements_send(void)
         return;
     }
 
-    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    _measurements_hex_arr_pos = 0;
-
-    measurements_debug( "Attempting to send measurements");
-
-    if (!_measurements_arr_append((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
-    {
-        log_error("Failed to add even version to measurements hex array.");
-        _pending_send = false;
-        _last_sent_ms = get_since_boot_ms();
+    if (!_measurements_send_start())
         return;
-    }
 
-    if (_message_start_pos == MEASUREMENTS_MAX_NUMBER)
-        _message_start_pos = 0;
+    if (_measurements_chunk_start_pos == MEASUREMENTS_MAX_NUMBER)
+        _measurements_chunk_start_pos = 0;
 
-    unsigned i = _message_start_pos;
+    unsigned i = _measurements_chunk_start_pos;
 
-    if (_message_start_pos)
+    if (_measurements_chunk_start_pos)
         measurements_debug("Resuming previous measurements send.");
 
     for (; i < MEASUREMENTS_MAX_NUMBER; i++)
@@ -297,8 +342,8 @@ static void measurements_send(void)
             {
                 _measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
                 measurements_debug("Failed to queue send of  \"%s\".", def->name);
-                _message_prev_start_pos = _message_start_pos;
-                _message_start_pos = i;
+                _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
+                _measurements_chunk_start_pos = i;
                 break;
             }
             num_qd++;
@@ -313,12 +358,12 @@ static void measurements_send(void)
 
     if (i == MEASUREMENTS_MAX_NUMBER)
     {
-        if (_message_start_pos)
+        if (_measurements_chunk_start_pos)
             /* Last of fragments */
-            _message_prev_start_pos = _message_start_pos;
+            _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
         else
-            _message_prev_start_pos = 0;
-        _message_start_pos = MEASUREMENTS_MAX_NUMBER;
+            _measurements_chunk_prev_start_pos = 0;
+        _measurements_chunk_start_pos = MEASUREMENTS_MAX_NUMBER;
     }
 
     if (num_qd > 0)
@@ -383,14 +428,6 @@ measurements_sensor_state_t fw_version_collection_time(char* name, uint32_t* col
     if (!collection_time)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     *collection_time = 0;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
-
-
-measurements_sensor_state_t fw_version_get(char* name, value_t* value)
-{
-    if (!value_as_str(value, fw_sha1, FW_SHA_LEN))
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -481,12 +518,12 @@ void on_lw_sent_ack(bool ack)
 {
     if (!ack)
     {
-        _message_prev_start_pos = _message_start_pos = 0;
+        _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos = 0;
          _pending_send = false;
         return;
     }
 
-    for (unsigned i = _message_prev_start_pos; i < _message_start_pos; i++)
+    for (unsigned i = _measurements_chunk_prev_start_pos; i < _measurements_chunk_start_pos; i++)
     {
         measurements_def_t* def = &_measurements_arr.def[i];
         if (!def->name[0])
@@ -500,9 +537,9 @@ void on_lw_sent_ack(bool ack)
     }
 
     if (_pending_send)
-        measurements_send();
+        _measurements_send();
     else
-        _message_prev_start_pos = _message_start_pos = 0;
+        _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos = 0;
 }
 
 
@@ -985,7 +1022,7 @@ void measurements_loop_iteration(void)
         {
             measurements_debug("Not connected to send, not taking readings.");
             has_printed_no_con = true;
-            _message_start_pos = _message_prev_start_pos = 0;
+            _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
             _pending_send = false;
         }
         return;
@@ -1011,7 +1048,7 @@ void measurements_loop_iteration(void)
             _interval_count = 0;
         }
         _interval_count++;
-        measurements_send();
+        _measurements_send();
     }
     uint16_t count_active = _measurements_iterate_callbacks();
     /* If no measurements require active calls. */

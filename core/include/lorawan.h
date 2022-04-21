@@ -28,6 +28,7 @@ extern uint16_t lw_packet_max_size;
 
 extern bool     lw_send_ready(void);
 extern bool     lw_send_str(char* str);
+extern bool     lw_is_recv_fw(void);
 extern void     lw_init(void);
 extern void     lw_reset(void);
 extern bool     lw_reload_config(void);

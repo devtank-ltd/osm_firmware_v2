@@ -173,6 +173,7 @@ class low_level_dev_t(object):
     def __init__(self, serial_obj, log_obj):
         self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\n")
         self._log_obj = log_obj
+        self.fileno = serial_obj.fileno
 
     def write(self, msg):
         self._log_obj.send(msg)
@@ -206,7 +207,7 @@ class low_level_dev_t(object):
         return msgs
 
 
-class dev_t(object):
+class dev_base_t(object):
     def __init__(self, port="/dev/ttyUSB0"):
         self._serial_obj = serial.Serial(port=port,
                                          baudrate=115200,
@@ -221,8 +222,14 @@ class dev_t(object):
                                          inter_byte_timeout=None,
                                          exclusive=None)
         self._log_obj = log_t("PC", "OSM")
+        self._log = self._log_obj.emit
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
+        self.fileno = self._ll.fileno
 
+
+class dev_t(dev_base_t):
+    def __init__(self, port="/dev/ttyUSB0"):
+        super().__init__(port)
         self._children = {
             "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
@@ -521,3 +528,77 @@ class dev_t(object):
         self.do_cmd("lora_config dev-eui %s" % dev_eui)
 
 
+    def fw_upload(self, filmware):
+        from crccheck.crc import CrcModbus
+        data = open(filmware, "rb").read()
+        crc = CrcModbus.calc(data)
+        hdata = ["%02x" % x for x in data]
+        hdata = "".join(hdata)
+        mtu=56
+        for n in range(0, len(hdata), mtu):
+            debug_print("Chunk %u/%u" % (n/2, len(hdata)/2))
+            chunk=hdata[n:n + mtu]
+        r = self.do_cmd("fw+ "+chunk)
+            expect= "FW %u chunk added" % (len(chunk)/2)
+            assert expect in r
+        r = self.do_cmd("fw@ %04x" % crc)
+        assert "FW added" in r
+
+    def reset(self):
+        self._ll.write('reset')
+        while True:
+            line = self._ll.read()
+            if '----start----' in line:
+                return
+
+
+class dev_debug_t(dev_base_t):
+    def __init__(self, port="/dev/ttyUSB0"):
+        super().__init__(port)
+        self._leftover = ""
+
+    def parse_msg(self, msg):
+        """
+        IN:  'DEBUG:0000036805:DEBUG:TEMP:2113'
+        OUT: ('TEMP', 2113)
+        """
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:FAILED", msg)
+        if r and r.group(0):
+            _,ts,_,name,_ = r.group(0).split(":")
+            self._log(f"{name} failed.")
+            return (name, False)
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F]+:[0-9]+", msg)
+        if r and r.group(0):
+            _,ts,_,name,type_,value = r.group(0).split(":")
+            try:
+                value = float(value)
+            except ValueError:
+                self._log(f"{value} is not a float.")
+                return None
+            self._log(f"{name} = {value}")
+            return (name, float(value))
+        # Cannot find regular expression matching template
+        return None
+
+    def parse_msgs(self, msgs):
+        resp = []
+        for msg in msgs:
+            resp.append(self.parse_msg(msg))
+        return resp
+
+    def read_msgs(self, timeout=1.5):
+        end_time = time.monotonic() + timeout
+        while time.monotonic() < end_time:
+            new_lines = self._ll.readlines()
+            if len(new_lines) == 0:
+                continue
+            new_lines[0] = (self._leftover + new_lines[0]).strip("\n\r")
+            self._leftover = new_lines[-1]
+            p_arr = []
+            for line in new_lines:
+                p = self.parse_msg(line)
+                if p:
+                    p_arr.append(p)
+            if p_arr:
+                return p_arr
+        return None

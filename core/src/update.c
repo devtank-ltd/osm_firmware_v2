@@ -50,6 +50,12 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
 }
 
 
+void fw_ota_reset(void)
+{
+    _fw_ota_pos = -1;
+    fw_debug("Reset FW download.");
+}
+
 
 bool fw_ota_add_chunk(void * data, unsigned size)
 {

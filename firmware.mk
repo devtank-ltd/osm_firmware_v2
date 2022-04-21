@@ -21,6 +21,8 @@ firmware_SOURCES := \
            core/src/common.c \
            core/src/w1.c \
            core/src/sleep.c \
+           core/src/can_comm.c \
+           core/src/debug_mode.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \
@@ -29,7 +31,8 @@ firmware_SOURCES := \
            sensors/src/veml7700.c \
            sensors/src/sai.c \
            sensors/src/cc.c \
-           sensors/src/bat.c
+           sensors/src/bat.c \
+           sensors/src/can_impl.c
 
 
 firmware_LINK_SCRIPT := core/stm32l452.ld
