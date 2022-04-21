@@ -560,12 +560,12 @@ class dev_debug_t(dev_base_t):
         IN:  'DEBUG:0000036805:DEBUG:TEMP:2113'
         OUT: ('TEMP', 2113)
         """
-        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:FAILED", msg)
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:FAILED", msg)
         if r and r.group(0):
             _,ts,_,name,_ = r.group(0).split(":")
             self._log(f"{name} failed.")
             return (name, False)
-        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F]+:[0-9]+", msg)
+        r = re.search("DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F]+:[0-9]+", msg)
         if r and r.group(0):
             _,ts,_,name,type_,value = r.group(0).split(":")
             try:
