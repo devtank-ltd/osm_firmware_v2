@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+
 #include <libopencm3/cm3/scb.h>
 
 #include "measurements.h"
@@ -82,7 +84,9 @@ static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
     (void)userdata;
     value_t value;
     measurements_sensor_state_t r = modbus_measurements_get2(reg, &value);
-    _debug_mode_send_value(r, reg->name, &value);
+    char name[MEASURE_NAME_NULLED_LEN] = {0};
+    memcpy(name, reg->name, MEASURE_NAME_LEN);
+    _debug_mode_send_value(r, name, &value);
     if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
         _debug_mode_modbus_waiting--;
     return true;
