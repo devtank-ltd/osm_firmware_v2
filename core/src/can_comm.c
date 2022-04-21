@@ -27,20 +27,20 @@ static bool             _can_comm_enabled                       = false;
 
 static void _can_comm_clk_init(void)
 {
-    rcc_periph_clock_enable(RCC_TIM2);
+    rcc_periph_clock_enable(CAN_RCC_TIM);
 
-    timer_disable_counter(TIM2);
+    timer_disable_counter(CAN_TIM);
 
-    timer_set_mode(TIM2,
+    timer_set_mode(CAN_TIM,
                    TIM_CR1_CKD_CK_INT,
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
 
-    timer_set_prescaler(TIM2, rcc_ahb_frequency / 10000-1);//-1 because it starts at zero, and interrupts on the overflow
-    timer_set_period(TIM2, 5);
-    timer_enable_preload(TIM2);
-    timer_continuous_mode(TIM2);
-    timer_enable_irq(TIM2, TIM_DIER_CC1IE);
+    timer_set_prescaler(CAN_TIM, rcc_ahb_frequency / 10000-1);//-1 because it starts at zero, and interrupts on the overflow
+    timer_set_period(CAN_TIM, 5);
+    timer_enable_preload(CAN_TIM);
+    timer_continuous_mode(CAN_TIM);
+    timer_enable_irq(CAN_TIM, TIM_DIER_CC1IE);
 }
 
 
@@ -133,9 +133,9 @@ void can_comm_init(void)
     */
     _can_comm_clk_init();
     if (_can_comm_enabled)
-        timer_enable_counter(TIM2);
+        timer_enable_counter(CAN_TIM);
 
-    nvic_enable_irq(NVIC_TIM2_IRQ);
+    nvic_enable_irq(NVIC_TIM3_IRQ);
 }
 
 
@@ -150,7 +150,7 @@ static bool _can_comm_new_data(can_comm_packet_t* pkt)
 
 void tim2_isr(void)
 {
-    timer_clear_flag(TIM2, TIM_SR_CC1IF);
+    timer_clear_flag(CAN_TIM, TIM_SR_CC1IF);
 
     can_comm_packet_t pkt;
     uint8_t data[CAN_COMM_MAX_DATA_SIZE];
@@ -166,7 +166,7 @@ void tim2_isr(void)
     // Unused bool func
     _can_comm_new_data(&pkt);
     if (!_can_comm_enabled)
-        timer_disable_counter(TIM2);
+        timer_disable_counter(CAN_TIM);
 }
 
 
@@ -174,7 +174,7 @@ void can_comm_enable(bool enabled)
 {
     _can_comm_enabled = enabled;
     if (enabled)
-        timer_enable_counter(TIM2);
+        timer_enable_counter(CAN_TIM);
 }
 
 

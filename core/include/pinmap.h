@@ -192,6 +192,10 @@ GPIO16 D2                   IO 11
 #define MODBUS_TIM      TIM2
 #define MODBUS_RST_TIM  RST_TIM2
 
+#define CAN_RCC_TIM     RCC_TIM3
+#define CAN_TIM         TIM3
+#define CAN_RST_TIM     RST_TIM3
+
 
 #define SAI_PORT_N_PINS                    \
 {                                          \
