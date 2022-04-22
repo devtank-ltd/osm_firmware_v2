@@ -192,7 +192,7 @@ static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* nam
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         inst = &_pulsecount_instances[i];
-        if (strncmp(name, inst->info.name, sizeof(inst->info.name) * sizeof(char) - 1) == 0)
+        if (strncmp(name, inst->info.name, sizeof(inst->info.name) * sizeof(char)) == 0)
         {
             *instance = inst;
             return true;
@@ -230,7 +230,7 @@ measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
     }
     if (!io_is_pulsecount_now(instance->info.io))
     {
-        pulsecount_debug("IO not set up.");
+        pulsecount_debug("IO %s not set up.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
