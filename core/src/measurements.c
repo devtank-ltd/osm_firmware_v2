@@ -239,13 +239,16 @@ static bool _measurements_send_start(void)
 bool measurements_send_test(void)
 {
     if (!lw_get_connected() || !lw_send_ready())
+    {
+        measurements_debug("LW not ready.");
         return false;
-
-    if (_measurements_hex_arr_pos)
-        return false;
+    }
 
     if (!_measurements_send_start())
+    {
+        measurements_debug("Failed to send start.");
         return false;
+    }
 
     value_t v;
 
@@ -255,6 +258,9 @@ bool measurements_send_test(void)
     r &= _measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
     r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
     r &= _measurements_arr_append(&v);
+
+    if (!r)
+        measurements_debug("Failed to add to array.");
 
     measurements_debug("Sending test array.");
     lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);

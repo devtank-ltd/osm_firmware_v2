@@ -93,6 +93,15 @@ static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
 }
 
 
+static void _lw_send_msg(void)
+{
+    value_t val;
+    val.type = VALUE_UINT8;
+    val.u8 = 1;
+    _debug_mode_send_value(measurements_send_test()?MEASUREMENTS_SENSOR_STATE_SUCCESS:MEASUREMENTS_SENSOR_STATE_ERROR, "LORA", &val);
+}
+
+
 static void _debug_mode_collect_iteration(void)
 {
     _debug_mode_collect_sensor(MEASUREMENTS_HTU21D_TEMP, htu21d_temp_measurements_get);
@@ -107,7 +116,10 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, pulsecount_get);
     can_impl_send_example();
     modbus_for_all_regs(_debug_modbus_get, NULL);
-    measurements_send_test();
+    static bool toggle = true;
+    if (toggle)
+        _lw_send_msg();
+    toggle = !toggle;
 }
 
 
@@ -175,6 +187,7 @@ void debug_mode(void)
             uart_rings_out_drain();
             _debug_mode_fast_iteration();
         }
+        lw_loop_iteration();
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
