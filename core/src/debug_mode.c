@@ -19,6 +19,7 @@
 #include "pulsecount.h"
 #include "sai.h"
 #include "veml7700.h"
+#include "cc.h"
 
 #include "modbus_measurements.h"
 
@@ -53,6 +54,9 @@ static void _debug_mode_init_iteration(void)
     veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_2);
+    cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME);
+    cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME);
+    cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME);
     if (!_debug_mode_modbus_waiting)
         modbus_for_all_regs(_debug_modbus_init, NULL);
 }
@@ -114,6 +118,9 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_LIGHT_NAME, veml7700_light_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, pulsecount_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, pulsecount_get);
+    _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_1_NAME, cc_get);
+    _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_2_NAME, cc_get);
+    _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_3_NAME, cc_get);
     can_impl_send_example();
     modbus_for_all_regs(_debug_modbus_get, NULL);
     static bool toggle = true;
