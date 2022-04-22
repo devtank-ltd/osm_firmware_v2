@@ -1,3 +1,4 @@
+import sys
 import select
 import can
 import struct
@@ -184,6 +185,7 @@ def main(argv, argc):
                             failed = True
                 pass_str = "PASSED" if not failed else "FAILED"
                 print(f"CAN = {pass_str}")
+                db_add_measurement(db_client, "CAN", failed)
             num_errs = libsocketcan.can_get_berr_counter(can_network)
             if num_errs is None:
                 num_errs = 0
@@ -191,5 +193,4 @@ def main(argv, argc):
 
 
 if __name__ == "__main__":
-    import sys
     main(sys.argv, len(sys.argv))
