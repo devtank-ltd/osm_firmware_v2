@@ -18,7 +18,7 @@ def dev_eui_generator(size=16, chars=string.ascii_lowercase + string.digits):
 
 def default_print(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-    print("[%s] %s\r"% (now, msg), file=sys.stderr)
+    print("[%s] %s"% (now, msg), file=sys.stderr)
 
 _debug_fnc = default_print if "DEBUG" in os.environ else None
 
