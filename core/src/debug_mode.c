@@ -123,10 +123,13 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_3_NAME, cc_get);
     can_impl_send_example();
     modbus_for_all_regs(_debug_modbus_get, NULL);
-    static bool toggle = true;
-    if (toggle)
+    static int lw_counter = 0;
+    if (lw_counter == 2)
+    {
         _lw_send_msg();
-    toggle = !toggle;
+        lw_counter = 0;
+    }
+    lw_counter++;
 }
 
 
