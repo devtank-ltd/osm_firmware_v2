@@ -20,7 +20,7 @@ def default_print(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     print("[%s] %s\r"% (now, msg), file=sys.stderr)
 
-_debug_fnc = lambda *args : default_print if "DEBUG" in os.environ else None
+_debug_fnc = default_print if "DEBUG" in os.environ else None
 
 
 def debug_print(msg):
