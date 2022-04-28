@@ -369,6 +369,9 @@ bool modbus_start_read(modbus_reg_t * reg)
         return false;
     }
 
+    /* All current types use this as is_valid. */
+    reg->class_data_b = 0;
+
     if (modbus_want_rx)
     {
         modbus_debug("Deferred read of \"%."STR(MODBUS_NAME_LEN)"s\"", reg->name);
