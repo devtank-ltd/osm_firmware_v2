@@ -30,13 +30,13 @@ class FakeMeterBlocks(ModbusSparseDataBlock):
 
     def __init__(self):
 
-        self._data = {0xc56e: [0, 0],     # PF  "PowerFactorP1",  "PF"              
-                      0xc552: [0, 24000], # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
-                      0xc554: [0, 24000], # cVP2  "VoltageP2",      "V / 100"         ,                        
-                      0xc556: [0, 24000], # cVP3  "VoltageP3",      "V / 100"         ,                        
-                      0xc560: [0, 3000],  # mAP1  "CurrentP1",      "A / 1000"        , 3000 for 3A in milliamps
-                      0xc562: [0, 3000],  # mAP2  "CurrentP2",      "A / 1000"        ,                        
-                      0xc564: [0, 3000],  # mAP3  "CurrentP3",      "A / 1000"        ,                        
+        self._data = {0xc56e: [0, 1],     # PF  "PowerFactorP1",  "PF"
+                      0xc552: [0, 24001], # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
+                      0xc554: [0, 24002], # cVP2  "VoltageP2",      "V / 100"         ,
+                      0xc556: [0, 24003], # cVP3  "VoltageP3",      "V / 100"         ,
+                      0xc560: [0, 3001],  # mAP1  "CurrentP1",      "A / 1000"        , 3000 for 3A in milliamps
+                      0xc562: [0, 3002],  # mAP2  "CurrentP2",      "A / 1000"        ,
+                      0xc564: [0, 3003],  # mAP3  "CurrentP3",      "A / 1000"        ,
                       0xc652: [0, 1000]   # ImEn  "ImportEnergy",   "watt/hours/0.001", 1000 for 1.0
                       }
         super().__init__(values=self._data)
