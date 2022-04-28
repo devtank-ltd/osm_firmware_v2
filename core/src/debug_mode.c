@@ -87,12 +87,18 @@ static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
 {
     (void)userdata;
     value_t value;
-    measurements_sensor_state_t r = modbus_measurements_get2(reg, &value);
     char name[MEASURE_NAME_NULLED_LEN] = {0};
-    memcpy(name, reg->name, MEASURE_NAME_LEN);
-    _debug_mode_send_value(r, name, &value);
-    if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        _debug_mode_modbus_waiting--;
+    if (modbus_reg_get_name(reg, name))
+    {
+        measurements_sensor_state_t r = modbus_measurements_get2(reg, &value);
+        if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        {
+            _debug_mode_send_value(r, name, &value);
+            _debug_mode_modbus_waiting--;
+            if (!_debug_modbus_init(reg, userdata)) /*Start this one again,  marking it as not having a valid value*/
+                log_error("Failed to re-queue modbus reg %s", name);
+        }
+    }
     return true;
 }
 
@@ -122,7 +128,8 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_2_NAME, cc_get);
     _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_3_NAME, cc_get);
     can_impl_send_example();
-    modbus_for_all_regs(_debug_modbus_get, NULL);
+    if (_debug_mode_modbus_waiting)
+        modbus_for_all_regs(_debug_modbus_get, NULL);
     static int lw_counter = 0;
     if (lw_counter == 2)
     {
