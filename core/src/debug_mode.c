@@ -131,7 +131,7 @@ static void _debug_mode_collect_iteration(void)
     if (_debug_mode_modbus_waiting)
         modbus_for_all_regs(_debug_modbus_get, NULL);
     static int lw_counter = 0;
-    if (lw_counter == 2)
+    if (lw_counter == 10)
     {
         _lw_send_msg();
         lw_counter = 0;
