@@ -21,6 +21,7 @@
 #include "timers.h"
 #include "io.h"
 #include "sai.h"
+#include "hpm.h"
 #include "uart_rings.h"
 #include "persist_config.h"
 #include "lorawan.h"
@@ -97,7 +98,9 @@ int main(void)
     if (boot_debug_mode)
     {
         log_sys_debug("Booted in debug_mode");
+        hpm_enable(true);
         debug_mode();
+        hpm_enable(false);
         log_sys_debug("Left debug_mode");
     }
 
