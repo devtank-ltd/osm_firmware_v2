@@ -33,6 +33,7 @@
 #include "veml7700.h"
 #include "cc.h"
 #include "can_impl.h"
+#include "debug_mode.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -90,6 +91,15 @@ int main(void)
     log_async_log = true;
 
     measurements_init();
+
+    bool boot_debug_mode = DEBUG_MODE & persist_get_log_debug_mask();
+
+    if (boot_debug_mode)
+    {
+        log_sys_debug("Booted in debug_mode");
+        debug_mode();
+        log_sys_debug("Left debug_mode");
+    }
 
     uint32_t prev_now = 0;
     uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;

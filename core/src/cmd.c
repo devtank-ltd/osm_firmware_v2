@@ -764,7 +764,16 @@ static void can_impl_cb(char* args)
 
 static void debug_mode_cb(char* args)
 {
-    debug_mode();
+    uint32_t mask = persist_get_log_debug_mask();
+    if (mask & DEBUG_MODE)
+    {
+        debug_mode(); /* Toggle it off.*/
+        persist_set_log_debug_mask(mask & ~DEBUG_MODE);
+        return;
+    }
+    persist_set_log_debug_mask(mask | DEBUG_MODE);
+    platform_raw_msg("Rebooting in debug_mode.");
+    reset_cb(args);
 }
 
 
