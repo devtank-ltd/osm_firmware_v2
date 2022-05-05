@@ -550,11 +550,23 @@ void modbus_ring_process(ring_buf_t * ring)
 
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
 
+    // Good or bad, we think we have the whole message for current register, so remove it from queue.
+    modbus_reg_t * current_reg = NULL;
+
+    if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
+    {
+        log_error("Modbus comms issues!");
+        modbuspacket_len = 0;
+        modbus_want_rx = false;
+        return;
+    }
+
     if ( (modbuspacket[modbuspacket_len-1] == (crc >> 8)) &&
          (modbuspacket[modbuspacket_len-2] == (crc & 0xFF)) )
     {
         modbus_debug("Bad CRC");
         modbuspacket_len = 0;
+        modbus_want_rx = false;
         return;
     }
 
@@ -563,14 +575,6 @@ void modbus_ring_process(ring_buf_t * ring)
     modbus_read_last_good = get_since_boot_ms();
     modbus_has_rx = true;
     modbus_want_rx = false;
-
-    modbus_reg_t * current_reg = NULL;
-
-    if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
-    {
-        log_error("Modbus comms issues!");
-        return;
-    }
 
     modbus_retransmit_count = 0;
 
