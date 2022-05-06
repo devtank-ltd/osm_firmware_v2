@@ -216,8 +216,6 @@ static unsigned _message_prev_start_pos = 0;
 static void measurements_send(void)
 {
     uint16_t            num_qd = 0;
-    measurements_def_t*  def;
-    measurements_data_t* data;
 
     static bool has_printed_no_con = false;
 
@@ -279,8 +277,8 @@ static void measurements_send(void)
 
     for (; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        def = &_measurements_arr.def[i];
-        data = &_measurements_arr.data[i];
+        measurements_def_t*  def  = &_measurements_arr.def[i];
+        measurements_data_t* data = &_measurements_arr.data[i];
         if (def->interval && (_interval_count % def->interval == 0))
         {
             if (data->sum.type == VALUE_UNSET || data->num_samples == 0)
@@ -327,8 +325,8 @@ static void measurements_send(void)
             _last_sent_ms = get_since_boot_ms();
         if (_measurements_debug_mode)
         {
-            for (unsigned i = 0; i < _measurements_hex_arr_pos; i++)
-                measurements_debug("Packet %u = 0x%"PRIx8, i, _measurements_hex_arr[i]);
+            for (unsigned j = 0; j < _measurements_hex_arr_pos; j++)
+                measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
         }
         else
             lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
