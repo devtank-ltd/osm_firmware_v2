@@ -128,13 +128,13 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_2_NAME, cc_get);
     _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_3_NAME, cc_get);
     can_impl_send_example();
-    if (_debug_mode_modbus_waiting)
-        modbus_for_all_regs(_debug_modbus_get, NULL);
     static int lw_counter = 0;
     if (lw_counter == 10)
     {
         _lw_send_msg();
         lw_counter = 0;
+        if (_debug_mode_modbus_waiting)
+            modbus_for_all_regs(_debug_modbus_get, NULL);
     }
     lw_counter++;
 }
