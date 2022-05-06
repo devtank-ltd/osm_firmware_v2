@@ -133,11 +133,14 @@ typedef union
     {
         uint16_t als_sd:1;
         uint16_t als_int_en:1;
+        // cppcheck-suppress unusedStructMember ; Padding
         uint16_t _:2;
         uint16_t als_pers:2;
         uint16_t als_it:4;
+        // cppcheck-suppress unusedStructMember ; Padding
         uint16_t __:1;
         uint16_t als_sm:2;
+        // cppcheck-suppress unusedStructMember ; Padding
         uint16_t ___:3;
     };
     uint16_t raw;
@@ -150,6 +153,7 @@ typedef union
     {
         uint16_t psm_en:1;
         uint16_t psm:2;
+        // cppcheck-suppress unusedStructMember ; Padding
         uint16_t _:13;
     };
     uint16_t raw;

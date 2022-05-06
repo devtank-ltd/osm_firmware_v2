@@ -558,6 +558,7 @@ overflow_exit:
 }
 
 
+// cppcheck-suppress unusedFunction ; System handler
 void dma2_channel1_isr(void)
 {
     DMA2_IFCR |= DMA_IFCR_CTCIF(DMA_CHANNEL1);

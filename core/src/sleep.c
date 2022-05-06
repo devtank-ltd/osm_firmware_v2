@@ -134,6 +134,7 @@ turn_on_sleep:
 }
 
 
+// cppcheck-suppress unusedFunction ; System handler
 void lptim1_isr(void)
 {
     if (lptimer_get_flag(LPTIM1, LPTIM_ICR_CMPMCF))

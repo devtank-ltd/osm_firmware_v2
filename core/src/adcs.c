@@ -185,6 +185,7 @@ static void _adcs_setup_dma(void)
 }
 
 
+// cppcheck-suppress unusedFunction ; System handler
 void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
 {
     if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))

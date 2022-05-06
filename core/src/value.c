@@ -227,7 +227,7 @@ bool value_to_str(value_t * v, char * str, unsigned size)
         case VALUE_INT8   : snprintf(str, size, "I8:%"PRId8,   v->i8);  break;
         case VALUE_INT16  : snprintf(str, size, "I16:%"PRId16, v->i16); break;
         case VALUE_INT32  : snprintf(str, size, "I32:%"PRId32, v->i32); break;
-        case VALUE_INT64  : snprintf(str, size, "I64:%lld",    v->i64); break;
+        case VALUE_INT64  : snprintf(str, size, "I64:%"PRId64, v->i64); break;
         case VALUE_FLOAT  : snprintf(str, size, "F32:%f",      v->f);   break;
         case VALUE_STR    : snprintf(str, size, "STR:%s",      v->str); break;
         default: return false;
