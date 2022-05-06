@@ -188,6 +188,8 @@ void debug_mode(void)
         _debug_mode_enabled = false;
         return;
     }
+    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
+    cc_set_channels_active(all_cc_channels, ADC_CC_COUNT);
 
     _debug_mode_enabled = true;
 
@@ -209,4 +211,5 @@ void debug_mode(void)
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
     }
+    measurements_derive_cc_phase();
 }

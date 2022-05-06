@@ -810,7 +810,7 @@ uint16_t measurements_num_measurements(void)
 }
 
 
-static void _measurements_derive_cc_phase(void)
+void measurements_derive_cc_phase(void)
 {
     unsigned len = 0;
     uint8_t channels[ADC_COUNT] = {0};
@@ -874,7 +874,7 @@ bool measurements_add(measurements_def_t* measurements_def)
                 return false;
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
         }
-        _measurements_derive_cc_phase();
+        measurements_derive_cc_phase();
         return true;
     }
     log_error("Could not find a space to add %s", measurements_def->name);
@@ -890,7 +890,7 @@ bool measurements_del(char* name)
         {
             memset(&_measurements_arr.def[i], 0, sizeof(measurements_def_t));
             memset(&_measurements_arr.data[i], 0, sizeof(measurements_data_t));
-            _measurements_derive_cc_phase();
+            measurements_derive_cc_phase();
             return true;
         }
     }
@@ -906,7 +906,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
         return false;
     }
     measurements_def->interval = interval;
-    _measurements_derive_cc_phase();
+    measurements_derive_cc_phase();
     return true;
 }
 
@@ -936,7 +936,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurements_def->samplecount = samplecount;
-    _measurements_derive_cc_phase();
+    measurements_derive_cc_phase();
     return true;
 }
 
@@ -1159,7 +1159,7 @@ void measurements_init(void)
         log_error("Could not load measurements interval.");
         transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     }
-    _measurements_derive_cc_phase();
+    measurements_derive_cc_phase();
 }
 
 
