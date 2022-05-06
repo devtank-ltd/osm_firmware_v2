@@ -26,8 +26,7 @@
 
 #define MODBUS_SLOTS  (MODBUS_MAX_DEV * MODBUS_DEV_REGS)
 
-typedef void (*modbus_reg_cb)(modbus_reg_t * reg, uint8_t * data, uint8_t size);
-
+#define MODBUS_MAX_RETRANSMITS 10
 
 /*         <               ADU                         >
             addr(1), func(1), reg(2), count(2) , crc(2)
@@ -61,6 +60,8 @@ static bool     modbus_has_rx = false;
 
 static uint32_t modbus_send_start_delay = 0;
 static uint32_t modbus_send_stop_delay = 0;
+
+static uint32_t modbus_retransmit_count = 0;
 
 static bool do_binary_framing = false; /* This is to support pymodbus.framer.binary_framer and http://jamod.sourceforge.net/. */
 
@@ -368,6 +369,9 @@ bool modbus_start_read(modbus_reg_t * reg)
         return false;
     }
 
+    /* All current types use this as is_valid. */
+    reg->class_data_b = 0;
+
     if (modbus_want_rx)
     {
         modbus_debug("Deferred read of \"%."STR(MODBUS_NAME_LEN)"s\"", reg->name);
@@ -407,7 +411,24 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     modbus_want_rx = false;
     modbus_has_rx = false;
     ring_buf_clear(ring);
-    _modbus_next_message();
+
+    modbus_retransmit_count++;
+    if (modbus_retransmit_count < MODBUS_MAX_RETRANSMITS)
+        _modbus_next_message();
+    else
+    {
+        modbus_reg_t * current_reg = NULL;
+
+        modbus_debug("Dropping message in queue.");
+        modbus_retransmit_count = 0;
+
+        if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
+        {
+            modbus_debug("Failed to drop message, dropping all messages.");
+            ring_buf_clear(&_message_queue);
+        }
+    }
+
     return true;
 }
 
@@ -529,11 +550,23 @@ void modbus_ring_process(ring_buf_t * ring)
 
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
 
+    // Good or bad, we think we have the whole message for current register, so remove it from queue.
+    modbus_reg_t * current_reg = NULL;
+
+    if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
+    {
+        log_error("Modbus comms issues!");
+        modbuspacket_len = 0;
+        modbus_want_rx = false;
+        return;
+    }
+
     if ( (modbuspacket[modbuspacket_len-1] == (crc >> 8)) &&
          (modbuspacket[modbuspacket_len-2] == (crc & 0xFF)) )
     {
         modbus_debug("Bad CRC");
         modbuspacket_len = 0;
+        modbus_want_rx = false;
         return;
     }
 
@@ -543,13 +576,7 @@ void modbus_ring_process(ring_buf_t * ring)
     modbus_has_rx = true;
     modbus_want_rx = false;
 
-    modbus_reg_t * current_reg = NULL;
-
-    if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
-    {
-        log_error("Modbus comms issues!");
-        return;
-    }
+    modbus_retransmit_count = 0;
 
     if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
         (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))

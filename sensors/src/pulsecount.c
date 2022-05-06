@@ -184,7 +184,10 @@ measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* col
 static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* name)
 {
     if (!instance)
+    {
+        pulsecount_debug("Handed a NULL pointer.");
         return false;
+    }
     pulsecount_instance_t* inst;
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
@@ -195,6 +198,7 @@ static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* nam
             return true;
         }
     }
+    pulsecount_debug("Could not find name in instances.");
     return false;
 }
 
@@ -214,12 +218,21 @@ measurements_sensor_state_t pulsecount_begin(char* name)
 measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
 {
     if (!value)
+    {
+        pulsecount_debug("Handed a NULL pointer.");
         return false;
+    }
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))
+    {
+        pulsecount_debug("Not an instance.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
     if (!io_is_pulsecount_now(instance->info.io))
+    {
+        pulsecount_debug("IO %s not set up.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     instance->send_count = instance->count;
     pulsecount_debug("%s at end %"PRIu32, instance->info.name, instance->send_count);

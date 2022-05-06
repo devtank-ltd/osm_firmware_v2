@@ -397,3 +397,33 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
 
     return NULL;
 }
+
+
+bool              modbus_for_all_regs(modbus_reg_cb cb, void * userdata)
+{
+    if (!cb)
+        return false;
+
+    modbus_bus_t * bus = persist_get_modbus_bus();
+
+    for(unsigned n = 0; n < bus->max_dev_num; n++)
+    {
+        modbus_dev_t * dev = &bus->modbus_devices[n];
+
+        if (!dev->name[0])
+            continue;
+
+        for(unsigned n = 0; n < bus->max_reg_num; n++)
+        {
+            modbus_reg_t * reg = &dev->regs[n];
+
+            if (!reg->name[0])
+                continue;
+
+            if (!cb(reg, userdata))
+                return false;
+        }
+    }
+
+    return true;
+}

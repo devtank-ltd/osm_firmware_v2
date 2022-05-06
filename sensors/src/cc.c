@@ -190,7 +190,7 @@ static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint
     if (channel &&
         !_cc_get_channel(channel, index_local))
     {
-        adc_debug("Not in active channel.");
+        adc_debug("Cannot get channel.");
         return false;
     }
     if (index)
@@ -279,11 +279,11 @@ measurements_sensor_state_t cc_begin(char* name)
     if (!_cc_adc_channels_active.len)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    uint8_t index;
+    uint8_t index, active_index;
 
-    if (!_cc_get_index(&index, name))
+    if (!_cc_get_info(name, &index, &active_index, NULL))
     {
-        adc_debug("Cannot get index.");
+        adc_debug("Cannot get CC info.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -524,12 +524,12 @@ bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;

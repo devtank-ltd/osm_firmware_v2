@@ -31,6 +31,8 @@
 #include "cc.h"
 #include "bat.h"
 #include "sleep.h"
+#include "can_impl.h"
+#include "debug_mode.h"
 
 
 static char   * rx_buffer;
@@ -754,6 +756,27 @@ void power_mode_cb(char* args)
 }
 
 
+static void can_impl_cb(char* args)
+{
+    can_impl_send_example();
+}
+
+
+static void debug_mode_cb(char* args)
+{
+    uint32_t mask = persist_get_log_debug_mask();
+    if (mask & DEBUG_MODE)
+    {
+        debug_mode(); /* Toggle it off.*/
+        persist_set_log_debug_mask(mask & ~DEBUG_MODE);
+        return;
+    }
+    persist_set_log_debug_mask(mask | DEBUG_MODE);
+    platform_raw_msg("Rebooting in debug_mode.");
+    reset_cb(args);
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -802,6 +825,8 @@ void cmds_process(char * command, unsigned len)
         { "no_lw",        "Dont need LW for measurements", no_lw_cb},
         { "sleep",        "Sleep",                    sleep_cb},
         { "power_mode",   "Power mode setting",       power_mode_cb},
+        { "can_impl",     "Send example CAN message", can_impl_cb},
+        { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
         { NULL },
     };
 
