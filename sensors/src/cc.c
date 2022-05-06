@@ -279,11 +279,11 @@ measurements_sensor_state_t cc_begin(char* name)
     if (!_cc_adc_channels_active.len)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    uint8_t index;
+    uint8_t index, active_index;
 
-    if (!_cc_get_index(&index, name))
+    if (!_cc_get_info(name, &index, &active_index, NULL))
     {
-        adc_debug("Cannot get index.");
+        adc_debug("Cannot get CC info.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
