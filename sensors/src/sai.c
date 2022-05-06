@@ -402,13 +402,11 @@ static bool _sai_rms(uint32_t* rms, sai_arr_t arr, unsigned len, uint32_t downsc
      This is a bad way of calculating RMS. Need to look at convoltion
      to minimise cycles and memory usage.
      */
-    int32_t     val;
-    uint64_t    val_sqr;
-    uint64_t    sum     = 0;
+    uint64_t sum = 0;
     for (unsigned i = 0; i < len; i++)
     {
         // convert to signed 24 bit number
-        val = arr[i];
+        int32_t val = arr[i];
         if (val & 0xC00000)
             val |= 0xFF000000;
 
@@ -416,7 +414,7 @@ static bool _sai_rms(uint32_t* rms, sai_arr_t arr, unsigned len, uint32_t downsc
         val /= downscale;
 
         // See if the square is larger than max uint64
-        val_sqr = abs_i64(val);
+        uint64_t val_sqr = abs_i64(val);
         if (val_sqr >= UINT64_MAX / val_sqr)
         {
             sound_debug("Overflow with scale %"PRIu32, downscale);

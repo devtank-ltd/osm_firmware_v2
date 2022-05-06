@@ -56,10 +56,9 @@ static volatile uint32_t    _adcs_end_time      = 0;
 static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_rms, uint8_t start_index, uint8_t step, uint16_t midpoint)
 {
     uint64_t sum = 0;
-    int64_t inter_val;
     for (unsigned i = start_index; i < buff_len; i+=step)
     {
-        inter_val = buff[i] - midpoint;
+        int64_t inter_val = buff[i] - midpoint;
         inter_val *= inter_val;
         sum += inter_val;
     }

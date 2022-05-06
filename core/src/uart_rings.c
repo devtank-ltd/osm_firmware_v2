@@ -237,14 +237,14 @@ static void uart_ring_out_drain(unsigned uart)
     if (uart == RS485_UART)
     {
         static bool rs485_transmitting = false;
-        static bool rs485_transmit_stopping = false;
         static uint32_t rs485_start_transmitting = 0;
-        static uint32_t rs485_stop_transmitting = 0;
 
         if (!len)
         {
             if (rs485_transmitting && uart_is_tx_empty(RS485_UART))
             {
+                static bool rs485_transmit_stopping = false;
+                static uint32_t rs485_stop_transmitting = 0;
                 if (!rs485_transmit_stopping)
                 {
                     modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());

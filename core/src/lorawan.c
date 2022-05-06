@@ -245,6 +245,7 @@ static void _lw_write(char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     vsnprintf(_lw_out_buffer, LW_BUFFER_SIZE, fmt, args);
+    va_end(args);
     lw_debug("<< %s", _lw_out_buffer);
     size_t len = strlen(_lw_out_buffer);
     _lw_out_buffer[len] = '\r';
@@ -540,13 +541,12 @@ static void _lw_handle_unsol(char* message)
 
     p += 8;
 
-    uint8_t val;
     memset(pl_tmp_buff, 0, 3 * sizeof(char));
     char* lw_p = _lw_cmd_ascii;
     for (size_t i = 0; i < strlen(p) / 2; i++)
     {
         strncpy(pl_tmp_buff, p + 2*i, 2);
-        val = strtoul(pl_tmp_buff, NULL, 16);
+        uint8_t val = strtoul(pl_tmp_buff, NULL, 16);
         if (val != 0)
             *lw_p++ = (char)val;
     }
@@ -852,10 +852,10 @@ static unsigned _lw_send_size(uint16_t arr_len)
 
 void lw_send(int8_t* hex_arr, uint16_t arr_len)
 {
-    char header_str[LW_HEADER_SIZE + 1] = {0};
-    char hex_str[3] = {0};
     if (_lw_state_machine.state == LW_STATE_IDLE)
     {
+        char header_str[LW_HEADER_SIZE + 1] = {0};
+        char hex_str[3] = {0};
         unsigned expected = _lw_send_size(arr_len);
         unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", _lw_get_port());
         unsigned sent = 0;
