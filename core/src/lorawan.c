@@ -795,7 +795,6 @@ static void _lw_process_wait_reinit(char* message)
 {
     if (_lw_msg_is_initialisation(message))
     {
-        log_out("i");
         _lw_state_machine.state = LW_STATE_WAIT_CONN;
         spin_blocking_ms(LW_DELAY_MS);
         _lw_join_network();
