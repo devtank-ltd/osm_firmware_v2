@@ -1,7 +1,11 @@
 #pragma once
 
+#include "config.h"
 #include "w1.h"
 #include "pulsecount.h"
+
+
+_Static_assert(STRLEN(GIT_VERSION)-3, "No git commit.");
 
 
 typedef struct

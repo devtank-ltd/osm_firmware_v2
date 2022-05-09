@@ -51,6 +51,7 @@
 
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
+#define STRLEN(x) (sizeof(x) / sizeof(char) - 1)
 
 #define VEML7700_DEVTANK_CORRECTED 1
 
