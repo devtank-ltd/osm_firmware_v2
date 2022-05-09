@@ -42,6 +42,7 @@
 
 
 
+// cppcheck-suppress unusedFunction ; System handler
 void hard_fault_handler(void)
 {
     /* Special libopencm3 function to handle crashes */

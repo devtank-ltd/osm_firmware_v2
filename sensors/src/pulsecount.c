@@ -52,6 +52,7 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 }
 
 
+// cppcheck-suppress unusedFunction ; System handler
 void W1_PULSE_ISR(void)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)

@@ -392,41 +392,49 @@ static void process_complete_dma(unsigned index)
 }
 
 
+// cppcheck-suppress unusedFunction ; System handler
 void usart2_isr(void)
 {
     process_serial(0);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void usart3_isr(void)
 {
     process_serial(1);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void usart1_isr(void)
 {
     process_serial(2);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void uart4_isr(void)
 {
     process_serial(3);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void dma1_channel7_isr(void)
 {
     process_complete_dma(0);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void dma1_channel2_isr(void)
 {
     process_complete_dma(1);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void dma1_channel5_isr(void)
 {
     process_complete_dma(2);
 }
 
+// cppcheck-suppress unusedFunction ; System handler
 void dma2_channel3_isr(void)
 {
     process_complete_dma(3);

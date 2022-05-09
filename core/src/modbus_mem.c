@@ -375,6 +375,7 @@ bool              modbus_reg_get_float(modbus_reg_t * reg, float * value)
     uint32_t v = _modbus_reg_get(reg);
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+    // cppcheck-suppress invalidPointerCast
     *value = *(float*)&v;
     #pragma GCC diagnostic pop
 
@@ -413,9 +414,9 @@ bool              modbus_for_all_regs(modbus_reg_cb cb, void * userdata)
         if (!dev->name[0])
             continue;
 
-        for(unsigned n = 0; n < bus->max_reg_num; n++)
+        for(unsigned m = 0; m < bus->max_reg_num; m++)
         {
-            modbus_reg_t * reg = &dev->regs[n];
+            modbus_reg_t * reg = &dev->regs[m];
 
             if (!reg->name[0])
                 continue;

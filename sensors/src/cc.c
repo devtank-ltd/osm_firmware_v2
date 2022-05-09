@@ -293,6 +293,8 @@ measurements_sensor_state_t cc_begin(char* name)
             continue;
         if (_cc_running[i])
         {
+            if (index >= ADC_CC_COUNT)
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
             _cc_running[index] = true;
             return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
@@ -309,6 +311,8 @@ measurements_sensor_state_t cc_begin(char* name)
             break;
     }
 
+    if (index >= ADC_CC_COUNT)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     _cc_running[index] = true;
     adc_debug("Started ADC reading for CC.");
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
@@ -323,6 +327,9 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
         adc_debug("Cannot get info.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
+
+    if (index >= ADC_CC_COUNT)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     if (!_cc_running[index])
     {
@@ -380,7 +387,7 @@ bool cc_set_midpoint(uint16_t midpoint, char* name)
     uint8_t index;
     if (!_cc_get_index(&index, name))
         return false;
-    if (index > ADC_CC_COUNT)
+    if (index >= ADC_CC_COUNT)
     {
         return false;
     }
@@ -399,7 +406,7 @@ bool cc_get_midpoint(uint16_t* midpoint, char* name)
     uint8_t index;
     if (!_cc_get_index(&index, name))
         return false;
-    if (index > ADC_CC_COUNT)
+    if (index >= ADC_CC_COUNT)
         return false;
     *midpoint = _cc_midpoints[index];
     return true;
