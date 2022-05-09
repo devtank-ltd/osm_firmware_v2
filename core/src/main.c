@@ -35,6 +35,7 @@
 #include "cc.h"
 #include "can_impl.h"
 #include "debug_mode.h"
+#include "ds18b20.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -81,6 +82,7 @@ int main(void)
     cc_init();
     htu21d_init();
     veml7700_init();
+    ds18b20_temp_init();
     sai_init();
     pulsecount_init();
     modbus_init();
