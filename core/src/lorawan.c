@@ -28,6 +28,7 @@
 #define LW_RESET_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
 #define LW_MAX_RESEND                   5
+#define LW_DELAY_MS                     1
 
 #define LW_ERROR_PREFIX                 "ERROR: "
 
@@ -778,10 +779,12 @@ static void _lw_process_wait_init_ok(char* message)
         if (_lw_state_machine.init_step == ARRAY_SIZE(_init_msgs))
         {
             _lw_state_machine.state = LW_STATE_WAIT_REINIT;
+            spin_blocking_ms(LW_DELAY_MS);
             _lw_soft_reset();
         }
         else
         {
+            spin_blocking_ms(LW_DELAY_MS);
             _lw_write_next_init_step();
         }
     }
@@ -792,7 +795,9 @@ static void _lw_process_wait_reinit(char* message)
 {
     if (_lw_msg_is_initialisation(message))
     {
+        log_out("i");
         _lw_state_machine.state = LW_STATE_WAIT_CONN;
+        spin_blocking_ms(LW_DELAY_MS);
         _lw_join_network();
     }
 }
@@ -803,6 +808,7 @@ static void _lw_process_wait_conn(char* message)
     if (_lw_msg_is_connected(message))
     {
         _lw_state_machine.state = LW_STATE_WAIT_OK;
+        spin_blocking_ms(LW_DELAY_MS);
         _lw_send_alive();
     }
 }
@@ -958,6 +964,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         unsigned expected = _lw_send_size(arr_len);
         unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", _lw_get_port());
         unsigned sent = 0;
+        spin_blocking_ms(LW_DELAY_MS);
         sent += _lw_write_to_uart(header_str);
         const char desc[]  ="LORA >> ";
         uart_ring_out(CMD_UART, desc, strlen(desc));

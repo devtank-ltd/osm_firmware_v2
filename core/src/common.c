@@ -35,6 +35,16 @@ void sys_tick_handler(void)
 }
 
 
+void spin_blocking_ms(uint32_t ms)
+{
+    uint64_t num_loops = (rcc_ahb_frequency / 1e4) * ms;
+    for (uint64_t i = 0; i < num_loops; i++)
+    {
+        asm("nop");
+    }
+}
+
+
 // Maths Functions
 
 float Q_rsqrt( float number )

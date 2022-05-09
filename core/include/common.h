@@ -20,3 +20,4 @@ extern int32_t  ilog10(uint32_t x);
 extern uint64_t abs_i64(int64_t val);
 extern bool     u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2);
 extern bool     u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2);
+extern void     spin_blocking_ms(uint32_t ms);
