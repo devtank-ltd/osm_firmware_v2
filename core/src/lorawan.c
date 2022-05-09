@@ -27,6 +27,8 @@
 #define LW_CONFIG_TIMEOUT_S             30
 #define LW_RESET_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
+#define LW_MAX_RESEND                   5
+#define LW_DELAY_MS                     1
 
 #define LW_ERROR_PREFIX                 "ERROR: "
 
@@ -161,6 +163,7 @@ typedef struct
     lw_states_t state;
     unsigned    init_step;
     uint32_t    last_message_time;
+    uint8_t     resend_count;
     uint8_t     reset_count;
 } lw_state_machine_t;
 
@@ -190,7 +193,7 @@ typedef struct
 } error_code_t;
 
 
-static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_OFF, .init_step=0, .last_message_time=0, .reset_count=0};
+static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_OFF, .init_step=0, .last_message_time=0, .resend_count=0, .reset_count=0};
 static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
 static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
@@ -370,6 +373,16 @@ static void _lw_clear_backup(void)
 
 static void _lw_retry_write(void)
 {
+    if (_lw_state_machine.resend_count >= LW_MAX_RESEND)
+    {
+        lw_debug("Failed to successfully resend (%u times), resetting chip.", LW_MAX_RESEND);
+        _lw_state_machine.resend_count = 0;
+        lw_reset();
+        on_lw_sent_ack(false);
+        return;
+    }
+    _lw_state_machine.resend_count++;
+    lw_debug("Resending %"PRIu8"/%u", _lw_state_machine.resend_count, LW_MAX_RESEND);
     switch (_lw_backup_message.backup_type)
     {
         case LW_BKUP_MSG_STR:
@@ -715,6 +728,7 @@ static void _lw_handle_error(char* message)
             break;
         case LW_ERROR_TIMEOUT_RX1:
             lw_debug("Timed out waiting for packet in windox RX1.");
+            _lw_retry_write();
             break;
         case LW_ERROR_TIMEOUT_RX2:
             lw_debug("Timed out waiting for packet in window RX2, retrying.");
@@ -765,10 +779,12 @@ static void _lw_process_wait_init_ok(char* message)
         if (_lw_state_machine.init_step == ARRAY_SIZE(_init_msgs))
         {
             _lw_state_machine.state = LW_STATE_WAIT_REINIT;
+            spin_blocking_ms(LW_DELAY_MS);
             _lw_soft_reset();
         }
         else
         {
+            spin_blocking_ms(LW_DELAY_MS);
             _lw_write_next_init_step();
         }
     }
@@ -779,7 +795,9 @@ static void _lw_process_wait_reinit(char* message)
 {
     if (_lw_msg_is_initialisation(message))
     {
+        log_out("i");
         _lw_state_machine.state = LW_STATE_WAIT_CONN;
+        spin_blocking_ms(LW_DELAY_MS);
         _lw_join_network();
     }
 }
@@ -790,6 +808,7 @@ static void _lw_process_wait_conn(char* message)
     if (_lw_msg_is_connected(message))
     {
         _lw_state_machine.state = LW_STATE_WAIT_OK;
+        spin_blocking_ms(LW_DELAY_MS);
         _lw_send_alive();
     }
 }
@@ -945,6 +964,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         unsigned expected = _lw_send_size(arr_len);
         unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", _lw_get_port());
         unsigned sent = 0;
+        spin_blocking_ms(LW_DELAY_MS);
         sent += _lw_write_to_uart(header_str);
         const char desc[]  ="LORA >> ";
         uart_ring_out(CMD_UART, desc, strlen(desc));
@@ -959,9 +979,12 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         uart_ring_out(CMD_UART, "\r\n", 2);
         _lw_state_machine.state = LW_STATE_WAIT_OK;
 
-        _lw_backup_message.backup_type = LW_BKUP_MSG_HEX;
-        _lw_backup_message.hex.len = arr_len;
-        memcpy(_lw_backup_message.hex.arr, hex_arr, arr_len);
+        if (_lw_backup_message.hex.arr != hex_arr)
+        {
+            _lw_backup_message.backup_type = LW_BKUP_MSG_HEX;
+            _lw_backup_message.hex.len = arr_len;
+            memcpy(_lw_backup_message.hex.arr, hex_arr, arr_len);
+        }
 
         if (sent != expected)
             log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
