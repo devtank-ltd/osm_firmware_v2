@@ -4,6 +4,9 @@
 #include <libopencm3/cm3/scb.h>
 
 
+#define NUM_SOS_LOOPS           3
+
+
 /* SOS in morse code is ... --- ...
 * 1. dot is one time unit
 * 2. dash is three time units
@@ -53,7 +56,7 @@ static void error_state(void)
         }
         _wait_units(7);
         count++;
-        if (count > 3)
+        if (count > NUM_SOS_LOOPS)
             scb_reset_system(); /* reset */
     }
 }
