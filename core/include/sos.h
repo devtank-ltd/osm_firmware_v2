@@ -1,5 +1,9 @@
 #pragma once
 
+
+#include <libopencm3/cm3/scb.h>
+
+
 /* SOS in morse code is ... --- ...
 * 1. dot is one time unit
 * 2. dash is three time units
@@ -27,6 +31,7 @@ static void _dash(void)
 
 static void error_state(void)
 {
+    uint8_t count = 0;
     while(true)
     {
         for(unsigned n=0; n < 3; n++)
@@ -47,6 +52,9 @@ static void error_state(void)
            _wait_units(1);
         }
         _wait_units(7);
+        count++;
+        if (count > 3)
+            scb_reset_system(); /* reset */
     }
 }
 
