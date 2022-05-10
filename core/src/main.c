@@ -10,6 +10,7 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/flash.h>
+#include <libopencm3/stm32/iwdg.h>
 
 #include "common.h"
 #include "pinmap.h"
@@ -40,7 +41,6 @@
 
 #define SLOW_FLASHING_TIME_SEC              3000
 #define NORMAL_FLASHING_TIME_SEC            1000
-
 
 
 // cppcheck-suppress unusedFunction ; System handler
@@ -89,6 +89,9 @@ int main(void)
     can_impl_init();
     lw_init();
 
+    iwdg_set_period_ms(IWDG_NORMAL_TIME_MS);
+    iwdg_start();
+
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 
@@ -111,6 +114,7 @@ int main(void)
     uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;
     while(true)
     {
+        iwdg_reset();
         while(since_boot_delta(get_since_boot_ms(), prev_now) < flashing_delay)
         {
             uart_rings_in_drain();

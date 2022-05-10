@@ -3,6 +3,7 @@
 #include <libopencm3/stm32/pwr.h>
 #include <libopencm3/stm32/lptimer.h>
 #include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/iwdg.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/scb.h>
 #include <libopencm3/cm3/sync.h>
@@ -26,12 +27,14 @@ static volatile uint16_t _sleep_compare = 0;
 void _sleep_before_sleep(void)
 {
     adcs_off();
+    iwdg_set_period_ms(IWDG_MAX_TIME_MS);
 }
 
 
 void _sleep_on_wakeup(void)
 {
     adcs_init();
+    iwdg_set_period_ms(IWDG_NORMAL_TIME_MS);
 }
 
 
@@ -94,6 +97,8 @@ static void _sleep_setup_tim(uint16_t count, uint32_t prescaler)
 
 bool sleep_for_ms(uint32_t ms)
 {
+    if (ms > SLEEP_MAX_TIME_MS)
+        ms = SLEEP_MAX_TIME_MS;
     uint32_t    before_time = get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (uart_rings_out_busy())
@@ -117,7 +122,8 @@ bool sleep_for_ms(uint32_t ms)
         div_shift += 1;
         if (div_shift > 7)
         {
-            count16 = 0xFFFF;
+            // Reduced the maximum value of sleep by 1 count so theres enough time for watchdog.
+            count16 = 0xFFFE;
             div_shift = 7;
             goto turn_on_sleep;
         }
