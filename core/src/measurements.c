@@ -370,10 +370,10 @@ static void _measurements_send(void)
         _measurements_chunk_start_pos = MEASUREMENTS_MAX_NUMBER;
     }
 
+    if (!_pending_send)
+        _last_sent_ms = get_since_boot_ms();
     if (num_qd > 0)
     {
-        if (!_pending_send)
-            _last_sent_ms = get_since_boot_ms();
         if (_measurements_debug_mode)
         {
             for (unsigned j = 0; j < _measurements_hex_arr_pos; j++)
