@@ -403,25 +403,8 @@ static void _lw_retry_write(void)
  void _lw_send_alive(void)
 {
     lw_debug("Sending an 'is alive' packet.");
-    switch (_lw_backup_message.backup_type)
-    {
-        case LW_BKUP_MSG_HEX:
-            if (_lw_backup_message.hex.len > 0)
-                goto send_backup_data;
-            break;
-        case LW_BKUP_MSG_STR:
-            if (strlen(_lw_backup_message.string) > 0)
-                goto send_backup_data;
-            break;
-        case LW_BKUP_MSG_BLANK:
-            break;
-    }
     _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
     return;
-
-send_backup_data:
-    lw_debug("Data in backup, resending data.");
-    _lw_retry_write();
 }
 
 
@@ -727,12 +710,28 @@ static void _lw_handle_error(char* message)
             lw_reset();
             break;
         case LW_ERROR_TIMEOUT_RX1:
-            lw_debug("Timed out waiting for packet in windox RX1.");
-            _lw_retry_write();
+            if (lw_get_connected())
+            {
+                lw_debug("Timed out waiting for packet in windox RX1.");
+                _lw_retry_write();
+            }
+            else
+            {
+                lw_debug("Send alive wasn't responded to.");
+                lw_reset();
+            }
             break;
         case LW_ERROR_TIMEOUT_RX2:
-            lw_debug("Timed out waiting for packet in window RX2, retrying.");
-            _lw_retry_write();
+            if (lw_get_connected())
+            {
+                lw_debug("Timed out waiting for packet in windox RX2.");
+                _lw_retry_write();
+            }
+            else
+            {
+                lw_debug("Send alive wasn't responded to.");
+                lw_reset();
+            }
             break;
         case LW_ERROR_RECV_RX1:
             lw_debug("Error receiving message in RX1.");
