@@ -130,8 +130,8 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
 
-    timer_set_prescaler(instance->tim, rcc_ahb_frequency / 1000 - 1);//-1 because it starts at zero, and interrupts on the overflow
-    timer_set_period(instance->tim, PULSECOUNT_EDGE_COOLDOWN_MS);
+    timer_set_prescaler(instance->tim, rcc_ahb_frequency / 10000 - 1);//-1 because it starts at zero, and interrupts on the overflow
+    timer_set_period(instance->tim, PULSECOUNT_EDGE_COOLDOWN_MS * 10);
     timer_enable_preload(instance->tim);
     timer_one_shot_mode(instance->tim);
     timer_enable_irq(instance->tim, TIM_DIER_CC1IE);
