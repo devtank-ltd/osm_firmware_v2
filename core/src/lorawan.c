@@ -28,7 +28,7 @@
 #define LW_RESET_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
 #define LW_MAX_RESEND                   5
-#define LW_DELAY_MS                     1
+#define LW_DELAY_MS                     2
 
 #define LW_ERROR_PREFIX                 "ERROR: "
 
@@ -230,6 +230,12 @@ static void _lw_chip_off(void)
 }
 
 
+static void _lw_msg_delay(void)
+{
+    spin_blocking_ms(LW_DELAY_MS);
+}
+
+
 static void _lw_chip_on(void)
 {
     _lw_state_machine.state = LW_STATE_WAIT_INIT;
@@ -403,25 +409,8 @@ static void _lw_retry_write(void)
  void _lw_send_alive(void)
 {
     lw_debug("Sending an 'is alive' packet.");
-    switch (_lw_backup_message.backup_type)
-    {
-        case LW_BKUP_MSG_HEX:
-            if (_lw_backup_message.hex.len > 0)
-                goto send_backup_data;
-            break;
-        case LW_BKUP_MSG_STR:
-            if (strlen(_lw_backup_message.string) > 0)
-                goto send_backup_data;
-            break;
-        case LW_BKUP_MSG_BLANK:
-            break;
-    }
     _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
     return;
-
-send_backup_data:
-    lw_debug("Data in backup, resending data.");
-    _lw_retry_write();
 }
 
 
@@ -727,12 +716,28 @@ static void _lw_handle_error(char* message)
             lw_reset();
             break;
         case LW_ERROR_TIMEOUT_RX1:
-            lw_debug("Timed out waiting for packet in windox RX1.");
-            _lw_retry_write();
+            if (lw_get_connected())
+            {
+                lw_debug("Timed out waiting for packet in windox RX1.");
+                _lw_retry_write();
+            }
+            else
+            {
+                lw_debug("Send alive wasn't responded to.");
+                lw_reset();
+            }
             break;
         case LW_ERROR_TIMEOUT_RX2:
-            lw_debug("Timed out waiting for packet in window RX2, retrying.");
-            _lw_retry_write();
+            if (lw_get_connected())
+            {
+                lw_debug("Timed out waiting for packet in windox RX2.");
+                _lw_retry_write();
+            }
+            else
+            {
+                lw_debug("Send alive wasn't responded to.");
+                lw_reset();
+            }
             break;
         case LW_ERROR_RECV_RX1:
             lw_debug("Error receiving message in RX1.");
@@ -776,15 +781,14 @@ static void _lw_process_wait_init_ok(char* message)
 {
     if (_lw_msg_is_ok(message))
     {
+        _lw_msg_delay();
         if (_lw_state_machine.init_step == ARRAY_SIZE(_init_msgs))
         {
             _lw_state_machine.state = LW_STATE_WAIT_REINIT;
-            spin_blocking_ms(LW_DELAY_MS);
             _lw_soft_reset();
         }
         else
         {
-            spin_blocking_ms(LW_DELAY_MS);
             _lw_write_next_init_step();
         }
     }
@@ -795,8 +799,8 @@ static void _lw_process_wait_reinit(char* message)
 {
     if (_lw_msg_is_initialisation(message))
     {
+        _lw_msg_delay();
         _lw_state_machine.state = LW_STATE_WAIT_CONN;
-        spin_blocking_ms(LW_DELAY_MS);
         _lw_join_network();
     }
 }
@@ -806,8 +810,8 @@ static void _lw_process_wait_conn(char* message)
 {
     if (_lw_msg_is_connected(message))
     {
+        _lw_msg_delay();
         _lw_state_machine.state = LW_STATE_WAIT_OK;
-        spin_blocking_ms(LW_DELAY_MS);
         _lw_send_alive();
     }
 }
@@ -963,7 +967,7 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         unsigned expected = _lw_send_size(arr_len);
         unsigned header_size = snprintf(header_str, sizeof(header_str), "at+send=lora:%"PRIu8":", _lw_get_port());
         unsigned sent = 0;
-        spin_blocking_ms(LW_DELAY_MS);
+        _lw_msg_delay();
         sent += _lw_write_to_uart(header_str);
         const char desc[]  ="LORA >> ";
         uart_ring_out(CMD_UART, desc, strlen(desc));
