@@ -28,7 +28,7 @@
 #define LW_RESET_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
 #define LW_MAX_RESEND                   5
-#define LW_DELAY_MS                     1
+#define LW_DELAY_MS                     2
 
 #define LW_ERROR_PREFIX                 "ERROR: "
 
