@@ -410,11 +410,20 @@ void usart1_isr(void)
     process_serial(2);
 }
 
+#if defined(STM32L451RE)
 // cppcheck-suppress unusedFunction ; System handler
 void uart4_isr(void)
 {
     process_serial(3);
 }
+
+#elif defined(STM32L433VTC6)
+// cppcheck-suppress unusedFunction ; System handler
+void lpuart1_isr(void)
+{
+    process_serial(3);
+}
+#endif
 
 // cppcheck-suppress unusedFunction ; System handler
 void dma1_channel7_isr(void)
@@ -434,8 +443,17 @@ void dma1_channel5_isr(void)
     process_complete_dma(2);
 }
 
+#if defined(STM32L451RE)
 // cppcheck-suppress unusedFunction ; System handler
 void dma2_channel3_isr(void)
 {
     process_complete_dma(3);
 }
+
+#elif defined(STM32L433VTC6)
+// cppcheck-suppress unusedFunction ; System handler
+void dma2_channel6_isr(void)
+{
+    process_complete_dma(3);
+}
+#endif

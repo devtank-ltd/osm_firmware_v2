@@ -21,7 +21,7 @@ CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
-CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D$(DEV)
 
 BUILD_DIR := build
 
