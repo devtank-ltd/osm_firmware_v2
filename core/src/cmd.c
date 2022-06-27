@@ -518,6 +518,7 @@ static void cc_cb(char* args)
         if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             log_out("Could not get CC values.");
+            return;
         }
         log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
         log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_2.u16%1000);

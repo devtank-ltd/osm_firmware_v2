@@ -545,6 +545,7 @@ bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
 
     return cc_set_channels_active(prev_cc_adc_channels_active.channels, prev_cc_adc_channels_active.len);
 bad_exit:
+    _cc_release_all();
     adc_debug("Couldnt get %s value.", name);
     return false;
 }
