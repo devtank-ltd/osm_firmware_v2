@@ -22,7 +22,7 @@
 #define BAT_MIN_MV                          791  /* 0.791 volts */
 #define BAT_MAX                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MAX_MV)
 #define BAT_MIN                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
-#define BAT_ON_BAT_THRESHOLD                BAT_MAX * 1.1
+#define BAT_ON_BAT_THRESHOLD                BAT_MAX
 
 
 typedef struct
@@ -234,7 +234,8 @@ static bool _bat_get_on_battery(bool* on_battery)
             adc_debug("ADC for Bat not complete!");
             return false;
     }
-    *on_battery = raw16 < BAT_ON_BAT_THRESHOLD;
+    uint32_t raw = raw16 * BAT_MUL;
+    *on_battery = raw < BAT_ON_BAT_THRESHOLD;
     _bat_update_on_battery(*on_battery);
     return true;
 }
