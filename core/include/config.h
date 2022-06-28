@@ -130,7 +130,7 @@ _Static_assert(0, "Not given a STM model.");
 
 #define __ADC_RMS_FULL__
 
-#define IWDG_NORMAL_TIME_MS 5000
+#define IWDG_NORMAL_TIME_MS 10000
 #define IWDG_MAX_TIME_MS    32760
 #define SLEEP_MAX_TIME_MS   30000
 
