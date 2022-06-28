@@ -32,7 +32,6 @@
 
 typedef enum
 {
-    MEASUREMENT_UNKNOWN = 0,
     MEASUREMENT_STATE_IDLE,
     MEASUREMENT_STATE_INITED,
 } measurements_state_t;
@@ -862,10 +861,7 @@ bool measurements_add(measurements_def_t* measurements_def)
         def = &_measurements_arr.def[space];
         data = &_measurements_arr.data[space];
         memcpy(def, measurements_def, sizeof(measurements_def_t));
-        {
-            measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
-            memcpy(data, &data_empty, sizeof(measurements_data_t));
-        }
+        memset(data, 0, sizeof(measurements_data_t));
         {
             measurements_inf_t inf;
             if (!_measurements_get_inf(def, &inf))
