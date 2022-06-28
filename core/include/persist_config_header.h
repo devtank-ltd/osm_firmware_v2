@@ -10,9 +10,16 @@
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
-#define FLASH_SIZE                  (256 * FLASH_PAGE_SIZE)
 
-#define FLASH_CONFIG_PAGE           255
+#if defined(STM32L451RE)
+    #define FLASH_PAGE_NUMBER       256
+#elif defined(STM32L433VTC6)
+    #define FLASH_PAGE_NUMBER       128
+#endif
+
+#define FLASH_SIZE                  (FLASH_PAGE_NUMBER * FLASH_PAGE_SIZE)
+
+#define FLASH_CONFIG_PAGE           (FLASH_PAGE_NUMBER - 1)
 #define FW_PAGE                     2
 #define NEW_FW_PAGE                 118
 
