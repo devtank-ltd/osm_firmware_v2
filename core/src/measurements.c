@@ -1029,6 +1029,7 @@ void measurements_loop_iteration(void)
             _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
             _pending_send = false;
         }
+        _measurements_iterate_callbacks();
         return;
     }
     uint32_t now = get_since_boot_ms();
