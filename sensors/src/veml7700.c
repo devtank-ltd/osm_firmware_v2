@@ -31,6 +31,7 @@ Application Guide:
 #define VEML7700_RES_SCALE                      10000
 #define VEML7700_COUNT_LOWER_THRESHOLD          100
 #define VEML7700_DEFAULT_COLLECT_TIME           6600  // Max time in ms
+#define VEML7700_MAX_READ_TIME                  VEML7700_DEFAULT_COLLECT_TIME + 100
 
 
 typedef enum
@@ -512,7 +513,8 @@ static bool _veml7700_iteration_done(void)
 
 static bool _veml7700_iteration_reading(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
+    uint32_t now = get_since_boot_ms();
+    if (since_boot_delta(now, _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
     {
         uint16_t counts;
         if (!_veml7700_get_counts_collect(&counts))
@@ -535,6 +537,11 @@ static bool _veml7700_iteration_reading(void)
         }
         _veml7700_state_machine.last_read = get_since_boot_ms();
         return _veml7700_get_counts_begin();
+    }
+    if (since_boot_delta(now, _veml7700_time.start_time) > VEML7700_MAX_READ_TIME)
+    {
+        _veml7700_state_machine.state = VEML7700_STATE_OFF;
+        return false;
     }
     return true;
 }
