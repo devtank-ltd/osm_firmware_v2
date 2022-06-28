@@ -512,9 +512,10 @@ static void cc_cb(char* args)
 {
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
+    value_t value_1;
     if (p == args)
     {
-        value_t value_1, value_2, value_3;
+        value_t value_2, value_3;
         if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             log_out("Could not get CC values.");
@@ -532,16 +533,15 @@ static void cc_cb(char* args)
     }
     char name[4];
     snprintf(name, 4, "CC%"PRIu8, cc_num);
-    value_t value;
-    if (!cc_get_blocking(name, &value))
+    if (!cc_get_blocking(name, &value_1))
     {
         log_out("Could not get adc value.");
         return;
     }
 
-    char temp[32] = "";
+    char temp[8] = "";
 
-    value_to_str(&value, temp, sizeof(temp));
+    value_to_str(&value_1, temp, sizeof(temp));
 
     log_out("CC = %smA", temp);
 }
