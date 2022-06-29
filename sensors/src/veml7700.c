@@ -456,6 +456,7 @@ bool veml7700_get_lux(uint32_t* lux)
     }
     if (_veml7700_state_machine.state != VEML7700_STATE_OFF)
     {
+        light_debug("Sensor is in wrong state = %d.", _veml7700_state_machine.state);
         return false;
     }
     _veml7700_reset_ctx();
@@ -514,36 +515,54 @@ static bool _veml7700_iteration_done(void)
 static bool _veml7700_iteration_reading(void)
 {
     uint32_t now = get_since_boot_ms();
+    if (since_boot_delta(now, _veml7700_time.start_time) > VEML7700_MAX_READ_TIME)
+    {
+        light_debug("Request timed out.");
+        goto bad_exit;
+    }
     if (since_boot_delta(now, _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
     {
         uint16_t counts;
         if (!_veml7700_get_counts_collect(&counts))
         {
-            return false;
+            light_debug("Could not collect counts.");
+            goto bad_exit;
         }
         if (counts > VEML7700_COUNT_LOWER_THRESHOLD)
         {
             _veml7700_time.last_time_taken = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time);
             _veml7700_state_machine.state = VEML7700_STATE_DONE;
             _veml7700_reading.is_valid = true;
-            return _veml7700_conv(&_veml7700_reading.lux, counts);
+            if (!_veml7700_conv(&_veml7700_reading.lux, counts))
+            {
+                light_debug("Could not convert light.");
+                goto bad_exit;
+            }
         }
         if (!_veml7700_increase_settings())
         {
             _veml7700_time.last_time_taken = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time);
             _veml7700_state_machine.state = VEML7700_STATE_DONE;
             _veml7700_reading.is_valid = true;
-            return _veml7700_conv(&_veml7700_reading.lux, counts);
+            if (!_veml7700_conv(&_veml7700_reading.lux, counts))
+            {
+                light_debug("Could not convert light.");
+                goto bad_exit;
+            }
         }
         _veml7700_state_machine.last_read = get_since_boot_ms();
-        return _veml7700_get_counts_begin();
-    }
-    if (since_boot_delta(now, _veml7700_time.start_time) > VEML7700_MAX_READ_TIME)
-    {
-        _veml7700_state_machine.state = VEML7700_STATE_OFF;
-        return false;
+        if (!_veml7700_get_counts_begin())
+        {
+            light_debug("Could not restart counts.");
+            goto bad_exit;
+        }
     }
     return true;
+
+bad_exit:
+    _veml7700_turn_off();
+    _veml7700_state_machine.state = VEML7700_STATE_OFF;
+    return false;
 }
 
 
