@@ -19,7 +19,7 @@ extern measurements_sensor_state_t htu21d_measurements_collection_time(char* nam
 extern measurements_sensor_state_t htu21d_measurements_iteration(char* name);
 
 extern measurements_sensor_state_t htu21d_temp_measurements_init(char* name);
-extern measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* value);
+extern measurements_sensor_state_t htu21d_temp_measurements_get(char* name, measurements_reading_t* value);
 
 extern measurements_sensor_state_t htu21d_humi_measurements_init(char* name);
-extern measurements_sensor_state_t htu21d_humi_measurements_get(char* name, value_t* value);
+extern measurements_sensor_state_t htu21d_humi_measurements_get(char* name, measurements_reading_t* value);

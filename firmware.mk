@@ -32,7 +32,8 @@ firmware_SOURCES := \
            sensors/src/sai.c \
            sensors/src/cc.c \
            sensors/src/bat.c \
-           sensors/src/can_impl.c
+           sensors/src/can_impl.c \
+           sensors/src/fw.c
 
 ifeq ($(DEV), STM32L451RE)
 	firmware_LINK_SCRIPT := core/stm32l452.ld

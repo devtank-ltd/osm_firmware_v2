@@ -319,7 +319,7 @@ measurements_sensor_state_t cc_begin(char* name)
 }
 
 
-measurements_sensor_state_t cc_get(char* name, value_t* value)
+measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
 {
     uint8_t index, active_index;
     if (!_cc_get_info(name, &index, &active_index, NULL))
@@ -364,7 +364,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    *value = value_from_u16(cc_mA);
+    value->v_i64 = (int64_t)cc_mA;
     adc_debug("CC = %umA", cc_mA);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -462,7 +462,7 @@ bool cc_calibrate(void)
 }
 
 
-bool cc_get_blocking(char* name, value_t* value)
+bool cc_get_blocking(char* name, measurements_reading_t* value)
 {
     uint8_t channel;
     if (!_cc_get_info(name, NULL, NULL, &channel))
@@ -492,7 +492,7 @@ bool cc_get_blocking(char* name, value_t* value)
 }
 
 
-bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
+bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3)
 {
     uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
     cc_channels_active_t prev_cc_adc_channels_active = {0};

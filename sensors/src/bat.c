@@ -111,7 +111,7 @@ measurements_sensor_state_t bat_begin(char* name)
 }
 
 
-measurements_sensor_state_t bat_get(char* name, value_t* value)
+measurements_sensor_state_t bat_get(char* name, measurements_reading_t* value)
 {
     if (!_bat_running)
     {
@@ -164,7 +164,7 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
         perc = (raw - BAT_MIN) / divider;
     }
 
-    *value = value_from(perc);
+    value->v_i64 = (int64_t)perc;
 
     adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
@@ -172,7 +172,7 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
 }
 
 
-bool bat_get_blocking(char* name, value_t* value)
+bool bat_get_blocking(char* name, measurements_reading_t* value)
 {
     if (bat_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {

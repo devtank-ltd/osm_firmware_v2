@@ -23,7 +23,7 @@ typedef enum
 
 typedef struct
 {
-    value_type_t type;
+    uint8_t type;
     union
     {
         uint8_t  u8;
