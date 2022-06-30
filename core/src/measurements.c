@@ -526,7 +526,7 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 
 static bool _measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
-    if (!def || !inf)
+    if (!def || !data || !inf)
     {
         measurements_debug("Handed NULL pointer.");
         return false;
