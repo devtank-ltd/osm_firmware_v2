@@ -759,7 +759,7 @@ static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, meas
     measurements_reading_t new_value;
     if (!_measurements_sample_get_resp(def, data, inf, &new_value))
     {
-        measurements_debug("Sample returned false.");
+        // measurements_debug("Sample returned false.");
         return false;
     }
     measurements_debug("Value : %"PRIi64, new_value.v_i64);
@@ -838,16 +838,17 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
         return false;
     }
 
+    bool r;
     switch(data->value_type)
     {
         case MEASUREMENTS_VALUE_TYPE_I64:
-            _measurements_sample_get_i64_iteration(def, data, &inf);
+            r = _measurements_sample_get_i64_iteration(def, data, &inf);
             break;
         case MEASUREMENTS_VALUE_TYPE_STR:
-            _measurements_sample_get_str_iteration(def, data, &inf);
+            r = _measurements_sample_get_str_iteration(def, data, &inf);
             break;
         case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            _measurements_sample_get_float_iteration(def, data, &inf);
+            r = _measurements_sample_get_float_iteration(def, data, &inf);
             break;
         default:
             measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
@@ -855,7 +856,7 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     }
 
     data->collection_time_cache = _measurements_get_collection_time(def, &inf);
-    return true;
+    return r;
 }
 
 
@@ -1089,7 +1090,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 }
 
 
-bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
+bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
     measurements_def_t* measurements_def = NULL;
     if (!samplecount || !_measurements_get_measurements_def(name, &measurements_def))
@@ -1106,7 +1107,7 @@ static uint16_t _measurements_iterate_callbacks(void)
     uint16_t active_count = 0;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        if (_measurements_arr.data[i].num_samples_init >= _measurements_arr.data[i].num_samples_collected)
+        if (_measurements_arr.data[i].num_samples_init <= _measurements_arr.data[i].num_samples_collected)
             continue;
         _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
         active_count++;
