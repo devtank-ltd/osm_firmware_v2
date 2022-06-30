@@ -773,7 +773,7 @@ static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, meas
         data->value.value_64.min = new_value.v_i64;
         data->value.value_64.max = new_value.v_i64;
         data->value.value_64.sum = new_value.v_i64;
-        return true;
+        goto good_exit;
     }
 
     data->value.value_64.sum += new_value.v_i64;
@@ -786,6 +786,7 @@ static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, meas
     else if (new_value.v_i64 < data->value.value_64.min)
         data->value.value_64.min = new_value.v_i64;
 
+good_exit:
     measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
     measurements_debug("Min : %"PRIi64, data->value.value_64.min);
     measurements_debug("Max : %"PRIi64, data->value.value_64.max);
