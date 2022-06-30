@@ -9,7 +9,6 @@ firmware_SOURCES := \
            core/src/ring.c \
            core/src/i2c.c \
            core/src/modbus_mem.c \
-           core/src/value.c \
            core/src/persist_config.c \
            core/src/lorawan.c \
            core/src/measurements.c \

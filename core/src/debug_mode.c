@@ -6,7 +6,6 @@
 #include "measurements.h"
 #include "persist_config.h"
 #include "base_types.h"
-#include "value.h"
 #include "log.h"
 #include "common.h"
 #include "uart_rings.h"
