@@ -15,7 +15,15 @@
 
 #include "persist_config_header.h"
 
-extern persist_storage_t osm_config;
+
+typedef struct
+{
+    persist_measurements_storage_t  measurements    __attribute__((aligned (2048)));
+    persist_storage_t               config          __attribute__((aligned (2048)));
+} json_x_img_mem_t;
+
+
+extern json_x_img_mem_t osm_mem;
 
 extern int write_json_from_img(const char * filename);
 extern int read_json_to_img(const char * filename);
