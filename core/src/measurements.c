@@ -926,10 +926,7 @@ static void _measurements_sample(void)
 
         if (time_since_interval >= time_collect)
         {
-            if (!_measurements_sample_get_iteration(def, data))
-            {
-                measurements_debug("Failed to get measurement.");
-            }
+            _measurements_sample_get_iteration(def, data);
             wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
         }
         else
