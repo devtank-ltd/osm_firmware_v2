@@ -33,7 +33,7 @@
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define PERSIST_VERSION            1
+#define PERSIST_VERSION            2
 
 
 typedef struct
