@@ -200,7 +200,7 @@ int write_json_from_img(const char * filename)
 
     json_object_object_add(root, "version", json_object_new_int(PERSIST_VERSION));
 
-    json_object_object_add(root, "log_debug_mask", json_object_new_int(DEBUG_SYS));
+    json_object_object_add(root, "log_debug_mask", json_object_new_int(osm_mem.config.log_debug_mask));
 
     json_object_object_add(root, "mins_interval", json_object_new_int(osm_mem.config.mins_interval));
 
