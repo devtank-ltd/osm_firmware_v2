@@ -14,9 +14,10 @@
 #include "persist_config_header.h"
 #include "flash_data.h"
 
-static bool                 persist_data_valid = false;
-static bool                 persist_data_lw_valid = false;
-static persist_storage_t    persist_data __attribute__((aligned (16)));
+static bool                             persist_data_valid = false;
+static bool                             persist_data_lw_valid = false;
+static persist_storage_t                persist_data __attribute__((aligned (16)));
+static persist_measurements_storage_t   persist_measurements __attribute__((aligned (16)));
 
 
 static void _lw_config_valid(void)
@@ -51,12 +52,14 @@ static void _lw_config_valid(void)
 void persistent_init(void)
 {
     persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
+    persist_measurements_storage_t* persist_measurements_raw = (persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
 
     uint32_t vs = persist_data_raw->version;
     if (vs != PERSIST_VERSION)
     {
         log_error("Persistent data version unknown.");
         memset(&persist_data, 0, sizeof(persist_data));
+        memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
@@ -66,6 +69,7 @@ void persistent_init(void)
     _lw_config_valid();
 
     memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
+    memcpy(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements));
     persist_data_valid = true;
 }
 
@@ -74,10 +78,13 @@ void persist_commit()
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_erase_page(FLASH_MEASUREMENTS_PAGE);
     flash_set_data(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data));
+    flash_set_data(PERSIST_RAW_MEASUREMENTS, &persist_measurements, sizeof(persist_measurements));
     flash_lock();
 
-    if (memcmp(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+    if (memcmp(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data)) == 0 &&
+        memcmp(PERSIST_RAW_MEASUREMENTS, &persist_measurements, sizeof(persist_measurements)) == 0)
     {
         log_sys_debug("Flash successfully written.");
         persist_data_valid = true;
@@ -167,7 +174,7 @@ bool persist_get_lw_app_key(char app_key[LW_APP_KEY_LEN+1])
 
 measurements_def_t * persist_get_measurements(void)
 {
-    return persist_data.measurements_arr;
+    return persist_measurements.measurements_arr;
 }
 
 
@@ -240,6 +247,7 @@ void    persistent_wipe(void)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_erase_page(FLASH_MEASUREMENTS_PAGE);
     flash_lock();
     platform_raw_msg("Factory Reset");
     scb_reset_system();
