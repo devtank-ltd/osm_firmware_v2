@@ -506,6 +506,15 @@ static bool _veml7700_get_counts_collect(uint16_t* counts)
 }
 
 
+static bool _veml7700_check_state(void)
+{
+    bool r = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time) <= VEML7700_MAX_READ_TIME;
+    if (!r)
+        light_debug("Request timed out.");
+    return r;
+}
+
+
 static bool _veml7700_iteration_done(void)
 {
     return true;
@@ -514,13 +523,9 @@ static bool _veml7700_iteration_done(void)
 
 static bool _veml7700_iteration_reading(void)
 {
-    uint32_t now = get_since_boot_ms();
-    if (since_boot_delta(now, _veml7700_time.start_time) > VEML7700_MAX_READ_TIME)
-    {
-        light_debug("Request timed out.");
+    if (!_veml7700_check_state())
         goto bad_exit;
-    }
-    if (since_boot_delta(now, _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
+    if (since_boot_delta(get_since_boot_ms(), _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
     {
         uint16_t counts;
         if (!_veml7700_get_counts_collect(&counts))
@@ -538,6 +543,7 @@ static bool _veml7700_iteration_reading(void)
                 light_debug("Could not convert light.");
                 goto bad_exit;
             }
+            return true;
         }
         if (!_veml7700_increase_settings())
         {
@@ -549,6 +555,7 @@ static bool _veml7700_iteration_reading(void)
                 light_debug("Could not convert light.");
                 goto bad_exit;
             }
+            return true;
         }
         _veml7700_state_machine.last_read = get_since_boot_ms();
         if (!_veml7700_get_counts_begin())
@@ -609,6 +616,12 @@ measurements_sensor_state_t veml7700_light_measurements_init(char* name)
         case VEML7700_STATE_OFF:
             break;
         case VEML7700_STATE_READING:
+            if (!_veml7700_check_state())
+            {
+                _veml7700_turn_off();
+                _veml7700_state_machine.state = VEML7700_STATE_OFF;
+                break;
+            }
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case VEML7700_STATE_DONE:
             return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -629,6 +642,8 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, value_t*
         case VEML7700_STATE_OFF:
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_READING:
+            if (!_veml7700_check_state())
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case VEML7700_STATE_DONE:
             break;
