@@ -28,6 +28,7 @@
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
 #define MEASUREMENTS_VALUE_STR_LEN              23
+#define MEASUREMENTS_SEND_STR_LEN               8
 
 
 #define MEASUREMENTS_SEND_IS_SIGNED    0x10
@@ -168,9 +169,18 @@ static bool _measurements_arr_append_float(int32_t val)
 
 static bool _measurements_arr_append_str(char* val, unsigned len)
 {
+    if (len > MEASUREMENTS_SEND_STR_LEN)
+        len = MEASUREMENTS_SEND_STR_LEN;
     for (unsigned i = 0; i < len; i++)
     {
         if (!_measurements_arr_append_i8((int8_t)(val[i])))
+        {
+            return false;
+        }
+    }
+    for (unsigned i = len; i < MEASUREMENTS_SEND_STR_LEN; i++)
+    {
+        if (!_measurements_arr_append_i8((int8_t)0))
         {
             return false;
         }
@@ -242,11 +252,9 @@ static bool _measurements_append_i64(int64_t* value)
 
 static bool _measurements_append_str(char* value)
 {
-    if (!_measurements_arr_append_i8(MEASUREMENTS_VALUE_TYPE_STR))
+    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_STR))
         return false;
     uint8_t len = strnlen(value, MEASUREMENTS_VALUE_STR_LEN);
-    if (!_measurements_arr_append_i8(len))
-        return false;
     return _measurements_arr_append_str(value, len);
 }
 
@@ -761,7 +769,6 @@ static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, meas
     measurements_reading_t new_value;
     if (!_measurements_sample_get_resp(def, data, inf, &new_value))
     {
-        // measurements_debug("Sample returned false.");
         return false;
     }
     measurements_debug("Value : %"PRIi64, new_value.v_i64);
@@ -819,8 +826,44 @@ static bool _measurements_sample_get_str_iteration(measurements_def_t* def, meas
 
 static bool _measurements_sample_get_float_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
 {
-    /* This isn't a _real_ float, just a int64_t multiplied by 1000, so the maths is the same */
-    return _measurements_sample_get_i64_iteration(def, data, inf);
+    if (!def || !data || !inf)
+    {
+        measurements_debug("Handed a NULL pointer.");
+        return false;
+    }
+    measurements_reading_t new_value;
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    {
+        return false;
+    }
+    measurements_debug("Value : %"PRIi32, new_value.v_f32);
+
+    if (data->num_samples == 0)
+    {
+        // If first measurements
+        data->num_samples++;
+        data->value.value_f.min = new_value.v_f32;
+        data->value.value_f.max = new_value.v_f32;
+        data->value.value_f.sum = new_value.v_f32;
+        goto good_exit;
+    }
+
+    data->value.value_f.sum += new_value.v_f32;
+
+    data->num_samples++;
+
+    if (new_value.v_f32 > data->value.value_f.max)
+        data->value.value_f.max = new_value.v_f32;
+
+    else if (new_value.v_f32 < data->value.value_f.min)
+        data->value.value_f.min = new_value.v_f32;
+
+good_exit:
+    measurements_debug("Sum : %"PRIi32, data->value.value_f.sum);
+    measurements_debug("Min : %"PRIi32, data->value.value_f.min);
+    measurements_debug("Max : %"PRIi32, data->value.value_f.max);
+
+    return true;
 }
 
 
