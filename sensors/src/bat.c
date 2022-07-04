@@ -22,7 +22,7 @@
 #define BAT_MIN_MV                          791  /* 0.791 volts */
 #define BAT_MAX                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MAX_MV)
 #define BAT_MIN                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
-#define BAT_ON_BAT_THRESHOLD                BAT_MAX
+#define BAT_ON_BAT_THRESHOLD                9000UL /* 90.00% */
 
 
 typedef struct
@@ -85,6 +85,28 @@ static bool _bat_check_request(void)
 }
 
 
+static uint16_t _bat_conv(uint16_t raw)
+{
+    uint32_t raw32 = raw * BAT_MUL;
+    uint16_t perc;
+    if (raw32 > BAT_MAX)
+    {
+        perc = BAT_MUL;
+    }
+    else if (raw32 < BAT_MIN)
+    {
+        /* How are we here? */
+        perc = (uint16_t)BAT_MIN;
+    }
+    else
+    {
+        uint32_t divider =  (BAT_MAX / BAT_MUL) - (BAT_MIN / BAT_MUL);
+        perc = (raw32 - BAT_MIN) / divider;
+    }
+    return perc;
+}
+
+
 measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection_time)
 {
     /**
@@ -139,8 +161,8 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    uint16_t raw16;
-    adcs_resp_t resp = adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time);
+    uint16_t raw;
+    adcs_resp_t resp = adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -156,27 +178,11 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
             break;
     }
 
-    adc_debug("Bat raw ADC:%"PRIu16, raw16);
+    adc_debug("Bat raw ADC:%"PRIu16, raw);
 
-    uint32_t raw = raw16 * BAT_MUL;
+    uint16_t perc = _bat_conv(raw);
 
-    uint16_t perc;
-
-    _bat_update_on_battery(raw <= BAT_ON_BAT_THRESHOLD);
-    if (raw > BAT_MAX)
-    {
-        perc = BAT_MUL;
-    }
-    else if (raw < BAT_MIN)
-    {
-        /* How are we here? */
-        perc = (uint16_t)BAT_MIN;
-    }
-    else
-    {
-        uint32_t divider =  (BAT_MAX / BAT_MUL) - (BAT_MIN / BAT_MUL);
-        perc = (raw - BAT_MIN) / divider;
-    }
+    _bat_update_on_battery(perc < BAT_ON_BAT_THRESHOLD);
 
     *value = value_from(perc);
 
@@ -237,8 +243,8 @@ static bool _bat_get_on_battery(bool* on_battery)
 
     _bat_running = false;
 
-    uint16_t raw16;
-    adcs_resp_t adc_resp = adcs_collect_avgs(&raw16, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, NULL);
+    uint16_t raw;
+    adcs_resp_t adc_resp = adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, NULL);
     _bat_release();
     switch (adc_resp)
     {
@@ -248,8 +254,8 @@ static bool _bat_get_on_battery(bool* on_battery)
             adc_debug("ADC for Bat not complete!");
             return false;
     }
-    uint32_t raw = raw16 * BAT_MUL;
-    *on_battery = raw < BAT_ON_BAT_THRESHOLD;
+    uint16_t perc = _bat_conv(raw);
+    *on_battery = perc < BAT_ON_BAT_THRESHOLD;
     _bat_update_on_battery(*on_battery);
     return true;
 }
