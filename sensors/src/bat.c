@@ -33,7 +33,8 @@ typedef struct
 } bat_on_battery_t;
 
 
-static volatile bool    _bat_running            = false;
+static bool             _bat_running            = false;
+static uint32_t         _bat_starting_time      = 0;
 static uint32_t         _bat_collection_time    = BAT_MON_DEFAULT_COLLECTION_TIME;
 static bat_on_battery_t _bat_on_battery         = {false, false, 0};
 
@@ -71,6 +72,19 @@ static void _bat_update_on_battery(bool on_battery)
 }
 
 
+static bool _bat_check_request(void)
+{
+    if (since_boot_delta(get_since_boot_ms(), _bat_starting_time) > BAT_TIMEOUT_MS)
+    {
+        adc_debug("BAT Request timed out.");
+        _bat_running = false;
+        _bat_release();
+        return false;
+    }
+    return true;
+}
+
+
 measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection_time)
 {
     /**
@@ -87,7 +101,7 @@ measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection
 
 measurements_sensor_state_t bat_begin(char* name)
 {
-    if (_bat_running)
+    if (_bat_running && _bat_check_request())
     {
         adc_debug("Already beginning BAT ADC.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
