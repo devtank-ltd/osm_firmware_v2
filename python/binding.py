@@ -172,6 +172,7 @@ class low_level_dev_t(object):
         self._serial = io.TextIOWrapper(io.BufferedRWPair(serial_obj, serial_obj), newline="\n")
         self._log_obj = log_obj
         self.fileno = serial_obj.fileno
+        self._leftover = ""
 
     def write(self, msg):
         self._log_obj.send(msg)
@@ -188,7 +189,7 @@ class low_level_dev_t(object):
             return None
         if len(msg) == 0:
             return None
-        self._log_obj.recv(msg.strip("\n\r"))
+        # self._log_obj.recv(msg.strip("\n\r"))
         return msg
 
     def readlines(self):
@@ -198,9 +199,12 @@ class low_level_dev_t(object):
             msg += new_msg
             new_msg = self.read()
 
+        msg = self._leftover + msg
         msgs = msg.split("\n\r")
         if len(msgs) == 1 and msgs[0] == '':
             return []
+        self._leftover = msgs[-1]
+        msgs = msgs[:-1]
 
         return msgs
 
