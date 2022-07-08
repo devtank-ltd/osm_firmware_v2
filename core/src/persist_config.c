@@ -60,6 +60,8 @@ void persistent_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+        persist_data.cc_config.ext_max_mA = 100000;
+        persist_data.cc_config.int_max_mA = 50;
         return;
     }
 
@@ -243,4 +245,10 @@ void    persistent_wipe(void)
     flash_lock();
     platform_raw_msg("Factory Reset");
     scb_reset_system();
+}
+
+
+cc_config_t * persist_get_cc_config(void)
+{
+    return &persist_data.cc_config;
 }

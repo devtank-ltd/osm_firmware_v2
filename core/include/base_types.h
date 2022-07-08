@@ -187,3 +187,11 @@ typedef struct
     uint8_t  parity;          /* uart_parity_t */
     modbus_dev_t            modbus_devices[MODBUS_MAX_DEV];
 } __attribute__((__packed__)) modbus_bus_t;
+
+
+typedef struct
+{
+    uint32_t ext_max_mA;
+    uint32_t int_max_mA;
+} cc_config_t;
+

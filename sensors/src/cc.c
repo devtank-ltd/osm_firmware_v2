@@ -17,6 +17,8 @@
 #define CC_TIMEOUT_MS                       2000
 #define CC_NUM_SAMPLES                      ADCS_NUM_SAMPLES
 
+#define CC_RESISTOR_OHM                     22
+
 
 typedef struct
 {
@@ -30,6 +32,7 @@ static uint16_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_channels_active_t _cc_adc_channels_active             = {0};
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
+static cc_config_t*         _config;
 
 
 static bool _cc_to_mV(uint16_t value, uint16_t* mV)
@@ -93,13 +96,15 @@ static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint)
         return false;
     }
 
-    if (inter_value > UINT32_MAX / 2000)
+    uint32_t scale_factor = _config->ext_max_mA / _config->int_max_mA;
+
+    if (inter_value > UINT32_MAX / scale_factor)
     {
         adc_debug("Overflowing value.");
         return false;
     }
-    inter_value *= 2000;
-    inter_value /= 22;
+    inter_value *= scale_factor;
+    inter_value /= CC_RESISTOR_OHM;
     if (inter_value > UINT16_MAX)
     {
         adc_debug("Cannot downsize value '%"PRIu32"'.", inter_value);
@@ -561,4 +566,5 @@ void cc_init(void)
         uint16_t midpoints[ADC_CC_COUNT] = {ADC_MAX_VAL / 2};
         cc_set_midpoints(midpoints);
     }
+    _config = persist_get_cc_config();
 }

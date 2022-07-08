@@ -570,6 +570,32 @@ static void cc_mp_cb(char* args)
 }
 
 
+static void cc_gain(char* args)
+{
+    // <ext_mA> <int_mA>
+    // 100000   50
+    char* p;
+    uint32_t ext_mA = strtoul(args, &p, 10);
+    cc_config_t* cc_conf = persist_get_cc_config();
+    if (p == args)
+        goto print_exit;
+    p = skip_space(p);
+    char* q;
+    uint32_t int_mA = strtoul(p, &q, 10);
+    if (p == q)
+    {
+        log_out("Syntax: cc_gain <ext max mA> <ext min mA>");
+        return;
+    }
+    cc_conf->ext_max_mA = ext_mA;
+    cc_conf->int_max_mA = int_mA;
+    log_out("Set the CC gain:");
+print_exit:
+    log_out("EXT max: %"PRIu32"A", cc_conf->ext_max_mA/1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"mA", cc_conf->int_max_mA/1000, cc_conf->int_max_mA);
+}
+
+
 static void ds18b20_cb(char* args)
 {
     float ds18b20_temp;
@@ -808,6 +834,7 @@ void cmds_process(char * command, unsigned len)
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
         { "cc_mp",        "Set the CC midpoint",      cc_mp_cb},
+        { "cc_gain",      "Set the max int and ext",  cc_gain},
         { "w1",           "Get temperature with w1",  ds18b20_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},
