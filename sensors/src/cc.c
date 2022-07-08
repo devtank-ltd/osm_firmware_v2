@@ -32,7 +32,7 @@ static uint16_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_channels_active_t _cc_adc_channels_active             = {0};
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
-static cc_config_t*         _config;
+static cc_config_t*         _configs;
 
 
 static bool _cc_to_mV(uint16_t value, uint16_t* mV)
@@ -61,7 +61,7 @@ static bool _cc_to_mV(uint16_t value, uint16_t* mV)
 }
 
 
-static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint)
+static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint, uint32_t scale_factor)
 {
     /**
      First must calculate the peak voltage
@@ -95,8 +95,6 @@ static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint)
         adc_debug("Cannot get mV value of midpoint.");
         return false;
     }
-
-    uint32_t scale_factor = _config->ext_max_mA / _config->int_max_mA;
 
     if (inter_value > UINT32_MAX / scale_factor)
     {
@@ -363,7 +361,8 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
 
     uint16_t cc_mA = 0;
 
-    if (!_cc_conv(adcs_rms, &cc_mA, midpoint))
+    uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mA;
+    if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
     {
         adc_debug("Failed to get current clamp");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -566,5 +565,5 @@ void cc_init(void)
         uint16_t midpoints[ADC_CC_COUNT] = {ADC_MAX_VAL / 2};
         cc_set_midpoints(midpoints);
     }
-    _config = persist_get_cc_config();
+    _configs = persist_get_cc_configs();
 }

@@ -50,7 +50,7 @@ typedef struct
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
     uint8_t                 ___[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
-    cc_config_t             cc_config;
+    cc_config_t             cc_configs[ADC_CC_COUNT];
 } __attribute__((__packed__)) persist_storage_t;
 
-_Static_assert(sizeof(persist_storage_t) % 16, "Persistent memory misaligned.");
+_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");

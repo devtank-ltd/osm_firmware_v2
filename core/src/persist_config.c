@@ -60,8 +60,11 @@ void persistent_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-        persist_data.cc_config.ext_max_mA = 100000;
-        persist_data.cc_config.int_max_mA = 50;
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            persist_data.cc_configs[i].ext_max_mA = 100000;
+            persist_data.cc_configs[i].int_max_mA = 50;
+        }
         return;
     }
 
@@ -248,7 +251,7 @@ void    persistent_wipe(void)
 }
 
 
-cc_config_t * persist_get_cc_config(void)
+cc_config_t * persist_get_cc_configs(void)
 {
-    return &persist_data.cc_config;
+    return persist_data.cc_configs;
 }
