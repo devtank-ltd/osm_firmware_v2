@@ -521,9 +521,9 @@ static void cc_cb(char* args)
             log_out("Could not get CC values.");
             return;
         }
-        log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
-        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_2.u16%1000);
-        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_3.u16%1000);
+        log_out("CC1 = %"PRIu32".%03"PRIu32" A", value_1.u32/1000, value_1.u32%1000);
+        log_out("CC2 = %"PRIu32".%03"PRIu32" A", value_2.u32/1000, value_2.u32%1000);
+        log_out("CC3 = %"PRIu32".%03"PRIu32" A", value_3.u32/1000, value_3.u32%1000);
         return;
     }
     if (cc_num > 3 || cc_num == 0)
@@ -557,15 +557,18 @@ static void cc_mp_cb(char* args)
 {
     // 2046 CC1
     char* p;
-    uint16_t new_mp = strtoul(args, &p, 10);
+    float new_mp = strtof(args, &p);
+    p = skip_space(p);
+    uint32_t new_mp32;
     if (p == args)
     {
-        cc_get_midpoint(&new_mp, p);
-        log_out("MP: %"PRIu16, new_mp);
+        cc_get_midpoint(&new_mp32, p);
+        log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return;
     }
+    new_mp32 = new_mp * 1000;
     p = skip_space(p);
-    if (!cc_set_midpoint(new_mp, p))
+    if (!cc_set_midpoint(new_mp32, p))
         log_out("Failed to set the midpoint.");
 }
 

@@ -26,8 +26,8 @@ extern measurements_def_t * persist_get_measurements(void);
 extern bool persist_get_mins_interval(uint32_t * mins_interval);
 extern bool persist_set_mins_interval(uint32_t mins_interval);
 
-extern bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT]);
-extern bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT]);
+extern bool persist_set_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT]);
+extern bool persist_get_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT]);
 
 extern float * persist_get_sai_cal_coeffs(void);
 

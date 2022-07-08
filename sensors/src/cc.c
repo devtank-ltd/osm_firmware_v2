@@ -28,14 +28,14 @@ typedef struct
 
 
 static uint8_t              _cc_adc_channel_array[ADC_CC_COUNT] = ADC_CC_CHANNELS;
-static uint16_t             _cc_midpoints[ADC_CC_COUNT];
+static uint32_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_channels_active_t _cc_adc_channels_active             = {0};
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
 static cc_config_t*         _configs;
 
 
-static bool _cc_to_mV(uint16_t value, uint16_t* mV)
+static bool _cc_to_mV(uint32_t value, uint32_t* mV)
 {
     // Linear scale without calibration.
     // ADC of    0 -> 0V
@@ -50,18 +50,12 @@ static bool _cc_to_mV(uint16_t value, uint16_t* mV)
     inter_val = value * (max_mV - min_mV);
     inter_val /= (max_value - min_value);
 
-    if (inter_val > UINT16_MAX)
-    {
-        adc_debug("Cannot downsize value '%"PRIu32"'.", inter_val);
-        return false;
-    }
-
-    *mV = (uint16_t)inter_val;
+    *mV = inter_val;
     return true;
 }
 
 
-static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint, uint32_t scale_factor)
+static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor)
 {
     /**
      First must calculate the peak voltage
@@ -81,7 +75,7 @@ static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint, uint3
      a uint32_t and then divisions after.
     */
     uint32_t inter_value    = 0;
-    uint16_t adc_diff       = 0;
+    uint32_t adc_diff       = 0;
 
     // If adc_val is larger, then pretend it is at the midpoint
     if (adc_val < midpoint)
@@ -89,26 +83,23 @@ static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint, uint3
         adc_diff = midpoint - adc_val;
     }
 
+    adc_debug("Difference = %"PRIu32".%03"PRIu32, adc_diff/1000, adc_diff%1000);
+
     // Once the conversion is no longer linearly multiplicative this needs to be changed.
-    if (!_cc_to_mV(adc_diff, (uint16_t*)&inter_value))
+    if (!_cc_to_mV(adc_diff, &inter_value))
     {
         adc_debug("Cannot get mV value of midpoint.");
         return false;
     }
 
-    if (inter_value > UINT32_MAX / scale_factor)
+    if (inter_value / 1000 > UINT32_MAX / scale_factor)
     {
         adc_debug("Overflowing value.");
         return false;
     }
     inter_value *= scale_factor;
-    inter_value /= CC_RESISTOR_OHM;
-    if (inter_value > UINT16_MAX)
-    {
-        adc_debug("Cannot downsize value '%"PRIu32"'.", inter_value);
-        return false;
-    }
-    *cc_mA = (uint16_t)inter_value;
+    inter_value /= (CC_RESISTOR_OHM * 1000);
+    *cc_mA = inter_value;
     return true;
 }
 
@@ -340,8 +331,8 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    uint16_t adcs_rms;
-    uint16_t midpoint = _cc_midpoints[index];
+    uint32_t adcs_rms;
+    uint32_t midpoint = _cc_midpoints[index];
 
     adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
     switch (resp)
@@ -359,7 +350,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
             break;
     }
 
-    uint16_t cc_mA = 0;
+    uint32_t cc_mA;
 
     uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mA;
     if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
@@ -368,13 +359,13 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    *value = value_from_u16(cc_mA);
-    adc_debug("CC = %umA", cc_mA);
+    *value = value_from(cc_mA);
+    adc_debug("CC = %"PRIu32"mA", cc_mA);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-bool cc_set_midpoints(uint16_t new_midpoints[ADC_CC_COUNT])
+bool cc_set_midpoints(uint32_t new_midpoints[ADC_CC_COUNT])
 {
     memcpy(_cc_midpoints, new_midpoints, ADC_CC_COUNT * sizeof(_cc_midpoints[0]));
     if (!persist_set_cc_midpoints(new_midpoints))
@@ -386,7 +377,7 @@ bool cc_set_midpoints(uint16_t new_midpoints[ADC_CC_COUNT])
 }
 
 
-bool cc_set_midpoint(uint16_t midpoint, char* name)
+bool cc_set_midpoint(uint32_t midpoint, char* name)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
@@ -405,7 +396,7 @@ bool cc_set_midpoint(uint16_t midpoint, char* name)
 }
 
 
-bool cc_get_midpoint(uint16_t* midpoint, char* name)
+bool cc_get_midpoint(uint32_t* midpoint, char* name)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
@@ -443,8 +434,23 @@ bool cc_calibrate(void)
         _cc_release_all();
         return false;
     }
-    uint16_t midpoints[ADC_CC_COUNT];
-    resp = adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
+    uint32_t t_mp[ADC_CC_COUNT];
+    resp = adcs_collect_avgs(t_mp, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
+    //_cc_release_all();
+    switch(resp)
+    {
+        case ADCS_RESP_FAIL:
+            adc_debug("Could not average the ADC.");
+            return false;
+        case ADCS_RESP_WAIT:
+            adc_debug("Could not average the ADC.");
+            return false;
+        case ADCS_RESP_OK:
+            break;
+    }
+
+    uint32_t midpoints[ADC_CC_COUNT];
+    resp = adcs_collect_rmss(midpoints, t_mp, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
     _cc_release_all();
     switch(resp)
     {
@@ -457,8 +463,9 @@ bool cc_calibrate(void)
         case ADCS_RESP_OK:
             break;
     }
+
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
-        adc_debug("MP CC%u: %"PRIu16, i+1, midpoints[i]);
+        adc_debug("MP CC%u: %"PRIu32".%03"PRIu32, i+1, midpoints[i]/1000, midpoints[i]%1000);
     cc_set_midpoints(midpoints);
     memcpy(_cc_adc_channels_active.channels, prev_cc_adc_channels_active.channels, prev_cc_adc_channels_active.len);
     _cc_adc_channels_active.len = prev_cc_adc_channels_active.len;
@@ -562,7 +569,7 @@ void cc_init(void)
     {
         // Assume it to be the theoretical midpoint
         adc_debug("Failed to load persistent midpoint.");
-        uint16_t midpoints[ADC_CC_COUNT] = {ADC_MAX_VAL / 2};
+        uint32_t midpoints[ADC_CC_COUNT] = {ADC_MAX_VAL / 2};
         cc_set_midpoints(midpoints);
     }
     _configs = persist_get_cc_configs();

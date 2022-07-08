@@ -200,7 +200,7 @@ bool persist_set_mins_interval(uint32_t mins_interval)
 
 
 
-bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
+bool persist_set_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
@@ -212,7 +212,7 @@ bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
 }
 
 
-bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
+bool persist_get_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {

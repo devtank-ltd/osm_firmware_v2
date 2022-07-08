@@ -44,8 +44,8 @@ typedef struct
     char                    lw_dev_eui[LW_DEV_EUI_LEN];
     char                    lw_app_key[LW_APP_KEY_LEN];
     measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
-    uint16_t                cc_midpoints[ADC_CC_COUNT];
-    uint8_t                 _[16-((ADC_CC_COUNT * sizeof(uint16_t))%16)];
+    uint32_t                cc_midpoints[ADC_CC_COUNT];
+    uint8_t                 _[16-((ADC_CC_COUNT * sizeof(uint32_t))%16)];
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
