@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <libopencm3/cm3/scb.h>
+#include <libopencm3/stm32/iwdg.h>
 
 #include "measurements.h"
 #include "persist_config.h"
@@ -210,6 +211,7 @@ void debug_mode(void)
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
+        iwdg_reset();
     }
     measurements_derive_cc_phase();
 }
