@@ -44,11 +44,13 @@ typedef struct
     char                    lw_dev_eui[LW_DEV_EUI_LEN];
     char                    lw_app_key[LW_APP_KEY_LEN];
     measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
-    uint16_t                cc_midpoints[ADC_CC_COUNT];
-    uint16_t                _[8-(ADC_CC_COUNT%8)];
+    uint32_t                cc_midpoints[ADC_CC_COUNT];
+    uint8_t                 _[16-((ADC_CC_COUNT * sizeof(uint32_t))%16)];
     uint16_t                ios_state[IOS_COUNT];
-    uint16_t                __[8-(IOS_COUNT%8)];
+    uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
+    uint8_t                 ___[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    cc_config_t             cc_configs[ADC_CC_COUNT];
 } __attribute__((__packed__)) persist_storage_t;
 
-_Static_assert(sizeof(persist_storage_t) % 16, "Persistent memory misaligned.");
+_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");

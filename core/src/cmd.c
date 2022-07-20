@@ -521,9 +521,9 @@ static void cc_cb(char* args)
             log_out("Could not get CC values.");
             return;
         }
-        log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
-        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_2.u16%1000);
-        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_3.u16%1000);
+        log_out("CC1 = %"PRIu32".%03"PRIu32" A", value_1.u32/1000, value_1.u32%1000);
+        log_out("CC2 = %"PRIu32".%03"PRIu32" A", value_2.u32/1000, value_2.u32%1000);
+        log_out("CC3 = %"PRIu32".%03"PRIu32" A", value_3.u32/1000, value_3.u32%1000);
         return;
     }
     if (cc_num > 3 || cc_num == 0)
@@ -557,16 +557,61 @@ static void cc_mp_cb(char* args)
 {
     // 2046 CC1
     char* p;
-    uint16_t new_mp = strtoul(args, &p, 10);
+    float new_mp = strtof(args, &p);
+    p = skip_space(p);
+    uint32_t new_mp32;
     if (p == args)
     {
-        cc_get_midpoint(&new_mp, p);
-        log_out("MP: %"PRIu16, new_mp);
+        cc_get_midpoint(&new_mp32, p);
+        log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return;
     }
+    new_mp32 = new_mp * 1000;
     p = skip_space(p);
-    if (!cc_set_midpoint(new_mp, p))
+    if (!cc_set_midpoint(new_mp32, p))
         log_out("Failed to set the midpoint.");
+}
+
+
+static void cc_gain(char* args)
+{
+    // <index> <ext_A> <int_mA>
+    // 1       100     50
+    cc_config_t* cc_conf = persist_get_cc_configs();
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    p = skip_space(p);
+    if (strlen(p) == 0)
+    {
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].ext_max_mA/1000, cc_conf[i].ext_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].int_max_mA/1000, cc_conf[i].int_max_mA%1000);
+        }
+        return;
+    }
+    if (index == 0 || index > ADC_CC_COUNT + 1 || p == args)
+        goto syntax_exit;
+    index--;
+
+    char* q;
+    float ext_A = strtof(p, &q);
+    if (q == p)
+        goto print_exit;
+    q = skip_space(q);
+    uint32_t int_mA = strtoul(q, &p, 10);
+    if (p == q)
+        goto syntax_exit;
+    cc_conf[index].ext_max_mA = ext_A * 1000;
+    cc_conf[index].int_max_mA = int_mA;
+    log_out("Set the CC gain:");
+print_exit:
+    log_out("EXT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].ext_max_mA/1000, cc_conf[index].ext_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].int_max_mA/1000, cc_conf[index].int_max_mA%1000);
+    return;
+syntax_exit:
+    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mA>");
+    log_out("e.g cc_gain 3 100 50");
 }
 
 
@@ -808,6 +853,7 @@ void cmds_process(char * command, unsigned len)
         { "cc",           "CC value",                 cc_cb},
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
         { "cc_mp",        "Set the CC midpoint",      cc_mp_cb},
+        { "cc_gain",      "Set the max int and ext",  cc_gain},
         { "w1",           "Get temperature with w1",  ds18b20_cb},
         { "timer",        "Test usecs timer",         timer_cb},
         { "temp",         "Get the temperature",      temperature_cb},

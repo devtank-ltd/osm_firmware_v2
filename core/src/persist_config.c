@@ -60,6 +60,11 @@ void persistent_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            persist_data.cc_configs[i].ext_max_mA = 100000;
+            persist_data.cc_configs[i].int_max_mA = 50;
+        }
         return;
     }
 
@@ -195,7 +200,7 @@ bool persist_set_mins_interval(uint32_t mins_interval)
 
 
 
-bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
+bool persist_set_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
@@ -207,7 +212,7 @@ bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
 }
 
 
-bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
+bool persist_get_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
@@ -243,4 +248,10 @@ void    persistent_wipe(void)
     flash_lock();
     platform_raw_msg("Factory Reset");
     scb_reset_system();
+}
+
+
+cc_config_t * persist_get_cc_configs(void)
+{
+    return persist_data.cc_configs;
 }

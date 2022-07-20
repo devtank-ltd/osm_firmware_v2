@@ -85,9 +85,10 @@ static bool _bat_check_request(void)
 }
 
 
-static uint16_t _bat_conv(uint16_t raw)
+static uint16_t _bat_conv(uint32_t raw)
 {
-    uint32_t raw32 = raw * BAT_MUL;
+    uint32_t scale = BAT_MUL / 1000;
+    uint32_t raw32 = raw * scale;
     uint16_t perc;
     if (raw32 > BAT_MAX)
     {
@@ -161,7 +162,7 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    uint16_t raw;
+    uint32_t raw;
     adcs_resp_t resp = adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time);
     switch(resp)
     {
@@ -178,13 +179,13 @@ measurements_sensor_state_t bat_get(char* name, value_t* value)
             break;
     }
 
-    adc_debug("Bat raw ADC:%"PRIu16, raw);
+    adc_debug("Bat raw ADC:%"PRIu32".%03"PRIu32, raw/1000, raw%1000);
 
     uint16_t perc = _bat_conv(raw);
 
     _bat_update_on_battery(perc < BAT_ON_BAT_THRESHOLD);
 
-    *value = value_from(perc);
+    *value = value_from_u16(perc);
 
     adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
@@ -243,7 +244,7 @@ static bool _bat_get_on_battery(bool* on_battery)
 
     _bat_running = false;
 
-    uint16_t raw;
+    uint32_t raw;
     adcs_resp_t adc_resp = adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, NULL);
     _bat_release();
     switch (adc_resp)

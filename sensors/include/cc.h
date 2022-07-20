@@ -13,8 +13,8 @@ extern measurements_sensor_state_t  cc_get(char* name, value_t* value);
 extern bool                         cc_get_blocking(char* name, value_t* value);
 extern bool                         cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3);
 
-extern bool                         cc_set_midpoint(uint16_t midpoint, char* name);
-extern bool                         cc_get_midpoint(uint16_t* midpoint, char* name);
+extern bool                         cc_set_midpoint(uint32_t midpoint, char* name);
+extern bool                         cc_get_midpoint(uint32_t* midpoint, char* name);
 extern bool                         cc_calibrate(void);
 
 extern bool                         cc_set_channels_active(uint8_t* active_channels, unsigned len);
