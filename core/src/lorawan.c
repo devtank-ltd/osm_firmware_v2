@@ -832,6 +832,7 @@ static void _lw_process_wait_ack(char* message)
     {
         _lw_state_machine.state = LW_STATE_IDLE;
         _lw_state_machine.reset_count = 0;
+        _lw_state_machine.resend_count = 0;
         _lw_clear_backup();
         on_lw_sent_ack(true);
     }
