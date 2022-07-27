@@ -1,0 +1,466 @@
+\documentclass[a4paper,12pt, notitlepage]{article}
+
+\usepackage[top=25mm,bottom=25mm,left=25mm,right=25mm]{geometry}
+%\usepackage{amsmath} 
+\usepackage{graphicx}
+%\usepackage{epstopdf}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{url}
+\usepackage{setspace} 
+%\usepackage[square, numbers]{natbib}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[export]{adjustbox}
+\usepackage{wrapfig}
+\usepackage[ddmmyyyy]{datetime}
+
+\setstretch{1.44}
+\setlength{\columnsep}{6mm}
+\titleformat{\section}{\bfseries\large\scshape\filright}{\thesection}{1em}{}
+\titleformat{\subsection}{\bfseries\normalsize\scshape\filright}{\thesubsection}{1em}{}
+
+\renewcommand{\abstractname}{}
+\newcommand{\captionfonts}{\footnotesize}
+\renewcommand\thesection{\arabic{section}.}
+\renewcommand\thesubsection{\arabic{section}.\arabic{subsection}}
+
+\makeatletter
+\long\def\@makecaption#1#2{
+  \vskip\abovecaptionskip
+  \sbox\@tempboxa{{\captionfonts #1: #2}}
+  \ifdim \wd\@tempboxa >\hsize
+    {\captionfonts #1: #2\par}
+  \else
+    \hbox to\hsize{\hfil\box\@tempboxa\hfil}
+  \fi
+  \vskip\belowcaptionskip}
+    
+\makeatother
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+	language=python,
+	aboveskip=2mm,
+	belowskip=2mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{OSM Configuration GUI: Guide}
+\rfoot{Page \thepage}
+\lfoot{}
+
+\renewcommand{\dateseparator}{.}
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{\textbf{\large{A Guide to the OSM Configuration GUI}}}
+
+\author{\normalsize{Devtank Ltd.} \\
+        \small\textit{
+        Marcus Holder}}
+\date{\today}
+
+\maketitle 
+\thispagestyle{fancy}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract} 
+\noindent
+This is a guide covering the OSM Configuration GUI including topics such as libraries used, functions and database structure. 
+\end{abstract}
+\vspace{11mm}
+
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Libraries}
+\label{sec: libraries}
+
+\subsection{Tkinter}
+\label{ssec: libtkinter}
+
+The tkinter package is the standard Python interface to the tk GUI toolkit. Both tk and tkinter are available on most Unix platforms, including macOS as well as on Windows systems.
+
+\subsection{pySerial}
+\label{libpyserial}
+
+This module encapsulates the access for the serial port. It provides backends for Python running on Widnows, OSX and Linux. It has features which 
+
+1. Allow access to the port settings through Python properties
+
+2. Offers support for different byte sizes, stop bits, parity and flow control.
+
+3. File like API with "read" and "write" and are 100\% pure Python.
+
+4. Compatible with io library.
+
+\subsection{sqlite3}
+\label{libsql3}
+
+SQLite is a C library that provides a lightweight disk-based database that doesn't require a seperate server process and allows accessing the database using a nonstandard variant of the SQL query language. Some applications including this one can use SQLite for internal data storage. To use the module, start by creating a \url{Connection} object that represents the database:
+
+\begin{lstlisting}
+import sqlite3
+con = sqlite3.connect('modbus_templates')
+
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{Structure}
+\label{sec: structgui}
+
+\subsection{Overview}
+\label{ssec: guiOverview}
+
+The GUI and all of it's widgets are created in the class \url{config_gui_window_t} inside \url{/osm_firmware/config_gui/release/config_gui.py}. The class creates the main window of the GUI and contains all of the sub windows and functions which allow adding modbus registers/devices, setting IOS, setting sample counts for measurements and configuring LoRaWan. The GUI also uses the \url{dev_t} object from \url{osm_firmware/python/binding.py} in order to send commands to the sensor over serial.
+
+The database, its functions and attributes are created in \url{osm_firmware/config_gui/release/modbus_db.py}. The functions used for modbus configuration are written in \url{osm_firmware/config_gui/release/modbus_funcs.py}.
+
+
+\subsection{Main Window}
+\label{subsec: mainw}
+
+The first screen seen after launching the program contains a drop down menu which enables the user to select the OSM Device that is plugged in via USB and connect to it which will load the rest of the application. This will be represented by /dev/ttyUSB[0|1]. See below to visualise how the device can be selected using the pySerial module in \url{config_gui.py}. 
+\begin{lstlisting}[caption={A simple function to set the OSM as the selected device},label={lst: exampWindow}]
+import serial.tools.list_ports
+
+        usb_label = Label(self._conn_fr, text="Select a device",
+                          bg=IVORY, font=FONT)
+        usb_label.pack()
+        returned_ports = []
+        active_ports = serial.tools.list_ports.comports(include_links=True)
+        for item in active_ports:
+            if "tty" in item:
+                returned_ports.append(item.device)
+        dropdown = Combobox(self._conn_fr, values=returned_ports,
+                            font=FONT)
+        for item in active_ports:
+            if "ttyUSB" in item.device:
+                dropdown.set(item.device)
+        dropdown.pack()
+
+        self.dev_sel = dropdown.get()
+        connect_btn = Button(self._conn_fr, text="Connect",
+                             command=self._populate_tabs,
+                             bg=CHARCOAL, fg=IVORY, font=FONT)
+        connect_btn.pack()
+
+\end{lstlisting}
+
+Once connected, the user is transferred to the home page of the application which contains the sensors' current measurements, LoRaWAN configuration, the serial number, firmware version and the option to update firmware. There are also a list of tabs where you can navigate to other windows such as Advanced Config, Modbus Configuration and Debug Mode. A tab is added to the gui by using Tkinter's notebook which can hold multiple tabs by creating a frame and adding it to the notebook.
+
+\begin{lstlisting}[caption={Creating a window with several tabs.},label={lst: entrygui}]
+from tkinter import Notebook
+
+		  self._notebook = Notebook(self)
+        self._notebook.pack(pady=10, expand=True)
+
+        self._conn_fr = Frame(self._notebook, width=1400, height=1000,
+                              bg=IVORY, padx=50, pady=50)
+        self._conn_fr.pack()
+        self._conn_fr.pack_propagate(0)
+
+        self._main_fr = Frame(self._notebook, width=1400, height=1000,
+                              bg=IVORY, padx=50, pady=50)
+        self._main_fr.pack()
+        self._main_fr.pack_propagate(0)
+
+        self._adv_fr = Frame(self._notebook, width=1400,
+                             height=1000, bg=IVORY, pady=50)
+        self._adv_fr.pack()
+        self._adv_fr.pack_propagate(0)
+
+        self._modb_fr = Frame(self._notebook, width=1400,
+                              height=1000, bg=IVORY, padx=50, pady=50)
+        self._modb_fr.pack()
+        self._modb_fr.pack_propagate(0)
+
+        self._debug_fr = Frame(self._notebook, width=1400,
+                               height=1000, bg=IVORY, padx=50)
+        self._debug_fr.pack()
+        self._debug_fr.pack_propagate(0)
+
+        self._notebook.add(self._conn_fr, text="Connect",)
+        self._notebook.add(self._main_fr, text="Home Page")
+        self._notebook.add(self._adv_fr, text='Advanced Config')
+        self._notebook.add(self._modb_fr, text="Modbus Configuration")
+        self._notebook.add(self._debug_fr, text="Debug Mode")
+\end{lstlisting}
+
+\subsection{Modbus Configuration}
+\label{ssec: modbusconfig}
+
+Configuring a modbus device and registers to the OSM is one of the main features of the configuration GUI. The modbus configuration tab loads default templates from the sqlite3 database as well as templates the user has created and saved. The two default modbus devices are the Rayleigh RI F 200 and the Countis E53.
+
+The Modbus Configuration page uses yaml files to temporarily store changes made by the user:  \url{modbus_data.yaml} and \url{del_file.yaml}. When the page is opened, \url{modbus_data.yaml} is populated with the properties of all the templates from the database. The contents of this file are updated when the user makes changes and are sent to the database if the user clicks 'Save'. Otherwise, unsaved changes will be lost if the window is closed or the gui is stopped.
+
+The file \url{del_file.yaml} is populated with the template id of the removed template if it exists in the database and this is id is used to delete the template from the database if the user saves their changes.
+
+\newpage
+\begin{lstlisting}[caption={The process of deleting a template from the database.},label={lst: exampDelTemp}]
+    def save_template(self):
+        with open('./yaml_files/del_file.yaml', 'r') as del_file:
+            document = yaml.full_load(del_file)
+            if document:
+                for doc in document[0]['templates_to_del']['template']:
+                    chosen_template = doc
+                    if doc:
+                        self.db.cur.execute(DEL_TEMP_ID(chosen_template))
+                        self.db.cur.execute(DEL_TEMP_REG(chosen_template))
+\end{lstlisting}
+
+\begin{lstlisting}[caption={An example of creating a window with a range of widgets suppled by Tkinter"},label={lst: exampAddTmp}]
+    def add_template_w(self, copy):
+        self.templ_w = Toplevel(self)
+        self.templ_w.title("Add New Template")
+        self.templ_w.geometry("765x400")
+        root.eval(f'tk::PlaceWindow {str(self.templ_w)} center')
+        self.add_template_window.configure(bg="#FAF9F6")
+
+        self.desc_entry = Entry(self.templ_w)
+        self.desc_entry.grid(column=3, row=1)
+
+        self.baudrate_entry = Combobox(self.templ_w)
+        self.baudrate_entry.grid(column=1, row=2)
+
+        self.bits = Label(self.templ_w, text="Character Bits")
+        self.bits.grid(column=2, row=2)
+
+        self.bits_entry = Spinbox(self.templ_w,  from_=0, to=10000)
+        self.bits_entry.grid(column=3, row=2)
+        
+        self.up_btn = Button(self.templ_w, text="->", width=5,
+                        command=lambda: self.shift_up()
+        up_btn.grid(column=3, row=7)
+        
+        
+\end{lstlisting}
+
+To populate widgets on a window frame you must first create a window by specifying Toplevel which constructs a child window to the parent 'root'. You must then reference this window as a parameter to the widget you create and place it by using grid() which requires a column and row. Alternatively, you can use pack() which doesn't require any parameters but provides less control of placement.
+
+
+\subsection{Set IO's and Scale Current Clamp}
+
+Setting IO's and scaling current clamp is made possible by binding the left mouse click on the measurement displayed in the 'Current Measurements Table' if it is TMP2, CNT1 or CC1/2/3 to the functions \url{self.__open_ios_w()} or \url{self._cal_cc()} which open their own windows respectively. The widget is passed through as a parameter to the function so that it knows which measurement to configure. They appear as a different colour to the rest of the measurements and the mouse icon changes on hover.
+
+\begin{lstlisting}[caption={A function to set pulsecount or one wire.},label={lst: exampIoSet}]
+   self._e = Entry(self._second_frame, width=14)
+   if self._e.get() == 'TMP2' or self._e.get() == 'CNT1' or self._e.get() == 'CNT2':
+       self._bind_io = self._e.bind(
+           "<Button-1>", lambda e: self.__open_ios_w(e.widget.get()))
+       self._e.configure(fg=BLUE)
+       self._change_on_hover(self._e)
+   elif self._e.get() == 'CC1' or self._e.get() == 'CC2' or self._e.get() == 'CC3':
+       self._bind_cc = self._e.bind(
+           "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
+       self._e.configure(fg=BLUE)
+       self._change_on_hover(self._e)
+\end{lstlisting}
+
+\subsection{LoRaWan Configuration}
+
+The device eui and application key for the device are loaded if they exist when the user connects to the sensor by sending a command to the sensor to read it's configuration using a function from the binding. These can be changed by manually entering a new key or it can be randomly generated.
+
+\begin{lstlisting}[caption={Reading the dev-eui and app-key and inserting into an entry box.},label={lst: exampLoraSet}]
+    def _pop_lora_entry(self):
+        dev_eui = self._dev.do_cmd_multi("lora_config dev-eui")
+        if dev_eui:
+            eui_op = dev_eui[0].split()[2]
+            self._eui_entry.insert(0, eui_op)
+
+        app_key = self._dev.do_cmd_multi("lora_config app-key")
+        if app_key:
+            app_op = app_key[0].split()[2]
+            self._app_entry.insert(0, app_op)
+\end{lstlisting}
+
+\subsection{Current Measurements}
+
+This table allows us to see the intervals between each uplink, the time before each report, their sample count per interval and which measurements are currently being reported by the device.
+
+It uses a function from the dev class in the binding to read the OSM and return a data structure which is then loaded onto an editable table.
+
+The user can edit the interval and sample count by entering a number and pressing enter on each cell.
+
+To create this table, you have to loop through columns and rows of a list of tuples and create an Entry widget for each iteration which represents a cell. To get all of the columns and rows, you first define the headers of your table in a list of tuples, the next step is to read the measurements from the sensor and then put them into a data structure which you can use to create the table and populate it with data.
+\begin{lstlisting}[caption={A snippet of how the measurements table is created.},label={lst: exampMeas}]
+
+    def measurements(self, cmd):
+        r = self.do_cmd_multi(cmd)
+        return [line.replace("\t\t", "\t").split("\t") for line in r]
+        
+    headers = [('Measurement', 'Uplink', 'Interval in Mins', 'Sample Count')]
+    sens_meas = self._dev.measurements("measurements")
+        if sens_meas:
+            sens_meas[:] = [tuple(i) for i in sens_meas]
+            for i in range(len(sens_meas)):
+                lst.append(row)
+
+       
+\end{lstlisting}
+
+For the user to be able to select multiple measurements at once to turn them off a checkbox is required for each row in the table. This can be done by using the Checkbutton tkinter widget and creating one for each row iteration. It requires an onvalue and offvalue for when it is checked and unchecked and a reference to an IntVar().
+
+\begin{lstlisting}[caption={Creating a checkbutton to select a row in current measurements},label={lst: exampCheck}]
+        self._check_meas = []
+        meas_var_list = []
+        self._check_meas.append(IntVar())
+        meas_var_list.append(self._check_meas[i-1])
+        check_meas = Checkbutton(self._second_frame, variable=self._check_meas[i-1],
+                                 onvalue=i, offvalue=0,
+                                 command=lambda: self._check_clicked(window, idy,
+                                 meas_var_list))
+        check_meas.grid(row=i, column=j+1)
+\end{lstlisting}
+\newpage
+\subsection{Debug Mode}
+
+Debug Mode uses the binding to send the command 'debug mode' to the sensor which puts it in a state in which it continuously reports measurements. The output is displayed on a 'fake terminal' on this window and is in an infinite loop until the application is closed or the user disables it.
+
+Similarly to current measurements, it populates a table made up of Entries with measurement and value as headers and the values are updated everytime a new value is reported in debug mode. This is done by using the binding to read lines being output by the sensor, if they exist, they are parsed using the \url{dev_debug_t} class from the binding which returns the measurement and value as a tuple pair which is then used to update the table entry.
+
+\begin{lstlisting}[caption={Functions related to debug mode},label={lst: exampdebnug}]
+    def __reload_debug_lines(self):
+        deb_list = self._dev.deb_readlines()
+        for d in deb_list:
+            if d:
+                res = self._debug_parse.parse_msg(d)
+                if res:
+                    dbg_meas = res[0]
+                    dbg_val = res[1]
+                    for i in self._deb_entries:
+                        meas = i[0].get()
+                        if meas == dbg_meas:
+                            val_to_change = i[1]
+                            val_to_change.configure(state='normal')
+                            val_to_change.delete(0, END)
+                            val_to_change.insert(0, int(dbg_val))
+                            val_to_change.configure(
+                                state='readonly')
+                    self._dbg_terml.configure(state='normal')
+                    self._dbg_terml.insert('1.0', d + "\n")
+                    self._dbg_terml.configure(state='disabled')
+        self._dbg_terml.after(1500, self.__reload_debug_lines)
+       
+\end{lstlisting}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section{Database Structure}
+\label{sec: dbstructgui}
+
+\subsection{Devices}
+
+This is the first table in the database which is using the SQLite3 library. It is created up of the following measurements:
+
+\begin{lstlisting}[caption={The creation of the 'devices' table.},label={lst: dblist}]
+ self.cur.execute('''CREATE TABLE IF NOT EXISTS devices
+                            (
+                                device_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                unit_id INTEGER NOT NULL,
+                                byte_order VARCHAR(255) NOT NULL,
+                                device_name VARCHAR(255) NOT NULL UNIQUE,
+                                baudrate INTEGER NOT NULL,
+                                bits INTEGER NOT NULL,
+                                parity VARCHAR(255) NOT NULL,
+                                stop_bits INTEGER NOT NULL,
+                                binary VARCHAR(255) NOT NULL
+                                
+                            )''')
+\end{lstlisting}
+The variable self.cur represents a connection to the sqlite3 database. All of these measurements enable us to store information about a modbus device that a customer wants to add to a template.
+
+\subsection{Registers}
+
+\begin{lstlisting}[caption={The creation of the 'registers' table.},label={lst: dbreglist}]
+ self.cur.execute('''CREATE TABLE IF NOT EXISTS registers 
+                            (
+                                register_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                hex_address VARCHAR(255) NOT NULL UNIQUE,
+                                function_id INTEGER NOT NULL,
+                                data_type VARCHAR(255) NOT NULL,
+                                reg_name VARCHAR(255) NOT NULL,
+                                reg_desc VARCHAR(255) NOT NULL,
+                                device_id INTEGER NOT NULL,
+                                FOREIGN KEY (device_id) REFERENCES devices (device_id)
+                            )''')
+\end{lstlisting}
+
+The foreign key is required as a device can have many registers, this allows us to link a register to the device.
+
+\subsection{Templates}
+
+\begin{lstlisting}[caption={The creation of the 'templates' table.},label={lst: dbtmplist}]
+self.cur.execute('''CREATE TABLE IF NOT EXISTS templates
+                            (
+                                template_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                template_name VARCHAR(255) NOT NULL UNIQUE,
+                                description VARCHAR(255) NOT NULL
+                            )''')
+\end{lstlisting}
+
+\subsection{templateRegister}
+
+\begin{lstlisting}[caption={The creation of the 'templates' table.},label={lst: dbtmplist}]
+        self.cur.execute(''' CREATE TABLE IF NOT EXISTS templateRegister
+                            (
+                                template_register_id INTEGER PRIMARY KEY,
+                                template_id INTEGER,
+                                register_id INTEGER,
+                                FOREIGN KEY (template_id) REFERENCES templates (template_id),
+                                FOREIGN KEY (register_id) REFERENCES registers (register_id)
+                            )''')
+\end{lstlisting}
+
+When creating a new template, the template id and register id gets added to this table which allows us to connect the registers to the correct template.
+
+\newpage
+\section{Extra Information}
+\label{sec: extragui}
+
+\subsection{Building Static stm32flasher}
+
+In \url{osm_firmware/config_gui} is the script \url{create_static_stm.sh} which can be executed to build a stm32flash with is not a dynamic executable meaning it can be used to update the firmware of the sensor on any machine regardless of dependencies.
+
+\subsection{Flashing the Sensor}
+
+When the user selects an image (complete.bin) to flash the sensor with, the script \url{static_program.sh} is executed which uses the static stm32flash created and the firmware image to flash the sensor.
+
+\subsection{Create Static Configuration Gui Executable}
+
+To create a one file executable of the configuration gui there is a script \url{create_gui_exe.sh} which resides in \url{osm_firmware/config_gui/release}. Running this script will use pyinstaller to create a one file executable, however, this is still a dynamic executable and requires converting into a static. The script uses the python library 'staticx' to create this. Afterwards, it creates a tar archive of the database, firmware image, stm32flash, yaml files, images, readme, manual, bash scripts and the configuration gui executable. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\small{
+%\begin{thebibliography}{99}
+
+%\setlength{\itemsep}{-2mm}
+
+%\bibitem{Webpage} Page Title,
+%                  Author {\url{https://www.url.org/}} {Accessed: dd.mm.yy}.
+%\bibitem{Book} Author, 
+%                  {\em Book Name}. Publisher {\bf Edition}, Pages (Publish Year).
+%
+%\end{thebibliography}
+%}
+%
+\end{document}
