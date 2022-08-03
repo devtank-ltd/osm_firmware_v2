@@ -97,7 +97,7 @@ static uint16_t _bat_conv(uint32_t raw)
     else if (raw32 < BAT_MIN)
     {
         /* How are we here? */
-        perc = (uint16_t)BAT_MIN;
+        perc = 0;
     }
     else
     {
