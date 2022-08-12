@@ -255,3 +255,9 @@ cc_config_t * persist_get_cc_configs(void)
 {
     return persist_data.cc_configs;
 }
+
+
+char* persist_get_serial_number(void)
+{
+    return persist_data.serial_number;
+}

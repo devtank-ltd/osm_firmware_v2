@@ -823,6 +823,28 @@ static void debug_mode_cb(char* args)
 }
 
 
+static void serial_num_cb(char* args)
+{
+    char* serial_num = persist_get_serial_number();
+    char* p = skip_space(args);
+    char dev_eui[LW_DEV_EUI_LEN + 1];
+    uint8_t len = strnlen(p, SERIAL_NUM_LEN);
+    if (len == 0)
+        goto print_exit;
+    log_out("Updating serial number.");
+    strncpy(serial_num, p, len);
+    serial_num[len] = 0;
+print_exit:
+    if (!persist_get_lw_dev_eui(dev_eui))
+    {
+        log_out("%s", persist_get_serial_number());
+        return;
+    }
+    log_out("Serial Number: %s-%s", serial_num, dev_eui);
+    return;
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -874,6 +896,7 @@ void cmds_process(char * command, unsigned len)
         { "power_mode",   "Power mode setting",       power_mode_cb},
         { "can_impl",     "Send example CAN message", can_impl_cb},
         { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
+        { "serial_num",   "Set/get serial number",    serial_num_cb},
         { NULL },
     };
 

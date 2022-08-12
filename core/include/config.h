@@ -134,3 +134,5 @@ _Static_assert(0, "Not given a STM model.");
 #define IWDG_MAX_TIME_MS    32760
 #define SLEEP_MAX_TIME_MS   30000
 
+#define SERIAL_NUM_LEN         41
+#define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
