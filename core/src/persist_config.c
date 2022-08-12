@@ -63,7 +63,7 @@ void persistent_init(void)
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
             persist_data.cc_configs[i].ext_max_mA = 100000;
-            persist_data.cc_configs[i].int_max_mA = 50;
+            persist_data.cc_configs[i].int_max_mV = 50;
         }
         return;
     }

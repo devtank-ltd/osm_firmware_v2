@@ -575,7 +575,7 @@ static void cc_mp_cb(char* args)
 
 static void cc_gain(char* args)
 {
-    // <index> <ext_A> <int_mA>
+    // <index> <ext_A> <int_mV>
     // 1       100     50
     cc_config_t* cc_conf = persist_get_cc_configs();
     char* p;
@@ -586,7 +586,7 @@ static void cc_gain(char* args)
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
             log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].ext_max_mA/1000, cc_conf[i].ext_max_mA%1000);
-            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].int_max_mA/1000, cc_conf[i].int_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, cc_conf[i].int_max_mV/1000, cc_conf[i].int_max_mV%1000);
         }
         return;
     }
@@ -603,14 +603,14 @@ static void cc_gain(char* args)
     if (p == q)
         goto syntax_exit;
     cc_conf[index].ext_max_mA = ext_A * 1000;
-    cc_conf[index].int_max_mA = int_mA;
+    cc_conf[index].int_max_mV = int_mA;
     log_out("Set the CC gain:");
 print_exit:
     log_out("EXT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].ext_max_mA/1000, cc_conf[index].ext_max_mA%1000);
-    log_out("INT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].int_max_mA/1000, cc_conf[index].int_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"V", cc_conf[index].int_max_mV/1000, cc_conf[index].int_max_mV%1000);
     return;
 syntax_exit:
-    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mA>");
+    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
     log_out("e.g cc_gain 3 100 50");
 }
 
