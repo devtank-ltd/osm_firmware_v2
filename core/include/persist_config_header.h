@@ -51,6 +51,8 @@ typedef struct
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
     uint8_t                 ___[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     cc_config_t             cc_configs[ADC_CC_COUNT];
+    uint8_t                 ____[16-((ADC_CC_COUNT * sizeof(cc_config_t))%16)];
+    char                    serial_number[SERIAL_NUM_LEN_NULLED];
 } __attribute__((__packed__)) persist_storage_t;
 
 _Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");

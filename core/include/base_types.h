@@ -192,6 +192,6 @@ typedef struct
 typedef struct
 {
     uint32_t ext_max_mA;
-    uint32_t int_max_mA;
+    uint32_t int_max_mV;
 } cc_config_t;
 

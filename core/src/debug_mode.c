@@ -50,7 +50,6 @@ static void _debug_mode_init_iteration(void)
     hpm_init(MEASUREMENTS_PM25_NAME);
     hpm_init(MEASUREMENTS_PM10_NAME);
     ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_1);
-    ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_2);
     sai_measurements_init(MEASUREMENTS_SOUND_NAME);
     veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1);
@@ -120,7 +119,6 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_PM25_NAME, hpm_get_pm25);
     _debug_mode_collect_sensor(MEASUREMENTS_PM10_NAME, hpm_get_pm10);
     _debug_mode_collect_sensor(MEASUREMENTS_W1_PROBE_NAME_1, ds18b20_measurements_collect);
-    _debug_mode_collect_sensor(MEASUREMENTS_W1_PROBE_NAME_2, ds18b20_measurements_collect);
     _debug_mode_collect_sensor(MEASUREMENTS_SOUND_NAME, sai_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_LIGHT_NAME, veml7700_light_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, pulsecount_get);

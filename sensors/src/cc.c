@@ -352,7 +352,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
 
     uint32_t cc_mA;
 
-    uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mA;
+    uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mV;
     if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
     {
         adc_debug("Failed to get current clamp");

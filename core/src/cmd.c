@@ -217,27 +217,76 @@ void lora_config_cb(char * args)
     // CMD  : "lora_config dev-eui 118f875d6994bbfd"
     // ARGS : "dev-eui 118f875d6994bbfd"
     char* p = skip_space(args);
-    p = strchr(p, ' ');
-    if (p == NULL)
+
+    uint16_t lenrem = strnlen(p, CMD_LINELEN);
+    if (lenrem == 0)
+        goto syntax_exit;
+
+    char* np = strchr(p, ' ');
+    if (!np)
+        np = p + lenrem;
+    uint8_t wordlen = np - p;
+
+    if (strncmp(p, "dev-eui", wordlen) == 0)
     {
-        return;
-    }
-    uint8_t end_pos_word = p - args + 1;
-    p = skip_space(p);
-    if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
-    {
-        char eui[LW_DEV_EUI_LEN + 1] = "";
-        strncpy(eui, p, strlen(p));
+        /* Dev EUI */
+        char eui[LW_DEV_EUI_LEN + 1];
+        p = skip_space(np);
+        lenrem = strnlen(p, CMD_LINELEN);
+        if (lenrem == 0)
+        {
+            /* View Dev EUI */
+            if (!persist_get_lw_dev_eui(eui))
+            {
+                log_out("Could not get Dev EUI");
+                return;
+            }
+            log_out("Dev EUI: %s", eui);
+            return;
+        }
+        /* Set Dev EUI */
+        if (lenrem != LW_DEV_EUI_LEN)
+        {
+            log_out("Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
+            return;
+        }
+        strncpy(eui, p, lenrem);
+        eui[lenrem] = 0;
         persist_set_lw_dev_eui(eui);
         lw_reload_config();
+        return;
     }
-    else if (strncmp(args, "app-key", end_pos_word-1) == 0)
+    if (strncmp(p, "app-key", wordlen) == 0)
     {
-        char key[LW_APP_KEY_LEN + 1] = "";
-        strncpy(key, p, strlen(p));
+        /* App Key */
+        char key[LW_APP_KEY_LEN + 1];
+        p = skip_space(np);
+        lenrem = strnlen(p, CMD_LINELEN);
+        if (lenrem == 0)
+        {
+            /* View Dev EUI */
+            if (!persist_get_lw_app_key(key))
+            {
+                log_out("Could not get app key.");
+                return;
+            }
+            log_out("App Key: %s", key);
+            return;
+        }
+        /* Set Dev EUI */
+        if (lenrem != LW_APP_KEY_LEN)
+        {
+            log_out("App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
+            return;
+        }
+        strncpy(key, p, lenrem);
+        key[lenrem] = 0;
         persist_set_lw_app_key(key);
         lw_reload_config();
+        return;
     }
+syntax_exit:
+    log_out("lora_config dev-eui/app-key [EUI/KEY]");
 }
 
 
@@ -575,7 +624,7 @@ static void cc_mp_cb(char* args)
 
 static void cc_gain(char* args)
 {
-    // <index> <ext_A> <int_mA>
+    // <index> <ext_A> <int_mV>
     // 1       100     50
     cc_config_t* cc_conf = persist_get_cc_configs();
     char* p;
@@ -586,7 +635,7 @@ static void cc_gain(char* args)
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
             log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].ext_max_mA/1000, cc_conf[i].ext_max_mA%1000);
-            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].int_max_mA/1000, cc_conf[i].int_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, cc_conf[i].int_max_mV/1000, cc_conf[i].int_max_mV%1000);
         }
         return;
     }
@@ -603,14 +652,14 @@ static void cc_gain(char* args)
     if (p == q)
         goto syntax_exit;
     cc_conf[index].ext_max_mA = ext_A * 1000;
-    cc_conf[index].int_max_mA = int_mA;
+    cc_conf[index].int_max_mV = int_mA;
     log_out("Set the CC gain:");
 print_exit:
     log_out("EXT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].ext_max_mA/1000, cc_conf[index].ext_max_mA%1000);
-    log_out("INT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].int_max_mA/1000, cc_conf[index].int_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"V", cc_conf[index].int_max_mV/1000, cc_conf[index].int_max_mV%1000);
     return;
 syntax_exit:
-    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mA>");
+    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
     log_out("e.g cc_gain 3 100 50");
 }
 
@@ -823,6 +872,28 @@ static void debug_mode_cb(char* args)
 }
 
 
+static void serial_num_cb(char* args)
+{
+    char* serial_num = persist_get_serial_number();
+    char* p = skip_space(args);
+    char dev_eui[LW_DEV_EUI_LEN + 1];
+    uint8_t len = strnlen(p, SERIAL_NUM_LEN);
+    if (len == 0)
+        goto print_exit;
+    log_out("Updating serial number.");
+    strncpy(serial_num, p, len);
+    serial_num[len] = 0;
+print_exit:
+    if (!persist_get_lw_dev_eui(dev_eui))
+    {
+        log_out("%s", persist_get_serial_number());
+        return;
+    }
+    log_out("Serial Number: %s-%s", serial_num, dev_eui);
+    return;
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
@@ -874,6 +945,7 @@ void cmds_process(char * command, unsigned len)
         { "power_mode",   "Power mode setting",       power_mode_cb},
         { "can_impl",     "Send example CAN message", can_impl_cb},
         { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
+        { "serial_num",   "Set/get serial number",    serial_num_cb},
         { NULL },
     };
 

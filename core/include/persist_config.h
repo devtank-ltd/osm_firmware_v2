@@ -38,3 +38,5 @@ extern modbus_bus_t * persist_get_modbus_bus(void);
 extern void persistent_wipe();
 
 extern cc_config_t * persist_get_cc_configs(void);
+
+extern char* persist_get_serial_number(void);
