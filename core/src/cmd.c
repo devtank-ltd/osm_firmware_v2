@@ -44,6 +44,7 @@ typedef struct
     const char * key;
     const char * desc;
     void (*cb)(char * args);
+    bool hidden;
 } cmd_t;
 
 
@@ -897,55 +898,55 @@ print_exit:
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
-        { "ios",          "Print all IOs.",           ios_log},
-        { "io",           "Get/set IO set.",          io_cb},
-        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb},
-        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb},
-        { "count",        "Counts of controls.",      count_cb},
-        { "version",      "Print version.",           version_cb},
-        { "lora",         "Send lora message",        lora_cb},
-        { "lora_config",  "Set lora config",          lora_config_cb},
-        { "interval",     "Set the interval",         interval_cb},
-        { "samplecount",  "Set the samplecount",      samplecount_cb},
-        { "debug",        "Set hex debug mask",       debug_cb},
-        { "hpm",          "Enable/Disable HPM",       hpm_cb},
-        { "mb_setup",     "Change Modbus comms",      modbus_setup_cb},
-        { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb},
-        { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb},
-        { "mb_get_reg",   "Get modbus reg",           modbus_get_reg_cb},
-        { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg},
-        { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev},
-        { "mb_log",       "Show modbus setup",        modbus_log},
-        { "save",         "Save config",              persist_commit},
-        { "measurements", "Print measurements",       measurements_cb},
-        { "fw+",          "Add chunk of new fw.",     fw_add},
-        { "fw@",          "Finishing crc of new fw.", fw_fin},
-        { "reset",        "Reset device.",            reset_cb},
-        { "cc",           "CC value",                 cc_cb},
-        { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
-        { "cc_mp",        "Set the CC midpoint",      cc_mp_cb},
-        { "cc_gain",      "Set the max int and ext",  cc_gain},
-        { "w1",           "Get temperature with w1",  ds18b20_cb},
-        { "timer",        "Test usecs timer",         timer_cb},
-        { "temp",         "Get the temperature",      temperature_cb},
-        { "humi",         "Get the humidity",         humidity_cb},
-        { "dew",          "Get the dew temperature",  dew_point_cb},
-        { "lora_conn",    "LoRa connected",           lora_conn_cb},
-        { "wipe",         "Factory Reset",            wipe_cb},
-        { "interval_mins","Get/Set interval minutes", interval_mins_cb},
-        { "bat",          "Get battery level.",       bat_cb},
-        { "pulsecount",   "Show pulsecount.",         pulsecount_log},
-        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
-        { "light",        "Get the light in lux.",    light_cb},
-        { "sound",        "Get the sound in lux.",    sound_cb},
-        { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
-        { "repop",        "Repopulate measurements.", repop_cb},
-        { "no_lw",        "Dont need LW for measurements", no_lw_cb},
-        { "sleep",        "Sleep",                    sleep_cb},
-        { "power_mode",   "Power mode setting",       power_mode_cb},
-        { "can_impl",     "Send example CAN message", can_impl_cb},
-        { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
-        { "serial_num",   "Set/get serial number",    serial_num_cb},
+        { "ios",          "Print all IOs.",           ios_log                       , false },
+        { "io",           "Get/set IO set.",          io_cb                         , false },
+        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb      , false },
+        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb         , false },
+        { "count",        "Counts of controls.",      count_cb                      , false },
+        { "version",      "Print version.",           version_cb                    , false },
+        { "lora",         "Send lora message",        lora_cb                       , false },
+        { "lora_config",  "Set lora config",          lora_config_cb                , false },
+        { "interval",     "Set the interval",         interval_cb                   , false },
+        { "samplecount",  "Set the samplecount",      samplecount_cb                , false },
+        { "debug",        "Set hex debug mask",       debug_cb                      , false },
+        { "hpm",          "Enable/Disable HPM",       hpm_cb                        , false },
+        { "mb_setup",     "Change Modbus comms",      modbus_setup_cb               , false },
+        { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb             , false },
+        { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb             , false },
+        { "mb_get_reg",   "Get modbus reg",           modbus_get_reg_cb             , false },
+        { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg    , false },
+        { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev    , false },
+        { "mb_log",       "Show modbus setup",        modbus_log                    , false },
+        { "save",         "Save config",              persist_commit                , false },
+        { "measurements", "Print measurements",       measurements_cb               , false },
+        { "fw+",          "Add chunk of new fw.",     fw_add                        , false },
+        { "fw@",          "Finishing crc of new fw.", fw_fin                        , false },
+        { "reset",        "Reset device.",            reset_cb                      , false },
+        { "cc",           "CC value",                 cc_cb                         , false },
+        { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb               , false },
+        { "cc_mp",        "Set the CC midpoint",      cc_mp_cb                      , false },
+        { "cc_gain",      "Set the max int and ext",  cc_gain                       , false },
+        { "w1",           "Get temperature with w1",  ds18b20_cb                    , false },
+        { "timer",        "Test usecs timer",         timer_cb                      , false },
+        { "temp",         "Get the temperature",      temperature_cb                , false },
+        { "humi",         "Get the humidity",         humidity_cb                   , false },
+        { "dew",          "Get the dew temperature",  dew_point_cb                  , false },
+        { "lora_conn",    "LoRa connected",           lora_conn_cb                  , false },
+        { "wipe",         "Factory Reset",            wipe_cb                       , false },
+        { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false },
+        { "bat",          "Get battery level.",       bat_cb                        , false },
+        { "pulsecount",   "Show pulsecount.",         pulsecount_log                , false },
+        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb                     , false },
+        { "light",        "Get the light in lux.",    light_cb                      , false },
+        { "sound",        "Get the sound in lux.",    sound_cb                      , false },
+        { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false },
+        { "repop",        "Repopulate measurements.", repop_cb                      , false },
+        { "no_lw",        "Dont need LW for measurements", no_lw_cb                 , false },
+        { "sleep",        "Sleep",                    sleep_cb                      , false },
+        { "power_mode",   "Power mode setting",       power_mode_cb                 , false },
+        { "can_impl",     "Send example CAN message", can_impl_cb                   , false },
+        { "debug_mode",   "Set/unset debug mode",     debug_mode_cb                 , false },
+        { "serial_num",   "Set/get serial number",    serial_num_cb                 , true  },
         { NULL },
     };
 
@@ -978,7 +979,10 @@ void cmds_process(char * command, unsigned len)
         log_out("Unknown command \"%s\"", rx_buffer);
         log_out(LOG_SPACER);
         for(cmd_t * cmd = cmds; cmd->key; cmd++)
-            log_out("%10s : %s", cmd->key, cmd->desc);
+        {
+            if (!cmd->hidden)
+                log_out("%10s : %s", cmd->key, cmd->desc);
+        }
     }
     log_out(LOG_END_SPACER);
 }
