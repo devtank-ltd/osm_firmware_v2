@@ -217,27 +217,76 @@ void lora_config_cb(char * args)
     // CMD  : "lora_config dev-eui 118f875d6994bbfd"
     // ARGS : "dev-eui 118f875d6994bbfd"
     char* p = skip_space(args);
-    p = strchr(p, ' ');
-    if (p == NULL)
+
+    uint16_t lenrem = strnlen(p, CMD_LINELEN);
+    if (lenrem == 0)
+        goto syntax_exit;
+
+    char* np = strchr(p, ' ');
+    if (!np)
+        np = p + lenrem;
+    uint8_t wordlen = np - p;
+
+    if (strncmp(p, "dev-eui", wordlen) == 0)
     {
-        return;
-    }
-    uint8_t end_pos_word = p - args + 1;
-    p = skip_space(p);
-    if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
-    {
-        char eui[LW_DEV_EUI_LEN + 1] = "";
-        strncpy(eui, p, strlen(p));
+        /* Dev EUI */
+        char eui[LW_DEV_EUI_LEN + 1];
+        p = skip_space(np);
+        lenrem = strnlen(p, CMD_LINELEN);
+        if (lenrem == 0)
+        {
+            /* View Dev EUI */
+            if (!persist_get_lw_dev_eui(eui))
+            {
+                log_out("Could not get Dev EUI");
+                return;
+            }
+            log_out("Dev EUI: %s", eui);
+            return;
+        }
+        /* Set Dev EUI */
+        if (lenrem != LW_DEV_EUI_LEN)
+        {
+            log_out("Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
+            return;
+        }
+        strncpy(eui, p, lenrem);
+        eui[lenrem] = 0;
         persist_set_lw_dev_eui(eui);
         lw_reload_config();
+        return;
     }
-    else if (strncmp(args, "app-key", end_pos_word-1) == 0)
+    if (strncmp(p, "app-key", wordlen) == 0)
     {
-        char key[LW_APP_KEY_LEN + 1] = "";
-        strncpy(key, p, strlen(p));
+        /* App Key */
+        char key[LW_APP_KEY_LEN + 1];
+        p = skip_space(np);
+        lenrem = strnlen(p, CMD_LINELEN);
+        if (lenrem == 0)
+        {
+            /* View Dev EUI */
+            if (!persist_get_lw_app_key(key))
+            {
+                log_out("Could not get app key.");
+                return;
+            }
+            log_out("App Key: %s", key);
+            return;
+        }
+        /* Set Dev EUI */
+        if (lenrem != LW_APP_KEY_LEN)
+        {
+            log_out("App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
+            return;
+        }
+        strncpy(key, p, lenrem);
+        key[lenrem] = 0;
         persist_set_lw_app_key(key);
         lw_reload_config();
+        return;
     }
+syntax_exit:
+    log_out("lora_config dev-eui/app-key [EUI/KEY]");
 }
 
 
