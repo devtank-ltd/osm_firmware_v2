@@ -23,6 +23,7 @@ firmware_SOURCES := \
            core/src/sleep.c \
            core/src/can_comm.c \
            core/src/debug_mode.c \
+           core/src/stm.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \

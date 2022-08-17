@@ -10,8 +10,8 @@
 #include <stdbool.h>
 #include <poll.h>
 #include <signal.h>
+#include <pthread.h>
 
-#include "linux.h"
 
 #define ARRAY_SIZE(_a)          (sizeof(_a) / sizeof(_a[0]))
 
@@ -45,6 +45,7 @@ static pty_buf_t        pty_names[]   = {"debug",
 static struct pollfd    pfds[LINUX_MAX_PTY * 2];
 static uint32_t         nfds;
 static pty_t            pty_list[LINUX_MAX_PTY];
+static pthread_t        _linux_listener_thread_id;
 
 
 static void _linux_error(char* fmt, ...)
@@ -150,7 +151,7 @@ static void _linux_setup_ptys(void)
 }
 
 
-static void _linux_setup_poll(void)
+void _linux_setup_poll(void)
 {
     memset(pfds, 0, sizeof(pfds));
     nfds = 0;
@@ -158,11 +159,9 @@ static void _linux_setup_poll(void)
     {
         if (pty_list[i].name)
         {
-            pfds[i * 2].fd = pty_list[i].master_fd;
-            pfds[i * 2].events = POLLIN;
-            pfds[i * 2 + 1].fd = pty_list[i].slave_fd;
-            pfds[i * 2 + 1].events = POLLIN;
-            nfds += 2;
+            pfds[i].fd = pty_list[i].master_fd;
+            pfds[i].events = POLLIN;
+            nfds++;
         }
     }
 }
@@ -181,17 +180,31 @@ void _linux_iterate(void)
             {
                 char buf[10];
                 pty_t* pty = _linux_get_pty(pfds[i].fd);
-                read(pfds[i].fd, buf, sizeof(buf));
-                printf("%s << %s", pty->name, buf);
+                int r = read(pfds[i].fd, buf, sizeof(buf) - 1);
+                if (r > 0)
+                {
+                    printf("%s << %s\n", pty->name, buf);
+                    dprintf(pty->master_fd,"Hi back\r\n");
+                }
+                pfds[i].revents &= ~POLLIN;
             }
         }
     }
 }
 
 
-void _linux_init(void)
+static void* thread_proc(void* vargp)
+{
+    while (1)
+        _linux_iterate();
+    return NULL;
+}
+
+
+void platform_init(void)
 {
     signal(SIGINT, _linux_exit);
     _linux_setup_ptys();
     _linux_setup_poll();
+    pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 }
