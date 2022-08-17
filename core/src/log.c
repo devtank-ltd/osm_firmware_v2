@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include <libopencm3/stm32/usart.h>
-
 
 #include "log.h"
 #include "uarts.h"
@@ -115,7 +113,7 @@ void log_debug_data(uint32_t flag, void * data, unsigned size)
     while(size)
     {
         char * pos = log_buffer;
-        snprintf(pos, 12, "0x%08x ", (uintptr_t)src);
+        snprintf(pos, 12, "0x%08"PRIxPTR" ", (uintptr_t)src);
         pos+=11;
         unsigned len = (size > 16)?16:size;
         for(unsigned i = 0; i <len; i++, pos+=2)
@@ -147,7 +145,7 @@ void log_debug_value(uint32_t flag, const char * prefix, value_t * v)
         case VALUE_UINT32 : log_debug(flag, "%s%"PRIu32, prefix, v->u32); break;
         case VALUE_INT32  : log_debug(flag, "%s%"PRId32, prefix, v->i32); break;
         case VALUE_UINT64 : log_debug(flag, "%s%"PRIu64, prefix, v->u64); break;
-        case VALUE_INT64  : log_debug(flag, "%s%lld",    prefix, v->i64); break;
+        case VALUE_INT64  : log_debug(flag, "%s%"PRIi64, prefix, v->i64); break;
         case VALUE_FLOAT  : log_debug(flag, "%s%f",      prefix, v->f);   break;
         case VALUE_STR    : log_debug(flag, "%s:%s",     prefix, v->str); break;
         default: log_debug(flag, "%sINVALID", prefix); break;
