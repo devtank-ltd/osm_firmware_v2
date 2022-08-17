@@ -9,13 +9,6 @@
 #include "log.h"
 
 
-static void _stm_setup_blink_led(void)
-{
-    gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
-    gpio_clear(LED_PORT, LED_PIN);
-}
-
-
 static void _stm_setup_systick(void)
 {
     systick_set_frequency(1000, rcc_ahb_frequency);
@@ -30,6 +23,19 @@ void hard_fault_handler(void)
     /* Special libopencm3 function to handle crashes */
     platform_raw_msg("----big fat crash -----");
     error_state();
+}
+
+
+void platform_blink_led_init(void)
+{
+    gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
+    gpio_clear(LED_PORT, LED_PIN);
+}
+
+
+void platform_blink_led_toggle(void)
+{
+    gpio_toggle(LED_PORT, LED_PIN);
 }
 
 
@@ -49,5 +55,4 @@ void platform_watchdog_init(uint32_t ms)
 void platform_init(void)
 {
     _stm_setup_systick();
-    _stm_setup_blink_led();
 }

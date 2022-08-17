@@ -3,30 +3,29 @@
 #include <stddef.h>
 
 #include "platform.h"
-
 #include "common.h"
-#include "pinmap.h"
-#include "cmd.h"
 #include "log.h"
+#include "uart_rings.h"
+
+#include "cmd.h"
 #include "uarts.h"
 #include "adcs.h"
-#include "pulsecount.h"
-#include "timers.h"
 #include "io.h"
-#include "sai.h"
-#include "hpm.h"
-#include "uart_rings.h"
+#include "i2c.h"
 #include "persist_config.h"
 #include "lorawan.h"
 #include "measurements.h"
+#include "debug_mode.h"
+
+#include "pulsecount.h"
+#include "sai.h"
+#include "hpm.h"
 #include "modbus.h"
 #include "timers.h"
 #include "htu21d.h"
-#include "i2c.h"
 #include "veml7700.h"
 #include "cc.h"
 #include "can_impl.h"
-#include "debug_mode.h"
 #include "ds18b20.h"
 
 
@@ -41,13 +40,16 @@ int main(void)
     rcc_apb1_frequency = 80e6;
     rcc_apb2_frequency = 80e6;
 
+    platform_init();
+    platform_blink_led_init();
+
     i2c_init(0);
 
     uarts_setup();
     uart_rings_init();
 
     platform_raw_msg("----start----");
-    log_sys_debug("Frequency : %lu", rcc_ahb_frequency);
+    log_sys_debug("Frequency : %"PRIu32, rcc_ahb_frequency);
     log_sys_debug("Version : %s", GIT_VERSION);
 
     persistent_init();
@@ -97,7 +99,7 @@ int main(void)
         }
         lw_loop_iteration();
         flashing_delay = lw_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
-        gpio_toggle(LED_PORT, LED_PIN);
+        platform_blink_led_toggle();
 
         prev_now = get_since_boot_ms();
     }
