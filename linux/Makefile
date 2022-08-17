@@ -10,6 +10,8 @@ GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 
+DEV ?= STM32L451RE
+
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
 CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
