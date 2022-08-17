@@ -15,7 +15,7 @@ DEV ?= STM32L451RE
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
 CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
-CFLAGS		+= -fstack-usage -Wstack-usage=100
+CFLAGS		+= -fstack-usage -Wstack-usage=500
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D$(DEV)
