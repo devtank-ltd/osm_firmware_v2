@@ -167,7 +167,7 @@ static void _write_cc_midpoints_json(struct json_object * root)
 {
     struct json_object * cc_midpoints_node = json_object_new_object();
     json_object_object_add(root, "cc_midpoints", cc_midpoints_node);
-    uint16_t* midpoint;
+    uint32_t* midpoint;
     char name[4];
     for (unsigned n = 0; n < ADC_CC_COUNT; n++)
     {
