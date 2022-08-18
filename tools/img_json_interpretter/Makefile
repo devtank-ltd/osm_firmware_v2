@@ -1,8 +1,8 @@
 
 BUILD_DIR := build
 
-CFLAGS := -I../../core/include -I../../sensors/include -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
-CFLAGS += -MMD -MP -g
+CFLAGS := -I../../core/include -I../../sensors/include -I../../libs/libopencm3/include/ -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+CFLAGS += -MMD -MP -g -DSTM32L4
 LDFLAGS := $(shell pkg-config --libs json-c)
 
 SRC := src/main.c \
