@@ -39,14 +39,19 @@ LINK_FLAGS += $(CPU_DEFINES) --specs=picolibc.specs
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32l4.a
 
 BUILD_DIR := build
+JSON_CONV_DIR := tools/img_json_interpretter
 
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
 
 FW_IMG := $(BUILD_DIR)/firmware.bin
 BL_IMG := $(BUILD_DIR)/bootloader.bin
 WHOLE_IMG := $(BUILD_DIR)/complete.bin
+JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
 
-default: $(WHOLE_IMG)
+default: $(WHOLE_IMG) $(JSON_CONV)
+
+$(JSON_CONV) :
+	$(MAKE) -C $(JSON_CONV_DIR)
 
 $(LIBOPENCM3) :
 	$(MAKE) -C libs/libopencm3 TARGETS=stm32/l4
@@ -96,6 +101,7 @@ flash: $(WHOLE_IMG)
 
 clean:
 	make -C libs/libopencm3 $@ TARGETS=stm32/l4
+	make -C $(JSON_CONV_DIR) $@
 	rm -rf $(BUILD_DIR)
 
 cppcheck:
