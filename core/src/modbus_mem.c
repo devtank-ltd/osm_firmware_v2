@@ -194,7 +194,7 @@ modbus_reg_t* modbus_get_reg(char * name)
 {
     if (!name)
         return NULL;
-    for(unsigned n = 0; n < modbus_get_device_count(); n++)
+    for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
     {
         modbus_reg_t * reg = modbus_dev_get_reg_by_name(modbus_get_device(n), name);
         if (reg)
