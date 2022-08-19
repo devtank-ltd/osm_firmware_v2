@@ -7,6 +7,14 @@ fi
 
 echo Using /dev/$dev
 
+users=$(fuser /dev/$dev 2>/dev/null)
+
+if [ -n "$users" ]
+then
+  echo "ERROR: /dev/$dev is in use!"
+  exit -1
+fi
+
 gpiochip=$(ls /sys/class/tty/$dev/device/../gpio/)
 
 gpiobase=${gpiochip/gpiochip}
