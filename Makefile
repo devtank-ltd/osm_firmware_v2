@@ -13,6 +13,7 @@ CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
+GIT_TAG := $(shell git tag --points-at HEAD)
 
 DEV ?= STM32L451RE
 
@@ -39,6 +40,7 @@ LINK_FLAGS += $(CPU_DEFINES) --specs=picolibc.specs
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32l4.a
 
 BUILD_DIR := build
+RELEASE_DIR := $(GIT_TAG)
 JSON_CONV_DIR := tools/img_json_interpretter
 
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
@@ -50,7 +52,7 @@ JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
 
 default: $(WHOLE_IMG) $(JSON_CONV)
 
-$(JSON_CONV) :
+$(JSON_CONV) : $(LIBOPENCM3)
 	$(MAKE) -C $(JSON_CONV_DIR)
 
 $(LIBOPENCM3) :
@@ -103,6 +105,8 @@ clean:
 	make -C libs/libopencm3 $@ TARGETS=stm32/l4
 	make -C $(JSON_CONV_DIR) $@
 	rm -rf $(BUILD_DIR)
+	rm -rf $(RELEASE_DIR)
+	rm -rf *_bundle.tar
 
 cppcheck:
 	cppcheck --enable=all --std=c11 --inline-suppr `find core -name "*.[ch]"` `find sensors -name "*.[ch]"`  -I core/include -I sensors/include
@@ -117,5 +121,17 @@ size: $(WHOLE_IMG)
 	$(SIZE) $(BUILD_DIR)/*.elf
 	$(NM) -S --size-sort $(shell find $(BUILD_DIR) -name "*.o")
 
+release_bundle : default
+	@if [ -n "$$( echo \'"$(GIT_TAG)"\' | sed -n '/release/p')" ]; then \
+	  mkdir -p $(RELEASE_DIR); \
+	  cp $(WHOLE_IMG) $(RELEASE_DIR); \
+	  cp $(JSON_CONV) $(RELEASE_DIR); \
+	  cp -r tools/config_scripts $(RELEASE_DIR); \
+	  tar -cf $(RELEASE_DIR).tar $(RELEASE_DIR); \
+	  rm -r $(RELEASE_DIR); \
+	  echo "Made release bundle $(GIT_TAG)_bundle.tar"; \
+	else \
+	  echo "NO RELEASE TAG CHECKED OUT"; \
+	fi \
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
