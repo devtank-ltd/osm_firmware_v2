@@ -23,6 +23,7 @@
 #include "sai.h"
 #include "sleep.h"
 #include "uart_rings.h"
+#include "pinmap.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000

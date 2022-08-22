@@ -1,6 +1,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/iwdg.h>
+#include <libopencm3/cm3/scb.h>
 
 #include "platform.h"
 
@@ -14,6 +15,20 @@ static void _stm_setup_systick(void)
     systick_set_frequency(1000, rcc_ahb_frequency);
     systick_counter_enable();
     systick_interrupt_enable();
+}
+
+static void _stm_setup_rs485(void)
+{
+    port_n_pins_t re_port_n_pin = RE_485_PIN;
+    port_n_pins_t de_port_n_pin = DE_485_PIN;
+
+    rcc_periph_clock_enable(PORT_TO_RCC(re_port_n_pin.port));
+    rcc_periph_clock_enable(PORT_TO_RCC(de_port_n_pin.port));
+
+    gpio_mode_setup(re_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, re_port_n_pin.pins);
+    gpio_mode_setup(de_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, de_port_n_pin.pins);
+
+    platform_set_rs485_mode(false);
 }
 
 
@@ -52,13 +67,48 @@ void platform_watchdog_init(uint32_t ms)
 }
 
 
-void platform_setup_UART_pins(uint32_t uart_num)
-{
-    ;
-}
-
-
 void platform_init(void)
 {
     _stm_setup_systick();
+    _stm_setup_rs485();
+}
+
+
+void platform_set_rs485_mode(bool driver_enable)
+{
+    /* ST3485E
+     *
+     * 2. RE Receiver output enable. RO is enabled when RE is low; RO is
+     * high impedance when RE is high. If RE is high and DE is low, the
+     * device will enter a low power shutdown mode.
+
+     * 3. DE Driver output enable. The driver outputs are enabled by
+     * bringing DE high. They are high impedance when DE is low. If RE
+     * is high DE is low, the device will enter a low-power shutdown
+     * mode. If the driver outputs are enabled, the part functions as
+     * line driver, while they are high impedance, it functions as line
+     * receivers if RE is low.
+     *
+     * */
+
+    port_n_pins_t re_port_n_pin = RE_485_PIN;
+    port_n_pins_t de_port_n_pin = DE_485_PIN;
+    if (driver_enable)
+    {
+        modbus_debug("driver:enable receiver:disable");
+        gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
+        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
+    }
+    else
+    {
+        modbus_debug("driver:disable receiver:enable");
+        gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
+        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
+    }
+}
+
+
+void platform_reset_sys(void)
+{
+    scb_reset_system();
 }

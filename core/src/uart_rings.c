@@ -2,10 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/rcc.h>
 
-#include "pinmap.h"
 #include "uart_rings.h"
 #include "ring.h"
 #include "log.h"
@@ -14,6 +11,7 @@
 #include "lorawan.h"
 #include "hpm.h"
 #include "modbus.h"
+#include "platform.h"
 
 #include "common.h"
 
@@ -182,39 +180,6 @@ void uart_ring_in_drain(unsigned uart)
 }
 
 
-static void _set_rs485_mode(bool driver_enable)
-{
-    /* ST3485E
-     *
-     * 2. RE Receiver output enable. RO is enabled when RE is low; RO is
-     * high impedance when RE is high. If RE is high and DE is low, the
-     * device will enter a low power shutdown mode.
-
-     * 3. DE Driver output enable. The driver outputs are enabled by
-     * bringing DE high. They are high impedance when DE is low. If RE
-     * is high DE is low, the device will enter a low-power shutdown
-     * mode. If the driver outputs are enabled, the part functions as
-     * line driver, while they are high impedance, it functions as line
-     * receivers if RE is low.
-     *
-     * */
-
-    port_n_pins_t re_port_n_pin = RE_485_PIN;
-    port_n_pins_t de_port_n_pin = DE_485_PIN;
-    if (driver_enable)
-    {
-        modbus_debug("driver:enable receiver:disable");
-        gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
-        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
-    }
-    else
-    {
-        modbus_debug("driver:disable receiver:enable");
-        gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
-        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
-    }
-}
-
 static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 {
     unsigned uart = *(unsigned*)puart;
@@ -256,7 +221,7 @@ static void uart_ring_out_drain(unsigned uart)
                 {
                     rs485_transmitting = false;
                     rs485_transmit_stopping = false;
-                    _set_rs485_mode(false);
+                    platform_set_rs485_mode(false);
                     return;
                 }
             }
@@ -266,7 +231,7 @@ static void uart_ring_out_drain(unsigned uart)
         if (!rs485_transmitting)
         {
             rs485_transmitting = true;
-            _set_rs485_mode(true);
+            platform_set_rs485_mode(true);
             rs485_start_transmitting = get_since_boot_ms();
             modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
             return;
@@ -334,14 +299,4 @@ void uart_rings_check()
 
 void uart_rings_init(void)
 {
-    port_n_pins_t re_port_n_pin = RE_485_PIN;
-    port_n_pins_t de_port_n_pin = DE_485_PIN;
-
-    rcc_periph_clock_enable(PORT_TO_RCC(re_port_n_pin.port));
-    rcc_periph_clock_enable(PORT_TO_RCC(de_port_n_pin.port));
-
-    gpio_mode_setup(re_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, re_port_n_pin.pins);
-    gpio_mode_setup(de_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, de_port_n_pin.pins);
-
-    _set_rs485_mode(false);
 }

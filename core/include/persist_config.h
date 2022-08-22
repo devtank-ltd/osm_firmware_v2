@@ -5,7 +5,6 @@
 
 
 #include "measurements.h"
-#include "pinmap.h"
 
 
 extern void persistent_init(void);

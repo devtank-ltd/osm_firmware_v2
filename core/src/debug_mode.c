@@ -11,6 +11,7 @@
 #include "common.h"
 #include "uart_rings.h"
 #include "lorawan.h"
+#include "pinmap.h"
 
 #include "can_impl.h"
 #include "ds18b20.h"

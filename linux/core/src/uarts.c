@@ -42,19 +42,25 @@ static void _uart_proc(unsigned uart, char* in, unsigned len)
 
 static void _uart_debug_cb(char* in, unsigned len)
 {
-    _uart_proc(0, in, len);
+    _uart_proc(CMD_UART, in, len);
 }
 
 
 static void _uart_lw_cb(char* in, unsigned len)
 {
-    _uart_proc(1, in, len);
+    _uart_proc(LW_UART, in, len);
 }
 
 
 static void _uart_hpm_cb(char* in, unsigned len)
 {
-    _uart_proc(2, in, len);
+    _uart_proc(HPM_UART, in, len);
+}
+
+
+static void _uart_rs485_cb(char* in, unsigned len)
+{
+    _uart_proc(RS485_UART, in, len);
 }
 
 
@@ -63,6 +69,7 @@ void uarts_setup(void)
     linux_add_pty("UART_DEBUG", &uart_channels[0].fd, _uart_debug_cb);
     linux_add_pty("UART_LW", &uart_channels[1].fd, _uart_lw_cb);
     linux_add_pty("UART_HPM", &uart_channels[2].fd, _uart_hpm_cb);
+    linux_add_pty("UART_RS485", &uart_channels[2].fd, _uart_rs485_cb);
 }
 
 

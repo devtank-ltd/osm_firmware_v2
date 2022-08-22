@@ -130,7 +130,22 @@ bool io_enable_w1(unsigned io)
 }
 
 
-bool io_enable_pulsecount(unsigned io, uint8_t pupd)
+static unsigned io_pull(io_pupd_t pull)
+{
+    switch(pull)
+    {
+        case IO_PUPD_NONE:
+            return GPIO_PUPD_NONE;
+        case IO_PUPD_UP:
+            return GPIO_PUPD_PULLUP;
+        case IO_PUPD_DOWN:
+            return GPIO_PUPD_PULLDOWN;
+    }
+    return GPIO_PUPD_NONE;
+}
+
+
+bool io_enable_pulsecount(unsigned io, io_pupd_t pupd)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -143,7 +158,7 @@ bool io_enable_pulsecount(unsigned io, uint8_t pupd)
     ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] &= ~IO_PULL_MASK;
-    ios_state[io] |= (pupd & IO_PULL_MASK);
+    ios_state[io] |= (io_pull(pupd) & IO_PULL_MASK);
 
     ios_state[io] |= IO_PULSE;
     pulsecount_enable(true);
@@ -152,7 +167,7 @@ bool io_enable_pulsecount(unsigned io, uint8_t pupd)
 }
 
 
-void     io_configure(unsigned io, bool as_input, unsigned pull)
+void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
@@ -200,7 +215,7 @@ void     io_configure(unsigned io, bool as_input, unsigned pull)
         io_state &= ~IO_AS_INPUT;
 
     io_state &= ~IO_PULL_MASK;
-    io_state |= (pull & IO_PULL_MASK);
+    io_state |= (io_pull(pull) & IO_PULL_MASK);
 
     _ios_setup_gpio(io, io_state);
 }

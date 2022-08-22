@@ -1,1 +1,0 @@
-../../../core/include/pinmap.h

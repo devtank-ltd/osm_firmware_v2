@@ -4,10 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/cm3/scb.h>
 
-#include "pinmap.h"
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
@@ -33,6 +30,7 @@
 #include "sleep.h"
 #include "can_impl.h"
 #include "debug_mode.h"
+#include "platform.h"
 
 
 static char   * rx_buffer;
@@ -85,7 +83,7 @@ void io_cb(char *args)
             return;
         }
 
-        unsigned pull = GPIO_PUPD_NONE;
+        io_pupd_t pull = IO_PUPD_NONE;
 
         pos = skip_space(pos);
 
@@ -94,12 +92,12 @@ void io_cb(char *args)
             if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
             {
                 pos = skip_to_space(pos);
-                pull = GPIO_PUPD_PULLUP;
+                pull = IO_PUPD_UP;
             }
             else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
             {
                 pos = skip_to_space(pos);
-                pull = GPIO_PUPD_PULLDOWN;
+                pull = IO_PUPD_DOWN;
             }
             else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
             {
@@ -163,11 +161,11 @@ void cmd_enable_pulsecount_cb(char * args)
     pos = skip_space(pos);
     uint8_t pupd;
     if (pos[0] == 'U')
-        pupd = GPIO_PUPD_PULLUP;
+        pupd = IO_PUPD_UP;
     else if (pos[0] == 'D')
-        pupd = GPIO_PUPD_PULLDOWN;
+        pupd = IO_PUPD_DOWN;
     else if (pos[0] == 'N')
-        pupd = GPIO_PUPD_NONE;
+        pupd = IO_PUPD_NONE;
     else
         goto bad_exit;
 
@@ -504,7 +502,7 @@ static void fw_fin(char *args)
 
 static void reset_cb(char *args)
 {
-    scb_reset_system();
+    platform_reset_sys();
 }
 
 

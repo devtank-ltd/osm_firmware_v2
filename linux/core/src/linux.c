@@ -213,3 +213,13 @@ void platform_init(void)
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 }
+
+
+void platform_set_rs485_mode(bool driver_enable)
+{
+}
+
+
+void platform_reset_sys(void)
+{
+}

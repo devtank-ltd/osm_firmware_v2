@@ -55,13 +55,11 @@
                         ADC1_CHANNEL_3V3_RAIL_MON,     \
                         ADC1_CHANNEL_5V_RAIL_MON       }
 
-#define ADC_COUNT       6
 
 #define ADC_CC_CHANNELS { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
                           ADC1_CHANNEL_CURRENT_CLAMP_2,  \
                           ADC1_CHANNEL_CURRENT_CLAMP_3   }
 
-#define ADC_CC_COUNT    3
 
 #define ADC_DMA_CHANNELS                                                        \
 {                                                                               \
@@ -114,13 +112,6 @@
         { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10|GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, UART4_PRIORITY, true }, \
     }
 #endif
-
-#define CMD_UART   0
-#define LW_UART    1
-#define HPM_UART   2
-#define RS485_UART 3
-
-#define UART_CHANNELS_COUNT 4
 
 #define MODBUS_SPEED    UART_4_SPEED
 #define MODBUS_PARITY   UART_4_PARITY

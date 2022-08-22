@@ -20,6 +20,7 @@
 #include "common.h"
 #include "timers.h"
 #include "update.h"
+#include "pinmap.h"
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
 
