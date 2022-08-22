@@ -1,6 +1,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/iwdg.h>
+#include <libopencm3/stm32/flash.h>
 #include <libopencm3/cm3/scb.h>
 
 #include "platform.h"
@@ -111,4 +112,26 @@ void platform_set_rs485_mode(bool driver_enable)
 void platform_reset_sys(void)
 {
     scb_reset_system();
+}
+
+
+persist_storage_t* platform_get_raw_persist(void)
+{
+    return (persist_storage_t*)PERSIST_RAW_DATA;
+}
+
+
+void platform_persist_commit(void)
+{
+    flash_unlock();
+    flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_set_data(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data));
+    flash_lock();
+}
+
+void platform_persist_wipe(void)
+{
+    flash_unlock();
+    flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_lock();
 }

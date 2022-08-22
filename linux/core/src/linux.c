@@ -13,6 +13,10 @@
 #include <pthread.h>
 
 
+#include "platform.h"
+#include "linux.h"
+
+
 #define ARRAY_SIZE(_a)          (sizeof(_a) / sizeof(_a[0]))
 
 
@@ -23,6 +27,8 @@
 
 #define LINUX_MASTER_SUFFIX     "_master"
 #define LINUX_SLAVE_SUFFIX      "_slave"
+
+#define LINUX_PERSIST_FILE_LOC  "/tmp/osm.img"
 
 
 extern int errno;
@@ -284,4 +290,16 @@ void platform_reset_sys(void)
 bool linux_add_gpio(char* name, uint32_t* fd, void (*cb)(uint32_t))
 {
     ;
+}
+
+
+persist_storage_t* platform_get_raw_persist(void)
+{
+    FILE* file = fopen(LINUX_PERSIST_FILE_LOC, "rb");
+    if (!file)
+        return NULL;
+    static persist_storage_t persist;
+    fread(&persist, sizeof(persist_storage_t), file);
+    fclose(file);
+    return &persist;
 }

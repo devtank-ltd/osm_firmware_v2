@@ -133,8 +133,6 @@
     {GPIOD, GPIO2 },   /* IO 9 */ \
 }
 
-#define IOS_COUNT 10
-
 /*
 Schematic name, STM pin
 GPIO01 C6                   IO 0

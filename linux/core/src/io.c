@@ -2,9 +2,9 @@
 
 #include "io.h"
 #include "linux.h"
+#include "config.h"
 
 
-#define IO_COUNT                        16
 #define IO_NAME_MAX_LEN                 16
 
 
@@ -15,7 +15,7 @@ typedef struct
 } fake_io_t;
 
 
-static fake_io_t fake_ios[IO_COUNT];
+static fake_io_t fake_ios[IOS_COUNT];
 
 
 extern bool     ios_get_pupd(unsigned io, uint8_t* pupd);
@@ -23,7 +23,7 @@ extern bool     ios_get_pupd(unsigned io, uint8_t* pupd);
 
 void     ios_init(void)
 {
-    for (uint8_t i = 0; i < IO_COUNT; i++)
+    for (uint8_t i = 0; i < IOS_COUNT; i++)
     {
         fake_io_t* io = &fake_ios[i];
         io->num = i;
@@ -36,7 +36,7 @@ void     ios_init(void)
 
 unsigned ios_get_count(void)
 {
-    return IO_COUNT;
+    return IOS_COUNT;
 }
 
 

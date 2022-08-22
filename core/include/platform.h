@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "persist_config_header.h"
+
 
 extern uint32_t rcc_ahb_frequency;
 extern uint32_t rcc_apb1_frequency;
@@ -16,4 +18,7 @@ void platform_blink_led_init(void);
 void platform_blink_led_toggle(void);
 void platform_set_rs485_mode(bool driver_enable);
 void platform_reset_sys(void);
+persist_storage_t* platform_get_raw_persist(void);
+void platform_persist_commit(void);
+void platform_persist_wipe(void);
 

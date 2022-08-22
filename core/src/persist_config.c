@@ -2,17 +2,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <libopencm3/stm32/flash.h>
-#include <libopencm3/cm3/scb.h>
-
 #include "config.h"
-#include "pinmap.h"
 #include "log.h"
 #include "persist_config.h"
 #include "timers.h"
 #include "lorawan.h"
 #include "persist_config_header.h"
 #include "flash_data.h"
+#include "platform.h"
 
 static bool                 persist_data_valid = false;
 static bool                 persist_data_lw_valid = false;
@@ -21,7 +18,7 @@ static persist_storage_t    persist_data __attribute__((aligned (16)));
 
 static void _lw_config_valid(void)
 {
-    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
+    persist_storage_t* persist_data_raw = platform_get_raw_persist();
 
     if (persist_data_raw->lw_dev_eui[0] && persist_data_raw->lw_app_key[0])
     {
@@ -72,10 +69,7 @@ void persistent_init(void)
 
 void persist_commit()
 {
-    flash_unlock();
-    flash_erase_page(FLASH_CONFIG_PAGE);
-    flash_set_data(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data));
-    flash_lock();
+    platform_persist_commit();
 
     if (memcmp(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
     {
@@ -238,9 +232,7 @@ float* persist_get_sai_cal_coeffs(void)
 
 void    persistent_wipe(void)
 {
-    flash_unlock();
-    flash_erase_page(FLASH_CONFIG_PAGE);
-    flash_lock();
+    platform_persist_wipe();
     platform_raw_msg("Factory Reset");
-    scb_reset_system();
+    platform_reset_sys();
 }

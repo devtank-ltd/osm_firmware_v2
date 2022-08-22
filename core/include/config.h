@@ -143,3 +143,5 @@ _Static_assert(0, "Not given a STM model.");
 #define RS485_UART 3
 
 #define UART_CHANNELS_COUNT 4
+
+#define IOS_COUNT 10
