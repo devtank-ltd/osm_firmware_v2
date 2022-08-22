@@ -1,121 +1,76 @@
-#include <stdlib.h>
+#include <stdio.h>
 #include <inttypes.h>
-#include <ctype.h>
 #include <stdlib.h>
-#include <pty.h>
 #include <unistd.h>
-#include <string.h>
 
-#include "cmd.h"
-#include "log.h"
-#include "pinmap.h"
-#include "ring.h"
-#include "uart_rings.h"
 #include "uarts.h"
+
+#include "linux.h"
+#include "uart_rings.h"
 #include "sleep.h"
+#include "log.h"
 
 
-static uart_channel_t uart_channels[] = UART_CHANNELS;
-
-
-static void uart_up(const uart_channel_t * channel)
-{
-    uint32_t parity = _uart_get_parity(channel->parity);
-
-    uint32_t usart = channel->usart;
-
-    usart_set_baudrate( usart, channel->baud );
-
-    uint8_t databits = channel->databits;
-    if (parity != USART_PARITY_NONE)
-        databits++;
-
-    /*
-     * Bits M1 and M0 make 2 bits for this.
-     *
-     * OpenCM3's usart_set_databits doesn't set both
-     *
-     */
-
-    switch(databits)
-    {
-        case 7:
-            // 7-bit character length: M[1:0] = 10
-            USART_CR1(usart) |=  USART_CR1_M0;
-            USART_CR1(usart) &= ~USART_CR1_M1;
-            break;
-        default :
-            // Should happen, but revert to 8N when it does
-            parity = USART_PARITY_NONE;
-             // fall through
-        case 8:
-            // 8-bit character length: M[1:0] = 00
-            USART_CR1(usart) &= ~USART_CR1_M0;
-            USART_CR1(usart) &= ~USART_CR1_M1;
-            break;
-        case 9:
-            // 9-bit character length: M[1:0] = 01
-            USART_CR1(usart) &= ~USART_CR1_M0;
-            USART_CR1(usart) |=  USART_CR1_M1;
-            break;
-    }
-
-    usart_set_stopbits( usart, _uart_get_stop(channel->stop) );
-    usart_set_parity( usart, parity);
+#define UART_CHANNELS_LINUX                                                                     \
+{                                                                                               \
+    { UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, true, 0}, /* UART 0 Debug */   \
+    { UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, true, 0}, /* UART 1 LoRa */    \
+    { UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, true, 0}, /* UART 2 HPM */     \
+    { UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, true, 0}, /* UART 3 485 */     \
 }
 
 
-static void uart_setup(uart_channel_t * channel)
+static uart_channel_t uart_channels[] = UART_CHANNELS_LINUX;
+
+
+static void _uart_proc(unsigned uart, char* in, unsigned len)
 {
-    int amaster, aslave;
-    openpty(&amaster, &aslave, NULL, NULL, NULL);
+    if (uart >= UART_CHANNELS_COUNT)
+        return;
 
-
-
-    rcc_periph_clock_enable(PORT_TO_RCC(channel->gpioport));
-    rcc_periph_clock_enable(channel->uart_clk);
-    if (channel->dma_unit)
-        rcc_periph_clock_enable(channel->dma_rcc);
-
-    gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
-    gpio_set_af( channel->gpioport, channel->alt_func_num, channel->pins );
-
-    usart_set_mode( channel->usart, USART_MODE_TX_RX );
-    usart_set_flow_control( channel->usart, USART_FLOWCONTROL_NONE );
-    uart_up(channel);
-
-    nvic_set_priority(channel->irqn, channel->priority);
-    nvic_enable_irq(channel->irqn);
-    usart_enable(channel->usart);
-    usart_enable_rx_interrupt(channel->usart);
-
-    if (channel->dma_irqn)
+    uart_ring_in(uart, in, len);
+    for (unsigned i = 0; i < len; i++)
     {
-        nvic_set_priority(channel->dma_irqn, channel->priority);
-        nvic_enable_irq(channel->dma_irqn);
-        dma_set_channel_request(channel->dma_unit, channel->dma_channel, 2); /*They are all 0b0010*/
+        if (in[i] == '\n' || in[i] == '\r')
+        {
+            sleep_debug("Waking up.");
+            sleep_exit_sleep_mode();
+        }
     }
-    channel->enabled = 1;
+}
+
+
+static void _uart_debug_cb(char* in, unsigned len)
+{
+    _uart_proc(0, in, len);
+}
+
+
+static void _uart_lw_cb(char* in, unsigned len)
+{
+    _uart_proc(1, in, len);
+}
+
+
+static void _uart_hpm_cb(char* in, unsigned len)
+{
+    _uart_proc(2, in, len);
+}
+
+
+void uarts_setup(void)
+{
+    linux_add_pty("UART_DEBUG", &uart_channels[0].fd, _uart_debug_cb);
+    linux_add_pty("UART_LW", &uart_channels[1].fd, _uart_lw_cb);
+    linux_add_pty("UART_HPM", &uart_channels[2].fd, _uart_hpm_cb);
 }
 
 
 void uart_enable(unsigned uart, bool enable)
 {
-    if (uart >= UART_CHANNELS_COUNT || !uart)
+    if (uart >= UART_CHANNELS_COUNT)
         return;
-
-    uart_debug(uart, "%s", (enable)?"Enable":"Disable");
-
-    uart_channel_t * channel = &uart_channels[uart];
-
-    if (!enable)
-    {
-        usart_disable_rx_interrupt(channel->usart);
-        usart_disable(channel->usart);
-        rcc_periph_clock_disable(channel->uart_clk);
-        channel->enabled = 0;
-    }
-    else uart_setup(channel);
+    uart_channels[uart].enabled = enable;
 }
 
 
@@ -123,17 +78,14 @@ bool uart_is_enabled(unsigned uart)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return false;
-
-    return (uart_channels[uart].enabled)?true:false;
+    return uart_channels[uart].enabled;
 }
 
 
 void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
-    if (uart >= UART_CHANNELS_COUNT || !uart)
+    if (uart >= UART_CHANNELS_COUNT)
         return;
-
-    uart_channel_t * channel = &uart_channels[uart];
 
     if (databits < 7)
     {
@@ -152,37 +104,26 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
         parity = uart_parity_none;
     }
 
-    channel->baud = speed;
-    channel->databits = databits;
-    channel->parity = parity;
-    channel->stop = stop;
-
-    uart_up(channel);
+    uart_channel_t* chan = &uart_channels[uart];
+    chan->baud      = speed;
+    chan->databits  = databits;
+    chan->parity    = parity;
+    chan->stop      = stop;
 
     uart_debug(uart, "%u %"PRIu8"%c%s",
-            (unsigned)channel->baud, channel->databits, uart_parity_as_char(channel->parity), uart_stop_bits_as_str(channel->stop));
+            (unsigned)chan->baud, chan->databits, uart_parity_as_char(chan->parity), uart_stop_bits_as_str(chan->stop));
 }
 
 
-extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_parity_t * parity, uart_stop_bits_t * stop)
+bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_parity_t * parity, uart_stop_bits_t * stop)
 {
-    if (uart >= UART_CHANNELS_COUNT )
+    if (uart >= UART_CHANNELS_COUNT)
         return false;
-
-    const uart_channel_t * channel = &uart_channels[uart];
-
-    if (speed)
-        *speed = channel->baud;
-
-    if (databits)
-        *databits = channel->databits;
-
-    if (parity)
-        *parity = channel->parity;
-
-    if (stop)
-        *stop = channel->stop;
-
+    uart_channel_t* chan = &uart_channels[uart];
+    *speed      = chan->baud;
+    *databits   = chan->databits;
+    *parity     = chan->parity;
+    *stop       = chan->stop;
     return true;
 }
 
@@ -208,231 +149,27 @@ bool uart_resetup_str(unsigned uart, char * str)
 }
 
 
-static bool uart_getc(uint32_t uart, char* c)
-{
-    uint32_t flags = USART_ISR(uart);
-
-    if (!(flags & USART_ISR_RXNE))
-    {
-        USART_ICR(uart) = flags;
-        return false;
-    }
-
-    *c = usart_recv(uart);
-
-    return true;
-}
-
-
-
-static void process_serial(unsigned uart)
-{
-    if (uart >= UART_CHANNELS_COUNT)
-        return;
-
-    uart_channel_t * channel = &uart_channels[uart];
-
-    if (!channel->enabled)
-        return;
-
-    char c;
-
-    if (!uart_getc(channel->usart, &c))
-        return;
-
-    uart_ring_in(uart, &c, 1);
-    if (c == '\n' || c == '\r')
-    {
-        sleep_debug("Waking up.");
-        sleep_exit_sleep_mode();
-    }
-}
-
-
-void uarts_setup(void)
-{
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
-        uart_setup(&uart_channels[n]);
-}
-
 bool uart_is_tx_empty(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
-        return false;
-
-    if (uart_doing_dma[uart])
-        return false;
-
-    uart = uart_channels[uart].usart;
-
-    return ((USART_ISR(uart) & USART_ISR_TXE));
+    return true;
 }
 
 
 bool uart_single_out(unsigned uart, char c)
 {
-    if (uart >= UART_CHANNELS_COUNT)
-        return false;
-
-    const uart_channel_t * channel = &uart_channels[uart];
-
-    if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
-        return false;
-
-    usart_send(channel->usart, c);
-
-    return true;
+    printf("Unimplemented uart_single_out");
+    exit(-1);
 }
 
 
 void uart_blocking(unsigned uart, const char *data, int size)
 {
-    if (uart >= UART_CHANNELS_COUNT)
-        return;
-
-    const uart_channel_t * channel = &uart_channels[uart];
-
-    while(size--)
-        usart_send_blocking(channel->usart, *data++);
+    if (!write(uart_channels[uart].fd, data, size))
+        exit(-1);
 }
 
 
 bool uart_dma_out(unsigned uart, char *data, int size)
 {
-    if (uart >= UART_CHANNELS_COUNT)
-        return false;
-
-    if (uart_doing_dma[uart])
-        return false;
-
-    const uart_channel_t * channel = &uart_channels[uart];
-
-    if (!channel->enabled)
-        return true; /* Drop the data */
-
-    if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
-        return false;
-
-    if (size == 1)
-    {
-        if (uart)
-            uart_debug(uart, "single out.");
-        usart_send(channel->usart, *data);
-        return true;
-    }
-
-    if (uart)
-        uart_debug(uart, "%u out on DMA channel %u", size, channel->dma_channel);
-
-    uart_doing_dma[uart] = true;
-
-    dma_channel_reset(channel->dma_unit, channel->dma_channel);
-
-    dma_set_peripheral_address(channel->dma_unit, channel->dma_channel, channel->dma_addr);
-    dma_set_memory_address(channel->dma_unit, channel->dma_channel, (uint32_t)data);
-    dma_set_number_of_data(channel->dma_unit, channel->dma_channel, size);
-    dma_set_read_from_memory(channel->dma_unit, channel->dma_channel);
-    dma_enable_memory_increment_mode(channel->dma_unit, channel->dma_channel);
-    dma_set_peripheral_size(channel->dma_unit, channel->dma_channel, DMA_CCR_PSIZE_8BIT);
-    dma_set_memory_size(channel->dma_unit, channel->dma_channel, DMA_CCR_MSIZE_8BIT);
-    dma_set_priority(channel->dma_unit, channel->dma_channel, DMA_CCR_PL_LOW);
-
-    dma_enable_transfer_complete_interrupt(channel->dma_unit, channel->dma_channel);
-
-    dma_enable_channel(channel->dma_unit, channel->dma_channel);
-
-    usart_enable_tx_dma(channel->usart);
-
-    return true;
+    return (write(uart_channels[uart].fd, data, size) != 0);
 }
-
-
-static void process_complete_dma(unsigned index)
-{
-    if (index >= UART_CHANNELS_COUNT)
-        return;
-
-    const uart_channel_t * channel = &uart_channels[index];
-
-    if ((DMA_ISR(channel->dma_unit) & DMA_ISR_TCIF(channel->dma_channel)) != 0)
-    {
-        DMA_ISR(channel->dma_unit) |= DMA_IFCR_CTCIF(channel->dma_channel);
-
-        uart_doing_dma[index] = false;
-
-        dma_disable_transfer_complete_interrupt(channel->dma_unit, channel->dma_channel);
-
-        usart_disable_tx_dma(channel->usart);
-
-        dma_disable_channel(channel->dma_unit, channel->dma_channel);
-    }
-    else
-        log_error("No DMA complete in ISR");
-}
-
-
-// cppcheck-suppress unusedFunction ; System handler
-void usart2_isr(void)
-{
-    process_serial(0);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void usart3_isr(void)
-{
-    process_serial(1);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void usart1_isr(void)
-{
-    process_serial(2);
-}
-
-#if defined(STM32L451RE)
-// cppcheck-suppress unusedFunction ; System handler
-void uart4_isr(void)
-{
-    process_serial(3);
-}
-
-#elif defined(STM32L433VTC6)
-// cppcheck-suppress unusedFunction ; System handler
-void lpuart1_isr(void)
-{
-    process_serial(3);
-}
-#endif
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma1_channel7_isr(void)
-{
-    process_complete_dma(0);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma1_channel2_isr(void)
-{
-    process_complete_dma(1);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma1_channel5_isr(void)
-{
-    process_complete_dma(2);
-}
-
-#if defined(STM32L451RE)
-// cppcheck-suppress unusedFunction ; System handler
-void dma2_channel3_isr(void)
-{
-    process_complete_dma(3);
-}
-
-#elif defined(STM32L433VTC6)
-// cppcheck-suppress unusedFunction ; System handler
-void dma2_channel6_isr(void)
-{
-    process_complete_dma(3);
-}
-#endif

@@ -19,6 +19,7 @@
 #define LINUX_FILE_LOC          "/tmp/osm/"
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_MAX_PTY           32
+#define LINUX_PTY_NAME_SIZE     16
 
 #define LINUX_MASTER_SUFFIX     "_master"
 #define LINUX_SLAVE_SUFFIX      "_slave"
@@ -31,16 +32,13 @@ typedef struct
 {
     int32_t master_fd;
     int32_t slave_fd;
-    char*   name;
+    char    name[LINUX_PTY_NAME_SIZE];
+    void    (*cb)(void);
 } pty_t;
 
 
 typedef char pty_buf_t[LINUX_PTY_BUF_SIZ];
 
-
-static pty_buf_t        pty_names[]   = {"debug",
-                                         "lw",
-                                         "hpm"};
 
 static struct pollfd    pfds[LINUX_MAX_PTY * 2];
 static uint32_t         nfds;
@@ -126,8 +124,6 @@ static void _linux_setup_pty(pty_t* pty, char* new_tty_name)
     if (openpty(&pty->master_fd, &pty->slave_fd, NULL, NULL, NULL))
         _linux_error("FAIL PTY OPEN: %"PRIu32, errno);
 
-    pty->name = new_tty_name;
-
     pty_buf_t dir_loc = LINUX_FILE_LOC;
 
     mode_t mode = S_ISUID | S_ISGID | S_IRWXU | S_IRWXG | S_IRWXO;
@@ -138,16 +134,6 @@ static void _linux_setup_pty(pty_t* pty, char* new_tty_name)
     strncat(pty_loc, new_tty_name, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
     strncat(pty_loc, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
     _linux_pty_symlink(pty->slave_fd, pty_loc);
-}
-
-
-static void _linux_setup_ptys(void)
-{
-    uint32_t len = ARRAY_SIZE(pty_names) > LINUX_MAX_PTY ? LINUX_MAX_PTY : ARRAY_SIZE(pty_names);
-    for (uint32_t i = 0; i < len; i++)
-    {
-        _linux_setup_pty(&pty_list[i], pty_names[i]);
-    }
 }
 
 
@@ -178,15 +164,18 @@ void _linux_iterate(void)
         {
             if (pfds[i].revents & POLLIN)
             {
+                pfds[i].revents &= ~POLLIN;
+
                 char buf[10];
                 pty_t* pty = _linux_get_pty(pfds[i].fd);
+                if (!pty)
+                    _linux_error("PTY is NULL pointer");
                 int r = read(pfds[i].fd, buf, sizeof(buf) - 1);
                 if (r > 0)
                 {
                     printf("%s << %s\n", pty->name, buf);
-                    dprintf(pty->master_fd,"Hi back\r\n");
+                    pty->cb(buf, r);
                 }
-                pfds[i].revents &= ~POLLIN;
             }
         }
     }
@@ -198,6 +187,22 @@ static void* thread_proc(void* vargp)
     while (1)
         _linux_iterate();
     return NULL;
+}
+
+
+bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigned len)))
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(pty_list); i++)
+    {
+        pty_t* pty = &pty_list[i]
+        if (pty->name == 0)
+            continue;
+        strncpy(pty->name, name, LINUX_PTY_NAME_SIZE);
+        pty->cb = read_cb;
+        _linux_setup_pty(pty, name);
+        return true;
+    }
+    return false;
 }
 
 

@@ -52,6 +52,12 @@ void platform_watchdog_init(uint32_t ms)
 }
 
 
+void platform_setup_UART_pins(uint32_t uart_num)
+{
+    ;
+}
+
+
 void platform_init(void)
 {
     _stm_setup_systick();
