@@ -203,39 +203,16 @@ void version_cb(char * args)
 }
 
 
-void lora_cb(char * args)
+void comms_send_cb(char * args)
 {
     char * pos = skip_space(args);
-    lw_send_str(pos);
+    comms_send_str(pos);
 }
 
 
-void lora_config_cb(char * args)
+void comms_config_cb(char * args)
 {
-    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
-    // ARGS : "dev-eui 118f875d6994bbfd"
-    char* p = skip_space(args);
-    p = strchr(p, ' ');
-    if (p == NULL)
-    {
-        return;
-    }
-    uint8_t end_pos_word = p - args + 1;
-    p = skip_space(p);
-    if (strncmp(args, "dev-eui", end_pos_word-1) == 0)
-    {
-        char eui[LW_DEV_EUI_LEN + 1] = "";
-        strncpy(eui, p, strlen(p));
-        persist_set_lw_dev_eui(eui);
-        lw_reload_config();
-    }
-    else if (strncmp(args, "app-key", end_pos_word-1) == 0)
-    {
-        char key[LW_APP_KEY_LEN + 1] = "";
-        strncpy(key, p, strlen(p));
-        persist_set_lw_app_key(key);
-        lw_reload_config();
-    }
+    comms_config_setup_str(skip_space(args));
 }
 
 
@@ -785,8 +762,8 @@ void cmds_process(char * command, unsigned len)
         { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb},
         { "count",        "Counts of controls.",      count_cb},
         { "version",      "Print version.",           version_cb},
-        { "lora",         "Send lora message",        lora_cb},
-        { "lora_config",  "Set lora config",          lora_config_cb},
+        { "comms_send",   "Send comms message",       comms_send_cb},
+        { "comms_config", "Set comms config",         comms_config_cb},
         { "interval",     "Set the interval",         interval_cb},
         { "samplecount",  "Set the samplecount",      samplecount_cb},
         { "debug",        "Set hex debug mask",       debug_cb},

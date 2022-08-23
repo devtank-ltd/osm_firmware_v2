@@ -702,7 +702,7 @@ void comms_reset(void)
 }
 
 
-bool comms_reload_config(void)
+static bool _lw_reload_config(void)
 {
     if (!_lw_load_config())
     {
@@ -1057,5 +1057,34 @@ void comms_loop_iteration(void)
                 comms_reset();
             }
             break;
+    }
+}
+
+
+void     comms_config_setup_str(char * str)
+{
+    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
+    // ARGS : "dev-eui 118f875d6994bbfd"
+    char * p = strchr(str, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+
+    uint8_t end_pos_word = p - str + 1;
+    p = skip_space(p);
+    if (strncmp(str, "dev-eui", end_pos_word-1) == 0)
+    {
+        char eui[LW_DEV_EUI_LEN + 1] = "";
+        strncpy(eui, p, strlen(p));
+        persist_set_lw_dev_eui(eui);
+        _lw_reload_config();
+    }
+    else if (strncmp(str, "app-key", end_pos_word-1) == 0)
+    {
+        char key[LW_APP_KEY_LEN + 1] = "";
+        strncpy(key, p, strlen(p));
+        persist_set_lw_app_key(key);
+        _lw_reload_config();
     }
 }
