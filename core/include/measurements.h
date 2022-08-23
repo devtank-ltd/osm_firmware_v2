@@ -4,17 +4,13 @@
 #include <inttypes.h>
 
 #include "config.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "value.h"
 #include "base_types.h"
 
 #include "measurements_mem.h"
 
 #define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)15
-#define MEASUREMENTS_HEX_ARRAY_SIZE            ((256-LW_HEADER_SIZE-LW_TAIL_SIZE)/2 - 1)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
-
-_Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
-
 
 extern uint32_t transmit_interval;
 

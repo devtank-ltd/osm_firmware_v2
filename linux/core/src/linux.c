@@ -272,6 +272,8 @@ void platform_init(void)
 {
     signal(SIGINT, _linux_exit);
     _linux_setup_ptys();
+//    _linux_setup_w1_sock();
+//    _linux_setup_pulse_count(); /* inotify on gpio file and counting accordingly. */
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 }

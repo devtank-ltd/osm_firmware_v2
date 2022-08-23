@@ -53,6 +53,7 @@ bool     io_enable_pulsecount(unsigned io, io_pupd_t pupd)
 
 bool     io_enable_w1(unsigned io)
 {
+    // TO DO: connect/disconnect domain socket of w1 ICP.
     return true;
 }
 

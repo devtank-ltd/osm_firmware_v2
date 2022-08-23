@@ -41,6 +41,7 @@ _Static_assert(0, "Not given a STM model.");
 #define TIMER2_PRIORITY 1
 #define PPS_PRIORITY 1
 
+#define MEASUREMENTS_HEX_ARRAY_SIZE 117
 
 #define CMD_VUART 0
 #define UART_ERR_NU 0
@@ -112,7 +113,7 @@ _Static_assert(0, "Not given a STM model.");
 
 #define DEBUG_SYS             0x1
 #define DEBUG_ADC             0x2
-#define DEBUG_LW              0x4
+#define DEBUG_COMMS           0x4
 #define DEBUG_IO              0x8
 #define DEBUG_UART(_x_)     (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
 #define DEBUG_HPM           0x100
