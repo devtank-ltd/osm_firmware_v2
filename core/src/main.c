@@ -35,11 +35,6 @@
 
 int main(void)
 {
-    /* Main clocks setup in bootloader, but of course libopencm3 doesn't know. */
-    rcc_ahb_frequency = 80e6;
-    rcc_apb1_frequency = 80e6;
-    rcc_apb2_frequency = 80e6;
-
     platform_init();
     platform_blink_led_init();
 

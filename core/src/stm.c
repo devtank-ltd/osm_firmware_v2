@@ -70,6 +70,11 @@ void platform_watchdog_init(uint32_t ms)
 
 void platform_init(void)
 {
+    /* Main clocks setup in bootloader, but of course libopencm3 doesn't know. */
+    rcc_ahb_frequency = 80e6;
+    rcc_apb1_frequency = 80e6;
+    rcc_apb2_frequency = 80e6;
+
     _stm_setup_systick();
     _stm_setup_rs485();
 }
