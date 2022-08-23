@@ -41,16 +41,46 @@ $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p "$(@D)"
 	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
 
+firmware_SOURCES := \
+           core/src/main.c \
+           core/src/linux.c \
+           core/src/base.c \
+           core/src/log.c \
+           core/src/uarts.c \
+           core/src/uart_rings.c \
+           core/src/cmd.c \
+           core/src/io.c \
+           core/src/ring.c \
+           core/src/i2c.c \
+           core/src/modbus_mem.c \
+           core/src/value.c \
+           core/src/persist_config.c \
+           core/src/comms.c \
+           core/src/measurements.c \
+           core/src/measurements_mem.c \
+           core/src/modbus_measurements.c \
+           core/src/update.c \
+           core/src/adcs.c \
+           core/src/timers.c \
+           core/src/common.c \
+           core/src/w1.c \
+           core/src/sleep.c \
+           core/src/can_comm.c \
+           core/src/debug_mode.c \
+           sensors/src/hpm.c \
+           sensors/src/htu21d.c \
+           sensors/src/modbus.c \
+           sensors/src/ds18b20.c \
+           sensors/src/pulsecount.c \
+           sensors/src/veml7700.c \
+           sensors/src/sai.c \
+           sensors/src/cc.c \
+           sensors/src/bat.c \
+           sensors/src/can_impl.c
 
-define PROGRAM_template
-  include $(1)
-  $(2)_OBJS=$$($(2)_SOURCES:%.c=$(BUILD_DIR)/%.o)
-  $(info $(BUILD_DIR)/$(2).elf)
-  $(BUILD_DIR)/$(2).elf: $$($(2)_OBJS) $$($(2)_LINK_SCRIPT)
-	$(CC) $$($(2)_OBJS) $$(LINK_FLAGS) -T$$($(2)_LINK_SCRIPT) -o $$@
-endef
+firmware_OBJS=$(firmware_SOURCES:%.c=$(BUILD_DIR)/%.o)
 
-$(eval $(call PROGRAM_template,../firmware.mk,firmware))
+$(BUILD_DIR)/firmware.elf : $(firmware_OBJS)
 
 clean:
 	rm -rf $(BUILD_DIR)

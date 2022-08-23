@@ -17,9 +17,6 @@
 #include "linux.h"
 
 
-#define ARRAY_SIZE(_a)          (sizeof(_a) / sizeof(_a[0]))
-
-
 #define LINUX_FILE_LOC          "/tmp/osm/"
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_MAX_PTY           32
@@ -58,9 +55,9 @@ typedef struct
             FILE*   direction_file;
             FILE*   value_file;
         } gpio;
-    }
+    };
     char            name[LINUX_PTY_NAME_SIZE];
-    void            (*cb)(void);
+    void            (*cb)();
 } fd_t;
 
 
@@ -91,8 +88,8 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
     {
         if (fd_list[i].name)
         {
-            if ( fd_list[i].master_fd == fd ||
-                 fd_list[i].slave_fd  == fd )
+            if ( fd_list[i].pty.master_fd == fd ||
+                 fd_list[i].pty.slave_fd  == fd )
                 return &fd_list[i];
         }
     }
@@ -107,9 +104,9 @@ static void _linux_cleanup_pty(fd_t* fd_handler)
     strncat(buf, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t) - strlen(buf));
     if (remove(buf))
         _linux_error("FAIL PTY SYMLINK CLEANUP: %s %"PRIu32, buf, errno);
-    if (close(fd_handler->master_fd))
+    if (close(fd_handler->pty.master_fd))
         _linux_error("FAIL PTY FD CLEANUP: %"PRIu32, errno);
-    if (close(fd_handler->slave_fd))
+    if (close(fd_handler->pty.slave_fd))
         _linux_error("FAIL PTY FD CLEANUP: %"PRIu32, errno);
 }
 
@@ -123,9 +120,9 @@ static void _linux_cleanup_fd_handlers(void)
             switch(fd_list[i].type)
             {
                 case LINUX_FD_TYPE_PTY:
-                    _linux_cleanup_fd_handler(&fd_list[i]);
+                    _linux_cleanup_pty(&fd_list[i]);
                     break;
-                case LINUX_FD_TYPE_FILE:
+                case LINUX_FD_TYPE_IO:
                     break;
             }
         }
@@ -181,7 +178,7 @@ void _linux_setup_poll(void)
     {
         if (fd_list[i].name)
         {
-            pfds[i].fd = fd_list[i].master_fd;
+            pfds[i].fd = fd_list[i].pty.master_fd;
             pfds[i].events = POLLIN;
             nfds++;
         }
@@ -194,7 +191,7 @@ void _linux_iterate(void)
     int ready = poll(pfds, nfds, -1);
     if (ready == -1)
         _linux_error("TIMEOUT");
-    for (int i = 0; i < nfds; i++)
+    for (uint32_t i = 0; i < nfds; i++)
     {
         if (pfds[i].revents != 0)
         {
@@ -221,11 +218,10 @@ void _linux_iterate(void)
                     case LINUX_FD_TYPE_IO:
                         /* Unsure how this will work */
                         r = read(pfds[i].fd, buf, sizeof(buf) - 1);
-                        uint8_t dir = strtoul(buf, 10);
+                        uint8_t dir = strtoul(buf, NULL, 10);
                         if (fd_handler->cb)
                             fd_handler->cb(buf, dir);
                         break;
-                    }
                 }
             }
         }
@@ -241,11 +237,11 @@ static void* thread_proc(void* vargp)
 }
 
 
-bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigned len)))
+bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigned len))
 {
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* pty = &fd_list[i]
+        fd_t* pty = &fd_list[i];
         uint8_t len_1 = strnlen(name, LINUX_PTY_NAME_SIZE);
         uint8_t len_2 = strnlen(pty->name, LINUX_PTY_NAME_SIZE);
         len_1 = len_1 < len_2 ? len_2 : len_1;
@@ -254,7 +250,7 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
     }
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* pty = &fd_list[i]
+        fd_t* pty = &fd_list[i];
         if (pty->name[0] == 0)
             continue;
         strncpy(pty->name, name, LINUX_PTY_NAME_SIZE);
@@ -271,9 +267,9 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
 void platform_init(void)
 {
     signal(SIGINT, _linux_exit);
-    _linux_setup_ptys();
-//    _linux_setup_w1_sock();
-//    _linux_setup_pulse_count(); /* inotify on gpio file and counting accordingly. */
+    //_linux_setup_ptys();
+    //_linux_setup_w1_sock();
+    //_linux_setup_pulse_count(); /* inotify on gpio file and counting accordingly. */
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 }
@@ -291,7 +287,7 @@ void platform_reset_sys(void)
 
 bool linux_add_gpio(char* name, uint32_t* fd, void (*cb)(uint32_t))
 {
-    ;
+    return false;
 }
 
 
@@ -301,7 +297,8 @@ persist_storage_t* platform_get_raw_persist(void)
     if (!file)
         return NULL;
     static persist_storage_t persist;
-    fread(&persist, sizeof(persist_storage_t), file);
+    if (fread(&persist, sizeof(persist_storage_t), 1, file) != sizeof(persist_storage_t))
+        return false;
     fclose(file);
     return &persist;
 }

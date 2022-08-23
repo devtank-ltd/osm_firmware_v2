@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdint.h>
+#include <stdbool.h>
+
+
 extern uint16_t comms_get_mtu(void);
 
 extern bool     comms_send_ready(void);
