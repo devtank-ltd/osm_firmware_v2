@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <libopencm3/cm3/scb.h>
+#include <libopencm3/stm32/iwdg.h>
 
 #include "measurements.h"
 #include "persist_config.h"
@@ -48,7 +49,6 @@ static void _debug_mode_init_iteration(void)
     hpm_init(MEASUREMENTS_PM25_NAME);
     hpm_init(MEASUREMENTS_PM10_NAME);
     ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_1);
-    ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_2);
     sai_measurements_init(MEASUREMENTS_SOUND_NAME);
     veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME);
     pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1);
@@ -126,7 +126,6 @@ static void _debug_mode_collect_iteration(void)
     _debug_mode_collect_sensor(MEASUREMENTS_PM25_NAME, MEASUREMENTS_VALUE_TYPE_I64, hpm_get_pm25);
     _debug_mode_collect_sensor(MEASUREMENTS_PM10_NAME, MEASUREMENTS_VALUE_TYPE_I64, hpm_get_pm10);
     _debug_mode_collect_sensor(MEASUREMENTS_W1_PROBE_NAME_1, MEASUREMENTS_VALUE_TYPE_FLOAT, ds18b20_measurements_collect);
-    _debug_mode_collect_sensor(MEASUREMENTS_W1_PROBE_NAME_2, MEASUREMENTS_VALUE_TYPE_FLOAT, ds18b20_measurements_collect);
     _debug_mode_collect_sensor(MEASUREMENTS_SOUND_NAME, MEASUREMENTS_VALUE_TYPE_I64, sai_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_LIGHT_NAME, MEASUREMENTS_VALUE_TYPE_I64, veml7700_light_measurements_get);
     _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, MEASUREMENTS_VALUE_TYPE_I64, pulsecount_get);
@@ -217,6 +216,7 @@ void debug_mode(void)
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);
+        iwdg_reset();
     }
     measurements_derive_cc_phase();
 }

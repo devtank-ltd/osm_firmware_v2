@@ -19,10 +19,7 @@ Documents used:
 
 #define DS18B20_INSTANCES   {                                          \
     { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
-      { { W1_PULSE_PORT, W1_PULSE_1_PIN } } } ,                        \
-                                                                       \
-    { { MEASUREMENTS_W1_PROBE_NAME_2, W1_PULSE_2_IO} ,                 \
-      { { W1_PULSE_PORT, W1_PULSE_2_PIN } } }                          \
+      { { W1_PULSE_PORT, W1_PULSE_1_PIN } } }                          \
 }
 
 #define DS18B20_DELAY_GET_TEMP_US   750000

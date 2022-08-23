@@ -1374,8 +1374,6 @@ void measurements_repopulate(void)
     measurements_add(&def);
     measurements_setup_default(&def, MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
     measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
-    measurements_add(&def);
     measurements_setup_default(&def, MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
     measurements_add(&def);
     measurements_setup_default(&def, MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
