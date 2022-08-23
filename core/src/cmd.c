@@ -14,7 +14,7 @@
 #include "timers.h"
 #include "persist_config.h"
 #include "sai.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "measurements.h"
 #include "hpm.h"
 #include "modbus_measurements.h"
@@ -591,9 +591,9 @@ static void dew_point_cb(char* args)
 }
 
 
-static void lora_conn_cb(char* args)
+static void comms_conn_cb(char* args)
 {
-    if (lw_get_connected())
+    if (comms_get_connected())
     {
         log_out("1 | Connected");
     }
@@ -642,7 +642,7 @@ static void bat_cb(char* args)
 }
 
 
-static void lw_dbg_cb(char* args)
+static void comms_dbg_cb(char* args)
 {
     uart_ring_out(LW_UART, args, strlen(args));
     uart_ring_out(LW_UART, "\r\n", 2);
@@ -696,7 +696,7 @@ static void repop_cb(char* args)
 }
 
 
-static void no_lw_cb(char* args)
+static void no_comms_cb(char* args)
 {
     bool enable = strtoul(args, NULL, 10);
     measurements_set_debug_mode(enable);
@@ -764,6 +764,9 @@ void cmds_process(char * command, unsigned len)
         { "version",      "Print version.",           version_cb},
         { "comms_send",   "Send comms message",       comms_send_cb},
         { "comms_config", "Set comms config",         comms_config_cb},
+        { "comms_conn",   "LoRa connected",           comms_conn_cb},
+        { "comms_dbg",    "Comms Chip Debug",         comms_dbg_cb},
+        { "no_comms",     "Dont need comms for measurements", no_comms_cb},
         { "interval",     "Set the interval",         interval_cb},
         { "samplecount",  "Set the samplecount",      samplecount_cb},
         { "debug",        "Set hex debug mask",       debug_cb},
@@ -788,17 +791,14 @@ void cmds_process(char * command, unsigned len)
         { "temp",         "Get the temperature",      temperature_cb},
         { "humi",         "Get the humidity",         humidity_cb},
         { "dew",          "Get the dew temperature",  dew_point_cb},
-        { "lora_conn",    "LoRa connected",           lora_conn_cb},
         { "wipe",         "Factory Reset",            wipe_cb},
         { "interval_mins","Get/Set interval minutes", interval_mins_cb},
         { "bat",          "Get battery level.",       bat_cb},
         { "pulsecount",   "Show pulsecount.",         pulsecount_log},
-        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb},
         { "light",        "Get the light in lux.",    light_cb},
         { "sound",        "Get the sound in lux.",    sound_cb},
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
         { "repop",        "Repopulate measurements.", repop_cb},
-        { "no_lw",        "Dont need LW for measurements", no_lw_cb},
         { "sleep",        "Sleep",                    sleep_cb},
         { "power_mode",   "Power mode setting",       power_mode_cb},
         { "can_impl",     "Send example CAN message", can_impl_cb},

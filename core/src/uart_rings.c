@@ -8,7 +8,7 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "hpm.h"
 #include "modbus.h"
 #include "platform.h"
@@ -169,8 +169,8 @@ void uart_ring_in_drain(unsigned uart)
         len = ring_buf_readline(ring, command, CMD_LINELEN);
         if (len)
         {
-            log_debug(DEBUG_LW, "LORA >> %s", command);
-            lw_process(command);
+            comms_debug(" >> %s", command);
+            comms_process(command);
         }
     }
     else if (uart == HPM_UART)

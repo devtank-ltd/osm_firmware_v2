@@ -10,7 +10,7 @@
 #include "log.h"
 #include "common.h"
 #include "uart_rings.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "pinmap.h"
 
 #include "can_impl.h"
@@ -158,14 +158,14 @@ static void _debug_mode_iteration(void)
     }
     else
     {
-        bool now_connected = lw_get_connected();
+        bool now_connected = comms_get_connected();
         if (!now_connected)
         {
-            dm_debug("LORA:FAILED");
+            dm_debug("COMMS:FAILED");
         }
         else
         {
-            dm_debug("LORA:CONNECTED");
+            dm_debug("COMMS:CONNECTED");
         }
         _debug_mode_collect_iteration();
     }
@@ -207,7 +207,7 @@ void debug_mode(void)
             uart_rings_out_drain();
             _debug_mode_fast_iteration();
         }
-        lw_loop_iteration();
+        comms_loop_iteration();
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         gpio_toggle(LED_PORT, LED_PIN);

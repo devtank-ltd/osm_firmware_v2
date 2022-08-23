@@ -13,7 +13,7 @@
 #include "io.h"
 #include "i2c.h"
 #include "persist_config.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "measurements.h"
 #include "debug_mode.h"
 
@@ -62,7 +62,7 @@ int main(void)
     pulsecount_init();
     modbus_init();
     can_impl_init();
-    lw_init();
+    comms_init();
 
     platform_watchdog_init(IWDG_NORMAL_TIME_MS);
 
@@ -92,8 +92,8 @@ int main(void)
             uart_rings_out_drain();
             measurements_loop_iteration();
         }
-        lw_loop_iteration();
-        flashing_delay = lw_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
+        comms_loop_iteration();
+        flashing_delay = comms_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
         platform_blink_led_toggle();
 
         prev_now = get_since_boot_ms();

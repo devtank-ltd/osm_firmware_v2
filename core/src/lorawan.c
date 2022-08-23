@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -35,6 +36,15 @@
 _Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
+
+
+typedef struct
+{
+    char dev_eui[LW_DEV_EUI_LEN];
+    char app_key[LW_APP_KEY_LEN];
+} _lw_config_t;
+
+static bool                 _persist_data_lw_valid = false;
 
 #define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
 #define LW_CONFIG_TIMEOUT_S             30
@@ -207,13 +217,11 @@ typedef struct
 
 
 static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_OFF, .init_step=0, .last_message_time=0, .resend_count=0, .reset_count=0};
-static port_n_pins_t        _comms_reset_gpio                      = { GPIOC, GPIO8 };
+static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
-static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
-static char                 _lw_app_key[LW_APP_KEY_LEN + 1];
 static uint8_t              _lw_port                            = 0;
 static uint32_t             _lw_chip_off_time                   = 0;
-static uint32_t             _comms_reset_timeout                   = comms_reset_GPIO_DEFAULT_MS;
+static uint32_t             _lw_reset_timeout                   = comms_reset_GPIO_DEFAULT_MS;
 static lw_backup_msg_t      _lw_backup_message                  = {.backup_type=LW_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
 static error_code_t         _lw_error_code                      = {0, false};
 static char                 _lw_cmd_ascii[CMD_LINELEN]          = "";
@@ -245,7 +253,7 @@ uint16_t comms_get_mtu(void)
 static void _lw_chip_off(void)
 {
     _lw_state_machine.state = LW_STATE_OFF;
-    gpio_clear(_comms_reset_gpio.port, _comms_reset_gpio.pins);
+    gpio_clear(_lw_reset_gpio.port, _lw_reset_gpio.pins);
 }
 
 
@@ -259,7 +267,7 @@ static void _lw_chip_on(void)
 {
     _lw_state_machine.state = LW_STATE_WAIT_INIT;
     _lw_state_machine.init_step = 0;
-    gpio_set(_comms_reset_gpio.port, _comms_reset_gpio.pins);
+    gpio_set(_lw_reset_gpio.port, _lw_reset_gpio.pins);
 }
 
 
@@ -302,27 +310,29 @@ static uint8_t _lw_get_port(void)
 }
 
 
-static void _comms_reset_gpio_init(void)
+static void _lw_reset_gpio_init(void)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(_comms_reset_gpio.port));
-    gpio_mode_setup(_comms_reset_gpio.port,
+    rcc_periph_clock_enable(PORT_TO_RCC(_lw_reset_gpio.port));
+    gpio_mode_setup(_lw_reset_gpio.port,
                     GPIO_MODE_OUTPUT,
                     GPIO_PUPD_NONE,
-                    _comms_reset_gpio.pins);
+                    _lw_reset_gpio.pins);
 }
 
 
 static bool _lw_load_config(void)
 {
-
-    if (!persist_get_lw_dev_eui(_lw_dev_eui) || !persist_get_lw_app_key(_lw_app_key))
+    if (_persist_data_lw_valid)
     {
         log_error("No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", _lw_dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", _lw_dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", _lw_app_key);
+
+    _lw_config_t * config = (_lw_config_t*) persist_get_comms_config();
+
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%."STR(LW_APP_KEY_LEN)"s", config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%."STR(LW_APP_KEY_LEN)"s", config->app_key);
     return true;
 }
 
@@ -435,7 +445,33 @@ static void _lw_retry_write(void)
 
 void comms_init(void)
 {
-    _comms_reset_gpio_init();
+    _lw_config_t * config = (_lw_config_t*)persist_get_comms_config();
+
+    _persist_data_lw_valid = true;
+
+    if (config->dev_eui[0] && config->app_key[0])
+    {
+        for(unsigned n = 0; n < LW_DEV_EUI_LEN; n++)
+        {
+            if (!isascii(config->dev_eui[n]))
+            {
+                _persist_data_lw_valid = false;
+                log_error("Persistent data lw dev not valid");
+                break;
+            }
+        }
+        for(unsigned n = 0; n < LW_APP_KEY_LEN; n++)
+        {
+            if (!isascii(config->app_key[n]))
+            {
+                _persist_data_lw_valid = false;
+                log_error("Persistent data lw app not valid");
+                break;
+            }
+        }
+    }
+
+    _lw_reset_gpio_init();
     if (_lw_state_machine.state != LW_STATE_OFF)
     {
         log_error("LoRaWAN chip not in DISCONNECTED state.");
@@ -693,11 +729,11 @@ void comms_reset(void)
     if (++_lw_state_machine.reset_count > 2)
     {
         comms_debug("Going into long reset mode (wait %"PRIi16" mins).", LW_SLOW_RESET_TIMEOUT_MINS);
-        _comms_reset_timeout = LW_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
+        _lw_reset_timeout = LW_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
     }
     else
     {
-        _comms_reset_timeout = 10;
+        _lw_reset_timeout = 10;
     }
 }
 
@@ -1037,7 +1073,7 @@ void comms_loop_iteration(void)
     switch(_lw_state_machine.state)
     {
         case LW_STATE_OFF:
-            if (since_boot_delta(now, _lw_chip_off_time) > _comms_reset_timeout)
+            if (since_boot_delta(now, _lw_chip_off_time) > _lw_reset_timeout)
             {
                 _lw_chip_on();
             }
@@ -1071,20 +1107,19 @@ void     comms_config_setup_str(char * str)
         return;
     }
 
+    _lw_config_t * config = (_lw_config_t*)persist_get_comms_config();
     uint8_t end_pos_word = p - str + 1;
     p = skip_space(p);
     if (strncmp(str, "dev-eui", end_pos_word-1) == 0)
     {
-        char eui[LW_DEV_EUI_LEN + 1] = "";
-        strncpy(eui, p, strlen(p));
-        persist_set_lw_dev_eui(eui);
+        memset(config->dev_eui, 0, LW_DEV_EUI_LEN);
+        strncpy(config->dev_eui, p, strlen(p));
         _lw_reload_config();
     }
     else if (strncmp(str, "app-key", end_pos_word-1) == 0)
     {
-        char key[LW_APP_KEY_LEN + 1] = "";
-        strncpy(key, p, strlen(p));
-        persist_set_lw_app_key(key);
+        memset(config->app_key, 0, LW_DEV_EUI_LEN);
+        strncpy(config->app_key, p, strlen(p));
         _lw_reload_config();
     }
 }
