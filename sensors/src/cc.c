@@ -360,7 +360,7 @@ measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
     }
 
     value->v_i64 = (int64_t)cc_mA;
-    adc_debug("CC = %umA", cc_mA);
+    adc_debug("CC = %"PRIu32"mA", cc_mA);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
