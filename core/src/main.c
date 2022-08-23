@@ -83,7 +83,7 @@ int main(void)
 
     uint32_t prev_now = 0;
     uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;
-    while(true)
+    while(platform_running())
     {
         platform_watchdog_reset();
         while(since_boot_delta(get_since_boot_ms(), prev_now) < flashing_delay)
@@ -98,6 +98,8 @@ int main(void)
 
         prev_now = get_since_boot_ms();
     }
+
+    platform_deinit();
 
     return 0;
 }

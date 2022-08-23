@@ -145,3 +145,13 @@ void platform_persist_wipe(void)
     flash_erase_page(FLASH_CONFIG_PAGE);
     flash_lock();
 }
+
+bool platform_running(void)
+{
+    return true;
+}
+
+
+void platform_deinit(void)
+{
+}

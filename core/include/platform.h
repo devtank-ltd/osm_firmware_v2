@@ -22,3 +22,5 @@ persist_storage_t* platform_get_raw_persist(void);
 bool platform_persist_commit(persist_storage_t * persist_data);
 void platform_persist_wipe(void);
 
+bool platform_running(void);
+void platform_deinit(void);
