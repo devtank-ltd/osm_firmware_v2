@@ -24,3 +24,9 @@ void platform_persist_wipe(void);
 
 bool platform_running(void);
 void platform_deinit(void);
+
+void platform_setup_adc(adc_setup_config_t* config);
+void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels);
+void platform_adc_start_conversion_regular(void);
+void platform_adc_power_off(void);
+void platform_adc_set_num_data(unsigned num_data);

@@ -46,3 +46,9 @@ typedef struct
     uint32_t gpio_func;
     port_n_pins_t port_n_pins;
 } i2c_def_t;
+
+
+typedef struct
+{
+    uint32_t mem_addr;
+} adc_setup_config_t;

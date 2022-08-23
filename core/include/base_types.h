@@ -144,3 +144,17 @@ typedef struct
     uint8_t  parity;          /* uart_parity_t */
     modbus_dev_t            modbus_devices[MODBUS_MAX_DEV];
 } __attribute__((__packed__)) modbus_bus_t;
+
+
+typedef enum
+{
+    ADCS_TYPE_BAT,
+    ADCS_TYPE_CC_CLAMP1,
+    ADCS_TYPE_CC_CLAMP2,
+    ADCS_TYPE_CC_CLAMP3,
+} adcs_type_t;
+
+
+#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
+                           ADCS_TYPE_CC_CLAMP2,  \
+                           ADCS_TYPE_CC_CLAMP3   }

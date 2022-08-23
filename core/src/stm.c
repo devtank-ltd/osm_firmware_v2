@@ -1,10 +1,14 @@
 #include <string.h>
 
 #include <libopencm3/stm32/gpio.h>
-#include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/iwdg.h>
 #include <libopencm3/stm32/flash.h>
+#include <libopencm3/stm32/adc.h>
+#include <libopencm3/stm32/dma.h>
+#include <libopencm3/stm32/rcc.h>
 #include <libopencm3/cm3/scb.h>
+#include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/systick.h>
 
 #include "platform.h"
 #include "flash_data.h"
@@ -12,6 +16,24 @@
 #include "sos.h"
 #include "pinmap.h"
 #include "log.h"
+
+#include "adcs.h"
+
+
+#define ADC_CCR_PRESCALE_1     0x0  /* 0b0000 */
+#define ADC_CCR_PRESCALE_2     0x1  /* 0b0001 */
+#define ADC_CCR_PRESCALE_4     0x2  /* 0b0010 */
+#define ADC_CCR_PRESCALE_6     0x3  /* 0b0011 */
+#define ADC_CCR_PRESCALE_8     0x4  /* 0b0100 */
+#define ADC_CCR_PRESCALE_10    0x5  /* 0b0101 */
+#define ADC_CCR_PRESCALE_12    0x6  /* 0b0110 */
+#define ADC_CCR_PRESCALE_16    0x7  /* 0b0111 */
+#define ADC_CCR_PRESCALE_32    0x8  /* 0b1000 */
+#define ADC_CCR_PRESCALE_64    0x9  /* 0b1001 */
+#define ADC_CCR_PRESCALE_128   0xA  /* 0b1010 */
+#define ADC_CCR_PRESCALE_256   0xB  /* 0b1011 */
+#define ADC_CCR_PRESCALE_MASK  0xF
+#define ADC_CCR_PRESCALE_SHIFT 18
 
 
 static void _stm_setup_systick(void)
@@ -33,6 +55,61 @@ static void _stm_setup_rs485(void)
     gpio_mode_setup(de_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, de_port_n_pin.pins);
 
     platform_set_rs485_mode(false);
+}
+
+
+static void _stm_adcs_set_prescale(uint32_t adc, uint32_t prescale)
+{
+    ADC_CCR(adc) &= ~(ADC_CCR_PRESCALE_MASK << ADC_CCR_PRESCALE_SHIFT);
+    ADC_CCR(adc) |= (prescale & ADC_CCR_PRESCALE_MASK) << ADC_CCR_PRESCALE_SHIFT;
+}
+
+
+static void _stm_setup_adc_unit(void)
+{
+    adc_power_off(ADC1);
+    RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
+    if (ADC_CR(ADC1) & ADC_CR_DEEPPWD)
+    {
+        ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
+    }
+
+    _stm_adcs_set_prescale(ADC1, ADC_CCR_PRESCALE_64);
+
+    adc_enable_regulator(ADC1);
+    adc_set_right_aligned(ADC1);
+    adc_set_sample_time_on_all_channels(ADC1, ADC_SMPR_SMP_640DOT5CYC);
+    adc_set_resolution(ADC1, ADC_CFGR1_RES_12_BIT);
+
+    adc_calibrate(ADC1);
+    adc_set_continuous_conversion_mode(ADC1);
+    adc_enable_dma(ADC1);
+    adc_power_on(ADC1);
+}
+
+
+static void _stm_setup_adc_dma(adc_setup_config_t* config)
+{
+    rcc_periph_clock_enable(RCC_DMA1);
+
+    nvic_enable_irq(NVIC_DMA1_CHANNEL1_IRQ);
+    dma_set_channel_request(DMA1, DMA_CHANNEL1, 0);
+
+    dma_channel_reset(DMA1, DMA_CHANNEL1);
+
+    dma_set_peripheral_address(DMA1, DMA_CHANNEL1, (uint32_t)&ADC_DR(ADC1));
+    dma_set_memory_address(DMA1, DMA_CHANNEL1, config->mem_addr);
+    dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL1);
+    dma_set_peripheral_size(DMA1, DMA_CHANNEL1, DMA_CCR_PSIZE_16BIT);
+    dma_set_memory_size(DMA1, DMA_CHANNEL1, DMA_CCR_MSIZE_16BIT);
+    dma_set_priority(DMA1, DMA_CHANNEL1, DMA_CCR_PL_LOW);
+
+    dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL1);
+    dma_set_number_of_data(DMA1, DMA_CHANNEL1, ADCS_NUM_SAMPLES);
+    dma_enable_circular_mode(DMA1, DMA_CHANNEL1);
+    dma_set_read_from_peripheral(DMA1, DMA_CHANNEL1);
+
+    dma_enable_channel(DMA1, DMA_CHANNEL1);
 }
 
 
@@ -154,4 +231,79 @@ bool platform_running(void)
 
 void platform_deinit(void)
 {
+}
+
+
+void platform_setup_adc(adc_setup_config_t* config)
+{
+    // Setup the clock and gpios
+    const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
+    rcc_periph_clock_enable(RCC_ADC1);
+    for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
+    {
+        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pins[n].port));
+        gpio_mode_setup(port_n_pins[n].port,
+                        GPIO_MODE_ANALOG,
+                        GPIO_PUPD_NONE,
+                        port_n_pins[n].pins);
+    }
+    _stm_setup_adc_unit();
+    _stm_setup_adc_dma(config);
+}
+
+
+static uint8_t _stm_adcs_get_channel(adcs_type_t adcs_type)
+{
+    switch(adcs_type)
+    {
+        case ADCS_TYPE_BAT:
+            return ADC1_CHANNEL_BAT_MON;
+        case ADCS_TYPE_CC_CLAMP1:
+            return ADC1_CHANNEL_CURRENT_CLAMP_1;
+        case ADCS_TYPE_CC_CLAMP2:
+            return ADC1_CHANNEL_CURRENT_CLAMP_2;
+        case ADCS_TYPE_CC_CLAMP3:
+            return ADC1_CHANNEL_CURRENT_CLAMP_3;
+    }
+    return 0;
+}
+
+
+void platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
+{
+    uint8_t channels[ADC_COUNT];
+    for (uint8_t i = 0; i < num_adcs_types; i++)
+        channels[i] = _stm_adcs_get_channel(adcs_types[i]);
+    adc_set_regular_sequence(ADC1, num_adcs_types, channels);
+}
+
+
+void platform_adc_start_conversion_regular(void)
+{
+    adc_start_conversion_regular(ADC1);
+}
+
+
+void platform_adc_power_off(void)
+{
+    adc_power_off(ADC1);
+}
+
+
+// cppcheck-suppress unusedFunction ; System handler
+void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
+{
+    if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))
+    {
+        dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
+        adcs_dma_complete();
+    }
+}
+
+
+void platform_adc_set_num_data(unsigned num_data)
+{
+    dma_disable_channel(DMA1, DMA_CHANNEL1);
+    dma_set_number_of_data(DMA1, DMA_CHANNEL1, num_data);
+    dma_enable_channel(DMA1, DMA_CHANNEL1);
 }

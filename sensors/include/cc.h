@@ -17,4 +17,4 @@ extern bool                         cc_set_midpoint(uint16_t midpoint, char* nam
 extern bool                         cc_get_midpoint(uint16_t* midpoint, char* name);
 extern bool                         cc_calibrate(void);
 
-extern bool                         cc_set_channels_active(uint8_t* active_channels, unsigned len);
+extern bool                         cc_set_active_clamps(adcs_type_t* clamps, unsigned len);

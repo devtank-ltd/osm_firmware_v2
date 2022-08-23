@@ -53,16 +53,16 @@ static inline value_t value_from_float(float d)   { return (value_t){.type = VAL
 extern bool value_as_str(value_t* value, char* d, unsigned len);
 
 
-#define value_from(_d_) _Generic((_d_),                                   \
-                                    unsigned char:      value_from_u8,    \
-                                    char:               value_from_i8,    \
-                                    unsigned short :    value_from_u16,   \
-                                    short :             value_from_i16,   \
-                                    unsigned long:      value_from_u32,   \
-                                    long:               value_from_i32,   \
-                                    unsigned long long: value_from_u64,   \
-                                    long long:          value_from_i64,   \
-                                    float :             value_from_float  \
+#define value_from(_d_) _Generic((_d_),                                \
+                                    uint8_t  :       value_from_u8,    \
+                                    int8_t   :       value_from_i8,    \
+                                    uint16_t :       value_from_u16,   \
+                                    int16_t  :       value_from_i16,   \
+                                    uint32_t :       value_from_u32,   \
+                                    int32_t  :       value_from_i32,   \
+                                    uint64_t :       value_from_u64,   \
+                                    int64_t  :       value_from_i64,   \
+                                    float    :       value_from_float  \
                                     )(_d_)
 
 #define value_get(_v_) ( (_v_->type == VALUE_UINT8)?_v_->u8:  \

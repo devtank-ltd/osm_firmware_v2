@@ -189,8 +189,8 @@ void debug_mode(void)
         _debug_mode_enabled = false;
         return;
     }
-    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
-    cc_set_channels_active(all_cc_channels, ADC_CC_COUNT);
+    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
+    cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
 
     _debug_mode_enabled = true;
 

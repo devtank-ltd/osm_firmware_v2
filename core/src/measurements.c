@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libopencm3/cm3/cortex.h>
-
 #include "measurements.h"
 #include "comms.h"
 #include "log.h"
@@ -23,7 +21,6 @@
 #include "sai.h"
 #include "sleep.h"
 #include "uart_rings.h"
-#include "pinmap.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
@@ -183,10 +180,10 @@ static bool _measurements_arr_append_value(value_t * value)
 }
 
 #define _measurements_arr_append(_b_) _Generic((_b_),                            \
-                                    signed char: _measurements_arr_append_i8,    \
-                                    short int: _measurements_arr_append_i16,     \
-                                    long int: _measurements_arr_append_i32,      \
-                                    long long int: _measurements_arr_append_i64, \
+                                    int8_t: _measurements_arr_append_i8,    \
+                                    int16_t: _measurements_arr_append_i16,     \
+                                    int32_t: _measurements_arr_append_i32,      \
+                                    int64_t: _measurements_arr_append_i64, \
                                     value_t * : _measurements_arr_append_value)(_b_)
 
 
@@ -812,24 +809,24 @@ uint16_t measurements_num_measurements(void)
 void measurements_derive_cc_phase(void)
 {
     unsigned len = 0;
-    uint8_t channels[ADC_COUNT] = {0};
+    adcs_type_t clamps[ADC_COUNT] = {0};
     measurements_def_t* def;
     if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def) &&
         _measurements_def_is_active(def) )
     {
-        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_1;
+        clamps[len++] = ADCS_TYPE_CC_CLAMP1;
     }
     if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def) &&
         _measurements_def_is_active(def) )
     {
-        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_2;
+        clamps[len++] = ADCS_TYPE_CC_CLAMP2;
     }
     if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def) &&
         _measurements_def_is_active(def) )
     {
-        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_3;
+        clamps[len++] = ADCS_TYPE_CC_CLAMP3;
     }
-    cc_set_channels_active(channels, len);
+    cc_set_active_clamps(clamps, len);
 }
 
 
@@ -1073,15 +1070,9 @@ void measurements_print(void)
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def = &_measurements_arr.def[i];
-        char id_start = measurements_def->name[0];
+        unsigned char id_start = measurements_def->name[0];
         if (!id_start || id_start == 0xFF)
-        {
             continue;
-        }
-        if ( 0 /* uart nearly full */ )
-        {
-            ; // Do something
-        }
         log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval, measurements_def->samplecount);
     }
 }
@@ -1112,7 +1103,7 @@ void measurements_init(void)
     for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
     {
         measurements_def_t* def = &_measurements_arr.def[n];
-        char id_start = def->name[0];
+        unsigned char id_start = def->name[0];
 
         if (!id_start || id_start == 0xFF)
         {

@@ -20,14 +20,14 @@
 
 typedef struct
 {
-    uint8_t     channels[ADC_CC_COUNT];
+    adcs_type_t active[ADC_CC_COUNT];
     unsigned    len;
-} cc_channels_active_t;
+} cc_active_clamps_t;
 
 
-static uint8_t              _cc_adc_channel_array[ADC_CC_COUNT] = ADC_CC_CHANNELS;
+static adcs_type_t          _cc_adc_clamp_array[ADC_CC_COUNT]   = ADC_TYPES_ALL_CC;
 static uint16_t             _cc_midpoints[ADC_CC_COUNT];
-static cc_channels_active_t _cc_adc_channels_active             = {0};
+static cc_active_clamps_t   _cc_adc_active_clamps               = {0};
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
 
@@ -110,14 +110,14 @@ static bool _cc_conv(uint16_t adc_val, uint16_t* cc_mA, uint16_t midpoint)
 }
 
 
-static bool _cc_find_active_channel_index(uint8_t* active_channel_index, uint8_t index)
+static bool _cc_find_active_clamp_index(uint8_t* active_clamp_index, uint8_t index)
 {
-    uint8_t adc_channel = _cc_adc_channel_array[index];
-    for (unsigned i = 0; i < _cc_adc_channels_active.len; i++)
+    uint8_t adc_clamp = _cc_adc_clamp_array[index];
+    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
     {
-        if (_cc_adc_channels_active.channels[i] == adc_channel)
+        if (_cc_adc_active_clamps.active[i] == adc_clamp)
         {
-            *active_channel_index = i;
+            *active_clamp_index = i;
             return true;
         }
     }
@@ -148,9 +148,9 @@ static bool _cc_get_index(uint8_t* index, char* name)
 }
 
 
-static bool _cc_get_channel(uint8_t* channel, uint8_t index)
+static bool _cc_get_clamp(uint8_t* clamp, uint8_t index)
 {
-    if (!channel)
+    if (!clamp)
     {
         adc_debug("Handed NULL pointer.");
         return false;
@@ -158,22 +158,22 @@ static bool _cc_get_channel(uint8_t* channel, uint8_t index)
     switch (index)
     {
         case 0:
-            *channel = ADC1_CHANNEL_CURRENT_CLAMP_1;
+            *clamp = ADCS_TYPE_CC_CLAMP1;
             return true;
         case 1:
-            *channel = ADC1_CHANNEL_CURRENT_CLAMP_2;
+            *clamp = ADCS_TYPE_CC_CLAMP2;
             return true;
         case 2:
-            *channel = ADC1_CHANNEL_CURRENT_CLAMP_3;
+            *clamp = ADCS_TYPE_CC_CLAMP3;
             return true;
         default:
-            adc_debug("No channel for %"PRIu8, index);
+            adc_debug("No clamp for %"PRIu8, index);
             return false;
     }
 }
 
 
-static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint8_t* channel)
+static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint8_t* clamp)
 {
     uint8_t index_local;
     if (!_cc_get_index(&index_local, name))
@@ -182,15 +182,15 @@ static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint
         return false;
     }
     if (active_index &&
-        !_cc_find_active_channel_index(active_index, index_local))
+        !_cc_find_active_clamp_index(active_index, index_local))
     {
-        adc_debug("Not in active channel.");
+        adc_debug("Not in active clamp.");
         return false;
     }
-    if (channel &&
-        !_cc_get_channel(channel, index_local))
+    if (clamp &&
+        !_cc_get_clamp(clamp, index_local))
     {
-        adc_debug("Cannot get channel.");
+        adc_debug("Cannot get clamp.");
         return false;
     }
     if (index)
@@ -217,7 +217,7 @@ static bool _cc_wait(void)
 }
 
 
-bool cc_set_channels_active(uint8_t* active_channels, unsigned len)
+bool cc_set_active_clamps(adcs_type_t* active_clamps, unsigned len)
 {
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
     {
@@ -232,9 +232,9 @@ bool cc_set_channels_active(uint8_t* active_channels, unsigned len)
         adc_debug("Not possible length of array.");
         return false;
     }
-    memcpy(_cc_adc_channels_active.channels, active_channels, len * sizeof(uint8_t));
-    _cc_adc_channels_active.len = len;
-    adc_debug("Setting %"PRIu8" active channels.", len);
+    memcpy(_cc_adc_active_clamps.active, active_clamps, len * sizeof(adcs_type_t));
+    _cc_adc_active_clamps.len = len;
+    adc_debug("Setting %"PRIu8" active clamps.", len);
     return true;
 }
 
@@ -276,7 +276,7 @@ measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_
 
 measurements_sensor_state_t cc_begin(char* name)
 {
-    if (!_cc_adc_channels_active.len)
+    if (!_cc_adc_active_clamps.len)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     uint8_t index, active_index;
@@ -299,7 +299,7 @@ measurements_sensor_state_t cc_begin(char* name)
             return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
-    adcs_resp_t resp = adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    adcs_resp_t resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -340,7 +340,7 @@ measurements_sensor_state_t cc_get(char* name, value_t* value)
     uint16_t adcs_rms;
     uint16_t midpoint = _cc_midpoints[index];
 
-    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_channels_active.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
     switch (resp)
     {
         case ADCS_RESP_FAIL:
@@ -415,15 +415,15 @@ bool cc_get_midpoint(uint16_t* midpoint, char* name)
 
 bool cc_calibrate(void)
 {
-    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
-    cc_channels_active_t prev_cc_adc_channels_active = {0};
-    memcpy(prev_cc_adc_channels_active.channels, _cc_adc_channels_active.channels, _cc_adc_channels_active.len * sizeof(_cc_adc_channels_active.channels[0]));
-    prev_cc_adc_channels_active.len = _cc_adc_channels_active.len;
+    adcs_type_t all_cc_clamps[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
+    cc_active_clamps_t prev_cc_adc_active_clamps = {0};
+    memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len * sizeof(_cc_adc_active_clamps.active[0]));
+    prev_cc_adc_active_clamps.len = _cc_adc_active_clamps.len;
 
-    memcpy(_cc_adc_channels_active.channels, all_cc_channels, ADC_CC_COUNT);
-    _cc_adc_channels_active.len = ADC_CC_COUNT;
+    memcpy(_cc_adc_active_clamps.active, all_cc_clamps, ADC_CC_COUNT);
+    _cc_adc_active_clamps.len = ADC_CC_COUNT;
 
-    adcs_resp_t resp = adcs_begin(_cc_adc_channels_active.channels, _cc_adc_channels_active.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    adcs_resp_t resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -456,26 +456,26 @@ bool cc_calibrate(void)
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         adc_debug("MP CC%u: %"PRIu16, i+1, midpoints[i]);
     cc_set_midpoints(midpoints);
-    memcpy(_cc_adc_channels_active.channels, prev_cc_adc_channels_active.channels, prev_cc_adc_channels_active.len);
-    _cc_adc_channels_active.len = prev_cc_adc_channels_active.len;
+    memcpy(_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
+    _cc_adc_active_clamps.len = prev_cc_adc_active_clamps.len;
     return true;
 }
 
 
 bool cc_get_blocking(char* name, value_t* value)
 {
-    uint8_t channel;
-    if (!_cc_get_info(name, NULL, NULL, &channel))
+    uint8_t clamp;
+    if (!_cc_get_info(name, NULL, NULL, &clamp))
     {
         adc_debug("Cannot get info.");
         return false;
     }
-    cc_channels_active_t prev_active_channels;
-    memcpy(prev_active_channels.channels, _cc_adc_channels_active.channels, _cc_adc_channels_active.len);
-    prev_active_channels.len = _cc_adc_channels_active.len;
-    if (!cc_set_channels_active(&channel, 1))
+    cc_active_clamps_t prev_cc_adc_active_clamps;
+    memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len);
+    prev_cc_adc_active_clamps.len = _cc_adc_active_clamps.len;
+    if (!cc_set_active_clamps(&clamp, 1))
     {
-        adc_debug("Cannot set active channel.");
+        adc_debug("Cannot set active clamp.");
         return false;
     }
     if (cc_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
@@ -487,21 +487,21 @@ bool cc_get_blocking(char* name, value_t* value)
         return false;
     bool r = (cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
     _cc_release_all();
-    cc_set_channels_active(prev_active_channels.channels, prev_active_channels.len);
+    cc_set_active_clamps(prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
     return r;
 }
 
 
 bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
 {
-    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
-    cc_channels_active_t prev_cc_adc_channels_active = {0};
-    memcpy(prev_cc_adc_channels_active.channels, _cc_adc_channels_active.channels, _cc_adc_channels_active.len * sizeof(_cc_adc_channels_active.channels[0]));
-    prev_cc_adc_channels_active.len = _cc_adc_channels_active.len;
+    adcs_type_t all_cc_clamps[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
+    cc_active_clamps_t prev_cc_adc_active_clamps = {0};
+    memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len * sizeof(_cc_adc_active_clamps.active[0]));
+    prev_cc_adc_active_clamps.len = _cc_adc_active_clamps.len;
 
-    if (!cc_set_channels_active(all_cc_channels, ADC_CC_COUNT))
+    if (!cc_set_active_clamps(all_cc_clamps, ADC_CC_COUNT))
     {
-        adc_debug("Cannot set active channel.");
+        adc_debug("Cannot set active clamp.");
         return false;
     }
 
@@ -543,7 +543,7 @@ bool cc_get_all_blocking(value_t* value_1, value_t* value_2, value_t* value_3)
     }
     _cc_release_all();
 
-    return cc_set_channels_active(prev_cc_adc_channels_active.channels, prev_cc_adc_channels_active.len);
+    return cc_set_active_clamps(prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
 bad_exit:
     _cc_release_all();
     adc_debug("Couldnt get %s value.", name);
