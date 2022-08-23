@@ -8,7 +8,6 @@
 #include "timers.h"
 #include "lorawan.h"
 #include "persist_config_header.h"
-#include "flash_data.h"
 #include "platform.h"
 
 static bool                 persist_data_valid = false;
@@ -47,7 +46,7 @@ static void _lw_config_valid(void)
 
 void persistent_init(void)
 {
-    persist_storage_t* persist_data_raw = (persist_storage_t*)PERSIST_RAW_DATA;
+    persist_storage_t* persist_data_raw = platform_get_raw_persist();
 
     uint32_t vs = persist_data_raw->version;
     if (vs != PERSIST_VERSION)
@@ -69,9 +68,7 @@ void persistent_init(void)
 
 void persist_commit()
 {
-    platform_persist_commit();
-
-    if (memcmp(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data)) == 0)
+    if (platform_persist_commit(&persist_data))
     {
         log_sys_debug("Flash successfully written.");
         persist_data_valid = true;

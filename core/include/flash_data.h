@@ -1,4 +1,5 @@
 #pragma once
+#include <libopencm3/stm32/flash.h>
 
 static inline void flash_set_data(const void * addr, const void * data, unsigned size)
 {

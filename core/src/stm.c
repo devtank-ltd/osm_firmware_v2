@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/iwdg.h>
@@ -5,6 +7,7 @@
 #include <libopencm3/cm3/scb.h>
 
 #include "platform.h"
+#include "flash_data.h"
 
 #include "sos.h"
 #include "pinmap.h"
@@ -126,12 +129,14 @@ persist_storage_t* platform_get_raw_persist(void)
 }
 
 
-void platform_persist_commit(void)
+bool platform_persist_commit(persist_storage_t * persist_data)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
-    flash_set_data(PERSIST_RAW_DATA, &persist_data, sizeof(persist_data));
+    flash_set_data(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t));
     flash_lock();
+
+    return (memcmp(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t)) == 0);
 }
 
 void platform_persist_wipe(void)
