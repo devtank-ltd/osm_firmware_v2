@@ -261,7 +261,7 @@ static bool _measurements_append_str(char* value)
 
 static bool _measurements_append_float(int32_t* value)
 {
-    if (!_measurements_arr_append_i8(MEASUREMENTS_VALUE_TYPE_FLOAT))
+    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_FLOAT))
         return false;
     return _measurements_arr_append_float(*value);
 }
