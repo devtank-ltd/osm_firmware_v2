@@ -23,30 +23,64 @@
 #include "sai.h"
 #include "sleep.h"
 #include "uart_rings.h"
+#include "fw.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
+#define MEASUREMENTS_VALUE_STR_LEN              23
+#define MEASUREMENTS_SEND_STR_LEN               8
 
-#define FW_SHA_LEN                          7
 
+#define MEASUREMENTS_SEND_IS_SIGNED    0x10
 
 typedef enum
 {
-    MEASUREMENT_UNKNOWN = 0,
-    MEASUREMENT_STATE_IDLE,
-    MEASUREMENT_STATE_INITED,
-} measurements_state_t;
+    MEASUREMENTS_SEND_TYPE_UNSET   = 0,
+    MEASUREMENTS_SEND_TYPE_UINT8   = 1,
+    MEASUREMENTS_SEND_TYPE_UINT16  = 2,
+    MEASUREMENTS_SEND_TYPE_UINT32  = 3,
+    MEASUREMENTS_SEND_TYPE_UINT64  = 4,
+    MEASUREMENTS_SEND_TYPE_INT8    = 1 | MEASUREMENTS_SEND_IS_SIGNED,
+    MEASUREMENTS_SEND_TYPE_INT16   = 2 | MEASUREMENTS_SEND_IS_SIGNED,
+    MEASUREMENTS_SEND_TYPE_INT32   = 3 | MEASUREMENTS_SEND_IS_SIGNED,
+    MEASUREMENTS_SEND_TYPE_INT64   = 4 | MEASUREMENTS_SEND_IS_SIGNED,
+    MEASUREMENTS_SEND_TYPE_FLOAT   = 5 | MEASUREMENTS_SEND_IS_SIGNED,
+    MEASUREMENTS_SEND_TYPE_STR     = 0x20,
+} measurements_send_type_t;
 
 
 typedef struct
 {
-    value_t                 sum;
-    value_t                 max;
-    value_t                 min;
+    union
+    {
+        struct
+        {
+            int64_t sum;
+            int64_t max;
+            int64_t min;
+        } value_64;
+        struct
+        {
+            int32_t sum;
+            int32_t max;
+            int32_t min;
+        } value_f;
+        struct
+        {
+            char    str[MEASUREMENTS_VALUE_STR_LEN];
+            uint8_t len;
+        } value_s;
+    };
+} measurements_value_t;
+
+
+typedef struct
+{
+    measurements_value_t    value;
+    uint8_t                 value_type;                                 /* measurements_value_type_t */
     uint8_t                 num_samples;
     uint8_t                 num_samples_init;
     uint8_t                 num_samples_collected;
-    measurements_state_t    state;
     uint32_t                collection_time_cache;
 } measurements_data_t;
 
@@ -64,8 +98,6 @@ typedef struct
     uint32_t wait_time;
 } measurements_check_time_t;
 
-
-static char fw_sha1[FW_SHA_LEN+1] = GIT_SHA1;
 
 static uint32_t                     _last_sent_ms                                        = 0;
 static bool                         _pending_send                                        = false;
@@ -85,14 +117,6 @@ static unsigned _measurements_chunk_prev_start_pos = 0;
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60 * 1000)
-
-
-measurements_sensor_state_t fw_version_get(char* name, value_t* value)
-{
-    if (!value_as_str(value, fw_sha1, FW_SHA_LEN))
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
 
 
 static bool _measurements_get_measurements_def(char* name, measurements_def_t** measurements_def)
@@ -137,18 +161,26 @@ static bool _measurements_arr_append_i64(int64_t val)
 }
 
 
-static bool _measurements_arr_append_float(float val)
+static bool _measurements_arr_append_float(int32_t val)
 {
-    int32_t m_val = val * 1000;
-    return _measurements_arr_append_i32(m_val);
+    return _measurements_arr_append_i32(val);
 }
 
 
 static bool _measurements_arr_append_str(char* val, unsigned len)
 {
+    if (len > MEASUREMENTS_SEND_STR_LEN)
+        len = MEASUREMENTS_SEND_STR_LEN;
     for (unsigned i = 0; i < len; i++)
     {
         if (!_measurements_arr_append_i8((int8_t)(val[i])))
+        {
+            return false;
+        }
+    }
+    for (unsigned i = len; i < MEASUREMENTS_SEND_STR_LEN; i++)
+    {
+        if (!_measurements_arr_append_i8((int8_t)0))
         {
             return false;
         }
@@ -157,63 +189,139 @@ static bool _measurements_arr_append_str(char* val, unsigned len)
 }
 
 
-static bool _measurements_arr_append_value(value_t * value)
+static bool _measurements_append_i64(int64_t* value)
 {
-    if (!value)
-        return false;
-    value_compact(value);
-    if (!_measurements_arr_append_i8(value->type))
-        return false;
-    switch(value->type)
+    measurements_send_type_t compressed_type;
+    if (*value > 0)
     {
-        case VALUE_UINT8  : return _measurements_arr_append_i8(value->i8);
-        case VALUE_INT8   : return _measurements_arr_append_i8(value->i8);
-        case VALUE_UINT16 : return _measurements_arr_append_i16(value->i16);
-        case VALUE_INT16  : return _measurements_arr_append_i16(value->i16);
-        case VALUE_UINT32 : return _measurements_arr_append_i32(value->i32);
-        case VALUE_INT32  : return _measurements_arr_append_i32(value->i32);
-        case VALUE_UINT64 : return _measurements_arr_append_i64(value->i64);
-        case VALUE_INT64  : return _measurements_arr_append_i64(value->i64);
-        case VALUE_FLOAT  : return _measurements_arr_append_float(value->f);
-        case VALUE_STR    : return _measurements_arr_append_str(value->str, VALUE_STR_LEN);
+        if (*value > UINT32_MAX)
+            compressed_type = MEASUREMENTS_SEND_TYPE_UINT64;
+        else if (*value > UINT16_MAX)
+            compressed_type = MEASUREMENTS_SEND_TYPE_UINT32;
+        else if (*value > UINT8_MAX)
+            compressed_type = MEASUREMENTS_SEND_TYPE_UINT16;
+        else
+            compressed_type = MEASUREMENTS_SEND_TYPE_UINT8;
+    }
+
+    else if (*value > INT32_MAX || *value < INT32_MIN)
+        compressed_type = MEASUREMENTS_SEND_TYPE_INT64;
+    else if (*value > INT16_MAX || *value < INT16_MIN)
+        compressed_type = MEASUREMENTS_SEND_TYPE_INT32;
+    else if (*value > INT8_MAX  || *value < INT8_MIN)
+        compressed_type = MEASUREMENTS_SEND_TYPE_INT16;
+    else
+        compressed_type = MEASUREMENTS_SEND_TYPE_INT8;
+
+    if (!_measurements_arr_append_i8(compressed_type))
+        return false;
+    union
+    {
+        uint8_t  u8;
+        uint16_t u16;
+        uint32_t u32;
+        uint64_t u64;
+    } v;
+    switch(compressed_type)
+    {
+        case MEASUREMENTS_SEND_TYPE_UINT8:
+            v.u8    = *value;
+            return _measurements_arr_append_i8(*(int8_t*)&v.u8);
+        case MEASUREMENTS_SEND_TYPE_INT8:
+            return _measurements_arr_append_i8((int8_t)*value);
+        case MEASUREMENTS_SEND_TYPE_UINT16:
+            v.u16   = *value;
+            return _measurements_arr_append_i16(*(int16_t*)&v.u16);
+        case MEASUREMENTS_SEND_TYPE_INT16:
+            return _measurements_arr_append_i16((int16_t)*value);
+        case MEASUREMENTS_SEND_TYPE_UINT32:
+            v.u32   = *value;
+            return _measurements_arr_append_i32(*(int32_t*)&v.u32);
+        case MEASUREMENTS_SEND_TYPE_INT32:
+            return _measurements_arr_append_i32((int32_t)*value);
+        case MEASUREMENTS_SEND_TYPE_UINT64:
+            v.u64   = *value;
+            return _measurements_arr_append_i64(*(int64_t*)&v.u64);
+        case MEASUREMENTS_SEND_TYPE_INT64:
+            return _measurements_arr_append_i64((int64_t)*value);
         default: break;
     }
     return false;
 }
 
-#define _measurements_arr_append(_b_) _Generic((_b_),                            \
-                                    signed char: _measurements_arr_append_i8,    \
-                                    short int: _measurements_arr_append_i16,     \
-                                    long int: _measurements_arr_append_i32,      \
-                                    long long int: _measurements_arr_append_i64, \
-                                    value_t * : _measurements_arr_append_value)(_b_)
 
-
-static bool _measurements_to_arr(measurements_def_t* measurements_def, measurements_data_t* measurements_data)
+static bool _measurements_append_str(char* value)
 {
-    bool single = measurements_def->samplecount == 1;
-    value_t mean;
+    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_STR))
+        return false;
+    uint8_t len = strnlen(value, MEASUREMENTS_VALUE_STR_LEN);
+    return _measurements_arr_append_str(value, len);
+}
+
+
+static bool _measurements_append_float(int32_t* value)
+{
+    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_FLOAT))
+        return false;
+    return _measurements_arr_append_float(*value);
+}
+
+
+static bool _measurements_to_arr_i64(measurements_data_t* data, bool single)
+{
+    if (single)
+        return _measurements_append_i64(&data->value.value_64.sum);
+    bool r = false;
+    int64_t mean = data->value.value_64.sum / data->num_samples;
+    r |= !_measurements_append_i64(&mean);
+    r |= !_measurements_append_i64(&data->value.value_64.min);
+    r |= !_measurements_append_i64(&data->value.value_64.max);
+    return !r;
+}
+
+
+static bool _measurements_to_arr_str(measurements_data_t* data)
+{
+    return _measurements_append_str(data->value.value_s.str);
+}
+
+
+static bool _measurements_to_arr_float(measurements_data_t* data, bool single)
+{
+    if (single)
+        return _measurements_append_float(&data->value.value_f.sum);
+    bool r = false;
+    int32_t mean = data->value.value_f.sum / data->num_samples;
+    r |= !_measurements_append_float(&mean);
+    r |= !_measurements_append_float(&data->value.value_f.min);
+    r |= !_measurements_append_float(&data->value.value_f.max);
+    return !r;
+}
+
+
+static bool _measurements_to_arr(measurements_def_t* def, measurements_data_t* data)
+{
+    bool single = def->samplecount == 1;
 
     bool r = 0;
-    r |= !_measurements_arr_append(*(int32_t*)measurements_def->name);
-    if (single)
+    r |= !_measurements_arr_append_i32(*(int32_t*)def->name);
+    uint8_t datatype = single ? MEASUREMENTS_DATATYPE_SINGLE : MEASUREMENTS_DATATYPE_AVERAGED;
+    r |= !_measurements_arr_append_i8(datatype);
+
+    switch(data->value_type)
     {
-        r |= !_measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
-        r |= !_measurements_arr_append(&measurements_data->sum);
-    }
-    else
-    {
-        value_t num_samples;
-        num_samples = value_from((float)measurements_data->num_samples);
-        if (!value_div(&mean, &measurements_data->sum, &num_samples))
-        {
-            log_error("Failed to average %s value.", measurements_def->name);
+        case MEASUREMENTS_VALUE_TYPE_I64:
+            r |= !_measurements_to_arr_i64(data, single);
+            break;
+        case MEASUREMENTS_VALUE_TYPE_STR:
+            r |= !_measurements_to_arr_str(data);
+            break;
+        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+            r |= !_measurements_to_arr_float(data, single);
+            break;
+        default:
+            measurements_debug("Unknown type '%"PRIu8"'.", data->value_type);
             return false;
-        }
-        r |= !_measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_AVERAGED);
-        r |= !_measurements_arr_append(&mean);
-        r |= !_measurements_arr_append(&measurements_data->min);
-        r |= !_measurements_arr_append(&measurements_data->max);
     }
     return !r;
 }
@@ -224,7 +332,7 @@ static bool _measurements_send_start(void)
     memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
     _measurements_hex_arr_pos = 0;
 
-    if (!_measurements_arr_append((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    if (!_measurements_arr_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
     {
         log_error("Failed to add even version to measurements hex array.");
         _pending_send = false;
@@ -250,14 +358,14 @@ bool measurements_send_test(void)
         return false;
     }
 
-    value_t v;
+    measurements_reading_t v;
 
     char id[4] = MEASUREMENTS_FW_VERSION;
 
-    bool r = _measurements_arr_append(*(int32_t*)id);
-    r &= _measurements_arr_append((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
+    bool r = _measurements_arr_append_i32(*(int32_t*)id);
+    r &= _measurements_arr_append_i8((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
     r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
-    r &= _measurements_arr_append(&v);
+    r &= _measurements_arr_append_str(v.v_str, MEASUREMENTS_VALUE_STR_LEN);
 
     if (!r)
         measurements_debug("Failed to add to array.");
@@ -332,9 +440,8 @@ static void _measurements_send(void)
         measurements_data_t* data = &_measurements_arr.data[i];
         if (def->interval && (_interval_count % def->interval == 0))
         {
-            if (data->sum.type == VALUE_UNSET || data->num_samples == 0)
+            if (data->num_samples == 0)
             {
-                data->num_samples = 0;
                 data->num_samples_init = 0;
                 data->num_samples_collected = 0;
                 log_error("Measurement \"%s\" requested but value not set.", def->name);
@@ -351,9 +458,7 @@ static void _measurements_send(void)
                 break;
             }
             num_qd++;
-            data->sum = VALUE_EMPTY;
-            data->min = VALUE_EMPTY;
-            data->max = VALUE_EMPTY;
+            memset(&data->value, 0, sizeof(measurements_value_t));
             data->num_samples = 0;
             data->num_samples_init = 0;
             data->num_samples_collected = 0;
@@ -427,18 +532,9 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 }
 
 
-measurements_sensor_state_t fw_version_collection_time(char* name, uint32_t* collection_time)
+static bool _measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
-    if (!collection_time)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    *collection_time = 0;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
-
-
-static bool _measurements_get_inf(measurements_def_t * def, measurements_inf_t* inf)
-{
-    if (!def || !inf)
+    if (!def || !data || !inf)
     {
         measurements_debug("Handed NULL pointer.");
         return false;
@@ -450,66 +546,78 @@ static bool _measurements_get_inf(measurements_def_t * def, measurements_inf_t* 
     {
         case FW_VERSION:
             inf->get_cb             = fw_version_get;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_STR;
             break;
         case PM10:
             inf->collection_time_cb = hpm_collection_time;
             inf->init_cb            = hpm_init;
             inf->get_cb             = hpm_get_pm10;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case PM25:
             inf->collection_time_cb = hpm_collection_time;
             inf->init_cb            = hpm_init;
             inf->get_cb             = hpm_get_pm25;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case MODBUS:
             inf->collection_time_cb = modbus_measurements_collection_time;
             inf->init_cb            = modbus_measurements_init;
             inf->get_cb             = modbus_measurements_get;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case CURRENT_CLAMP:
             inf->collection_time_cb = cc_collection_time;
             inf->init_cb            = cc_begin;
             inf->get_cb             = cc_get;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case W1_PROBE:
             inf->collection_time_cb = ds18b20_collection_time;
             inf->init_cb            = ds18b20_measurements_init;
             inf->get_cb             = ds18b20_measurements_collect;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_FLOAT;
             break;
         case HTU21D_TMP:
             inf->collection_time_cb = htu21d_measurements_collection_time;
             inf->init_cb            = htu21d_temp_measurements_init;
             inf->get_cb             = htu21d_temp_measurements_get;
             inf->iteration_cb       = htu21d_measurements_iteration;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case HTU21D_HUM:
             inf->collection_time_cb = htu21d_measurements_collection_time;
             inf->init_cb            = htu21d_humi_measurements_init;
             inf->get_cb             = htu21d_humi_measurements_get;
             inf->iteration_cb       = htu21d_measurements_iteration;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case BAT_MON:
             inf->collection_time_cb = bat_collection_time;
             inf->init_cb            = bat_begin;
             inf->get_cb             = bat_get;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case PULSE_COUNT:
             inf->collection_time_cb = pulsecount_collection_time;
             inf->init_cb            = pulsecount_begin;
             inf->get_cb             = pulsecount_get;
             inf->acked_cb           = pulsecount_ack;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case LIGHT:
             inf->collection_time_cb = veml7700_measurements_collection_time;
             inf->init_cb            = veml7700_light_measurements_init;
             inf->get_cb             = veml7700_light_measurements_get;
             inf->iteration_cb       = veml7700_iteration;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case SOUND:
             inf->collection_time_cb = sai_collection_time;
             inf->init_cb            = sai_measurements_init;
             inf->get_cb             = sai_measurements_get;
             inf->iteration_cb       = sai_iteration_callback;
+            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
@@ -529,11 +637,12 @@ void on_lw_sent_ack(bool ack)
 
     for (unsigned i = _measurements_chunk_prev_start_pos; i < _measurements_chunk_start_pos; i++)
     {
-        measurements_def_t* def = &_measurements_arr.def[i];
+        measurements_def_t*  def  = &_measurements_arr.def[i];
+        measurements_data_t* data = &_measurements_arr.data[i];
         if (!def->name[0])
             continue;
         measurements_inf_t inf;
-        if (!_measurements_get_inf(def, &inf))
+        if (!_measurements_get_inf(def, data, &inf))
             continue;
 
         if (inf.acked_cb)
@@ -556,10 +665,9 @@ static bool _measurements_def_is_active(measurements_def_t* def)
 static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, &inf))
+    if (!_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
-        data->state = MEASUREMENT_STATE_IDLE;
         data->num_samples_init++;
         data->num_samples_collected++;
         return;
@@ -567,7 +675,6 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
     if (!inf.init_cb)
     {
         // Init functions are optional
-        data->state = MEASUREMENT_STATE_INITED;
         data->num_samples_init++;
         measurements_debug("%s has no init function (optional).", def->name);
         return;
@@ -577,12 +684,10 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             measurements_debug("%s successfully init'd.", def->name);
-            data->state = MEASUREMENT_STATE_INITED;
             data->num_samples_init++;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s could not init, will not collect.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_init++;
             data->num_samples_collected++;
             break;
@@ -597,10 +702,9 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, &inf))
+    if (!_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
-        data->state = MEASUREMENT_STATE_IDLE;
         data->num_samples_init++;
         data->num_samples_collected++;
         return false;
@@ -617,7 +721,6 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s errored on iterate, will not collect.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_init++;
             data->num_samples_collected++;
             return false;
@@ -628,36 +731,23 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
 }
 
 
-static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
+static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value)
 {
-    measurements_inf_t inf;
-    if (!_measurements_get_inf(def, &inf))
+    if (!def || !data || !inf || !new_value)
     {
-        measurements_debug("Failed to get the interface for %s.", def->name);
-        data->state = MEASUREMENT_STATE_IDLE;
-        data->num_samples_collected++;
+        measurements_debug("Handed a NULL pointer.");
         return false;
     }
-    if (!inf.get_cb)
-    {
-        // Get function is non-optional
-        data->state = MEASUREMENT_STATE_IDLE;
-        data->num_samples_collected++;
-        measurements_debug("%s has no collect function.", def->name);
-        return false;
-    }
-    value_t new_value = VALUE_EMPTY;
-    measurements_sensor_state_t resp = inf.get_cb(def->name, &new_value);
+    /* Each function should check if this has been initialised */
+    measurements_sensor_state_t resp = inf->get_cb(def->name, new_value);
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             measurements_debug("%s successfully collect'd.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_collected++;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s could not collect.", def->name);
-            data->state = MEASUREMENT_STATE_IDLE;
             data->num_samples_collected++;
             return false;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
@@ -665,42 +755,154 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
             _check_time.wait_time = 0;
             return false;
     }
-    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+    return true;
+}
 
-    log_debug_value(DEBUG_MEASUREMENTS, "Value :", &new_value);
 
-    if (new_value.type == VALUE_STR)
+static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+{
+    if (!def || !data || !inf)
     {
-        data->num_samples++;
-        data->sum = new_value;
-        return true;
+        measurements_debug("Handed a NULL pointer.");
+        return false;
     }
+    measurements_reading_t new_value;
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    {
+        return false;
+    }
+    measurements_debug("Value : %"PRIi64, new_value.v_i64);
+
     if (data->num_samples == 0)
     {
         // If first measurements
         data->num_samples++;
-        data->min = new_value;
-        data->max = new_value;
-        data->sum = new_value;
-        return true;
+        data->value.value_64.min = new_value.v_i64;
+        data->value.value_64.max = new_value.v_i64;
+        data->value.value_64.sum = new_value.v_i64;
+        goto good_exit;
     }
 
-    if (!value_add(&data->sum, &data->sum, &new_value))
+    data->value.value_64.sum += new_value.v_i64;
+
+    data->num_samples++;
+
+    if (new_value.v_i64 > data->value.value_64.max)
+        data->value.value_64.max = new_value.v_i64;
+
+    else if (new_value.v_i64 < data->value.value_64.min)
+        data->value.value_64.min = new_value.v_i64;
+
+good_exit:
+    measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
+    measurements_debug("Min : %"PRIi64, data->value.value_64.min);
+    measurements_debug("Max : %"PRIi64, data->value.value_64.max);
+
+    return true;
+}
+
+
+static bool _measurements_sample_get_str_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+{
+    if (!def || !data || !inf)
     {
-        // If this fails, the number of samples shouldn't increase nor the max/min.
-        log_error("Failed to add %s value.", def->name);
+        measurements_debug("Handed a NULL pointer.");
         return false;
     }
+    measurements_reading_t new_value;
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    {
+        measurements_debug("Sample returned false.");
+        return false;
+    }
+    uint8_t new_len = strnlen(new_value.v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
+    strncpy(data->value.value_s.str, new_value.v_str, new_len);
+    data->value.value_s.str[new_len] = 0;
+    measurements_debug("Value : %s", data->value.value_s.str);
     data->num_samples++;
-    if (value_grt(&new_value, &data->max))
-    {
-        data->max = new_value;
-    }
-    else if (value_lst(&new_value, &data->min))
-    {
-        data->min = new_value;
-    }
     return true;
+}
+
+
+static bool _measurements_sample_get_float_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+{
+    if (!def || !data || !inf)
+    {
+        measurements_debug("Handed a NULL pointer.");
+        return false;
+    }
+    measurements_reading_t new_value;
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    {
+        return false;
+    }
+    measurements_debug("Value : %"PRIi32, new_value.v_f32);
+
+    if (data->num_samples == 0)
+    {
+        // If first measurements
+        data->num_samples++;
+        data->value.value_f.min = new_value.v_f32;
+        data->value.value_f.max = new_value.v_f32;
+        data->value.value_f.sum = new_value.v_f32;
+        goto good_exit;
+    }
+
+    data->value.value_f.sum += new_value.v_f32;
+
+    data->num_samples++;
+
+    if (new_value.v_f32 > data->value.value_f.max)
+        data->value.value_f.max = new_value.v_f32;
+
+    else if (new_value.v_f32 < data->value.value_f.min)
+        data->value.value_f.min = new_value.v_f32;
+
+good_exit:
+    measurements_debug("Sum : %"PRIi32, data->value.value_f.sum);
+    measurements_debug("Min : %"PRIi32, data->value.value_f.min);
+    measurements_debug("Max : %"PRIi32, data->value.value_f.max);
+
+    return true;
+}
+
+
+static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
+{
+    measurements_inf_t inf;
+    if (!_measurements_get_inf(def, data, &inf))
+    {
+        measurements_debug("Failed to get the interface for %s.", def->name);
+        data->num_samples_collected++;
+        return false;
+    }
+    if (!inf.get_cb)
+    {
+        // Get function is non-optional
+        data->num_samples_collected++;
+        measurements_debug("%s has no collect function.", def->name);
+        return false;
+    }
+
+    bool r;
+    switch(data->value_type)
+    {
+        case MEASUREMENTS_VALUE_TYPE_I64:
+            r = _measurements_sample_get_i64_iteration(def, data, &inf);
+            break;
+        case MEASUREMENTS_VALUE_TYPE_STR:
+            r = _measurements_sample_get_str_iteration(def, data, &inf);
+            break;
+        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+            r = _measurements_sample_get_float_iteration(def, data, &inf);
+            break;
+        default:
+            measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
+            return false;
+    }
+
+    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+    return r;
 }
 
 
@@ -767,12 +969,7 @@ static void _measurements_sample(void)
 
         if (time_since_interval >= time_collect)
         {
-            if (_measurements_sample_get_iteration(def, data))
-            {
-                log_debug_value(DEBUG_MEASUREMENTS, "Sum :", &data->sum);
-                log_debug_value(DEBUG_MEASUREMENTS, "Min :", &data->min);
-                log_debug_value(DEBUG_MEASUREMENTS, "Max :", &data->max);
-            }
+            _measurements_sample_get_iteration(def, data);
             wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
         }
         else
@@ -862,13 +1059,10 @@ bool measurements_add(measurements_def_t* measurements_def)
         def = &_measurements_arr.def[space];
         data = &_measurements_arr.data[space];
         memcpy(def, measurements_def, sizeof(measurements_def_t));
-        {
-            measurements_data_t data_empty = { VALUE_EMPTY, VALUE_EMPTY, VALUE_EMPTY, 0, 0, 0, MEASUREMENT_STATE_IDLE, 0};
-            memcpy(data, &data_empty, sizeof(measurements_data_t));
-        }
+        memset(data, 0, sizeof(measurements_data_t));
         {
             measurements_inf_t inf;
-            if (!_measurements_get_inf(def, &inf))
+            if (!_measurements_get_inf(def, data, &inf))
                 return false;
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
         }
@@ -939,7 +1133,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 }
 
 
-bool     measurements_get_samplecount(char* name, uint8_t * samplecount)
+bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
     measurements_def_t* measurements_def = NULL;
     if (!samplecount || !_measurements_get_measurements_def(name, &measurements_def))
@@ -956,7 +1150,7 @@ static uint16_t _measurements_iterate_callbacks(void)
     uint16_t active_count = 0;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        if (_measurements_arr.data[i].state != MEASUREMENT_STATE_INITED)
+        if (_measurements_arr.data[i].num_samples_init <= _measurements_arr.data[i].num_samples_collected)
             continue;
         _measurements_sample_iteration_iteration(&_measurements_arr.def[i], &_measurements_arr.data[i]);
         active_count++;
@@ -1133,12 +1327,13 @@ void measurements_init(void)
     for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
     {
         measurements_def_t* def = &_measurements_arr.def[n];
+        measurements_data_t* data = &_measurements_arr.data[n];
 
         if (!def->name[0])
             continue;
 
         measurements_inf_t inf;
-        if (!_measurements_get_inf(def, &inf))
+        if (!_measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
     }

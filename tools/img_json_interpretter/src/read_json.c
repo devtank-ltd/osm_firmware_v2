@@ -36,7 +36,7 @@ static void _measurement_del(const char * name)
 {
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        char * def_name = osm_config.measurements_arr[i].name;
+        char * def_name = osm_mem.measurements.measurements_arr[i].name;
         if (strcmp(name, def_name) == 0)
         {
             def_name[0] = 0;
@@ -98,10 +98,10 @@ static bool _read_modbus_json(struct json_object * root)
     struct json_object * modbus_bus = json_object_object_get(root, "modbus_bus");
     if (modbus_bus)
     {
-        osm_config.modbus_bus.version     = MODBUS_BLOB_VERSION;
-        osm_config.modbus_bus.max_dev_num = MODBUS_MAX_DEV;
-        osm_config.modbus_bus.max_reg_num = MODBUS_DEV_REGS;
-        osm_config.modbus_bus.binary_protocol = (uint8_t)json_object_get_boolean(json_object_object_get(modbus_bus, "binary_protocol"));
+        osm_mem.config.modbus_bus.version     = MODBUS_BLOB_VERSION;
+        osm_mem.config.modbus_bus.max_dev_num = MODBUS_MAX_DEV;
+        osm_mem.config.modbus_bus.max_reg_num = MODBUS_DEV_REGS;
+        osm_mem.config.modbus_bus.binary_protocol = (uint8_t)json_object_get_boolean(json_object_object_get(modbus_bus, "binary_protocol"));
 
         char con_str[16];
 
@@ -111,8 +111,8 @@ static bool _read_modbus_json(struct json_object * root)
             uart_stop_bits_t stopbits;
 
             if (!decompose_uart_str(con_str,
-                               &osm_config.modbus_bus.baudrate,
-                               &osm_config.modbus_bus.databits,
+                               &osm_mem.config.modbus_bus.baudrate,
+                               &osm_mem.config.modbus_bus.databits,
                                &parity,
                                &stopbits))
             {
@@ -120,15 +120,15 @@ static bool _read_modbus_json(struct json_object * root)
                 return false;
             }
 
-            osm_config.modbus_bus.parity   = parity;
-            osm_config.modbus_bus.stopbits = stopbits;
+            osm_mem.config.modbus_bus.parity   = parity;
+            osm_mem.config.modbus_bus.stopbits = stopbits;
         }
         else
         {
-            osm_config.modbus_bus.baudrate = UART_4_SPEED;
-            osm_config.modbus_bus.databits = UART_4_DATABITS;
-            osm_config.modbus_bus.parity   = UART_4_PARITY;
-            osm_config.modbus_bus.stopbits = UART_4_STOP;
+            osm_mem.config.modbus_bus.baudrate = UART_4_SPEED;
+            osm_mem.config.modbus_bus.databits = UART_4_DATABITS;
+            osm_mem.config.modbus_bus.parity   = UART_4_PARITY;
+            osm_mem.config.modbus_bus.stopbits = UART_4_STOP;
         }
 
         struct json_object * devices = json_object_object_get(modbus_bus, "modbus_devices");
@@ -216,7 +216,7 @@ static bool _read_modbus_json(struct json_object * root)
 
                         _measurement_del(reg_name);
 
-                        measurements_def_t * def = _measurement_get_free(osm_config.measurements_arr);
+                        measurements_def_t * def = _measurement_get_free(osm_mem.measurements.measurements_arr);
                         if (!def)
                             return false;
                         memcpy(def->name, reg_name, MODBUS_NAME_LEN);
@@ -242,7 +242,7 @@ static bool _read_measurements_json(struct json_object * root)
     {
         json_object_object_foreach(measurements_node, measurement_name, measurement_node)
         {
-            measurements_def_t * def = measurements_array_find(osm_config.measurements_arr, measurement_name);
+            measurements_def_t * def = measurements_array_find(osm_mem.measurements.measurements_arr, measurement_name);
             if (!def)
             {
                 log_error("Unknown measurement \"%s\"", measurement_name);
@@ -274,7 +274,7 @@ static bool _read_ios_json(struct json_object * root)
 {
     {
         uint16_t ios_init_state[IOS_COUNT] = IOS_STATE;
-        memcpy(osm_config.ios_state, ios_init_state, sizeof(ios_init_state));
+        memcpy(osm_mem.config.ios_state, ios_init_state, sizeof(ios_init_state));
     }
 
     struct json_object * ios_node = json_object_object_get(root, "ios");
@@ -288,7 +288,7 @@ static bool _read_ios_json(struct json_object * root)
                 log_error("Too many IOs");
                 return false;
             }
-            uint16_t state = osm_config.ios_state[index];
+            uint16_t state = osm_mem.config.ios_state[index];
             uint16_t pull    = _get_io_pull(json_object_get_string(json_object_object_get(io_node, "pull")), state & IO_PULL_MASK);
             uint16_t dir     = _get_io_dir(json_object_get_string(json_object_object_get(io_node, "direction")), state & IO_AS_INPUT);
             uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_ONEWIRE:0;
@@ -310,7 +310,7 @@ static bool _read_ios_json(struct json_object * root)
             if (!dir)
                 state |= (json_object_get_boolean(json_object_object_get(io_node, "out_high")))?IO_OUT_ON:0;
 
-            osm_config.ios_state[index] = state | (pull | dir | w1_mode | pcnt_mode);
+            osm_mem.config.ios_state[index] = state | (pull | dir | w1_mode | pcnt_mode);
         }
     }
 
@@ -344,7 +344,7 @@ static bool _read_cc_midpoints_json(struct json_object * root)
                 log_error("Bad midpoint for \"%s\"", cc_midpoints_name);
                 return false;
             }
-            osm_config.cc_midpoints[index-1] = midpoint;
+            osm_mem.config.cc_midpoints[index-1] = midpoint;
         }
     }
     return true;
@@ -367,32 +367,32 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
 
-    memset(&osm_config, 0, sizeof(osm_config));
+    memset(&osm_mem.config, 0, sizeof(osm_mem));
 
-    osm_config.version = json_object_get_int(obj);
-    if (osm_config.version != PERSIST_VERSION)
+    osm_mem.config.version = json_object_get_int(obj);
+    if (osm_mem.config.version != PERSIST_VERSION)
     {
         log_error("Wrong version.");
         goto bad_exit;
     }
 
-    osm_config.log_debug_mask = _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
+    osm_mem.config.log_debug_mask = _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
     int tmp = _get_defaulted_int(root, "mins_interval",  15);
     if (tmp < 1 || tmp > (60 * 24))
     {
         log_error("Unsupported mins_interval");
         goto bad_exit;
     }
-    osm_config.mins_interval  = tmp;
+    osm_mem.config.mins_interval  = tmp;
 
-    if (!_get_string_buf(root, "lw_dev_eui", osm_config.lw_dev_eui, LW_DEV_EUI_LEN) ||
-        !_get_string_buf(root, "lw_app_key", osm_config.lw_app_key, LW_APP_KEY_LEN))
+    if (!_get_string_buf(root, "lw_dev_eui", osm_mem.config.lw_dev_eui, LW_DEV_EUI_LEN) ||
+        !_get_string_buf(root, "lw_app_key", osm_mem.config.lw_app_key, LW_APP_KEY_LEN))
     {
         log_error("No LoRaWAN keys.");
         goto bad_exit;
     }
 
-    measurements_add_defaults(osm_config.measurements_arr);
+    measurements_add_defaults(osm_mem.measurements.measurements_arr);
 
     if (!_read_modbus_json(root))
         goto bad_exit;
@@ -414,7 +414,7 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
 
-    if (fwrite(&osm_config, sizeof(osm_config), 1, f) != 1)
+    if (fwrite(&osm_mem, sizeof(osm_mem), 1, f) != 1)
     {
         perror("Failed to write file.");
         fclose(f);

@@ -635,7 +635,7 @@ measurements_sensor_state_t veml7700_light_measurements_init(char* name)
 }
 
 
-measurements_sensor_state_t veml7700_light_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurements_reading_t* value)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -655,7 +655,7 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, value_t*
     }
     _veml7700_reading.is_valid = false;
     light_debug("Final lux = %"PRIu32, _veml7700_reading.lux);
-    *value = value_from(_veml7700_reading.lux);
+    value->v_i64 = (int64_t)_veml7700_reading.lux;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

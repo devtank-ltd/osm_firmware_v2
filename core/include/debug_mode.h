@@ -5,7 +5,6 @@
 
 #include "config.h"
 #include "lorawan.h"
-#include "value.h"
 #include "base_types.h"
 
 

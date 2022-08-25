@@ -5,7 +5,7 @@
 
 static bool _write_modbus_json(struct json_object * root)
 {
-    modbus_bus_t* modbus = &osm_config.modbus_bus;
+    modbus_bus_t* modbus = &osm_mem.config.modbus_bus;
 
     if (modbus->version == MODBUS_BLOB_VERSION &&
         modbus->max_dev_num == MODBUS_MAX_DEV &&
@@ -117,7 +117,7 @@ static void _write_measurements_json(struct json_object * root)
 
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t * def = &osm_config.measurements_arr[i];
+        measurements_def_t * def = &osm_mem.measurements.measurements_arr[i];
         if (def->name[0])
         {
             struct json_object * measurement_node = json_object_new_object();
@@ -137,7 +137,7 @@ static void _write_ios_json(struct json_object * root)
 
     for(unsigned n = 0; n < IOS_COUNT; n++)
     {
-        uint16_t state = osm_config.ios_state[n];
+        uint16_t state = osm_mem.config.ios_state[n];
         struct json_object * io_node = json_object_new_object();
 
         char name[8];
@@ -171,7 +171,7 @@ static void _write_cc_midpoints_json(struct json_object * root)
     char name[4];
     for (unsigned n = 0; n < ADC_CC_COUNT; n++)
     {
-        midpoint = &osm_config.cc_midpoints[n];
+        midpoint = &osm_mem.config.cc_midpoints[n];
         snprintf(name, 4, "CC%u", n+1);
         json_object_object_add(cc_midpoints_node, name, json_object_new_int(*midpoint));
     }
@@ -188,7 +188,7 @@ int write_json_from_img(const char * filename)
         perror("Failed to open file.");
         return EXIT_FAILURE;
     }
-    if (fread(&osm_config, sizeof(osm_config), 1, f) != 1)
+    if (fread(&osm_mem, sizeof(osm_mem), 1, f) != 1)
     {
         perror("Failed to read file.");
         fclose(f);
@@ -200,12 +200,12 @@ int write_json_from_img(const char * filename)
 
     json_object_object_add(root, "version", json_object_new_int(PERSIST_VERSION));
 
-    json_object_object_add(root, "log_debug_mask", json_object_new_int(DEBUG_SYS));
+    json_object_object_add(root, "log_debug_mask", json_object_new_int(osm_mem.config.log_debug_mask));
 
-    json_object_object_add(root, "mins_interval", json_object_new_int(osm_config.mins_interval));
+    json_object_object_add(root, "mins_interval", json_object_new_int(osm_mem.config.mins_interval));
 
-    json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(osm_config.lw_dev_eui, LW_DEV_EUI_LEN));
-    json_object_object_add(root, "lw_app_key", json_object_new_string_len(osm_config.lw_app_key, LW_APP_KEY_LEN));
+    json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(osm_mem.config.lw_dev_eui, LW_DEV_EUI_LEN));
+    json_object_object_add(root, "lw_app_key", json_object_new_string_len(osm_mem.config.lw_app_key, LW_APP_KEY_LEN));
 
     _write_cc_midpoints_json(root);
 

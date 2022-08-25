@@ -410,7 +410,7 @@ bad_humi_exit:
 }
 
 
-measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t htu21d_temp_measurements_get(char* name, measurements_reading_t* value)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     _htu21d_state_machine.flags &= ~HTU21D_STATE_FLAG_TEMPERATURE;
@@ -429,12 +429,12 @@ measurements_sensor_state_t htu21d_temp_measurements_get(char* name, value_t* va
         htu21d_debug("Temperature value is not valid (old).");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *value = value_from(_htu21d_reading.temperature.value);
+    value->v_i64 = (int64_t)_htu21d_reading.temperature.value;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-measurements_sensor_state_t htu21d_humi_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t htu21d_humi_measurements_get(char* name, measurements_reading_t* value)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     _htu21d_state_machine.flags &= ~HTU21D_STATE_FLAG_HUMIDITY;
@@ -453,7 +453,7 @@ measurements_sensor_state_t htu21d_humi_measurements_get(char* name, value_t* va
         htu21d_debug("Temperature or humidity value is not valid (old).");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *value = value_from(_htu21d_reading.humidity.value);
+    value->v_i64 = (int64_t)_htu21d_reading.humidity.value;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

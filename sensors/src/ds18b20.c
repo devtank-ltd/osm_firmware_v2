@@ -11,7 +11,6 @@ Documents used:
 
 #include "pinmap.h"
 #include "log.h"
-#include "value.h"
 #include "common.h"
 #include "io.h"
 #include "w1.h"
@@ -214,7 +213,7 @@ measurements_sensor_state_t ds18b20_measurements_init(char* name)
 }
 
 
-measurements_sensor_state_t ds18b20_measurements_collect(char* name, value_t* value)
+measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurements_reading_t* value)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
@@ -251,7 +250,7 @@ measurements_sensor_state_t ds18b20_measurements_collect(char* name, value_t* va
         decimal_bits = (decimal_bits - 16) % 16;
     }
 
-    *value = value_from_float((float)integer_bits + (float)decimal_bits / 16.f);
+    value->v_f32 = (int32_t)integer_bits * 1000 + ((int32_t)decimal_bits * 1000) / 16;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

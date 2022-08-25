@@ -562,18 +562,18 @@ static void cc_cb(char* args)
 {
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
-    value_t value_1;
+    measurements_reading_t value_1;
     if (p == args)
     {
-        value_t value_2, value_3;
+        measurements_reading_t value_2, value_3;
         if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             log_out("Could not get CC values.");
             return;
         }
-        log_out("CC1 = %"PRIu32".%03"PRIu32" A", value_1.u32/1000, value_1.u32%1000);
-        log_out("CC2 = %"PRIu32".%03"PRIu32" A", value_2.u32/1000, value_2.u32%1000);
-        log_out("CC3 = %"PRIu32".%03"PRIu32" A", value_3.u32/1000, value_3.u32%1000);
+        log_out("CC1 = %"PRIi64".%"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        log_out("CC2 = %"PRIi64".%"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        log_out("CC3 = %"PRIi64".%"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
         return;
     }
     if (cc_num > 3 || cc_num == 0)
@@ -589,11 +589,7 @@ static void cc_cb(char* args)
         return;
     }
 
-    char temp[8] = "";
-
-    value_to_str(&value_1, temp, sizeof(temp));
-
-    log_out("CC = %smA", temp);
+    log_out("CC = %"PRIi64"mA", value_1.v_i64);
 }
 
 
@@ -751,14 +747,14 @@ static void interval_mins_cb(char* args)
 
 static void bat_cb(char* args)
 {
-    value_t value;
+    measurements_reading_t value;
     if (!bat_get_blocking(NULL, &value))
     {
         log_out("Could not get bat value.");
         return;
     }
 
-    log_out("Bat %u.%02u", value.u16 / 100, value.u16 %100);
+    log_out("Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
 }
 
 
