@@ -19,10 +19,10 @@
 
 #define FLASH_SIZE                  (FLASH_PAGE_NUMBER * FLASH_PAGE_SIZE)
 
-#define FLASH_CONFIG_PAGE           (FLASH_PAGE_NUMBER - 1)
-#define FLASH_MEASUREMENTS_PAGE     (FLASH_PAGE_NUMBER - 2)
-#define FW_PAGE                     2
-#define NEW_FW_PAGE                 118
+#define FLASH_CONFIG_PAGE           2
+#define FLASH_MEASUREMENTS_PAGE     3
+#define FW_PAGE                     4
+#define NEW_FW_PAGE                 120
 
 #define FW_PAGES                    100
 #define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
