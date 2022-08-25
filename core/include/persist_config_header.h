@@ -19,8 +19,8 @@
 
 #define FLASH_SIZE                  (FLASH_PAGE_NUMBER * FLASH_PAGE_SIZE)
 
-#define FLASH_CONFIG_PAGE           2
-#define FLASH_MEASUREMENTS_PAGE     3
+#define FLASH_MEASUREMENTS_PAGE     2
+#define FLASH_CONFIG_PAGE           3
 #define FW_PAGE                     4
 #define NEW_FW_PAGE                 120
 
