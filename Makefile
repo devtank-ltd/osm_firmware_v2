@@ -101,11 +101,12 @@ serial_program: $(WHOLE_IMG)
 	KEEPCONFIG=1 ./tools/config_scripts/program.sh $<
 
 
-flash: $(WHOLE_IMG)
+flash: $(BL_IMG) $(FW_IMG)
 	openocd -f interface/stlink-v2-1.cfg \
 		    -f target/stm32l4x.cfg \
 		    -c "init" -c "halt" \
-		    -c "program $(WHOLE_IMG) 0x08000000 verify reset exit" \
+		    -c "program $(BL_IMG) 0x08000000 verify reset exit" \
+		    -c "program $(FW_IMG) 0x08002000 verify reset exit" \
 		    -c "reset" \
 		    -c "shutdown"
 
