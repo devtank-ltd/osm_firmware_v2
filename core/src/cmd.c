@@ -6,6 +6,7 @@
 #include <inttypes.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/scb.h>
+#include <libopencm3/stm32/desig.h>
 
 #include "pinmap.h"
 #include "log.h"
@@ -871,6 +872,11 @@ static void debug_mode_cb(char* args)
 
 static void serial_num_cb(char* args)
 {
+#ifdef STM32L451RE
+    log_out("Firmware for STM32L451RE");
+#elif STM32L433VTC6
+    log_out("Firmware for STM32L433VTC6");
+#endif
     char* serial_num = persist_get_serial_number();
     char* p = skip_space(args);
     char dev_eui[LW_DEV_EUI_LEN + 1];

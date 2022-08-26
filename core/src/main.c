@@ -37,6 +37,7 @@
 #include "can_impl.h"
 #include "debug_mode.h"
 #include "ds18b20.h"
+#include "version.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -71,6 +72,8 @@ int main(void)
     platform_raw_msg("----start----");
     log_sys_debug("Frequency : %lu", rcc_ahb_frequency);
     log_sys_debug("Version : %s", GIT_VERSION);
+
+    check_version();
 
     persistent_init();
     timers_init();
