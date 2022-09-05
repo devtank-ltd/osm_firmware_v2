@@ -1,10 +1,8 @@
 
 BUILD_DIR := build
 
-DEV ?= STM32L451RE
-
 CFLAGS := -I../../core/include -I../../sensors/include -I../../libs/libopencm3/include/ -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
-CFLAGS += -MMD -MP -g -DSTM32L4 -D$(DEV)
+CFLAGS += -MMD -MP -g -DSTM32L4
 LDFLAGS := $(shell pkg-config --libs json-c)
 
 SRC := src/main.c \

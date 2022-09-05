@@ -1,5 +1,5 @@
 
-/* Linker script for STM32L433VTC6, 512K flash, 160K RAM. */
+/* Linker script for STM32L4 firmware, 200K flash, 64K RAM. */
 /* 8k for config split out of the flash */
 
 /* Define memory regions. */

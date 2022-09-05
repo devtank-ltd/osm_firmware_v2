@@ -34,11 +34,3 @@ firmware_SOURCES := \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
            sensors/src/fw.c
-
-ifeq ($(DEV), STM32L451RE)
-	firmware_LINK_SCRIPT := core/stm32l452.ld
-else ifeq ($(DEV), STM32L433VTC6)
-	firmware_LINK_SCRIPT := core/stm32l433.ld
-else
-	firmware_LINK_SCRIPT :=
-endif

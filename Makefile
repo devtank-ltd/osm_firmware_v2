@@ -15,8 +15,6 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG := $(shell git tag --points-at HEAD)
 
-DEV ?= STM32L451RE
-
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
 CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
@@ -24,11 +22,14 @@ CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
-CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D$(DEV)
+CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
 
 BUILD_DIR := build
 
 INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include
+
+bootloader_LINK_SCRIPT := bootloader/stm32l4.ld
+firmware_LINK_SCRIPT := core/stm32l4.ld
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4
