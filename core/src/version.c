@@ -1,6 +1,8 @@
 #include <libopencm3/stm32/iwdg.h>
 
 
+#include "version.h"
+
 #include "log.h"
 #include "common.h"
 
@@ -9,17 +11,16 @@
 #define FLASH_SIZE_STM32L433VTC6        64
 
 
-#define FLASHING_TIME_SEC               2500
+static version_arch_t _version_arch = VERSION_ARCH_UNDEFINED;
 
 
-typedef enum
+void version_arch_error_handler(void)
 {
-    TYPE_STM32L451RE,
-    TYPE_STM32L433VTC6,
-} type_arch_t;
+    while(1);
+}
 
 
-static bool get_arch(uint8_t* arch)
+static bool _version_get_arch(version_arch_t* arch)
 {
     if (!arch)
         return false;
@@ -27,46 +28,28 @@ static bool get_arch(uint8_t* arch)
     switch(flash_size)
     {
         case FLASH_SIZE_STM32L452RE:
-            log_out("STM is STM32L451RE");
-            *arch = TYPE_STM32L451RE;
+            *arch = VERSION_ARCH_REV_B;
             return true;
         case FLASH_SIZE_STM32L433VTC6:
-            log_out("STM is STM32L433VTC6");
-            *arch = TYPE_STM32L433VTC6;
+            *arch = VERSION_ARCH_REV_C;
             return true;
         default:
-            log_out("STM is unknown (%"PRIu16"kB flash)", flash_size);
             break;
     }
     return false;
 }
 
 
-static bool get_vers(uint8_t* vers)
+version_arch_t version_get_arch(void)
 {
-#ifdef STM32L451RE
-    *vers = TYPE_STM32L451RE;
-#elif STM32L433VTC6
-    *vers = TYPE_STM32L433VTC6;
-#else
-    return false;
-#endif
-    return true;
+    if (_version_arch == VERSION_ARCH_UNDEFINED &&
+        !_version_get_arch(&_version_arch))
+        return VERSION_ARCH_UNDEFINED;
+    return _version_arch;
 }
 
 
-void check_version(void)
+bool version_is_arch(version_arch_t is_arch)
 {
-    uint8_t arch, vers;
-    if (!get_arch(&arch) || !get_vers(&vers) || arch != vers)
-    {
-        uint32_t prev_now = 0;
-        while(true)
-        {
-            iwdg_reset();
-            while(since_boot_delta(get_since_boot_ms(), prev_now) < FLASHING_TIME_SEC);
-            log_out("VERSION WRONG");
-            prev_now = get_since_boot_ms();
-        }
-    }
+    return (version_get_arch() == is_arch);
 }

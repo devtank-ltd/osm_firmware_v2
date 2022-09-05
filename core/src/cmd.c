@@ -34,6 +34,7 @@
 #include "sleep.h"
 #include "can_impl.h"
 #include "debug_mode.h"
+#include "version.h"
 
 
 static char   * rx_buffer;
@@ -204,6 +205,23 @@ void count_cb(char * args)
 void version_cb(char * args)
 {
     log_out("Version : %s", GIT_VERSION);
+    version_arch_t arch = version_get_arch();
+    uint8_t name_len = 10;
+    char name[name_len];
+    memset(name, 0, name_len);
+    switch(arch)
+    {
+        case VERSION_ARCH_REV_B:
+            strncpy(name, "Rev B", name_len);
+            break;
+        case VERSION_ARCH_REV_C:
+            strncpy(name, "Rev C", name_len);
+            break;
+        default:
+            log_out("Unknown architecture.");
+            break;
+    }
+    log_out("Architecture is %s", name);
 }
 
 
@@ -872,11 +890,6 @@ static void debug_mode_cb(char* args)
 
 static void serial_num_cb(char* args)
 {
-#ifdef STM32L451RE
-    log_out("Firmware for STM32L451RE");
-#elif STM32L433VTC6
-    log_out("Firmware for STM32L433VTC6");
-#endif
     char* serial_num = persist_get_serial_number();
     char* p = skip_space(args);
     char dev_eui[LW_DEV_EUI_LEN + 1];
