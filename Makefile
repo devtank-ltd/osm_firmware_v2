@@ -124,7 +124,7 @@ debug_mon: $(WHOLE_IMG)
 	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
 debug_gdb: $(WHOLE_IMG)
-	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
+	gdb-multiarch -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
 
 size: $(WHOLE_IMG)
 	$(SIZE) $(BUILD_DIR)/*.elf
