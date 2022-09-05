@@ -1,5 +1,5 @@
 {
-  "version":2,
+  "version":3,
   "log_debug_mask":1,
   "mins_interval":1,
   "lw_dev_eui":"\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000",
