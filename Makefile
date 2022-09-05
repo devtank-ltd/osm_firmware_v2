@@ -13,7 +13,7 @@ CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
-GIT_TAG := $(shell git tag --points-at HEAD)
+GIT_TAG ?= $(shell git tag --points-at HEAD)
 
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
