@@ -22,7 +22,7 @@
 
 static uart_channel_t uart_channels_rev_b[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_B;
 static uart_channel_t uart_channels_rev_c[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_C;
-static uart_channel_t* uart_channels;
+static uart_channel_t* uart_channels = NULL;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
