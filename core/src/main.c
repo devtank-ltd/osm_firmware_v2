@@ -37,6 +37,7 @@
 #include "can_impl.h"
 #include "debug_mode.h"
 #include "ds18b20.h"
+#include "version.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000

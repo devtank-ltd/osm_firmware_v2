@@ -11,18 +11,10 @@
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
 
-#if defined(STM32L451RE)
-    #define FLASH_PAGE_NUMBER       256
-#elif defined(STM32L433VTC6)
-    #define FLASH_PAGE_NUMBER       128
-#endif
-
-#define FLASH_SIZE                  (FLASH_PAGE_NUMBER * FLASH_PAGE_SIZE)
-
-#define FLASH_CONFIG_PAGE           (FLASH_PAGE_NUMBER - 1)
-#define FLASH_MEASUREMENTS_PAGE     (FLASH_PAGE_NUMBER - 2)
-#define FW_PAGE                     2
-#define NEW_FW_PAGE                 118
+#define FLASH_MEASUREMENTS_PAGE     2
+#define FLASH_CONFIG_PAGE           3
+#define FW_PAGE                     4
+#define NEW_FW_PAGE                 120
 
 #define FW_PAGES                    100
 #define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
@@ -33,7 +25,7 @@
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define PERSIST_VERSION            2
+#define PERSIST_VERSION             3
 
 
 typedef struct

@@ -26,3 +26,9 @@ gpio_str="-$boot&-$reset,,$reset,,:$boot&-$reset,,$reset"
 #entry sequence: GPIO_3=low, GPIO_2=low, 100ms delay, GPIO_2=high
 #exit sequence: GPIO_3=high, GPIO_2=low, 300ms delay, GPIO_2=high
 #./stm32flash -i '-3&-2,2:3&-2,,,2' /dev/ttyS0
+
+bootloader_addr=0x08000000
+bootloader_size=0x00001000
+config_addr=0x08001000
+config_size=0x00001000
+firmware_addr=0x08002000

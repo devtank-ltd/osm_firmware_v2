@@ -20,10 +20,6 @@
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
-#if (!defined(STM32L451RE) && !defined(STM32L433VTC6))
-_Static_assert(0, "Not given a STM model.");
-#endif
-
 
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300

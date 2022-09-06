@@ -13,9 +13,7 @@ CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
-GIT_TAG := $(shell git tag --points-at HEAD)
-
-DEV ?= STM32L451RE
+GIT_TAG ?= $(shell git tag --points-at HEAD)
 
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
@@ -24,11 +22,14 @@ CFLAGS		+= -fstack-usage -Wstack-usage=100
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
-CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D$(DEV)
+CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
 
 BUILD_DIR := build
 
 INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include
+
+bootloader_LINK_SCRIPT := bootloader/stm32l4.ld
+firmware_LINK_SCRIPT := core/stm32l4.ld
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4
@@ -43,6 +44,8 @@ BUILD_DIR := build
 RELEASE_DIR := releases
 JSON_CONV_DIR := tools/img_json_interpretter
 
+MEM_JSON := $(JSON_CONV_DIR)/default_mem.json
+
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
@@ -51,8 +54,9 @@ FW_IMG := $(BUILD_DIR)/firmware.bin
 BL_IMG := $(BUILD_DIR)/bootloader.bin
 WHOLE_IMG := $(BUILD_DIR)/complete.bin
 JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
+MEM_IMG := $(BUILD_DIR)/mem.bin
 
-default: $(WHOLE_IMG) $(JSON_CONV)
+default: $(WHOLE_IMG)
 
 $(JSON_CONV) : $(LIBOPENCM3)
 	$(MAKE) -C $(JSON_CONV_DIR)
@@ -65,9 +69,13 @@ $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 	rm -f $(BUILD_DIR)/.git.*
 	touch $@
 
-$(WHOLE_IMG) : $(BL_IMG) $(FW_IMG)
+$(MEM_IMG) : $(MEM_JSON) $(JSON_CONV)
+	$(JSON_CONV) $@ < $(MEM_JSON)
+
+$(WHOLE_IMG) : $(BL_IMG) $(FW_IMG) $(MEM_IMG)
 	dd of=$@ if=$(BL_IMG) bs=2k
-	dd of=$@ if=$(FW_IMG) seek=2 conv=notrunc bs=2k
+	dd of=$@ if=$(MEM_IMG) seek=2 conv=notrunc bs=2k
+	dd of=$@ if=$(FW_IMG)  seek=4 conv=notrunc bs=2k
 
 $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p "$(@D)"
@@ -94,11 +102,12 @@ serial_program: $(WHOLE_IMG)
 	KEEPCONFIG=1 ./tools/config_scripts/program.sh $<
 
 
-flash: $(WHOLE_IMG)
+flash: $(BL_IMG) $(FW_IMG)
 	openocd -f interface/stlink-v2-1.cfg \
 		    -f target/stm32l4x.cfg \
 		    -c "init" -c "halt" \
-		    -c "program $(WHOLE_IMG) 0x08000000 verify reset exit" \
+		    -c "program $(BL_IMG) 0x08000000 verify reset exit" \
+		    -c "program $(FW_IMG) 0x08002000 verify reset exit" \
 		    -c "reset" \
 		    -c "shutdown"
 
@@ -116,7 +125,7 @@ debug_mon: $(WHOLE_IMG)
 	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
 debug_gdb: $(WHOLE_IMG)
-	$(TOOLCHAIN)-gdb -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
+	gdb-multiarch -ex "target remote localhost:3333" -ex load $(FW_IMG:%.bin=%.elf) -ex "monitor reset init"
 
 size: $(WHOLE_IMG)
 	$(SIZE) $(BUILD_DIR)/*.elf
