@@ -370,11 +370,15 @@ int read_json_to_img(const char * filename)
     memset(&osm_mem, 0, sizeof(json_x_img_mem_t));
 
     osm_mem.config.version = json_object_get_int(obj);
-    if (osm_mem.config.version != PERSIST_VERSION)
+    if (osm_mem.config.version > PERSIST_VERSION)
     {
         log_error("Wrong version.");
         goto bad_exit;
     }
+    log_out("JSON version = %"PRIu8, osm_mem.config.version);
+    log_out("IMG  version = %"PRIu8, PERSIST_VERSION);
+    if (osm_mem.config.version != PERSIST_VERSION)
+        log_out("WARNING: Check compatibility!");
 
     osm_mem.config.log_debug_mask = _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
     int tmp = _get_defaulted_int(root, "mins_interval",  15);
