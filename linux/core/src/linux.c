@@ -61,6 +61,15 @@ typedef struct
 } fd_t;
 
 
+typedef struct
+{
+    persist_storage_t               persist_data;
+    uint8_t                         _[2048 - sizeof(persist_storage_t)];
+    persist_measurements_storage_t  persist_measurements;
+    uint8_t                         __[2048 - sizeof(persist_measurements_storage_t)];
+} persist_mem_t;
+
+
 typedef char pty_buf_t[LINUX_PTY_BUF_SIZ];
 
 
@@ -68,6 +77,15 @@ static struct pollfd    pfds[LINUX_MAX_PTY * 2];
 static uint32_t         nfds;
 static fd_t             fd_list[LINUX_MAX_PTY];
 static pthread_t        _linux_listener_thread_id;
+static persist_mem_t    _linux_persist_mem          = {0};
+static bool             _linux_running              = true;
+
+
+void _linux_sig_handler(int signo)
+{
+    if (signo == SIGINT)
+        _linux_running = false;
+}
 
 
 static void _linux_error(char* fmt, ...)
@@ -266,12 +284,18 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
 
 void platform_init(void)
 {
-    signal(SIGINT, _linux_exit);
+    signal(SIGINT, _linux_sig_handler);
     //_linux_setup_ptys();
     //_linux_setup_w1_sock();
     //_linux_setup_pulse_count(); /* inotify on gpio file and counting accordingly. */
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
+}
+
+
+void platform_deinit(void)
+{
+    _linux_exit(0);
 }
 
 
@@ -282,6 +306,7 @@ void platform_set_rs485_mode(bool driver_enable)
 
 void platform_reset_sys(void)
 {
+    _linux_exit(0);
 }
 
 
@@ -291,14 +316,51 @@ bool linux_add_gpio(char* name, uint32_t* fd, void (*cb)(uint32_t))
 }
 
 
+static persist_mem_t* _linux_get_persist(void)
+{
+    FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "rb");
+    if (!mem_file)
+        return NULL;
+    if (fread(&_linux_persist_mem, sizeof(persist_mem_t), 1, mem_file) != sizeof(persist_mem_t))
+        return NULL;
+    fclose(mem_file);
+    return &_linux_persist_mem;
+}
+
+
 persist_storage_t* platform_get_raw_persist(void)
 {
-    FILE* file = fopen(LINUX_PERSIST_FILE_LOC, "rb");
-    if (!file)
-        return NULL;
-    static persist_storage_t persist;
-    if (fread(&persist, sizeof(persist_storage_t), 1, file) != sizeof(persist_storage_t))
+    return &_linux_get_persist()->persist_data;
+}
+
+
+persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
+{
+    return &_linux_get_persist()->persist_measurements;
+}
+
+
+bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+{
+    FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "wb");
+    if (!mem_file)
         return false;
-    fclose(file);
-    return &persist;
+    memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(persist_storage_t));
+    memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(persist_measurements_storage_t));
+    fwrite(&_linux_persist_mem, sizeof(_linux_persist_mem), 1, mem_file);
+    fclose(mem_file);
+    return true;
+}
+
+
+void platform_persist_wipe(void)
+{
+    memset(&_linux_persist_mem, 0, sizeof(persist_mem_t));
+    platform_persist_commit(&_linux_persist_mem.persist_data, &_linux_persist_mem.persist_measurements);
+}
+
+
+bool platform_running(void)
+{
+    return _linux_running;
 }
