@@ -53,7 +53,6 @@ firmware_SOURCES := \
            core/src/ring.c \
            core/src/i2c.c \
            core/src/modbus_mem.c \
-           core/src/value.c \
            core/src/persist_config.c \
            core/src/comms.c \
            core/src/measurements.c \
@@ -67,6 +66,7 @@ firmware_SOURCES := \
            core/src/sleep.c \
            core/src/can_comm.c \
            core/src/debug_mode.c \
+           core/src/version.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \
@@ -76,7 +76,8 @@ firmware_SOURCES := \
            sensors/src/sai.c \
            sensors/src/cc.c \
            sensors/src/bat.c \
-           sensors/src/can_impl.c
+           sensors/src/can_impl.c \
+           sensors/src/fw.c
 
 firmware_OBJS=$(firmware_SOURCES:%.c=$(BUILD_DIR)/%.o)
 
