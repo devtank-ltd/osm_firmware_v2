@@ -9,7 +9,6 @@ firmware_SOURCES := \
            core/src/ring.c \
            core/src/i2c.c \
            core/src/modbus_mem.c \
-           core/src/value.c \
            core/src/persist_config.c \
            core/src/lorawan.c \
            core/src/measurements.c \
@@ -23,6 +22,7 @@ firmware_SOURCES := \
            core/src/sleep.c \
            core/src/can_comm.c \
            core/src/debug_mode.c \
+           core/src/version.c \
            core/src/stm.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
@@ -33,12 +33,5 @@ firmware_SOURCES := \
            sensors/src/sai.c \
            sensors/src/cc.c \
            sensors/src/bat.c \
-           sensors/src/can_impl.c
-
-ifeq ($(DEV), STM32L451RE)
-	firmware_LINK_SCRIPT := core/stm32l452.ld
-else ifeq ($(DEV), STM32L433VTC6)
-	firmware_LINK_SCRIPT := core/stm32l433.ld
-else
-	firmware_LINK_SCRIPT :=
-endif
+           sensors/src/can_impl.c \
+           sensors/src/fw.c

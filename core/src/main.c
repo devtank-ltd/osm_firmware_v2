@@ -27,6 +27,7 @@
 #include "cc.h"
 #include "can_impl.h"
 #include "ds18b20.h"
+#include "version.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000

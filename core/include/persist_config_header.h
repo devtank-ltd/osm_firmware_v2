@@ -10,17 +10,10 @@
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
 
-#if defined(STM32L451RE)
-    #define FLASH_PAGE_NUMBER       256
-#elif defined(STM32L433VTC6)
-    #define FLASH_PAGE_NUMBER       128
-#endif
-
-#define FLASH_SIZE                  (FLASH_PAGE_NUMBER * FLASH_PAGE_SIZE)
-
-#define FLASH_CONFIG_PAGE           (FLASH_PAGE_NUMBER - 1)
-#define FW_PAGE                     2
-#define NEW_FW_PAGE                 118
+#define FLASH_MEASUREMENTS_PAGE     2
+#define FLASH_CONFIG_PAGE           3
+#define FW_PAGE                     4
+#define NEW_FW_PAGE                 120
 
 #define FW_PAGES                    100
 #define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
@@ -29,8 +22,9 @@
 #define FW_ADDR                     PAGE2ADDR(FW_PAGE)
 #define NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
+#define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define PERSIST_VERSION            1
+#define PERSIST_VERSION             3
 
 
 typedef struct
@@ -40,13 +34,23 @@ typedef struct
     uint32_t                pending_fw;
     uint32_t                mins_interval;
     modbus_bus_t            modbus_bus;
-    uint8_t                 comms_setup[64];
-    measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
-    uint16_t                cc_midpoints[ADC_CC_COUNT];
-    uint16_t                _[8-(ADC_CC_COUNT%8)];
+    comms_config_t          comms_config;
+    uint32_t                cc_midpoints[ADC_CC_COUNT];
+    uint8_t                 _[16-((ADC_CC_COUNT * sizeof(uint32_t))%16)];
     uint16_t                ios_state[IOS_COUNT];
-    uint16_t                __[8-(IOS_COUNT%8)];
+    uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
+    uint8_t                 ___[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    cc_config_t             cc_configs[ADC_CC_COUNT];
+    uint8_t                 ____[16-((ADC_CC_COUNT * sizeof(cc_config_t))%16)];
+    char                    serial_number[SERIAL_NUM_LEN_NULLED];
 } __attribute__((__packed__)) persist_storage_t;
 
-_Static_assert(sizeof(persist_storage_t) % 16, "Persistent memory misaligned.");
+
+typedef struct
+{
+    measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
+} persist_measurements_storage_t;
+
+_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
+_Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");

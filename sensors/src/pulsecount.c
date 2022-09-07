@@ -216,7 +216,7 @@ measurements_sensor_state_t pulsecount_begin(char* name)
 }
 
 
-measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
+measurements_sensor_state_t pulsecount_get(char* name, measurements_reading_t* value)
 {
     if (!value)
     {
@@ -237,7 +237,7 @@ measurements_sensor_state_t pulsecount_get(char* name, value_t* value)
 
     instance->send_count = instance->count;
     pulsecount_debug("%s at end %"PRIu32, instance->info.name, instance->send_count);
-    *value = value_from(instance->send_count);
+    value->v_i64 = (int64_t)instance->send_count;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

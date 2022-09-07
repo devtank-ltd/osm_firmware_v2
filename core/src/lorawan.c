@@ -23,10 +23,6 @@
 #include "update.h"
 #include "pinmap.h"
 
-
-#define LW_DEV_EUI_LEN                      16
-#define LW_APP_KEY_LEN                      32
-
 #define LW_HEADER_SIZE                      17
 #define LW_TAIL_SIZE                        2
 
@@ -36,13 +32,6 @@
 _Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
-
-
-typedef struct
-{
-    char dev_eui[LW_DEV_EUI_LEN];
-    char app_key[LW_APP_KEY_LEN];
-} _lw_config_t;
 
 static bool                 _persist_data_lw_valid = false;
 
@@ -320,6 +309,18 @@ static void _lw_reset_gpio_init(void)
 }
 
 
+static lw_config_t* _lw_get_config(void)
+{
+    comms_config_t* comms_config = persist_get_comms_config();
+    if (comms_config->type != COMMS_TYPE_LW)
+    {
+        comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
+        return NULL;
+    }
+    return (lw_config_t*)(comms_config->setup);
+}
+
+
 static bool _lw_load_config(void)
 {
     if (_persist_data_lw_valid)
@@ -328,7 +329,9 @@ static bool _lw_load_config(void)
         return false;
     }
 
-    _lw_config_t * config = (_lw_config_t*) persist_get_comms_config();
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return false;
 
     snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
     snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%."STR(LW_APP_KEY_LEN)"s", config->dev_eui);
@@ -445,7 +448,9 @@ static void _lw_retry_write(void)
 
 void comms_init(void)
 {
-    _lw_config_t * config = (_lw_config_t*)persist_get_comms_config();
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return;
 
     _persist_data_lw_valid = true;
 
@@ -887,6 +892,7 @@ static void _lw_process_wait_ack(char* message)
     {
         _lw_state_machine.state = LW_STATE_IDLE;
         _lw_state_machine.reset_count = 0;
+        _lw_state_machine.resend_count = 0;
         _lw_clear_backup();
         on_comms_sent_ack(true);
     }
@@ -1107,7 +1113,10 @@ void     comms_config_setup_str(char * str)
         return;
     }
 
-    _lw_config_t * config = (_lw_config_t*)persist_get_comms_config();
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return;
+
     uint8_t end_pos_word = p - str + 1;
     p = skip_space(p);
     if (strncmp(str, "dev-eui", end_pos_word-1) == 0)
@@ -1122,4 +1131,17 @@ void     comms_config_setup_str(char * str)
         strncpy(config->app_key, p, strlen(p));
         _lw_reload_config();
     }
+}
+
+
+bool comms_get_id(char* str, uint8_t len)
+{
+    if (len < LW_DEV_EUI_LEN + 1)
+        return false;
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return false;
+    strncpy(str, config->dev_eui, LW_DEV_EUI_LEN);
+    str[LW_DEV_EUI_LEN] = 0;
+    return true;
 }

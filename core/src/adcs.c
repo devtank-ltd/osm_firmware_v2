@@ -34,22 +34,28 @@ static adc_setup_config_t _adcs_config = {.mem_addr = (uintptr_t)_adcs_buffer};
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
  * buffer, the step and start index are required to find the correct RMS.*/
 #ifdef __ADC_RMS_FULL__
-static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_rms, uint8_t start_index, uint8_t step, uint16_t midpoint)
+static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
 {
-    uint64_t sum = 0;
+    double inter_val = 0;
+    int32_t mp_small = midpoint / 1000;
     for (unsigned i = start_index; i < buff_len; i+=step)
     {
-        int64_t inter_val = buff[i] - midpoint;
-        inter_val *= inter_val;
-        sum += inter_val;
+        int64_t v = buff[i] - mp_small;
+        inter_val += v * v;
     }
-    *adc_rms = midpoint - 1/Q_rsqrt( sum / (buff_len/step) );
-    adc_debug("RMS = %"PRIu16, *adc_rms);
+    adc_debug("inter_val = %.03lf", inter_val/1000.f);
+    inter_val /= (buff_len / step);
+    inter_val = sqrt(inter_val);
+    inter_val *= 1000;
+    inter_val = midpoint - inter_val;
+    adc_debug("inter_val = %.03lf", inter_val/1000.f);
+    *adc_rms = inter_val;
+    adc_debug("RMS = %"PRIu32".%03"PRIu32, *adc_rms/1000, *adc_rms%1000);
     return true;
 }
 #else
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
-static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_rms, uint8_t start_index, uint8_t step, uint16_t midpoint)
+static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
 {
     /**
     Four major steps:
@@ -91,22 +97,24 @@ static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_
     }
     uint32_t inter_val = midpoint - sum / peak_pos;
     inter_val /= sqrt(2);
-    *adc_rms = midpoint - inter_val;
-    adc_debug("RMS = %"PRIu16, *adc_rms);
+    *adc_rms = midpoint - inter_val * 1000;
+    adc_debug("RMS = %"PRIu32"%.03"PRIu32, *adc_rms/1000, *adc_rms%1000);
     return true;
 }
 #endif //__ADC_RMS_FULL__
 
 
-static bool _adcs_get_avg(adcs_all_buf_t buff, unsigned buff_len, uint16_t* adc_avg, uint8_t start_index, uint8_t step)
+static bool _adcs_get_avg(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_avg, uint8_t start_index, uint8_t step)
 {
     uint64_t sum = 0;
     for (unsigned i = start_index; i < buff_len; i+=step)
     {
         sum += buff[i];
     }
-    *adc_avg = sum * step / buff_len;
-    adc_debug("AVG = %"PRIu16, *adc_avg);
+    buff_len /= step;
+    sum *= 1000;
+    *adc_avg = sum / buff_len;
+    adc_debug("AVG = %"PRIu32".%03"PRIu32, *adc_avg/1000, *adc_avg%1000);
     return true;
 }
 
@@ -149,7 +157,7 @@ adcs_resp_t adcs_begin(adcs_type_t* channels, unsigned num_channels, unsigned nu
 }
 
 
-adcs_resp_t adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_rms(uint32_t* rms, uint32_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rms)
     {
@@ -173,7 +181,7 @@ adcs_resp_t adcs_collect_rms(uint16_t* rms, uint16_t midpoint, unsigned num_chan
 }
 
 
-adcs_resp_t adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rmss || !midpoints)
     {
@@ -193,7 +201,7 @@ adcs_resp_t adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_
             adc_debug("Handed NULL pointer.");
             return ADCS_RESP_FAIL;
         }
-        if (!_adcs_get_rms(_adcs_buffer, num_samples, rmss, i, num_channels, midpoints[i]))
+        if (!_adcs_get_rms(_adcs_buffer, num_samples, &rmss[i], i, num_channels, midpoints[i]))
         {
             adc_debug("Could not get RMS value for pos %u", i);
             return ADCS_RESP_FAIL;
@@ -205,7 +213,7 @@ adcs_resp_t adcs_collect_rmss(uint16_t* rmss, uint16_t* midpoints, unsigned num_
 }
 
 
-adcs_resp_t adcs_collect_avgs(uint16_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avgs)
     {

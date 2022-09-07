@@ -31,6 +31,7 @@
 #include "can_impl.h"
 #include "debug_mode.h"
 #include "platform.h"
+#include "version.h"
 
 
 static char   * rx_buffer;
@@ -42,6 +43,7 @@ typedef struct
     const char * key;
     const char * desc;
     void (*cb)(char * args);
+    bool hidden;
 } cmd_t;
 
 
@@ -200,6 +202,23 @@ void count_cb(char * args)
 void version_cb(char * args)
 {
     log_out("Version : %s", GIT_VERSION);
+    version_arch_t arch = version_get_arch();
+    uint8_t name_len = 10;
+    char name[name_len];
+    memset(name, 0, name_len);
+    switch(arch)
+    {
+        case VERSION_ARCH_REV_B:
+            strncpy(name, "Rev B", name_len);
+            break;
+        case VERSION_ARCH_REV_C:
+            strncpy(name, "Rev C", name_len);
+            break;
+        default:
+            log_out("Unknown architecture.");
+            break;
+    }
+    log_out("Architecture is %s", name);
 }
 
 
@@ -487,18 +506,18 @@ static void cc_cb(char* args)
 {
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
-    value_t value_1;
+    measurements_reading_t value_1;
     if (p == args)
     {
-        value_t value_2, value_3;
+        measurements_reading_t value_2, value_3;
         if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             log_out("Could not get CC values.");
             return;
         }
-        log_out("CC1 = %"PRIu16".%"PRIu16" A", value_1.u16/1000, value_1.u16%1000);
-        log_out("CC2 = %"PRIu16".%"PRIu16" A", value_2.u16/1000, value_2.u16%1000);
-        log_out("CC3 = %"PRIu16".%"PRIu16" A", value_3.u16/1000, value_3.u16%1000);
+        log_out("CC1 = %"PRIi64".%"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        log_out("CC2 = %"PRIi64".%"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        log_out("CC3 = %"PRIi64".%"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
         return;
     }
     if (cc_num > 3 || cc_num == 0)
@@ -514,11 +533,7 @@ static void cc_cb(char* args)
         return;
     }
 
-    char temp[8] = "";
-
-    value_to_str(&value_1, temp, sizeof(temp));
-
-    log_out("CC = %smA", temp);
+    log_out("CC = %"PRIi64"mA", value_1.v_i64);
 }
 
 
@@ -532,16 +547,61 @@ static void cc_mp_cb(char* args)
 {
     // 2046 CC1
     char* p;
-    uint16_t new_mp = strtoul(args, &p, 10);
+    float new_mp = strtof(args, &p);
+    p = skip_space(p);
+    uint32_t new_mp32;
     if (p == args)
     {
-        cc_get_midpoint(&new_mp, p);
-        log_out("MP: %"PRIu16, new_mp);
+        cc_get_midpoint(&new_mp32, p);
+        log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return;
     }
+    new_mp32 = new_mp * 1000;
     p = skip_space(p);
-    if (!cc_set_midpoint(new_mp, p))
+    if (!cc_set_midpoint(new_mp32, p))
         log_out("Failed to set the midpoint.");
+}
+
+
+static void cc_gain(char* args)
+{
+    // <index> <ext_A> <int_mV>
+    // 1       100     50
+    cc_config_t* cc_conf = persist_get_cc_configs();
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    p = skip_space(p);
+    if (strlen(p) == 0)
+    {
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].ext_max_mA/1000, cc_conf[i].ext_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, cc_conf[i].int_max_mV/1000, cc_conf[i].int_max_mV%1000);
+        }
+        return;
+    }
+    if (index == 0 || index > ADC_CC_COUNT + 1 || p == args)
+        goto syntax_exit;
+    index--;
+
+    char* q;
+    float ext_A = strtof(p, &q);
+    if (q == p)
+        goto print_exit;
+    q = skip_space(q);
+    uint32_t int_mA = strtoul(q, &p, 10);
+    if (p == q)
+        goto syntax_exit;
+    cc_conf[index].ext_max_mA = ext_A * 1000;
+    cc_conf[index].int_max_mV = int_mA;
+    log_out("Set the CC gain:");
+print_exit:
+    log_out("EXT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].ext_max_mA/1000, cc_conf[index].ext_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"V", cc_conf[index].int_max_mV/1000, cc_conf[index].int_max_mV%1000);
+    return;
+syntax_exit:
+    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
+    log_out("e.g cc_gain 3 100 50");
 }
 
 
@@ -631,14 +691,14 @@ static void interval_mins_cb(char* args)
 
 static void bat_cb(char* args)
 {
-    value_t value;
+    measurements_reading_t value;
     if (!bat_get_blocking(NULL, &value))
     {
         log_out("Could not get bat value.");
         return;
     }
 
-    log_out("Bat %u.%02u", value.u16 / 100, value.u16 %100);
+    log_out("Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
 }
 
 
@@ -753,56 +813,83 @@ static void debug_mode_cb(char* args)
 }
 
 
+
+#define SERIAL_NUM_COMM_LEN         17
+
+static void serial_num_cb(char* args)
+{
+    char* serial_num = persist_get_serial_number();
+    char* p = skip_space(args);
+    char comm_id[SERIAL_NUM_COMM_LEN];
+    uint8_t len = strnlen(p, SERIAL_NUM_LEN);
+    if (len == 0)
+        goto print_exit;
+    log_out("Updating serial number.");
+    strncpy(serial_num, p, len);
+    serial_num[len] = 0;
+print_exit:
+    if (!comms_get_id(comm_id, SERIAL_NUM_COMM_LEN))
+    {
+        log_out("%s", persist_get_serial_number());
+        return;
+    }
+    log_out("Serial Number: %s-%s", serial_num, comm_id);
+    return;
+}
+
+
 void cmds_process(char * command, unsigned len)
 {
     static cmd_t cmds[] = {
-        { "ios",          "Print all IOs.",           ios_log},
-        { "io",           "Get/set IO set.",          io_cb},
-        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb},
-        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb},
-        { "count",        "Counts of controls.",      count_cb},
-        { "version",      "Print version.",           version_cb},
-        { "comms_send",   "Send comms message",       comms_send_cb},
-        { "comms_config", "Set comms config",         comms_config_cb},
-        { "comms_conn",   "LoRa connected",           comms_conn_cb},
-        { "comms_dbg",    "Comms Chip Debug",         comms_dbg_cb},
-        { "no_comms",     "Dont need comms for measurements", no_comms_cb},
-        { "interval",     "Set the interval",         interval_cb},
-        { "samplecount",  "Set the samplecount",      samplecount_cb},
-        { "debug",        "Set hex debug mask",       debug_cb},
-        { "hpm",          "Enable/Disable HPM",       hpm_cb},
-        { "mb_setup",     "Change Modbus comms",      modbus_setup_cb},
-        { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb},
-        { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb},
-        { "mb_get_reg",   "Get modbus reg",           modbus_get_reg_cb},
-        { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg},
-        { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev},
-        { "mb_log",       "Show modbus setup",        modbus_log},
-        { "save",         "Save config",              persist_commit},
-        { "measurements", "Print measurements",       measurements_cb},
-        { "fw+",          "Add chunk of new fw.",     fw_add},
-        { "fw@",          "Finishing crc of new fw.", fw_fin},
-        { "reset",        "Reset device.",            reset_cb},
-        { "cc",           "CC value",                 cc_cb},
-        { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb},
-        { "cc_mp",        "Set the CC midpoint",      cc_mp_cb},
-        { "w1",           "Get temperature with w1",  ds18b20_cb},
-        { "timer",        "Test usecs timer",         timer_cb},
-        { "temp",         "Get the temperature",      temperature_cb},
-        { "humi",         "Get the humidity",         humidity_cb},
-        { "dew",          "Get the dew temperature",  dew_point_cb},
-        { "wipe",         "Factory Reset",            wipe_cb},
-        { "interval_mins","Get/Set interval minutes", interval_mins_cb},
-        { "bat",          "Get battery level.",       bat_cb},
-        { "pulsecount",   "Show pulsecount.",         pulsecount_log},
-        { "light",        "Get the light in lux.",    light_cb},
-        { "sound",        "Get the sound in lux.",    sound_cb},
-        { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb},
-        { "repop",        "Repopulate measurements.", repop_cb},
-        { "sleep",        "Sleep",                    sleep_cb},
-        { "power_mode",   "Power mode setting",       power_mode_cb},
-        { "can_impl",     "Send example CAN message", can_impl_cb},
-        { "debug_mode",   "Set/unset debug mode",     debug_mode_cb},
+        { "ios",          "Print all IOs.",           ios_log                       , false },
+        { "io",           "Get/set IO set.",          io_cb                         , false },
+        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb      , false },
+        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb         , false },
+        { "count",        "Counts of controls.",      count_cb                      , false },
+        { "version",      "Print version.",           version_cb                    , false },
+        { "comms_send",   "Send comms message",       comms_send_cb                 , false },
+        { "comms_config", "Set comms config",         comms_config_cb               , false },
+        { "comms_conn",   "LoRa connected",           comms_conn_cb                 , false },
+        { "comms_dbg",    "Comms Chip Debug",         comms_dbg_cb                  , false },
+        { "no_comms",     "Dont need comms for measurements", no_comms_cb           , false },
+        { "interval",     "Set the interval",         interval_cb                   , false },
+        { "samplecount",  "Set the samplecount",      samplecount_cb                , false },
+        { "debug",        "Set hex debug mask",       debug_cb                      , false },
+        { "hpm",          "Enable/Disable HPM",       hpm_cb                        , false },
+        { "mb_setup",     "Change Modbus comms",      modbus_setup_cb               , false },
+        { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb             , false },
+        { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb             , false },
+        { "mb_get_reg",   "Get modbus reg",           modbus_get_reg_cb             , false },
+        { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg    , false },
+        { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev    , false },
+        { "mb_log",       "Show modbus setup",        modbus_log                    , false },
+        { "save",         "Save config",              persist_commit                , false },
+        { "measurements", "Print measurements",       measurements_cb               , false },
+        { "fw+",          "Add chunk of new fw.",     fw_add                        , false },
+        { "fw@",          "Finishing crc of new fw.", fw_fin                        , false },
+        { "reset",        "Reset device.",            reset_cb                      , false },
+        { "cc",           "CC value",                 cc_cb                         , false },
+        { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb               , false },
+        { "cc_mp",        "Set the CC midpoint",      cc_mp_cb                      , false },
+        { "cc_gain",      "Set the max int and ext",  cc_gain                       , false },
+        { "w1",           "Get temperature with w1",  ds18b20_cb                    , false },
+        { "timer",        "Test usecs timer",         timer_cb                      , false },
+        { "temp",         "Get the temperature",      temperature_cb                , false },
+        { "humi",         "Get the humidity",         humidity_cb                   , false },
+        { "dew",          "Get the dew temperature",  dew_point_cb                  , false },
+        { "wipe",         "Factory Reset",            wipe_cb                       , false },
+        { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false },
+        { "bat",          "Get battery level.",       bat_cb                        , false },
+        { "pulsecount",   "Show pulsecount.",         pulsecount_log                , false },
+        { "light",        "Get the light in lux.",    light_cb                      , false },
+        { "sound",        "Get the sound in lux.",    sound_cb                      , false },
+        { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false },
+        { "repop",        "Repopulate measurements.", repop_cb                      , false },
+        { "sleep",        "Sleep",                    sleep_cb                      , false },
+        { "power_mode",   "Power mode setting",       power_mode_cb                 , false },
+        { "can_impl",     "Send example CAN message", can_impl_cb                   , false },
+        { "debug_mode",   "Set/unset debug mode",     debug_mode_cb                 , false },
+        { "serial_num",   "Set/get serial number",    serial_num_cb                 , true  },
         { NULL },
     };
 
@@ -835,7 +922,10 @@ void cmds_process(char * command, unsigned len)
         log_out("Unknown command \"%s\"", rx_buffer);
         log_out(LOG_SPACER);
         for(cmd_t * cmd = cmds; cmd->key; cmd++)
-            log_out("%10s : %s", cmd->key, cmd->desc);
+        {
+            if (!cmd->hidden)
+                log_out("%10s : %s", cmd->key, cmd->desc);
+        }
     }
     log_out(LOG_END_SPACER);
 }

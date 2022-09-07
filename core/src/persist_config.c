@@ -9,33 +9,41 @@
 #include "persist_config_header.h"
 #include "platform.h"
 
-static bool                 persist_data_valid = false;
-static persist_storage_t    persist_data __attribute__((aligned (16)));
-
+static bool                             persist_data_valid = false;
+static persist_storage_t                persist_data __attribute__((aligned (16)));
+static persist_measurements_storage_t   persist_measurements __attribute__((aligned (16)));
 
 void persistent_init(void)
 {
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
+    persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
 
     uint32_t vs = persist_data_raw->version;
     if (vs != PERSIST_VERSION)
     {
         log_error("Persistent data version unknown.");
         memset(&persist_data, 0, sizeof(persist_data));
+        memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            persist_data.cc_configs[i].ext_max_mA = 100000;
+            persist_data.cc_configs[i].int_max_mV = 50;
+        }
         return;
     }
 
     memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
+    memcpy(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements));
     persist_data_valid = true;
 }
 
 
 void persist_commit()
 {
-    if (platform_persist_commit(&persist_data))
+    if (platform_persist_commit(&persist_data, &persist_measurements))
     {
         log_sys_debug("Flash successfully written.");
         persist_data_valid = true;
@@ -65,15 +73,15 @@ uint32_t persist_get_log_debug_mask(void)
 }
 
 
-void* persist_get_comms_config(void)
+comms_config_t* persist_get_comms_config(void)
 {
-    return persist_data.comms_setup;
+    return &persist_data.comms_config;
 }
 
 
 measurements_def_t * persist_get_measurements(void)
 {
-    return persist_data.measurements_arr;
+    return persist_measurements.measurements_arr;
 }
 
 
@@ -101,7 +109,7 @@ bool persist_set_mins_interval(uint32_t mins_interval)
 
 
 
-bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
+bool persist_set_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
@@ -113,7 +121,7 @@ bool persist_set_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
 }
 
 
-bool persist_get_cc_midpoints(uint16_t midpoints[ADC_CC_COUNT])
+bool persist_get_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
 {
     if (!persist_data_valid)
     {
@@ -147,4 +155,16 @@ void    persistent_wipe(void)
     platform_persist_wipe();
     platform_raw_msg("Factory Reset");
     platform_reset_sys();
+}
+
+
+cc_config_t * persist_get_cc_configs(void)
+{
+    return persist_data.cc_configs;
+}
+
+
+char* persist_get_serial_number(void)
+{
+    return persist_data.serial_number;
 }

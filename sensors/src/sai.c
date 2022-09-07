@@ -597,7 +597,7 @@ measurements_sensor_state_t sai_measurements_init(char* name)
 }
 
 
-measurements_sensor_state_t sai_measurements_get(char* name, value_t* value)
+measurements_sensor_state_t sai_measurements_get(char* name, measurements_reading_t* value)
 {
     _sai_dma_off();
     if (_sai_sample.num_rms == 0)
@@ -613,7 +613,7 @@ measurements_sensor_state_t sai_measurements_get(char* name, value_t* value)
 
     sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
     sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
-    *value = value_from_u64(dB);
+    value->v_i64 = (int64_t)dB;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

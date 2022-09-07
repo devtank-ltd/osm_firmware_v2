@@ -206,20 +206,30 @@ persist_storage_t* platform_get_raw_persist(void)
 }
 
 
-bool platform_persist_commit(persist_storage_t * persist_data)
+persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
+{
+    return (persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
+}
+
+
+bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_erase_page(FLASH_MEASUREMENTS_PAGE);
     flash_set_data(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t));
+    flash_set_data(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(persist_measurements_storage_t));
     flash_lock();
 
-    return (memcmp(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t)) == 0);
+    return (memcmp(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t)) == 0 &&
+            memcmp(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(persist_measurements_storage_t)) == 0);
 }
 
 void platform_persist_wipe(void)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
+    flash_erase_page(FLASH_MEASUREMENTS_PAGE);
     flash_lock();
 }
 

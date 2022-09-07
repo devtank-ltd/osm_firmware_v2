@@ -19,5 +19,7 @@ extern void     comms_loop_iteration(void);
 
 extern void     comms_config_setup_str(char * str);
 
+extern bool     comms_get_id(char* str, uint8_t len);
+
 /* To be implemented by caller.*/
 extern void     on_comms_sent_ack(bool acked) __attribute__((weak));

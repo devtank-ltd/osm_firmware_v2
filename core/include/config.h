@@ -20,14 +20,10 @@
 #define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
-#if (!defined(STM32L451RE) && !defined(STM32L433VTC6))
-_Static_assert(0, "Not given a STM model.");
-#endif
-
 
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300
-#define ADCS_NUM_SAMPLES   480
+#define ADCS_NUM_SAMPLES  1500
 
 #define SAI_NUM_CAL_COEFFS   5
 
@@ -146,3 +142,9 @@ _Static_assert(0, "Not given a STM model.");
 #define UART_CHANNELS_COUNT 4
 
 #define IOS_COUNT 10
+
+#define SERIAL_NUM_LEN         41
+#define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
+
+#define LW_DEV_EUI_LEN                      16
+#define LW_APP_KEY_LEN                      32

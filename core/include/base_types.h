@@ -158,3 +158,29 @@ typedef enum
 #define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
                            ADCS_TYPE_CC_CLAMP2,  \
                            ADCS_TYPE_CC_CLAMP3   }
+
+typedef struct
+{
+    uint32_t ext_max_mA;
+    uint32_t int_max_mV;
+} cc_config_t;
+
+
+typedef enum
+{
+    COMMS_TYPE_LW,
+} comms_type_lw_t;
+
+
+typedef struct
+{
+    uint8_t type;           /* comms_type_lw_t */
+    uint8_t setup[127];
+} comms_config_t;
+
+
+typedef struct
+{
+    char    dev_eui[LW_DEV_EUI_LEN];
+    char    app_key[LW_APP_KEY_LEN];
+} lw_config_t;

@@ -268,7 +268,7 @@ measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection
 }
 
 
-measurements_sensor_state_t hpm_get_pm10(char* name, value_t* val)
+measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val)
 {
     bool was_valid = hpm_valid;
     hpm_enable(false);
@@ -276,13 +276,12 @@ measurements_sensor_state_t hpm_get_pm10(char* name, value_t* val)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    val->type = VALUE_UINT16;
-    val->u16 = pm10_entry.d;
+    val->v_i64 = (int64_t)pm10_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-measurements_sensor_state_t hpm_get_pm25(char* name, value_t* val)
+measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val)
 {
     bool was_valid = hpm_valid;
     hpm_enable(false);
@@ -290,8 +289,7 @@ measurements_sensor_state_t hpm_get_pm25(char* name, value_t* val)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    val->type = VALUE_UINT16;
-    val->u16 = pm25_entry.d;
+    val->v_i64 = (int64_t)pm25_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

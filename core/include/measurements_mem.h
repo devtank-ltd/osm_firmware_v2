@@ -2,7 +2,7 @@
 
 #include "base_types.h"
 
-#define MEASUREMENTS_MAX_NUMBER                   64
+#define MEASUREMENTS_MAX_NUMBER                   256
 
 #define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x01
 #define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
@@ -15,7 +15,6 @@
 #define MEASUREMENTS_CURRENT_CLAMP_2_NAME   "CC2"
 #define MEASUREMENTS_CURRENT_CLAMP_3_NAME   "CC3"
 #define MEASUREMENTS_W1_PROBE_NAME_1        "TMP2"
-#define MEASUREMENTS_W1_PROBE_NAME_2        "TMP3"
 #define MEASUREMENTS_HTU21D_TEMP            "TEMP"
 #define MEASUREMENTS_HTU21D_HUMI            "HUMI"
 #define MEASUREMENTS_BATMON_NAME            "BAT"

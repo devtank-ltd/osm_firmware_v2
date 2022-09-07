@@ -4,7 +4,6 @@
 #include <inttypes.h>
 
 #include "config.h"
-#include "value.h"
 #include "base_types.h"
 
 

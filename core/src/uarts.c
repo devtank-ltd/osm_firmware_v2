@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/gpio.h>
@@ -16,9 +17,12 @@
 #include "uart_rings.h"
 #include "uarts.h"
 #include "sleep.h"
+#include "version.h"
 
 
-static uart_channel_t uart_channels[] = UART_CHANNELS;
+static uart_channel_t uart_channels_rev_b[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_B;
+static uart_channel_t uart_channels_rev_c[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_C;
+static uart_channel_t* uart_channels = NULL;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
@@ -272,6 +276,17 @@ static void process_serial(unsigned uart)
 
 void uarts_setup(void)
 {
+    version_arch_t arch = version_get_arch();
+    if (arch == VERSION_ARCH_REV_B)
+        uart_channels = uart_channels_rev_b;
+    else if (arch == VERSION_ARCH_REV_C)
+        uart_channels = uart_channels_rev_c;
+    else
+    {
+        version_arch_error_handler();
+        return;
+    }
+
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
 }
@@ -410,20 +425,21 @@ void usart1_isr(void)
     process_serial(2);
 }
 
-#if defined(STM32L451RE)
 // cppcheck-suppress unusedFunction ; System handler
 void uart4_isr(void)
 {
+    if (version_is_arch(VERSION_ARCH_REV_B))
+        hard_fault_handler();
     process_serial(3);
 }
 
-#elif defined(STM32L433VTC6)
 // cppcheck-suppress unusedFunction ; System handler
 void lpuart1_isr(void)
 {
+    if (version_is_arch(VERSION_ARCH_REV_C))
+        hard_fault_handler();
     process_serial(3);
 }
-#endif
 
 // cppcheck-suppress unusedFunction ; System handler
 void dma1_channel7_isr(void)
@@ -443,17 +459,18 @@ void dma1_channel5_isr(void)
     process_complete_dma(2);
 }
 
-#if defined(STM32L451RE)
 // cppcheck-suppress unusedFunction ; System handler
 void dma2_channel3_isr(void)
 {
+    if (version_is_arch(VERSION_ARCH_REV_B))
+        hard_fault_handler();
     process_complete_dma(3);
 }
 
-#elif defined(STM32L433VTC6)
 // cppcheck-suppress unusedFunction ; System handler
 void dma2_channel6_isr(void)
 {
+    if (version_is_arch(VERSION_ARCH_REV_C))
+        hard_fault_handler();
     process_complete_dma(3);
 }
-#endif
