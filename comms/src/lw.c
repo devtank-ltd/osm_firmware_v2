@@ -39,18 +39,12 @@ bool lw_persist_data_is_valid(void)
     for (uint8_t i = 0; i < LW_DEV_EUI_LEN; i++)
     {
         if (!isascii(config->dev_eui[i]) || config->dev_eui[i] == 0)
-        {
-            log_out("DEVEUI CHARACTER '%c', position %"PRIu8, config->dev_eui[i], i);
             return false;
-        }
     }
     for (uint8_t i = 0; i < LW_APP_KEY_LEN; i++)
     {
         if (!isascii(config->app_key[i]) || config->app_key[i] == 0)
-        {
-            log_out("APPKEY CHARACTER '%c', position %"PRIu8, config->dev_eui[i], i);
             return false;
-        }
     }
     return true;
 }
@@ -81,7 +75,7 @@ bool lw_config_setup_str(char * str)
         if (lenrem == 0)
         {
             /* View Dev EUI */
-            if (!config)
+            if (!config || lw_persist_data_is_valid())
             {
                 log_out("Could not get Dev EUI");
                 return false;
@@ -106,7 +100,7 @@ bool lw_config_setup_str(char * str)
         if (lenrem == 0)
         {
             /* View Dev EUI */
-            if (!config)
+            if (!config || lw_persist_data_is_valid())
             {
                 log_out("Could not get app key.");
                 return false;
