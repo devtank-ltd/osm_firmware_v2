@@ -10,6 +10,7 @@ firmware_SOURCES := \
            core/src/i2c.c \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
+           core/src/comms.c \
            core/src/rak4270.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \

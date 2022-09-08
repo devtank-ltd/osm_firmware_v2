@@ -13,7 +13,7 @@
 #include "uart_rings.h"
 #include "uarts.h"
 #include "config.h"
-#include "comms.h"
+#include "rak4270.h"
 #include "log.h"
 #include "cmd.h"
 #include "measurements.h"
@@ -38,7 +38,7 @@ static bool                 _persist_data_rak4270_valid = false;
 
 #define RAK4270_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
 #define RAK4270_CONFIG_TIMEOUT_S             30
-#define comms_reset_GPIO_DEFAULT_MS        10
+#define RAK4270_RESET_GPIO_DEFAULT_MS        10
 #define RAK4270_SLOW_RESET_TIMEOUT_MINS      15
 #define RAK4270_MAX_RESEND                   5
 #define RAK4270_DELAY_MS                     2
@@ -211,7 +211,7 @@ static port_n_pins_t        _rak4270_reset_gpio                      = { GPIOC, 
 static char                 _rak4270_out_buffer[RAK4270_BUFFER_SIZE]      = {0};
 static uint8_t              _rak4270_port                            = 0;
 static uint32_t             _rak4270_chip_off_time                   = 0;
-static uint32_t             _rak4270_reset_timeout                   = comms_reset_GPIO_DEFAULT_MS;
+static uint32_t             _rak4270_reset_timeout                   = RAK4270_RESET_GPIO_DEFAULT_MS;
 static rak4270_backup_msg_t      _rak4270_backup_message                  = {.backup_type=RAK4270_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
 static error_code_t         _rak4270_error_code                      = {0, false};
 static char                 _rak4270_cmd_ascii[CMD_LINELEN]          = "";
@@ -234,7 +234,7 @@ static rak4270_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters
                                      "App Key goes here"};
 
 
-uint16_t comms_get_mtu(void)
+uint16_t rak4270_get_mtu(void)
 {
     return _rak4270_packet_max_size;
 }
@@ -347,7 +347,7 @@ static void _rak4270_chip_init(void)
     {
         comms_debug("Chip already on, restarting chip.");
         _rak4270_chip_off();
-        timer_delay_us_64(comms_reset_GPIO_DEFAULT_MS * 1000);
+        timer_delay_us_64(RAK4270_RESET_GPIO_DEFAULT_MS * 1000);
     }
     comms_debug("Initialising LoRaWAN chip.");
     _rak4270_chip_on();
@@ -383,15 +383,15 @@ static void _rak4270_soft_reset(void)
 }
 
 
-bool comms_send_ready(void)
+bool rak4270_send_ready(void)
 {
     return _rak4270_state_machine.state == RAK4270_STATE_IDLE;
 }
 
 
-bool comms_send_str(char* str)
+bool rak4270_send_str(char* str)
 {
-    if (!comms_send_ready())
+    if (!rak4270_send_ready())
     {
         comms_debug("Cannot send '%s' as chip is not in IDLE state.", str);
         return false;
@@ -416,7 +416,7 @@ static void _rak4270_retry_write(void)
     {
         comms_debug("Failed to successfully resend (%u times), resetting chip.", RAK4270_MAX_RESEND);
         _rak4270_state_machine.resend_count = 0;
-        comms_reset();
+        rak4270_reset();
         on_comms_sent_ack(false);
         return;
     }
@@ -426,11 +426,11 @@ static void _rak4270_retry_write(void)
     {
         case RAK4270_BKUP_MSG_STR:
             _rak4270_state_machine.state = RAK4270_STATE_IDLE;
-            comms_send_str(_rak4270_backup_message.string);
+            rak4270_send_str(_rak4270_backup_message.string);
             break;
         case RAK4270_BKUP_MSG_HEX:
             _rak4270_state_machine.state = RAK4270_STATE_IDLE;
-            comms_send(_rak4270_backup_message.hex.arr, _rak4270_backup_message.hex.len);
+            rak4270_send(_rak4270_backup_message.hex.arr, _rak4270_backup_message.hex.len);
             break;
         default:
             comms_debug("Broken backup, cant resend");
@@ -447,7 +447,7 @@ static void _rak4270_retry_write(void)
 }
 
 
-void comms_init(void)
+void rak4270_init(void)
 {
     lw_config_t* config = _rak4270_get_config();
     if (!config)
@@ -524,7 +524,7 @@ static unsigned _rak4270_handle_unsol_2_rak4270_cmd_ascii(char *p)
 }
 
 
-bool comms_send_allowed(void)
+bool rak4270_send_allowed(void)
 {
     // TODO: This function could probably be done better.
     return (_next_fw_chunk_id != 0);
@@ -711,13 +711,13 @@ static void _rak4270_send_error_code(void)
         char err_msg[11] = "";
         snprintf(err_msg, 11, "%"PRIx16, _rak4270_error_code.code);
         comms_debug("Sending error message '%s'", err_msg);
-        comms_send_str(err_msg);
+        rak4270_send_str(err_msg);
         _rak4270_error_code.valid = false;
     }
 }
 
 
-void comms_reset(void)
+void rak4270_reset(void)
 {
     if (_rak4270_state_machine.state == RAK4270_STATE_OFF)
     {
@@ -745,7 +745,7 @@ static bool _rak4270_reload_config(void)
         return false;
     }
     _rak4270_state_machine.reset_count = 0;
-    comms_reset();
+    rak4270_reset();
     return true;
 }
 
@@ -768,10 +768,10 @@ static void _rak4270_handle_error(char* message)
             comms_debug("Packet size too large, reducing limit throwing data and resetting chip.");
             _rak4270_packet_max_size -= 2;
             on_comms_sent_ack(false);
-            comms_reset();
+            rak4270_reset();
             break;
         case RAK4270_ERROR_TIMEOUT_RX1:
-            if (comms_get_connected())
+            if (rak4270_get_connected())
             {
                 comms_debug("Timed out waiting for packet in windox RX1.");
                 _rak4270_retry_write();
@@ -779,11 +779,11 @@ static void _rak4270_handle_error(char* message)
             else
             {
                 comms_debug("Send alive wasn't responded to.");
-                comms_reset();
+                rak4270_reset();
             }
             break;
         case RAK4270_ERROR_TIMEOUT_RX2:
-            if (comms_get_connected())
+            if (rak4270_get_connected())
             {
                 comms_debug("Timed out waiting for packet in windox RX2.");
                 _rak4270_retry_write();
@@ -791,7 +791,7 @@ static void _rak4270_handle_error(char* message)
             else
             {
                 comms_debug("Send alive wasn't responded to.");
-                comms_reset();
+                rak4270_reset();
             }
             break;
         case RAK4270_ERROR_RECV_RX1:
@@ -809,14 +809,14 @@ static void _rak4270_handle_error(char* message)
             comms_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
             _rak4270_packet_max_size -= 2;
             on_comms_sent_ack(false);
-            comms_reset();
+            rak4270_reset();
             break;
         case RAK4270_ERROR_INVLD_MIC:
             comms_debug("Invalid MIC in LoRa message.");
             break;
         default:
             comms_debug("Error Code %"PRIu8", resetting chip.", err_no);
-            comms_reset();
+            rak4270_reset();
             break;
     }
 }
@@ -923,7 +923,7 @@ static void _rak4270_process_wait_conf_ok(char* message)
 }
 
 
-void comms_process(char* message)
+void rak4270_process(char* message)
 {
     _rak4270_update_last_message_time();
     if (_rak4270_msg_is_error(message))
@@ -1014,7 +1014,7 @@ static unsigned _rak4270_send_size(uint16_t arr_len)
 }
 
 
-void comms_send(int8_t* hex_arr, uint16_t arr_len)
+void rak4270_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak4270_state_machine.state == RAK4270_STATE_IDLE)
     {
@@ -1057,7 +1057,7 @@ void comms_send(int8_t* hex_arr, uint16_t arr_len)
 }
 
 
-bool comms_get_connected(void)
+bool rak4270_get_connected(void)
 {
     return (_rak4270_state_machine.state == RAK4270_STATE_WAIT_OK       ||
             _rak4270_state_machine.state == RAK4270_STATE_WAIT_ACK      ||
@@ -1068,7 +1068,7 @@ bool comms_get_connected(void)
 }
 
 
-void comms_loop_iteration(void)
+void rak4270_loop_iteration(void)
 {
     uint32_t now = get_since_boot_ms();
     switch(_rak4270_state_machine.state)
@@ -1091,14 +1091,14 @@ void comms_loop_iteration(void)
                     on_comms_sent_ack(false);
                 }
                 comms_debug("LoRa chip timed out, resetting.");
-                comms_reset();
+                rak4270_reset();
             }
             break;
     }
 }
 
 
-void     comms_config_setup_str(char * str)
+void rak4270_config_setup_str(char * str)
 {
     // CMD  : "lora_config dev-eui 118f875d6994bbfd"
     // ARGS : "dev-eui 118f875d6994bbfd"
@@ -1129,7 +1129,7 @@ void     comms_config_setup_str(char * str)
 }
 
 
-bool comms_get_id(char* str, uint8_t len)
+bool rak4270_get_id(char* str, uint8_t len)
 {
     if (len < LW_DEV_EUI_LEN + 1)
         return false;
