@@ -25,7 +25,9 @@ firmware_SOURCES := \
            core/src/version.c \
            core/src/stm.c \
            comms/src/comms.c \
+           comms/src/lw.c \
            comms/src/rak4270.c \
+           comms/src/rak3172.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \

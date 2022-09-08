@@ -310,18 +310,6 @@ static void _rak4270_reset_gpio_init(void)
 }
 
 
-static lw_config_t* _rak4270_get_config(void)
-{
-    comms_config_t* comms_config = persist_get_comms_config();
-    if (comms_config->type != COMMS_TYPE_LW)
-    {
-        comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
-        return NULL;
-    }
-    return (lw_config_t*)(comms_config->setup);
-}
-
-
 static bool _rak4270_load_config(void)
 {
     if (_persist_data_rak4270_valid)
@@ -330,7 +318,7 @@ static bool _rak4270_load_config(void)
         return false;
     }
 
-    lw_config_t* config = _rak4270_get_config();
+    lw_config_t* config = lw_get_config();
     if (!config)
         return false;
 
@@ -449,7 +437,7 @@ static void _rak4270_retry_write(void)
 
 void rak4270_init(void)
 {
-    lw_config_t* config = _rak4270_get_config();
+    lw_config_t* config = lw_get_config();
     if (!config)
         return;
 
@@ -1102,41 +1090,75 @@ void rak4270_config_setup_str(char * str)
 {
     // CMD  : "lora_config dev-eui 118f875d6994bbfd"
     // ARGS : "dev-eui 118f875d6994bbfd"
-    char * p = strchr(str, ' ');
-    if (p == NULL)
+    char* p = skip_space(str);
+
+    uint16_t lenrem = strnlen(p, CMD_LINELEN);
+    if (lenrem == 0)
+        goto syntax_exit;
+
+    char* np = strchr(p, ' ');
+    if (!np)
+        np = p + lenrem;
+    uint8_t wordlen = np - p;
+
+    lw_config_t* config = lw_get_config();
+
+    if (strncmp(p, "dev-eui", wordlen) == 0)
     {
+        /* Dev EUI */
+        char eui[LW_DEV_EUI_LEN + 1];
+        p = skip_space(np);
+        lenrem = strnlen(p, CMD_LINELEN);
+        if (lenrem == 0)
+        {
+            /* View Dev EUI */
+            if (!config)
+            {
+                log_out("Could not get Dev EUI");
+                return;
+            }
+            log_out("Dev EUI: %s", eui);
+            return;
+        }
+        /* Set Dev EUI */
+        if (lenrem != LW_DEV_EUI_LEN)
+        {
+            log_out("Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
+            return;
+        }
+        strncpy(config->dev_eui, p, lenrem);
+        config->dev_eui[lenrem] = 0;
+        _rak4270_reload_config();
         return;
     }
-
-    lw_config_t* config = _rak4270_get_config();
-    if (!config)
+    if (strncmp(p, "app-key", wordlen) == 0)
+    {
+        /* App Key */
+        char key[LW_APP_KEY_LEN + 1];
+        p = skip_space(np);
+        lenrem = strnlen(p, CMD_LINELEN);
+        if (lenrem == 0)
+        {
+            /* View Dev EUI */
+            if (!config)
+            {
+                log_out("Could not get app key.");
+                return;
+            }
+            log_out("App Key: %s", key);
+            return;
+        }
+        /* Set Dev EUI */
+        if (lenrem != LW_APP_KEY_LEN)
+        {
+            log_out("App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
+            return;
+        }
+        strncpy(config->app_key, p, lenrem);
+        config->app_key[lenrem] = 0;
+        _rak4270_reload_config();
         return;
-
-    uint8_t end_pos_word = p - str + 1;
-    p = skip_space(p);
-    if (strncmp(str, "dev-eui", end_pos_word-1) == 0)
-    {
-        memset(config->dev_eui, 0, LW_DEV_EUI_LEN);
-        strncpy(config->dev_eui, p, strlen(p));
-        _rak4270_reload_config();
     }
-    else if (strncmp(str, "app-key", end_pos_word-1) == 0)
-    {
-        memset(config->app_key, 0, LW_DEV_EUI_LEN);
-        strncpy(config->app_key, p, strlen(p));
-        _rak4270_reload_config();
-    }
-}
-
-
-bool rak4270_get_id(char* str, uint8_t len)
-{
-    if (len < LW_DEV_EUI_LEN + 1)
-        return false;
-    lw_config_t* config = _rak4270_get_config();
-    if (!config)
-        return false;
-    strncpy(str, config->dev_eui, LW_DEV_EUI_LEN);
-    str[LW_DEV_EUI_LEN] = 0;
-    return true;
+syntax_exit:
+    log_out("lora_config dev-eui/app-key [EUI/KEY]");
 }
