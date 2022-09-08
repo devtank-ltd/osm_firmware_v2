@@ -15,6 +15,8 @@ typedef struct
 } special_io_info_t;
 
 
+extern bool     msg_is(const char* ref, char* message);
+
 extern uint32_t get_since_boot_ms(void);
 extern uint32_t since_boot_delta(uint32_t newer, uint32_t older);
 

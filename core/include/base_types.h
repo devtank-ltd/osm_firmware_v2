@@ -181,13 +181,6 @@ typedef struct
 } comms_config_t;
 
 
-typedef struct
-{
-    char    dev_eui[LW_DEV_EUI_LEN];
-    char    app_key[LW_APP_KEY_LEN];
-} lw_config_t;
-
-
 typedef enum
 {
     MEASUREMENTS_SENSOR_STATE_SUCCESS,

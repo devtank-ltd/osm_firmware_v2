@@ -9,6 +9,12 @@
 #include "platform.h"
 
 
+bool msg_is(const char* ref, char* message)
+{
+    return (bool)(strncmp(message, ref, strlen(ref)) == 0);
+}
+
+
 // Timing Functions
 
 uint32_t since_boot_delta(uint32_t newer, uint32_t older)

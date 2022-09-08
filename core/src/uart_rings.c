@@ -164,7 +164,7 @@ void uart_ring_in_drain(unsigned uart)
         if (len)
             cmds_process(command, len);
     }
-    else if (uart == LW_UART)
+    else if (uart == COMMS_UART)
     {
         len = ring_buf_readline(ring, command, CMD_LINELEN);
         if (len)

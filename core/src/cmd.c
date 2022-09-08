@@ -723,8 +723,8 @@ static void bat_cb(char* args)
 
 static void comms_dbg_cb(char* args)
 {
-    uart_ring_out(LW_UART, args, strlen(args));
-    uart_ring_out(LW_UART, "\r\n", 2);
+    uart_ring_out(COMMS_UART, args, strlen(args));
+    uart_ring_out(COMMS_UART, "\r\n", 2);
 }
 
 
