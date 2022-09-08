@@ -26,7 +26,7 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_S
 
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include
+INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include
 
 bootloader_LINK_SCRIPT := bootloader/stm32l4.ld
 firmware_LINK_SCRIPT := core/stm32l4.ld
