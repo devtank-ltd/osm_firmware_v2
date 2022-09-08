@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -33,8 +32,6 @@
 _Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
-
-static bool                 _persist_data_rak4270_valid = false;
 
 #define RAK4270_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
 #define RAK4270_CONFIG_TIMEOUT_S             30
@@ -312,7 +309,7 @@ static void _rak4270_reset_gpio_init(void)
 
 static bool _rak4270_load_config(void)
 {
-    if (_persist_data_rak4270_valid)
+    if (!lw_persist_data_is_valid())
     {
         log_error("No LoRaWAN Dev EUI and/or App Key.");
         return false;
@@ -323,7 +320,7 @@ static bool _rak4270_load_config(void)
         return false;
 
     snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%."STR(LW_APP_KEY_LEN)"s", config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
     snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%."STR(LW_APP_KEY_LEN)"s", config->app_key);
     return true;
 }
@@ -437,33 +434,7 @@ static void _rak4270_retry_write(void)
 
 void rak4270_init(void)
 {
-    lw_config_t* config = lw_get_config();
-    if (!config)
-        return;
-
-    _persist_data_rak4270_valid = true;
-
-    if (config->dev_eui[0] && config->app_key[0])
-    {
-        for(unsigned n = 0; n < LW_DEV_EUI_LEN; n++)
-        {
-            if (!isascii(config->dev_eui[n]))
-            {
-                _persist_data_rak4270_valid = false;
-                log_error("Persistent data rak4270 dev not valid");
-                break;
-            }
-        }
-        for(unsigned n = 0; n < LW_APP_KEY_LEN; n++)
-        {
-            if (!isascii(config->app_key[n]))
-            {
-                _persist_data_rak4270_valid = false;
-                log_error("Persistent data rak4270 app not valid");
-                break;
-            }
-        }
-    }
+    lw_persist_data_is_valid();
 
     _rak4270_reset_gpio_init();
     if (_rak4270_state_machine.state != RAK4270_STATE_OFF)
@@ -733,6 +704,7 @@ static bool _rak4270_reload_config(void)
         return false;
     }
     _rak4270_state_machine.reset_count = 0;
+    _rak4270_state_machine.state = RAK4270_STATE_OFF;
     rak4270_reset();
     return true;
 }
@@ -1064,7 +1036,10 @@ void rak4270_loop_iteration(void)
         case RAK4270_STATE_OFF:
             if (since_boot_delta(now, _rak4270_chip_off_time) > _rak4270_reset_timeout)
             {
-                _rak4270_chip_on();
+                if (lw_persist_data_is_valid())
+                    _rak4270_chip_on();
+                else
+                    rak4270_reset();
             }
             break;
         case RAK4270_STATE_IDLE:
@@ -1086,79 +1061,8 @@ void rak4270_loop_iteration(void)
 }
 
 
-void rak4270_config_setup_str(char * str)
+void rak4270_config_setup_str(char* str)
 {
-    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
-    // ARGS : "dev-eui 118f875d6994bbfd"
-    char* p = skip_space(str);
-
-    uint16_t lenrem = strnlen(p, CMD_LINELEN);
-    if (lenrem == 0)
-        goto syntax_exit;
-
-    char* np = strchr(p, ' ');
-    if (!np)
-        np = p + lenrem;
-    uint8_t wordlen = np - p;
-
-    lw_config_t* config = lw_get_config();
-
-    if (strncmp(p, "dev-eui", wordlen) == 0)
-    {
-        /* Dev EUI */
-        char eui[LW_DEV_EUI_LEN + 1];
-        p = skip_space(np);
-        lenrem = strnlen(p, CMD_LINELEN);
-        if (lenrem == 0)
-        {
-            /* View Dev EUI */
-            if (!config)
-            {
-                log_out("Could not get Dev EUI");
-                return;
-            }
-            log_out("Dev EUI: %s", eui);
-            return;
-        }
-        /* Set Dev EUI */
-        if (lenrem != LW_DEV_EUI_LEN)
-        {
-            log_out("Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
-            return;
-        }
-        strncpy(config->dev_eui, p, lenrem);
-        config->dev_eui[lenrem] = 0;
+    if (lw_config_setup_str(str))
         _rak4270_reload_config();
-        return;
-    }
-    if (strncmp(p, "app-key", wordlen) == 0)
-    {
-        /* App Key */
-        char key[LW_APP_KEY_LEN + 1];
-        p = skip_space(np);
-        lenrem = strnlen(p, CMD_LINELEN);
-        if (lenrem == 0)
-        {
-            /* View Dev EUI */
-            if (!config)
-            {
-                log_out("Could not get app key.");
-                return;
-            }
-            log_out("App Key: %s", key);
-            return;
-        }
-        /* Set Dev EUI */
-        if (lenrem != LW_APP_KEY_LEN)
-        {
-            log_out("App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
-            return;
-        }
-        strncpy(config->app_key, p, lenrem);
-        config->app_key[lenrem] = 0;
-        _rak4270_reload_config();
-        return;
-    }
-syntax_exit:
-    log_out("lora_config dev-eui/app-key [EUI/KEY]");
 }

@@ -17,3 +17,5 @@ typedef struct
 
 bool            lw_get_id(char* str, uint8_t len);
 lw_config_t*    lw_get_config(void);
+bool            lw_persist_data_is_valid(void);
+bool            lw_config_setup_str(char * str);
