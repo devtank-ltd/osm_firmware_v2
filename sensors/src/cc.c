@@ -8,7 +8,6 @@
 #include "common.h"
 #include "log.h"
 #include "adcs.h"
-#include "pinmap.h"
 #include "persist_config.h"
 #include "uart_rings.h"
 
@@ -142,7 +141,7 @@ static bool _cc_get_index(uint8_t* index, char* name)
 }
 
 
-static bool _cc_get_clamp(uint8_t* clamp, uint8_t index)
+static bool _cc_get_clamp(adcs_type_t* clamp, uint8_t index)
 {
     if (!clamp)
     {
@@ -167,7 +166,7 @@ static bool _cc_get_clamp(uint8_t* clamp, uint8_t index)
 }
 
 
-static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, uint8_t* clamp)
+static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, adcs_type_t* clamp)
 {
     uint8_t index_local;
     if (!_cc_get_index(&index_local, name))
@@ -475,7 +474,7 @@ bool cc_calibrate(void)
 
 bool cc_get_blocking(char* name, measurements_reading_t* value)
 {
-    uint8_t clamp;
+    adcs_type_t clamp;
     if (!_cc_get_info(name, NULL, NULL, &clamp))
     {
         adc_debug("Cannot get info.");
