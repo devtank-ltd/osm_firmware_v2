@@ -39,7 +39,7 @@ int main(void)
     platform_init();
     platform_blink_led_init();
 
-    i2c_init(0);
+    i2cs_init();
 
     uarts_setup();
     uart_rings_init();

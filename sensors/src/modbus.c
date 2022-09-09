@@ -4,8 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <libopencm3/cm3/systick.h>
-
 #include "log.h"
 #include "pinmap.h"
 #include "modbus.h"
