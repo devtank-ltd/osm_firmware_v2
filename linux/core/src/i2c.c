@@ -1,7 +1,7 @@
 #include "i2c.h"
 
 
-void i2c_init(unsigned i2c_index)
+void i2cs_init(void)
 {
     return;
 }

@@ -79,6 +79,7 @@ static fd_t             fd_list[LINUX_MAX_PTY];
 static pthread_t        _linux_listener_thread_id;
 static persist_mem_t    _linux_persist_mem          = {0};
 static bool             _linux_running              = true;
+uint32_t rcc_ahb_frequency;
 
 
 void _linux_sig_handler(int signo)
@@ -293,9 +294,58 @@ void platform_init(void)
 }
 
 
+void platform_watchdog_init(uint32_t ms)
+{
+    ;
+}
+
+
+void platform_watchdog_reset(void)
+{
+    ;
+}
+
+
+void platform_blink_led_init(void)
+{
+    ;
+}
+
+
+void platform_blink_led_toggle(void)
+{
+    ;
+}
+
+
 void platform_deinit(void)
 {
     _linux_exit(0);
+}
+
+
+void platform_setup_adc(adc_setup_config_t* config)
+{
+}
+
+
+void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
+{
+}
+
+
+void platform_adc_start_conversion_regular(void)
+{
+}
+
+
+void platform_adc_power_off(void)
+{
+}
+
+
+void platform_adc_set_num_data(unsigned num_data)
+{
 }
 
 

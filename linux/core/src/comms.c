@@ -61,3 +61,9 @@ void comms_loop_iteration(void)
 void comms_config_setup_str(char * str)
 {
 }
+
+
+bool comms_get_id(char* str, uint8_t len)
+{
+    return false;
+}

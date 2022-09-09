@@ -20,3 +20,9 @@ void w1_send_byte(uint8_t index, uint8_t byte)
 {
     ;
 }
+
+
+void w1_init(uint8_t index)
+{
+    ;
+}

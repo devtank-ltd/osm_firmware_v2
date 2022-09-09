@@ -22,7 +22,7 @@ BUILD_DIR := build
 
 INCLUDE_PATHS += -Icore/include -Isensors/include
 
-LINK_FLAGS = -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-sections
+LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections
 
 BUILD_DIR := build
 
@@ -81,6 +81,7 @@ firmware_SOURCES := \
 firmware_OBJS=$(firmware_SOURCES:%.c=$(BUILD_DIR)/%.o)
 
 $(BUILD_DIR)/firmware.elf : $(firmware_OBJS)
+	$(CC) $(firmware_OBJS) $(LINK_FLAGS) -o $@
 
 clean:
 	rm -rf $(BUILD_DIR)
