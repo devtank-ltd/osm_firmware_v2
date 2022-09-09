@@ -110,11 +110,6 @@
     { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10|GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, UART4_PRIORITY, true }, \
 }
 
-#define MODBUS_SPEED    UART_4_SPEED
-#define MODBUS_PARITY   UART_4_PARITY
-#define MODBUS_DATABITS UART_4_DATABITS
-#define MODBUS_STOP     UART_4_STOP
-
 
 #define IOS_PORT_N_PINS            \
 {                                  \
@@ -167,13 +162,11 @@ GPIO16 D2                   IO 11
 #define W1_PULSE_PORT               GPIOA
 
 #define W1_PULSE_1_PIN              GPIO11
-#define W1_PULSE_1_IO               4
 
 #define W1_PULSE_1_EXTI             EXTI11
 #define W1_PULSE_1_EXTI_IRQ NVIC_EXTI15_10_IRQ
 
 #define W1_PULSE_2_PIN              GPIO12
-#define W1_PULSE_2_IO               5
 
 #define W1_PULSE_2_EXTI             EXTI12
 #define W1_PULSE_2_EXTI_IRQ NVIC_EXTI15_10_IRQ

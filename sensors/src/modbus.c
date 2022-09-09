@@ -5,7 +5,6 @@
 #include <stdlib.h>
 
 #include "log.h"
-#include "pinmap.h"
 #include "modbus.h"
 #include "uart_rings.h"
 #include "uarts.h"
@@ -430,7 +429,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     return true;
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, uint8_t byte_order, uint8_t word_order);
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
 
 void modbus_ring_process(ring_buf_t * ring)
 {

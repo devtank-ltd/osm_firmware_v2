@@ -103,6 +103,11 @@
 #define UART_3_STOP uart_stop_bits_1
 #define UART_4_STOP uart_stop_bits_1
 
+#define MODBUS_SPEED    UART_4_SPEED
+#define MODBUS_PARITY   UART_4_PARITY
+#define MODBUS_DATABITS UART_4_DATABITS
+#define MODBUS_STOP     UART_4_STOP
+
 #define USB_DATA_PCK_SZ    64
 
 #define DMA_DATA_PCK_SZ    64
@@ -142,6 +147,8 @@
 #define UART_CHANNELS_COUNT 4
 
 #define IOS_COUNT 10
+#define W1_PULSE_1_IO               4
+#define W1_PULSE_2_IO               5
 
 #define SERIAL_NUM_LEN         41
 #define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)

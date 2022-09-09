@@ -9,7 +9,6 @@ Documents used:
 */
 #include <string.h>
 
-#include "pinmap.h"
 #include "log.h"
 #include "common.h"
 #include "io.h"
@@ -19,7 +18,7 @@ Documents used:
 
 #define DS18B20_INSTANCES   {                                          \
     { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
-      { { W1_PULSE_PORT, W1_PULSE_1_PIN } } }                          \
+        0 }                                                            \
 }
 
 #define DS18B20_DELAY_GET_TEMP_US   750000
@@ -50,18 +49,18 @@ typedef union
 typedef struct
 {
     special_io_info_t   info;
-    w1_instance_t       w1_instance;
+    uint8_t             w1_index;
 } ds18b20_instance_t;
 
 
 static ds18b20_instance_t _ds18b20_instances[] = DS18B20_INSTANCES;
 
 
-static void _ds18b20_read_scpad(ds18b20_memory_t* d, w1_instance_t* instance)
+static void _ds18b20_read_scpad(ds18b20_memory_t* d, ds18b20_instance_t* instance)
 {
     for (int i = 0; i < 9; i++)
     {
-        d->raw[i] = w1_read_byte(instance);
+        d->raw[i] = w1_read_byte(instance->w1_index);
     }
 }
 
@@ -151,20 +150,20 @@ bool ds18b20_query_temp(float* temperature, char* name)
     }
 
     ds18b20_memory_t d; 
-    if (!w1_reset(&instance->w1_instance))
+    if (!w1_reset(instance->w1_index))
     {
         goto bad_exit;
     }
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_CONV_T);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_CONV_T);
     _ds18b20_delay_us(DS18B20_DELAY_GET_TEMP_US);
-    if (!w1_reset(&instance->w1_instance))
+    if (!w1_reset(instance->w1_index))
     {
         goto bad_exit;
     }
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_READ_SCP);
-    _ds18b20_read_scpad(&d, &instance->w1_instance);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_READ_SCP);
+    _ds18b20_read_scpad(&d, instance);
 
     if (!_ds18b20_crc_check(d.raw, 8))
     {
@@ -202,13 +201,13 @@ measurements_sensor_state_t ds18b20_measurements_init(char* name)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!io_is_w1_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!w1_reset(&instance->w1_instance))
+    if (!w1_reset(instance->w1_index))
     {
         exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_CONV_T);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_CONV_T);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -221,14 +220,14 @@ measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurement
     if (!io_is_w1_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     ds18b20_memory_t d;
-    if (!w1_reset(&instance->w1_instance))
+    if (!w1_reset(instance->w1_index))
     {
         exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(&instance->w1_instance, DS18B20_CMD_READ_SCP);
-    _ds18b20_read_scpad(&d, &instance->w1_instance);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
+    w1_send_byte(instance->w1_index, DS18B20_CMD_READ_SCP);
+    _ds18b20_read_scpad(&d, instance);
 
     if (!_ds18b20_crc_check(d.raw, 8))
     {
@@ -268,7 +267,7 @@ measurements_sensor_state_t ds18b20_collection_time(char* name, uint32_t* collec
 
 static void _ds18b20_init_instance(ds18b20_instance_t* instance)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(W1_PULSE_PORT));
+    w1_init(instance->w1_index);
 }
 
 
