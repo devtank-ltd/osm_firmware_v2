@@ -12,17 +12,12 @@ Application Guide:
 #include <string.h>
 #include <stdlib.h>
 
-#include <libopencm3/stm32/i2c.h>
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-
+#include "veml7700.h"
 #include "config.h"
-#include "pinmap.h"
 #include "i2c.h"
 #include "log.h"
 #include "measurements.h"
 #include "common.h"
-#include "veml7700.h"
 #include "uart_rings.h"
 #include "timers.h"
 

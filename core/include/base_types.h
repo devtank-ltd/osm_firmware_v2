@@ -184,3 +184,19 @@ typedef struct
     char    dev_eui[LW_DEV_EUI_LEN];
     char    app_key[LW_APP_KEY_LEN];
 } lw_config_t;
+
+
+typedef enum
+{
+    MEASUREMENTS_SENSOR_STATE_SUCCESS,
+    MEASUREMENTS_SENSOR_STATE_BUSY,
+    MEASUREMENTS_SENSOR_STATE_ERROR,
+} measurements_sensor_state_t;
+
+
+typedef union
+{
+    int64_t v_i64;
+    int32_t v_f32;
+    char*   v_str;
+} measurements_reading_t;

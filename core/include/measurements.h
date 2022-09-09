@@ -16,26 +16,10 @@ extern uint32_t transmit_interval;
 
 typedef enum
 {
-    MEASUREMENTS_SENSOR_STATE_SUCCESS,
-    MEASUREMENTS_SENSOR_STATE_BUSY,
-    MEASUREMENTS_SENSOR_STATE_ERROR,
-} measurements_sensor_state_t;
-
-
-typedef enum
-{
     MEASUREMENTS_POWER_MODE_AUTO,
     MEASUREMENTS_POWER_MODE_BATTERY,
     MEASUREMENTS_POWER_MODE_PLUGGED,
 } measurements_power_mode_t;
-
-
-typedef union
-{
-    int64_t v_i64;
-    int32_t v_f32;
-    char*   v_str;
-} measurements_reading_t;
 
 
 typedef enum
