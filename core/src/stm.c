@@ -341,3 +341,15 @@ void platform_adc_set_num_data(unsigned num_data)
     dma_set_number_of_data(DMA1, DMA_CHANNEL1, num_data);
     dma_enable_channel(DMA1, DMA_CHANNEL1);
 }
+
+
+void platform_hpm_enable(bool enable)
+{
+    port_n_pins_t port_n_pin = HPM_EN_PIN;
+    if (enable)
+    {
+        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
+        gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
+        gpio_set(port_n_pin.port, port_n_pin.pins);
+    }
+}

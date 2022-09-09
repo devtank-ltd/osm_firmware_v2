@@ -376,3 +376,9 @@ bool platform_running(void)
 {
     return _linux_running;
 }
+
+
+void platform_hpm_enable(bool enable)
+{
+    ;
+}

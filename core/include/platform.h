@@ -33,3 +33,5 @@ void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channe
 void platform_adc_start_conversion_regular(void);
 void platform_adc_power_off(void);
 void platform_adc_set_num_data(unsigned num_data);
+
+void platform_hpm_enable(bool enable);
