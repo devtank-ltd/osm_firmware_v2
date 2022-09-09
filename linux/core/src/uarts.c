@@ -64,12 +64,17 @@ static void _uart_rs485_cb(char* in, unsigned len)
 }
 
 
-void uarts_setup(void)
+void uarts_linux_setup(void)
 {
     linux_add_pty("UART_DEBUG", &uart_channels[0].fd, _uart_debug_cb);
     linux_add_pty("UART_LW", &uart_channels[1].fd, _uart_lw_cb);
     linux_add_pty("UART_HPM", &uart_channels[2].fd, _uart_hpm_cb);
     linux_add_pty("UART_RS485", &uart_channels[2].fd, _uart_rs485_cb);
+}
+
+
+void uarts_setup(void)
+{
 }
 
 

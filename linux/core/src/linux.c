@@ -105,7 +105,7 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
 {
     for (uint32_t i = 0; i < LINUX_MAX_PTY; i++)
     {
-        if (fd_list[i].name)
+        if (fd_list[i].name[0])
         {
             if ( fd_list[i].pty.master_fd == fd ||
                  fd_list[i].pty.slave_fd  == fd )
@@ -270,7 +270,7 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* pty = &fd_list[i];
-        if (pty->name[0] == 0)
+        if (pty->name[0] != 0)
             continue;
         strncpy(pty->name, name, LINUX_PTY_NAME_SIZE);
         pty->type = LINUX_FD_TYPE_PTY;
@@ -285,10 +285,9 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
 
 void platform_init(void)
 {
+    printf("Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
-    //_linux_setup_ptys();
-    //_linux_setup_w1_sock();
-    //_linux_setup_pulse_count(); /* inotify on gpio file and counting accordingly. */
+    uarts_linux_setup();
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 }

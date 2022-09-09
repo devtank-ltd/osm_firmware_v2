@@ -18,8 +18,7 @@ void persistent_init(void)
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
     persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
 
-    uint32_t vs = persist_data_raw->version;
-    if (vs != PERSIST_VERSION)
+    if (!persist_data_raw || !persist_measurements_raw || persist_data_raw->version != PERSIST_VERSION)
     {
         log_error("Persistent data version unknown.");
         memset(&persist_data, 0, sizeof(persist_data));

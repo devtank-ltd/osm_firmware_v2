@@ -203,16 +203,15 @@ void version_cb(char * args)
 {
     log_out("Version : %s", GIT_VERSION);
     version_arch_t arch = version_get_arch();
-    uint8_t name_len = 10;
-    char name[name_len];
-    memset(name, 0, name_len);
+    char name[VERSION_NAME_LEN];
+    memset(name, 0, VERSION_NAME_LEN);
     switch(arch)
     {
         case VERSION_ARCH_REV_B:
-            strncpy(name, "Rev B", name_len);
+            strncpy(name, "Rev B", VERSION_NAME_LEN);
             break;
         case VERSION_ARCH_REV_C:
-            strncpy(name, "Rev C", name_len);
+            strncpy(name, "Rev C", VERSION_NAME_LEN);
             break;
         default:
             log_out("Unknown architecture.");
