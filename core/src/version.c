@@ -1,6 +1,3 @@
-#include <libopencm3/stm32/iwdg.h>
-
-
 #include "version.h"
 
 #include "log.h"
