@@ -1,9 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libopencm3/cm3/scb.h>
-#include <libopencm3/stm32/iwdg.h>
-
 #include "measurements.h"
 #include "persist_config.h"
 #include "base_types.h"
@@ -11,7 +8,7 @@
 #include "common.h"
 #include "uart_rings.h"
 #include "comms.h"
-#include "pinmap.h"
+#include "platform.h"
 
 #include "can_impl.h"
 #include "ds18b20.h"
@@ -195,7 +192,7 @@ void debug_mode(void)
         _debug_mode_enabled = false;
         return;
     }
-    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
+    adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
     cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
 
     _debug_mode_enabled = true;
@@ -216,8 +213,8 @@ void debug_mode(void)
         comms_loop_iteration();
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
-        gpio_toggle(LED_PORT, LED_PIN);
-        iwdg_reset();
+        platform_blink_led_toggle();
+        platform_watchdog_reset();
     }
     measurements_derive_cc_phase();
 }
