@@ -360,6 +360,18 @@ void platform_persist_wipe(void)
 }
 
 
+bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
+{
+    return false;
+}
+
+
+void platform_clear_flash_flags(void)
+{
+    ;
+}
+
+
 bool platform_running(void)
 {
     return _linux_running;

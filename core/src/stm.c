@@ -233,6 +233,30 @@ void platform_persist_wipe(void)
     flash_lock();
 }
 
+
+bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
+{
+    flash_unlock();
+    flash_erase_page(abs_page);
+    flash_program(dst, fw_page, FLASH_PAGE_SIZE);
+    flash_lock();
+
+    if (memcmp((void*)dst, fw_page, FLASH_PAGE_SIZE) == 0)
+    {
+        memset(fw_page, 0xFF, FLASH_PAGE_SIZE);
+        return true;
+    }
+
+    return false;
+}
+
+
+void platform_clear_flash_flags(void)
+{
+    flash_clear_status_flags();
+}
+
+
 bool platform_running(void)
 {
     return true;

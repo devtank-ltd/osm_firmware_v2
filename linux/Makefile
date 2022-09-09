@@ -60,6 +60,7 @@ firmware_SOURCES := \
            core/src/adcs.c \
            core/src/timers.c \
            core/src/common.c \
+           core/src/platform_common.c \
            core/src/w1.c \
            core/src/sleep.c \
            core/src/can_comm.c \
