@@ -91,12 +91,12 @@ void _linux_sig_handler(int signo)
 
 static void _linux_error(char* fmt, ...)
 {
-    printf("LINUX ERROR: ");
+    fprintf(stderr, "LINUX ERROR: ");
     va_list v;
     va_start(v, fmt);
-    vprintf(fmt, v);
+    vfprintf(stderr, fmt, v);
     va_end(v);
-    printf("\n");
+    fprintf(stderr, "\n");
     exit(-1);
 }
 
@@ -151,7 +151,7 @@ static void _linux_cleanup_fd_handlers(void)
 
 static void _linux_exit(int err)
 {
-    printf("Cleaning up before exit...\n");
+    fprintf(stdout, "Cleaning up before exit...\n");
     _linux_cleanup_fd_handlers();
 }
 
@@ -164,10 +164,10 @@ static void _linux_pty_symlink(int fd, char* new_tty_name)
         _linux_error("FAIL PTY FIND TTY: %"PRIu32, errno);
 
     if (!access(new_tty_name, F_OK) && remove(new_tty_name))
-        printf("FAIL REMOVE OLD SYMLINK: %"PRIu32, errno);
+        fprintf(stderr, "FAIL REMOVE OLD SYMLINK: %"PRIu32, errno);
 
     if (symlink(initial_tty, new_tty_name))
-        printf("FAIL SYMLINK TTY: %"PRIu32, errno);
+        fprintf(stderr, "FAIL SYMLINK TTY: %"PRIu32, errno);
 }
 
 
@@ -180,7 +180,7 @@ static void _linux_setup_pty(fd_t* fd_handler, char* new_tty_name)
 
     mode_t mode = S_ISUID | S_ISGID | S_IRWXU | S_IRWXG | S_IRWXO;
     if (mkdir(dir_loc, mode) && errno != EEXIST)
-        printf("FAIL CREATE FOLDER: %"PRIu32, errno);
+        fprintf(stderr, "FAIL CREATE FOLDER: %"PRIu32, errno);
 
     pty_buf_t pty_loc = LINUX_FILE_LOC;
     strncat(pty_loc, new_tty_name, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
@@ -223,16 +223,35 @@ void _linux_iterate(void)
                 if (!fd_handler)
                     _linux_error("PTY is NULL pointer");
                 int r;
+                static bool redraw_prec = true;
                 switch(fd_handler->type)
                 {
                     case LINUX_FD_TYPE_PTY:
                         r = read(pfds[i].fd, buf, sizeof(buf) - 1);
-                        if (r > 0)
+                        if (r <= 0)
+                            break;
+                        if (r == 1)
                         {
-                            printf("%s << %s\n", fd_handler->name, buf);
-                            if (fd_handler->cb)
-                                fd_handler->cb(buf, r);
+                            if (redraw_prec)
+                            {
+                                redraw_prec = false;
+                                fprintf(stdout, "%s << ", fd_handler->name);
+                            }
+                            if (buf[0] == '\r')
+                            {
+                                redraw_prec = true;
+                                fprintf(stdout, "\n");
+                            }
+                            else
+                            {
+                                fprintf(stdout, "%c", buf[0]);
+                                fflush(stdout);
+                            }
                         }
+                        else
+                            fprintf(stdout, "%s << %s\n", fd_handler->name, buf);
+                        if (fd_handler->cb)
+                            fd_handler->cb(buf, r);
                         break;
                     case LINUX_FD_TYPE_IO:
                         /* Unsure how this will work */
@@ -276,6 +295,7 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
         pty->type = LINUX_FD_TYPE_PTY;
         pty->cb = read_cb;
         _linux_setup_pty(pty, name);
+        *fd = pty->pty.master_fd;
         return true;
     }
     _linux_error("No space in array for '%s'", name);
@@ -285,7 +305,7 @@ bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char* name, unsigne
 
 void platform_init(void)
 {
-    printf("Process ID: %"PRIi32"\n", getpid());
+    fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
     uarts_linux_setup();
     _linux_setup_poll();
