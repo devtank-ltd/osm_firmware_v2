@@ -1,4 +1,11 @@
+#include <inttypes.h>
+#include <string.h>
+#include <stdio.h>
+
+
 #include "comms.h"
+#include "config.h"
+#include "uart_rings.h"
 
 
 #define COMMS_DEFAULT_MTU       256
@@ -18,7 +25,9 @@ bool comms_send_ready(void)
 
 bool comms_send_str(char* str)
 {
-    return true;
+    if(!uart_ring_out(LW_UART, str, strlen(str)))
+        return false;
+    return uart_ring_out(LW_UART, "\r\n", 2);
 }
 
 
@@ -30,6 +39,13 @@ bool comms_send_allowed(void)
 
 void comms_send(int8_t* hex_arr, uint16_t arr_len)
 {
+    char buf[3];
+    for (uint16_t i = 0; i < arr_len; i++)
+    {
+        snprintf(buf, 3, "%.2"PRIu32, hex_arr[i]);
+        uart_ring_out(LW_UART, buf, 2);
+    }
+    uart_ring_out(LW_UART, "\r\n", 2);
 }
 
 void comms_init(void)
