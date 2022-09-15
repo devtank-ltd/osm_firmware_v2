@@ -429,16 +429,22 @@ void usart1_isr(void)
 void uart4_isr(void)
 {
     if (version_is_arch(VERSION_ARCH_REV_B))
-        hard_fault_handler();
-    process_serial(3);
+    {
+        process_serial(3);
+        return;
+    }
+    hard_fault_handler();
 }
 
 // cppcheck-suppress unusedFunction ; System handler
 void lpuart1_isr(void)
 {
     if (version_is_arch(VERSION_ARCH_REV_C))
-        hard_fault_handler();
-    process_serial(3);
+    {
+        process_serial(3);
+        return;
+    }
+    hard_fault_handler();
 }
 
 // cppcheck-suppress unusedFunction ; System handler
@@ -463,14 +469,20 @@ void dma1_channel5_isr(void)
 void dma2_channel3_isr(void)
 {
     if (version_is_arch(VERSION_ARCH_REV_B))
-        hard_fault_handler();
-    process_complete_dma(3);
+    {
+        process_complete_dma(3);
+        return;
+    }
+    hard_fault_handler();
 }
 
 // cppcheck-suppress unusedFunction ; System handler
 void dma2_channel6_isr(void)
 {
     if (version_is_arch(VERSION_ARCH_REV_C))
-        hard_fault_handler();
-    process_complete_dma(3);
+    {
+        process_complete_dma(3);
+        return;
+    }
+    hard_fault_handler();
 }
