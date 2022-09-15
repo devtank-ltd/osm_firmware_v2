@@ -67,20 +67,21 @@ int main(void)
 
     platform_watchdog_init(IWDG_NORMAL_TIME_MS);
 
-    log_async_log = true;
-
     measurements_init();
 
     bool boot_debug_mode = DEBUG_MODE & persist_get_log_debug_mask();
 
     if (boot_debug_mode)
     {
+        log_async_log = true;
         log_sys_debug("Booted in debug_mode");
         hpm_enable(true);
         debug_mode();
         hpm_enable(false);
         log_sys_debug("Left debug_mode");
     }
+
+    log_async_log = true;
 
     uint32_t prev_now = 0;
     uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;

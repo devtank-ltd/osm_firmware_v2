@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <poll.h>
+#include <stdarg.h>
 #include <signal.h>
 #include <pthread.h>
 
@@ -57,14 +58,13 @@ typedef struct
         } gpio;
     };
     char            name[LINUX_PTY_NAME_SIZE];
-    void            (*cb)();
+    void            (*cb)(char * addr, unsigned len);
 } fd_t;
 
 
 typedef struct
 {
     persist_measurements_storage_t  persist_measurements;
-    uint8_t                         _[2048 - sizeof(persist_measurements_storage_t)];
     persist_storage_t               persist_data;
     uint8_t                         __[2048 - sizeof(persist_storage_t)];
 } persist_mem_t;
@@ -82,10 +82,28 @@ static bool             _linux_running              = true;
 uint32_t rcc_ahb_frequency;
 
 
+static bool _linux_in_debug = false;
+
+
+void linux_port_debug(char * fmt, ...)
+{
+    if (!_linux_in_debug)
+        return;
+
+    va_list va;
+    va_start(va, fmt);
+    vprintf(fmt, va);
+    va_end(va);
+}
+
+
 void _linux_sig_handler(int signo)
 {
     if (signo == SIGINT)
+    {
+        linux_port_debug("Signal\n");
         _linux_running = false;
+    }
 }
 
 
@@ -217,48 +235,36 @@ void _linux_iterate(void)
             if (pfds[i].revents & POLLIN)
             {
                 pfds[i].revents &= ~POLLIN;
+                char c;
 
-                char buf[10];
                 fd_t* fd_handler = _linux_get_fd_handler(pfds[i].fd);
                 if (!fd_handler)
                     _linux_error("PTY is NULL pointer");
                 int r;
-                static bool redraw_prec = true;
                 switch(fd_handler->type)
                 {
                     case LINUX_FD_TYPE_PTY:
-                        r = read(pfds[i].fd, buf, sizeof(buf) - 1);
+                        r = read(pfds[i].fd, &c, 1);
                         if (r <= 0)
                             break;
                         if (r == 1)
                         {
-                            if (redraw_prec)
-                            {
-                                redraw_prec = false;
-                                fprintf(stdout, "%s << ", fd_handler->name);
-                            }
-                            if (buf[0] == '\r')
-                            {
-                                redraw_prec = true;
-                                fprintf(stdout, "\n");
-                            }
-                            else
-                            {
-                                fprintf(stdout, "%c", buf[0]);
-                                fflush(stdout);
-                            }
+                            linux_port_debug("%s << %c\n", fd_handler->name, c);
+                            if (fd_handler->cb)
+                                fd_handler->cb(&c, 1);
                         }
-                        else
-                            fprintf(stdout, "%s << %s\n", fd_handler->name, buf);
-                        if (fd_handler->cb)
-                            fd_handler->cb(buf, r);
                         break;
                     case LINUX_FD_TYPE_IO:
+                    {
+                        char buf[10];
                         /* Unsure how this will work */
                         r = read(pfds[i].fd, buf, sizeof(buf) - 1);
                         uint8_t dir = strtoul(buf, NULL, 10);
                         if (fd_handler->cb)
                             fd_handler->cb(buf, dir);
+                        break;
+                    }
+                    default:
                         break;
                 }
             }
@@ -375,6 +381,7 @@ void platform_set_rs485_mode(bool driver_enable)
 
 void platform_reset_sys(void)
 {
+    _linux_error("platform_reset_sys\n");
     _linux_exit(0);
 }
 

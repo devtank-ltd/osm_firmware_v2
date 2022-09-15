@@ -176,7 +176,7 @@ bool uart_single_out(unsigned uart, char c)
 
 void uart_blocking(unsigned uart, const char *data, int size)
 {
-    if (!write(uart_channels[uart].fd, data, size))
+    if (!fwrite((char*)data, 1, size, stdout))
         exit(-1);
 }
 
