@@ -11,7 +11,7 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 
 #Compiler options
-CFLAGS		+= -O0 -g -c -std=gnu11
+CFLAGS		+= -O0 -g -c -std=gnu11 -pedantic
 CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
 CFLAGS		+= -fstack-usage -Wstack-usage=500
 CFLAGS		+= -MMD -MP
