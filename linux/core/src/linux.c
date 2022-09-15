@@ -25,7 +25,7 @@
 #define LINUX_MASTER_SUFFIX     "_master"
 #define LINUX_SLAVE_SUFFIX      "_slave"
 
-#define LINUX_PERSIST_FILE_LOC  "/tmp/osm.img"
+#define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
 
 
 extern int errno;
@@ -63,10 +63,10 @@ typedef struct
 
 typedef struct
 {
-    persist_storage_t               persist_data;
-    uint8_t                         _[2048 - sizeof(persist_storage_t)];
     persist_measurements_storage_t  persist_measurements;
-    uint8_t                         __[2048 - sizeof(persist_measurements_storage_t)];
+    uint8_t                         _[2048 - sizeof(persist_measurements_storage_t)];
+    persist_storage_t               persist_data;
+    uint8_t                         __[2048 - sizeof(persist_storage_t)];
 } persist_mem_t;
 
 
@@ -399,13 +399,19 @@ static persist_mem_t* _linux_get_persist(void)
 
 persist_storage_t* platform_get_raw_persist(void)
 {
-    return &_linux_get_persist()->persist_data;
+    persist_mem_t* persist = _linux_get_persist();
+    if (!persist)
+        return NULL;
+    return &persist->persist_data;
 }
 
 
 persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
 {
-    return &_linux_get_persist()->persist_measurements;
+    persist_mem_t* persist = _linux_get_persist();
+    if (!persist)
+        return NULL;
+    return &persist->persist_measurements;
 }
 
 
@@ -414,8 +420,10 @@ bool platform_persist_commit(persist_storage_t* persist_data, persist_measuremen
     FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "wb");
     if (!mem_file)
         return false;
-    memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(persist_storage_t));
-    memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(persist_measurements_storage_t));
+    if (persist_data != &_linux_persist_mem.persist_data)
+        memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(persist_storage_t));
+    if (persist_measurements != &_linux_persist_mem.persist_measurements)
+        memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(persist_measurements_storage_t));
     fwrite(&_linux_persist_mem, sizeof(_linux_persist_mem), 1, mem_file);
     fclose(mem_file);
     return true;
