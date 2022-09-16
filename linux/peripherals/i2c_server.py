@@ -122,6 +122,8 @@ class i2c_client_t(object):
 
 class i2c_server_t(object):
     def __init__(self, socket_loc, devs, log_file=None):
+        if os.path.exists(socket_loc):
+            os.unlink(socket_loc)
         self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self._server.bind(socket_loc)
         self._server.setblocking(False)
