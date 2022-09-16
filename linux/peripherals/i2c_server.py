@@ -121,9 +121,9 @@ class i2c_client_t(object):
 
 
 class i2c_server_t(object):
-    def __init__(self, hostname, port, devs, log_file=None):
-        self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._server.bind((hostname, port))
+    def __init__(self, socket_loc, devs, log_file=None):
+        self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._server.bind(socket_loc)
         self._server.setblocking(False)
         self._server.listen(5)
 
@@ -283,7 +283,7 @@ class i2c_server_t(object):
 
 def main():
     devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS)}
-    i2c_sock = i2c_server_t("127.0.0.1", 65432, devs)
+    i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
     i2c_sock.run_forever()
     return 0
 
