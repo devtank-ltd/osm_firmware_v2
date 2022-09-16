@@ -188,16 +188,16 @@ class i2c_server_t(object):
                 continue
             self._i2c_process(client, i2c_data)
 
-    def _create_i2c_string(self, data):
+    def _create_i2c_payload(self, data):
         if data["data_1"] is None and data["data_2"] is None:
             data_str = "--"
         elif data["data_1"] is not None and data["data_2"] is not None:
             data_str = "%.02x,%.02x"% (data["data_1"], data["data_2"])
         else:
             raise TypeError(f"Confused string with data_1 = {data_1} and data_2 = {data_2}.")
-        string = "%.02x:%.01x:%.02x:[%s]"% (data["addr"], data["dir"], data["cmd_code"], data_str)
-        assert self._parse_i2c(string, True) is not False, f"Created string does not match I2C pattern. '{string}'"
-        return string
+        payload = "%.02x:%.01x:%.02x:[%s]"% (data["addr"], data["dir"], data["cmd_code"], data_str)
+        assert self._parse_i2c(payload, True) is not False, f"Created string does not match I2C pattern. '{payload}'"
+        return payload
 
     def _i2c_process(self, client, data):
         fd = client.fileno()
@@ -210,15 +210,15 @@ class i2c_server_t(object):
             if resp is False:
                 self.error("Failed to write device (0x%.02x) with command code (0x%.02x)."% (data['addr'], data["cmd_code"]))
                 return
-            string = self._create_i2c_string(resp)
-            self._send_to_client(client, string)
+            payload = self._create_i2c_payload(resp)
+            self._send_to_client(client, payload)
         elif data["dir"] == I2C_READ_NUM:
             resp = dev.read(data["cmd_code"])
             if resp is False:
                 self.error("Failed to read device (0x%.02x) with command code (0x%.02x)."% (data['addr'], data["cmd_code"]))
                 return
-            string = self._create_i2c_string(resp)
-            self._send_to_client(client, string)
+            payload = self._create_i2c_payload(resp)
+            self._send_to_client(client, payload)
         else:
             self.error(f"Client [fd:{fd}] requested unknown direction ({data['dir']}).")
             return
