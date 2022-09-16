@@ -171,7 +171,11 @@ class i2c_server_t(object):
             self.error(f"Message from client [fd:{fd}] not in connected clients list.")
             return
         while True:
-            line = client.read()
+            try:
+                line = client.read()
+            except OSError:
+                self._close_client(client)
+                return
             if line is None:
                 self._close_client(client)
                 return
@@ -256,14 +260,22 @@ class i2c_server_t(object):
 
     def _close_client(self, client):
         fd = client.fileno()
-        self._clients.pop(fd)
+        try:
+            self._clients.pop(fd)
+        except KeyError:
+            return
         self.info(f"Disconnecting client [fd:{fd}]")
         self._selector.unregister(client)
         client.close()
 
     def _send_to_client(self, client, msg):
         self.debug("Message to client [fd:%u] >> '%s'" % (client.fileno(), msg))
-        if not client.write(msg.encode()):
+        try:
+            resp = client.write(msg.encode())
+        except BrokenPipeError:
+            self._close_client(client)
+            return
+        if not resp:
             self._close_client(client)
 
     def _send_to_all_clients(self, msg):
