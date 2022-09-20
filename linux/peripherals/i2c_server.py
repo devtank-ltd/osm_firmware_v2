@@ -12,36 +12,13 @@ import selectors
 This program uses sockets to provide a server for the I2C communication
 to be faked.
 
-Parameters required for I2C comms:
-  * slave address (7bits),
-  * direction - read/write (1bit),
-  * command code (8bits),
-  * data (2 x 8 bits).
-
-Data is only required when writing.
-
-To emulate this, the following format will be sent (in hex):
-slave_addr:direction:cmd_code:[data[0],data[1]]
-ie. reading from veml7700 ALS reg
-10:1:04:[--]
-ie. writing 0x1213 to veml7700 CONF0 reg
-10:0:00:[12,13]
-
-The response the server will supply to the client read command will
-follow the same format.
-i.e. From the read command above, a reading of 0x5432
-10:1:04:[54,32]
-
-The response for a write will be an ack, an ack will again follow the
-same format.
-i.e
-10:0:00:[--]
+The format for the fake I2C comms shall be as below:
+MASTER>>SLAVE: slave_addr:wn[w,..]:rn
+SLAVE>>MASTER: slave_addr:wn:rn[r,...]
 """
-
-I2C_MESSAGE_PATTERN_STR = "^(?P<addr>[0-9a-fA-F]{2})"\
-                          "\:(?P<dir>[01]{1})"\
-                          "\:(?P<cmd_code>[0-9a-fA-F]{2})"\
-                          "\:\[(((?P<data_1>[0-9a-fA-F]{2}),(?P<data_2>[0-9a-fA-F]{2}))|(--))\]$"
+I2C_MESSAGE_PATTERN_STR = "^(?P<addr>[0-9a-fA-F]{2}):"\
+                          "(?P<wn>[0-9]+)(\[(?P<w>([0-9a-fA-F]{2},?)+)\])?:"\
+                          "(?P<rn>[0-9]+)(\[(?P<r>([0-9a-fA-F]{2},?)+)\])?$"
 I2C_MESSAGE_PATTERN = re.compile(I2C_MESSAGE_PATTERN_STR)
 
 
@@ -85,30 +62,57 @@ class i2c_device_t(object):
     def __init__(self, addr, cmds):
         self._addr = addr
         self._cmds = cmds
+        self._last_cmd_code = None
 
-    def read(self, cmd_code):
-        data = self._cmds.get(cmd_code, None)
-        if data is None:
-            return False
-        data_1 = (data >> 8) & 0xFF
-        data_2 = data & 0xFF
-        return {"addr"    : self._addr,
-                "dir"     : I2C_READ_NUM,
-                "cmd_code": cmd_code,
-                "data_1"  : data_1,
-                "data_2"  : data_2}
+    def _read(self, cmd_code):
+        data_arr = []
+        if cmd_code is None:
+            cmd_code = self._last_cmd_code
+        assert cmd_code is not None, "No command code given."
+        orig_value = value_cpy = int(self._cmds[cmd_code])
 
-    def write(self, cmd_code, data_1, data_2):
-        cmd = self._cmds.get(cmd_code, None)
-        if cmd is None:
-            return False
-        data = ((data_1 & 0xFF) << 8) + (data_2 & 0xFF)
+        count = 0
+        while value_cpy != 0:
+            count += 1
+            value_cpy = value_cpy >> (8 * count)
+
+        for i in range(count, 0, -1):
+            shift = 8 * (i - 1)
+            this_value = orig_value >> shift
+            data_arr.append(this_value & 0xFF)
+        return data_arr
+
+    def _write(self, cmd_code, w):
+        assert isinstance(w, list), "w must be a list"
+        len_w = len(w)
+        assert len_w >= 1, f"w must have at least 1 element ({len_w})."
+        cmd_code = w[0]
+        vals = w[1:]
+        data = 0
+        for i in range(0, len_w - 1):
+            data += (vals[i] & 0xFF) << (8 * i)
         self._cmds[cmd_code] = data
-        return {"addr"    : self._addr,
-                "dir"     : I2C_WRIE_NUM,
-                "cmd_code": cmd_code,
-                "data_1"  : None,
-                "data_2"  : None}
+        return None
+
+    def transfer(self, data):
+        wn = data["wn"]
+        w  = None
+        rn = data["rn"]
+        r  = None
+        cmd_code = None
+        if wn:
+            assert wn == len(data["w"]), f"WN is not equal to length of W. ({wn} != {len(data['w'])})"
+            self._last_cmd_code = cmd_code = data["w"][0]
+            if wn > 1:
+                w = self._write(cmd_code, data["w"][1:])
+        if rn:
+            r = self._read(cmd_code)
+            assert rn == len(r), f"RN is not equal to length of R. ({rn} != {len(r)})"
+        return {"addr"   : self._addr,
+                "wn"     : wn,
+                "w"      : w,
+                "rn"     : rn,
+                "r"      : r}
 
 
 class i2c_client_t(object):
@@ -193,13 +197,11 @@ class i2c_server_t(object):
             self._i2c_process(client, i2c_data)
 
     def _create_i2c_payload(self, data):
-        if data["data_1"] is None and data["data_2"] is None:
-            data_str = "--"
-        elif data["data_1"] is not None and data["data_2"] is not None:
-            data_str = "%.02x,%.02x"% (data["data_1"], data["data_2"])
-        else:
-            raise TypeError(f"Confused string with data_1 = {data_1} and data_2 = {data_2}.")
-        payload = "%.02x:%.01x:%.02x:[%s]"% (data["addr"], data["dir"], data["cmd_code"], data_str)
+        len_r = len(data["r"])
+        if data["rn"] != len_r:
+            self.error(f"Created payload with rn and len(r) mismatching. ({data['rn']} != {len_r})")
+        print(data)
+        payload = "%.02x:%x:%x[%s]"% (data["addr"], data["wn"], data["rn"], ",".join(["%.02x"% x for x in data["r"]]))
         assert self._parse_i2c(payload, True) is not False, f"Created string does not match I2C pattern. '{payload}'"
         return payload
 
@@ -209,23 +211,9 @@ class i2c_server_t(object):
         if not dev:
             self.error("Client [fd:{%d}] requested device that this server doesn't have (0x%.02x)."% (fd, data['addr']))
             return
-        if data["dir"] == I2C_WRITE_NUM:
-            resp = dev.write(data["cmd_code"], data["data_1"], data["data_2"])
-            if resp is False:
-                self.error("Failed to write device (0x%.02x) with command code (0x%.02x)."% (data['addr'], data["cmd_code"]))
-                return
-            payload = self._create_i2c_payload(resp)
-            self._send_to_client(client, payload)
-        elif data["dir"] == I2C_READ_NUM:
-            resp = dev.read(data["cmd_code"])
-            if resp is False:
-                self.error("Failed to read device (0x%.02x) with command code (0x%.02x)."% (data['addr'], data["cmd_code"]))
-                return
-            payload = self._create_i2c_payload(resp)
-            self._send_to_client(client, payload)
-        else:
-            self.error(f"Client [fd:{fd}] requested unknown direction ({data['dir']}).")
-            return
+        resp = dev.transfer(data)
+        payload = self._create_i2c_payload(resp)
+        self._send_to_client(client, payload)
 
     def _verify_i2c_type(self, dict_, key):
         value = dict_.get(key, None)
@@ -244,18 +232,35 @@ class i2c_server_t(object):
             return False
         dict_ = match_.groupdict()
         if not self._verify_i2c_type(dict_, "addr")      or \
-           not self._verify_i2c_type(dict_, "dir")       or \
-           not self._verify_i2c_type(dict_, "cmd_code"):
+           not self._verify_i2c_type(dict_, "wn")       or \
+           not self._verify_i2c_type(dict_, "rn"):
             self.error("Could not convert the I2C strings to data.")
             return False
-        if (not out and dict_["dir"] == I2C_WRITE_NUM) or (out and dict_["dir"] == I2C_READ_NUM):
-            if (not self._verify_i2c_type(dict_, "data_1")) or (not self._verify_i2c_type(dict_, "data_2")):
-                self.error("Wrong data for read/write.")
+
+        wn = dict_["wn"]
+        if wn and not out:
+            w_str = dict_.get("w", None)
+            if w_str is None:
+                self.error("Command is to write but no data given.")
                 return False
-        elif (not out and dict_["dir"] == I2C_READ_NUM) or (out and dict_["dir"] == I2C_WRITE_NUM):
-            if (dict_.get("data_1", None) is not None) or (dict_.get("data_2", None) is not None):
-                self.error("Wrong data for read.")
+            w = [int(x, 16) for x in w_str.split(',')]
+            if len(w) != wn:
+                self.error("WN does not match W length.")
                 return False
+            dict_["w"] = w
+
+        rn = dict_["rn"]
+        if rn and out:
+            r_str = dict_.get("r", None)
+            if r_str is None:
+                self.error("Command is to read but no to be read given.")
+                return False
+            r = [int(x, 16) for x in r_str.split(',')]
+            if len(r) != rn:
+                self.error("RN does not match R length.")
+                return False
+            dict_["r"] = r
+
         return dict_
 
     def _close_client(self, client):

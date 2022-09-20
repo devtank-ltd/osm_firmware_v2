@@ -8,7 +8,7 @@ def main():
     sock_loc = "/tmp/osm/i2c_socket"
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.connect(sock_loc)
-    client.send(b"10:1:00:[--]")
+    client.send(b"10:1[00]:2")
     try:
         while True:
             line = client.recv(1024)

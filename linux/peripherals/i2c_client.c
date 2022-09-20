@@ -1,3 +1,7 @@
+/* Built with:
+   gcc -g -O0 -Wall -pedantic -Werror -o "i2c_client" "i2c_client.c" -lm -lpthread -lutil -O0
+ */
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -39,7 +43,7 @@ int main(int argc, char **argv)
         printf(" Retrying...\n");
     }
 
-    char buf[BUF_SIZ] = "10:1:00:[--]";
+    char buf[BUF_SIZ] = "10:0:2";
     int buf_siz = strnlen(buf, BUF_SIZ);
     printf("SEND: %s\n", buf);
     int send_size = send(_socketfd, buf, buf_siz, 0);
