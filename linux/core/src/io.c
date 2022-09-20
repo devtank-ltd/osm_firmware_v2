@@ -3,6 +3,7 @@
 #include "io.h"
 #include "linux.h"
 #include "config.h"
+#include "pinmap.h"
 
 
 #define IO_NAME_MAX_LEN                 16

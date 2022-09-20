@@ -9,6 +9,7 @@
 #include "uart_rings.h"
 #include "sleep.h"
 #include "log.h"
+#include "pinmap.h"
 
 
 #define UART_CHANNELS_LINUX                                                                     \

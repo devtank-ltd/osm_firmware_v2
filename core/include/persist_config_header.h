@@ -5,6 +5,7 @@
 
 #include "measurements.h"
 #include "config.h"
+#include "pinmap.h"
 
 
 #define FLASH_ADDRESS               0x8000000

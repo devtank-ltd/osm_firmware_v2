@@ -14,6 +14,7 @@ Documents used:
 #include "io.h"
 #include "w1.h"
 #include "ds18b20.h"
+#include "pinmap.h"
 
 
 #define DS18B20_INSTANCES   {                                          \

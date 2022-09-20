@@ -42,9 +42,20 @@ VEML7700_CMDS = {0x00: 0x0999,
                  0x01: 0x0888,
                  0x02: 0x0777,
                  0x03: 0x0666,
-                 0x04: 0x0555,
+                 0x04: 0x7c01, # Raw light count = 380
                  0x05: 0x0444,
                  0x06: 0x0333}
+
+
+
+HTU21D_ADDR   = 0x40
+HTU21D_CMDS   = {0xE3: 0x63b87e, # Temperature = 21.590degC
+                 0xE5: 0x741ee4, # Humidity = 50.160%
+                 0xF3: 0x0777,
+                 0xF5: 0x0666,
+                 0xE6: 0x0555,
+                 0xE7: 0x0444,
+                 0xFE: 0x0333}
 
 
 def log(file_, msg, colour=None):
@@ -74,7 +85,7 @@ class i2c_device_t(object):
         count = 0
         while value_cpy != 0:
             count += 1
-            value_cpy = value_cpy >> (8 * count)
+            value_cpy = value_cpy >> 8
 
         for i in range(count, 0, -1):
             shift = 8 * (i - 1)
@@ -106,8 +117,10 @@ class i2c_device_t(object):
             if wn > 1:
                 w = self._write(cmd_code, data["w"][1:])
         if rn:
-            r = self._read(cmd_code)
-            assert rn == len(r), f"RN is not equal to length of R. ({rn} != {len(r)})"
+            r_raw = self._read(cmd_code)
+            r_raw_len = len(r_raw)
+            assert rn >= r_raw_len, f"RN less than the length of R. ({rn} != {r_raw_len})"
+            r = [0 for x in range(0, rn-r_raw_len)] + r_raw
         return {"addr"   : self._addr,
                 "wn"     : wn,
                 "w"      : w,
@@ -197,11 +210,16 @@ class i2c_server_t(object):
             self._i2c_process(client, i2c_data)
 
     def _create_i2c_payload(self, data):
-        len_r = len(data["r"])
-        if data["rn"] != len_r:
-            self.error(f"Created payload with rn and len(r) mismatching. ({data['rn']} != {len_r})")
-        print(data)
-        payload = "%.02x:%x:%x[%s]"% (data["addr"], data["wn"], data["rn"], ",".join(["%.02x"% x for x in data["r"]]))
+        payload = "%.02x:%x"% (data["addr"], data["wn"])
+
+        if data["w"] is not None:
+            payload += "[%s]"% ",".join(["%.02x"% x for x in data["w"]])
+
+        payload += ":%x"% data["rn"]
+
+        if data["r"] is not None:
+            payload += "[%s]"% ",".join(["%.02x"% x for x in data["r"]])
+
         assert self._parse_i2c(payload, True) is not False, f"Created string does not match I2C pattern. '{payload}'"
         return payload
 
@@ -229,6 +247,7 @@ class i2c_server_t(object):
     def _parse_i2c(self, line, out=False):
         match_ = I2C_MESSAGE_PATTERN.search(line)
         if not match_:
+            self.debug(f"Regex search failed for '{line}'")
             return False
         dict_ = match_.groupdict()
         if not self._verify_i2c_type(dict_, "addr")      or \
@@ -301,7 +320,8 @@ class i2c_server_t(object):
 
 
 def main():
-    devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS)}
+    devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS),
+            HTU21D_ADDR  : i2c_device_t(HTU21D_ADDR,   HTU21D_CMDS  )}
     i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
     i2c_sock.run_forever()
     return 0

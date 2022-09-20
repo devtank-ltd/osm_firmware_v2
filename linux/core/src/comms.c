@@ -6,6 +6,7 @@
 #include "comms.h"
 #include "config.h"
 #include "uart_rings.h"
+#include "pinmap.h"
 
 
 #define COMMS_DEFAULT_MTU       256
