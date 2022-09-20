@@ -64,7 +64,7 @@ _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
 
 
 
-static void process_part_measure_response(uint8_t *data)
+static void process_part_measure_response(const uint8_t *data)
 {
     if (data[1] != 5 || data[2] != 0x04)
     {
@@ -95,7 +95,7 @@ static void process_part_measure_response(uint8_t *data)
 }
 
 
-static void process_part_measure_long_response(uint8_t *data)
+static void process_part_measure_long_response(const uint8_t *data)
 {
     if (data[1] != 0x4d || data[2] != 0 || data[3] != 28)
     { /* 13 2byte data entries + 2 for byte checksum*/
@@ -126,7 +126,7 @@ static void process_part_measure_long_response(uint8_t *data)
 }
 
 
-static void process_nack_response(uint8_t *data)
+static void process_nack_response(const uint8_t *data)
 {
     if(data[1] == 0x96)
         hpm_error("Negative ACK");
@@ -135,7 +135,7 @@ static void process_nack_response(uint8_t *data)
 }
 
 
-static void process_ack_response(uint8_t *data)
+static void process_ack_response(const uint8_t *data)
 {
     if (data[1] == 0xA5)
         hpm_debug("ACK received");

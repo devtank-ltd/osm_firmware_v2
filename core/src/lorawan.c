@@ -433,7 +433,7 @@ void lw_init(void)
 
 static uint64_t _lw_handle_unsol_consume(char *p, unsigned len)
 {
-    if (len > 16 || (len % 1))
+    if (len > 16 || (len % 2))
         return 0;
 
     char tmp = p[len];
@@ -476,7 +476,7 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
 
     unsigned len = strlen(p);
 
-    if (len % 1 || len < 10)
+    if (len % 2 || len < 10)
     {
         log_error("Invalid LW unsol msg");
         return;

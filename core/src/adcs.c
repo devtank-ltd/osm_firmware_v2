@@ -53,7 +53,7 @@ static volatile uint32_t    _adcs_end_time      = 0;
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
  * buffer, the step and start index are required to find the correct RMS.*/
 #ifdef __ADC_RMS_FULL__
-static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
+static bool _adcs_get_rms(const adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
 {
     double inter_val = 0;
     int32_t mp_small = midpoint / 1000;
@@ -74,7 +74,7 @@ static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_
 }
 #else
 static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
-static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
+static bool _adcs_get_rms(const adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
 {
     /**
     Four major steps:
@@ -123,7 +123,7 @@ static bool _adcs_get_rms(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_
 #endif //__ADC_RMS_FULL__
 
 
-static bool _adcs_get_avg(adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_avg, uint8_t start_index, uint8_t step)
+static bool _adcs_get_avg(const adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_avg, uint8_t start_index, uint8_t step)
 {
     uint64_t sum = 0;
     for (unsigned i = start_index; i < buff_len; i+=step)

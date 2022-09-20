@@ -396,7 +396,7 @@ void sai_init(void)
 }
 
 
-static bool _sai_rms(uint32_t* rms, sai_arr_t arr, unsigned len, uint32_t downscale)
+static bool _sai_rms(const uint32_t* rms, const sai_arr_t arr, unsigned len, uint32_t downscale)
 {
     /*
      This is a bad way of calculating RMS. Need to look at convoltion

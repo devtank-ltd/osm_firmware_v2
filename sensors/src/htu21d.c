@@ -85,7 +85,7 @@ static htu21d_state _htu21d_state_machine = {.flags=HTU21D_STATE_FLAG_NONE};
 
 
 // HTU21D(F) sensor provides a CRC-8 checksum for error detection. The polynomial used is X8 + X5 + X4 + 1.
-uint8_t _crc8(uint8_t* mem, uint8_t size)
+uint8_t _crc8(const uint8_t* mem, uint8_t size)
 {
     uint8_t crc = 0x00;
     for (uint8_t i = 0; i < size; i++)

@@ -68,7 +68,6 @@ typedef struct
         struct
         {
             char    str[MEASUREMENTS_VALUE_STR_LEN];
-            uint8_t len;
         } value_s;
     };
 } measurements_value_t;

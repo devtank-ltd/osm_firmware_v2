@@ -104,7 +104,7 @@ int32_t nlz(uint32_t x)
 int32_t ilog10(uint32_t x)
 {
     int32_t y;
-    static uint32_t table2[11] = {0, 9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, 0xFFFFFFFF};
+    static const uint32_t table2[11] = {0, 9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, 0xFFFFFFFF};
     y = (19 * (31 - nlz(x))) >> 6;
     y = y + ((table2[y+1] - x) >> 31);
     return y;

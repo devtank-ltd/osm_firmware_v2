@@ -115,7 +115,7 @@ void log_debug_data(uint32_t flag, void * data, unsigned size)
     while(size)
     {
         char * pos = log_buffer;
-        snprintf(pos, 12, "0x%08x ", (uintptr_t)src);
+        snprintf(pos, 12, "0x%08"PRIxPTR" ", (uintptr_t)src);
         pos+=11;
         unsigned len = (size > 16)?16:size;
         for(unsigned i = 0; i <len; i++, pos+=2)

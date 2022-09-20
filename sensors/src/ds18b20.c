@@ -74,7 +74,7 @@ static void _ds18b20_delay_us(uint32_t delay)
 }
 
 
-static bool _ds18b20_crc_check(uint8_t* mem, uint8_t size)
+static bool _ds18b20_crc_check(const uint8_t* mem, uint8_t size)
 {
     uint8_t crc = 0x00;
     for (uint8_t i = 0; i < size; i++)
@@ -102,7 +102,7 @@ static bool _ds18b20_crc_check(uint8_t* mem, uint8_t size)
 }
 
 
-static bool _ds18b20_empty_check(uint8_t* mem, unsigned size)
+static bool _ds18b20_empty_check(const uint8_t* mem, unsigned size)
 {
     for (unsigned i = 0; i < size; i++)
     {

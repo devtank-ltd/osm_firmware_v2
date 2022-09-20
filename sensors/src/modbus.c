@@ -597,7 +597,7 @@ void modbus_ring_process(ring_buf_t * ring)
 }
 
 
-static bool _modbus_data_to_u16(uint16_t* value, uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order)
+static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order)
 {
     if (!value)
     {

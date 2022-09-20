@@ -94,17 +94,17 @@ void io_cb(char *args)
 
         if (*pos && *pos != '=')
         {
-            if (strncmp(pos, "UP", 2) == 0 || *pos == 'U')
+            if ((strncmp(pos, "UP", 2) == 0) || (pos[0] == 'U'))
             {
                 pos = skip_to_space(pos);
                 pull = GPIO_PUPD_PULLUP;
             }
-            else if (strncmp(pos, "DOWN", 4) == 0 || *pos == 'D')
+            else if (strncmp(pos, "DOWN", 4) == 0 || pos[0] == 'D')
             {
                 pos = skip_to_space(pos);
                 pull = GPIO_PUPD_PULLDOWN;
             }
-            else if (strncmp(pos, "NONE", 4) == 0 || *pos == 'N')
+            else if (strncmp(pos, "NONE", 4) == 0 || pos[0] == 'N')
             {
                 pos = skip_to_space(pos);
             }
