@@ -46,6 +46,12 @@ void i2cs_init(void)
 }
 
 
+void i2c_linux_deinit(void)
+{
+    close(_socketfd);
+}
+
+
 bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
     if ((!w && wn) || (!r && rn))
@@ -90,7 +96,6 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
     snprintf(tmp_buf, I2C_BUF_SIZ-1, ":%x", rn);
     strncat(buf, tmp_buf, I2C_BUF_SIZ-1);
 
-    log_sys_debug("I2C SEND: %s\n", buf);
     int buf_siz = strnlen(buf, I2C_BUF_SIZ-1);
     int send_size = send(_socketfd, buf, buf_siz, 0);
     if (send_size != buf_siz)
@@ -102,7 +107,7 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
     int recv_siz = recv(_socketfd, buf, I2C_BUF_SIZ-1, 0);
     if (recv_siz < 0)
     {
-        log_sys_debug("Failed to receive.");
+        log_error("Failed to receive.");
         return false;
     }
     buf[recv_siz] = 0;

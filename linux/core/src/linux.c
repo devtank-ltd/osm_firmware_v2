@@ -12,6 +12,7 @@
 #include <stdarg.h>
 #include <signal.h>
 #include <pthread.h>
+#include <sys/timerfd.h>
 
 
 #include "platform.h"
@@ -36,6 +37,7 @@ typedef enum
 {
     LINUX_FD_TYPE_PTY,
     LINUX_FD_TYPE_IO,
+    LINUX_FD_TYPE_SINGLE_FD,
 } linux_fd_type_t;
 
 
@@ -49,6 +51,7 @@ typedef struct
             int32_t master_fd;
             int32_t slave_fd;
         } pty;
+        uint32_t single_fd;
         struct
         {
             int32_t fd;
@@ -161,6 +164,9 @@ static void _linux_cleanup_fd_handlers(void)
                     break;
                 case LINUX_FD_TYPE_IO:
                     break;
+                case LINUX_FD_TYPE_SINGLE_FD:
+                    close(fd_list[i].single_fd);
+                    break;
             }
         }
     }
@@ -170,6 +176,7 @@ static void _linux_cleanup_fd_handlers(void)
 static void _linux_exit(int err)
 {
     fprintf(stdout, "Cleaning up before exit...\n");
+    i2c_linux_deinit();
     _linux_cleanup_fd_handlers();
 }
 
@@ -207,16 +214,76 @@ static void _linux_setup_pty(fd_t* fd_handler, char* new_tty_name)
 }
 
 
+static void _linux_systick_cb(char* name, unsigned len)
+{
+    sys_tick_handler();
+}
+
+
+void _linux_setup_systick(void)
+{
+    int systick_timerfd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
+    struct itimerspec timerspec = {0};
+
+    timerspec.it_value.tv_sec  = 1 / 1000;
+    timerspec.it_value.tv_nsec = 1000000;
+    timerspec.it_interval      = timerspec.it_value;
+
+    if (timerfd_settime(systick_timerfd, 0, &timerspec, NULL))
+    {
+        close(systick_timerfd);
+        _linux_error("Failed set time of timer file descriptor: %s", strerror(errno));
+    }
+
+    char name[LINUX_PTY_NAME_SIZE] = "systick_timer";
+    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* pty = &fd_list[i];
+        uint8_t len_1 = strnlen(name, LINUX_PTY_NAME_SIZE);
+        uint8_t len_2 = strnlen(pty->name, LINUX_PTY_NAME_SIZE);
+        len_1 = len_1 < len_2 ? len_2 : len_1;
+        if (strncmp(pty->name, name, len_1) == 0)
+            _linux_error("Attempted to add a PTY with same name '%s'", name);
+    }
+    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* pty = &fd_list[i];
+        if (pty->name[0] != 0)
+            continue;
+        strncpy(pty->name, name, LINUX_PTY_NAME_SIZE);
+        pty->type = LINUX_FD_TYPE_SINGLE_FD;
+        pty->cb = _linux_systick_cb;
+        pty->single_fd = systick_timerfd;
+        return;
+    }
+    _linux_error("No space in array for '%s'", name);
+    return;
+}
+
+
 void _linux_setup_poll(void)
 {
     memset(pfds, 0, sizeof(pfds));
     nfds = 0;
     for (uint32_t i = 0; i < LINUX_MAX_PTY; i++)
     {
-        if (fd_list[i].name)
+        fd_t* fd = &fd_list[i];
+        if (fd->name)
         {
-            pfds[i].fd = fd_list[i].pty.master_fd;
-            pfds[i].events = POLLIN;
+            switch (fd->type)
+            {
+                case LINUX_FD_TYPE_PTY:
+                    pfds[i].fd = fd->pty.master_fd;
+                    pfds[i].events = POLLIN;
+                    break;
+                case LINUX_FD_TYPE_SINGLE_FD:
+                    pfds[i].fd = fd->single_fd;
+                    pfds[i].events = POLLIN;
+                    break;
+                default:
+                    _linux_error("Not implemented.");
+                    break;
+            }
             nfds++;
         }
     }
@@ -263,6 +330,13 @@ void _linux_iterate(void)
                         if (fd_handler->cb)
                             fd_handler->cb(buf, dir);
                         break;
+                    }
+                    case LINUX_FD_TYPE_SINGLE_FD:
+                    {
+                        char buf[64];
+                        read(fd_handler->single_fd, buf, 64);
+                        if (fd_handler->cb)
+                            fd_handler->cb(NULL, 0);
                     }
                     default:
                         break;
@@ -314,6 +388,7 @@ void platform_init(void)
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
     uarts_linux_setup();
+    _linux_setup_systick();
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 }
