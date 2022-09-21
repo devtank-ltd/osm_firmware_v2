@@ -28,7 +28,7 @@ static bool _i2c_connect(void)
     _socketfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (connect(_socketfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
     {
-        printf("Could not bind the socket.");
+        log_error("Could not bind the socket.");
         return false;
     }
     return true;

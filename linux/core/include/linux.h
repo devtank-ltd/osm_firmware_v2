@@ -2,11 +2,12 @@
 
 #include <stdbool.h>
 
+bool linux_write_pty(unsigned index, char *data, int size);
 
-bool linux_add_pty(char* name, uint32_t* fd, void (*read_cb)(char *, unsigned int));
-bool linux_add_gpio(char* name, uint32_t* fd, void (*cb)(uint32_t));
-
-void uarts_linux_setup(void) __attribute__((weak));
+void uart_debug_cb(char* in, unsigned len) __attribute__((weak));
+void uart_lw_cb(char* in, unsigned len)  __attribute__((weak));
+void uart_hpm_cb(char* in, unsigned len)  __attribute__((weak));
+void uart_rs485_cb(char* in, unsigned len)  __attribute__((weak));
 
 void i2c_linux_deinit(void) __attribute__((weak));
 

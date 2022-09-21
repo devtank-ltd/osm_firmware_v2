@@ -9,29 +9,11 @@
 #define IO_NAME_MAX_LEN                 16
 
 
-typedef struct
-{
-    uint8_t     num;
-    uint32_t    fd;
-} fake_io_t;
-
-
-static fake_io_t fake_ios[IOS_COUNT];
-
-
 extern bool     ios_get_pupd(unsigned io, uint8_t* pupd);
 
 
 void     ios_init(void)
 {
-    for (uint8_t i = 0; i < IOS_COUNT; i++)
-    {
-        fake_io_t* io = &fake_ios[i];
-        io->num = i;
-        char name[IO_NAME_MAX_LEN];
-        snprintf(name, IO_NAME_MAX_LEN-1, "GPIO%02u", i);
-        linux_add_gpio(name, &io->fd, NULL);
-    }
 }
 
 
