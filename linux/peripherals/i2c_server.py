@@ -30,13 +30,14 @@ I2C_WRITE_NUM = 0
 I2C_READ_NUM  = 1
 
 
+COLOUR_WHITE  = "\033[29m"
 COLOUR_BLACK  = "\033[30m"
 COLOUR_RED    = "\033[31m"
 COLOUR_GREEN  = "\033[32m"
 COLOUR_YELLOW = "\033[33m"
 COLOUR_BLUE   = "\033[34m"
 COLOUR_CYAN   = "\033[36m"
-COLOUR_WHITE  = "\033[37m"
+COLOUR_GREY   = "\033[37m"
 
 COLOUR_RESET  = COLOUR_WHITE
 
@@ -92,7 +93,7 @@ class i2c_server_t(object):
         log_file_obj = sys.stdout if log_file is None else open(log_file, "a")
         self._log = lambda m, c=None: log(log_file_obj, m, c)
 
-        self.info    = lambda m : self._log(f"{{INFO}}: {m}", COLOUR_WHITE)
+        self.info    = lambda m : self._log(f"{{INFO}}: {m}", COLOUR_GREY)
         self.error   = lambda m : self._log(f"{{ERROR}}: {m}", COLOUR_RED)
         self.warning = lambda m : self._log(f"{{WARNING}}: {m}", COLOUR_YELLOW)
         if os.environ.get("DEBUG", None):
