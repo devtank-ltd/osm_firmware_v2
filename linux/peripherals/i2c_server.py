@@ -8,6 +8,10 @@ import datetime
 import selectors
 
 
+from i2c_basetypes import i2c_device_t
+from i2c_htu21d import i2c_device_htu21d_t
+
+
 """
 This program uses sockets to provide a server for the I2C communication
 to be faked.
@@ -47,17 +51,6 @@ VEML7700_CMDS = {0x00: 0x0999,
                  0x06: 0x0333}
 
 
-
-HTU21D_ADDR   = 0x40
-HTU21D_CMDS   = {0xE3: 0x63b87e, # Temperature = 21.590degC
-                 0xE5: 0x741ee4, # Humidity = 50.160%
-                 0xF3: 0x0777,
-                 0xF5: 0x0666,
-                 0xE6: 0x0555,
-                 0xE7: 0x0444,
-                 0xFE: 0x0333}
-
-
 def log(file_, msg, colour=None):
     if file_ is not sys.stdout and file_.closed:
         file_.open()
@@ -67,65 +60,6 @@ def log(file_, msg, colour=None):
     file_.write(payload)
     file_.flush()
     return len(payload)
-
-
-class i2c_device_t(object):
-    def __init__(self, addr, cmds):
-        self._addr = addr
-        self._cmds = cmds
-        self._last_cmd_code = None
-
-    def _read(self, cmd_code):
-        data_arr = []
-        if cmd_code is None:
-            cmd_code = self._last_cmd_code
-        assert cmd_code is not None, "No command code given."
-        orig_value = value_cpy = int(self._cmds[cmd_code])
-
-        count = 0
-        while value_cpy != 0:
-            count += 1
-            value_cpy = value_cpy >> 8
-
-        for i in range(count, 0, -1):
-            shift = 8 * (i - 1)
-            this_value = orig_value >> shift
-            data_arr.append(this_value & 0xFF)
-        return data_arr
-
-    def _write(self, cmd_code, w):
-        assert isinstance(w, list), "w must be a list"
-        len_w = len(w)
-        assert len_w >= 1, f"w must have at least 1 element ({len_w})."
-        cmd_code = w[0]
-        vals = w[1:]
-        data = 0
-        for i in range(0, len_w - 1):
-            data += (vals[i] & 0xFF) << (8 * i)
-        self._cmds[cmd_code] = data
-        return None
-
-    def transfer(self, data):
-        wn = data["wn"]
-        w  = None
-        rn = data["rn"]
-        r  = None
-        cmd_code = None
-        if wn:
-            assert wn == len(data["w"]), f"WN is not equal to length of W. ({wn} != {len(data['w'])})"
-            self._last_cmd_code = cmd_code = data["w"][0]
-            if wn > 1:
-                w = self._write(cmd_code, data["w"][1:])
-        if rn:
-            r_raw = self._read(cmd_code)
-            r_raw_len = len(r_raw)
-            assert rn >= r_raw_len, f"RN less than the length of R. ({rn} != {r_raw_len})"
-            r = [0 for x in range(0, rn-r_raw_len)] + r_raw
-        return {"addr"   : self._addr,
-                "wn"     : wn,
-                "w"      : w,
-                "rn"     : rn,
-                "r"      : r}
 
 
 class i2c_client_t(object):
@@ -320,8 +254,9 @@ class i2c_server_t(object):
 
 
 def main():
+    htu_dev = i2c_device_htu21d_t()
     devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS),
-            HTU21D_ADDR  : i2c_device_t(HTU21D_ADDR,   HTU21D_CMDS  )}
+            htu_dev.addr:  htu_dev}
     i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
     i2c_sock.run_forever()
     return 0
