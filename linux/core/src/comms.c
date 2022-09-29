@@ -10,6 +10,7 @@
 
 
 #define COMMS_DEFAULT_MTU       256
+#define COMMS_ID_STR            "LINUX_COMMS"
 
 
 uint16_t comms_get_mtu(void)
@@ -49,6 +50,7 @@ void comms_send(int8_t* hex_arr, uint16_t arr_len)
     uart_ring_out(LW_UART, "\r\n", 2);
 }
 
+
 void comms_init(void)
 {
 }
@@ -66,7 +68,7 @@ void comms_process(char* message)
 
 bool comms_get_connected(void)
 {
-    return false;
+    return true;
 }
 
 
@@ -82,5 +84,6 @@ void comms_config_setup_str(char * str)
 
 bool comms_get_id(char* str, uint8_t len)
 {
-    return false;
+    strncpy(str, COMMS_ID_STR, len);
+    return true;
 }
