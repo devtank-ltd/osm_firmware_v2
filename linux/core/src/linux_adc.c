@@ -1,17 +1,36 @@
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdio.h>
+
+#include <json-c/json.h>
+#include <json-c/json_util.h>
 
 #include "base_types.h"
 #include "pinmap.h"
 #include "log.h"
 #include "adcs.h"
+#include "linux.h"
 
 
-#define ADCS_THEORETICAL_MIDPOINT           ((ADC_MAX_VAL + 1) / 2)
-#define ADCS_5A_AMPLITUDE                   96.54f
-#define ADCS_7_5A_AMPLITUDE                 144.81f
-#define ADCS_10A_AMPLITUDE                  193.09f
+#define ADCS_CONFIG_FILE                        LINUX_FILE_LOC"adcs_config.json"
+
+#define ADCS_WAVE_TYPE_AC_STRING                "AC"
+#define ADCS_WAVE_TYPE_DC_STRING                "DC"
+
+#define ADCS_THEORETICAL_MIDPOINT               ((ADC_MAX_VAL + 1) / 2)
+#define ADCS_5A_AMPLITUDE                       96.54f
+#define ADCS_7_5A_AMPLITUDE                     144.81f
+#define ADCS_10A_AMPLITUDE                      193.09f
+
+#define ADCS_WAVE_AC_DEFAULT_AMPLITUDE          ADCS_5A_AMPLITUDE
+#define ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET   ADCS_THEORETICAL_MIDPOINT
+#define ADCS_WAVE_AC_DEFAULT_FREQUENCY          50.f
+#define ADCS_WAVE_AC_DEFAULT_PHASE              0.f
+
+#define ADCS_WAVE_DC_DEFAULT_AMPLITUDE          ADCS_5A_AMPLITUDE
+#define ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE   100
 
 
 typedef enum
@@ -42,16 +61,18 @@ typedef struct
 } adcs_wave_t;
 
 
+static pthread_t    _linux_adc_generator_thread_id;
+
 static uint16_t*    _adcs_buf                           = NULL;         /* sizeof ADCS_NUM_SAMPLES */
 static unsigned     _adcs_num_data                      = 0;
 static uint8_t      _adcs_num_active_channels           = 0;
 static adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
-static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_THEORETICAL_MIDPOINT, .phase=0,        .frequency=50} }, /* CURRENT_CLAMP_1 */
-                                                            {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_THEORETICAL_MIDPOINT, .phase=2*M_PI/3, .frequency=50} }, /* CURRENT_CLAMP_2 */
-                                                            {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_THEORETICAL_MIDPOINT, .phase=4*M_PI/3, .frequency=50} }, /* CURRENT_CLAMP_3 */
-                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=4095, .random_amplitude=100 } } ,    /* BAT_MON         */
-                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=3000, .random_amplitude=100 } } ,    /* 3V3_RAIL_MON    */
-                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=3000, .random_amplitude=100 } } };  /* 5V_RAIL_MON     */
+static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
+                                                            {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=2*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_2 */
+                                                            {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=4*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_3 */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_WAVE_DC_DEFAULT_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* 3V3_RAIL_MON    */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_WAVE_DC_DEFAULT_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } };    /* 5V_RAIL_MON     */
 
 
 static uint16_t _adcs_calculate_dc_wave(adcs_wave_t* wave)
@@ -107,6 +128,110 @@ static void _adcs_fill_buffer(void)
 }
 
 
+static bool _adcs_float_from_json(struct json_object * root, const char* name, float* val)
+{
+    if (!val)
+        return false;
+    struct json_object * val_obj = json_object_object_get(root, name);
+    if (val_obj)
+    {
+        *val = json_object_get_double(val_obj);
+        return true;
+    }
+    return false;
+}
+
+
+static bool _adcs_load_from_file(void)
+{
+    FILE* adcs_config_file = fopen(ADCS_CONFIG_FILE, "r");
+    if (!adcs_config_file)
+        return false;
+    struct json_object * root = json_object_from_fd(fileno(adcs_config_file));
+    if (!root)
+    {
+        fclose(adcs_config_file);
+        return false;
+    }
+    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+    {
+        adcs_wave_t* wave = &_adcs_waves[i];
+        if (!wave)
+            continue;
+        char name[5];
+        snprintf(name, 4, "CC%u", i+1);
+        struct json_object * cc = json_object_object_get(root, name);
+        if (!cc)
+            continue;
+        struct json_object * type = json_object_object_get(cc, "type");
+        if (!type)
+            continue;
+        const char * type_str = json_object_get_string(type);
+        unsigned len = strlen(type_str);
+        if (len != 2)
+            continue;
+        float v;
+        if (strncmp(type_str, ADCS_WAVE_TYPE_AC_STRING, 2) == 0)
+        {
+            if (wave->type != ADCS_WAVE_TYPE_AC)
+            {
+                wave->type                = ADCS_WAVE_TYPE_AC;
+                wave->ac.amplitude        = ADCS_WAVE_AC_DEFAULT_AMPLITUDE;
+                wave->ac.amplitude_offset = ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET;
+                wave->ac.frequency        = ADCS_WAVE_AC_DEFAULT_FREQUENCY;
+                wave->ac.phase            = ADCS_WAVE_AC_DEFAULT_PHASE;
+            }
+
+            if (_adcs_float_from_json(cc, "amplitude", &v))
+                wave->ac.amplitude = v;
+
+            if (_adcs_float_from_json(cc, "amplitude_offset", &v))
+                wave->ac.amplitude_offset = v;
+
+            if (_adcs_float_from_json(cc, "frequency", &v))
+                wave->ac.frequency = v;
+
+            if (_adcs_float_from_json(cc, "phase", &v))
+                wave->ac.phase = v;
+        }
+        else if (strncmp(type_str, ADCS_WAVE_TYPE_DC_STRING, 2) == 0)
+        {
+            if (wave->type != ADCS_WAVE_TYPE_DC)
+            {
+                wave->type                = ADCS_WAVE_TYPE_DC;
+                wave->dc.amplitude        = ADCS_WAVE_DC_DEFAULT_AMPLITUDE;
+                wave->dc.random_amplitude = ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE;
+            }
+            if (_adcs_float_from_json(cc, "amplitude", &v))
+                wave->dc.amplitude = v;
+
+            if (_adcs_float_from_json(cc, "random_amplitude", &v))
+                wave->dc.random_amplitude = v;
+        }
+        else
+            continue;
+    }
+    fclose(adcs_config_file);
+    return true;
+}
+
+
+static void _adcs_remove_file(void)
+{
+    remove(ADCS_CONFIG_FILE);
+}
+
+
+static void* _linux_adc_generator_proc(void* vargp)
+{
+    if (_adcs_load_from_file())
+        _adcs_remove_file();
+    _adcs_fill_buffer();
+    adcs_dma_complete();
+    return NULL;
+}
+
+
 void platform_setup_adc(adc_setup_config_t* config)
 {
     _adcs_buf = (uint16_t*)config->mem_addr;
@@ -122,8 +247,7 @@ void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channe
 
 void platform_adc_start_conversion_regular(void)
 {
-    _adcs_fill_buffer();
-    adcs_dma_complete();
+    pthread_create(&_linux_adc_generator_thread_id, NULL, _linux_adc_generator_proc, NULL);
 }
 
 

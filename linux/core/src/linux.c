@@ -20,7 +20,6 @@
 #include "linux.h"
 
 
-#define LINUX_FILE_LOC          "/tmp/osm/"
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_PTY_NAME_SIZE     16
 #define LINUX_LINE_BUF_SIZ      32

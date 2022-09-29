@@ -2,6 +2,10 @@
 
 #include <stdbool.h>
 
+
+#define LINUX_FILE_LOC          "/tmp/osm/"
+
+
 bool linux_write_pty(unsigned index, char *data, int size);
 
 void uart_debug_cb(char* in, unsigned len) __attribute__((weak));

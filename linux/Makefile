@@ -20,9 +20,9 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_S
 
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Icore/include -Isensors/include
+INCLUDE_PATHS += -Icore/include -Isensors/include $(shell pkg-config --cflags json-c)
 
-LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections
+LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 
 BUILD_DIR := build
 
