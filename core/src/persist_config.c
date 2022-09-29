@@ -28,6 +28,7 @@ void persistent_init(void)
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
+            persist_data.cc_midpoints[i] = CC_DEFAULT_MIDPOINT;
             persist_data.cc_configs[i].ext_max_mA = 100000;
             persist_data.cc_configs[i].int_max_mV = 50;
         }
