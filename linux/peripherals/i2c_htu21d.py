@@ -66,6 +66,9 @@ class i2c_device_htu21d_t(i2c_device_t):
 
     @property
     def humidity(self):
+        """ Humidity is calculated in two parts. First the count is
+        converted to a humidity, second the temperature is accounted for
+        with a function of temperature (_H_f_T) """
         uncomp = self._Sh_2_H(self._cmds[self.HTU21D_HUMIDITY_CMD] >> 8)
         return uncomp + self._H_f_T()
 
