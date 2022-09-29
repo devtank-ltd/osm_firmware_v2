@@ -58,6 +58,7 @@ firmware_SOURCES := \
            core/src/modbus_measurements.c \
            core/src/update.c \
            core/src/adcs.c \
+           core/src/linux_adc.c \
            core/src/timers.c \
            core/src/common.c \
            core/src/platform_common.c \

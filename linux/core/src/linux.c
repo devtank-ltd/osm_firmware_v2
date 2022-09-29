@@ -510,31 +510,6 @@ void platform_deinit(void)
 }
 
 
-void platform_setup_adc(adc_setup_config_t* config)
-{
-}
-
-
-void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
-{
-}
-
-
-void platform_adc_start_conversion_regular(void)
-{
-}
-
-
-void platform_adc_power_off(void)
-{
-}
-
-
-void platform_adc_set_num_data(unsigned num_data)
-{
-}
-
-
 void platform_set_rs485_mode(bool driver_enable)
 {
 }
@@ -562,14 +537,14 @@ static persist_mem_t* _linux_get_persist(void)
 {
     FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "rb");
     if (!mem_file)
-        goto bad_exit;
+        return NULL;
     if (fread(&_linux_persist_mem, sizeof(persist_mem_t), 1, mem_file) != sizeof(persist_mem_t))
-        goto bad_exit;
+    {
+        fclose(mem_file);
+        return NULL;
+    }
     fclose(mem_file);
     return &_linux_persist_mem;
-bad_exit:
-    fclose(mem_file);
-    return NULL;
 }
 
 
