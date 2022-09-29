@@ -15,7 +15,6 @@
 #define CC_DEFAULT_COLLECTION_TIME          1000
 #define CC_TIMEOUT_MS                       2000
 #define CC_NUM_SAMPLES                      ADCS_NUM_SAMPLES
-#define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2)
 
 #define CC_RESISTOR_OHM                     22
 
@@ -569,7 +568,7 @@ void cc_init(void)
     {
         // Assume it to be the theoretical midpoint
         adc_debug("Failed to load persistent midpoint.");
-        uint32_t midpoints[ADC_CC_COUNT] = {CC_DEFAULT_MIDPOINT};
+        uint32_t midpoints[ADC_CC_COUNT] = {CC_DEFAULT_MIDPOINT, CC_DEFAULT_MIDPOINT, CC_DEFAULT_MIDPOINT};
         cc_set_midpoints(midpoints);
     }
     _configs = persist_get_cc_configs();
