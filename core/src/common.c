@@ -9,9 +9,6 @@
 #include "platform.h"
 
 
-static volatile uint32_t since_boot_ms = 0;
-
-
 // Timing Functions
 
 uint32_t since_boot_delta(uint32_t newer, uint32_t older)
@@ -20,20 +17,6 @@ uint32_t since_boot_delta(uint32_t newer, uint32_t older)
         return (0xFFFFFFFF - older) + newer;
     else
         return newer - older;
-}
-
-
-uint32_t get_since_boot_ms(void)
-{
-    return since_boot_ms;
-}
-
-
-// cppcheck-suppress unusedFunction ; System handler
-void sys_tick_handler(void)
-{
-    /* Special libopencm3 function to handle system ticks */
-    since_boot_ms++;
 }
 
 

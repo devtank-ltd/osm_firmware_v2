@@ -93,6 +93,7 @@ int main(void)
             uart_rings_in_drain();
             uart_rings_out_drain();
             measurements_loop_iteration();
+            platform_tight_loop();
         }
         comms_loop_iteration();
         flashing_delay = comms_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;

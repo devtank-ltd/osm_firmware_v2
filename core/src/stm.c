@@ -36,6 +36,9 @@
 #define ADC_CCR_PRESCALE_SHIFT 18
 
 
+static volatile uint32_t since_boot_ms = 0;
+
+
 static void _stm_setup_systick(void)
 {
     systick_set_frequency(1000, rcc_ahb_frequency);
@@ -352,4 +355,21 @@ void platform_hpm_enable(bool enable)
         gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
         gpio_set(port_n_pin.port, port_n_pin.pins);
     }
+}
+
+
+void platform_tight_loop(void) {}
+
+
+uint32_t get_since_boot_ms(void)
+{
+    return since_boot_ms;
+}
+
+
+// cppcheck-suppress unusedFunction ; System handler
+void sys_tick_handler(void)
+{
+    /* Special libopencm3 function to handle system ticks */
+    since_boot_ms++;
 }

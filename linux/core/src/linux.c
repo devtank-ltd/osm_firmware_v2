@@ -82,14 +82,13 @@ static struct pollfd    pfds[LINUX_MAX_NFDS];
 static uint32_t         nfds;
 static pthread_t        _linux_listener_thread_id;
 static persist_mem_t    _linux_persist_mem          = {0};
-static bool             _linux_running              = true;
+static volatile bool    _linux_running              = true;
 static bool             _linux_in_debug             = false;
-bool                    linux_threads_deinit        = false;
+volatile bool           linux_threads_deinit        = false;
+static int64_t          _linux_boot_time_us         = 0;
 
 uint32_t                rcc_ahb_frequency;
 
-
-static void _linux_systick_cb(void);
 
 static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
                                       .name={"UART_DEBUG"},
@@ -103,12 +102,10 @@ static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
                                      {.type=LINUX_FD_TYPE_PTY,
                                       .name={"UART_RS485"},
                                       .cb=uart_rs485_cb},
-                                     {.type=LINUX_FD_TYPE_TIMER,
-                                      .name={"SYSTICK_TIMER"},
-                                      .cb=_linux_systick_cb},
                                      {.type=LINUX_FD_TYPE_EVENT,
                                       .name={"ADC_GEN_EVENT"},
                                       .cb=linux_adc_generate}};
+
 
 
 void linux_port_debug(char * fmt, ...)
@@ -143,6 +140,17 @@ static void _linux_error(char* fmt, ...)
     fprintf(stderr, " (%s)", strerror(errno));
     fprintf(stderr, "\n");
     exit(-1);
+}
+
+
+static int64_t _linux_get_current_us(void)
+{
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_REALTIME, &ts))
+        _linux_error("Failed to get the realtime of the clock.");
+
+    return (int64_t)(ts.tv_nsec / 1000LL) + (int64_t)(ts.tv_sec * 1000000);
 }
 
 
@@ -232,12 +240,6 @@ bad_exit:
     if (!close(*slave_fd))
         _linux_error("Fail to close slave fd when couldnt open PTY %s", name);
     _linux_error("Fail to setup PTY.");
-}
-
-
-static void _linux_systick_cb(void)
-{
-    sys_tick_handler();
 }
 
 
@@ -545,6 +547,7 @@ void* thread_proc(void* vargp)
 
 void platform_init(void)
 {
+    _linux_boot_time_us = _linux_get_current_us();
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
@@ -689,4 +692,27 @@ bool platform_running(void)
 void platform_hpm_enable(bool enable)
 {
     ;
+}
+
+
+void platform_tight_loop(void)
+{
+    static int64_t last_call = 0;
+    int64_t now = _linux_get_current_us();
+    if (!last_call)
+    {
+        last_call = now;
+        return;
+    }
+    int64_t delta_time = (now - last_call);
+    if (delta_time < 1000)
+        usleep(1000 - delta_time);
+    last_call = now;
+}
+
+
+uint32_t get_since_boot_ms(void)
+{
+    int64_t t = (_linux_get_current_us() - _linux_boot_time_us) / 1000;
+    return t;
 }

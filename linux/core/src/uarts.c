@@ -175,5 +175,7 @@ void uart_blocking(unsigned uart, const char *data, int size)
 
 bool uart_dma_out(unsigned uart, char *data, int size)
 {
-    return linux_write_pty(uart, data, size);
+    if (!linux_write_pty(uart, data, size))
+        uart_blocking(uart, data, size);
+    return true;
 }

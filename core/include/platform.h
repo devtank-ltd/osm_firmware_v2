@@ -35,3 +35,5 @@ void platform_adc_power_off(void);
 void platform_adc_set_num_data(unsigned num_data);
 
 void platform_hpm_enable(bool enable);
+
+void platform_tight_loop(void);

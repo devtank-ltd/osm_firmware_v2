@@ -6,7 +6,7 @@
 #define LINUX_FILE_LOC          "/tmp/osm/"
 
 
-extern bool linux_threads_deinit;
+extern volatile bool linux_threads_deinit;
 
 
 bool linux_write_pty(unsigned index, char *data, int size);
