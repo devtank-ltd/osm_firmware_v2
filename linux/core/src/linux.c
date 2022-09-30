@@ -593,6 +593,9 @@ void platform_reset_sys(void)
 {
     _linux_save_fd_file();
 
+    fprintf(stdout, "Collecting threads...\n");
+    linux_threads_deinit = true;
+    pthread_join(_linux_listener_thread_id, NULL);
     fprintf(stdout, "Cleaning up before exit...\n");
     i2c_linux_deinit();
 
