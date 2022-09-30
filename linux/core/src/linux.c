@@ -612,7 +612,7 @@ static persist_mem_t* _linux_get_persist(void)
     FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "rb");
     if (!mem_file)
         return NULL;
-    if (fread(&_linux_persist_mem, sizeof(persist_mem_t), 1, mem_file) != sizeof(persist_mem_t))
+    if (fread(&_linux_persist_mem, sizeof(persist_mem_t), 1, mem_file) != 1)
     {
         fclose(mem_file);
         return NULL;

@@ -150,6 +150,7 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
                 goto recv_bad_fmt_exit;
             pos++;
         }
+        pos--;
 
         if (*pos != ']' && *(pos+1) != '\0')
             goto recv_bad_fmt_exit;
