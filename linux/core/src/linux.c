@@ -14,7 +14,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <sys/timerfd.h>
-
+#include <sys/eventfd.h>
 
 #include "platform.h"
 #include "linux.h"
@@ -39,6 +39,7 @@ typedef enum
 {
     LINUX_FD_TYPE_PTY,
     LINUX_FD_TYPE_TIMER,
+    LINUX_FD_TYPE_EVENT,
 } linux_fd_type_t;
 
 
@@ -56,9 +57,13 @@ typedef struct
         {
             int32_t fd;
         } timer;
+        struct
+        {
+            int32_t fd;
+        } event;
     };
     char            name[LINUX_PTY_NAME_SIZE];
-    void            (*cb)(char * addr, unsigned len);
+    void            (*cb)();
 } fd_t;
 
 
@@ -79,11 +84,12 @@ static pthread_t        _linux_listener_thread_id;
 static persist_mem_t    _linux_persist_mem          = {0};
 static bool             _linux_running              = true;
 static bool             _linux_in_debug             = false;
+bool                    linux_threads_deinit        = false;
 
 uint32_t                rcc_ahb_frequency;
 
 
-static void _linux_systick_cb(char* name, unsigned len);
+static void _linux_systick_cb(void);
 
 static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
                                       .name={"UART_DEBUG"},
@@ -99,7 +105,10 @@ static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
                                       .cb=uart_rs485_cb},
                                      {.type=LINUX_FD_TYPE_TIMER,
                                       .name={"SYSTICK_TIMER"},
-                                      .cb=_linux_systick_cb}};
+                                      .cb=_linux_systick_cb},
+                                     {.type=LINUX_FD_TYPE_EVENT,
+                                      .name={"ADC_GEN_EVENT"},
+                                      .cb=linux_adc_generate}};
 
 
 void linux_port_debug(char * fmt, ...)
@@ -118,7 +127,7 @@ void _linux_sig_handler(int signo)
 {
     if (signo == SIGINT)
     {
-        linux_port_debug("Signal\n");
+        printf("Caught signal, exiting gracefully.\n");
         _linux_running = false;
     }
 }
@@ -154,6 +163,11 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
             case LINUX_FD_TYPE_TIMER:
                 if (fd_h->timer.fd == fd)
                     return fd_h;
+                break;
+            case LINUX_FD_TYPE_EVENT:
+                if (fd_h->event.fd == fd)
+                    return fd_h;
+                break;
             default:
                 continue;
         }
@@ -221,7 +235,7 @@ bad_exit:
 }
 
 
-static void _linux_systick_cb(char* name, unsigned len)
+static void _linux_systick_cb(void)
 {
     sys_tick_handler();
 }
@@ -255,10 +269,7 @@ static void _linux_load_fd_file(void)
 {
     FILE* osm_reboot_file = fopen(LINUX_REBOOT_FILE_LOC, "r");
     if (!osm_reboot_file)
-    {
-        //fclose(osm_reboot_file);
         return;
-    }
     char line[LINUX_LINE_BUF_SIZ];
     while (fgets(line, LINUX_LINE_BUF_SIZ-1, osm_reboot_file))
     {
@@ -304,7 +315,7 @@ static void _linux_setup_systick(int32_t* fd)
     *fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC);
     struct itimerspec timerspec = {0};
 
-    timerspec.it_value.tv_sec  = 1 / 1000;
+    timerspec.it_value.tv_sec  = 0;
     timerspec.it_value.tv_nsec = 1000000;
     timerspec.it_interval      = timerspec.it_value;
 
@@ -313,6 +324,44 @@ static void _linux_setup_systick(int32_t* fd)
         close(*fd);
         _linux_error("Failed set time of timer file descriptor");
     }
+}
+
+
+static void _linux_kick_event(int fd)
+{
+    uint64_t v = 0xC0FFEE;
+    write(fd, &v, sizeof(uint64_t));
+}
+
+
+bool linux_kick_adc_gen(void)
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* fd = &fd_list[i];
+        switch(fd->type)
+        {
+            case LINUX_FD_TYPE_EVENT:
+                if (strcmp(fd->name, "ADC_GEN_EVENT") == 0)
+                {
+                    _linux_kick_event(fd->event.fd);
+                    return true;
+                }
+                break;
+            default:
+                continue;
+        }
+    }
+    return false;
+}
+
+
+static void _linux_setup_event(int* fd)
+{
+    int _fd_ = eventfd(0, EFD_CLOEXEC);
+    if (_fd_ < 0)
+        _linux_error("Failed to create event fd.");
+    *fd = _fd_;
 }
 
 
@@ -335,6 +384,10 @@ static void _linux_setup_fd_handlers(void)
                 if (!fd->timer.fd)
                     _linux_setup_systick(&fd->timer.fd);
                 break;
+            case LINUX_FD_TYPE_EVENT:
+                if (!fd->event.fd)
+                    _linux_setup_event(&fd->event.fd);
+                break;
             default:
                 _linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
                 break;
@@ -348,7 +401,7 @@ static void _linux_cleanup_fd_handlers(void)
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
-        if (!fd->name[0] || isascii(fd->name[0]))
+        if (!fd->name[0] || !isascii(fd->name[0]))
             continue;
         switch(fd->type)
         {
@@ -360,8 +413,12 @@ static void _linux_cleanup_fd_handlers(void)
                 _linux_remove_symlink(fd->name);
                 break;
             case LINUX_FD_TYPE_TIMER:
-                if (close(fd_list[i].timer.fd))
+                if (close(fd->timer.fd))
                     _linux_error("Fail close TIMER '%s'", fd->name);
+                break;
+            case LINUX_FD_TYPE_EVENT:
+                if (close(fd->event.fd))
+                    _linux_error("Fail close EVENT '%s'", fd->name);
                 break;
             default:
                 _linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
@@ -373,6 +430,9 @@ static void _linux_cleanup_fd_handlers(void)
 
 static void _linux_exit(int err)
 {
+    fprintf(stdout, "Collecting threads...\n");
+    linux_threads_deinit = true;
+    pthread_join(_linux_listener_thread_id, NULL);
     fprintf(stdout, "Cleaning up before exit...\n");
     i2c_linux_deinit();
     _linux_cleanup_fd_handlers();
@@ -404,6 +464,10 @@ static void _linux_setup_poll(void)
                 pfds[i].fd = fd->timer.fd;
                 pfds[i].events = POLLIN;
                 break;
+            case LINUX_FD_TYPE_EVENT:
+                pfds[i].fd = fd->event.fd;
+                pfds[i].events = POLLIN;
+                break;
             default:
                 _linux_error("Not implemented.");
                 break;
@@ -415,7 +479,9 @@ static void _linux_setup_poll(void)
 
 void _linux_iterate(void)
 {
-    int ready = poll(pfds, nfds, -1);
+    int ready = poll(pfds, nfds, 1000);
+    if (linux_threads_deinit)
+        return;
     if (ready == -1)
         _linux_error("TIMEOUT");
     for (uint32_t i = 0; i < nfds; i++)
@@ -450,7 +516,16 @@ void _linux_iterate(void)
                     char buf[64];
                     read(fd_handler->timer.fd, buf, 64);
                     if (fd_handler->cb)
-                        fd_handler->cb(NULL, 0);
+                        fd_handler->cb();
+                    break;
+                }
+                case LINUX_FD_TYPE_EVENT:
+                {
+                    uint64_t v;
+                    read(fd_handler->event.fd, &v, sizeof(uint64_t));
+                    if (fd_handler->cb)
+                        fd_handler->cb(fd_handler->event.fd);
+                    break;
                 }
                 default:
                     break;
@@ -460,9 +535,9 @@ void _linux_iterate(void)
 }
 
 
-static void* thread_proc(void* vargp)
+void* thread_proc(void* vargp)
 {
-    while (1)
+    while (!linux_threads_deinit)
         _linux_iterate();
     return NULL;
 }

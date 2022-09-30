@@ -1,7 +1,6 @@
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
-#include <pthread.h>
 #include <stdio.h>
 
 #include <json-c/json.h>
@@ -60,8 +59,6 @@ typedef struct
     };
 } adcs_wave_t;
 
-
-static pthread_t    _linux_adc_generator_thread_id;
 
 static uint16_t*    _adcs_buf                           = NULL;         /* sizeof ADCS_NUM_SAMPLES */
 static unsigned     _adcs_num_data                      = 0;
@@ -222,13 +219,12 @@ static void _adcs_remove_file(void)
 }
 
 
-static void* _linux_adc_generator_proc(void* vargp)
+void linux_adc_generate(void)
 {
     if (_adcs_load_from_file())
         _adcs_remove_file();
     _adcs_fill_buffer();
     adcs_dma_complete();
-    return NULL;
 }
 
 
@@ -247,7 +243,7 @@ void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channe
 
 void platform_adc_start_conversion_regular(void)
 {
-    pthread_create(&_linux_adc_generator_thread_id, NULL, _linux_adc_generator_proc, NULL);
+    linux_kick_adc_gen();
 }
 
 
