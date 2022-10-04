@@ -5,6 +5,10 @@ Usage:
     python setup.py py2app
 """
 
+# MacOS dependances:
+# pip3 install pyserial pyyaml idle Pillow
+# brew install python-tk
+
 # To create a MacOS OSM GUI App, run:
 # python3 macos_setup.py py2app
 # The app will be in dist/config_gui.app
