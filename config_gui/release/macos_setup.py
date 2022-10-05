@@ -15,8 +15,16 @@ Usage:
 
 # Once bundled the .app has no dependances
 
+# To distribute, I suggest tarballing it up:
+# tar -C dist -cvjf config_gui.app.tar.bz2 config_gui.app
+# MacOS GUI extracts tarballs automatically when you open it.
+# Then tell the customer to drag the resulting .app into their Applications folder.
+# We should work on a .dmg or .pkg, though.
+
+# If you have issues with tcl/tk, make sure your
+# build macOS instance has the latest Python from python.org.
+
 from setuptools import setup
-from distutils.dir_util import copy_tree
 
 APP = ['config_gui.py']
 DATA_FILES = [
