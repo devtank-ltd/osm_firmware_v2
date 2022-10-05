@@ -438,6 +438,7 @@ static void _linux_exit(int err)
     fprintf(stdout, "Cleaning up before exit...\n");
     i2c_linux_deinit();
     _linux_cleanup_fd_handlers();
+    fprintf(stdout, "Finished.\n");
 }
 
 
