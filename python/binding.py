@@ -65,7 +65,7 @@ def parse_current_clamp(r_str:str):
         return False
     r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
     if r:
-        return int(r[-1])
+        return float(r[-1])
     return False
 
 
@@ -237,7 +237,7 @@ class dev_t(dev_base_t):
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
             "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
-            "temp"      : measurement_t("Temperature"        , float , "tmp"       , parse_temp           ),
+            "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
             "PF"       : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
             "VP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),

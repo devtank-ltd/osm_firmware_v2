@@ -73,7 +73,7 @@ class i2c_client_t(object):
 
 
 class i2c_server_t(object):
-    def __init__(self, socket_loc, devs, log_file=None):
+    def __init__(self, socket_loc, devs, log_file=None, logger=None):
         if os.path.exists(socket_loc):
             os.unlink(socket_loc)
         self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -90,16 +90,21 @@ class i2c_server_t(object):
 
         self._done = False
 
-        log_file_obj = sys.stdout if log_file is None else open(log_file, "a")
-        self._log = lambda m, c=None: log(log_file_obj, m, c)
-
-        self.info    = lambda m : self._log(f"{{INFO}}: {m}", COLOUR_GREY)
-        self.error   = lambda m : self._log(f"{{ERROR}}: {m}", COLOUR_RED)
-        self.warning = lambda m : self._log(f"{{WARNING}}: {m}", COLOUR_YELLOW)
-        if os.environ.get("DEBUG", None):
-            self.debug   = lambda m : self._log(f"{{DEBUG}}: {m}", COLOUR_CYAN)
+        if logger is None:
+            log_file_obj = sys.stdout if log_file is None else open(log_file, "a")
+            self._log = lambda m, c=None: log(log_file_obj, m, c)
+            self.info    = lambda m : self._log(f"{{INFO}}: {m}", COLOUR_GREY)
+            self.error   = lambda m : self._log(f"{{ERROR}}: {m}", COLOUR_RED)
+            self.warning = lambda m : self._log(f"{{WARNING}}: {m}", COLOUR_YELLOW)
+            if os.environ.get("DEBUG", None):
+                self.debug   = lambda m : self._log(f"{{DEBUG}}: {m}", COLOUR_CYAN)
+            else:
+                self.debug   = lambda *x : x
         else:
-            self.debug   = lambda *x : x
+            self.info    = logger.info
+            self.error   = logger.error
+            self.warning = logger.warning
+            self.debug   = logger.debug
 
         self._devices = dict(devs)
 
