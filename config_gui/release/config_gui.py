@@ -22,7 +22,6 @@ import logging
 import platform
 import signal
 from stat import *
-import time
 
 MB_DB = modbus_db
 FW_PROCESS = False
@@ -108,12 +107,13 @@ GET_TMP_N = MB_DB.GET_TMP_N
 GET_TEMP_ID = MB_DB.GET_TEMP_ID
 GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
 ICONS_T = "./osm_pictures/logos/icons-together.png"
-DVT_IMG = "./osm_pictures/logos/powered_by.png"
-OSM_IMG = "./osm_pictures/logos/logoOSM2NL.png"
-GAUGE = "./osm_pictures/logos/ENV01.png"
-SENSOR = "./osm_pictures/logos/1.png"
-OSM_1 = "./osm_pictures/logos/osm_no_background.png"
-R_LOGO = "./osm_pictures/logos/random.png"
+DVT_IMG = "./osm_pictures/logos/OSM+Powered.png"
+OSM_1 = "./osm_pictures/logos/lora-osm.png"
+R_LOGO = "./osm_pictures/logos/shuffle.png"
+GRPH_BG = "./osm_pictures/logos/graph_bg.png"
+PARAMS = "./osm_pictures/logos/parameters.png"
+OPEN_S = "./osm_pictures/logos/opensource-nb.png"
+LEAF = "./osm_pictures/logos/Leaf.png"
 
 
 def log_func(msg):
@@ -157,31 +157,30 @@ class config_gui_window_t(Tk):
                         padding=10)
         style.configure("Tab", focuscolor=style.configure(".")["background"])
         self._notebook = Notebook(self, style='lefttab.TNotebook')
-        self._notebook.pack(pady=10, expand=True)
+        self._notebook.pack(fill='both', expand=True)
 
         self._conn_fr = Frame(self._notebook, width=1400, height=1000,
                               bg=IVORY, padx=50, pady=50)
-        self._conn_fr.pack()
+        self._conn_fr.pack(fill='both', expand=True)
         self._conn_fr.pack_propagate(0)
 
-        self._main_fr = Frame(self._notebook, width=1400, height=1000,
+        self._main_fr = Frame(self._notebook,
                               bg=IVORY, padx=50)
-        self._main_fr.pack()
+        self._main_fr.pack(fill='both', expand=True)
         self._main_fr.pack_propagate(0)
 
-        self._adv_fr = Frame(self._notebook, width=1400,
-                             height=1000, bg=IVORY, pady=50)
-        self._adv_fr.pack()
+        self._adv_fr = Frame(self._notebook, bg=IVORY,
+                             pady=50)
+        self._adv_fr.pack(fill='both', expand=True)
         self._adv_fr.pack_propagate(0)
 
-        self._modb_fr = Frame(self._notebook, width=1400,
-                              height=1000, bg=IVORY, padx=50, pady=50)
-        self._modb_fr.pack()
+        self._modb_fr = Frame(self._notebook,
+                              bg=IVORY, padx=50, pady=50)
+        self._modb_fr.pack(fill='both', expand=True)
         self._modb_fr.pack_propagate(0)
 
-        self._debug_fr = Frame(self._notebook, width=1400,
-                               height=1000, bg=IVORY, padx=50)
-        self._debug_fr.pack()
+        self._debug_fr = Frame(self._notebook, bg=IVORY)
+        self._debug_fr.pack(fill='both', expand=True)
         self._debug_fr.pack_propagate(0)
 
         usb_label = Label(self._conn_fr, text="Select a device",
@@ -231,8 +230,7 @@ class config_gui_window_t(Tk):
         self._welcome_p.pack()
 
         img = Image.open(OSM_1)
-        resiz_dev = img.resize((400, 405), Image.LANCZOS)
-        osm1_logo = ImageTk.PhotoImage(resiz_dev)
+        osm1_logo = ImageTk.PhotoImage(img)
         self._conn_fr.img_list = []
         self._conn_fr.img_list.append(osm1_logo)
         self._osm1_lab = Label(
@@ -328,24 +326,15 @@ class config_gui_window_t(Tk):
 
                     self._main_fr.img_list = []
                     img = Image.open(DVT_IMG)
-                    resiz_dev = img.resize((200, 205), Image.LANCZOS)
-                    dev_logo = ImageTk.PhotoImage(resiz_dev)
+                    dev_logo = ImageTk.PhotoImage(img)
                     self._main_fr.img_list.append(dev_logo)
                     dev_lab = Label(self._main_fr, image=dev_logo, bg=IVORY)
-                    dev_lab.grid(column=6, row=14, rowspan=5, padx=(60, 0))
-
-                    img2 = Image.open(OSM_IMG)
-                    resiz_osm = img2.resize((200, 205), Image.LANCZOS)
-                    osm_logo = ImageTk.PhotoImage(resiz_osm)
-                    osm_lab = Label(self._main_fr, image=osm_logo, bg=IVORY)
-                    osm_lab.grid(column=4, row=14, rowspan=5,
-                                 columnspan=2, padx=(100, 0))
-                    self._main_fr.img_list.append(osm_logo)
+                    dev_lab.grid(column=6, row=14, rowspan=5)
 
                     web_url = Label(
                         self._main_fr, text="Click here to visit our website!",
                         font=FONT_XL, bg=IVORY, fg=OSM_GRN)
-                    web_url.grid(column=5, row=19, columnspan=2, padx=(0, 30))
+                    web_url.grid(column=6, row=19, columnspan=2, padx=(0, 30))
                     web_url.bind(
                         "<Button-1>",
                         lambda e: open_url("https://www.devtank.co.uk"))
@@ -358,6 +347,14 @@ class config_gui_window_t(Tk):
                     emc_lab = Label(banner_fr, image=emc_img, bg=IVORY)
                     emc_lab.grid(column=0, row=0, padx=20)
                     self._main_fr.img_list.append(emc_img)
+
+                    img_gr = Image.open(GRPH_BG)
+                    gra_logo = ImageTk.PhotoImage(img_gr)
+                    self._adv_fr.img_list = []
+                    self._adv_fr.img_list.append(gra_logo)
+                    self._gra_lab = Label(
+                        self._adv_fr, image=gra_logo, bg=IVORY)
+                    self._gra_lab.place(x=0, y=0)
 
                     self._terminal = Text(
                         self._adv_fr, bg=BLACK, fg=LIME_GRN,
@@ -379,9 +376,6 @@ class config_gui_window_t(Tk):
                                             bg=IVORY, fg=BLACK, font=FONT,
                                             activebackground="green", activeforeground=IVORY)
                     man_config_btn.pack()
-                    self._confirmed_cmd = Label(self._adv_fr, text="")
-                    self._confirmed_cmd.pack()
-                    self._confirmed_cmd.configure(bg=IVORY)
                     self._open_lora_config(self._main_fr)
 
                     self.modbus_opened = False
@@ -429,7 +423,7 @@ class config_gui_window_t(Tk):
             self._main_modbus_w()
         elif slction == '.!notebook.!frame5' and self._dbg_open == False:
             self._dbg_open = True
-            self._thread_debug(self._debug_fr)
+            self._thread_debug()
         elif slction == '.!notebook.!frame2' and self.modbus_opened == True:
             self.modbus_opened = False
             self._fw_label.configure(text="")
@@ -732,11 +726,11 @@ class config_gui_window_t(Tk):
             self.ios_page.destroy()
             self._open_ios_w(meas)
 
-    def _thread_debug(self, frame):
-        self._open_debug_w(frame)
+    def _thread_debug(self):
+        self._open_debug_w(self._debug_fr)
         log_func(f"User switched to tab 'Debug Mode'.")
         T1 = THREAD(
-            target=lambda: self._load_debug_meas(frame)
+            target=lambda: self._load_debug_meas(self._debug_fr)
         )
         T1.daemon = True
         T1.start()
@@ -746,25 +740,37 @@ class config_gui_window_t(Tk):
             log_func("_thread_debug : thread 1 complete")
 
     def _open_debug_w(self, frame):
+        l_img = Image.open(LEAF)
+        leaf_logo = ImageTk.PhotoImage(l_img)
+        self._debug_fr.img_list = []
+        self._debug_fr.img_list.append(leaf_logo)
+        self._leaf_lab = Label(
+            self._debug_fr, image=leaf_logo, bg=IVORY)
+        self._leaf_lab.grid(column=0, row=0, columnspan=3)
+
         debug_btn = Button(frame,
                            text="Activate/Disable Debug Mode",
                            command=lambda: self._dev.do_debug("debug_mode"),
                            bg=IVORY, fg=BLACK, font=FONT,
                            activebackground="green", activeforeground=IVORY)
-        debug_btn.grid(column=1, row=0, pady=(50, 0))
+        debug_btn.grid(column=3, row=1, padx=((200, 50)))
+
         self._dbg_terml = Text(frame,
                                height=30, width=80,
                                bg=BLACK, fg=LIME_GRN,
                                borderwidth=10, relief="sunken")
-        self._dbg_terml.grid(column=0, row=1, columnspan=3)
+        self._dbg_terml.grid(column=2, row=2, columnspan=3,
+                             padx=((200, 50)))
         self._dbg_terml.configure(state='disabled')
 
-        self._debug_first_fr = Frame(frame, bg=IVORY, pady=40)
-        self._debug_first_fr.grid(column=4, columnspan=3, row=0, rowspan=30)
+        self._debug_first_fr = Frame(frame, bg="green", borderwidth=8,
+                                     relief="ridge")
+        self._debug_first_fr.grid(column=6, row=1,
+                                  rowspan=30)
 
         self._dbg_canv = Canvas(
-            self._debug_first_fr, bg=IVORY)
-        self._dbg_canv.grid(column=0, row=0, padx=(200, 0))
+            self._debug_first_fr)
+        self._dbg_canv.grid(column=0, row=0)
 
     def _load_debug_meas(self, frame):
         hdrs = [('Measurement', 'Value')]
@@ -791,7 +797,9 @@ class config_gui_window_t(Tk):
                                     font=('Arial', 14, 'bold'))
                     debug_e.grid(row=i, column=j)
                     debug_e.insert(END, hdrs[i][j])
-                    debug_e.configure(state='readonly')
+                    debug_e.configure(state='disabled',
+                                      disabledbackground=IVORY,
+                                      disabledforeground=BLACK)
                     newrow.append(debug_e)
                 self._deb_entries.append(newrow)
         self._dbg_canv.create_window(
@@ -827,7 +835,7 @@ class config_gui_window_t(Tk):
                             val_to_change.delete(0, END)
                             val_to_change.insert(0, int(dbg_val))
                             val_to_change.configure(
-                                state='readonly')
+                                state='disabled')
                     self._dbg_terml.configure(state='normal')
                     self._dbg_terml.insert('1.0', d + "\n")
                     self._dbg_terml.configure(state='disabled')
@@ -1258,7 +1266,6 @@ class config_gui_window_t(Tk):
         cmd = cmd.get()
         self._dev.do_debug(cmd)
         newline = self._dev.imp_readlines()
-        self._confirmed_cmd.config(text="Command sent")
         self._write_terminal_cmd(newline, self._terminal)
 
     def _pop_lora_entry(self):
@@ -1282,8 +1289,7 @@ class config_gui_window_t(Tk):
 
     def _open_lora_config(self, frame):
         img = Image.open(R_LOGO)
-        resize = img.resize((20, 25), Image.LANCZOS)
-        icon = ImageTk.PhotoImage(resize)
+        icon = ImageTk.PhotoImage(img)
         self._conn_fr.img_list.append(icon)
         lora_c_label = Label(frame, text="LoRaWAN Configuration",
                              bg=IVORY, font=FONT_L)
@@ -1492,19 +1498,21 @@ class config_gui_window_t(Tk):
                 with open('./yaml_files/modbus_data.yaml', 'a') as f:
                     yaml.dump(write_dev_to_yaml, f)
 
-        img = Image.open(GAUGE)
-        img2 = Image.open(SENSOR)
-        resiz_gaug = img.resize((255, 205), Image.LANCZOS)
-        resiz_env = img2.resize((200, 205), Image.LANCZOS)
-        gaug_logo = ImageTk.PhotoImage(resiz_gaug)
-        env_logo = ImageTk.PhotoImage(resiz_env)
+        img = Image.open(PARAMS)
+        param_logo = ImageTk.PhotoImage(img)
         self._modb_fr.img_list = []
-        dev_lab = Label(self._modb_fr, image=gaug_logo, bg=IVORY)
-        dev_lab.grid(column=3, row=9, rowspan=5, padx=60)
-        osm_lab = Label(self._modb_fr, image=env_logo, bg=IVORY)
-        osm_lab.grid(column=5, row=9, rowspan=5)
-        self._modb_fr.img_list.append(gaug_logo)
-        self._modb_fr.img_list.append(env_logo)
+        dev_lab = Label(self._modb_fr, image=param_logo, bg=IVORY)
+        dev_lab.grid(column=3, row=9, rowspan=5, padx=20)
+        self._modb_fr.img_list.append(param_logo)
+
+        canv = Canvas(self._modb_fr)
+        canv.grid(column=0, row=15, columnspan=10, pady=70)
+
+        img_os = Image.open(OPEN_S)
+        os_logo = ImageTk.PhotoImage(img_os)
+        os_lab = Label(canv, image=os_logo, bg=IVORY)
+        os_lab.grid(column=0, row=0)
+        self._modb_fr.img_list.append(os_logo)
         root.update()
         self._load_headers(self._modb_fr, "mb", True)
 
