@@ -110,10 +110,10 @@ ICONS_T = "./osm_pictures/logos/icons-together.png"
 DVT_IMG = "./osm_pictures/logos/OSM+Powered.png"
 OSM_1 = "./osm_pictures/logos/lora-osm.png"
 R_LOGO = "./osm_pictures/logos/shuffle.png"
-GRPH_BG = "./osm_pictures/logos/graph_bg.png"
+GRPH_BG = "./osm_pictures/logos/graph.png"
 PARAMS = "./osm_pictures/logos/parameters.png"
 OPEN_S = "./osm_pictures/logos/opensource-nb.png"
-LEAF = "./osm_pictures/logos/Leaf.png"
+LEAF = "./osm_pictures/logos/leaf2.png"
 
 
 def log_func(msg):
