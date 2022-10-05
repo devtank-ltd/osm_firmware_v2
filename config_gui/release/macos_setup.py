@@ -5,7 +5,7 @@ Usage:
     python setup.py py2app
 """
 
-# MacOS dependances:
+# MacOS dependances for non-bundled package:
 # pip3 install pyserial pyyaml idle Pillow
 # brew install python-tk
 
@@ -13,10 +13,14 @@ Usage:
 # python3 macos_setup.py py2app
 # The app will be in dist/config_gui.app
 
+# Once bundled the .app has no dependances
+
 from setuptools import setup
+from distutils.dir_util import copy_tree
 
 APP = ['config_gui.py']
-DATA_FILES = ['osm_pictures',
+DATA_FILES = [
+ 'osm_pictures',
  'yaml_files',
  'config_database',
  'binding.py',
@@ -26,8 +30,14 @@ DATA_FILES = ['osm_pictures',
  'static_program.sh',
  'create_gui_exe.sh',
  'create_static_stm.sh',
- 'static_program.sh']
-OPTIONS = {'iconfile': 'osm_pictures/logos/macos-osm.icns'}
+ 'static_program.sh',
+]
+OPTIONS = {
+    'iconfile': 'osm_pictures/logos/macos-osm.icns',
+    'plist':    {'NSRequiresAquaSystemAppearance': False}, # Dark mode support
+    'includes': ['PIL','binding','crccheck.crc','csv','datetime','idlelib.tooltip','imp','io','json','logging','modbus_db','modbus_funcs','os','platform','random','re','serial','serial.tools.list_ports','setuptools','signal','sqlite3','stat','string','subprocess','sys','threading','time','tkinter','tkinter.filedialog','tkinter.messagebox','tkinter.ttk','traceback','webbrowser','yaml'],
+    'packages': ['tkinter'],
+}
 
 setup(
     app=APP,
@@ -35,3 +45,4 @@ setup(
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
 )
+
