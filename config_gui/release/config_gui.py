@@ -931,8 +931,6 @@ class config_gui_window_t(Tk):
         self._load_measurements(window, idy, tablist)
 
     def _load_measurements(self, window, idy, tablist):
-        Grid.rowconfigure(root, 0, weight=1)
-        Grid.columnconfigure(root, 0, weight=1)
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
         if idy == "mb":
@@ -940,13 +938,13 @@ class config_gui_window_t(Tk):
                 self._main_frame, bg=IVORY, width=720, height=240)
             self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(
-                column=3, row=0, rowspan=9, padx=30, columnspan=5, sticky=NSEW)
+                column=3, row=0, rowspan=9, padx=30, columnspan=5)
         else:
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY, width=625, height=400)
             self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(column=0, columnspan=3,
-                                  row=6, rowspan=9, sticky=NSEW)
+                                  row=6, rowspan=9)
         self._second_frame = Frame(self._my_canvas)
         self._second_frame.grid(column=0, row=0)
         sb = Scrollbar(self._main_frame, orient='vertical',
