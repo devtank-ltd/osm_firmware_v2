@@ -153,7 +153,7 @@ class config_gui_window_t(Tk):
         style.map("lefttab.TNotebook.Tab", background=[
             ("selected", IVORY)], foreground=[("selected", BLACK)])
         style.configure('lefttab.TNotebook.Tab', background="green",
-                        foreground=IVORY, font=FONT, width=25,
+                        foreground=IVORY, font=FONT, width=15,
                         padding=10)
         style.configure("Tab", focuscolor=style.configure(".")["background"])
         self._notebook = Notebook(self, style='lefttab.TNotebook')
@@ -304,9 +304,9 @@ class config_gui_window_t(Tk):
                         self._notebook.add(self._conn_fr, text="Connect",)
                         self._notebook.add(self._main_fr, text="Home Page")
                         self._notebook.add(
-                            self._adv_fr, text='Advanced Configuration')
+                            self._adv_fr, text='Advanced Config')
                         self._notebook.add(
-                            self._modb_fr, text="Modbus Configuration")
+                            self._modb_fr, text="Modbus Config")
                         self._notebook.add(self._debug_fr, text="Debug Mode")
                     self._notebook.select(1)
                     self._sensor_name = Label(self._main_fr, text="",
@@ -368,8 +368,7 @@ class config_gui_window_t(Tk):
                     cmd.insert(0, 'Enter a command and hit return to send.')
                     cmd.bind("<Return>", lambda e: self._enter_cmd(cmd))
                     cmd.bind("<Button-1>",
-                             lambda event:  self._clear_box(event,
-                                                            self._confirmed_cmd, cmd))
+                             lambda event:  self._clear_box(event, cmd))
 
                     man_config_btn = Button(self._adv_fr, text="List of Commands",
                                             command=self._manual_config,
@@ -396,8 +395,9 @@ class config_gui_window_t(Tk):
 
     def _get_interval_mins(self):
         get_mins = self._dev.do_cmd_multi("interval_mins")
-        self._interval_min = get_mins[0].split()[4]
-        return self._interval_min
+        if get_mins:
+            self._interval_min = get_mins[0].split()[4]
+            return self._interval_min
 
     def _pop_sensor_name(self):
         serial_num = self._dev.do_cmd_multi("serial_num")
@@ -429,9 +429,8 @@ class config_gui_window_t(Tk):
             self._fw_label.configure(text="")
             self._load_headers(frame, "rif", True)
 
-    def _clear_box(self, event, label, entry):
+    def _clear_box(self, event, entry):
         entry.delete(0, END)
-        label.config(text="")
         return
 
     def _visit_widgets(self, frame, cmd):
@@ -814,7 +813,7 @@ class config_gui_window_t(Tk):
         self._dbg_canv.bind('<Configure>', lambda e: self._dbg_canv.configure(
             scrollregion=self._dbg_canv.bbox("all")))
 
-        h = self._dbg_sec_fr.winfo_height()
+        h = self._dbg_terml.winfo_height()
         w = self._dbg_sec_fr.winfo_width()
         self._dbg_canv.configure(height=h, width=w)
         self._reload_debug_lines()
@@ -927,7 +926,7 @@ class config_gui_window_t(Tk):
                 "<Return>", lambda e: self._change_uplink(window,
                                                           entry_change_uplink))
             entry_change_uplink.bind(
-                "<Button-1>", lambda event: self._clear_box(event, self._confirmed_cmd,
+                "<Button-1>", lambda event: self._clear_box(event,
                                                             entry_change_uplink))
             entry_change_uplink.configure(validate="key", validatecommand=(
                 window.register(self._handle_input), '%P', '%d'))
@@ -1281,9 +1280,12 @@ class config_gui_window_t(Tk):
 
     def _get_lora_status(self):
         status = self._dev.do_cmd_multi("lora_conn")
-        conn = status[0].split()[0]
-        if conn == '1':
-            self._lora_status.configure(text="Connected", fg="green")
+        if status:
+            conn = status[0].split()[0]
+            if conn == '1':
+                self._lora_status.configure(text="Connected", fg="green")
+            else:
+                self._lora_status.configure(text="Disconnected", fg="red")
         else:
             self._lora_status.configure(text="Disconnected", fg="red")
 
@@ -1299,7 +1301,7 @@ class config_gui_window_t(Tk):
                            bg=IVORY, font=FONT)
         lora_label.grid(column=4, row=7, sticky="E")
 
-        self._eui_entry = Entry(frame, width=40, font=FONT, bg=IVORY)
+        self._eui_entry = Entry(frame, font=FONT, bg=IVORY)
         self._eui_entry.grid(column=5, row=7, sticky="NSEW", columnspan=2)
 
         add_eui_btn = Button(frame, image=icon,
@@ -1311,7 +1313,7 @@ class config_gui_window_t(Tk):
                           bg=IVORY, font=FONT)
         app_label.grid(column=4, row=8, sticky="E", padx=(30, 0))
 
-        self._app_entry = Entry(frame, width=40, font=FONT, bg=IVORY)
+        self._app_entry = Entry(frame, font=FONT, bg=IVORY)
         self._app_entry.grid(column=5, row=8, sticky="NSEW", columnspan=2)
 
         add_app_btn = Button(frame, image=icon,
