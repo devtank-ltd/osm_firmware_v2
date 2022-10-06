@@ -586,14 +586,12 @@ class config_gui_window_t(Tk):
         uplink_chang.delete(0, END)
         uplink_chang.insert(0, int(min))
         # if user changes interval in mins for pulsecount or one wire
-        if meas_chang == 'CNT1' or meas_chang == 'CNT2' and widget_val != '0':
+        if meas_chang == 'CNT1' and widget_val != '0':
             self._dev.do_cmd("interval TMP2 0")
             self._update_meas_tab('TMP2')
         elif meas_chang == 'TMP2' and widget_val != '0':
             self._dev.do_cmd("interval CNT1 0")
-            self._dev.do_cmd("interval CNT2 0")
             self._update_meas_tab('CNT1')
-            self._update_meas_tab('CNT2')
 
     def _round_to_multiple(self, number, multiple):
         return multiple * round(number / multiple)
@@ -933,19 +931,22 @@ class config_gui_window_t(Tk):
         self._load_measurements(window, idy, tablist)
 
     def _load_measurements(self, window, idy, tablist):
+        Grid.rowconfigure(root, 0, weight=1)
+        Grid.columnconfigure(root, 0, weight=1)
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
         if idy == "mb":
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY, width=720, height=240)
-            self._my_canvas.grid(column=0, row=0)
+            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(
-                column=3, row=0, rowspan=9, padx=30, columnspan=5)
+                column=3, row=0, rowspan=9, padx=30, columnspan=5, sticky=NSEW)
         else:
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY, width=625, height=400)
-            self._my_canvas.grid(column=0, row=0)
-            self._main_frame.grid(column=0, columnspan=3, row=6, rowspan=9)
+            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
+            self._main_frame.grid(column=0, columnspan=3,
+                                  row=6, rowspan=9, sticky=NSEW)
         self._second_frame = Frame(self._my_canvas)
         self._second_frame.grid(column=0, row=0)
         sb = Scrollbar(self._main_frame, orient='vertical',
