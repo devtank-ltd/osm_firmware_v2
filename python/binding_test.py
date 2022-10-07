@@ -28,43 +28,43 @@ def output_normal(msg):
 
 # ---------------------------
 
-w1 = dev.w1.value
+w1 = dev.extract_val("w1 TMP2", "TMP2")
 threshold_check(w1, 17, 5, "degreeC", "OneWire Temp")
 #store_value("OneWire Temp", dev.w1.value)
 
-
-pm25, pm10 = dev.hpm.value
+pm10 = dev.extract_val("hpm", "PM10")
 threshold_check(pm10, 5, 5, "", "PM10")
+
+pm25 = dev.extract_val("hpm", "PM25")
 threshold_check(pm25, 7, 5, "", "PM25")
 
-
-cc = dev.cc.value / 10
+cc = dev.extract_val("cc", "Current Clamp")
 threshold_check(cc, 7, 1, "amps", "Current Clamp")
 
-
-lora = dev.lora_conn.value
+lora = dev.extract_val("lora_conn", "LoRaWan")
 test_check(lora, "loRaWAN connection established")
 
-PF = dev.PF.value
+PF = dev.get_modbus_val("PF")
 threshold_check(PF, 1, 0.2, "", "Power Factor")
 
-CVP1 = dev.cVP1.value / 100
-threshold_check(CVP1, 240, 10, "volts", "P1 Voltage")
+CVP1 = dev.get_modbus_val("cVP1")
+threshold_check(CVP1, 24000, 10, "volts", "P1 Voltage")
 
-CVP2 = dev.cVP2.value / 100
-threshold_check(CVP2, 240, 10, "volts", "P2 Voltage")
+CVP2 = dev.get_modbus_val("cVP2")
+threshold_check(CVP2, 24000, 10, "volts", "P2 Voltage")
 
-CVP3 = dev.cVP3.value / 100
-threshold_check(CVP3, 240, 10, "volts", "P3 Voltage")
+CVP3 = dev.get_modbus_val("cVP3")
+threshold_check(CVP3, 24000, 10, "volts", "P3 Voltage")
 
-MAP1 = dev.mAP1.value
+MAP1 = dev.get_modbus_val("mAP1")
 threshold_check(MAP1, 3000, 200, "milliamps", "P1 milliamps")
 
-MAP2 = dev.mAP2.value
+MAP2 = dev.get_modbus_val("mAP2")
 threshold_check(MAP2, 3000, 200, "milliamps", "P2 milliamps")
 
-MAP3 = dev.mAP3.value
+MAP3 = dev.get_modbus_val("mAP3")
 threshold_check(MAP3, 3000, 200, "milliamps", "P3 milliamps")
 
-ImpEnergy = dev.ImEn.value
+ImpEnergy = dev.get_modbus_val("ImEn")
 threshold_check(ImpEnergy, 1000, 100, "", "Power consumption")
+
