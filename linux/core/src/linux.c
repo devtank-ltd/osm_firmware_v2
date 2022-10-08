@@ -651,10 +651,7 @@ bool platform_persist_commit(persist_storage_t* persist_data, persist_measuremen
 {
     FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "wb");
     if (!mem_file)
-    {
-        fclose(mem_file);
         return false;
-    }
     if (persist_data != &_linux_persist_mem.persist_data)
         memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(persist_storage_t));
     if (persist_measurements != &_linux_persist_mem.persist_measurements)
