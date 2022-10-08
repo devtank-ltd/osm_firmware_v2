@@ -3,8 +3,6 @@
 CC = gcc
 OBJCOPY = objcopy
 OBJDUMP = objdump
-SIZE = size
-NM = nm
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
@@ -91,10 +89,6 @@ clean:
 
 cppcheck:
 	cppcheck --enable=all --std=c11 --inline-suppr `find core -name "*.[ch]"` `find sensors -name "*.[ch]"`  -I core/include -I sensors/include
-
-size: $(WHOLE_IMG)
-	$(SIZE) $(BUILD_DIR)/*.elf
-	$(NM) -S --size-sort $(shell find $(BUILD_DIR) -name "*.o")
 
 
 test: default
