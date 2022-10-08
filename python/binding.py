@@ -1,4 +1,5 @@
 import serial
+import select
 import datetime
 import time
 import csv
@@ -183,6 +184,7 @@ class low_level_dev_t(object):
     def read(self):
         try:
             msg = self._serial.readline()
+            debug_print(f'<< "{msg}"')
         except UnicodeDecodeError:
             return None
         if msg == '':
@@ -192,7 +194,11 @@ class low_level_dev_t(object):
         # self._log_obj.recv(msg.strip("\n\r"))
         return msg
 
-    def readlines(self):
+    def readlines(self, timeout=1):
+        r = select.select([self], [], [], timeout)
+        if not r[0]:
+            debug_print("Lines timeout")
+            return []
         new_msg = self.read()
         msg = ""
         while new_msg != None:
@@ -470,12 +476,14 @@ class dev_t(dev_base_t):
     def get_value(self, cmd):
         cmd = self.do_cmd(cmd)
         if cmd is False:
+            debug_print("Trying get_value again...")
             time.sleep(4)
             cmd = self.do_cmd(cmd)
 
     def get_val(self, cmd:measurement_t):
         cmd.value = self.do_cmd(cmd.cmd)
         if cmd.value is False:
+            debug_print("Trying get_val again...")
             time.sleep(4)
             cmd.value = self.do_cmd(cmd.cmd)
 
@@ -484,6 +492,7 @@ class dev_t(dev_base_t):
             assert isinstance(cmd, measurement_t), "Commands should be of type measurement_t"
             cmd.value = self.do_cmd(cmd.cmd)
             if cmd.value is False:
+                debug_print("Trying get_vals again...")
                 time.sleep(4)
                 cmd.value = self.do_cmd(cmd.cmd)
 
