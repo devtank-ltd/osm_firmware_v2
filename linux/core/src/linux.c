@@ -18,6 +18,7 @@
 
 #include "platform.h"
 #include "linux.h"
+#include "log.h"
 
 
 #define LINUX_PTY_BUF_SIZ       64
@@ -722,4 +723,25 @@ uint32_t get_since_boot_ms(void)
 {
     int64_t t = (_linux_get_current_us() - _linux_boot_time_us) / 1000;
     return t;
+}
+
+
+void log_debug(uint32_t flag, const char * s, ...)
+{
+    if (!(flag & log_debug_mask))
+        return;
+
+    va_list ap;
+    va_start(ap, s);
+
+    char prefix[18];
+
+    snprintf(prefix, sizeof(prefix), "DEBUG:%010u:", (unsigned)get_since_boot_ms());
+
+    fprintf(stdout, prefix);
+    vfprintf(stdout, s, ap);
+    fprintf(stdout, "\n");
+    fflush(stdout);
+
+    va_end(ap);
 }
