@@ -170,7 +170,6 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
     {
         if (fwrite((char*)data, 1, size, stdout) != (size_t)size)
             exit(-1);
-        fflush(stdout);
     }
 }
 

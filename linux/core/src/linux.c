@@ -558,6 +558,10 @@ void* thread_proc(void* vargp)
 void platform_init(void)
 {
     _linux_boot_time_us = _linux_get_current_us();
+
+    if (setvbuf(stdout, NULL, _IOLBF, 1024) < 0)
+        fprintf(stderr, "ERROR : %s\n", strerror(errno));
+
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
@@ -741,7 +745,6 @@ void log_debug(uint32_t flag, const char * s, ...)
     fprintf(stdout, prefix);
     vfprintf(stdout, s, ap);
     fprintf(stdout, "\n");
-    fflush(stdout);
 
     va_end(ap);
 }
