@@ -101,6 +101,7 @@ class test_framework_t(object):
         prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
         poxtfix = test_logging_formatter_t.RESET
         print(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})' + poxtfix)
+        return passed
 
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
@@ -115,8 +116,9 @@ class test_framework_t(object):
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
 
-        self._threshold_check("Temp test", self._vosm_conn.temp.value, 20, 5)
-        return True
+        passed = True
+        passed &= self._threshold_check("Temp test", self._vosm_conn.temp.value, 20, 5)
+        return passed
 
     def _wait_for_line(self, stream, pattern, timeout=3):
         start = time.monotonic()
@@ -231,9 +233,10 @@ def main():
 
     args = get_args()
 
+    passed = False
     with test_framework_t(args.fake_osm) as tf:
-        tf.test()
-    return 0
+        passed = tf.test()
+    return 0 if passed else -1
 
 
 if __name__ == "__main__":
