@@ -159,12 +159,6 @@ bool uart_is_tx_empty(unsigned uart)
 }
 
 
-bool uart_single_out(unsigned uart, char c)
-{
-    printf("Unimplemented uart_single_out");
-    exit(-1);
-}
-
 static void _uart_blocking(unsigned uart, const char *data, int size)
 {
     if (log_async_log)
@@ -174,6 +168,13 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
     }
     else if (uart == CMD_UART && !fwrite((char*)data, 1, size, stdout))
         exit(-1);
+}
+
+
+bool uart_single_out(unsigned uart, char c)
+{
+    _uart_blocking(uart, &c, 1);
+    return true;
 }
 
 
