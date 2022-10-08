@@ -17,6 +17,7 @@ import i2c_server as i2c
 
 
 class test_logging_formatter_t(logging.Formatter):
+    GREEN       = "\033[32;20m"
     WHITE       = "\033[0m"
     GREY        = "\033[37;20m"
     YELLOW      = "\033[33;20m"
@@ -95,7 +96,9 @@ class test_framework_t(object):
             self._logger.debug(f'Invalid test argument {value} for "{desc}"')
             passed = False
         op = "=" if passed else "!="
-        self._logger.info(f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})')
+        prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
+        poxtfix = test_logging_formatter_t.RESET
+        print(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})' + poxtfix)
 
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
