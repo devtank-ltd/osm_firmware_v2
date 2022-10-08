@@ -514,7 +514,10 @@ void _linux_iterate(void)
                         break;
                     if (r == 1)
                     {
-                        linux_port_debug("%s << %c", fd_handler->name, c);
+                        if (isgraph(c))
+                            linux_port_debug("%s << %c (0x%02x)", fd_handler->name, c, c);
+                        else
+                            linux_port_debug("%s << [0x%02x]", fd_handler->name, c);
                         if (fd_handler->cb)
                             fd_handler->cb(&c, 1);
                     }
