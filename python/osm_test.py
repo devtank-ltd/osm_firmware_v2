@@ -45,8 +45,9 @@ class test_logging_formatter_t(logging.Formatter):
 
 class test_framework_t(object):
 
-    DEFAULT_DEBUG_PTY_PATH = "/tmp/osm/UART_DEBUG_slave"
-    DEFAULT_I2C_SCK_PATH = "/tmp/osm/i2c_socket"
+    DEFAULT_OSM_BASE = "/tmp/osm/"
+    DEFAULT_DEBUG_PTY_PATH = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
+    DEFAULT_I2C_SCK_PATH = DEFAULT_OSM_BASE + "i2c_socket"
     DEFAULT_VALGRIND       = "valgrind"
     DEFAULT_VALGRIND_FLAGS = "--leak-check=full"
 
@@ -156,7 +157,8 @@ class test_framework_t(object):
             os.unlink(self.DEFAULT_DEBUG_PTY_PATH)
         self._logger.info("Spawning virtual OSM.")
         command = self.DEFAULT_VALGRIND.split() + self.DEFAULT_VALGRIND_FLAGS.split() + path.split()
-        self._vosm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        debug_log = open(self.DEFAULT_OSM_BASE + "debug.log", "w")
+        self._vosm_proc = subprocess.Popen(command, stdout=debug_log, stderr=subprocess.PIPE)
         self._logger.debug("Opened virtual OSM.")
         pattern_str = "^==[0-9]+== Command: .*build/firmware.elf$"
         # pattern_str = "^DEBUG:[0-9]{10}:SYS:Version : \[[0-9]+\]-[0-9a-z]{7}-.*$"
