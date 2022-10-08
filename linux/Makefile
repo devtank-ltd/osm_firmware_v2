@@ -17,12 +17,14 @@ CFLAGS		+= -fstack-usage -Wstack-usage=500
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 BUILD_DIR := build
 
 INCLUDE_PATHS += -Icore/include -Isensors/include $(shell pkg-config --cflags json-c)
 
 LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
+LINK_FLAGS += -lgcov --coverage
 
 BUILD_DIR := build
 
@@ -95,9 +97,21 @@ size: $(WHOLE_IMG)
 	$(NM) -S --size-sort $(shell find $(BUILD_DIR) -name "*.o")
 
 
-test: $(BUILD_DIR)/firmware.elf
+test: default
 	mkdir -p /tmp/osm/
 	../python/osm_test.py
+
+
+coverage: default
+	lcov --zerocounters -d $(BUILD_DIR)/
+	lcov --capture --initial -d $(BUILD_DIR)/ --output-file $(BUILD_DIR)/coverage.info
+	mkdir -p /tmp/osm/
+	../python/osm_test.py
+	lcov --capture -d $(BUILD_DIR)/ --output-file $(BUILD_DIR)/coverage.info
+	mkdir -p $(BUILD_DIR)/coverage
+	cd $(BUILD_DIR)/coverage && genhtml ../coverage.info
+	sensible-browser $(BUILD_DIR)/coverage/index.html
+
 
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
