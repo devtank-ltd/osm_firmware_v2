@@ -11,6 +11,7 @@
 #include "measurements.h"
 #include "adcs.h"
 #include "platform.h"
+#include "linux.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32
@@ -73,7 +74,7 @@ bool sleep_for_ms(uint32_t ms)
     count = (ms * 1000) / (SLEEP_LSI_CLK_FREQ_KHZ * (1 << div_shift));
 turn_on_sleep:
     _sleep_before_sleep();
-    usleep(ms * 1000);
+    linux_usleep(ms * 1000);
     _sleep_on_wakeup();
     sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));
     return true;

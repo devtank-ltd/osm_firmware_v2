@@ -1,12 +1,13 @@
 #include <unistd.h>
 
 #include "timers.h"
+#include "linux.h"
 
 
 
 void timer_delay_us(uint16_t wait_us)
 {
-    usleep(wait_us);
+    linux_usleep(wait_us);
 }
 
 

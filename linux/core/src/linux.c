@@ -88,6 +88,9 @@ static bool             _linux_in_debug             = false;
 volatile bool           linux_threads_deinit        = false;
 static int64_t          _linux_boot_time_us         = 0;
 
+static pthread_cond_t  _sleep_cond  =  PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
+
 uint32_t                rcc_ahb_frequency;
 
 
@@ -128,6 +131,7 @@ void _linux_sig_handler(int signo)
     {
         printf("Caught signal, exiting gracefully.\n");
         _linux_running = false;
+        linux_awaken();
     }
     else if (signo == SIGUSR1)
     {
@@ -520,7 +524,10 @@ void _linux_iterate(void)
                         else
                             linux_port_debug("%s << [0x%02x]", fd_handler->name, c);
                         if (fd_handler->cb)
+                        {
                             fd_handler->cb(&c, 1);
+                            linux_awaken();
+                        }
                     }
                     break;
                 case LINUX_FD_TYPE_TIMER:
@@ -721,7 +728,7 @@ void platform_tight_loop(void)
     }
     int64_t delta_time = (now - last_call);
     if (delta_time < 1000)
-        usleep(1000 - delta_time);
+        linux_usleep(1000 - delta_time);
     last_call = now;
 }
 
@@ -750,4 +757,35 @@ void log_debug(uint32_t flag, const char * s, ...)
     fprintf(stdout, "\n");
 
     va_end(ap);
+}
+
+
+void linux_usleep(unsigned usecs)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    ts.tv_sec += usecs / 1000000;
+    ts.tv_nsec = (usecs % 1000000) * 1000;
+
+    if (!pthread_mutex_lock(&_sleep_mutex))
+    {
+        int rc = pthread_cond_timedwait(&_sleep_cond, &_sleep_mutex, &ts);
+        if (!rc || rc == ETIMEDOUT)
+            pthread_mutex_unlock(&_sleep_mutex);
+    }
+    else printf("FAILED to sleep.\n");
+}
+
+
+void linux_awaken(void)
+{
+    printf("Kicking sleeping Linux\n");
+    if (!pthread_mutex_lock(&_sleep_mutex))
+    {
+        pthread_cond_broadcast(&_sleep_cond);
+        pthread_mutex_unlock(&_sleep_mutex);
+    }
+    else printf("Sleep Linux not kicked.\n");
 }
