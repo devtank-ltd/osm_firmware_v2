@@ -107,5 +107,8 @@ coverage: default
 	sensible-browser $(BUILD_DIR)/coverage/index.html
 
 
+valgrind: default
+	valgrind --leak-check=full build/firmware.elf
+
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
