@@ -562,6 +562,9 @@ void platform_init(void)
     if (setvbuf(stdout, NULL, _IOLBF, 1024) < 0)
         fprintf(stderr, "ERROR : %s\n", strerror(errno));
 
+    if (getenv("DEBUG"))
+        _linux_in_debug = true;
+
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
