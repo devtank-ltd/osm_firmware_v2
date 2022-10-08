@@ -95,4 +95,9 @@ size: $(WHOLE_IMG)
 	$(NM) -S --size-sort $(shell find $(BUILD_DIR) -name "*.o")
 
 
+test: $(BUILD_DIR)/firmware.elf
+	mkdir -p /tmp/osm/
+	../python/osm_test.py
+
+
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
