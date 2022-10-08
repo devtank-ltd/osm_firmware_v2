@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import time
+import errno
 import subprocess
 import logging
 import signal
@@ -165,10 +166,22 @@ class test_framework_t(object):
         self._logger.info("Connecting to the virtual OSM.")
         if not self._wait_for_file(path, timeout):
             return False
+        try:
+            self._raw_connect_osm(path)
+        except OSError as e:
+            if e.errno == errno.EIO:
+                self._logger.debug("IO error openning, trying again (timing?).")
+                time.sleep(0.1)
+                self._raw_connect_osm(path)
+                return True
+            self._logger.error(e)
+            return False
+        return True
+
+    def _raw_connect_osm(self, path):
         self._vosm_conn = binding.dev_t(path)
         binding.set_debug_print(self._logger.debug)
         self._logger.debug("Connected to the virtual OSM.")
-        return True
 
     def _disconnect_osm(self):
         if self._vosm_conn is None:
