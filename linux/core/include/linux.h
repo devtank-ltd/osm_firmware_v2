@@ -22,3 +22,5 @@ void sys_tick_handler(void) __attribute__((weak));
 
 void linux_adc_generate(void);
 bool linux_kick_adc_gen(void);
+
+void linux_port_debug(char * fmt, ...);

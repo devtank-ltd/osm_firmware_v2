@@ -9,6 +9,7 @@
 #include "i2c.h"
 
 #include "log.h"
+#include "linux.h"
 
 
 #define I2C_SERVER_LOC                          "/tmp/osm/i2c_socket"
@@ -103,6 +104,7 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
         log_error("Failed to send the correct size I2C for the message. (%d != %d)", send_size, buf_siz);
         return false;
     }
+    linux_port_debug("I2C sent %d", send_size);
 
     int recv_siz = recv(_socketfd, buf, I2C_BUF_SIZ-1, 0);
     if (recv_siz < 0)
@@ -110,6 +112,9 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
         log_error("Failed to receive.");
         return false;
     }
+
+    linux_port_debug("I2C received %d", recv_siz);
+
     buf[recv_siz] = 0;
     char* pos = buf;
     char* npos;

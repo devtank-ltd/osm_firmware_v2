@@ -116,6 +116,7 @@ void linux_port_debug(char * fmt, ...)
     va_list va;
     va_start(va, fmt);
     vprintf(fmt, va);
+    printf("\n");
     va_end(va);
 }
 
@@ -513,7 +514,7 @@ void _linux_iterate(void)
                         break;
                     if (r == 1)
                     {
-                        linux_port_debug("%s << %c\n", fd_handler->name, c);
+                        linux_port_debug("%s << %c", fd_handler->name, c);
                         if (fd_handler->cb)
                             fd_handler->cb(&c, 1);
                     }
