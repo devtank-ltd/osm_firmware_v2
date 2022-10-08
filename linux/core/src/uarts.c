@@ -165,17 +165,26 @@ bool uart_single_out(unsigned uart, char c)
     exit(-1);
 }
 
+static void _uart_blocking(unsigned uart, const char *data, int size)
+{
+    if (log_async_log)
+    {
+        if (!linux_write_pty(uart, data, size))
+            linux_port_debug("Write failed.");
+    }
+    else if (uart == CMD_UART && !fwrite((char*)data, 1, size, stdout))
+        exit(-1);
+}
+
 
 void uart_blocking(unsigned uart, const char *data, int size)
 {
-    if (!fwrite((char*)data, 1, size, stdout))
-        exit(-1);
+    _uart_blocking(uart, data, size);
 }
 
 
 bool uart_dma_out(unsigned uart, char *data, int size)
 {
-    if (!linux_write_pty(uart, data, size))
-        uart_blocking(uart, data, size);
+    _uart_blocking(uart, data, size);
     return true;
 }

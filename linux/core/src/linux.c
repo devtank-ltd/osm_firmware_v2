@@ -447,7 +447,7 @@ static void _linux_exit(int err)
 }
 
 
-bool linux_write_pty(unsigned index, char *data, int size)
+bool linux_write_pty(unsigned index, const char *data, int size)
 {
     return (write(fd_list[index].pty.master_fd, data, size) != 0);
 }
