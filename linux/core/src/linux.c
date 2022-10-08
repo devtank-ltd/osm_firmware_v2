@@ -127,6 +127,10 @@ void _linux_sig_handler(int signo)
         printf("Caught signal, exiting gracefully.\n");
         _linux_running = false;
     }
+    else if (signo == SIGUSR1)
+    {
+        _linux_in_debug = !_linux_in_debug;
+    }
 }
 
 
@@ -552,6 +556,7 @@ void platform_init(void)
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
     signal(SIGINT, _linux_sig_handler);
+    signal(SIGUSR1, _linux_sig_handler);
     _linux_setup_fd_handlers();
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
