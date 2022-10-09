@@ -107,6 +107,10 @@ coverage: default
 	sensible-browser $(BUILD_DIR)/coverage/index.html
 
 
+soak: default
+	loop=0; while [ "$$?" = "0" ]; do loop=$$(($$loop + 1));make test; done; date; echo "Loops:" $$loop
+
+
 valgrind: default
 	valgrind --leak-check=full build/firmware.elf
 
