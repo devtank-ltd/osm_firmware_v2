@@ -22,7 +22,8 @@ BUILD_DIR := build
 INCLUDE_PATHS += -Icore/include -Isensors/include $(shell pkg-config --cflags json-c)
 
 LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
-LINK_FLAGS += -lgcov --coverage
+LINK_FLAGS += -lgcov --coverage -pthread -lutil
+
 
 BUILD_DIR := build
 
