@@ -52,7 +52,7 @@ class test_framework_t(object):
     DEFAULT_VALGRIND_FLAGS = "--leak-check=full"
 
     def __init__(self, osm_path):
-        level = logging.DEBUG
+        level = logging.DEBUG if "DEBUG" in os.environ else logging.INFO
         self._logger        = logging.getLogger(__name__)
         self._logger.setLevel(level)
         streamhandler       = logging.StreamHandler()
@@ -184,7 +184,8 @@ class test_framework_t(object):
 
     def _raw_connect_osm(self, path):
         self._vosm_conn = binding.dev_t(path)
-        binding.set_debug_print(self._logger.debug)
+        if "DEBUG" in os.environ:
+            binding.set_debug_print(self._logger.debug)
         self._logger.debug("Connected to the virtual OSM.")
 
     def _disconnect_osm(self):

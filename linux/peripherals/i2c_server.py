@@ -104,7 +104,7 @@ class i2c_server_t(object):
             self.info    = logger.info
             self.error   = logger.error
             self.warning = logger.warning
-            self.debug   = logger.debug
+            self.debug   = logger.debug if os.environ.get("DEBUG", None) else lambda *x : x
 
         self._devices = dict(devs)
 
@@ -113,7 +113,7 @@ class i2c_server_t(object):
     def _new_client_callback(self, sock, __mask):
         conn, addr = sock.accept()
         client = i2c_client_t(conn)
-        self.info("New client connection FD:%u" % client.fileno())
+        self.debug("New client connection FD:%u" % client.fileno())
 
         self._clients[client.fileno()] = client
 
