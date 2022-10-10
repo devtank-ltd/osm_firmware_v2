@@ -367,7 +367,7 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
 
-    memset(&osm_mem.config, 0, sizeof(osm_mem));
+    memset(&osm_mem, 0, sizeof(osm_mem));
 
     osm_mem.config.version = json_object_get_int(obj);
     if (osm_mem.config.version != PERSIST_VERSION)
