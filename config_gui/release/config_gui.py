@@ -33,8 +33,8 @@ CMDS = ["ios ------ Print all IOs.",
         "sio ------ Enable Special IO.",
         "count ------ Counts of controls.",
         "version ------ Print version.",
-        "lora ------ Send lora message",
-        "lora_config ------ Set lora config",
+        "comms ------ Send lora message",
+        "comms_config ------ Set lora config",
         "interval ------ Set the interval",
         "samplecount ------ Set the samplecount",
         "debug ------ Set hex debug mask",
@@ -58,7 +58,7 @@ CMDS = ["ios ------ Print all IOs.",
         "temp ------ Get the temperature",
         "humi ------ Get the humidity",
         "dew ------ Get the dew temperature",
-        "lora_conn ------ LoRa connected",
+        "comms_conn ------ LoRa connected",
         "wipe ------ Factory Reset",
         "interval_min ------ Get/Set interval minutes",
         "bat ------ Get battery level.",
@@ -1267,18 +1267,18 @@ class config_gui_window_t(Tk):
         self._write_terminal_cmd(newline, self._terminal)
 
     def _pop_lora_entry(self):
-        dev_eui = self._dev.do_cmd_multi("lora_config dev-eui")
+        dev_eui = self._dev.do_cmd_multi("comms_config dev-eui")
         if dev_eui:
             eui_op = dev_eui[0].split()[2]
             self._eui_entry.insert(0, eui_op)
 
-        app_key = self._dev.do_cmd_multi("lora_config app-key")
+        app_key = self._dev.do_cmd_multi("comms_config app-key")
         if app_key:
             app_op = app_key[0].split()[2]
             self._app_entry.insert(0, app_op)
 
     def _get_lora_status(self):
-        status = self._dev.do_cmd_multi("lora_conn")
+        status = self._dev.do_cmd_multi("comms_conn")
         if status:
             conn = status[0].split()[0]
             if conn == '1':
@@ -1350,8 +1350,8 @@ class config_gui_window_t(Tk):
         dev_eui = self._eui_entry.get()
         app_key = self._app_entry.get()
         if len(dev_eui) == 16 and len(app_key) == 32:
-            dev_output = self._dev.do_cmd(f"lora_config dev-eui {dev_eui}")
-            app_output = self._dev.do_cmd(f"lora_config app-key {app_key}")
+            dev_output = self._dev.do_cmd(f"comms_config dev-eui {dev_eui}")
+            app_output = self._dev.do_cmd(f"comms_config app-key {app_key}")
             self._lora_confirm.configure(text="Configuration sent.")
         else:
             self._lora_confirm.configure(
