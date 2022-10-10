@@ -202,7 +202,7 @@ void debug_mode(void)
     _debug_mode_init();
 
     uint32_t prev_now = 0;
-    while(_debug_mode_enabled || !_debug_mode_init_get_toggle) /* Do extra loop if waiting to collect sensors so not to confuse when rejoining measurements.*/
+    while(platform_running() && (_debug_mode_enabled || !_debug_mode_init_get_toggle)) /* Do extra loop if waiting to collect sensors so not to confuse when rejoining measurements.*/
     {
         while(since_boot_delta(get_since_boot_ms(), prev_now) < 1000)
         {
