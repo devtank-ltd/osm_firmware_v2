@@ -4,26 +4,14 @@
 #include <inttypes.h>
 
 #include "config.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "base_types.h"
 
 #include "measurements_mem.h"
 
 #define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)15
-#define MEASUREMENTS_HEX_ARRAY_SIZE            ((256-LW_HEADER_SIZE-LW_TAIL_SIZE)/2 - 1)   /* Hex is double, and LoRaWAN chip only takes 256 bytes at one time.*/
-
-_Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
-
 
 extern uint32_t transmit_interval;
-
-
-typedef enum
-{
-    MEASUREMENTS_SENSOR_STATE_SUCCESS,
-    MEASUREMENTS_SENSOR_STATE_BUSY,
-    MEASUREMENTS_SENSOR_STATE_ERROR,
-} measurements_sensor_state_t;
 
 
 typedef enum
@@ -32,14 +20,6 @@ typedef enum
     MEASUREMENTS_POWER_MODE_BATTERY,
     MEASUREMENTS_POWER_MODE_PLUGGED,
 } measurements_power_mode_t;
-
-
-typedef union
-{
-    int64_t v_i64;
-    int32_t v_f32;
-    char*   v_str;
-} measurements_reading_t;
 
 
 typedef enum

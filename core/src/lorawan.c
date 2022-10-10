@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -12,7 +13,7 @@
 #include "uart_rings.h"
 #include "uarts.h"
 #include "config.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "log.h"
 #include "cmd.h"
 #include "measurements.h"
@@ -20,12 +21,23 @@
 #include "common.h"
 #include "timers.h"
 #include "update.h"
+#include "pinmap.h"
+
+#define LW_HEADER_SIZE                      17
+#define LW_TAIL_SIZE                        2
+
+#define LW_PAYLOAD_MAX_DEFAULT              242
+
+
+_Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < LW_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
 
+static bool                 _persist_data_lw_valid = false;
+
 #define LW_BUFFER_SIZE                  UART_1_OUT_BUF_SIZE
 #define LW_CONFIG_TIMEOUT_S             30
-#define LW_RESET_GPIO_DEFAULT_MS        10
+#define comms_reset_GPIO_DEFAULT_MS        10
 #define LW_SLOW_RESET_TIMEOUT_MINS      15
 #define LW_MAX_RESEND                   5
 #define LW_DELAY_MS                     2
@@ -196,18 +208,16 @@ typedef struct
 static lw_state_machine_t   _lw_state_machine                   = {.state=LW_STATE_OFF, .init_step=0, .last_message_time=0, .resend_count=0, .reset_count=0};
 static port_n_pins_t        _lw_reset_gpio                      = { GPIOC, GPIO8 };
 static char                 _lw_out_buffer[LW_BUFFER_SIZE]      = {0};
-static char                 _lw_dev_eui[LW_DEV_EUI_LEN + 1];
-static char                 _lw_app_key[LW_APP_KEY_LEN + 1];
 static uint8_t              _lw_port                            = 0;
 static uint32_t             _lw_chip_off_time                   = 0;
-static uint32_t             _lw_reset_timeout                   = LW_RESET_GPIO_DEFAULT_MS;
+static uint32_t             _lw_reset_timeout                   = comms_reset_GPIO_DEFAULT_MS;
 static lw_backup_msg_t      _lw_backup_message                  = {.backup_type=LW_BKUP_MSG_BLANK, .hex={.len=0, .arr={0}}};
 static error_code_t         _lw_error_code                      = {0, false};
 static char                 _lw_cmd_ascii[CMD_LINELEN]          = "";
 static uint16_t             _next_fw_chunk_id                   = 0;
 
 
-uint16_t                    lw_packet_max_size                  = LW_PAYLOAD_MAX_DEFAULT;
+static uint16_t             _lw_packet_max_size                  = LW_PAYLOAD_MAX_DEFAULT;
 
 
 static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
@@ -221,6 +231,12 @@ static lw_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
                                      "Dev EUI goes here",
                                      "App EUI goes here",
                                      "App Key goes here"};
+
+
+uint16_t comms_get_mtu(void)
+{
+    return _lw_packet_max_size;
+}
 
 
 static void _lw_chip_off(void)
@@ -263,7 +279,7 @@ static void _lw_write(char* fmt, ...)
     va_start(args, fmt);
     vsnprintf(_lw_out_buffer, LW_BUFFER_SIZE, fmt, args);
     va_end(args);
-    lw_debug("<< %s", _lw_out_buffer);
+    comms_debug("<< %s", _lw_out_buffer);
     size_t len = strlen(_lw_out_buffer);
     _lw_out_buffer[len] = '\r';
     _lw_out_buffer[len+1] = '\n';
@@ -293,17 +309,33 @@ static void _lw_reset_gpio_init(void)
 }
 
 
+static lw_config_t* _lw_get_config(void)
+{
+    comms_config_t* comms_config = persist_get_comms_config();
+    if (comms_config->type != COMMS_TYPE_LW)
+    {
+        comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
+        return NULL;
+    }
+    return (lw_config_t*)(comms_config->setup);
+}
+
+
 static bool _lw_load_config(void)
 {
-
-    if (!persist_get_lw_dev_eui(_lw_dev_eui) || !persist_get_lw_app_key(_lw_app_key))
+    if (_persist_data_lw_valid)
     {
         log_error("No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%s", _lw_dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%s", _lw_dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%s", _lw_app_key);
+
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return false;
+
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(lw_msg_buf_t), "at+set_config=lora:dev_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(lw_msg_buf_t), "at+set_config=lora:app_eui:%."STR(LW_APP_KEY_LEN)"s", config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(lw_msg_buf_t), "at+set_config=lora:app_key:%."STR(LW_APP_KEY_LEN)"s", config->app_key);
     return true;
 }
 
@@ -312,11 +344,11 @@ static void _lw_chip_init(void)
 {
     if (_lw_state_machine.state != LW_STATE_OFF)
     {
-        lw_debug("Chip already on, restarting chip.");
+        comms_debug("Chip already on, restarting chip.");
         _lw_chip_off();
-        timer_delay_us_64(LW_RESET_GPIO_DEFAULT_MS * 1000);
+        timer_delay_us_64(comms_reset_GPIO_DEFAULT_MS * 1000);
     }
-    lw_debug("Initialising LoRaWAN chip.");
+    comms_debug("Initialising LoRaWAN chip.");
     _lw_chip_on();
 }
 
@@ -326,13 +358,13 @@ static void _lw_set_confirmed(bool confirmed)
     if (confirmed)
     {
         _lw_state_machine.state = LW_STATE_WAIT_CONF_OK;
-        lw_debug("Setting to confirmed.");
+        comms_debug("Setting to confirmed.");
         _lw_write("at+set_config=lora:confirm:1");
     }
     else
     {
         _lw_state_machine.state = LW_STATE_WAIT_UCONF_OK;
-        lw_debug("Setting to unconfirmed.");
+        comms_debug("Setting to unconfirmed.");
         _lw_write("at+set_config=lora:confirm:0");
     }
 }
@@ -350,17 +382,17 @@ static void _lw_soft_reset(void)
 }
 
 
-bool lw_send_ready(void)
+bool comms_send_ready(void)
 {
     return _lw_state_machine.state == LW_STATE_IDLE;
 }
 
 
-bool lw_send_str(char* str)
+bool comms_send_str(char* str)
 {
-    if (!lw_send_ready())
+    if (!comms_send_ready())
     {
-        lw_debug("Cannot send '%s' as chip is not in IDLE state.", str);
+        comms_debug("Cannot send '%s' as chip is not in IDLE state.", str);
         return false;
     }
     _lw_state_machine.state = LW_STATE_WAIT_OK;
@@ -381,26 +413,26 @@ static void _lw_retry_write(void)
 {
     if (_lw_state_machine.resend_count >= LW_MAX_RESEND)
     {
-        lw_debug("Failed to successfully resend (%u times), resetting chip.", LW_MAX_RESEND);
+        comms_debug("Failed to successfully resend (%u times), resetting chip.", LW_MAX_RESEND);
         _lw_state_machine.resend_count = 0;
-        lw_reset();
-        on_lw_sent_ack(false);
+        comms_reset();
+        on_comms_sent_ack(false);
         return;
     }
     _lw_state_machine.resend_count++;
-    lw_debug("Resending %"PRIu8"/%u", _lw_state_machine.resend_count, LW_MAX_RESEND);
+    comms_debug("Resending %"PRIu8"/%u", _lw_state_machine.resend_count, LW_MAX_RESEND);
     switch (_lw_backup_message.backup_type)
     {
         case LW_BKUP_MSG_STR:
             _lw_state_machine.state = LW_STATE_IDLE;
-            lw_send_str(_lw_backup_message.string);
+            comms_send_str(_lw_backup_message.string);
             break;
         case LW_BKUP_MSG_HEX:
             _lw_state_machine.state = LW_STATE_IDLE;
-            lw_send(_lw_backup_message.hex.arr, _lw_backup_message.hex.len);
+            comms_send(_lw_backup_message.hex.arr, _lw_backup_message.hex.len);
             break;
         default:
-            lw_debug("Broken backup, cant resend");
+            comms_debug("Broken backup, cant resend");
             return;
     }
 }
@@ -408,14 +440,42 @@ static void _lw_retry_write(void)
 
  void _lw_send_alive(void)
 {
-    lw_debug("Sending an 'is alive' packet.");
+    comms_debug("Sending an 'is alive' packet.");
     _lw_write("at+send=lora:%"PRIu8":", _lw_get_port());
     return;
 }
 
 
-void lw_init(void)
+void comms_init(void)
 {
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return;
+
+    _persist_data_lw_valid = true;
+
+    if (config->dev_eui[0] && config->app_key[0])
+    {
+        for(unsigned n = 0; n < LW_DEV_EUI_LEN; n++)
+        {
+            if (!isascii(config->dev_eui[n]))
+            {
+                _persist_data_lw_valid = false;
+                log_error("Persistent data lw dev not valid");
+                break;
+            }
+        }
+        for(unsigned n = 0; n < LW_APP_KEY_LEN; n++)
+        {
+            if (!isascii(config->app_key[n]))
+            {
+                _persist_data_lw_valid = false;
+                log_error("Persistent data lw app not valid");
+                break;
+            }
+        }
+    }
+
     _lw_reset_gpio_init();
     if (_lw_state_machine.state != LW_STATE_OFF)
     {
@@ -463,7 +523,7 @@ static unsigned _lw_handle_unsol_2_lw_cmd_ascii(char *p)
 }
 
 
-bool lw_is_recv_fw(void)
+bool comms_send_allowed(void)
 {
     // TODO: This function could probably be done better.
     return (_next_fw_chunk_id != 0);
@@ -506,7 +566,7 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
         case LW_ID_FW_START:
         {
             uint16_t count = (uint16_t)_lw_handle_unsol_consume(p, 4);
-            lw_debug("FW of %"PRIu16" chunks", count);
+            comms_debug("FW of %"PRIu16" chunks", count);
             _next_fw_chunk_id = 0;
             fw_ota_reset();
             break;
@@ -516,7 +576,7 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
             uint16_t chunk_id = (uint16_t)_lw_handle_unsol_consume(p, 4);
             p += 4;
             unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)incoming_pl->data);
-            lw_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
+            comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             if (_next_fw_chunk_id != chunk_id)
             {
                 log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _next_fw_chunk_id);
@@ -547,7 +607,7 @@ static void _lw_handle_unsol(lw_payload_t * incoming_pl)
         }
         default:
         {
-            lw_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
+            comms_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
             break;
         }
     }
@@ -655,25 +715,25 @@ static void _lw_send_error_code(void)
     {
         char err_msg[11] = "";
         snprintf(err_msg, 11, "%"PRIx16, _lw_error_code.code);
-        lw_debug("Sending error message '%s'", err_msg);
-        lw_send_str(err_msg);
+        comms_debug("Sending error message '%s'", err_msg);
+        comms_send_str(err_msg);
         _lw_error_code.valid = false;
     }
 }
 
 
-void lw_reset(void)
+void comms_reset(void)
 {
     if (_lw_state_machine.state == LW_STATE_OFF)
     {
-        lw_debug("Already resetting.");
+        comms_debug("Already resetting.");
         return;
     }
     _lw_chip_off();
     _lw_chip_off_time = get_since_boot_ms();
     if (++_lw_state_machine.reset_count > 2)
     {
-        lw_debug("Going into long reset mode (wait %"PRIi16" mins).", LW_SLOW_RESET_TIMEOUT_MINS);
+        comms_debug("Going into long reset mode (wait %"PRIi16" mins).", LW_SLOW_RESET_TIMEOUT_MINS);
         _lw_reset_timeout = LW_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
     }
     else
@@ -683,14 +743,14 @@ void lw_reset(void)
 }
 
 
-bool lw_reload_config(void)
+static bool _lw_reload_config(void)
 {
     if (!_lw_load_config())
     {
         return false;
     }
     _lw_state_machine.reset_count = 0;
-    lw_reset();
+    comms_reset();
     return true;
 }
 
@@ -706,62 +766,62 @@ static void _lw_handle_error(char* message)
     switch (err_no)
     {
         case LW_ERROR_TRANS_BUSY:
-            lw_debug("LoRa Transceiver is busy, retrying.");
+            comms_debug("LoRa Transceiver is busy, retrying.");
             _lw_retry_write();
             break;
         case LW_ERROR_PACKET_SIZE:
-            lw_debug("Packet size too large, reducing limit throwing data and resetting chip.");
-            lw_packet_max_size -= 2;
-            on_lw_sent_ack(false);
-            lw_reset();
+            comms_debug("Packet size too large, reducing limit throwing data and resetting chip.");
+            _lw_packet_max_size -= 2;
+            on_comms_sent_ack(false);
+            comms_reset();
             break;
         case LW_ERROR_TIMEOUT_RX1:
-            if (lw_get_connected())
+            if (comms_get_connected())
             {
-                lw_debug("Timed out waiting for packet in windox RX1.");
+                comms_debug("Timed out waiting for packet in windox RX1.");
                 _lw_retry_write();
             }
             else
             {
-                lw_debug("Send alive wasn't responded to.");
-                lw_reset();
+                comms_debug("Send alive wasn't responded to.");
+                comms_reset();
             }
             break;
         case LW_ERROR_TIMEOUT_RX2:
-            if (lw_get_connected())
+            if (comms_get_connected())
             {
-                lw_debug("Timed out waiting for packet in windox RX2.");
+                comms_debug("Timed out waiting for packet in windox RX2.");
                 _lw_retry_write();
             }
             else
             {
-                lw_debug("Send alive wasn't responded to.");
-                lw_reset();
+                comms_debug("Send alive wasn't responded to.");
+                comms_reset();
             }
             break;
         case LW_ERROR_RECV_RX1:
-            lw_debug("Error receiving message in RX1.");
+            comms_debug("Error receiving message in RX1.");
             _lw_retry_write();
             break;
         case LW_ERROR_RECV_RX2:
-            lw_debug("Error receiving message in RX2.");
+            comms_debug("Error receiving message in RX2.");
             _lw_retry_write();
             break;
         case LW_ERROR_DUP_DOWNLINK:
-            lw_debug("Duplicate downlink.");
+            comms_debug("Duplicate downlink.");
             break;
         case LW_ERROR_PAYLOAD_SIZE:
-            lw_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
-            lw_packet_max_size -= 2;
-            on_lw_sent_ack(false);
-            lw_reset();
+            comms_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
+            _lw_packet_max_size -= 2;
+            on_comms_sent_ack(false);
+            comms_reset();
             break;
         case LW_ERROR_INVLD_MIC:
-            lw_debug("Invalid MIC in LoRa message.");
+            comms_debug("Invalid MIC in LoRa message.");
             break;
         default:
-            lw_debug("Error Code %"PRIu8", resetting chip.", err_no);
-            lw_reset();
+            comms_debug("Error Code %"PRIu8", resetting chip.", err_no);
+            comms_reset();
             break;
     }
 }
@@ -834,7 +894,7 @@ static void _lw_process_wait_ack(char* message)
         _lw_state_machine.reset_count = 0;
         _lw_state_machine.resend_count = 0;
         _lw_clear_backup();
-        on_lw_sent_ack(true);
+        on_comms_sent_ack(true);
     }
 }
 
@@ -868,7 +928,7 @@ static void _lw_process_wait_conf_ok(char* message)
 }
 
 
-void lw_process(char* message)
+void comms_process(char* message)
 {
     _lw_update_last_message_time();
     if (_lw_msg_is_error(message))
@@ -895,7 +955,7 @@ void lw_process(char* message)
     if (recv_type == LW_RECV_ACK &&
         _lw_state_machine.state != LW_STATE_WAIT_ACK)
     {
-        lw_debug("Unexpected ACK");
+        comms_debug("Unexpected ACK");
         return;
     }
 
@@ -959,7 +1019,7 @@ static unsigned _lw_send_size(uint16_t arr_len)
 }
 
 
-void lw_send(int8_t* hex_arr, uint16_t arr_len)
+void comms_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_lw_state_machine.state == LW_STATE_IDLE)
     {
@@ -993,16 +1053,16 @@ void lw_send(int8_t* hex_arr, uint16_t arr_len)
         if (sent != expected)
             log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
         else
-            lw_debug("Sent %u bytes", sent);
+            comms_debug("Sent %u bytes", sent);
     }
     else
     {
-        lw_debug("Incorrect state to send : %u", (unsigned)_lw_state_machine.state);
+        comms_debug("Incorrect state to send : %u", (unsigned)_lw_state_machine.state);
     }
 }
 
 
-bool lw_get_connected(void)
+bool comms_get_connected(void)
 {
     return (_lw_state_machine.state == LW_STATE_WAIT_OK       ||
             _lw_state_machine.state == LW_STATE_WAIT_ACK      ||
@@ -1013,7 +1073,7 @@ bool lw_get_connected(void)
 }
 
 
-void lw_loop_iteration(void)
+void comms_loop_iteration(void)
 {
     uint32_t now = get_since_boot_ms();
     switch(_lw_state_machine.state)
@@ -1033,11 +1093,55 @@ void lw_loop_iteration(void)
             {
                 if (_lw_state_machine.state == LW_STATE_WAIT_OK || _lw_state_machine.state == LW_STATE_WAIT_ACK)
                 {
-                    on_lw_sent_ack(false);
+                    on_comms_sent_ack(false);
                 }
-                lw_debug("LoRa chip timed out, resetting.");
-                lw_reset();
+                comms_debug("LoRa chip timed out, resetting.");
+                comms_reset();
             }
             break;
     }
+}
+
+
+void     comms_config_setup_str(char * str)
+{
+    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
+    // ARGS : "dev-eui 118f875d6994bbfd"
+    char * p = strchr(str, ' ');
+    if (p == NULL)
+    {
+        return;
+    }
+
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return;
+
+    uint8_t end_pos_word = p - str + 1;
+    p = skip_space(p);
+    if (strncmp(str, "dev-eui", end_pos_word-1) == 0)
+    {
+        memset(config->dev_eui, 0, LW_DEV_EUI_LEN);
+        strncpy(config->dev_eui, p, strlen(p));
+        _lw_reload_config();
+    }
+    else if (strncmp(str, "app-key", end_pos_word-1) == 0)
+    {
+        memset(config->app_key, 0, LW_DEV_EUI_LEN);
+        strncpy(config->app_key, p, strlen(p));
+        _lw_reload_config();
+    }
+}
+
+
+bool comms_get_id(char* str, uint8_t len)
+{
+    if (len < LW_DEV_EUI_LEN + 1)
+        return false;
+    lw_config_t* config = _lw_get_config();
+    if (!config)
+        return false;
+    strncpy(str, config->dev_eui, LW_DEV_EUI_LEN);
+    str[LW_DEV_EUI_LEN] = 0;
+    return true;
 }

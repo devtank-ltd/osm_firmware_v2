@@ -2,6 +2,8 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/i2c.h>
 
+#include "i2c.h"
+
 #include "pinmap.h"
 #include "log.h"
 #include "common.h"
@@ -12,8 +14,14 @@ static const i2c_def_t i2c_buses[]     = I2C_BUSES;
 static uint8_t         i2c_buses_ready = 0;
 
 
-void    i2c_init(unsigned i2c_index)
+static void i2c_init(unsigned i2c_index)
 {
+    if (i2c_index > ARRAY_SIZE(i2c_buses))
+    {
+        log_error("Tried to init I2C bus with uninitialised memory.");
+        return;
+    }
+
     if (!log_async_log && (i2c_buses_ready & (1 << i2c_index)))
         return;
 
@@ -45,8 +53,23 @@ void    i2c_init(unsigned i2c_index)
 }
 
 
-bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
+bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
+    uint32_t i2c;
+    uint8_t addr;
+    switch (type)
+    {
+        case I2C_TYPE_HTU21D:
+            i2c = HTU21D_I2C;
+            addr = I2C_HTU21D_ADDR;
+            break;
+        case I2C_TYPE_VEML7700:
+            i2c = VEML7700_I2C;
+            addr = I2C_VEML7700_ADDR;
+            break;
+        default:
+            return false;
+    }
     /* i2c_transfer7 but with ms timeout. */
     uint32_t start_ms = get_since_boot_ms();
 
@@ -128,4 +151,11 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
     }
 
     return true;
+}
+
+
+void i2cs_init(void)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(i2c_buses); i++)
+        i2c_init(i);
 }

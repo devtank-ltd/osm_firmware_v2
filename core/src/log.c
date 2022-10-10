@@ -3,8 +3,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include <libopencm3/stm32/usart.h>
-
 
 #include "log.h"
 #include "uarts.h"
@@ -12,7 +10,7 @@
 #include "persist_config.h"
 #include "common.h"
 
-uint32_t log_debug_mask = DEBUG_SYS | DEBUG_LW | DEBUG_MEASUREMENTS | DEBUG_LIGHT;
+uint32_t log_debug_mask = DEBUG_SYS | DEBUG_COMMS | DEBUG_MEASUREMENTS | DEBUG_LIGHT;
 bool     log_async_log  = false;
 
 

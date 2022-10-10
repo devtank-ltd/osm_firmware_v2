@@ -12,17 +12,12 @@ Application Guide:
 #include <string.h>
 #include <stdlib.h>
 
-#include <libopencm3/stm32/i2c.h>
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-
+#include "veml7700.h"
 #include "config.h"
-#include "pinmap.h"
 #include "i2c.h"
 #include "log.h"
 #include "measurements.h"
 #include "common.h"
-#include "veml7700.h"
 #include "uart_rings.h"
 #include "timers.h"
 
@@ -247,7 +242,7 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
     uint8_t reg8 = reg;
     uint8_t d[2] = {0};
     light_debug("Read command 0x%"PRIx8, reg8);
-    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
+    if (!i2c_transfer_timeout(I2C_TYPE_VEML7700, &reg8, 1, d, 2, 100))
     {
         light_debug("Read timed out.");
         return false;
@@ -261,7 +256,7 @@ static bool _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
 {
     uint8_t payload[3] = { reg, data & 0xFF, data >> 8 };
     light_debug("Send command 0x%"PRIx8" [0x%"PRIx8" 0x%"PRIx8"].", payload[0], payload[1], payload[2]);
-    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, payload, 3, NULL, 0, 100))
+    if (!i2c_transfer_timeout(I2C_TYPE_VEML7700, payload, 3, NULL, 0, 100))
     {
         light_debug("Write timed out.");
         return false;
@@ -663,5 +658,4 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurem
 
 void veml7700_init(void)
 {
-    i2c_init(VEML7700_I2C_INDEX);
 }

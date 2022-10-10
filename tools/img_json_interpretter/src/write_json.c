@@ -204,8 +204,15 @@ int write_json_from_img(const char * filename)
 
     json_object_object_add(root, "mins_interval", json_object_new_int(osm_mem.config.mins_interval));
 
-    json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(osm_mem.config.lw_dev_eui, LW_DEV_EUI_LEN));
-    json_object_object_add(root, "lw_app_key", json_object_new_string_len(osm_mem.config.lw_app_key, LW_APP_KEY_LEN));
+    comms_config_t* comms_config = &osm_mem.config.comms_config;
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(((lw_config_t*)comms_config->setup)->dev_eui, LW_DEV_EUI_LEN));
+            json_object_object_add(root, "lw_app_key", json_object_new_string_len(((lw_config_t*)comms_config->setup)->app_key, LW_APP_KEY_LEN));
+            break;
+    }
+
 
     _write_cc_midpoints_json(root);
 

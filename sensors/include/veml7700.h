@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "base_types.h"
+
+
 extern void veml7700_init(void);
 
 extern bool veml7700_get_lux(uint32_t* lux);

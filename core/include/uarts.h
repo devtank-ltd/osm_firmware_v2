@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include "pinmap.h"
+#include "base_types.h"
 
 extern void uarts_setup();
 

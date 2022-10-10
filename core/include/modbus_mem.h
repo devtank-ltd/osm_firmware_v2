@@ -2,7 +2,8 @@
 
 #include <stdbool.h>
 
-#include "pinmap.h"
+#include "base_types.h"
+
 extern void           modbus_log();
 
 extern modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos);

@@ -1,6 +1,7 @@
 from imp import reload
 import threading
 import serial
+import select
 import datetime
 import time
 import csv
@@ -230,6 +231,7 @@ class low_level_dev_t(object):
     def read(self):
         try:
             msg = self._serial.readline()
+            debug_print(f'<< "{msg}"')
         except UnicodeDecodeError:
             return None
         if msg == '':
@@ -239,7 +241,11 @@ class low_level_dev_t(object):
         self._log_obj.recv(msg.strip("\n\r"))
         return msg
 
-    def readlines(self, end_line=None):
+    def readlines(self, end_line=None, timeout=1):
+        r = select.select([self], [], [], timeout)
+        if not r[0]:
+            debug_print("Lines timeout")
+            return []
         new_msg = self.read()
         msgs = []
         if new_msg is None:
@@ -285,20 +291,20 @@ class dev_t(dev_base_t):
     def __init__(self, port):
         super().__init__(port)
         self._children = {
-            "w1": measurement_t("One Wire", float, "w1", parse_one_wire),
-            "cc": measurement_t("Current Clamp", int, "cc", parse_current_clamp),
-            "hpm": measurement_t("Particles (2.5|10)", str, "hpm 1", parse_particles),
-            "lora_conn": measurement_t("LoRa Comms", bool, "lora_conn", parse_lora_comms),
-            "temp": measurement_t("Temperature", float, "tmp", parse_temp),
-            "humi": measurement_t("Humidity", float, "humi", parse_humidity),
-            "PF": modbus_reg_t("Power Factor",  0xc56e,  3,  "U32", "PF"),
-            "cVP1": modbus_reg_t("Phase 1 volts", 0xc552, 3, "U32", "cVP1"),
-            "cVP2": modbus_reg_t("Phase 2 volts", 0xc554, 3, "U32", "cVP2"),
-            "cVP3": modbus_reg_t("Phase 3 volts", 0xc556, 3, "U32", "cVP3"),
-            "mAP1": modbus_reg_t("Phase 1 amps", 0xc560, 3, "U32", "mAP1"),
-            "mAP2": modbus_reg_t("Phase 2 amps", 0xc562, 3, "U32", "mAP2"),
-            "mAP3": modbus_reg_t("Phase 3 amps", 0xc564, 3, "U32", "mAP3"),
-            "ImEn": modbus_reg_t("Import Energy", 0xc652, 3, "U32", "ImEn"),
+            "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
+            "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
+            "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
+            "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
+            "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
+            "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
+            "PF"       : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
+            "VP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
+            "VP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
+            "VP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
+            "AP1"      : modbus_reg_t("Phase 1 amps"    , 0x10, 4, "F", "AP1" ),
+            "AP2"      : modbus_reg_t("Phase 2 amps"    , 0x12, 4, "F", "AP2" ),
+            "AP3"      : modbus_reg_t("Phase 3 amps"    , 0x14, 4, "F", "AP3" ),
+            "Imp"      : modbus_reg_t("Import Energy"   , 0x60, 4, "F", "Imp" ),
         }
 
     def __getattr__(self, attr):
@@ -521,12 +527,14 @@ class dev_t(dev_base_t):
     def get_value(self, cmd):
         cmd = self.do_cmd(cmd)
         if cmd is False:
+            debug_print("Trying get_value again...")
             time.sleep(4)
             cmd = self.do_cmd(cmd)
 
     def get_val(self, cmd: measurement_t):
         cmd.value = self.do_cmd(cmd.cmd)
         if cmd.value is False:
+            debug_print("Trying get_val again...")
             time.sleep(4)
             cmd.value = self.do_cmd(cmd.cmd)
 
@@ -536,6 +544,7 @@ class dev_t(dev_base_t):
                 cmd, measurement_t), "Commands should be of type measurement_t"
             cmd.value = self.do_cmd(cmd.cmd)
             if cmd.value is False:
+                debug_print("Trying get_vals again...")
                 time.sleep(4)
                 cmd.value = self.do_cmd(cmd.cmd)
 

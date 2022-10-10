@@ -367,7 +367,7 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
 
-    memset(&osm_mem, 0, sizeof(json_x_img_mem_t));
+    memset(&osm_mem, 0, sizeof(osm_mem));
 
     osm_mem.config.version = json_object_get_int(obj);
     if (osm_mem.config.version > PERSIST_VERSION)
@@ -389,11 +389,17 @@ int read_json_to_img(const char * filename)
     }
     osm_mem.config.mins_interval  = tmp;
 
-    if (!_get_string_buf(root, "lw_dev_eui", osm_mem.config.lw_dev_eui, LW_DEV_EUI_LEN) ||
-        !_get_string_buf(root, "lw_app_key", osm_mem.config.lw_app_key, LW_APP_KEY_LEN))
+    comms_config_t* comms_config = &osm_mem.config.comms_config;
+    switch(comms_config->type)
     {
-        log_error("No LoRaWAN keys.");
-        goto bad_exit;
+        case COMMS_TYPE_LW:
+            if (!_get_string_buf(root, "lw_dev_eui", ((lw_config_t*)(comms_config->setup))->dev_eui, LW_DEV_EUI_LEN) ||
+                !_get_string_buf(root, "lw_app_key", ((lw_config_t*)(comms_config->setup))->app_key, LW_APP_KEY_LEN))
+            {
+                log_error("No LoRaWAN keys.");
+                goto bad_exit;
+            }
+            break;
     }
 
     measurements_add_defaults(osm_mem.measurements.measurements_arr);

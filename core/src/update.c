@@ -1,12 +1,11 @@
 #include <string.h>
 
-#include <libopencm3/stm32/flash.h>
-
 #include "log.h"
 #include "modbus.h"
 #include "persist_config.h"
 #include "persist_config_header.h"
 #include "update.h"
+#include "platform.h"
 
 static uint8_t _fw_page[FLASH_PAGE_SIZE] __attribute__ ( (aligned (16)));
 
@@ -24,24 +23,17 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
 
     while(retries--)
     {
-        flash_unlock();
-        flash_erase_page(abs_page);
-        flash_program(dst, _fw_page, FLASH_PAGE_SIZE);
-        flash_lock();
-
         fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, *(uint64_t*)_fw_page);
-
-        if (memcmp((void*)dst, _fw_page, FLASH_PAGE_SIZE) == 0)
+        if (platform_overwrite_fw_page(dst, abs_page, _fw_page))
         {
             fw_debug("Written page");
-            memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
             return true;
         }
 
         if (retries)
         {
             log_error("Retrying to write page");
-            flash_clear_status_flags();
+            platform_clear_flash_flags();
         }
     }
 

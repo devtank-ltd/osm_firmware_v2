@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "ring.h"
-#include "pinmap.h"
 #include "log.h"
 #include "modbus_mem.h"
 

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+
+#include "platform_base_types.h"
 #include "config.h"
 
 /*subset of usb_cdc_line_coding_bParityType*/
@@ -52,51 +54,6 @@ extern char * skip_space(char * pos);
 
 extern char* io_get_pull_str(uint16_t io_state);
 extern bool  io_is_special(uint16_t io_state);
-
-#ifdef STM32L4
-#include <libopencm3/stm32/rcc.h>
-
-typedef struct
-{
-    uint32_t port;
-    uint32_t pins;
-} port_n_pins_t;
-
-#define PORT_TO_RCC(_port_)   (RCC_GPIOA + ((_port_ - GPIO_PORT_A_BASE) / 0x400))
-
-
-typedef struct
-{
-    uint32_t              usart;
-    enum rcc_periph_clken uart_clk;
-    uint32_t              baud;
-    uint8_t               databits:4;
-    uint8_t               parity:2 /*uart_parity_t*/;
-    uint8_t               stop:2 /*uart_stop_bits_t*/;
-    uint32_t              gpioport;
-    uint16_t              pins;
-    uint8_t               alt_func_num;
-    uint8_t               irqn;
-    uint32_t              dma_addr;
-    uint32_t              dma_unit;
-    uint32_t              dma_rcc;
-    uint8_t               dma_irqn;
-    uint8_t               dma_channel;
-    uint8_t               priority;
-    uint8_t               enabled;
-} uart_channel_t;
-
-typedef struct
-{
-    uint32_t rcc;
-    uint32_t i2c;
-    uint32_t speed;
-    uint32_t clock_megahz;
-    uint32_t gpio_func;
-    port_n_pins_t port_n_pins;
-} i2c_def_t;
-
-#endif //STM32L4
 
 
 typedef enum
@@ -189,9 +146,57 @@ typedef struct
 } __attribute__((__packed__)) modbus_bus_t;
 
 
+typedef enum
+{
+    ADCS_TYPE_BAT,
+    ADCS_TYPE_CC_CLAMP1,
+    ADCS_TYPE_CC_CLAMP2,
+    ADCS_TYPE_CC_CLAMP3,
+} adcs_type_t;
+
+
+#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
+                           ADCS_TYPE_CC_CLAMP2,  \
+                           ADCS_TYPE_CC_CLAMP3   }
+
 typedef struct
 {
     uint32_t ext_max_mA;
     uint32_t int_max_mV;
 } cc_config_t;
 
+
+typedef enum
+{
+    COMMS_TYPE_LW,
+} comms_type_lw_t;
+
+
+typedef struct
+{
+    uint8_t type;           /* comms_type_lw_t */
+    uint8_t setup[127];
+} comms_config_t;
+
+
+typedef struct
+{
+    char    dev_eui[LW_DEV_EUI_LEN];
+    char    app_key[LW_APP_KEY_LEN];
+} lw_config_t;
+
+
+typedef enum
+{
+    MEASUREMENTS_SENSOR_STATE_SUCCESS,
+    MEASUREMENTS_SENSOR_STATE_BUSY,
+    MEASUREMENTS_SENSOR_STATE_ERROR,
+} measurements_sensor_state_t;
+
+
+typedef union
+{
+    int64_t v_i64;
+    int32_t v_f32;
+    char*   v_str;
+} measurements_reading_t;

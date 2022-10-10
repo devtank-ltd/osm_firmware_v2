@@ -6,9 +6,7 @@
 
 #include "uart_rings.h"
 #include "measurements.h"
-
-
-static volatile uint32_t since_boot_ms = 0;
+#include "platform.h"
 
 
 // Timing Functions
@@ -19,20 +17,6 @@ uint32_t since_boot_delta(uint32_t newer, uint32_t older)
         return (0xFFFFFFFF - older) + newer;
     else
         return newer - older;
-}
-
-
-uint32_t get_since_boot_ms(void)
-{
-    return since_boot_ms;
-}
-
-
-// cppcheck-suppress unusedFunction ; System handler
-void sys_tick_handler(void)
-{
-    /* Special libopencm3 function to handle system ticks */
-    since_boot_ms++;
 }
 
 
@@ -47,28 +31,6 @@ void spin_blocking_ms(uint32_t ms)
 
 
 // Maths Functions
-
-float Q_rsqrt( float number )
-{
-    long i;
-    float x2, y;
-    const float threehalfs = 1.5F;
-
-    x2 = number * 0.5F;
-    y  = number;
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-    // cppcheck-suppress invalidPointerCast
-    i  = * ( long * ) &y;                       // evil floating point bit level hacking
-    i  = 0x5f3759df - ( i >> 1 );               // what the fuck? 
-    // cppcheck-suppress invalidPointerCast
-    y  = * ( float * ) &i;
-    #pragma GCC diagnostic pop
-    y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
-//  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-
-    return y;
-}
 
 
 int32_t nlz(uint32_t x)

@@ -3,6 +3,8 @@
 
 #include <libopencm3/cm3/scb.h>
 
+#include "pinmap.h"
+
 
 #define NUM_SOS_LOOPS           3
 
@@ -32,7 +34,7 @@ static void _dash(void)
     gpio_set(LED_PORT, LED_PIN);
 }
 
-static void error_state(void)
+void error_state(void)
 {
     uint8_t count = 0;
     while(true)

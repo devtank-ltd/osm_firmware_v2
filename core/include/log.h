@@ -9,7 +9,7 @@ extern uint32_t log_debug_mask;
 
 extern void platform_raw_msg(const char * s);
 
-extern void log_debug(uint32_t flag, const char * s, ...) PRINTF_FMT_CHECK( 2, 3);
+extern void log_debug(uint32_t flag, const char * s, ...) __attribute__((weak)) PRINTF_FMT_CHECK( 2, 3);
 
 extern void log_bad_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
 extern void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
@@ -22,7 +22,7 @@ extern void log_debug_data(uint32_t flag, void * data, unsigned size);
 inline static void _empty_log() {}
 #define log_sys_debug(...)      _empty_log(__VA_ARGS__)
 #define adc_debug(...)          _empty_log(__VA_ARGS__)
-#define lw_debug(...)           _empty_log(__VA_ARGS__)
+#define comms_debug(...)        _empty_log(__VA_ARGS__)
 #define io_debug(...)           _empty_log(__VA_ARGS__)
 #define uart_debug(_uart_, ...) _empty_log(__VA_ARGS__)
 #define hpm_debug(...)          _empty_log(__VA_ARGS__)
@@ -39,7 +39,7 @@ inline static void _empty_log() {}
 #else
 #define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
 #define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
-#define lw_debug(...)           log_debug(DEBUG_LW, "LORA: " __VA_ARGS__)
+#define comms_debug(...)           log_debug(DEBUG_COMMS, "COMMS: " __VA_ARGS__)
 #define io_debug(...)           log_debug(DEBUG_IO, "IO: " __VA_ARGS__)
 #define uart_debug(_uart_, ...) log_debug(DEBUG_UART(uart), "UART"STR(_uart_)": " __VA_ARGS__)
 #define hpm_debug(...)          log_debug(DEBUG_HPM, "HPM: " __VA_ARGS__)

@@ -3,6 +3,9 @@
 #include <stdbool.h>
 
 
+#define VERSION_NAME_LEN            10
+
+
 typedef enum
 {
     VERSION_ARCH_UNDEFINED,

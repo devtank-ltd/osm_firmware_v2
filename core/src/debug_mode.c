@@ -1,16 +1,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libopencm3/cm3/scb.h>
-#include <libopencm3/stm32/iwdg.h>
-
 #include "measurements.h"
 #include "persist_config.h"
 #include "base_types.h"
 #include "log.h"
 #include "common.h"
 #include "uart_rings.h"
-#include "lorawan.h"
+#include "comms.h"
+#include "platform.h"
 
 #include "can_impl.h"
 #include "ds18b20.h"
@@ -163,14 +161,14 @@ static void _debug_mode_iteration(void)
     }
     else
     {
-        bool now_connected = lw_get_connected();
+        bool now_connected = comms_get_connected();
         if (!now_connected)
         {
-            dm_debug("LORA:FAILED");
+            dm_debug("COMMS:FAILED");
         }
         else
         {
-            dm_debug("LORA:CONNECTED");
+            dm_debug("COMMS:CONNECTED");
         }
         _debug_mode_collect_iteration();
     }
@@ -194,8 +192,8 @@ void debug_mode(void)
         _debug_mode_enabled = false;
         return;
     }
-    uint8_t all_cc_channels[ADC_CC_COUNT] = ADC_CC_CHANNELS;
-    cc_set_channels_active(all_cc_channels, ADC_CC_COUNT);
+    adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
+    cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
 
     _debug_mode_enabled = true;
 
@@ -212,11 +210,11 @@ void debug_mode(void)
             uart_rings_out_drain();
             _debug_mode_fast_iteration();
         }
-        lw_loop_iteration();
+        comms_loop_iteration();
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
-        gpio_toggle(LED_PORT, LED_PIN);
-        iwdg_reset();
+        platform_blink_led_toggle();
+        platform_watchdog_reset();
     }
     measurements_derive_cc_phase();
 }

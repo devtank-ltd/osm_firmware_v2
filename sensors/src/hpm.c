@@ -1,14 +1,11 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-
 #include "log.h"
 #include "hpm.h"
-#include "pinmap.h"
 #include "uart_rings.h"
 #include "common.h"
+#include "platform.h"
 
 
 #define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
@@ -40,14 +37,14 @@ typedef struct
 typedef struct
 {
     hpm_packet_header_t header;
-    void (*cb)(uint8_t *data);
+    void (*cb)(const uint8_t *data);
 } hpm_response_t;
 
 
-static void process_part_measure_response(uint8_t *data);
-static void process_part_measure_long_response(uint8_t *data);
-static void process_nack_response(uint8_t *data);
-static void process_ack_response(uint8_t *data);
+static void process_part_measure_response(const uint8_t *data);
+static void process_part_measure_long_response(const uint8_t *data);
+static void process_nack_response(const uint8_t *data);
+static void process_ack_response(const uint8_t *data);
 
 
 static hpm_response_t responses[] =
@@ -217,32 +214,24 @@ void hpm_enable(bool enable)
 {
     static unsigned hpm_use_ref = 0;
 
-    port_n_pins_t port_n_pin = HPM_EN_PIN;
+    platform_hpm_enable(enable);
 
     if (enable)
     {
-        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
-
-        gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
-
-        gpio_set(port_n_pin.port, port_n_pin.pins);
-
         hpm_use_ref++;
         hpm_debug("Power On (ref:%u)", hpm_use_ref);
+        return;
     }
 
-    if (!enable)
+    if (hpm_use_ref)
+        hpm_use_ref--;
+    if (!hpm_use_ref)
     {
-        if (hpm_use_ref)
-            hpm_use_ref--;
-        if (!hpm_use_ref)
-        {
-            hpm_debug("Power Off");
-            gpio_clear(port_n_pin.port, port_n_pin.pins);
-            hpm_valid = false;
-        }
-        else hpm_debug("Power Off deferred (ref:%u)", hpm_use_ref);
+        hpm_debug("Power Off");
+        hpm_valid = false;
     }
+    else
+        hpm_debug("Power Off deferred (ref:%u)", hpm_use_ref);
 }
 
 

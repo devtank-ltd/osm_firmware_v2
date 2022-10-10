@@ -18,11 +18,13 @@ firmware_SOURCES := \
            core/src/adcs.c \
            core/src/timers.c \
            core/src/common.c \
+           core/src/platform_common.c \
            core/src/w1.c \
            core/src/sleep.c \
            core/src/can_comm.c \
            core/src/debug_mode.c \
            core/src/version.c \
+           core/src/stm.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \

@@ -12,13 +12,8 @@ Documents used:
 #include <string.h>
 #include <stdlib.h>
 
-#include <libopencm3/stm32/i2c.h>
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-
 #include "common.h"
 #include "config.h"
-#include "pinmap.h"
 #include "i2c.h"
 #include "log.h"
 #include "htu21d.h"
@@ -130,7 +125,7 @@ static bool _htu21d_read_reg16(htu21d_reg_t reg, uint16_t * r)
     uint8_t d[3] = {0};
     htu21d_debug("Read command 0x%"PRIx8, reg8);
 
-    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, d, 3, 100))
+    if (!i2c_transfer_timeout(I2C_TYPE_HTU21D, &reg8, 1, d, 3, 100))
     {
         htu21d_init();
         return false;
@@ -144,7 +139,7 @@ static void _htu21d_send(htu21d_reg_t reg)
 {
     uint8_t reg8 = reg;
     htu21d_debug("Send command 0x%"PRIx8, reg8);
-    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
+    if (!i2c_transfer_timeout(I2C_TYPE_HTU21D, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
         htu21d_init();
 }
 
@@ -152,35 +147,14 @@ static void _htu21d_send(htu21d_reg_t reg)
 static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
 {
     htu21d_debug("Try read");
-    i2c_set_7bit_address(HTU21D_I2C, I2C_HTU21D_ADDR);
-    i2c_set_read_transfer_dir(HTU21D_I2C);
-    i2c_set_bytes_to_transfer(HTU21D_I2C, 3);
-
-    i2c_send_start(HTU21D_I2C);
-    i2c_enable_autoend(HTU21D_I2C);
-
-    uint32_t start_ms = get_since_boot_ms();
-
-    while(since_boot_delta(get_since_boot_ms(), start_ms) < timeout)
+    uint8_t d[3] = {0};
+    if (!i2c_transfer_timeout(I2C_TYPE_HTU21D, NULL, 0, d, 3, timeout))
     {
-        if (!i2c_nack(HTU21D_I2C))
-        {
-            uint8_t d[3] = {0};
-            for (size_t i = 0; i < 3; i++)
-            {
-                while (i2c_received_data(HTU21D_I2C) == 0)
-                    if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout)
-                        goto timeout;
-                d[i] = i2c_get_data(HTU21D_I2C);
-            }
-            return _htu21d_get_u16(d, r);
-        }
+        htu21d_debug("Read timeout.");
+        htu21d_init();
+        return false;
     }
-
-timeout:
-    htu21d_debug("Read timeout.");
-    htu21d_init();
-    return false;
+    return _htu21d_get_u16(d, r);
 }
 
 
@@ -460,7 +434,6 @@ measurements_sensor_state_t htu21d_humi_measurements_get(char* name, measurement
 
 void htu21d_init(void)
 {
-    i2c_init(HTU21D_I2C_INDEX);
     _htu21d_send(HTU21D_SOFT_RESET);
 }
 

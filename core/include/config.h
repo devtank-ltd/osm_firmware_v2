@@ -24,6 +24,7 @@
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300
 #define ADCS_NUM_SAMPLES  1500
+#define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2)
 
 #define SAI_NUM_CAL_COEFFS   5
 
@@ -37,6 +38,7 @@
 #define TIMER2_PRIORITY 1
 #define PPS_PRIORITY 1
 
+#define MEASUREMENTS_HEX_ARRAY_SIZE 117
 
 #define CMD_VUART 0
 #define UART_ERR_NU 0
@@ -102,13 +104,18 @@
 #define UART_3_STOP uart_stop_bits_1
 #define UART_4_STOP uart_stop_bits_1
 
+#define MODBUS_SPEED    UART_4_SPEED
+#define MODBUS_PARITY   UART_4_PARITY
+#define MODBUS_DATABITS UART_4_DATABITS
+#define MODBUS_STOP     UART_4_STOP
+
 #define USB_DATA_PCK_SZ    64
 
 #define DMA_DATA_PCK_SZ    64
 
 #define DEBUG_SYS             0x1
 #define DEBUG_ADC             0x2
-#define DEBUG_LW              0x4
+#define DEBUG_COMMS           0x4
 #define DEBUG_IO              0x8
 #define DEBUG_UART(_x_)     (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
 #define DEBUG_HPM           0x100
@@ -132,3 +139,6 @@
 
 #define SERIAL_NUM_LEN         41
 #define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
+
+#define LW_DEV_EUI_LEN                      16
+#define LW_APP_KEY_LEN                      32

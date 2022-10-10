@@ -4,11 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/cm3/scb.h>
-#include <libopencm3/stm32/desig.h>
 
-#include "pinmap.h"
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
@@ -18,7 +14,7 @@
 #include "timers.h"
 #include "persist_config.h"
 #include "sai.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "measurements.h"
 #include "hpm.h"
 #include "modbus_measurements.h"
@@ -34,6 +30,7 @@
 #include "sleep.h"
 #include "can_impl.h"
 #include "debug_mode.h"
+#include "platform.h"
 #include "version.h"
 
 
@@ -88,7 +85,7 @@ void io_cb(char *args)
             return;
         }
 
-        unsigned pull = GPIO_PUPD_NONE;
+        io_pupd_t pull = IO_PUPD_NONE;
 
         pos = skip_space(pos);
 
@@ -97,12 +94,12 @@ void io_cb(char *args)
             if ((strncmp(pos, "UP", 2) == 0) || (pos[0] == 'U'))
             {
                 pos = skip_to_space(pos);
-                pull = GPIO_PUPD_PULLUP;
+                pull = IO_PUPD_UP;
             }
             else if (strncmp(pos, "DOWN", 4) == 0 || pos[0] == 'D')
             {
                 pos = skip_to_space(pos);
-                pull = GPIO_PUPD_PULLDOWN;
+                pull = IO_PUPD_DOWN;
             }
             else if (strncmp(pos, "NONE", 4) == 0 || pos[0] == 'N')
             {
@@ -166,11 +163,11 @@ void cmd_enable_pulsecount_cb(char * args)
     pos = skip_space(pos);
     uint8_t pupd;
     if (pos[0] == 'U')
-        pupd = GPIO_PUPD_PULLUP;
+        pupd = IO_PUPD_UP;
     else if (pos[0] == 'D')
-        pupd = GPIO_PUPD_PULLDOWN;
+        pupd = IO_PUPD_DOWN;
     else if (pos[0] == 'N')
-        pupd = GPIO_PUPD_NONE;
+        pupd = IO_PUPD_NONE;
     else
         goto bad_exit;
 
@@ -206,16 +203,15 @@ void version_cb(char * args)
 {
     log_out("Version : %s", GIT_VERSION);
     version_arch_t arch = version_get_arch();
-    uint8_t name_len = 10;
-    char name[name_len];
-    memset(name, 0, name_len);
+    char name[VERSION_NAME_LEN];
+    memset(name, 0, VERSION_NAME_LEN);
     switch(arch)
     {
         case VERSION_ARCH_REV_B:
-            strncpy(name, "Rev B", name_len);
+            strncpy(name, "Rev B", VERSION_NAME_LEN);
             break;
         case VERSION_ARCH_REV_C:
-            strncpy(name, "Rev C", name_len);
+            strncpy(name, "Rev C", VERSION_NAME_LEN);
             break;
         default:
             log_out("Unknown architecture.");
@@ -225,88 +221,16 @@ void version_cb(char * args)
 }
 
 
-void lora_cb(char * args)
+void comms_send_cb(char * args)
 {
     char * pos = skip_space(args);
-    lw_send_str(pos);
+    comms_send_str(pos);
 }
 
 
-void lora_config_cb(char * args)
+void comms_config_cb(char * args)
 {
-    // CMD  : "lora_config dev-eui 118f875d6994bbfd"
-    // ARGS : "dev-eui 118f875d6994bbfd"
-    char* p = skip_space(args);
-
-    uint16_t lenrem = strnlen(p, CMD_LINELEN);
-    if (lenrem == 0)
-        goto syntax_exit;
-
-    char* np = strchr(p, ' ');
-    if (!np)
-        np = p + lenrem;
-    uint8_t wordlen = np - p;
-
-    if (strncmp(p, "dev-eui", wordlen) == 0)
-    {
-        /* Dev EUI */
-        char eui[LW_DEV_EUI_LEN + 1];
-        p = skip_space(np);
-        lenrem = strnlen(p, CMD_LINELEN);
-        if (lenrem == 0)
-        {
-            /* View Dev EUI */
-            if (!persist_get_lw_dev_eui(eui))
-            {
-                log_out("Could not get Dev EUI");
-                return;
-            }
-            log_out("Dev EUI: %s", eui);
-            return;
-        }
-        /* Set Dev EUI */
-        if (lenrem != LW_DEV_EUI_LEN)
-        {
-            log_out("Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
-            return;
-        }
-        strncpy(eui, p, lenrem);
-        eui[lenrem] = 0;
-        persist_set_lw_dev_eui(eui);
-        lw_reload_config();
-        return;
-    }
-    if (strncmp(p, "app-key", wordlen) == 0)
-    {
-        /* App Key */
-        char key[LW_APP_KEY_LEN + 1];
-        p = skip_space(np);
-        lenrem = strnlen(p, CMD_LINELEN);
-        if (lenrem == 0)
-        {
-            /* View Dev EUI */
-            if (!persist_get_lw_app_key(key))
-            {
-                log_out("Could not get app key.");
-                return;
-            }
-            log_out("App Key: %s", key);
-            return;
-        }
-        /* Set Dev EUI */
-        if (lenrem != LW_APP_KEY_LEN)
-        {
-            log_out("App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
-            return;
-        }
-        strncpy(key, p, lenrem);
-        key[lenrem] = 0;
-        persist_set_lw_app_key(key);
-        lw_reload_config();
-        return;
-    }
-syntax_exit:
-    log_out("lora_config dev-eui/app-key [EUI/KEY]");
+    comms_config_setup_str(skip_space(args));
 }
 
 
@@ -573,7 +497,7 @@ static void fw_fin(char *args)
 
 static void reset_cb(char *args)
 {
-    scb_reset_system();
+    platform_reset_sys();
 }
 
 
@@ -726,9 +650,9 @@ static void dew_point_cb(char* args)
 }
 
 
-static void lora_conn_cb(char* args)
+static void comms_conn_cb(char* args)
 {
-    if (lw_get_connected())
+    if (comms_get_connected())
     {
         log_out("1 | Connected");
     }
@@ -777,7 +701,7 @@ static void bat_cb(char* args)
 }
 
 
-static void lw_dbg_cb(char* args)
+static void comms_dbg_cb(char* args)
 {
     uart_ring_out(LW_UART, args, strlen(args));
     uart_ring_out(LW_UART, "\r\n", 2);
@@ -831,7 +755,7 @@ static void repop_cb(char* args)
 }
 
 
-static void no_lw_cb(char* args)
+static void no_comms_cb(char* args)
 {
     bool enable = strtoul(args, NULL, 10);
     measurements_set_debug_mode(enable);
@@ -888,11 +812,14 @@ static void debug_mode_cb(char* args)
 }
 
 
+
+#define SERIAL_NUM_COMM_LEN         17
+
 static void serial_num_cb(char* args)
 {
     char* serial_num = persist_get_serial_number();
     char* p = skip_space(args);
-    char dev_eui[LW_DEV_EUI_LEN + 1];
+    char comm_id[SERIAL_NUM_COMM_LEN];
     uint8_t len = strnlen(p, SERIAL_NUM_LEN);
     if (len == 0)
         goto print_exit;
@@ -900,12 +827,12 @@ static void serial_num_cb(char* args)
     strncpy(serial_num, p, len);
     serial_num[len] = 0;
 print_exit:
-    if (!persist_get_lw_dev_eui(dev_eui))
+    if (!comms_get_id(comm_id, SERIAL_NUM_COMM_LEN))
     {
         log_out("%s", persist_get_serial_number());
         return;
     }
-    log_out("Serial Number: %s-%s", serial_num, dev_eui);
+    log_out("Serial Number: %s-%s", serial_num, comm_id);
     return;
 }
 
@@ -919,8 +846,11 @@ void cmds_process(char * command, unsigned len)
         { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb         , false },
         { "count",        "Counts of controls.",      count_cb                      , false },
         { "version",      "Print version.",           version_cb                    , false },
-        { "lora",         "Send lora message",        lora_cb                       , false },
-        { "lora_config",  "Set lora config",          lora_config_cb                , false },
+        { "comms_send",   "Send comms message",       comms_send_cb                 , false },
+        { "comms_config", "Set comms config",         comms_config_cb               , false },
+        { "comms_conn",   "LoRa connected",           comms_conn_cb                 , false },
+        { "comms_dbg",    "Comms Chip Debug",         comms_dbg_cb                  , false },
+        { "no_comms",     "Dont need comms for measurements", no_comms_cb           , false },
         { "interval",     "Set the interval",         interval_cb                   , false },
         { "samplecount",  "Set the samplecount",      samplecount_cb                , false },
         { "debug",        "Set hex debug mask",       debug_cb                      , false },
@@ -946,17 +876,14 @@ void cmds_process(char * command, unsigned len)
         { "temp",         "Get the temperature",      temperature_cb                , false },
         { "humi",         "Get the humidity",         humidity_cb                   , false },
         { "dew",          "Get the dew temperature",  dew_point_cb                  , false },
-        { "lora_conn",    "LoRa connected",           lora_conn_cb                  , false },
         { "wipe",         "Factory Reset",            wipe_cb                       , false },
         { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false },
         { "bat",          "Get battery level.",       bat_cb                        , false },
         { "pulsecount",   "Show pulsecount.",         pulsecount_log                , false },
-        { "lw_dbg",       "LoraWAN Chip Debug",       lw_dbg_cb                     , false },
         { "light",        "Get the light in lux.",    light_cb                      , false },
         { "sound",        "Get the sound in lux.",    sound_cb                      , false },
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false },
         { "repop",        "Repopulate measurements.", repop_cb                      , false },
-        { "no_lw",        "Dont need LW for measurements", no_lw_cb                 , false },
         { "sleep",        "Sleep",                    sleep_cb                      , false },
         { "power_mode",   "Power mode setting",       power_mode_cb                 , false },
         { "can_impl",     "Send example CAN message", can_impl_cb                   , false },

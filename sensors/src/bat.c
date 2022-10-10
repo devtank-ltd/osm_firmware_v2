@@ -6,7 +6,6 @@
 #include "common.h"
 #include "log.h"
 #include "adcs.h"
-#include "pinmap.h"
 #include "persist_config.h"
 #include "uart_rings.h"
 
@@ -130,7 +129,7 @@ measurements_sensor_state_t bat_begin(char* name)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    uint8_t bat_channel = ADC1_CHANNEL_BAT_MON;
+    adcs_type_t bat_channel = ADCS_TYPE_BAT;
     adcs_resp_t resp = adcs_begin(&bat_channel, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT);
     switch(resp)
     {

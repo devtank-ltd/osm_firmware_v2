@@ -4,10 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libopencm3/cm3/cortex.h>
-
 #include "measurements.h"
-#include "lorawan.h"
+#include "comms.h"
 #include "log.h"
 #include "config.h"
 #include "hpm.h"
@@ -345,7 +343,7 @@ static bool _measurements_send_start(void)
 
 bool measurements_send_test(void)
 {
-    if (!lw_get_connected() || !lw_send_ready())
+    if (!comms_get_connected() || !comms_send_ready())
     {
         measurements_debug("LW not ready.");
         return false;
@@ -370,7 +368,7 @@ bool measurements_send_test(void)
         measurements_debug("Failed to add to array.");
 
     measurements_debug("Sending test array.");
-    lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+    comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
 
     return r;
 }
@@ -382,7 +380,7 @@ static void _measurements_send(void)
 
     static bool has_printed_no_con = false;
 
-    if (!lw_get_connected())
+    if (!comms_get_connected())
     {
         if (!has_printed_no_con)
         {
@@ -399,11 +397,11 @@ static void _measurements_send(void)
 
     has_printed_no_con = false;
 
-    if (!lw_send_ready() && !_measurements_debug_mode)
+    if (!comms_send_ready() && !_measurements_debug_mode)
     {
-        if (lw_is_recv_fw())
+        if (comms_send_allowed())
         {
-            // Tried to send but receiving FW
+            // Tried to send but not allowed (receiving FW?)
             return;
         }
         if (_pending_send)
@@ -411,7 +409,7 @@ static void _measurements_send(void)
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
-                lw_reset();
+                comms_reset();
                 _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
                 _pending_send = false;
             }
@@ -447,7 +445,7 @@ static void _measurements_send(void)
                 continue;
             }
             uint16_t prev_measurements_hex_arr_pos = _measurements_hex_arr_pos;
-            if (_measurements_hex_arr_pos >= (lw_packet_max_size / 2) ||
+            if (_measurements_hex_arr_pos >= (comms_get_mtu() / 2) ||
                 !_measurements_to_arr(def, data))
             {
                 _measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
@@ -484,7 +482,7 @@ static void _measurements_send(void)
                 measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
         }
         else
-            lw_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+            comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
         if (i == MEASUREMENTS_MAX_NUMBER)
         {
             _pending_send = false;
@@ -625,7 +623,7 @@ static bool _measurements_get_inf(measurements_def_t * def, measurements_data_t*
 }
 
 
-void on_lw_sent_ack(bool ack)
+void on_comms_sent_ack(bool ack)
 {
     if (!ack)
     {
@@ -1007,24 +1005,24 @@ uint16_t measurements_num_measurements(void)
 void measurements_derive_cc_phase(void)
 {
     unsigned len = 0;
-    uint8_t channels[ADC_COUNT] = {0};
+    adcs_type_t clamps[ADC_COUNT] = {0};
     measurements_def_t* def;
     if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def) &&
         _measurements_def_is_active(def) )
     {
-        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_1;
+        clamps[len++] = ADCS_TYPE_CC_CLAMP1;
     }
     if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def) &&
         _measurements_def_is_active(def) )
     {
-        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_2;
+        clamps[len++] = ADCS_TYPE_CC_CLAMP2;
     }
     if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def) &&
         _measurements_def_is_active(def) )
     {
-        channels[len++] = ADC1_CHANNEL_CURRENT_CLAMP_3;
+        clamps[len++] = ADCS_TYPE_CC_CLAMP3;
     }
-    cc_set_channels_active(channels, len);
+    cc_set_active_clamps(clamps, len);
 }
 
 
@@ -1213,7 +1211,7 @@ void measurements_loop_iteration(void)
 {
     static bool has_printed_no_con = false;
 
-    if (!lw_get_connected() && !_measurements_debug_mode)
+    if (!comms_get_connected() && !_measurements_debug_mode)
     {
         if (!has_printed_no_con)
         {
@@ -1265,15 +1263,9 @@ void measurements_print(void)
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def = &_measurements_arr.def[i];
-        char id_start = measurements_def->name[0];
+        unsigned char id_start = measurements_def->name[0];
         if (!id_start || id_start == 0xFF)
-        {
             continue;
-        }
-        if ( 0 /* uart nearly full */ )
-        {
-            ; // Do something
-        }
         log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval, measurements_def->samplecount);
     }
 }
@@ -1304,7 +1296,7 @@ void measurements_init(void)
     for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
     {
         measurements_def_t* def = &_measurements_arr.def[n];
-        char id_start = def->name[0];
+        unsigned char id_start = def->name[0];
 
         if (!id_start || id_start == 0xFF)
         {
