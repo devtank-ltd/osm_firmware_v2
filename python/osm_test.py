@@ -35,12 +35,24 @@ class test_logging_formatter_t(logging.Formatter):
         logging.CRITICAL: BOLD_RED + FORMAT + RESET
     }
 
-    def format(self, record):
+    def _format_colour(self, record):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         formatter.datefmt   = "%Y-%m-%dT%H:%M:%S"
         formatter.converter = time.gmtime
         return formatter.format(record)
+
+    def _format_no_colour(self, record):
+        formatter = logging.Formatter(self.FORMAT)
+        formatter.datefmt   = "%Y-%m-%dT%H:%M:%S"
+        formatter.converter = time.gmtime
+        return formatter.format(record)
+
+    def colour(self, enabled):
+        if enabled:
+            self.format = self._format_colour
+        else:
+            self.format = self._format_no_colour
 
 
 class test_framework_t(object):
@@ -51,13 +63,18 @@ class test_framework_t(object):
     DEFAULT_VALGRIND       = "valgrind"
     DEFAULT_VALGRIND_FLAGS = "--leak-check=full"
 
-    def __init__(self, osm_path):
+    def __init__(self, osm_path, log_file=None):
         level = logging.DEBUG if "DEBUG" in os.environ else logging.INFO
         self._logger        = logging.getLogger(__name__)
         self._logger.setLevel(level)
-        streamhandler       = logging.StreamHandler()
-        streamhandler.setLevel(level)
         formatter           = test_logging_formatter_t()
+        self._log_file      = log_file
+        if self._log_file:
+            streamhandler   = logging.FileHandler(self._log_file)
+        else:
+            streamhandler   = logging.StreamHandler()
+        formatter.colour(self._log_file is None)
+        streamhandler.setLevel(level)
 
         streamhandler.setFormatter(formatter)
         self._logger.addHandler(streamhandler)
@@ -98,9 +115,11 @@ class test_framework_t(object):
             self._logger.debug(f'Invalid test argument {value} for "{desc}"')
             passed = False
         op = "=" if passed else "!="
-        prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
-        poxtfix = test_logging_formatter_t.RESET
-        print(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})' + poxtfix)
+        prefix = poxtfix = ""
+        if self._log_file is None:
+            prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
+            poxtfix = test_logging_formatter_t.RESET
+        self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})' + poxtfix)
         return passed
 
     def test(self):
@@ -164,7 +183,6 @@ class test_framework_t(object):
         self._vosm_proc = subprocess.Popen(command, stdout=debug_log, stderr=subprocess.PIPE)
         self._logger.debug("Opened virtual OSM.")
         pattern_str = "^==[0-9]+== Command: .*build/firmware.elf$"
-        # pattern_str = "^DEBUG:[0-9]{10}:SYS:Version : \[[0-9]+\]-[0-9a-z]{7}-.*$"
         return bool(self._wait_for_line(self._vosm_proc.stderr, re.compile(pattern_str)))
 
     def _connect_osm(self, path, timeout=3):
@@ -231,12 +249,13 @@ def main():
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )
         parser.add_argument("-f", "--fake_osm", help='Fake OSM', type=str, default=DEFAULT_FAKE_OSM_PATH)
+        parser.add_argument("-l", "--log_file", help='Log file', default=None)
         return parser.parse_args()
 
     args = get_args()
 
     passed = False
-    with test_framework_t(args.fake_osm) as tf:
+    with test_framework_t(args.fake_osm, args.log_file) as tf:
         passed = tf.test()
     return 0 if passed else -1
 
