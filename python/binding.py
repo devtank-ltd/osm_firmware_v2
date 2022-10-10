@@ -18,12 +18,16 @@ _RESPONSE_BEGIN = "============{"
 _RESPONSE_END = "}============"
 
 
-def app_key_generator(size=32, chars=string.ascii_lowercase + string.digits):
+def app_key_generator(size=32, chars=string.hexdigits):
+    """ Technically this will do upper and lowercase letters so the
+    randomness is skewed towards letters. """
     return ''.join(random.choice(chars) for _ in range(size))
     
 
 
-def dev_eui_generator(size=16, chars=string.ascii_lowercase + string.digits):
+def dev_eui_generator(size=16, chars=string.hexdigits):
+    """ Technically this will do upper and lowercase letters so the
+    randomness is skewed towards letters. """
     return ''.join(random.choice(chars) for _ in range(size))
 
 
