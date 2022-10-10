@@ -752,7 +752,7 @@ void log_debug(uint32_t flag, const char * s, ...)
 
     snprintf(prefix, sizeof(prefix), "DEBUG:%010u:", (unsigned)get_since_boot_ms());
 
-    fprintf(stdout, prefix);
+    fprintf(stdout, "%s", prefix);
     vfprintf(stdout, s, ap);
     fprintf(stdout, "\n");
 
