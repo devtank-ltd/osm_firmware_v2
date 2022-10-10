@@ -642,14 +642,6 @@ static void humidity_cb(char* args)
 }
 
 
-static void dew_point_cb(char* args)
-{
-    int32_t dew_temp;
-    htu21d_read_dew_temp(&dew_temp);
-    log_out("Dew temperature: %0.3fdegC", (float)dew_temp/100.f);
-}
-
-
 static void comms_conn_cb(char* args)
 {
     if (comms_get_connected())
@@ -875,7 +867,6 @@ void cmds_process(char * command, unsigned len)
         { "timer",        "Test usecs timer",         timer_cb                      , false },
         { "temp",         "Get the temperature",      temperature_cb                , false },
         { "humi",         "Get the humidity",         humidity_cb                   , false },
-        { "dew",          "Get the dew temperature",  dew_point_cb                  , false },
         { "wipe",         "Factory Reset",            wipe_cb                       , false },
         { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false },
         { "bat",          "Get battery level.",       bat_cb                        , false },

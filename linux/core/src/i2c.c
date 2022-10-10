@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <inttypes.h>
 
 #include "i2c.h"
 
@@ -76,6 +77,7 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
             addr = 0x10;
             break;
         default:
+            log_error("Unknown type %d", type);
             return false;
     }
 

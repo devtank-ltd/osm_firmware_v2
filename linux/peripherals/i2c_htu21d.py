@@ -6,16 +6,22 @@ from i2c_basetypes import i2c_device_t
 
 class i2c_device_htu21d_t(i2c_device_t):
     HTU21D_ADDR   = 0x40
-    HTU21D_CMDS   = {0xE3: 0x63b87e, # Temperature = 21.590degC
-                     0xE5: 0x741ee4, # Humidity = 50.160%
-                     0xF3: 0x0777,
-                     0xF5: 0x0666,
-                     0xE6: 0x0555,
-                     0xE7: 0x0444,
-                     0xFE: 0x0333}
 
-    HTU21D_TEMPERATURE_CMD = 0xE3
-    HTU21D_HUMIDITY_CMD    = 0xE5
+    HTU21D_HOLD_TRIG_TEMP_MEAS = 0xE3
+    HTU21D_HOLD_TRIG_HUMI_MEAS = 0xE5
+    HTU21D_TRIG_TEMP_MEAS      = 0xF3
+    HTU21D_TRIG_HUMI_MEAS      = 0xF5
+    HTU21D_WRITE_USER_REG      = 0xE6
+    HTU21D_READ_USER_REG       = 0xE7
+    HTU21D_SOFT_RESET          = 0xFE
+
+    HTU21D_CMDS   = {HTU21D_HOLD_TRIG_TEMP_MEAS: 0x63b87e, # Temperature = 21.590degC
+                     HTU21D_HOLD_TRIG_HUMI_MEAS: 0x741ee4, # Humidity = 50.160%
+                     HTU21D_TRIG_TEMP_MEAS     : 0x0777,
+                     HTU21D_TRIG_HUMI_MEAS     : 0x0666,
+                     HTU21D_WRITE_USER_REG     : 0x0555,
+                     HTU21D_READ_USER_REG      : 0x0444,
+                     HTU21D_SOFT_RESET         : 0x0333}
 
     def __init__(self):
         super().__init__(self.HTU21D_ADDR, self.HTU21D_CMDS)
@@ -46,13 +52,13 @@ class i2c_device_htu21d_t(i2c_device_t):
 
     @property
     def temperature(self):
-        return self._St_2_T(self._cmds[self.HTU21D_TEMPERATURE_CMD] >> 8)
+        return self._St_2_T(self._cmds[self.HTU21D_HOLD_TRIG_TEMP_MEAS] >> 8)
 
     @temperature.setter
     def temperature(self, new_T:float):
         curr_hum = self.humidity
         new_St = self._T_2_St(float(new_T))
-        self._cmds[self.HTU21D_TEMPERATURE_CMD] = (new_St << 8) | self._crc(new_St)
+        self._cmds[self.HTU21D_HOLD_TRIG_TEMP_MEAS] = (new_St << 8) | self._crc(new_St)
         self.humidity = curr_hum
 
     def _Sh_2_H(self, Sh):
@@ -69,14 +75,14 @@ class i2c_device_htu21d_t(i2c_device_t):
         """ Humidity is calculated in two parts. First the count is
         converted to a humidity, second the temperature is accounted for
         with a function of temperature (_H_f_T) """
-        uncomp = self._Sh_2_H(self._cmds[self.HTU21D_HUMIDITY_CMD] >> 8)
+        uncomp = self._Sh_2_H(self._cmds[self.HTU21D_HOLD_TRIG_HUMI_MEAS] >> 8)
         return uncomp + self._H_f_T()
 
     @humidity.setter
     def humidity(self, new_H:float):
         uncomp = float(new_H) - self._H_f_T()
         new_Sh = self._H_2_Sh(uncomp)
-        self._cmds[self.HTU21D_HUMIDITY_CMD] = (new_Sh << 8) | self._crc(new_Sh)
+        self._cmds[self.HTU21D_HOLD_TRIG_HUMI_MEAS] = (new_Sh << 8) | self._crc(new_Sh)
 
 
 
