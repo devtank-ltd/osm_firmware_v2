@@ -41,6 +41,7 @@ static modbus_bus_t * modbus_bus = NULL;
 static modbus_dev_t * modbus_devices = NULL;
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
+static uint8_t tx_modbuspacket[10];
 
 static unsigned modbuspacket_len = 0;
 
@@ -281,35 +282,35 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     if (reg->func == MODBUS_READ_HOLDING_FUNC)
     {
         /* ADU Header (Application Data Unit) */
-        modbuspacket[0] = dev->slave_id;
+        tx_modbuspacket[0] = dev->slave_id;
         /* ====================================== */
         /* PDU payload (Protocol Data Unit) */
-        modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
-        modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
-        modbuspacket[3] = reg->reg_addr & 0xFF;
-        modbuspacket[4] = reg_count >> 8; /*Register read count */
-        modbuspacket[5] = reg_count & 0xFF;
+        tx_modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
+        tx_modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+        tx_modbuspacket[3] = reg->reg_addr & 0xFF;
+        tx_modbuspacket[4] = reg_count >> 8; /*Register read count */
+        tx_modbuspacket[5] = reg_count & 0xFF;
         body_size = 6;
         /* ====================================== */
     }
     else if (reg->func == MODBUS_READ_INPUT_FUNC)
     {
         /* ADU Header (Application Data Unit) */
-        modbuspacket[0] = dev->slave_id;
+        tx_modbuspacket[0] = dev->slave_id;
         /* ====================================== */
         /* PDU payload (Protocol Data Unit) */
-        modbuspacket[1] = MODBUS_READ_INPUT_FUNC; /*Input*/
-        modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
-        modbuspacket[3] = reg->reg_addr & 0xFF;
-        modbuspacket[4] = reg_count >> 8; /*Register read count */
-        modbuspacket[5] = reg_count & 0xFF;
+        tx_modbuspacket[1] = MODBUS_READ_INPUT_FUNC; /*Input*/
+        tx_modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
+        tx_modbuspacket[3] = reg->reg_addr & 0xFF;
+        tx_modbuspacket[4] = reg_count >> 8; /*Register read count */
+        tx_modbuspacket[5] = reg_count & 0xFF;
         body_size = 6;
         /* ====================================== */
     }
     /* ADU Tail */
-    uint16_t crc = modbus_crc(modbuspacket, body_size);
-    modbuspacket[body_size] = crc & 0xFF;
-    modbuspacket[body_size+1] = crc >> 8;
+    uint16_t crc = modbus_crc(tx_modbuspacket, body_size);
+    tx_modbuspacket[body_size] = crc & 0xFF;
+    tx_modbuspacket[body_size+1] = crc >> 8;
 
     modbus_want_rx = true;
     modbus_cur_send_time = get_since_boot_ms();
@@ -317,10 +318,10 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     if (do_binary_framing)
     {
         uart_ring_out(RS485_UART, (char[]){MODBUS_BIN_START}, 1);
-        modbuspacket[8] = MODBUS_BIN_STOP;
-        uart_ring_out(RS485_UART, (char*)modbuspacket, 9);
+        tx_modbuspacket[8] = MODBUS_BIN_STOP;
+        uart_ring_out(RS485_UART, (char*)tx_modbuspacket, 9);
     }
-    else uart_ring_out(RS485_UART, (char*)modbuspacket, 8); /* Frame is done with silence */
+    else uart_ring_out(RS485_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
 
     /* All current types use this as is_valid. */
     reg->class_data_b = 0;
@@ -491,7 +492,7 @@ void modbus_ring_process(ring_buf_t * ring)
             }
             else if ((func & MODBUS_ERROR_MASK) == MODBUS_ERROR_MASK)
             {
-                modbuspacket_len = 3; /* Exception code and crc*/
+                modbuspacket_len = 2; /* Exception code is in header, so just crc*/
             }
             else
             {
@@ -578,7 +579,7 @@ void modbus_ring_process(ring_buf_t * ring)
     if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
         (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
     {
-        modbus_debug("Exception: %0x"PRIx8, modbuspacket[2]);
+        modbus_debug("Exception: 0x%02"PRIx8, modbuspacket[2]);
         return;
     }
 
