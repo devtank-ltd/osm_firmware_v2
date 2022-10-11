@@ -760,7 +760,6 @@ void linux_usleep(unsigned usecs)
 
 void linux_awaken(void)
 {
-    printf("Kicking sleeping Linux\n");
     if (!pthread_mutex_lock(&_sleep_mutex))
     {
         pthread_cond_broadcast(&_sleep_cond);
