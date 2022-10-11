@@ -250,7 +250,7 @@ class test_framework_t(object):
         self._i2c_process = None
 
     def _modbus_run(self, path):
-        modbus_server = modbus.modbus_server_t(path, logger=self._logger)
+        modbus_server = modbus.modbus_server_t(path)
         modbus_server.run_forever()
 
     def _spawn_modbus(self, path, timeout=1):

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import logging
 from pymodbus.payload import BinaryPayloadBuilder
 from pymodbus.transaction import ModbusBinaryFramer
@@ -40,7 +40,10 @@ class modbus_server_t(object):
                       ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
             logging.basicConfig(format=FORMAT)
             self._logger = log = logging.getLogger()
-            log.setLevel(logging.DEBUG)
+            if "DEBUG" in os.environ:
+                log.setLevel(logging.DEBUG)
+            else:
+                log.setLevel(logging.CRITICAL)
         else:
             self._logger = log = logger
 
