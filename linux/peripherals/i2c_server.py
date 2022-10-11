@@ -263,6 +263,8 @@ def main():
     htu_dev = i2c_device_htu21d_t()
     devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS),
             htu_dev.addr:  htu_dev}
+    if not os.path.exists("/tmp/osm"):
+        os.mkdir("/tmp/osm")
     i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
     i2c_sock.run_forever()
     return 0
