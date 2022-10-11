@@ -146,6 +146,7 @@ class test_framework_t(object):
         passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
         passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
         passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
+        passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.VP1.value, 1000, 10)
         return passed
 
     def _wait_for_line(self, stream, pattern, timeout=3):

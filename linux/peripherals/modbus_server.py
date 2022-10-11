@@ -1,33 +1,45 @@
 #!/usr/bin/env python3
 
 import logging
+from pymodbus.payload import BinaryPayloadBuilder
 from pymodbus.transaction import ModbusBinaryFramer
 from pymodbus.version import version
 from pymodbus.server.sync import StartSerialServer
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
+from pymodbus.constants import Endian
+
+
+SIZE_DICT = { BinaryPayloadBuilder.add_64bit_uint  : 4 ,
+              BinaryPayloadBuilder.add_64bit_int   : 4 ,
+              BinaryPayloadBuilder.add_32bit_uint  : 2 ,
+              BinaryPayloadBuilder.add_32bit_int   : 2 ,
+              BinaryPayloadBuilder.add_16bit_uint  : 1 ,
+              BinaryPayloadBuilder.add_16bit_int   : 1 ,
+              BinaryPayloadBuilder.add_32bit_float : 2 ,
+              BinaryPayloadBuilder.add_64bit_float : 4 }
 
 
 MODBUS_DEV_ADDRESS_E53  = 0x5
-MODBUS_REGISTERS_E53    = {0xc56e: [0, 1],     # PF  "PowerFactorP1",  "PF"
-                           0xc552: [0, 24001], # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
-                           0xc554: [0, 24002], # cVP2  "VoltageP2",      "V / 100"         ,
-                           0xc556: [0, 24003], # cVP3  "VoltageP3",      "V / 100"         ,
-                           0xc560: [0, 3001],  # mAP1  "CurrentP1",      "A / 1000"        , 3000 for 3A in milliamps
-                           0xc562: [0, 3002],  # mAP2  "CurrentP2",      "A / 1000"        ,
-                           0xc564: [0, 3003],  # mAP3  "CurrentP3",      "A / 1000"        ,
-                           0xc652: [0, 1000]   # ImEn  "ImportEnergy",   "watt/hours/0.001", 1000 for 1.0
+MODBUS_REGISTERS_E53    = {0xc56e: (BinaryPayloadBuilder.add_32bit_uint,     1),     # PF    "PowerFactorP1",  "PF"
+                           0xc552: (BinaryPayloadBuilder.add_32bit_uint, 24001), # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
+                           0xc554: (BinaryPayloadBuilder.add_32bit_uint, 24002), # cVP2  "VoltageP2",      "V / 100"         ,
+                           0xc556: (BinaryPayloadBuilder.add_32bit_uint, 24003), # cVP3  "VoltageP3",      "V / 100"         ,
+                           0xc560: (BinaryPayloadBuilder.add_32bit_uint,  3001),  # mAP1  "CurrentP1",      "A / 1000"        , 3000 for 3A in milliamps
+                           0xc562: (BinaryPayloadBuilder.add_32bit_uint,  3002),  # mAP2  "CurrentP2",      "A / 1000"        ,
+                           0xc564: (BinaryPayloadBuilder.add_32bit_uint,  3003),  # mAP3  "CurrentP3",      "A / 1000"        ,
+                           0xc652: (BinaryPayloadBuilder.add_32bit_uint,  1000)   # ImEn  "ImportEnergy",   "watt/hours/0.001", 1000 for 1.0
                            }
 
 MODBUS_DEV_ADDRESS_RIF  = 0x1
-MODBUS_REGISTERS_RIF    = {0x36: [0, 1.],     # PF   "PowerFactorP1",  "PF"
-                           0x00: [0, 24001.], # VP1  "VoltageP1",      "V"
-                           0x02: [0, 24002.], # VP2  "VoltageP2",      "V"
-                           0x04: [0, 24003.], # VP3  "VoltageP3",      "V"
-                           0x10: [0, 3001.],  # AP1  "CurrentP1",      "A"
-                           0x12: [0, 3002.],  # AP2  "CurrentP2",      "A"
-                           0x14: [0, 3003.],  # AP3  "CurrentP3",      "A"
-                           0x60: [0, 1000.]   # Imp  "ImportEnergy",   "watt/hours/1"
+MODBUS_REGISTERS_RIF    = {0x36: (BinaryPayloadBuilder.add_32bit_float, 1.    ), # PF   "PowerFactorP1",  "PF"
+                           0x00: (BinaryPayloadBuilder.add_32bit_float, 24001.), # VP1  "VoltageP1",      "V"
+                           0x02: (BinaryPayloadBuilder.add_32bit_float, 24002.), # VP2  "VoltageP2",      "V"
+                           0x04: (BinaryPayloadBuilder.add_32bit_float, 24003.), # VP3  "VoltageP3",      "V"
+                           0x10: (BinaryPayloadBuilder.add_32bit_float, 3001. ), # AP1  "CurrentP1",      "A"
+                           0x12: (BinaryPayloadBuilder.add_32bit_float, 3002. ), # AP2  "CurrentP2",      "A"
+                           0x14: (BinaryPayloadBuilder.add_32bit_float, 3003. ), # AP3  "CurrentP3",      "A"
+                           0x60: (BinaryPayloadBuilder.add_32bit_float, 1000. )  # Imp  "ImportEnergy",   "watt/hours/1"
                            }
 
 class meter_blocks_t(ModbusSparseDataBlock):
@@ -65,8 +77,10 @@ class modbus_server_t(object):
 
         self._port = port
 
-        e53_slave_block = meter_blocks_t(MODBUS_REGISTERS_E53)
-        rif_slave_block = meter_blocks_t(MODBUS_REGISTERS_RIF)
+        e53_builder     = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
+        e53_slave_block = self._create_block(e53_builder, MODBUS_REGISTERS_E53)
+        rif_builder     = BinaryPayloadBuilder(byteorder=Endian.Big, wordorder=Endian.Big)
+        rif_slave_block = self._create_block(rif_builder, MODBUS_REGISTERS_RIF)
         slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
                   MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(hr=rif_slave_block, zero_mode=True)}
         self._context = ModbusServerContext(slaves=slaves, single=False)
@@ -82,6 +96,23 @@ class modbus_server_t(object):
         log = self._logger
         StartSerialServer(self._context, framer=ModbusBinaryFramer, identity=self._identity,
                       port=self._port, timeout=1, baudrate=9600)
+
+    def _create_block(self, builder, src):
+        dst = {}
+        keys = sorted(src.keys())
+        for key in keys:
+            type_func, somevalue = src[key]
+            type_func(builder, somevalue)
+
+        builder_values = builder.build()
+        pos = 0
+        for key in keys:
+            type_func, somevalue = src[key]
+            len_ = SIZE_DICT[type_func]
+            dst[key] = builder_values[pos:pos + len_]
+            pos += len_
+
+        return ModbusSparseDataBlock(dst)
 
 
 def main(args):
