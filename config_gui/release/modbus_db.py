@@ -1,5 +1,6 @@
 import sqlite3
 import yaml
+import os
 
 # self.cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, device_name, baudrate, bits, parity, stop_bits, binary) VALUES (5, 'MSB MSW', 'E53', 9600, 8, 'N', 1, 'RTU')")
 # self.cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, device_name, baudrate, bits, parity, stop_bits, binary) VALUES (1, 'MSB LSW', 'RIF', 9600, 8, 'N', 1, 'RTU')")
@@ -111,7 +112,6 @@ INS_TEMP = lambda temp_name, desc: '''INSERT OR IGNORE INTO templates (template_
 
 DEL_TEMP_ID = lambda temp: "DELETE FROM templates WHERE template_id = %u" % temp
 
-
 DEL_TEMP_REG = lambda temp_id: "DELETE FROM templateRegister WHERE template_id = %u" % temp_id
 
 
@@ -166,11 +166,12 @@ GET_HEX_REG = lambda hex: "SELECT register_id FROM registers WHERE hex_address =
 GET_TMP_N = "SELECT template_name FROM templates"
 
 GET_REG_DESC = lambda reg: "SELECT reg_desc FROM registers WHERE reg_name = '%s'" % reg
+PATH = os.path.dirname(__file__)
 
 class modb_database_t():
     def __init__(self):
         self.conn = sqlite3.connect(
-            './config_database/modbus_templates', check_same_thread=False)
+            PATH + '/config_database/modbus_templates', check_same_thread=False)
         self.cur = self.conn.cursor()
 
     def get_reg_ids(self, hex_addr):

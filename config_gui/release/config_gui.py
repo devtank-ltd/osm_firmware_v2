@@ -91,6 +91,7 @@ STD_MEASUREMENTS_DESCS = {
     'SND': 'Sound'
 }
 
+PATH = os.path.dirname(__file__)
 NAVY = "#292924"
 IVORY = "#FAF9F6"
 CHARCOAL = "#565656"
@@ -106,14 +107,14 @@ FONT_XL = ('Arial', 20, 'bold')
 GET_TMP_N = MB_DB.GET_TMP_N
 GET_TEMP_ID = MB_DB.GET_TEMP_ID
 GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
-ICONS_T = "./osm_pictures/logos/icons-together.png"
-DVT_IMG = "./osm_pictures/logos/OSM+Powered.png"
-OSM_1 = "./osm_pictures/logos/lora-osm.png"
-R_LOGO = "./osm_pictures/logos/shuffle.png"
-GRPH_BG = "./osm_pictures/logos/graph.png"
-PARAMS = "./osm_pictures/logos/parameters.png"
-OPEN_S = "./osm_pictures/logos/opensource-nb.png"
-LEAF = "./osm_pictures/logos/leaf2.png"
+ICONS_T = PATH + "/osm_pictures/logos/icons-together.png"
+DVT_IMG = PATH + "/osm_pictures/logos/OSM+Powered.png"
+OSM_1 =   PATH + "/osm_pictures/logos/lora-osm.png"
+R_LOGO =  PATH + "/osm_pictures/logos/shuffle.png"
+GRPH_BG = PATH + "/osm_pictures/logos/graph.png"
+PARAMS =  PATH + "/osm_pictures/logos/parameters.png"
+OPEN_S =  PATH + "/osm_pictures/logos/opensource-nb.png"
+LEAF =    PATH + "/osm_pictures/logos/leaf2.png"
 
 
 def log_func(msg):
@@ -142,9 +143,9 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
-        with open('./yaml_files/modbus_data.yaml', 'w') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
             pass
-        with open('./yaml_files/del_file.yaml', 'w') as df:
+        with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
             pass
 
         style = Style()
