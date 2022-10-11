@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import os
 import sys
 from tkinter import *
@@ -2172,6 +2174,8 @@ class config_gui_window_t(Tk):
 
 
 if __name__ == '__main__':
+    own_dir = os.path.dirname(__file__)
+    os.chdir(own_dir)
     root = config_gui_window_t()
     tag = os.popen("git describe --tags").read().split('-')[0]
     width, height = root.winfo_screenwidth(), root.winfo_screenheight()
