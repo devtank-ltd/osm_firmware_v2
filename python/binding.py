@@ -22,7 +22,6 @@ def app_key_generator(size=32, chars=string.hexdigits):
     """ Technically this will do upper and lowercase letters so the
     randomness is skewed towards letters. """
     return ''.join(random.choice(chars) for _ in range(size))
-    
 
 
 def dev_eui_generator(size=16, chars=string.hexdigits):
@@ -298,7 +297,7 @@ class dev_t(dev_base_t):
             "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
-            "lora_conn" : measurement_t("LoRa Comms"         , bool  , "lora_conn" , parse_lora_comms     ),
+            "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
             "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
             "PF"       : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),

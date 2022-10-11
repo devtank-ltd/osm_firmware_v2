@@ -1,6 +1,7 @@
 import yaml
 import modbus_db
 from modbus_db import modb_database_t
+import os
 
 GET_TEMP_ID = modbus_db.GET_TEMP_ID
 DEL_TEMP_ID = modbus_db.DEL_TEMP_ID
@@ -14,6 +15,7 @@ INS_TMP_REG = modbus_db.INS_TMP_REG
 GET_UNIT_IDS = modbus_db.GET_UNIT_IDS
 GET_TMP_N = modbus_db.GET_TMP_N
 
+PATH = os.path.dirname(__file__)
 
 class modbus_funcs_t():
     def __init__(self):
@@ -21,9 +23,9 @@ class modbus_funcs_t():
 
     def revert_mb(self):
         # clear the yaml files from previous sessions
-        with open('./yaml_files/modbus_data.yaml', 'w') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
             pass
-        with open('./yaml_files/del_file.yaml', 'w') as del_file:
+        with open(PATH + '/yaml_files/del_file.yaml', 'w') as del_file:
             pass
         with self.db.conn:
             data = self.db.cur.execute(GET_TMP_N)
@@ -31,7 +33,7 @@ class modbus_funcs_t():
 
     def delete_temp_reg(self, temp, reg, copy):
         if copy == None:
-            with open('./yaml_files/modbus_data.yaml', 'r') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
                     if doc[v]['templates'][0]['template_name'] == temp:
@@ -43,7 +45,7 @@ class modbus_funcs_t():
                                 register['data_type'].pop(i)
                                 register['hex_address'].pop(i)
                                 register['reg_desc'].pop(i)
-                                with open('./yaml_files/modbus_data.yaml', 'w') as d_file:
+                                with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as d_file:
                                     yaml.dump(doc, d_file)
                                     break
 
@@ -89,10 +91,10 @@ class modbus_funcs_t():
             register['data_type'].append(item[2])
             register['reg_name'].append(item[3])
             register['reg_desc'].append(item[4])
-        with open('./yaml_files/modbus_data.yaml', 'a') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
             yaml.dump(devices_dict, f)
 
-        with open('./yaml_files/modbus_data.yaml') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml') as f:
             documents = yaml.full_load(f)
             for doc in documents:
                 doc_reg = doc['registers'][0]
@@ -114,54 +116,54 @@ class modbus_funcs_t():
         return yaml_template_name
 
     def del_tmpl_db(self, chosen_del, devices_dict):
-        with open('./yaml_files/del_file.yaml', 'r') as del_file:
+        with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
             doc = yaml.full_load(del_file)
             if doc is None:
                 devices_dict[0]['templates_to_del']['template'].append(
                     chosen_del)
-                with open('./yaml_files/del_file.yaml', 'a') as del_file:
+                with open(PATH + '/yaml_files/del_file.yaml', 'a') as del_file:
                     yaml.dump(devices_dict, del_file)
             else:
-                with open('./yaml_files/del_file.yaml', 'r') as del_file:
+                with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
                     doc = yaml.full_load(del_file)
                     doc[0]['templates_to_del']['template'].append(
                         chosen_del)
-                    with open('./yaml_files/del_file.yaml', 'w') as del_file:
+                    with open(PATH + '/yaml_files/del_file.yaml', 'w') as del_file:
                         yaml.dump(doc, del_file)
 
     def replace_tmpl_yaml(self, chosen_template):
-        with open('./yaml_files/modbus_data.yaml', 'r') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
             doc = yaml.full_load(f)
             for y, item in enumerate(doc):
                 if item['templates'][0]['template_name'] == chosen_template:
                     del doc[y]
                     if len(doc) == 0:
                         del doc
-                    with open('./yaml_files/modbus_data.yaml', 'w') as f:
+                    with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                         if f:
                             yaml.dump(doc, f)
 
     def save_edit_yaml(self, copy, edited_template, devices_dict, edited_temp):
         if copy == 'edit':
-            with open('./yaml_files/modbus_data.yaml', 'r') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for i, v in enumerate(doc):
                     if doc[i]['templates'][0]['template_name'] == edited_template:
                         del doc[i]
                         if len(doc) == 0:
                             del doc
-                        with open('./yaml_files/modbus_data.yaml', 'w') as f:
+                        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                             if f:
                                 yaml.dump(doc, f)
-            with open('./yaml_files/del_file.yaml', 'r') as del_file:
+            with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
                 loaded_del = yaml.full_load(del_file)
                 if loaded_del is None:
                     devices_dict[0]['templates_to_del']['template'].append(
                         edited_temp)
-                    with open('./yaml_files/del_file.yaml', 'a') as del_file:
+                    with open(PATH + '/yaml_files/del_file.yaml', 'a') as del_file:
                         yaml.dump(devices_dict, del_file)
                 else:
-                    with open('./yaml_files/del_file.yaml', 'r') as del_file:
+                    with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
                         del_f = yaml.full_load(del_file)
                         for i in del_f[0]['templates_to_del']['template']:
                             if i == edited_temp:
@@ -169,11 +171,11 @@ class modbus_funcs_t():
                             else:
                                 del_f[0]['templates_to_del']['template'].append(
                                     edited_temp)
-                                with open('./yaml_files/del_file.yaml', 'w') as del_file:
+                                with open(PATH + '/yaml_files/del_file.yaml', 'w') as del_file:
                                     yaml.dump(del_f, del_file)
 
     def save_template(self):
-        with open('./yaml_files/del_file.yaml', 'r') as del_file:
+        with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
             document = yaml.full_load(del_file)
             if document:
                 for doc in document[0]['templates_to_del']['template']:
@@ -181,7 +183,7 @@ class modbus_funcs_t():
                     if doc:
                         self.db.cur.execute(DEL_TEMP_ID(chosen_template))
                         self.db.cur.execute(DEL_TEMP_REG(chosen_template))
-        with open('./yaml_files/modbus_data.yaml') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml') as f:
             document = yaml.full_load(f)
             if document:
                 for doc in document:
@@ -246,6 +248,6 @@ class modbus_funcs_t():
                                                               yaml_reg_name, yaml_reg_desc, dev_id_t))
                             reg_id = self.db.get_reg_ids(yaml_hex)
                             self.db.cur.execute(INS_TMP_REG(tmp_id, reg_id[0]))
-            with open('./yaml_files/modbus_data.yaml', 'w') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                 pass
             self.db.conn.commit()

@@ -91,6 +91,7 @@ STD_MEASUREMENTS_DESCS = {
     'SND': 'Sound'
 }
 
+PATH = os.path.dirname(__file__)
 NAVY = "#292924"
 IVORY = "#FAF9F6"
 CHARCOAL = "#565656"
@@ -106,14 +107,14 @@ FONT_XL = ('Arial', 20, 'bold')
 GET_TMP_N = MB_DB.GET_TMP_N
 GET_TEMP_ID = MB_DB.GET_TEMP_ID
 GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
-ICONS_T = "./osm_pictures/logos/icons-together.png"
-DVT_IMG = "./osm_pictures/logos/OSM+Powered.png"
-OSM_1 = "./osm_pictures/logos/lora-osm.png"
-R_LOGO = "./osm_pictures/logos/shuffle.png"
-GRPH_BG = "./osm_pictures/logos/graph.png"
-PARAMS = "./osm_pictures/logos/parameters.png"
-OPEN_S = "./osm_pictures/logos/opensource-nb.png"
-LEAF = "./osm_pictures/logos/leaf2.png"
+ICONS_T = PATH + "/osm_pictures/logos/icons-together.png"
+DVT_IMG = PATH + "/osm_pictures/logos/OSM+Powered.png"
+OSM_1 =   PATH + "/osm_pictures/logos/lora-osm.png"
+R_LOGO =  PATH + "/osm_pictures/logos/shuffle.png"
+GRPH_BG = PATH + "/osm_pictures/logos/graph.png"
+PARAMS =  PATH + "/osm_pictures/logos/parameters.png"
+OPEN_S =  PATH + "/osm_pictures/logos/opensource-nb.png"
+LEAF =    PATH + "/osm_pictures/logos/leaf2.png"
 
 
 def log_func(msg):
@@ -142,9 +143,9 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
-        with open('./yaml_files/modbus_data.yaml', 'w') as f:
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
             pass
-        with open('./yaml_files/del_file.yaml', 'w') as df:
+        with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
             pass
 
         style = Style()
@@ -460,7 +461,7 @@ class config_gui_window_t(Tk):
         self._cmd = None
         try:
             self._cmd = subprocess.Popen(
-                ["sudo", "./static_program.sh", selected], shell=False)
+                ["sudo", "./" + PATH + "/static_program.sh", selected], shell=False)
         except Exception as e:
             self._stop()
             traceback.print_exc()
@@ -1496,7 +1497,7 @@ class config_gui_window_t(Tk):
                 dev = ''.join(row)
                 self.template_list.insert(0, dev)
                 write_dev_to_yaml = self.db.get_all_info(dev)
-                with open('./yaml_files/modbus_data.yaml', 'a') as f:
+                with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                     yaml.dump(write_dev_to_yaml, f)
 
         img = Image.open(PARAMS)
@@ -1563,7 +1564,7 @@ class config_gui_window_t(Tk):
         if self.edited_selection:
             index = self.edited_selection[0]
             edited_template = self.template_list.get(index)
-            with open('./yaml_files/modbus_data.yaml', 'r') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 if doc:
                     for i, item in enumerate(doc):
@@ -1637,7 +1638,7 @@ class config_gui_window_t(Tk):
             dev = ''.join(row)
             write_dev_to_yaml = self.db.get_all_info(dev)
             self.template_list.insert(0, dev)
-            with open('./yaml_files/modbus_data.yaml', 'a') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                 yaml.dump(write_dev_to_yaml, f)
 
     def _callback(self, event):
@@ -1677,7 +1678,7 @@ class config_gui_window_t(Tk):
                 temp = temp_list.get(template[0])
             else:
                 temp = str(name_entry.get())
-            with open('./yaml_files/modbus_data.yaml', 'r') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
                     if doc[v]['templates'][0]['template_name'] == temp:
@@ -1711,7 +1712,7 @@ class config_gui_window_t(Tk):
                                         index+1, data[0])
                                     register['reg_desc'].insert(
                                         index+1, data[4])
-                                with open('./yaml_files/modbus_data.yaml', 'w') as d_file:
+                                with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as d_file:
                                     yaml.dump(doc, d_file)
 
     def _shift_up(self, listbox, temp_list, name_entry, identity):
@@ -1733,7 +1734,7 @@ class config_gui_window_t(Tk):
                 template = temp_list.get(sel[0])
             else:
                 template = str(name_entry.get())
-            with open('./yaml_files/modbus_data.yaml', 'r') as f:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
                     if doc[v]['templates'][0]['template_name'] == template:
@@ -1767,7 +1768,7 @@ class config_gui_window_t(Tk):
                                         index-1, data[0])
                                     register['reg_desc'].insert(
                                         index-1, data[4])
-                                with open('./yaml_files/modbus_data.yaml', 'w') as d_file:
+                                with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as d_file:
                                     yaml.dump(doc, d_file)
 
     def _del_reg_tmp(self, listbox, copy, temp_list,
@@ -1819,7 +1820,7 @@ class config_gui_window_t(Tk):
                         self._modb_funcs.save_edit_yaml(
                             copy, edited_template, devices_dict, edited_temp)
                         self.template_list.delete(index)
-                    with open('./yaml_files/modbus_data.yaml', 'r') as f:
+                    with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                         doc = yaml.full_load(f)
                         if doc:
                             for y, item in enumerate(doc):
@@ -1827,7 +1828,7 @@ class config_gui_window_t(Tk):
                                     del doc[y]
                                     if len(doc) == 0:
                                         del doc
-                                    with open('./yaml_files/modbus_data.yaml', 'w') as f:
+                                    with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                                         if f:
                                             yaml.dump(doc, f)
                 if len(exists) == 0 or exists[0][1] == str(self.dev_entry.get()):
