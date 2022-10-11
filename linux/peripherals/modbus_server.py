@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-from pymodbus.datastore import ModbusSparseDataBlock
+
+import logging
+from pymodbus.transaction import ModbusBinaryFramer
+from pymodbus.version import version
+from pymodbus.server.sync import StartSerialServer
+from pymodbus.device import ModbusDeviceIdentification
+from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
 
 
 MODBUS_DEV_ADDRESS_E53  = 0x5
@@ -46,34 +52,41 @@ class meter_blocks_t(ModbusSparseDataBlock):
         return data[0:count]
 
 
+class modbus_server_t(object):
+    def __init__(self, port, logger=None):
+        if logger is None:
+            FORMAT = ('%(asctime)-15s %(threadName)-15s'
+                      ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
+            logging.basicConfig(format=FORMAT)
+            self._logger = log = logging.getLogger()
+            log.setLevel(logging.DEBUG)
+        else:
+            self._logger = log = logger
+
+        self._port = port
+
+        e53_slave_block = meter_blocks_t(MODBUS_REGISTERS_E53)
+        rif_slave_block = meter_blocks_t(MODBUS_REGISTERS_RIF)
+        slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
+                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(hr=rif_slave_block, zero_mode=True)}
+        self._context = ModbusServerContext(slaves=slaves, single=False)
+        self._identity = ModbusDeviceIdentification()
+        self._identity.VendorName = 'Pymodbus'
+        self._identity.ProductCode = 'PM'
+        self._identity.VendorUrl = 'http://github.com/riptideio/pymodbus/'
+        self._identity.ProductName = 'Pymodbus Server'
+        self._identity.ModelName = 'Pymodbus Server'
+        self._identity.MajorMinorRevision = version.short()
+
+    def run_forever(self):
+        log = self._logger
+        StartSerialServer(self._context, framer=ModbusBinaryFramer, identity=self._identity,
+                      port=self._port, timeout=1, baudrate=9600)
+
+
 def main(args):
-    import logging
-    from pymodbus.transaction import ModbusBinaryFramer
-    from pymodbus.version import version
-    from pymodbus.server.sync import StartSerialServer
-    from pymodbus.device import ModbusDeviceIdentification
-    from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext
-
-    FORMAT = ('%(asctime)-15s %(threadName)-15s'
-              ' %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
-    logging.basicConfig(format=FORMAT)
-    log = logging.getLogger()
-    log.setLevel(logging.DEBUG)
-
-    e53_slave_block = meter_blocks_t(MODBUS_REGISTERS_E53)
-    rif_slave_block = meter_blocks_t(MODBUS_REGISTERS_RIF)
-    slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
-              MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(hr=rif_slave_block, zero_mode=True)}
-    context = ModbusServerContext(slaves=slaves, single=False)
-    identity = ModbusDeviceIdentification()
-    identity.VendorName = 'Pymodbus'
-    identity.ProductCode = 'PM'
-    identity.VendorUrl = 'http://github.com/riptideio/pymodbus/'
-    identity.ProductName = 'Pymodbus Server'
-    identity.ModelName = 'Pymodbus Server'
-    identity.MajorMinorRevision = version.short()
-    StartSerialServer(context, framer=ModbusBinaryFramer, identity=identity,
-                  port=args[1], timeout=1, baudrate=9600)
+    modbus_server = modbus_server_t(args[1])
+    modbus_server.run_forever()
     return 0
 
 
