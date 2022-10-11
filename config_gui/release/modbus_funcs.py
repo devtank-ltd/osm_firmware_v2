@@ -1,7 +1,6 @@
 import yaml
 import modbus_db
-from modbus_db import modb_database_t
-import os
+from modbus_db import modb_database_t, find_path
 
 GET_TEMP_ID = modbus_db.GET_TEMP_ID
 DEL_TEMP_ID = modbus_db.DEL_TEMP_ID
@@ -14,8 +13,7 @@ INS_INTO_REGS = modbus_db.INS_INTO_REGS
 INS_TMP_REG = modbus_db.INS_TMP_REG
 GET_UNIT_IDS = modbus_db.GET_UNIT_IDS
 GET_TMP_N = modbus_db.GET_TMP_N
-
-PATH = os.path.dirname(__file__)
+PATH = find_path()
 
 class modbus_funcs_t():
     def __init__(self):

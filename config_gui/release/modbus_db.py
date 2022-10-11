@@ -1,6 +1,7 @@
 import sqlite3
 import yaml
 import os
+import sys
 
 # self.cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, device_name, baudrate, bits, parity, stop_bits, binary) VALUES (5, 'MSB MSW', 'E53', 9600, 8, 'N', 1, 'RTU')")
 # self.cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, device_name, baudrate, bits, parity, stop_bits, binary) VALUES (1, 'MSB LSW', 'RIF', 9600, 8, 'N', 1, 'RTU')")
@@ -166,8 +167,11 @@ GET_HEX_REG = lambda hex: "SELECT register_id FROM registers WHERE hex_address =
 GET_TMP_N = "SELECT template_name FROM templates"
 
 GET_REG_DESC = lambda reg: "SELECT reg_desc FROM registers WHERE reg_name = '%s'" % reg
-PATH = os.path.dirname(__file__)
+def find_path():
+    PATH = os.environ.get("_MEIPASS2",os.path.abspath("."))
+    return PATH
 
+PATH=find_path()
 class modb_database_t():
     def __init__(self):
         self.conn = sqlite3.connect(
