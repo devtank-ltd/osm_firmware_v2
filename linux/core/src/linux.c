@@ -18,6 +18,7 @@
 
 #include "platform.h"
 #include "linux.h"
+#include "common.h"
 
 
 #define LINUX_PTY_BUF_SIZ       64
@@ -118,6 +119,7 @@ void linux_port_debug(char * fmt, ...)
 
     va_list va;
     va_start(va, fmt);
+    printf("%010u:", (unsigned)get_since_boot_ms());
     vprintf(fmt, va);
     printf("\n");
     va_end(va);

@@ -458,6 +458,7 @@ static void modbus_get_reg_cb(char * args)
     {
         uart_rings_in_drain();
         uart_rings_out_drain();
+        platform_tight_loop();
         if (modbus_measurements_get2(reg, &value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
         {
             log_out("%s : %"PRId32, name, value.v_f32);

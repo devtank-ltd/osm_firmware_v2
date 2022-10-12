@@ -11,7 +11,7 @@ from pymodbus.constants import Endian
 
 
 MODBUS_DEV_ADDRESS_E53  = 0x5
-MODBUS_REGISTERS_E53    = {0xc56e: (BinaryPayloadBuilder.add_32bit_uint,     1),  # PF    "PowerFactorP1",  "PF"
+MODBUS_REGISTERS_E53    = {0xc56e: (BinaryPayloadBuilder.add_32bit_uint,  1000),  # PF    "PowerFactorP1",  "PF"
                            0xc552: (BinaryPayloadBuilder.add_32bit_uint, 24001),  # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
                            0xc554: (BinaryPayloadBuilder.add_32bit_uint, 24002),  # cVP2  "VoltageP2",      "V / 100"         ,
                            0xc556: (BinaryPayloadBuilder.add_32bit_uint, 24003),  # cVP3  "VoltageP3",      "V / 100"         ,
