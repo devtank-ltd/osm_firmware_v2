@@ -10,7 +10,7 @@ import logging
 import signal
 import multiprocessing
 
-import binding
+from binding import modbus_reg_t, dev_t, set_debug_print
 
 sys.path.append("../linux/peripherals/")
 
@@ -59,6 +59,7 @@ class test_logging_formatter_t(logging.Formatter):
 class test_framework_t(object):
 
     DEFAULT_OSM_BASE = "/tmp/osm/"
+    DEFAULT_OSM_CONFIG = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
     DEFAULT_RS485_PTY_PATH = DEFAULT_OSM_BASE + "UART_RS485_slave"
     DEFAULT_I2C_SCK_PATH = DEFAULT_OSM_BASE + "i2c_socket"
@@ -142,11 +143,22 @@ class test_framework_t(object):
         if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
             return False
 
+        self._vosm_conn.setup_modbus(is_bin=True)
+        self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
+            modbus_reg_t("Power Factor"    , 0xc56e, 3, "U32", "PF"  ),
+            modbus_reg_t("Phase 1 volts"   , 0xc552, 3, "U32", "cVP1" )
+            ])
+        self._vosm_conn.setup_modbus_dev(1, "RIF", True, False, [
+            modbus_reg_t("CurrentP1" , 0x10, 4, "F", "AP1" ),
+            modbus_reg_t("CurrentP2" , 0x12, 4, "F", "AP2" )
+            ])
         passed = True
         passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
         passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
         passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
-        passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.VP1.value, 240000, 100)
+        passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
+        passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
+        passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
         return passed
 
     def _wait_for_line(self, stream, pattern, timeout=3):
@@ -189,6 +201,8 @@ class test_framework_t(object):
         self._logger.info("Spawning virtual OSM.")
         command = self.DEFAULT_VALGRIND.split() + self.DEFAULT_VALGRIND_FLAGS.split() + path.split()
         debug_log = open(self.DEFAULT_OSM_BASE + "debug.log", "w")
+        if os.path.exists(self.DEFAULT_OSM_CONFIG):
+            os.unlink(self.DEFAULT_OSM_CONFIG)
         self._vosm_proc = subprocess.Popen(command, stdout=debug_log, stderr=subprocess.PIPE)
         self._logger.debug("Opened virtual OSM.")
         pattern_str = "^==[0-9]+== Command: .*build/firmware.elf$"
@@ -211,9 +225,9 @@ class test_framework_t(object):
         return True
 
     def _raw_connect_osm(self, path):
-        self._vosm_conn = binding.dev_t(path)
+        self._vosm_conn = dev_t(path)
         if "DEBUG" in os.environ:
-            binding.set_debug_print(self._logger.debug)
+            set_debug_print(self._logger.debug)
         self._vosm_conn.measurements_enable(False)
         self._logger.debug("Connected to the virtual OSM.")
 
