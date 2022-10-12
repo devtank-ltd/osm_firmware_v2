@@ -444,15 +444,43 @@ static void modbus_get_reg_cb(char * args)
         return;
     }
 
-    log_debug_mask |= DEBUG_MODBUS;
+    if (!modbus_start_read(reg))
+    {
+        log_out("Unknown to read modbus register.");
+        return;
+    }
 
-    modbus_start_read(reg);
+    uint32_t start_time = get_since_boot_ms();
+
+    measurements_reading_t value;
+
+    while(since_boot_delta(get_since_boot_ms(), start_time) < 1000)
+    {
+        uart_rings_in_drain();
+        uart_rings_out_drain();
+        platform_tight_loop();
+        if (modbus_measurements_get2(reg, &value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        {
+            log_out("%s : %"PRId32, name, value.v_f32);
+            return;
+        }
+    }
+    log_out("Timed out");
 }
 
 
 static void measurements_cb(char *args)
 {
     measurements_print();
+}
+
+
+static void measurements_enable_cb(char *args)
+{
+    if (args[0])
+        measurements_enabled = (args[0] == '1');
+
+    log_out("measurements_enabled : %c", (measurements_enabled)?'1':'0');
 }
 
 
@@ -856,6 +884,7 @@ void cmds_process(char * command, unsigned len)
         { "mb_log",       "Show modbus setup",        modbus_log                    , false },
         { "save",         "Save config",              persist_commit                , false },
         { "measurements", "Print measurements",       measurements_cb               , false },
+        { "meas_enable",  "Enable measuremnts.",      measurements_enable_cb        , false },
         { "fw+",          "Add chunk of new fw.",     fw_add                        , false },
         { "fw@",          "Finishing crc of new fw.", fw_fin                        , false },
         { "reset",        "Reset device.",            reset_cb                      , false },

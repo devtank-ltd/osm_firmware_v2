@@ -105,38 +105,6 @@ def parse_lora_comms(r_str: str):
     return "Connected" in r_str
 
 
-class mb_reg_t(object):
-    def __init__(self, name, addr, dtype, func):
-        self.name = name
-        self.addr = addr
-        self.dtype = dtype
-        self.func = func
-
-    def __str__(self):
-        return f'{str(self.name)}, {str(self.addr)}, {str(self.dtype)}, {str(self.func)}'
-
-
-class mb_dev_t(object):
-    def __init__(self, name, unit_id, regs, byteorder, wordorder):
-        self.unit = unit_id
-        self.name = name
-        self.regs = regs
-        self.byteorder = byteorder
-        self.wordorder = wordorder
-
-    def __str__(self):
-        return f'{str(self.unit)}, {str(self.name)}, {str(self.regs)}, {str(self.byteorder)}, {str(self.wordorder)}'
-
-
-class mb_bus_t(object):
-    def __init__(self, config, devices):
-        self.config = config
-        self.devices = devices
-
-    def __str__(self):
-        return f'{self.config}, {self.devices}'
-
-
 class measurement_t(object):
     def __init__(self, name: str, type_: type, cmd: str, parse_func):
         self.name = name
@@ -190,6 +158,35 @@ class modbus_reg_t(measurement_t):
     @property
     def cmd(self) -> str:
         return f"mb_get_reg {self.handle}"
+
+    def __str__(self):
+        return f'{str(self.name)}, {str(self.address)}, {str(self.mb_type_)}, {str(self.func)}'
+
+
+class mb_reg_t(modbus_reg_t):
+    def __init__(self, name, addr, dtype, func):
+        super().__init__(name, addr, func, dtype, name)
+
+
+class mb_dev_t(object):
+    def __init__(self, name, unit_id, regs, byteorder, wordorder):
+        self.unit = unit_id
+        self.name = name
+        self.regs = regs
+        self.byteorder = byteorder
+        self.wordorder = wordorder
+
+    def __str__(self):
+        return f'{str(self.unit)}, {str(self.name)}, {str(self.regs)}, {str(self.byteorder)}, {str(self.wordorder)}'
+
+
+class mb_bus_t(object):
+    def __init__(self, config, devices):
+        self.config = config
+        self.devices = devices
+
+    def __str__(self):
+        return f'{self.config}, {self.devices}'
 
 
 class reader_child_t(object):
@@ -300,15 +297,8 @@ class dev_t(dev_base_t):
             "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
             "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
-            "PF"       : modbus_reg_t("Power Factor"    , 0x36, 4, "F", "PF"  ),
-            "VP1"      : modbus_reg_t("Phase 1 volts"   , 0x00, 4, "F", "VP1" ),
-            "VP2"      : modbus_reg_t("Phase 2 volts"   , 0x02, 4, "F", "VP2" ),
-            "VP3"      : modbus_reg_t("Phase 3 volts"   , 0x04, 4, "F", "VP3" ),
-            "AP1"      : modbus_reg_t("Phase 1 amps"    , 0x10, 4, "F", "AP1" ),
-            "AP2"      : modbus_reg_t("Phase 2 amps"    , 0x12, 4, "F", "AP2" ),
-            "AP3"      : modbus_reg_t("Phase 3 amps"    , 0x14, 4, "F", "AP3" ),
-            "Imp"      : modbus_reg_t("Import Energy"   , 0x60, 4, "F", "Imp" ),
         }
+        self.update_modbus_registers()
 
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
@@ -499,6 +489,9 @@ class dev_t(dev_base_t):
             meas_list = [line.replace("\t\t", "\t").split("\t") for line in r]
         return meas_list
 
+    def measurements_enable(self, value):
+        self.do_cmd("meas_enable %s" % ("1" if value else "0"))
+
     def get_modbus(self):
         lines = self.do_cmd_multi("mb_log")
         bus_config = None
@@ -526,6 +519,17 @@ class dev_t(dev_base_t):
             pass
 
         return mb_bus_t(config=bus_config, devices=[mb_dev_t(**dev) for dev in devs])
+
+    def update_modbus_registers(self):
+        new_chldren = {}
+        for key, child in self._children.items():
+            if not isinstance(child, modbus_reg_t):
+                new_chldren[key] = child
+        self._children = new_chldren
+        mb_root = self.get_modbus()
+        for device in mb_root.devices:
+            for reg in device.regs:
+                self._children[reg.handle] = reg
 
     def get_value(self, cmd):
         cmd = self.do_cmd(cmd)
@@ -557,8 +561,10 @@ class dev_t(dev_base_t):
         if r:
             return int(r[-1])
 
-    def modbus_dev_add(self, slave_id: int, device: str) -> bool:
-        r = self.do_cmd(f"mb_dev_add {slave_id} {device}", timeout=3)
+    def modbus_dev_add(self, slave_id: int, device: str, is_msb: bool, is_msw: bool) -> bool:
+        is_msb = "MSB" if is_msb else "LSB"
+        is_msw = "MSW" if is_msw else "LSW"
+        r = self.do_cmd(f"mb_dev_add {slave_id} {is_msb} {is_msw} {device}", timeout=3)
         return "Added modbus device" in r
 
     def modbus_reg_add(self, slave_id: int, reg: modbus_reg_t) -> bool:
@@ -567,18 +573,23 @@ class dev_t(dev_base_t):
             return False
         r = self.do_cmd(
             f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
+        self._children[reg.handle] = reg
         return "Added modbus reg" in r
 
-    def setup_modbus_dev(self, slave_id: int, device: str, regs: list) -> bool:
-        if not self.modbus_dev_add(slave_id, device):
+    def setup_modbus(self, is_bin=False, baudrate=9600, bits=8, parity='N', stopbits=1):
+        is_bin = "BIN" if is_bin else "RTU"
+        self._ll.write(f"mb_setup {is_bin} {baudrate} {bits}{parity}{stopbits}")
+        self._ll.readlines()
+
+    def setup_modbus_dev(self, slave_id: int, device: str, is_msb: bool, is_msw: bool, regs: list) -> bool:
+        if not self.modbus_dev_add(slave_id, device, is_msb, is_msw):
             self._log("Could not add device.")
             return False
         for reg in regs:
             self._ll.write(
                 f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
             self._ll.readlines()
-        self._ll.write("mb_setup BIN 9600 8N1")
-        self._ll.readlines()
+            self._children[reg.handle] = reg
         return True
 
     def modbus_dev_del(self, device: str):

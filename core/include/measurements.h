@@ -61,3 +61,5 @@ extern void     measurements_set_debug_mode(bool enable);
 extern void     measurements_power_mode(measurements_power_mode_t mode);
 extern void     measurements_derive_cc_phase(void);
 extern bool     measurements_send_test(void);
+
+extern bool     measurements_enabled;

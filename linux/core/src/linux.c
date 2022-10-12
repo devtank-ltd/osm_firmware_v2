@@ -18,7 +18,7 @@
 
 #include "platform.h"
 #include "linux.h"
-#include "log.h"
+#include "common.h"
 
 
 #define LINUX_PTY_BUF_SIZ       64
@@ -119,6 +119,7 @@ void linux_port_debug(char * fmt, ...)
 
     va_list va;
     va_start(va, fmt);
+    printf("%010u:", (unsigned)get_since_boot_ms());
     vprintf(fmt, va);
     printf("\n");
     va_end(va);
@@ -520,14 +521,11 @@ void _linux_iterate(void)
                     if (r == 1)
                     {
                         if (isgraph(c))
-                            linux_port_debug("%s << %c (0x%02x)", fd_handler->name, c, c);
+                            linux_port_debug("%s << '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
                         else
-                            linux_port_debug("%s << [0x%02x]", fd_handler->name, c);
+                            linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
                         if (fd_handler->cb)
-                        {
                             fd_handler->cb(&c, 1);
-                            linux_awaken();
-                        }
                     }
                     break;
                 case LINUX_FD_TYPE_TIMER:
@@ -740,26 +738,6 @@ uint32_t get_since_boot_ms(void)
 }
 
 
-void log_debug(uint32_t flag, const char * s, ...)
-{
-    if (!(flag & log_debug_mask))
-        return;
-
-    va_list ap;
-    va_start(ap, s);
-
-    char prefix[18];
-
-    snprintf(prefix, sizeof(prefix), "DEBUG:%010u:", (unsigned)get_since_boot_ms());
-
-    fprintf(stdout, "%s", prefix);
-    vfprintf(stdout, s, ap);
-    fprintf(stdout, "\n");
-
-    va_end(ap);
-}
-
-
 void linux_usleep(unsigned usecs)
 {
     struct timespec ts;
@@ -781,7 +759,6 @@ void linux_usleep(unsigned usecs)
 
 void linux_awaken(void)
 {
-    printf("Kicking sleeping Linux\n");
     if (!pthread_mutex_lock(&_sleep_mutex))
     {
         pthread_cond_broadcast(&_sleep_cond);

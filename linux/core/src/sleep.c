@@ -36,7 +36,7 @@ void _sleep_on_wakeup(void)
 
 void sleep_exit_sleep_mode(void)
 {
-    ;
+    linux_awaken();
 }
 
 
