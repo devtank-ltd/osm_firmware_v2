@@ -464,7 +464,7 @@ static void modbus_get_reg_cb(char * args)
             return;
         }
     }
-    log_out("Timed out : %"PRIu32, since_boot_delta(get_since_boot_ms(), start_time));
+    log_out("Timed out");
 }
 
 
