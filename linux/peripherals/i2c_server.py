@@ -7,7 +7,7 @@ import socket
 import datetime
 import selectors
 
-
+import socket_server_base as socket_server
 from i2c_basetypes import i2c_device_t
 from i2c_htu21d import i2c_device_htu21d_t
 
@@ -30,18 +30,6 @@ I2C_WRITE_NUM = 0
 I2C_READ_NUM  = 1
 
 
-COLOUR_WHITE  = "\033[29m"
-COLOUR_BLACK  = "\033[30m"
-COLOUR_RED    = "\033[31m"
-COLOUR_GREEN  = "\033[32m"
-COLOUR_YELLOW = "\033[33m"
-COLOUR_BLUE   = "\033[34m"
-COLOUR_CYAN   = "\033[36m"
-COLOUR_GREY   = "\033[37m"
-
-COLOUR_RESET  = COLOUR_WHITE
-
-
 VEML7700_ADDR = 0x10
 VEML7700_CMDS = {0x00: 0x0999,
                  0x01: 0x0888,
@@ -52,102 +40,22 @@ VEML7700_CMDS = {0x00: 0x0999,
                  0x06: 0x0333}
 
 
-def log(file_, msg, colour=None):
-    if file_ is not sys.stdout and file_.closed:
-        file_.open()
-    payload = f"[{datetime.datetime.isoformat(datetime.datetime.utcnow())}] {msg}\n"
-    if file_ is sys.stdout and colour:
-        payload = colour + payload + COLOUR_RESET
-    file_.write(payload)
-    file_.flush()
-    return len(payload)
-
-
-class i2c_client_t(object):
-    def __init__(self, connection_obj):
-            self._conn_obj = connection_obj
-            self.read = lambda x=1024: self._conn_obj.recv(x)
-            self.write = self._conn_obj.send
-            self.fileno = self._conn_obj.fileno
-            self.close = self._conn_obj.close
-
-
-class i2c_server_t(object):
+class i2c_server_t(socket_server.socket_server_t):
     def __init__(self, socket_loc, devs, log_file=None, logger=None):
-        if os.path.exists(socket_loc):
-            os.unlink(socket_loc)
-        self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._server.bind(socket_loc)
-        self._server.setblocking(False)
-        self._server.listen(5)
-
-        self._selector = selectors.PollSelector()
-        self._selector.register(self._server, selectors.EVENT_READ, self._new_client_callback)
-
-        self._clients = {}
-
-        self.fileno = self._server.fileno
-
-        self._done = False
-
-        if logger is None:
-            log_file_obj = sys.stdout if log_file is None else open(log_file, "a")
-            self._log = lambda m, c=None: log(log_file_obj, m, c)
-            self.info    = lambda m : self._log(f"{{INFO}}: {m}", COLOUR_GREY)
-            self.error   = lambda m : self._log(f"{{ERROR}}: {m}", COLOUR_RED)
-            self.warning = lambda m : self._log(f"{{WARNING}}: {m}", COLOUR_YELLOW)
-            if os.environ.get("DEBUG", None):
-                self.debug   = lambda m : self._log(f"{{DEBUG}}: {m}", COLOUR_CYAN)
-            else:
-                self.debug   = lambda *x : x
-        else:
-            self.info    = logger.info
-            self.error   = logger.error
-            self.warning = logger.warning
-            self.debug   = logger.debug if os.environ.get("DEBUG", None) else lambda *x : x
+        super().__init__(socket_loc, log_file=log_file, logger=logger)
 
         self._devices = dict(devs)
 
         self.info(f"I2C SERVER INITIALISED WITH {len(self._devices)} DEVICES")
 
-    def _new_client_callback(self, sock, __mask):
-        conn, addr = sock.accept()
-        client = i2c_client_t(conn)
-        self.debug("New client connection FD:%u" % client.fileno())
-
-        self._clients[client.fileno()] = client
-
-        self._selector.register(client,
-                                selectors.EVENT_READ,
-                                self._client_message)
-
-    def _client_message(self, sock, __mask):
-        fd = sock.fileno()
-        client = self._clients.get(fd, None)
-        if client is None:
-            self.error(f"Message from client [fd:{fd}] not in connected clients list.")
+    def _process(self, client, data):
+        data = data.decode()
+        self.debug(f"Client [fd:{client.fileno()}] message << '{data}'")
+        i2c_data = self._parse_i2c(data)
+        if i2c_data is False:
+            self.warning("Client message does not match I2C pattern.")
             return
-        while True:
-            try:
-                line = client.read()
-            except OSError:
-                self._close_client(client)
-                return
-            if line is None:
-                self._close_client(client)
-                return
-            if line is False:
-                self.warning(f"Tried to read from client [fd:{fd}] but failed.")
-                return
-            if not len(line):
-                return
-            line = line.decode()
-            self.debug(f"Client [fd:{fd}] message << '{line}'")
-            i2c_data = self._parse_i2c(line)
-            if i2c_data is False:
-                self.warning("Client message does not match I2C pattern.")
-                continue
-            self._i2c_process(client, i2c_data)
+        self._i2c_process(client, i2c_data)
 
     def _create_i2c_payload(self, data):
         payload = "%.02x:%x"% (data["addr"], data["wn"])
@@ -221,42 +129,6 @@ class i2c_server_t(object):
             dict_["r"] = r
 
         return dict_
-
-    def _close_client(self, client):
-        fd = client.fileno()
-        try:
-            self._clients.pop(fd)
-        except KeyError:
-            return
-        self.info(f"Disconnecting client [fd:{fd}]")
-        self._selector.unregister(client)
-        client.close()
-
-    def _send_to_client(self, client, msg):
-        self.debug("Message to client [fd:%u] >> '%s'" % (client.fileno(), msg))
-        try:
-            resp = client.write(msg.encode())
-        except BrokenPipeError:
-            self._close_client(client)
-            return
-        if not resp:
-            self._close_client(client)
-
-    def _send_to_all_clients(self, msg):
-        for client in self._clients.values():
-            self._send_to_client(client, msg)
-
-    def run_forever(self):
-        try:
-            while not self._done:
-                events = self._selector.select(timeout=0.5)
-                for key, mask in events:
-                    callback = key.data
-                    callback(key.fileobj, mask)
-        except KeyboardInterrupt:
-            print("Caught keyboard interrupt, exiting")
-        finally:
-            self._selector.close()
 
 
 def main():
