@@ -49,11 +49,11 @@ class modbus_server_t(object):
 
         self._port = port
 
-        e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=Endian.Big, wordorder=Endian.Little)
-        rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=Endian.Big, wordorder=Endian.Big)
+        e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=Endian.Big, wordorder=Endian.Big)
+        rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=Endian.Big, wordorder=Endian.Little)
 
-        slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block),
-                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block)}
+        slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
+                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block, zero_mode=True)}
         self._context = ModbusServerContext(slaves=slaves, single=False)
         self._identity = ModbusDeviceIdentification()
         self._identity.VendorName = 'Pymodbus'
