@@ -444,7 +444,11 @@ static void modbus_get_reg_cb(char * args)
         return;
     }
 
-    modbus_start_read(reg);
+    if (!modbus_start_read(reg))
+    {
+        log_out("Unknown to read modbus register.");
+        return;
+    }
 
     uint32_t start_time = get_since_boot_ms();
 
