@@ -523,10 +523,7 @@ void _linux_iterate(void)
                         else
                             linux_port_debug("%s << [0x%02x]", fd_handler->name, c);
                         if (fd_handler->cb)
-                        {
                             fd_handler->cb(&c, 1);
-                            linux_awaken();
-                        }
                     }
                     break;
                 case LINUX_FD_TYPE_TIMER:
