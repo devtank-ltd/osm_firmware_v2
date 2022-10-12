@@ -519,9 +519,9 @@ void _linux_iterate(void)
                     if (r == 1)
                     {
                         if (isgraph(c))
-                            linux_port_debug("%s << %c (0x%02x)", fd_handler->name, c, c);
+                            linux_port_debug("%s << '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
                         else
-                            linux_port_debug("%s << [0x%02x]", fd_handler->name, c);
+                            linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
                         if (fd_handler->cb)
                             fd_handler->cb(&c, 1);
                     }
