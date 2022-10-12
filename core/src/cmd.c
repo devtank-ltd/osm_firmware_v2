@@ -444,9 +444,23 @@ static void modbus_get_reg_cb(char * args)
         return;
     }
 
-    log_debug_mask |= DEBUG_MODBUS;
-
     modbus_start_read(reg);
+
+    uint32_t start_time = get_since_boot_ms();
+
+    measurements_reading_t value;
+
+    while(since_boot_delta(get_since_boot_ms(), start_time) < 1000)
+    {
+        uart_rings_in_drain();
+        uart_rings_out_drain();
+        if (modbus_measurements_get2(reg, &value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        {
+            log_out("%s : %"PRId32, name, value.v_f32);
+            return;
+        }
+    }
+    log_out("Timed out : %"PRIu32, since_boot_delta(get_since_boot_ms(), start_time));
 }
 
 
