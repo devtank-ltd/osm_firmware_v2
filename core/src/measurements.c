@@ -105,6 +105,8 @@ static uint16_t                     _measurements_hex_arr_pos                   
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
+bool                                 measurements_enabled                                = true;
+
 static measurements_power_mode_t    _measurements_power_mode                             = MEASUREMENTS_POWER_MODE_AUTO;
 
 static unsigned _measurements_chunk_start_pos = 0;
@@ -1209,6 +1211,9 @@ static void _measurements_sleep_iteration(void)
 
 void measurements_loop_iteration(void)
 {
+    if (!measurements_enabled)
+        return;
+
     static bool has_printed_no_con = false;
 
     if (!comms_get_connected() && !_measurements_debug_mode)

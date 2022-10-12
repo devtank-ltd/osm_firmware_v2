@@ -474,6 +474,15 @@ static void measurements_cb(char *args)
 }
 
 
+static void measurements_enable_cb(char *args)
+{
+    if (args[0])
+        measurements_enabled = (args[0] == '1');
+
+    log_out("measurements_enabled : %c", (measurements_enabled)?'1':'0');
+}
+
+
 static void fw_add(char *args)
 {
     args = skip_space(args);
@@ -874,6 +883,7 @@ void cmds_process(char * command, unsigned len)
         { "mb_log",       "Show modbus setup",        modbus_log                    , false },
         { "save",         "Save config",              persist_commit                , false },
         { "measurements", "Print measurements",       measurements_cb               , false },
+        { "meas_enable",  "Enable measuremnts.",      measurements_enable_cb        , false },
         { "fw+",          "Add chunk of new fw.",     fw_add                        , false },
         { "fw@",          "Finishing crc of new fw.", fw_fin                        , false },
         { "reset",        "Reset device.",            reset_cb                      , false },
