@@ -214,6 +214,7 @@ class test_framework_t(object):
         self._vosm_conn = binding.dev_t(path)
         if "DEBUG" in os.environ:
             binding.set_debug_print(self._logger.debug)
+        self._vosm_conn.measurements_enable(False)
         self._logger.debug("Connected to the virtual OSM.")
 
     def _disconnect_osm(self):

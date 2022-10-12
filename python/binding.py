@@ -500,6 +500,9 @@ class dev_t(dev_base_t):
             meas_list = [line.replace("\t\t", "\t").split("\t") for line in r]
         return meas_list
 
+    def measurements_enable(self, value):
+        self.do_cmd("meas_enable %s" % ("1" if value else "0"))
+
     def get_modbus(self):
         lines = self.do_cmd_multi("mb_log")
         bus_config = None
