@@ -407,12 +407,11 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
 
     def _add_ver(self):
-        vers = self._dev.do_cmd_multi("version")
-        if vers:
-            version = vers[0].split('-')[1]
-            self._fw_version_body.configure(
-                text="Current Firmware Version - " + version,
-                bg=IVORY, font=FONT)
+        version = self._dev.version
+        version = "-".join(version.split("-")[0:2])
+        self._fw_version_body.configure(
+            text="Current Firmware Version - " + version,
+            bg=IVORY, font=FONT)
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()

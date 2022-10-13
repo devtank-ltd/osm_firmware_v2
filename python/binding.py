@@ -311,6 +311,11 @@ class dev_t(dev_base_t):
         self._log_obj.emit(msg)
 
     @property
+    def version(self):
+        r = self.do_cmd_multi("version")
+        return r[0].split()[-1]
+
+    @property
     def serial_num(self):
         r = self.do_cmd_multi("serial_num")
         return r[0].split()[-1]
