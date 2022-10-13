@@ -1,5 +1,8 @@
 #!/bin/bash
 
+own_dir=$(dirname "$(readlink -f "$0")")
+cd "$own_dir"
+
 [ -d "./stm32flash-0.6" ] || wget https://sourceforge.net/projects/stm32flash/files/stm32flash-0.6.tar.gz/download && tar -xvf download
 
 rm download
