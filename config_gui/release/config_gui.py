@@ -401,13 +401,13 @@ class config_gui_window_t(Tk):
         return self._interval_min
 
     def _pop_sensor_name(self):
-        ser_op = self._dev.serial_num
+        ser_op = self._dev.serial_num.value
         self._sensor_name.configure(
             text="Serial Number - " + ser_op,
             bg=IVORY, font=FONT)
 
     def _add_ver(self):
-        version = self._dev.version
+        version = self._dev.version.value
         version = "-".join(version.split("-")[0:2])
         self._fw_version_body.configure(
             text="Current Firmware Version - " + version,
@@ -1278,10 +1278,9 @@ class config_gui_window_t(Tk):
             self._app_entry.insert(0, app_op)
 
     def _get_lora_status(self):
-        status = self._dev.do_cmd_multi("comms_conn")
-        if status:
-            conn = status[0].split()[0]
-            if conn == '1':
+        conn = self._dev.comms_conn.value
+        if conn is not None:
+            if conn:
                 self._lora_status.configure(text="Connected", fg="green")
             else:
                 self._lora_status.configure(text="Disconnected", fg="red")

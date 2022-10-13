@@ -105,6 +105,10 @@ def parse_lora_comms(r_str: str):
     return "Connected" in r_str
 
 
+def parse_word(index: int, r_str: str):
+    return r_str.split()[index]
+
+
 class measurement_t(object):
     def __init__(self, name: str, type_: type, cmd: str, parse_func):
         self.name = name
@@ -297,6 +301,8 @@ class dev_t(dev_base_t):
             "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
             "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
+            "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
+            "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
         self.update_modbus_registers()
 
@@ -309,16 +315,6 @@ class dev_t(dev_base_t):
 
     def _log(self, msg):
         self._log_obj.emit(msg)
-
-    @property
-    def version(self):
-        r = self.do_cmd_multi("version")
-        return r[0].split()[-1]
-
-    @property
-    def serial_num(self):
-        r = self.do_cmd_multi("serial_num")
-        return r[0].split()[-1]
 
     @property
     def interval_mins(self):
@@ -452,24 +448,8 @@ class dev_t(dev_base_t):
             self._ll.write(cmd)
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
-        self._ll.write(cmd)
-        end_time = time.monotonic() + timeout
-        r = []
-        done = False
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines(_RESPONSE_END)
-            for line in new_lines:
-                if _RESPONSE_END in line:
-                    done = True
-                r += line
-            if done:
-                break
-            assert not "ERROR" in r, "OSM Error"
-        r_str = ""
-        for i in range(0, len(r)):
-            line = r[i]
-            r_str += str(line)
-        return r_str
+        r = self.do_cmd_multi(cmd, timeout)
+        return "".join([str(line) for line in r])
 
     def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> str:
         self._ll.write(cmd)
@@ -484,6 +464,7 @@ class dev_t(dev_base_t):
             r += new_lines
             if done:
                 break
+            assert not "ERROR" in r, "OSM Error"
         start_pos = None
         end_pos = None
         for n in range(0, len(r)):
