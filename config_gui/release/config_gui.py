@@ -397,18 +397,14 @@ class config_gui_window_t(Tk):
                         self._load_measurements(self._main_fr, "rif", None)
 
     def _get_interval_mins(self):
-        get_mins = self._dev.do_cmd_multi("interval_mins")
-        if get_mins:
-            self._interval_min = get_mins[0].split()[4]
-            return self._interval_min
+        self._interval_min = self._dev.interval_mins
+        return self._interval_min
 
     def _pop_sensor_name(self):
-        serial_num = self._dev.do_cmd_multi("serial_num")
-        if serial_num:
-            ser_op = serial_num[0].split()[2]
-            self._sensor_name.configure(
-                text="Serial Number - " + ser_op,
-                bg=IVORY, font=FONT)
+        ser_op = self._dev.serial_num
+        self._sensor_name.configure(
+            text="Serial Number - " + ser_op,
+            bg=IVORY, font=FONT)
 
     def _add_ver(self):
         vers = self._dev.do_cmd_multi("version")
@@ -860,11 +856,11 @@ class config_gui_window_t(Tk):
         if int(widg.get()):
             uplink = int(widg.get())
             if uplink > 255:
-                self._dev.do_cmd(f"interval_mins 255")
+                self._dev.interval_mins = 255
             elif uplink < 3:
-                self._dev.do_cmd(f"interval_mins 3")
+                self._dev.interval_mins = 3
             else:
-                self._dev.do_cmd(f"interval_mins {uplink}")
+                self._dev.interval_mins = uplink
             self._load_headers(frame, "rif", False)
         else:
             tkinter.messagebox.showerror(

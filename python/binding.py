@@ -311,8 +311,18 @@ class dev_t(dev_base_t):
         self._log_obj.emit(msg)
 
     @property
+    def serial_num(self):
+        r = self.do_cmd_multi("serial_num")
+        return r[0].split()[-1]
+
+    @property
     def interval_mins(self):
-        return self.do_cmd("interval_mins")
+        r = self.do_cmd_multi("interval_mins")
+        return int(r[0].split()[-1])
+
+    @interval_mins.setter
+    def interval_mins(self, value):
+        return self.do_cmd("interval_mins %u" % value)
 
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")
