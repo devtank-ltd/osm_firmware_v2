@@ -18,7 +18,7 @@ import threading
 import traceback
 from modbus_funcs import modbus_funcs_t
 import modbus_db
-from modbus_db import modb_database_t
+from modbus_db import modb_database_t, find_path
 from PIL import ImageTk, Image
 import logging
 import platform
@@ -93,7 +93,7 @@ STD_MEASUREMENTS_DESCS = {
     'SND': 'Sound'
 }
 
-PATH = os.path.dirname(__file__)
+PATH = find_path()
 NAVY = "#292924"
 IVORY = "#FAF9F6"
 CHARCOAL = "#565656"
@@ -814,7 +814,9 @@ class config_gui_window_t(Tk):
         self._dbg_canv.bind('<Configure>', lambda e: self._dbg_canv.configure(
             scrollregion=self._dbg_canv.bbox("all")))
 
-        h = self._dbg_terml.winfo_height()
+        h = self._dbg_sec_fr.winfo_height()
+        if h > 600:
+            h = self._dbg_terml.winfo_height()
         w = self._dbg_sec_fr.winfo_width()
         self._dbg_canv.configure(height=h, width=w)
         self._reload_debug_lines()
@@ -1089,7 +1091,7 @@ class config_gui_window_t(Tk):
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
                                            command=lambda: self._remove_reg(idy, check))
-                    self._del_reg.grid(column=6, row=8)
+                    self._del_reg.grid(column=3, row=8)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
