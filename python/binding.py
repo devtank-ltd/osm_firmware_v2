@@ -122,20 +122,14 @@ class measurement_t(object):
         try:
             if self.type_ == bool:
                 return bool(int(self._value) == 1)
-            if self.type_ == int:
-                return int(self._value)
-            if self.type_ == float:
-                return float(self._value)
-            if self.type_ == str:
-                return str(self._value)
+            return self.type_(self._value)
         except ValueError:
             return False
         except TypeError:
             return False
         return self._value
 
-    @value.setter
-    def value(self, value_str):
+    def update(self, value_str):
         v_str = value_str.replace(self.cmd, "")
         self._value = self.parse_func(v_str)
         self.type_ = type(self._value)
@@ -535,21 +529,17 @@ class dev_t(dev_base_t):
             cmd = self.do_cmd(cmd)
 
     def get_val(self, cmd: measurement_t):
-        cmd.value = self.do_cmd(cmd.cmd)
+        assert isinstance(
+            cmd, measurement_t), "Commands should be of type measurement_t"
+        cmd.update(self.do_cmd(cmd.cmd))
         if cmd.value is False:
             debug_print("Trying get_val again...")
             time.sleep(4)
-            cmd.value = self.do_cmd(cmd.cmd)
+            cmd.update(self.do_cmd(cmd.cmd))
 
     def get_vals(self, cmds: list):
         for cmd in cmds:
-            assert isinstance(
-                cmd, measurement_t), "Commands should be of type measurement_t"
-            cmd.value = self.do_cmd(cmd.cmd)
-            if cmd.value is False:
-                debug_print("Trying get_vals again...")
-                time.sleep(4)
-                cmd.value = self.do_cmd(cmd.cmd)
+            self.get_val(cmd)
 
     def _set_debug(self, value: int) -> int:
         r = self.do_cmd(f"debug {hex(value)}")
