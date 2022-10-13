@@ -2118,52 +2118,32 @@ class config_gui_window_t(Tk):
             if cancel:
                 log_func("User attempting to write modbus template to sensor..")
                 chosen_template = temp_list.get(index)
-                curr_dev = []
+                curr_devs = []
                 self._modbus = self._dev.get_modbus()
                 if self._modbus.devices:
-                    for i in self._modbus.devices:
-                        unit_id = i.unit
-                        curr_dev.append(unit_id)
+                    for dev in self._modbus.devices:
+                        curr_devs += [ dev.unit ]
                 regs = self.db.get_modbus_template_regs(chosen_template)
                 if regs:
-                    reg_n = []
-                    if curr_dev:
-                        for i in self._modbus.devices:
-                            for v in i.regs:
-                                reg_conf = v
-                                reg_name = (str(reg_conf).split(',')[0])
-                                reg_n.append(reg_name)
-                        for i in regs:
-                            unit_id = i[0]
-                            bytes = i[1]
-                            dev_name = i[6]
-                            hex_addr = i[2]
-                            func_type = i[3]
-                            data_type = i[4]
-                            reg_name = i[5]
-                            if i == regs[0] and unit_id not in curr_dev:
-                                dev_add = self._dev.do_cmd(
-                                    f"mb_dev_add {unit_id} {bytes} {dev_name}")
-                            if reg_name not in reg_n:
-                                reg_add = self._dev.do_cmd(
-                                    f"mb_reg_add {unit_id} {hex_addr} {func_type} {data_type} {reg_name}")
-                    else:
-                        for i in regs:
-                            unit_id = i[0]
-                            bytes = i[1]
-                            dev_name = i[6]
-                            hex_addr = i[2]
-                            func_type = i[3]
-                            data_type = i[4]
-                            reg_name = i[5]
-                            if i == regs[0]:
-                                dev_add = self._dev.do_cmd(
-                                    f"mb_dev_add {unit_id} {bytes} {dev_name}")
-                                reg_add = self._dev.do_cmd(
-                                    f"mb_reg_add {unit_id} {hex_addr} {func_type} {data_type} {reg_name}")
-                            else:
-                                reg_add = self._dev.do_cmd(
-                                    f"mb_reg_add {unit_id} {hex_addr} {func_type} {data_type} {reg_name}")
+                    curr_regs = []
+                    for dev in self._modbus.devices:
+                        for reg in dev.regs:
+                            curr_regs += [ reg.handle ]
+                    for reg in regs:
+                        unit_id, bytes_fmt, hex_addr, func_type, \
+                            data_type, reg_name, dev_name = reg
+                        if unit_id not in curr_devs:
+                            self._dev.modbus_dev_add(unit_id,
+                                                     dev_name,
+                                                     "MSB" in bytes_fmt,
+                                                     "MSW" in bytes_fmt)
+                        if reg_name not in curr_regs:
+                            self._dev.modbus_reg_add(unit_id,
+                                                     binding.modbus_reg_t(reg_name,
+                                                                  int(hex_addr, 16),
+                                                                  func_type,
+                                                                  data_type,
+                                                                  reg_name))
                     self._load_headers(self._modb_fr, "mb", True)
                     tkinter.messagebox.showinfo(
                         "Device Written", "Go to debug mode to monitor data.")
