@@ -1,4 +1,9 @@
 = OpenSmartMonitor Configuration GUI Operating Manual
+:revdate: October 11, 2022
+:revnumber: 1.0 
+:revremark: {doctitle} 
+:version-label!: 1.0
+Marcus Holder
 
 == Update Firmware
 
