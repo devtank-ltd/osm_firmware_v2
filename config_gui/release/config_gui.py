@@ -622,7 +622,7 @@ class config_gui_window_t(Tk):
                     text="Select a pull up.", bg=RED, fg=IVORY)
         if cmd == 'enable':
             # check if user is trying to overwrite existing io
-            lines = self._dev.do_cmd_multi('ios')
+            lines = self._dev.ios_output
             found = []
             for line in lines:
                 if meas == "CNT1" and "IO 04 : USED" in line:
@@ -822,8 +822,8 @@ class config_gui_window_t(Tk):
 
     def _reload_debug_lines(self):
         if self._dbg_open:
-            deb_list = self._dev.deb_readlines()
-            for d in deb_list:
+            dbg_list = self._dev.dbg_readlines()
+            for d in dbg_list:
                 if d:
                     res = self._debug_parse.parse_msg(d)
                     if res:
@@ -1272,14 +1272,11 @@ class config_gui_window_t(Tk):
         self._write_terminal_cmd(newline, self._terminal)
 
     def _pop_lora_entry(self):
-        dev_eui = self._dev.do_cmd_multi("comms_config dev-eui")
-        if dev_eui:
-            eui_op = dev_eui[0].split()[2]
+        eui_op = self._dev.dev_eui
+        if eui_op:
             self._eui_entry.insert(0, eui_op)
-
-        app_key = self._dev.do_cmd_multi("comms_config app-key")
-        if app_key:
-            app_op = app_key[0].split()[2]
+        app_op = self._dev.app_key
+        if app_op:
             self._app_entry.insert(0, app_op)
 
     def _get_lora_status(self):

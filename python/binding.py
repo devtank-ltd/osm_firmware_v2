@@ -318,6 +318,22 @@ class dev_t(dev_base_t):
     @interval_mins.setter
     def interval_mins(self, value):
         return self.do_cmd("interval_mins %u" % value)
+    
+    @property
+    def ios_output(self):
+        return self.do_cmd_multi("ios")
+    
+    @property
+    def app_key(self):
+        ak = self.do_cmd_multi("comms_config app-key")
+        if ak:
+            return ak[0].split()[2]
+    
+    @property
+    def dev_eui(self):
+        de = self.do_cmd_multi("comms_config dev-eui")
+        if de:
+            return de[0].split()[2]
 
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")
@@ -430,12 +446,8 @@ class dev_t(dev_base_t):
                 r_str += line + "\n"
         return r_str
 
-    def deb_readlines(self):
-        r_lines = []
-        new_lines = self._ll.readlines()
-        for line in new_lines:
-            r_lines.append(line)
-        return r_lines
+    def dbg_readlines(self):
+        return self._ll.readlines()
 
     def do_debug(self, cmd):
         if cmd is not None:
