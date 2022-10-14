@@ -15,6 +15,8 @@
 #include <ctype.h>
 #include <sys/timerfd.h>
 #include <sys/eventfd.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "platform.h"
 #include "linux.h"
@@ -806,5 +808,22 @@ void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 bool platform_gpio_get(const port_n_pins_t * gpio_pin)
 {
     return _ios_enabled[gpio_pin->index];
+}
+
+
+bool socket_connect(char* path, int* _socketfd)
+{
+    if (!path || !_socketfd)
+        return false;
+    struct sockaddr_un addr;
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, path, sizeof(addr.sun_path));
+    *_socketfd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (connect(*_socketfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
+        printf("Could not bind the socket.\n");
+        return false;
+    }
+    return true;
 }
 
