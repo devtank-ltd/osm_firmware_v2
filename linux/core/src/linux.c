@@ -453,9 +453,25 @@ static void _linux_exit(int err)
 }
 
 
-bool linux_write_pty(unsigned index, const char *data, int size)
+bool linux_write_pty(unsigned index, const char *data, unsigned size)
 {
-    return (write(fd_list[index].pty.master_fd, data, size) != 0);
+    if (index > RS485_UART)
+        return false;
+
+    fd_t * fd_handler = &fd_list[index];
+    if (index != CMD_UART)
+    {
+        for(unsigned n = 0; n < size; n++)
+        {
+            char c = data[n];
+            if (isgraph(c))
+                linux_port_debug("%s >> '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
+            else
+                linux_port_debug("%s >> [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+        }
+    }
+
+    return (write(fd_handler->pty.master_fd, data, size) != 0);
 }
 
 
