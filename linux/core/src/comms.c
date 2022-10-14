@@ -7,6 +7,7 @@
 #include "config.h"
 #include "uart_rings.h"
 #include "pinmap.h"
+#include "log.h"
 
 
 #define COMMS_DEFAULT_MTU       256
@@ -79,6 +80,14 @@ void comms_loop_iteration(void)
 
 void comms_config_setup_str(char * str)
 {
+    if (strstr(str, "dev-eui"))
+    {
+        log_out("LINUX-DEV");
+    }
+    else if (strstr(str, "app-key"))
+    {
+        log_out("LINUX-APP");
+    }
 }
 
 
