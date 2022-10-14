@@ -112,7 +112,7 @@ def parse_word(index: int, r_str: str):
 
 
 class measurement_t(object):
-    def __init__(self, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False):
+    def __init__(self, name: str, type_: type, cmd: str, parse_func):
         self.name = name
         self.type_ = type_
         self.cmd = cmd
@@ -349,11 +349,20 @@ class dev_t(dev_base_t):
         if child:
             return reader_child_t(self, child)
         self._log('No attribute "%s"' % attr)
-        return super().__getattribute__(attr)
+        raise AttributeError
 
     def _log(self, msg):
         self._log_obj.emit(msg)
 
+    @property
+    def interval_mins(self):
+        r = self.do_cmd_multi("interval_mins")
+        return int(r[0].split()[-1])
+
+    @interval_mins.setter
+    def interval_mins(self, value):
+        return self.do_cmd("interval_mins %u" % value)
+    
     @property
     def ios_output(self):
         return self.do_cmd_multi("ios")
@@ -485,13 +494,8 @@ class dev_t(dev_base_t):
         return False
 
     def imp_readlines(self, timeout: float = 0.5):
-        r_str = ""
-        end_time = time.monotonic() + timeout
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines()
-            for line in new_lines:
-                r_str += line + "\n"
-        return r_str
+        new_lines = self._ll.readlines()
+        return "".join([str(line)+"\n" for line in new_lines])
 
     def dbg_readlines(self):
         return self._ll.readlines()
@@ -582,13 +586,12 @@ class dev_t(dev_base_t):
             for reg in device.regs:
                 self._children[reg.handle] = reg
 
-    def set_val(self, cmd: measurement_t, v):
-        assert isinstance(v, cmd.type_)
-        assert self.is_writable
-        if self._measurement.type_ == bool:
-            v = "1" if v else "0"
-        cmd.update(self.do_cmd(f"{cmd.cmd} {v}"))
-        self._parent.do_cmd(f"{self.cmd} {str(v)}")
+    def get_value(self, cmd):
+        cmd = self.do_cmd(cmd)
+        if cmd is False:
+            debug_print("Trying get_value again...")
+            time.sleep(4)
+            cmd = self.do_cmd(cmd)
 
     def get_val(self, cmd: measurement_t):
         assert isinstance(
