@@ -175,6 +175,7 @@ class test_framework_t(object):
         passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
+        passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 30200, 0)
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)
