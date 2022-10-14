@@ -93,6 +93,8 @@ class test_framework_t(object):
         self._i2c_process       = None
         self._modbus_process    = None
 
+        self._done              = False
+
     def __enter__(self):
         return self
 
@@ -160,6 +162,25 @@ class test_framework_t(object):
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
         return passed
+
+    def run(self):
+        self._logger.info("Starting Virtual OSM Test...")
+
+        self._spawn_i2c()
+        if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
+            return False
+        if not self._spawn_virtual_osm(self._vosm_path):
+            self.error("Failed to spawn virtual OSM.")
+            return False
+
+        if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
+            return False
+
+        try:
+            while not self._done:
+                time.sleep(0.5)
+        except KeyboardInterrupt:
+            self._logger.debug("Caught Keyboard interrupt, exiting.")
 
     def _wait_for_line(self, stream, pattern, timeout=3):
         start = time.monotonic()
@@ -297,13 +318,17 @@ def main():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )
         parser.add_argument("-f", "--fake_osm", help='Fake OSM', type=str, default=DEFAULT_FAKE_OSM_PATH)
         parser.add_argument("-l", "--log_file", help='Log file', default=None)
+        parser.add_argument("-r", "--run",      help='Do not test, just run.', action='store_true')
         return parser.parse_args()
 
     args = get_args()
 
     passed = False
     with test_framework_t(args.fake_osm, args.log_file) as tf:
-        passed = tf.test()
+        if args.run:
+            passed = tf.run()
+        else:
+            passed = tf.test()
     return 0 if passed else -1
 
 
