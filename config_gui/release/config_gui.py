@@ -417,6 +417,8 @@ class config_gui_window_t(Tk):
         slction = notebook.select()
         log_func(f"User changed to tab {slction}.")
         if slction == '.!notebook.!frame4' and self.modbus_opened == False:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
+                pass
             self.modbus_opened = True
             self._main_modbus_w()
         elif slction == '.!notebook.!frame5' and self._dbg_open == False:
@@ -426,6 +428,8 @@ class config_gui_window_t(Tk):
             self.modbus_opened = False
             self._fw_label.configure(text="")
             self._load_headers(frame, "rif", True)
+        if slction != '.!notebook.!frame5' and self._dbg_open == True:
+            self._dbg_open = False
 
     def _clear_box(self, event, entry):
         entry.delete(0, END)
@@ -817,26 +821,27 @@ class config_gui_window_t(Tk):
         self._reload_debug_lines()
 
     def _reload_debug_lines(self):
-        deb_list = self._dev.deb_readlines()
-        for d in deb_list:
-            if d:
-                res = self._debug_parse.parse_msg(d)
-                if res:
-                    dbg_meas = res[0]
-                    dbg_val = res[1]
-                    for i in self._deb_entries:
-                        meas = i[0].get()
-                        if meas == dbg_meas:
-                            val_to_change = i[1]
-                            val_to_change.configure(state='normal')
-                            val_to_change.delete(0, END)
-                            val_to_change.insert(0, int(dbg_val))
-                            val_to_change.configure(
-                                state='disabled')
-                    self._dbg_terml.configure(state='normal')
-                    self._dbg_terml.insert('1.0', d + "\n")
-                    self._dbg_terml.configure(state='disabled')
-        self._dbg_terml.after(1500, self._reload_debug_lines)
+        if self._dbg_open:
+            deb_list = self._dev.deb_readlines()
+            for d in deb_list:
+                if d:
+                    res = self._debug_parse.parse_msg(d)
+                    if res:
+                        dbg_meas = res[0]
+                        dbg_val = res[1]
+                        for i in self._deb_entries:
+                            meas = i[0].get()
+                            if meas == dbg_meas:
+                                val_to_change = i[1]
+                                val_to_change.configure(state='normal')
+                                val_to_change.delete(0, END)
+                                val_to_change.insert(0, int(dbg_val))
+                                val_to_change.configure(
+                                    state='disabled')
+                        self._dbg_terml.configure(state='normal')
+                        self._dbg_terml.insert('1.0', d + "\n")
+                        self._dbg_terml.configure(state='disabled')
+            self._dbg_terml.after(1500, self._reload_debug_lines)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")
