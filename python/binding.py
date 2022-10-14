@@ -110,12 +110,13 @@ def parse_word(index: int, r_str: str):
 
 
 class measurement_t(object):
-    def __init__(self, name: str, type_: type, cmd: str, parse_func):
+    def __init__(self, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False):
         self.name = name
         self.type_ = type_
         self.cmd = cmd
         self._value = None
         self.parse_func = parse_func
+        self.is_writable = is_writable
 
     @property
     def value(self):
@@ -196,6 +197,10 @@ class reader_child_t(object):
     def value(self):
         self._parent.get_val(self._measurement)
         return self._measurement.value
+
+    @value.setter
+    def value(self, v):
+        self._parent.set_val(self._measurement, v)
 
 
 class log_t(object):
@@ -297,6 +302,7 @@ class dev_t(dev_base_t):
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
             "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
             "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
+            "interval_mins": measurement_t("Interval Minutes", str   , "interval_mins", lambda s : parse_word(4, s), True ),
         }
         self.update_modbus_registers()
 
@@ -310,15 +316,6 @@ class dev_t(dev_base_t):
     def _log(self, msg):
         self._log_obj.emit(msg)
 
-    @property
-    def interval_mins(self):
-        r = self.do_cmd_multi("interval_mins")
-        return int(r[0].split()[-1])
-
-    @interval_mins.setter
-    def interval_mins(self, value):
-        return self.do_cmd("interval_mins %u" % value)
-    
     @property
     def ios_output(self):
         return self.do_cmd_multi("ios")
@@ -533,12 +530,13 @@ class dev_t(dev_base_t):
             for reg in device.regs:
                 self._children[reg.handle] = reg
 
-    def get_value(self, cmd):
-        cmd = self.do_cmd(cmd)
-        if cmd is False:
-            debug_print("Trying get_value again...")
-            time.sleep(4)
-            cmd = self.do_cmd(cmd)
+    def set_val(self, cmd: measurement_t, v):
+        assert isinstance(v, cmd.type_)
+        assert self.is_writable
+        if self._measurement.type_ == bool:
+            v = "1" if v else "0"
+        cmd.update(self.do_cmd(f"{cmd.cmd} {v}"))
+        self._parent.do_cmd(f"{self.cmd} {str(v)}")
 
     def get_val(self, cmd: measurement_t):
         assert isinstance(

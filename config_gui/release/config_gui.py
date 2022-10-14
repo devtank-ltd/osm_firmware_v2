@@ -397,7 +397,7 @@ class config_gui_window_t(Tk):
                         self._load_measurements(self._main_fr, "rif", None)
 
     def _get_interval_mins(self):
-        self._interval_min = self._dev.interval_mins
+        self._interval_min = self._dev.interval_mins.value
         return self._interval_min
 
     def _pop_sensor_name(self):
@@ -860,11 +860,11 @@ class config_gui_window_t(Tk):
         if int(widg.get()):
             uplink = int(widg.get())
             if uplink > 255:
-                self._dev.interval_mins = 255
+                self._dev.interval_mins.value = 255
             elif uplink < 3:
-                self._dev.interval_mins = 3
+                self._dev.interval_mins.value = 3
             else:
-                self._dev.interval_mins = uplink
+                self._dev.interval_mins.value = uplink
             self._load_headers(frame, "rif", False)
         else:
             tkinter.messagebox.showerror(
