@@ -4,7 +4,10 @@ import logging
 from pymodbus.payload import BinaryPayloadBuilder
 from pymodbus.transaction import ModbusBinaryFramer
 from pymodbus.version import version
-from pymodbus.server.sync import StartSerialServer
+if version.major < 3:
+    from pymodbus.server.sync import StartSerialServer
+else:
+    from pymodbus.server import StartSerialServer
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
 from pymodbus.constants import Endian
@@ -65,7 +68,7 @@ class modbus_server_t(object):
 
     def run_forever(self):
         log = self._logger
-        StartSerialServer(self._context, framer=ModbusBinaryFramer, identity=self._identity,
+        StartSerialServer(context=self._context, framer=ModbusBinaryFramer, identity=self._identity,
                       port=self._port, timeout=1, baudrate=9600)
 
     def _create_block(self, src, byteorder, wordorder):
