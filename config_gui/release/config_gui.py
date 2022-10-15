@@ -30,6 +30,10 @@ FW_PROCESS = False
 THREAD = threading.Thread
 GET_REG_DESC = MB_DB.GET_REG_DESC
 
+LINUX_OSM_TTY = "/tmp/osm/UART_DEBUG_slave"
+
+
+
 CMDS = ["ios ------ Print all IOs.",
         "io ------ Get/set IO set.",
         "sio ------ Enable Special IO.",
@@ -198,6 +202,8 @@ class config_gui_window_t(Tk):
         for item in active_ports:
             if curr_platform in item:
                 returned_ports.append(item.device)
+        if os.path.exists(LINUX_OSM_TTY):
+            returned_ports += [ LINUX_OSM_TTY ]
         dropdown = Combobox(self._conn_fr, values=returned_ports,
                             font=FONT, width=22)
         for item in active_ports:
