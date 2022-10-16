@@ -325,12 +325,20 @@ class dev_t(dev_base_t):
         ak = self.do_cmd_multi("comms_config app-key")
         if ak:
             return ak[0].split()[0]
-    
+
+    @app_key.setter
+    def app_key(self, key):
+        self.do_cmd_multi(f"comms_config app-key {key}")
+
     @property
     def dev_eui(self):
         de = self.do_cmd_multi("comms_config dev-eui")
         if de:
             return de[0].split()[0]
+
+    @dev_eui.setter
+    def dev_eui(self, eui):
+        self.do_cmd_multi(f"comms_config dev-eui {eui}")
 
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")

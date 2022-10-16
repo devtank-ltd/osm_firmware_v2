@@ -1357,9 +1357,10 @@ class config_gui_window_t(Tk):
         dev_eui = self._eui_entry.get()
         app_key = self._app_entry.get()
         if len(dev_eui) == 16 and len(app_key) == 32:
-            dev_output = self._dev.do_cmd(f"comms_config dev-eui {dev_eui}")
-            app_output = self._dev.do_cmd(f"comms_config app-key {app_key}")
+            self._dev.dev_eui = dev_eui
+            self._dev.app_key = app_key
             self._lora_confirm.configure(text="Configuration sent.")
+            self._pop_lora_entry()
         else:
             self._lora_confirm.configure(
                 text="Missing fields or bad character limit.")
