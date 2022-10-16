@@ -36,14 +36,16 @@ extern char * skip_space(char * pos);
 #define IO_PULL_MASK    0x0003
 #define IO_TYPE_MASK    0xF000
 #define IO_STATE_MASK   0x0F00
+#define IO_TYPE_ON_MASK 0x000C
 
 #define IO_AS_INPUT     0x0100
 #define IO_DIR_LOCKED   0x0200
-#define IO_PULSE        0x0400
-#define IO_ONEWIRE      0x0800
-#define IO_OUT_ON       0x0C00
+#define IO_OUT_ON       0x0400
 
-#define IO_TYPE_PULSECOUNT   0x3000
+#define IO_PULSE        0x0004
+#define IO_ONEWIRE      0x0008
+
+#define IO_TYPE_PULSECOUNT   0x2000
 #define IO_TYPE_ONEWIRE      0x4000
 
 #ifndef STM32L4

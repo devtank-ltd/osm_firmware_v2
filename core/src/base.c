@@ -38,7 +38,7 @@ char* io_get_pull_str(uint16_t io_state)
 
 bool io_is_special(uint16_t io_state)
 {
-    switch(io_state & IO_STATE_MASK)
+    switch(io_state & IO_TYPE_ON_MASK)
     {
         case IO_PULSE:
         case IO_ONEWIRE:

@@ -16,7 +16,7 @@ static uint16_t * ios_state;
 
 static char* _ios_get_type_active(uint16_t io_state)
 {
-    switch(io_state & IO_STATE_MASK)
+    switch(io_state & IO_TYPE_ON_MASK)
     {
         case IO_PULSE: return "PLSCNT";
         case IO_ONEWIRE:    return "W1";
@@ -92,7 +92,7 @@ void     ios_init(void)
 
         uint16_t io_state = ios_state[n];
 
-        if (io_state & IO_PULSE || io_state & IO_ONEWIRE)
+        if (io_state & IO_TYPE_ON_MASK)
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         else
             _ios_setup_gpio(n, io_state);
@@ -285,25 +285,22 @@ void     io_log(unsigned io)
     const port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
 
-    char * type = _ios_get_type_active(io_state);
-
-    if (!(io_state & IO_ONEWIRE || io_state & IO_PULSE))
+    if (!(io_state & IO_TYPE_ON_MASK))
     {
         char * pretype = "";
         char * posttype = "";
 
+        char * type = _ios_get_type_possible(io_state);
+
         if (type[0])
         {
-            if (io_is_special(io_state))
-            {
-                pretype = "[";
-                posttype = "] ";
-            }
-            else
-            {
-                pretype = "";
-                posttype = " ";
-            }
+            pretype = "[";
+            posttype = "] ";
+        }
+        else
+        {
+            pretype = "";
+            posttype = " ";
         }
 
         if (io_state & IO_AS_INPUT)
@@ -319,6 +316,7 @@ void     io_log(unsigned io)
     }
     else
     {
+        char * type = _ios_get_type_active(io_state);
         char pupd_char;
         if ((io_state & IO_PULL_MASK) == GPIO_PUPD_PULLUP)
             pupd_char = 'U';
