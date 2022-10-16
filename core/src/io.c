@@ -1,14 +1,12 @@
 #include <string.h>
 
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-
 #include "config.h"
 #include "pinmap.h"
 #include "io.h"
 #include "log.h"
 #include "pulsecount.h"
 #include "uarts.h"
+#include "platform.h"
 #include "ds18b20.h"
 #include "persist_config.h"
 
@@ -65,10 +63,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
-    gpio_mode_setup(gpio_pin->port,
-        (io_state & IO_AS_INPUT)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT,
-        io_state & IO_PULL_MASK,
-        gpio_pin->pins);
+    platform_gpio_setup(gpio_pin, io_state & IO_AS_INPUT, io_state & IO_PULL_MASK);
 
     ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
@@ -93,7 +88,7 @@ void     ios_init(void)
 
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
     {
-        rcc_periph_clock_enable(PORT_TO_RCC(ios_pins[n].port));
+        platform_gpio_init(&ios_pins[n]);
 
         uint16_t io_state = ios_state[n];
 
@@ -272,12 +267,12 @@ void     io_on(unsigned io, bool on_off)
     if (on_off)
     {
         ios_state[io] |= IO_OUT_ON;
-        gpio_set(output->port, output->pins);
+        platform_gpio_set(output, true);
     }
     else
     {
         ios_state[io] &= ~IO_OUT_ON;
-        gpio_clear(output->port, output->pins);
+        platform_gpio_set(output, false);
     }
 }
 
@@ -315,12 +310,12 @@ void     io_log(unsigned io)
             log_out("IO %02u : %s%s%sIN %s = %s",
                     io, pretype, type, posttype,
                     io_get_pull_str(io_state),
-                    (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
+                    (platform_gpio_get(gpio_pin))?"ON":"OFF");
         else
             log_out("IO %02u : %s%s%sOUT %s = %s",
                     io, pretype, type, posttype,
                     io_get_pull_str(io_state),
-                    (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
+                    (platform_gpio_get(gpio_pin))?"ON":"OFF");
     }
     else
     {

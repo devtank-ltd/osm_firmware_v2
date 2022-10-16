@@ -91,6 +91,9 @@ static int64_t          _linux_boot_time_us         = 0;
 static pthread_cond_t  _sleep_cond  =  PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
 
+static bool _ios_enabled[IOS_COUNT] = {0};
+
+
 uint32_t                rcc_ahb_frequency;
 
 
@@ -782,3 +785,26 @@ void linux_awaken(void)
     }
     else printf("Sleep Linux not kicked.\n");
 }
+
+
+void platform_gpio_init(const port_n_pins_t * gpio_pin)
+{
+}
+
+
+void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+{
+}
+
+
+void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+{
+    _ios_enabled[gpio_pin->index] = is_on;
+}
+
+
+bool platform_gpio_get(const port_n_pins_t * gpio_pin)
+{
+    return _ios_enabled[gpio_pin->index];
+}
+

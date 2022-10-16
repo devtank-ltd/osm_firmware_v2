@@ -373,3 +373,31 @@ void sys_tick_handler(void)
     /* Special libopencm3 function to handle system ticks */
     since_boot_ms++;
 }
+
+
+void platform_gpio_init(const port_n_pins_t * gpio_pin)
+{
+    rcc_periph_clock_enable(PORT_TO_RCC(gpio_pin->port));
+}
+
+
+void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+{
+    gpio_mode_setup(gpio_pin->port,
+                    (is_input)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT,
+                    pull,
+                    gpio_pin->pins);
+}
+
+void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+{
+    if (is_on)
+        gpio_set(gpio_pin->port, gpio_pin->pins);
+    else
+        gpio_clear(gpio_pin->port, gpio_pin->pins);
+}
+
+bool platform_gpio_get(const port_n_pins_t * gpio_pin)
+{
+    return gpio_get(gpio_pin->port, gpio_pin->pins) != 0;
+}
