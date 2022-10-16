@@ -264,6 +264,37 @@ class low_level_dev_t(object):
         return msgs
 
 
+class io_t(object):
+    def __init__(self, parent, index):
+        self._parent = parent
+        self._index = index
+
+    @property
+    def value(self):
+        return self._parent.get_io(self._index)
+
+    @value.setter
+    def value(self, v:bool):
+        self._parent.set_io(self._index, v)
+
+    def configure(self, is_input: bool, bias: str):
+        self._parent.configure_io(self._index, is_input, bias)
+
+
+class ios_t(object):
+    def __init__(self, parent, count):
+        self._parent = parent
+        self._count = count
+
+    def __len__(self):
+        return self._count
+
+    def __getitem__(self, index):
+        if index > self._count or index < 0:
+            raise IndexError('IO index out of range')
+        return io_t(self._parent, index)
+
+
 class dev_base_t(object):
     def __init__(self, port):
         if isinstance(port, str):
@@ -283,7 +314,7 @@ class dev_base_t(object):
             self._serial_obj = port
         else:
             raise Exception("Unsupport serial port argument.")
-            
+
         self._log_obj = log_t("PC", "OSM")
         self._log = self._log_obj.emit
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
@@ -304,9 +335,14 @@ class dev_t(dev_base_t):
             "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
             "interval_mins": measurement_t("Interval Minutes", str   , "interval_mins", lambda s : parse_word(4, s), True ),
         }
+        line = self.do_cmd("count")
+        self._io_count = int(line.split()[-1])
         self.update_modbus_registers()
 
     def __getattr__(self, attr):
+        if attr == "ios":
+            return ios_t(self, self._io_count)
+
         child = self._children.get(attr, None)
         if child:
             return reader_child_t(self, child)
@@ -319,7 +355,7 @@ class dev_t(dev_base_t):
     @property
     def ios_output(self):
         return self.do_cmd_multi("ios")
-    
+
     @property
     def app_key(self):
         ak = self.do_cmd_multi("comms_config app-key")
@@ -558,6 +594,18 @@ class dev_t(dev_base_t):
     def get_vals(self, cmds: list):
         for cmd in cmds:
             self.get_val(cmd)
+
+    def get_io(self, index: int) -> bool:
+        line = self.do_cmd("io %u" % index)
+        state = line.split()[-1]
+        return state == "ON"
+
+    def set_io(self, index: int, enabled: bool):
+        self.do_cmd("io %u = %u" % (index, int(enabled)))
+
+    def configure_io(self, index: int, is_input: bool, bias: str):
+        assert bias in ["U","N","D"], "Invalid IO bais"
+        self.do_cmd("io %u : %s %s" % (index, "I" if is_input else "O", bias))
 
     def _set_debug(self, value: int) -> int:
         r = self.do_cmd(f"debug {hex(value)}")
