@@ -150,17 +150,17 @@ Setting IO's and scaling current clamp is made possible by binding the left mous
 
 === LoRaWAN Configuration
 
-The device eui and application key for the device are loaded if they exist when the user connects to the sensor by sending a command to the sensor to read it's configuration using a function from the binding. These can be changed by manually entering a new key or it can be randomly generated.
+The device eui and application key for the device are loaded if they exist when the user connects to the sensor by sending a command to the sensor to read it's configuration using a property from the binding. These can be changed by manually entering a new key or it can be randomly generated.
 
 [,python]
 ----
     def _pop_lora_entry(self):
-        dev_eui = self._dev.do_cmd_multi("lora_config dev-eui")
+        dev_eui = self._dev.dev_eui
         if dev_eui:
             eui_op = dev_eui[0].split()[2]
             self._eui_entry.insert(0, eui_op)
 
-        app_key = self._dev.do_cmd_multi("lora_config app-key")
+        app_key = self._dev.app_key
         if app_key:
             app_op = app_key[0].split()[2]
             self._app_entry.insert(0, app_op)
