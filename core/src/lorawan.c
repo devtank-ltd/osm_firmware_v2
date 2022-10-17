@@ -1121,15 +1121,23 @@ void     comms_config_setup_str(char * str)
     p = skip_space(p);
     if (strncmp(str, "dev-eui", end_pos_word-1) == 0)
     {
-        memset(config->dev_eui, 0, LW_DEV_EUI_LEN);
-        strncpy(config->dev_eui, p, strlen(p));
-        _lw_reload_config();
+        if (p[0])
+        {
+            memset(config->dev_eui, 0, LW_DEV_EUI_LEN);
+            strncpy(config->dev_eui, p, strlen(p));
+            _lw_reload_config();
+        }
+        else log_out("%*.s", LW_DEV_EUI_LEN, config->dev_eui);
     }
     else if (strncmp(str, "app-key", end_pos_word-1) == 0)
     {
-        memset(config->app_key, 0, LW_DEV_EUI_LEN);
-        strncpy(config->app_key, p, strlen(p));
-        _lw_reload_config();
+        if (p[0])
+        {
+            memset(config->app_key, 0, LW_APP_KEY_LEN);
+            strncpy(config->app_key, p, strlen(p));
+            _lw_reload_config();
+        }
+        else log_out("%*.s", LW_APP_KEY_LEN, config->app_key);
     }
 }
 

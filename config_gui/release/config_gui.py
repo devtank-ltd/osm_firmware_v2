@@ -30,6 +30,10 @@ FW_PROCESS = False
 THREAD = threading.Thread
 GET_REG_DESC = MB_DB.GET_REG_DESC
 
+LINUX_OSM_TTY = "/tmp/osm/UART_DEBUG_slave"
+
+
+
 CMDS = ["ios ------ Print all IOs.",
         "io ------ Get/set IO set.",
         "sio ------ Enable Special IO.",
@@ -198,6 +202,8 @@ class config_gui_window_t(Tk):
         for item in active_ports:
             if curr_platform in item:
                 returned_ports.append(item.device)
+        if os.path.exists(LINUX_OSM_TTY):
+            returned_ports += [ LINUX_OSM_TTY ]
         dropdown = Combobox(self._conn_fr, values=returned_ports,
                             font=FONT, width=22)
         for item in active_ports:
@@ -397,31 +403,28 @@ class config_gui_window_t(Tk):
                         self._load_measurements(self._main_fr, "rif", None)
 
     def _get_interval_mins(self):
-        get_mins = self._dev.do_cmd_multi("interval_mins")
-        if get_mins:
-            self._interval_min = get_mins[0].split()[4]
-            return self._interval_min
+        self._interval_min = self._dev.interval_mins.value
+        return self._interval_min
 
     def _pop_sensor_name(self):
-        serial_num = self._dev.do_cmd_multi("serial_num")
-        if serial_num:
-            ser_op = serial_num[0].split()[2]
-            self._sensor_name.configure(
-                text="Serial Number - " + ser_op,
-                bg=IVORY, font=FONT)
+        ser_op = self._dev.serial_num.value
+        self._sensor_name.configure(
+            text="Serial Number - " + ser_op,
+            bg=IVORY, font=FONT)
 
     def _add_ver(self):
-        vers = self._dev.do_cmd_multi("version")
-        if vers:
-            version = vers[0].split('-')[1]
-            self._fw_version_body.configure(
-                text="Current Firmware Version - " + version,
-                bg=IVORY, font=FONT)
+        version = self._dev.version.value
+        version = "-".join(version.split("-")[0:2])
+        self._fw_version_body.configure(
+            text="Current Firmware Version - " + version,
+            bg=IVORY, font=FONT)
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
         log_func(f"User changed to tab {slction}.")
         if slction == '.!notebook.!frame4' and self.modbus_opened == False:
+            with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
+                pass
             self.modbus_opened = True
             self._main_modbus_w()
         elif slction == '.!notebook.!frame5' and self._dbg_open == False:
@@ -431,6 +434,8 @@ class config_gui_window_t(Tk):
             self.modbus_opened = False
             self._fw_label.configure(text="")
             self._load_headers(frame, "rif", True)
+        if slction != '.!notebook.!frame5' and self._dbg_open == True:
+            self._dbg_open = False
 
     def _clear_box(self, event, entry):
         entry.delete(0, END)
@@ -623,7 +628,7 @@ class config_gui_window_t(Tk):
                     text="Select a pull up.", bg=RED, fg=IVORY)
         if cmd == 'enable':
             # check if user is trying to overwrite existing io
-            lines = self._dev.do_cmd_multi('ios')
+            lines = self._dev.ios_output
             found = []
             for line in lines:
                 if meas == "CNT1" and "IO 04 : USED" in line:
@@ -822,26 +827,27 @@ class config_gui_window_t(Tk):
         self._reload_debug_lines()
 
     def _reload_debug_lines(self):
-        deb_list = self._dev.deb_readlines()
-        for d in deb_list:
-            if d:
-                res = self._debug_parse.parse_msg(d)
-                if res:
-                    dbg_meas = res[0]
-                    dbg_val = res[1]
-                    for i in self._deb_entries:
-                        meas = i[0].get()
-                        if meas == dbg_meas:
-                            val_to_change = i[1]
-                            val_to_change.configure(state='normal')
-                            val_to_change.delete(0, END)
-                            val_to_change.insert(0, int(dbg_val))
-                            val_to_change.configure(
-                                state='disabled')
-                    self._dbg_terml.configure(state='normal')
-                    self._dbg_terml.insert('1.0', d + "\n")
-                    self._dbg_terml.configure(state='disabled')
-        self._dbg_terml.after(1500, self._reload_debug_lines)
+        if self._dbg_open:
+            dbg_list = self._dev.dbg_readlines()
+            for d in dbg_list:
+                if d:
+                    res = self._debug_parse.parse_msg(d)
+                    if res:
+                        dbg_meas = res[0]
+                        dbg_val = res[1]
+                        for i in self._deb_entries:
+                            meas = i[0].get()
+                            if meas == dbg_meas:
+                                val_to_change = i[1]
+                                val_to_change.configure(state='normal')
+                                val_to_change.delete(0, END)
+                                val_to_change.insert(0, int(dbg_val))
+                                val_to_change.configure(
+                                    state='disabled')
+                        self._dbg_terml.configure(state='normal')
+                        self._dbg_terml.insert('1.0', d + "\n")
+                        self._dbg_terml.configure(state='disabled')
+            self._dbg_terml.after(1500, self._reload_debug_lines)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")
@@ -860,11 +866,11 @@ class config_gui_window_t(Tk):
         if int(widg.get()):
             uplink = int(widg.get())
             if uplink > 255:
-                self._dev.do_cmd(f"interval_mins 255")
+                self._dev.interval_mins.value = 255
             elif uplink < 3:
-                self._dev.do_cmd(f"interval_mins 3")
+                self._dev.interval_mins.value = 3
             else:
-                self._dev.do_cmd(f"interval_mins {uplink}")
+                self._dev.interval_mins.value = uplink
             self._load_headers(frame, "rif", False)
         else:
             tkinter.messagebox.showerror(
@@ -1272,21 +1278,17 @@ class config_gui_window_t(Tk):
         self._write_terminal_cmd(newline, self._terminal)
 
     def _pop_lora_entry(self):
-        dev_eui = self._dev.do_cmd_multi("comms_config dev-eui")
-        if dev_eui:
-            eui_op = dev_eui[0].split()[2]
+        eui_op = self._dev.dev_eui
+        if eui_op:
             self._eui_entry.insert(0, eui_op)
-
-        app_key = self._dev.do_cmd_multi("comms_config app-key")
-        if app_key:
-            app_op = app_key[0].split()[2]
+        app_op = self._dev.app_key
+        if app_op:
             self._app_entry.insert(0, app_op)
 
     def _get_lora_status(self):
-        status = self._dev.do_cmd_multi("comms_conn")
-        if status:
-            conn = status[0].split()[0]
-            if conn == '1':
+        conn = self._dev.comms_conn.value
+        if conn is not None:
+            if conn:
                 self._lora_status.configure(text="Connected", fg="green")
             else:
                 self._lora_status.configure(text="Disconnected", fg="red")
@@ -1355,9 +1357,10 @@ class config_gui_window_t(Tk):
         dev_eui = self._eui_entry.get()
         app_key = self._app_entry.get()
         if len(dev_eui) == 16 and len(app_key) == 32:
-            dev_output = self._dev.do_cmd(f"comms_config dev-eui {dev_eui}")
-            app_output = self._dev.do_cmd(f"comms_config app-key {app_key}")
+            self._dev.dev_eui = dev_eui
+            self._dev.app_key = app_key
             self._lora_confirm.configure(text="Configuration sent.")
+            self._pop_lora_entry()
         else:
             self._lora_confirm.configure(
                 text="Missing fields or bad character limit.")
@@ -2118,52 +2121,32 @@ class config_gui_window_t(Tk):
             if cancel:
                 log_func("User attempting to write modbus template to sensor..")
                 chosen_template = temp_list.get(index)
-                curr_dev = []
+                curr_devs = []
                 self._modbus = self._dev.get_modbus()
                 if self._modbus.devices:
-                    for i in self._modbus.devices:
-                        unit_id = i.unit
-                        curr_dev.append(unit_id)
+                    for dev in self._modbus.devices:
+                        curr_devs += [ dev.unit ]
                 regs = self.db.get_modbus_template_regs(chosen_template)
                 if regs:
-                    reg_n = []
-                    if curr_dev:
-                        for i in self._modbus.devices:
-                            for v in i.regs:
-                                reg_conf = v
-                                reg_name = (str(reg_conf).split(',')[0])
-                                reg_n.append(reg_name)
-                        for i in regs:
-                            unit_id = i[0]
-                            bytes = i[1]
-                            dev_name = i[6]
-                            hex_addr = i[2]
-                            func_type = i[3]
-                            data_type = i[4]
-                            reg_name = i[5]
-                            if i == regs[0] and unit_id not in curr_dev:
-                                dev_add = self._dev.do_cmd(
-                                    f"mb_dev_add {unit_id} {bytes} {dev_name}")
-                            if reg_name not in reg_n:
-                                reg_add = self._dev.do_cmd(
-                                    f"mb_reg_add {unit_id} {hex_addr} {func_type} {data_type} {reg_name}")
-                    else:
-                        for i in regs:
-                            unit_id = i[0]
-                            bytes = i[1]
-                            dev_name = i[6]
-                            hex_addr = i[2]
-                            func_type = i[3]
-                            data_type = i[4]
-                            reg_name = i[5]
-                            if i == regs[0]:
-                                dev_add = self._dev.do_cmd(
-                                    f"mb_dev_add {unit_id} {bytes} {dev_name}")
-                                reg_add = self._dev.do_cmd(
-                                    f"mb_reg_add {unit_id} {hex_addr} {func_type} {data_type} {reg_name}")
-                            else:
-                                reg_add = self._dev.do_cmd(
-                                    f"mb_reg_add {unit_id} {hex_addr} {func_type} {data_type} {reg_name}")
+                    curr_regs = []
+                    for dev in self._modbus.devices:
+                        for reg in dev.regs:
+                            curr_regs += [ reg.handle ]
+                    for reg in regs:
+                        unit_id, bytes_fmt, hex_addr, func_type, \
+                            data_type, reg_name, dev_name = reg
+                        if unit_id not in curr_devs:
+                            self._dev.modbus_dev_add(unit_id,
+                                                     dev_name,
+                                                     "MSB" in bytes_fmt,
+                                                     "MSW" in bytes_fmt)
+                        if reg_name not in curr_regs:
+                            self._dev.modbus_reg_add(unit_id,
+                                                     binding.modbus_reg_t(reg_name,
+                                                                  int(hex_addr, 16),
+                                                                  func_type,
+                                                                  data_type,
+                                                                  reg_name))
                     self._load_headers(self._modb_fr, "mb", True)
                     tkinter.messagebox.showinfo(
                         "Device Written", "Go to debug mode to monitor data.")

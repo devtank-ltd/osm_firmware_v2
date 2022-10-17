@@ -19,8 +19,7 @@ typedef struct
 
 typedef struct
 {
-    uint32_t port;
-    uint32_t pins;
+    uint32_t index;
 } port_n_pins_t;
 
 

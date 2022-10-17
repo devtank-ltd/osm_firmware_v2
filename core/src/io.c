@@ -1,14 +1,12 @@
 #include <string.h>
 
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-
 #include "config.h"
 #include "pinmap.h"
 #include "io.h"
 #include "log.h"
 #include "pulsecount.h"
 #include "uarts.h"
+#include "platform.h"
 #include "ds18b20.h"
 #include "persist_config.h"
 
@@ -18,7 +16,7 @@ static uint16_t * ios_state;
 
 static char* _ios_get_type_active(uint16_t io_state)
 {
-    switch(io_state & IO_STATE_MASK)
+    switch(io_state & IO_TYPE_ON_MASK)
     {
         case IO_PULSE: return "PLSCNT";
         case IO_ONEWIRE:    return "W1";
@@ -65,10 +63,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
-    gpio_mode_setup(gpio_pin->port,
-        (io_state & IO_AS_INPUT)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT,
-        io_state & IO_PULL_MASK,
-        gpio_pin->pins);
+    platform_gpio_setup(gpio_pin, io_state & IO_AS_INPUT, io_state & IO_PULL_MASK);
 
     ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
@@ -93,11 +88,11 @@ void     ios_init(void)
 
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
     {
-        rcc_periph_clock_enable(PORT_TO_RCC(ios_pins[n].port));
+        platform_gpio_init(&ios_pins[n]);
 
         uint16_t io_state = ios_state[n];
 
-        if (io_state & IO_PULSE || io_state & IO_ONEWIRE)
+        if (io_state & IO_TYPE_ON_MASK)
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         else
             _ios_setup_gpio(n, io_state);
@@ -272,12 +267,12 @@ void     io_on(unsigned io, bool on_off)
     if (on_off)
     {
         ios_state[io] |= IO_OUT_ON;
-        gpio_set(output->port, output->pins);
+        platform_gpio_set(output, true);
     }
     else
     {
         ios_state[io] &= ~IO_OUT_ON;
-        gpio_clear(output->port, output->pins);
+        platform_gpio_set(output, false);
     }
 }
 
@@ -290,40 +285,38 @@ void     io_log(unsigned io)
     const port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
 
-    char * type = _ios_get_type_active(io_state);
-
-    if (!(io_state & IO_ONEWIRE || io_state & IO_PULSE))
+    if (!(io_state & IO_TYPE_ON_MASK))
     {
         char * pretype = "";
         char * posttype = "";
 
+        char * type = _ios_get_type_possible(io_state);
+
         if (type[0])
         {
-            if (io_is_special(io_state))
-            {
-                pretype = "[";
-                posttype = "] ";
-            }
-            else
-            {
-                pretype = "";
-                posttype = " ";
-            }
+            pretype = "[";
+            posttype = "] ";
+        }
+        else
+        {
+            pretype = "";
+            posttype = " ";
         }
 
         if (io_state & IO_AS_INPUT)
             log_out("IO %02u : %s%s%sIN %s = %s",
                     io, pretype, type, posttype,
                     io_get_pull_str(io_state),
-                    (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
+                    (platform_gpio_get(gpio_pin))?"ON":"OFF");
         else
             log_out("IO %02u : %s%s%sOUT %s = %s",
                     io, pretype, type, posttype,
                     io_get_pull_str(io_state),
-                    (gpio_get(gpio_pin->port, gpio_pin->pins))?"ON":"OFF");
+                    (platform_gpio_get(gpio_pin))?"ON":"OFF");
     }
     else
     {
+        char * type = _ios_get_type_active(io_state);
         char pupd_char;
         if ((io_state & IO_PULL_MASK) == GPIO_PUPD_PULLUP)
             pupd_char = 'U';

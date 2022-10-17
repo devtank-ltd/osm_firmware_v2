@@ -105,33 +105,32 @@ def parse_lora_comms(r_str: str):
     return "Connected" in r_str
 
 
+def parse_word(index: int, r_str: str):
+    return r_str.split()[index]
+
+
 class measurement_t(object):
-    def __init__(self, name: str, type_: type, cmd: str, parse_func):
+    def __init__(self, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False):
         self.name = name
         self.type_ = type_
         self.cmd = cmd
         self._value = None
         self.parse_func = parse_func
+        self.is_writable = is_writable
 
     @property
     def value(self):
         try:
             if self.type_ == bool:
                 return bool(int(self._value) == 1)
-            if self.type_ == int:
-                return int(self._value)
-            if self.type_ == float:
-                return float(self._value)
-            if self.type_ == str:
-                return str(self._value)
+            return self.type_(self._value)
         except ValueError:
             return False
         except TypeError:
             return False
         return self._value
 
-    @value.setter
-    def value(self, value_str):
+    def update(self, value_str):
         v_str = value_str.replace(self.cmd, "")
         self._value = self.parse_func(v_str)
         self.type_ = type(self._value)
@@ -199,6 +198,10 @@ class reader_child_t(object):
         self._parent.get_val(self._measurement)
         return self._measurement.value
 
+    @value.setter
+    def value(self, v):
+        self._parent.set_val(self._measurement, v)
+
 
 class log_t(object):
     def __init__(self, sender, receiver):
@@ -261,6 +264,37 @@ class low_level_dev_t(object):
         return msgs
 
 
+class io_t(object):
+    def __init__(self, parent, index):
+        self._parent = parent
+        self._index = index
+
+    @property
+    def value(self):
+        return self._parent.get_io(self._index)
+
+    @value.setter
+    def value(self, v:bool):
+        self._parent.set_io(self._index, v)
+
+    def configure(self, is_input: bool, bias: str):
+        self._parent.configure_io(self._index, is_input, bias)
+
+
+class ios_t(object):
+    def __init__(self, parent, count):
+        self._parent = parent
+        self._count = count
+
+    def __len__(self):
+        return self._count
+
+    def __getitem__(self, index):
+        if index > self._count or index < 0:
+            raise IndexError('IO index out of range')
+        return io_t(self._parent, index)
+
+
 class dev_base_t(object):
     def __init__(self, port):
         if isinstance(port, str):
@@ -280,7 +314,7 @@ class dev_base_t(object):
             self._serial_obj = port
         else:
             raise Exception("Unsupport serial port argument.")
-            
+
         self._log_obj = log_t("PC", "OSM")
         self._log = self._log_obj.emit
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
@@ -297,10 +331,18 @@ class dev_t(dev_base_t):
             "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
             "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
+            "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
+            "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
+            "interval_mins": measurement_t("Interval Minutes", str   , "interval_mins", lambda s : parse_word(4, s), True ),
         }
+        line = self.do_cmd("count")
+        self._io_count = int(line.split()[-1])
         self.update_modbus_registers()
 
     def __getattr__(self, attr):
+        if attr == "ios":
+            return ios_t(self, self._io_count)
+
         child = self._children.get(attr, None)
         if child:
             return reader_child_t(self, child)
@@ -311,8 +353,28 @@ class dev_t(dev_base_t):
         self._log_obj.emit(msg)
 
     @property
-    def interval_mins(self):
-        return self.do_cmd("interval_mins")
+    def ios_output(self):
+        return self.do_cmd_multi("ios")
+
+    @property
+    def app_key(self):
+        ak = self.do_cmd_multi("comms_config app-key")
+        if ak:
+            return ak[0].split()[0]
+
+    @app_key.setter
+    def app_key(self, key):
+        self.do_cmd_multi(f"comms_config app-key {key}")
+
+    @property
+    def dev_eui(self):
+        de = self.do_cmd_multi("comms_config dev-eui")
+        if de:
+            return de[0].split()[0]
+
+    @dev_eui.setter
+    def dev_eui(self, eui):
+        self.do_cmd_multi(f"comms_config dev-eui {eui}")
 
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")
@@ -425,36 +487,16 @@ class dev_t(dev_base_t):
                 r_str += line + "\n"
         return r_str
 
-    def deb_readlines(self):
-        r_lines = []
-        new_lines = self._ll.readlines()
-        for line in new_lines:
-            r_lines.append(line)
-        return r_lines
+    def dbg_readlines(self):
+        return self._ll.readlines()
 
     def do_debug(self, cmd):
         if cmd is not None:
             self._ll.write(cmd)
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
-        self._ll.write(cmd)
-        end_time = time.monotonic() + timeout
-        r = []
-        done = False
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines(_RESPONSE_END)
-            for line in new_lines:
-                if _RESPONSE_END in line:
-                    done = True
-                r += line
-            if done:
-                break
-            assert not "ERROR" in r, "OSM Error"
-        r_str = ""
-        for i in range(0, len(r)):
-            line = r[i]
-            r_str += str(line)
-        return r_str
+        r = self.do_cmd_multi(cmd, timeout)
+        return "".join([str(line) for line in r])
 
     def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> str:
         self._ll.write(cmd)
@@ -469,6 +511,7 @@ class dev_t(dev_base_t):
             r += new_lines
             if done:
                 break
+            assert not "ERROR" in r, "OSM Error"
         start_pos = None
         end_pos = None
         for n in range(0, len(r)):
@@ -531,29 +574,38 @@ class dev_t(dev_base_t):
             for reg in device.regs:
                 self._children[reg.handle] = reg
 
-    def get_value(self, cmd):
-        cmd = self.do_cmd(cmd)
-        if cmd is False:
-            debug_print("Trying get_value again...")
-            time.sleep(4)
-            cmd = self.do_cmd(cmd)
+    def set_val(self, cmd: measurement_t, v):
+        assert isinstance(v, cmd.type_)
+        assert self.is_writable
+        if self._measurement.type_ == bool:
+            v = "1" if v else "0"
+        cmd.update(self.do_cmd(f"{cmd.cmd} {v}"))
+        self._parent.do_cmd(f"{self.cmd} {str(v)}")
 
     def get_val(self, cmd: measurement_t):
-        cmd.value = self.do_cmd(cmd.cmd)
+        assert isinstance(
+            cmd, measurement_t), "Commands should be of type measurement_t"
+        cmd.update(self.do_cmd(cmd.cmd))
         if cmd.value is False:
             debug_print("Trying get_val again...")
             time.sleep(4)
-            cmd.value = self.do_cmd(cmd.cmd)
+            cmd.update(self.do_cmd(cmd.cmd))
 
     def get_vals(self, cmds: list):
         for cmd in cmds:
-            assert isinstance(
-                cmd, measurement_t), "Commands should be of type measurement_t"
-            cmd.value = self.do_cmd(cmd.cmd)
-            if cmd.value is False:
-                debug_print("Trying get_vals again...")
-                time.sleep(4)
-                cmd.value = self.do_cmd(cmd.cmd)
+            self.get_val(cmd)
+
+    def get_io(self, index: int) -> bool:
+        line = self.do_cmd("io %u" % index)
+        state = line.split()[-1]
+        return state == "ON"
+
+    def set_io(self, index: int, enabled: bool):
+        self.do_cmd("io %u = %u" % (index, int(enabled)))
+
+    def configure_io(self, index: int, is_input: bool, bias: str):
+        assert bias in ["U","N","D"], "Invalid IO bais"
+        self.do_cmd("io %u : %s %s" % (index, "I" if is_input else "O", bias))
 
     def _set_debug(self, value: int) -> int:
         r = self.do_cmd(f"debug {hex(value)}")

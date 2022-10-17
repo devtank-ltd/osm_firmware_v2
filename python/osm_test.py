@@ -129,6 +129,20 @@ class test_framework_t(object):
         self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})' + poxtfix)
         return passed
 
+    def _bool_check(self, desc, value, ref:bool):
+        if isinstance(value, bool):
+            passed = value == ref
+        else:
+            self._logger.debug(f'Invalid test argument {value} for "{desc}"')
+            passed = False
+        op = "=" if passed else "!="
+        prefix = poxtfix = ""
+        if self._log_file is None:
+            prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
+            poxtfix = test_logging_formatter_t.RESET
+        self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref})' + poxtfix)
+        return passed
+
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
 
@@ -161,6 +175,15 @@ class test_framework_t(object):
         passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
+
+        io = self._vosm_conn.ios[0]
+        passed &= self._bool_check("IO off", io.value, False)
+        io.value = True
+        passed &= self._bool_check("IO still off", io.value, False)
+        io.configure(False, "U")
+        io.value = True
+        passed &= self._bool_check("IO on", io.value, True)
+
         return passed
 
     def run(self):
