@@ -13,6 +13,7 @@
 #include "log.h"
 #include "base_types.h"
 #include "uart_rings.h"
+#include "pinmap.h"
 
 
 #define RAK3172_TIMEOUT_MS              15000

@@ -19,7 +19,7 @@ CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Icore/include -Isensors/include $(shell pkg-config --cflags json-c)
+INCLUDE_PATHS += -Icore/include -Isensors/include -Icomms/include $(shell pkg-config --cflags json-c)
 
 LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINK_FLAGS += -lgcov --coverage -pthread -lutil
@@ -53,7 +53,6 @@ firmware_SOURCES := \
            core/src/i2c.c \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
-           core/src/comms.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \
            core/src/modbus_measurements.c \
@@ -68,6 +67,7 @@ firmware_SOURCES := \
            core/src/can_comm.c \
            core/src/debug_mode.c \
            core/src/version.c \
+           comms/src/comms.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \

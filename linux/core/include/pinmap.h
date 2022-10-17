@@ -11,7 +11,7 @@
 #define ADC_CC_COUNT    3
 
 #define CMD_UART   0
-#define LW_UART    1
+#define COMMS_UART 1
 #define HPM_UART   2
 #define RS485_UART 3
 
