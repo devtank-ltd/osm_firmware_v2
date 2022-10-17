@@ -82,11 +82,11 @@ void comms_config_setup_str(char * str)
 {
     if (strstr(str, "dev-eui"))
     {
-        log_out("LINUX-DEV");
+        log_out("Dev EUI: LINUX-DEV");
     }
     else if (strstr(str, "app-key"))
     {
-        log_out("LINUX-APP");
+        log_out("App Key: LINUX-APP");
     }
 }
 
