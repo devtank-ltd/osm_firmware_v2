@@ -106,6 +106,8 @@ def parse_lora_comms(r_str: str):
 
 
 def parse_word(index: int, r_str: str):
+    if index >= len(r_str):
+        return ""
     return r_str.split()[index]
 
 
@@ -347,7 +349,7 @@ class dev_t(dev_base_t):
         if child:
             return reader_child_t(self, child)
         self._log('No attribute "%s"' % attr)
-        raise AttributeError
+        return super().__getattribute__(attr)
 
     def _log(self, msg):
         self._log_obj.emit(msg)
@@ -359,8 +361,10 @@ class dev_t(dev_base_t):
     @property
     def app_key(self):
         ak = self.do_cmd_multi("comms_config app-key")
-        if ak:
-            return ak[0].split()[0]
+        prec = "App Key: "
+        if ak and ak[0].startswith(prec):
+            return ak[0][len(prec):]
+        return ""
 
     @app_key.setter
     def app_key(self, key):
@@ -369,8 +373,10 @@ class dev_t(dev_base_t):
     @property
     def dev_eui(self):
         de = self.do_cmd_multi("comms_config dev-eui")
-        if de:
-            return de[0].split()[0]
+        prec = "Dev EUI: "
+        if de and de[0].startswith(prec):
+            return de[0][len(prec):]
+        return ""
 
     @dev_eui.setter
     def dev_eui(self, eui):
@@ -496,6 +502,8 @@ class dev_t(dev_base_t):
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
         r = self.do_cmd_multi(cmd, timeout)
+        if r is None:
+            return ""
         return "".join([str(line) for line in r])
 
     def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> str:

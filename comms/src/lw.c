@@ -75,7 +75,7 @@ bool lw_config_setup_str(char * str)
         if (lenrem == 0)
         {
             /* View Dev EUI */
-            if (!config || lw_persist_data_is_valid())
+            if (!config || !lw_persist_data_is_valid())
             {
                 log_out("Could not get Dev EUI");
                 return false;
@@ -100,7 +100,7 @@ bool lw_config_setup_str(char * str)
         if (lenrem == 0)
         {
             /* View Dev EUI */
-            if (!config || lw_persist_data_is_valid())
+            if (!config || !lw_persist_data_is_valid())
             {
                 log_out("Could not get app key.");
                 return false;
