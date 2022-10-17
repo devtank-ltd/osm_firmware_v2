@@ -28,9 +28,9 @@ bool comms_send_ready(void)
 
 bool comms_send_str(char* str)
 {
-    if(!uart_ring_out(LW_UART, str, strlen(str)))
+    if(!uart_ring_out(COMMS_UART, str, strlen(str)))
         return false;
-    return uart_ring_out(LW_UART, "\r\n", 2);
+    return uart_ring_out(COMMS_UART, "\r\n", 2);
 }
 
 
@@ -46,9 +46,9 @@ void comms_send(int8_t* hex_arr, uint16_t arr_len)
     for (uint16_t i = 0; i < arr_len; i++)
     {
         snprintf(buf, 3, "%.2"PRIu32, hex_arr[i]);
-        uart_ring_out(LW_UART, buf, 2);
+        uart_ring_out(COMMS_UART, buf, 2);
     }
-    uart_ring_out(LW_UART, "\r\n", 2);
+    uart_ring_out(COMMS_UART, "\r\n", 2);
 }
 
 
@@ -82,11 +82,11 @@ void comms_config_setup_str(char * str)
 {
     if (strstr(str, "dev-eui"))
     {
-        log_out("LINUX-DEV");
+        log_out("Dev EUI: LINUX-DEV");
     }
     else if (strstr(str, "app-key"))
     {
-        log_out("LINUX-APP");
+        log_out("App Key: LINUX-APP");
     }
 }
 

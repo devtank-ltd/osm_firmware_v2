@@ -10,7 +10,6 @@ firmware_SOURCES := \
            core/src/i2c.c \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
-           core/src/lorawan.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \
            core/src/modbus_measurements.c \
@@ -25,6 +24,10 @@ firmware_SOURCES := \
            core/src/debug_mode.c \
            core/src/version.c \
            core/src/stm.c \
+           comms/src/comms.c \
+           comms/src/lw.c \
+           comms/src/rak4270.c \
+           comms/src/rak3172.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
            sensors/src/modbus.c \

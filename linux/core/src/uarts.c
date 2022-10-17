@@ -49,7 +49,7 @@ void uart_debug_cb(char* in, unsigned len)
 
 void uart_lw_cb(char* in, unsigned len)
 {
-    _uart_proc(LW_UART, in, len);
+    _uart_proc(COMMS_UART, in, len);
 }
 
 

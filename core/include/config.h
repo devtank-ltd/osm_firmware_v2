@@ -139,6 +139,3 @@
 
 #define SERIAL_NUM_LEN         41
 #define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
-
-#define LW_DEV_EUI_LEN                      16
-#define LW_APP_KEY_LEN                      32
