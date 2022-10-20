@@ -112,7 +112,7 @@ def parse_word(index: int, r_str: str):
 
 
 class measurement_t(object):
-    def __init__(self, name: str, type_: type, cmd: str, parse_func):
+    def __init__(self, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False):
         self.name = name
         self.type_ = type_
         self.cmd = cmd
@@ -390,9 +390,6 @@ class dev_t(dev_base_t):
     @dev_eui.setter
     def dev_eui(self, eui):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
-    
-    def set_dev_eui(self, eui):
-        self._ll.write(f"comms_config dev-eui {eui}")
     
     def change_samplec(self, meas, val):
         self._ll.write(f"samplecount {meas} {val}")

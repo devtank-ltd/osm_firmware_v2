@@ -1354,8 +1354,8 @@ class config_gui_window_t(Tk):
         dev_eui = self._eui_entry.get()
         app_key = self._app_entry.get()
         if len(dev_eui) == 16 and len(app_key) == 32:
-            dev_output = self._dev.set_dev_eui(dev_eui)
-            app_output = self._dev.set_app_key(app_key)
+            self._dev.dev_eui = dev_eui
+            self._dev.app_key = app_key
             self._lora_confirm.configure(text="Configuration sent.")
             self._pop_lora_entry()
         else:
@@ -2137,6 +2137,7 @@ class config_gui_window_t(Tk):
                                                      dev_name,
                                                      "MSB" in bytes_fmt,
                                                      "MSW" in bytes_fmt)
+                            curr_devs.append(unit_id)
                         if reg_name not in curr_regs:
                             self._dev.modbus_reg_add(unit_id,
                                                      binding.modbus_reg_t(reg_name,
