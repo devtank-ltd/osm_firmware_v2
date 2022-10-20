@@ -390,7 +390,43 @@ class dev_t(dev_base_t):
     @dev_eui.setter
     def dev_eui(self, eui):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
-
+    
+    def set_dev_eui(self, eui):
+        self._ll.write(f"comms_config dev-eui {eui}")
+    
+    def change_samplec(self, meas, val):
+        self._ll.write(f"samplecount {meas} {val}")
+    
+    def change_interval(self, meas, val):
+        self._ll.write(f"interval {meas} {val}")
+    
+    def activate_io(self, meas, pin, pull):
+        #Enabling one wire or pulsecount e.g. "en_w1 4 U"
+        self._ll.write(f"{meas} {pin} {pull}")
+    
+    def disable_io(self, pin):
+        self._ll.write(f"io {pin} : I N")
+    
+    @property
+    def print_all_ios(self):
+        return self.do_cmd_multi("ios")
+    
+    @property
+    def print_cc_gain(self):
+        return self.do_cmd_multi("cc_gain")
+    
+    def get_midpoint(self, phase):
+        return self.do_cmd_multi(f"cc_mp {phase}")
+    
+    def update_midpoint(self, value, phase):
+        return self.do_cmd_multi(f"cc_mp {value} {phase}")
+    
+    def set_outer_inner_cc(self, phase, outer, inner):
+        self._ll.write(f"cc_gain {phase} {outer} {inner}")
+    
+    def save(self):
+        self._ll.write("save")
+        
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")
         end_time = time.monotonic() + timeout
@@ -657,6 +693,9 @@ class dev_t(dev_base_t):
 
     def modbus_dev_del(self, device: str):
         self._ll.write(f"mb_dev_del {device}")
+    
+    def modbus_reg_del(self, reg: str):
+        self._ll.write(f"mb_reg_del {reg}")
 
     def current_clamp_calibrate(self):
         self._ll.write("cc_cal")

@@ -39,7 +39,7 @@ CMDS = ["ios ------ Print all IOs.",
         "sio ------ Enable Special IO.",
         "count ------ Counts of controls.",
         "version ------ Print version.",
-        "comms_send ------ Send lora message",
+        "comms ------ Send lora message",
         "comms_config ------ Set lora config",
         "interval ------ Set the interval",
         "samplecount ------ Set the samplecount",
@@ -403,7 +403,7 @@ class config_gui_window_t(Tk):
                         self._load_measurements(self._main_fr, "rif", None)
 
     def _get_interval_mins(self):
-        self._interval_min = self._dev.interval_mins.value
+        self._interval_min = self._dev.interval_mins
         return self._interval_min
 
     def _pop_sensor_name(self):
@@ -557,18 +557,16 @@ class config_gui_window_t(Tk):
         widget_no = re.findall('\d', widget_num)
         widget_id = ''.join(widget_no)
         if int(widget_id) % 4 == 0:
-            self._dev.do_cmd(
-                f"samplecount {meas_chang} {widget_val}")
+            self._dev.change_samplec(meas_chang, widget_val)
             samp_chang.delete(0, END)
             samp_chang.insert(0, widget_val)
         elif int(widget_id) % 2 == 0:
-            self._dev.do_cmd(
-                f"interval {meas_chang} {widget_val}")
+            self._dev.change_interval(meas_chang, widget_val)
             if meas_chang == 'TMP2' and widget_val != '0':
-                self._dev.do_cmd("interval CNT1 0")
+                self._dev.change_interval("CNT1", "0")
                 self._update_meas_tab('CNT1')
             elif meas_chang == 'CNT1' and widget_val != '0':
-                self._dev.do_cmd("interval TMP2 0")
+                self._dev.change_interval("TMP2" ,"0")
                 self._update_meas_tab('TMP2')
             res = int(self._interval_min) * int(widget_val)
             inv_chang.delete(0, END)
@@ -590,15 +588,15 @@ class config_gui_window_t(Tk):
             inv_chang.insert(0, int(widget_val))
         mins = int(widget_val) / int(self._interval_min)
         min = round(mins, 0)
-        self._dev.do_cmd(f"interval {meas_chang} {min}")
+        self._dev.change_interval(meas_chang, min)
         uplink_chang.delete(0, END)
         uplink_chang.insert(0, int(min))
         # if user changes interval in mins for pulsecount or one wire
         if meas_chang == 'CNT1' and widget_val != '0':
-            self._dev.do_cmd("interval TMP2 0")
+            self._dev.change_interval("TMP2", "0")
             self._update_meas_tab('TMP2')
         elif meas_chang == 'TMP2' and widget_val != '0':
-            self._dev.do_cmd("interval CNT1 0")
+            self._dev.change_interval("CNT1", "0")
             self._update_meas_tab('CNT1')
 
     def _round_to_multiple(self, number, multiple):
@@ -643,24 +641,24 @@ class config_gui_window_t(Tk):
             else:
                 # activate io
                 if meas == 'TMP2':
-                    self._dev.do_cmd(f"{inst} 4 N")
+                    self._dev.activate_io(inst, 4, "N")
                     self._ios_label.configure(
                         text=f"{desc} enabled.", bg=LIME_GRN, fg=BLACK)
                 elif meas == 'CNT1':
-                    self._dev.do_cmd(f"{inst} 4 U")
+                    self._dev.activate_io(inst, 4, "U")
                 elif meas == 'CNT2':
-                    self._dev.do_cmd(f"{inst} 5 {pullup}")
+                    self._dev.activate_io(inst, 5, pullup)
         elif cmd == 'disable':
             # disable io
             if meas == 'TMP2':
-                self._dev.do_cmd("io 4 : I N")
+                self._dev.disable_io(4)
             elif meas == 'CNT1':
-                self._dev.do_cmd("io 4 : I N")
+                self._dev.disable_io(4)
             elif meas == 'CNT2':
-                self._dev.do_cmd("io 5 : I N")
+                self._dev.disable_io(5)
             self._ios_label.configure(text="IO disabled.", bg=RED, fg=IVORY)
         # update terminal output
-        io_out = self._dev.do_cmd_multi("ios")
+        io_out = self._dev.print_all_ios
         self._ios_terminal.configure(state='normal')
         self._ios_terminal.delete('1.0', END)
         for i in io_out:
@@ -708,7 +706,7 @@ class config_gui_window_t(Tk):
                                   height=20, width=50,
                                   bg=BLACK, fg=LIME_GRN)
         self._ios_terminal.grid(column=0, row=6, columnspan=3)
-        io_out = self._dev.do_cmd_multi("ios")
+        io_out = self._dev.print_all_ios
         if io_out:
             for i in io_out:
                 if "IO 04" in i:
@@ -866,11 +864,11 @@ class config_gui_window_t(Tk):
         if int(widg.get()):
             uplink = int(widg.get())
             if uplink > 255:
-                self._dev.interval_mins.value = 255
+                self._dev.interval_mins = 255
             elif uplink < 3:
-                self._dev.interval_mins.value = 3
+                self._dev.interval_mins = 3
             else:
-                self._dev.interval_mins.value = uplink
+                self._dev.interval_mins = uplink
             self._load_headers(frame, "rif", False)
         else:
             tkinter.messagebox.showerror(
@@ -1064,7 +1062,7 @@ class config_gui_window_t(Tk):
                             dev_to_remove = device.get()
                             mb_reg_to_change = self._entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
-                            self._dev.do_cmd(f"mb_reg_del {mb_reg_to_change}")
+                            self._dev.modbus_reg_del(mb_reg_to_change)
                         else:
                             log_func(
                                 "User attempting to set measurement interval 0..")
@@ -1072,7 +1070,7 @@ class config_gui_window_t(Tk):
                             meas_chang = meas_chang.get()
                             inv_chang = self._entries[i][2]
                             uplink_chang = self._entries[i][1]
-                            self._dev.do_cmd(f"interval {meas_chang} 0")
+                            self._dev.change_interval(meas_chang, 0)
                             inv_chang.delete(0, END)
                             inv_chang.insert(0, 0)
                             uplink_chang.delete(0, END)
@@ -1087,7 +1085,7 @@ class config_gui_window_t(Tk):
                     dev = dev_entry.get()
                     list_of_devs.append(dev)
                 if dev_to_remove not in list_of_devs:
-                    self._dev.do_cmd(f"mb_dev_del {dev_to_remove}")
+                    self._dev.modbus_dev_del(dev_to_remove)
 
     def _check_clicked(self, window, idy, check):
         for cb in check:
@@ -1154,9 +1152,10 @@ class config_gui_window_t(Tk):
         self._cal_terminal.configure(state='disabled')
 
         cal_btn = Button(self._cc_window,
-                         text="Calibrate ADC", command=self._calibrate,
-                         bg=IVORY, fg=BLACK, font=FONT,
-                         activebackground="green", activeforeground=IVORY)
+                        text="Calibrate ADC", 
+                        command=lambda:self._calibrate(widget),
+                        bg=IVORY, fg=BLACK, font=FONT,
+                        activebackground="green", activeforeground=IVORY)
         cal_btn.grid(column=0, row=5, pady=10)
         on_hover = Hovertip(
             cal_btn, "Calibrate current clamp midpoint, make sure there is no live current.")
@@ -1175,7 +1174,8 @@ class config_gui_window_t(Tk):
             mp_btn, "Manually calibrate ADC midpoint. (Default 2048)")
         self._fill_cc_term(widget)
 
-        self._cal_label = Label(self._cc_window, text="")
+        self._cal_label = Label(self._cc_window, text="",
+        bg=IVORY)
         self._cal_label.grid(column=3, row=6)
 
         help_cc = Label(self._cc_window, text="Help")
@@ -1188,14 +1188,14 @@ class config_gui_window_t(Tk):
             ''')
 
     def _fill_cc_term(self, widget):
-        cc_gain = self._dev.do_cmd_multi("cc_gain")
+        cc_gain = self._dev.print_cc_gain
         self._cal_terminal.configure(state='normal')
         self._cal_terminal.delete('1.0', END)
         if cc_gain:
             for i in cc_gain:
                 if widget in i:
                     self._cal_terminal.insert(INSERT, i + "\n")
-            midpoint = self._dev.do_cmd_multi(f"cc_mp {widget}")
+            midpoint = self._dev.get_midpoint(widget)
             for v in midpoint:
                 self._cal_terminal.insert(INSERT, "\n" + v + "\n")
             self._cal_terminal.configure(state='disabled')
@@ -1214,21 +1214,18 @@ class config_gui_window_t(Tk):
             self._cal_label['text'] = "You must enter an integer"
         else:
             mp = entry.get()
-            set_mp = self._dev.do_cmd_multi(f"cc_mp {mp} {widget}")
-            cc_gain = self._dev.do_cmd_multi("cc_gain")
+            set_mp = self._dev.update_midpoint(mp, widget)
+            cc_gain = self._dev.print_cc_gain
             self._fill_cc_term(widget)
             self._cal_label['text'] = ""
 
-    def _calibrate(self):
+    def _calibrate(self, widget):
         log_func("User attempting to calibrate ADC automatically..")
         dev_off = tkinter.messagebox.askyesno(
             "Calibrate", "Has the current been switched off?", parent=self._cc_window)
         if dev_off:
-            cal = self._dev.do_cmd("cc_cal")
-            self._cal_terminal.configure(state='normal')
-            self._cal_terminal.delete('1.0', END)
-            self._cal_terminal.insert(INSERT, cal + "\n")
-            self._cal_terminal.configure(state='disabled')
+            cal = self._dev.current_clamp_calibrate()
+            self._fill_cc_term(widget)
         else:
             tkinter.messagebox.showinfo(
                 "", "Turn off live current.", parent=self._cc_window)
@@ -1243,7 +1240,7 @@ class config_gui_window_t(Tk):
                 phase = widget[2]
                 self._cal_terminal.configure(state='normal')
                 self._cal_terminal.delete('1.0', END)
-                gain = self._dev.do_cmd(f"cc_gain {phase} {outer} {inner}")
+                gain = self._dev.set_outer_inner_cc(phase, outer, inner)
                 self._fill_cc_term(widget)
             except:
                 tkinter.messagebox.showerror(
@@ -1334,7 +1331,7 @@ class config_gui_window_t(Tk):
         send_btn.grid(column=7, row=9, sticky="NSEW")
 
         save_btn = Button(frame, text="Save",
-                          command=lambda: self._dev.do_cmd("save"), bg=IVORY, fg=BLACK, font=FONT,
+                          command=lambda: self._dev.save(), bg=IVORY, fg=BLACK, font=FONT,
                           activebackground="green", activeforeground=IVORY)
         save_btn.grid(column=7, row=10, sticky="NSEW")
 
@@ -1357,8 +1354,8 @@ class config_gui_window_t(Tk):
         dev_eui = self._eui_entry.get()
         app_key = self._app_entry.get()
         if len(dev_eui) == 16 and len(app_key) == 32:
-            self._dev.dev_eui = dev_eui
-            self._dev.app_key = app_key
+            dev_output = self._dev.set_dev_eui(dev_eui)
+            app_output = self._dev.set_app_key(app_key)
             self._lora_confirm.configure(text="Configuration sent.")
             self._pop_lora_entry()
         else:
@@ -1382,7 +1379,7 @@ class config_gui_window_t(Tk):
                 debug = self._dev.imp_readlines()
             except Exception as e:
                 log_func(e)
-            self._dev.do_cmd("debug 0")
+            self._dev._set_debug(0)
             self._close_save(root)
         else:
             root.destroy()
