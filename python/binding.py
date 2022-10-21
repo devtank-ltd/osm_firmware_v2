@@ -335,7 +335,6 @@ class dev_t(dev_base_t):
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
             "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
             "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
-            "interval_mins": measurement_t("Interval Minutes", str   , "interval_mins", lambda s : parse_word(4, s), True ),
         }
         line = self.do_cmd("count")
         self._io_count = int(line.split()[-1])
@@ -619,12 +618,13 @@ class dev_t(dev_base_t):
             for reg in device.regs:
                 self._children[reg.handle] = reg
 
-    def get_value(self, cmd):
-        cmd = self.do_cmd(cmd)
-        if cmd is False:
-            debug_print("Trying get_value again...")
-            time.sleep(4)
-            cmd = self.do_cmd(cmd)
+    def set_val(self, cmd: measurement_t, v):
+        assert isinstance(v, cmd.type_)
+        assert self.is_writable
+        if self._measurement.type_ == bool:
+            v = "1" if v else "0"
+        cmd.update(self.do_cmd(f"{cmd.cmd} {v}"))
+        self._parent.do_cmd(f"{self.cmd} {str(v)}")
 
     def get_val(self, cmd: measurement_t):
         assert isinstance(
