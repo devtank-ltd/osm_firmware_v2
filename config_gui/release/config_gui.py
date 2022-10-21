@@ -602,71 +602,73 @@ class config_gui_window_t(Tk):
     def _round_to_multiple(self, number, multiple):
         return multiple * round(number / multiple)
 
-    def _do_ios_cmd(self, cmd, meas):
+
+    def _get_ios_meas_inst(self, meas):
+        if meas.startswith("TMP"):
+            return 'w1'
+        elif meas.startswith("CNT"):
+            return 'pulse'
+
+    def _get_ios_meas_desc(self, meas):
+        if meas.startswith("TMP"):
+            return 'One Wire Temperature'
+        elif meas.startswith("CNT"):
+            return 'Pulsecount'
+
+    def _get_ios_pin_obj(self, meas):
+        if meas == "TMP2" or meas == "CNT1":
+            return self._dev.ios[4]
+        elif meas == "TMP3" or meas == "CNT2":
+            return self._dev.ios[5]
+        return None
+
+    def _set_ios_label(self, meas, pin_obj, pin_is):
+        desc = self._get_ios_meas_desc(meas)
+
+        if pin_is == meas:
+            self._ios_label.configure(
+                text=f"{desc} enabled.", bg=LIME_GRN, fg=BLACK)
+        elif pin_is:
+            self._ios_label.configure(
+                text=f"That IO is in use as {self._get_ios_meas_desc(pin_is)}.", bg=RED, fg=IVORY)
+        else:
+            self._ios_label.configure(
+                text=f"{desc} disabled.", bg=RED, fg=BLACK)
+
+    def _do_ios_cmd(self, cmd, meas, pin_obj, pin_is):
         log_func(f"User attempting to {cmd} IO for {meas}")
-        inst = ''
-        desc = ''
-        if meas == 'TMP2':
-            inst = 'en_w1'
-            desc = 'One Wire Temperature'
-        elif meas == 'CNT1' or meas == 'CNT2':
-            inst = 'en_pulse'
-            desc = 'Pulsecount'
-        if meas == 'CNT2':
-            if self._up_d_non.get():
-                pullup = self._up_d_non.get()
-                if pullup == 'Up':
-                    pullup = 'U'
-                elif pullup == 'Down':
-                    pullup = 'D'
+        inst = self._get_ios_meas_inst(meas)
+        desc = self._get_ios_meas_desc(meas)
+
+        if meas.startswith('CNT'):
+            if meas == "CNT2":
+                if self._up_d_non.get():
+                    pullup = self._up_d_non.get()
+                    if pullup == 'Up':
+                        pullup = 'U'
+                    elif pullup == 'Down':
+                        pullup = 'D'
+                    else:
+                        pullup = 'N'
                 else:
-                    pullup = 'N'
+                    self._ios_label.configure(
+                        text="Select a pull up.", bg=RED, fg=IVORY)
+                    return
             else:
-                self._ios_label.configure(
-                    text="Select a pull up.", bg=RED, fg=IVORY)
+                pullup = "U"
+        else:
+            pullup = "N"
         if cmd == 'enable':
             # check if user is trying to overwrite existing io
-            lines = self._dev.ios_output
-            found = []
-            for line in lines:
-                if meas == "CNT1" and "IO 04 : USED" in line:
-                    found.append(line)
-                elif meas == "TMP2" and "IO 04 : USED" in line:
-                    found.append(line)
-                elif meas == "CNT2" and "IO 05 : USED" in line:
-                    found.append(line)
-            if found:
-                self._ios_label.configure(
-                    text="That IO is in use.", bg=RED, fg=IVORY)
-            else:
-                # activate io
-                if meas == 'TMP2':
-                    self._dev.activate_io(inst, 4, "N")
-                    self._ios_label.configure(
-                        text=f"{desc} enabled.", bg=LIME_GRN, fg=BLACK)
-                elif meas == 'CNT1':
-                    self._dev.activate_io(inst, 4, "U")
-                elif meas == 'CNT2':
-                    self._dev.activate_io(inst, 5, pullup)
+            if pin_is:
+                pin_obj.disable_io()
+            pin_obj.activate_io(inst, pullup)
         elif cmd == 'disable':
             # disable io
-            if meas == 'TMP2':
-                self._dev.disable_io(4)
-            elif meas == 'CNT1':
-                self._dev.disable_io(4)
-            elif meas == 'CNT2':
-                self._dev.disable_io(5)
-            self._ios_label.configure(text="IO disabled.", bg=RED, fg=IVORY)
-        # update terminal output
-        io_out = self._dev.print_all_ios
-        self._ios_terminal.configure(state='normal')
-        self._ios_terminal.delete('1.0', END)
-        for i in io_out:
-            if "IO 04" in i:
-                self._ios_terminal.insert(INSERT, i + "\n")
-            elif "IO 05" in i:
-                self._ios_terminal.insert(INSERT, i + "\n")
-        self._ios_terminal.configure(state='disabled')
+            pin_obj.disable_io()
+        self.ios_page .destroy()
+        self._open_ios_w(meas)
+
 
     def _open_ios_w(self, meas):
         self.ios_page = Toplevel(self.master)
@@ -674,7 +676,10 @@ class config_gui_window_t(Tk):
         self.ios_page.geometry("405x500")
         self.ios_page.configure(bg=IVORY)
         log_func("User opened IO window..")
-        if meas != 'TMP2':
+        pin_obj = self._get_ios_pin_obj(meas)
+        assert pin_obj
+        pin_is = pin_obj.active_as()
+        if not meas.startswith('TMP'):
             io_d_label = Label(
                 self.ios_page,
                 text="Set Pull Up or Pull Down")
@@ -685,49 +690,40 @@ class config_gui_window_t(Tk):
             if meas == 'CNT1':
                 self._up_d_non.set('Up')
                 self._up_d_non.configure(state='disabled')
-        en_check = Button(self.ios_page,
-                          text="Enable",
-                          command=lambda: self._do_ios_cmd('enable', meas),
-                          bg=IVORY, fg=BLACK, font=FONT,
-                          activebackground="green", activeforeground=IVORY)
-        en_check.grid(column=0, row=4)
+            else:
+                pull = pin_obj.active_pull()
+                if pull:
+                    pull = pull.lower()
+                    if pull[0] == 'u':
+                        self._up_d_non.set('Up')
+                    elif pull[0] == 'd':
+                        self._up_d_non.set('Down')
+                    else:
+                        self._up_d_non.set('None')
+                else:
+                    self._up_d_non.set('None')
+                if pin_is == meas:
+                    self._up_d_non.configure(state='disabled')
 
-        dis_check = Button(self.ios_page,
-                           text="Disable",
-                           command=lambda: self._do_ios_cmd('disable', meas),
-                           bg=IVORY, fg=BLACK, font=FONT,
-                           activebackground="green", activeforeground=IVORY)
-        dis_check.grid(column=2, row=4)
-
+        if pin_is == meas:
+            dis_check = Button(self.ios_page,
+                               text="Disable",
+                               command=lambda: self._do_ios_cmd('disable', meas, pin_obj, pin_is),
+                               bg=IVORY, fg=BLACK, font=FONT,
+                               activebackground="green", activeforeground=IVORY)
+            dis_check.grid(column=0, row=4)
+        else:
+            en_check = Button(self.ios_page,
+                              text="Enable",
+                              command=lambda: self._do_ios_cmd('enable', meas, pin_obj, pin_is),
+                              bg=IVORY, fg=BLACK, font=FONT,
+                              activebackground="green", activeforeground=IVORY)
+            en_check.grid(column=0, row=4)
         self._ios_label = Label(self.ios_page, text="", bg=IVORY)
         self._ios_label.grid(column=1, row=5)
+        self._set_ios_label(meas, pin_obj, pin_is)
 
-        self._ios_terminal = Text(self.ios_page,
-                                  height=20, width=50,
-                                  bg=BLACK, fg=LIME_GRN)
-        self._ios_terminal.grid(column=0, row=6, columnspan=3)
-        io_out = self._dev.print_all_ios
-        if io_out:
-            for i in io_out:
-                if "IO 04" in i:
-                    self._ios_terminal.insert(INSERT, i + "\n")
-                elif "IO 05" in i:
-                    self._ios_terminal.insert(INSERT, i + "\n")
-            help_lab = Label(self.ios_page, text="Help")
-            help_lab.grid(column=2, row=7)
-            help_hover = Hovertip(help_lab, '''
-            You must enable this measurement for it to report data.\t\n
-            W1 = One Wire Temperature.(TMP2)\t\n
-            PLSCNT = Pulsecount.(CNT1/2)\t\n
-            IO 04 is reserved for TMP2 or CNT1.\t\n
-            IO 05 is reserved for CNT2.\t
-            ''')
-            self._ios_terminal.configure(state='disabled')
-        else:
-            tkinter.messagebox.showerror(
-                "Error", "Press OK to reopen window..")
-            self.ios_page.destroy()
-            self._open_ios_w(meas)
+
 
     def _thread_debug(self):
         self._open_debug_w(self._debug_fr)

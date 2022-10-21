@@ -282,6 +282,37 @@ class io_t(object):
     def configure(self, is_input: bool, bias: str):
         self._parent.configure_io(self._index, is_input, bias)
 
+    def activate_io(self, meas, pull):
+        #Enabling one wire or pulsecount e.g. "en_w1 4 U"
+        self._parent.do_cmd(f"en_{meas} {self._index} {pull}")
+
+    def disable_io(self):
+        self._parent.do_cmd(f"io {self._index} : I N")
+
+    def active_as(self):
+        line = self._parent.do_cmd(f"io {self._index}")
+        used_pos = line.find("USED")
+        if used_pos == -1:
+            return None
+        pin_is = line[used_pos:].split()[1]
+        if pin_is == "PLSCNT":
+            if self._index == 4:
+                return "CNT1"
+            elif self._index == 5:
+                return "CNT2"
+        elif pin_is == "W1":
+            if self._index == 4:
+                return "TMP2"
+            elif self._index == 5:
+                return "TMP3"
+
+    def active_pull(self):
+        line = self._parent.do_cmd(f"io {self._index}")
+        used_pos = line.find("USED")
+        if used_pos == -1:
+            return None
+        return line[used_pos:].split()[2]
+
 
 class ios_t(object):
     def __init__(self, parent, count):
@@ -361,10 +392,6 @@ class dev_t(dev_base_t):
     @interval_mins.setter
     def interval_mins(self, value):
         return self.do_cmd("interval_mins %u" % value)
-    
-    @property
-    def ios_output(self):
-        return self.do_cmd_multi("ios")
 
     @property
     def app_key(self):
@@ -402,10 +429,6 @@ class dev_t(dev_base_t):
     
     def disable_io(self, pin):
         self._ll.write(f"io {pin} : I N")
-    
-    @property
-    def print_all_ios(self):
-        return self.do_cmd_multi("ios")
     
     @property
     def print_cc_gain(self):
