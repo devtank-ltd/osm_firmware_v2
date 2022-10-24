@@ -184,7 +184,7 @@ measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurement
     int8_t decimal_bits = d.t & 0x000F;
     if (d.t & 0x8000)
     {
-        integer_bits = integer_bits | 0xF000;
+        integer_bits = (integer_bits | 0xF000) + 1;
         decimal_bits = (decimal_bits - 16) % 16;
     }
 
