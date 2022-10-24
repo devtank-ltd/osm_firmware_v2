@@ -16,6 +16,7 @@ sys.path.append("../linux/peripherals/")
 
 import i2c_server as i2c
 import modbus_server as modbus
+import w1_server as w1
 
 
 class test_logging_formatter_t(logging.Formatter):
@@ -58,13 +59,14 @@ class test_logging_formatter_t(logging.Formatter):
 
 class test_framework_t(object):
 
-    DEFAULT_OSM_BASE = "/tmp/osm/"
-    DEFAULT_OSM_CONFIG = DEFAULT_OSM_BASE + "osm.img"
-    DEFAULT_DEBUG_PTY_PATH = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
-    DEFAULT_RS485_PTY_PATH = DEFAULT_OSM_BASE + "UART_RS485_slave"
-    DEFAULT_I2C_SCK_PATH = DEFAULT_OSM_BASE + "i2c_socket"
-    DEFAULT_VALGRIND       = "valgrind"
-    DEFAULT_VALGRIND_FLAGS = "--leak-check=full"
+    DEFAULT_OSM_BASE        = "/tmp/osm/"
+    DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
+    DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
+    DEFAULT_RS485_PTY_PATH  = DEFAULT_OSM_BASE + "UART_RS485_slave"
+    DEFAULT_I2C_SCK_PATH    = DEFAULT_OSM_BASE + "i2c_socket"
+    DEFAULT_W1_SCK_PATH     = DEFAULT_OSM_BASE + "w1_socket"
+    DEFAULT_VALGRIND        = "valgrind"
+    DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
 
     def __init__(self, osm_path, log_file=None):
         level = logging.DEBUG if "DEBUG" in os.environ else logging.INFO
@@ -92,6 +94,7 @@ class test_framework_t(object):
         self._vosm_conn         = None
         self._i2c_process       = None
         self._modbus_process    = None
+        self._w1_process        = None
 
         self._done              = False
 
@@ -106,6 +109,7 @@ class test_framework_t(object):
         self._close_modbus()
         self._close_virtual_osm()
         self._close_i2c()
+        self._close_w1()
 
     def _wait_for_file(self, path, timeout):
         start_time = time.monotonic()
@@ -149,6 +153,9 @@ class test_framework_t(object):
         self._spawn_i2c()
         if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
             return False
+        self._spawn_w1()
+        if not self._wait_for_file(self.DEFAULT_W1_SCK_PATH, 3):
+            return False
         if not self._spawn_virtual_osm(self._vosm_path):
             self.error("Failed to spawn virtual OSM.")
             return False
@@ -175,7 +182,7 @@ class test_framework_t(object):
         passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
-        passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 30200, 0)
+        passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 25.0625, 0.01)
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)
@@ -331,6 +338,27 @@ class test_framework_t(object):
         self._modbus_process.kill()
         self._logger.debug("Closed virtual MODBUS.")
         self._modbus_process = None
+
+    def _w1_run(self):
+        w1_sock = w1.w1_server_t("/tmp/osm/w1_socket", logger=self._logger)
+        w1_sock.run_forever()
+
+    def _spawn_w1(self):
+        if os.path.exists(self.DEFAULT_W1_SCK_PATH):
+            os.unlink(self.DEFAULT_W1_SCK_PATH)
+        self._logger.info("Spawning virtual W1.")
+        self._w1_process = multiprocessing.Process(target=self._w1_run, name="w1_server", args=())
+        self._w1_process.start()
+        self._logger.debug("Spawned virtual W1.")
+
+    def _close_w1(self):
+        self._logger.info("Closing virtual W1.")
+        if self._w1_process is None:
+            self._logger.debug("Virtual W1 process isn't running, skip closing.")
+            return
+        self._w1_process.kill()
+        self._logger.debug("Closed virtual W1.")
+        self._w1_process = None
 
 
 def main():

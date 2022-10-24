@@ -111,8 +111,10 @@ class socket_server_t(object):
 
     def _send_to_client(self, client, msg):
         self.debug("Message to client [fd:%u] >> '%s'" % (client.fileno(), msg))
+        if not isinstance(msg, bytes):
+            msg = msg.encode()
         try:
-            resp = client.send(msg.encode())
+            resp = client.send(msg)
         except BrokenPipeError:
             self._close_client(client)
             return
