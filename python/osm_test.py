@@ -340,7 +340,9 @@ class test_framework_t(object):
         self._modbus_process = None
 
     def _w1_run(self):
-        w1_sock = w1.w1_server_t("/tmp/osm/w1_socket", logger=self._logger)
+        ds18b20 = w1.ds18b20_t(logger=self._logger)
+        devs    = [ds18b20]
+        w1_sock = w1.w1_server_t("/tmp/osm/w1_socket", devs, logger=self._logger)
         w1_sock.run_forever()
 
     def _spawn_w1(self):

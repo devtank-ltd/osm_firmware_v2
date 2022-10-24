@@ -10,10 +10,13 @@ This program uses sockets to provide a server for the one-wire
 communication to be faked.
 """
 
+DS18B20_DEFAULT_TEMPERATURE     = 25.0625
+
+
 
 class ds18b20_t(object):    
-    def __init__(self, temp=25.0625, logger=None):
-        self._temperature = temp
+    def __init__(self, temperature=DS18B20_DEFAULT_TEMPERATURE, logger=None):
+        self._temperature = temperature
         self._qd_temperature = None
         self.COMMANDS = { 0xCC : self._command_skip_rom ,
                           0x44 : self._command_conv_t   ,
@@ -70,19 +73,24 @@ class ds18b20_t(object):
 
 
 class w1_server_t(socket_server.socket_server_t):
-    def __init__(self, socket_loc, log_file=None, logger=None):
+    def __init__(self, socket_loc, devs, log_file=None, logger=None):
         super().__init__(socket_loc, log_file=log_file, logger=logger)
 
         self.info(f"W1 SERVER INITIALISED")
-        self._ds18b20 = ds18b20_t(logger=logger)
+        self._devs = devs
 
     def _process(self, client, raw_data):
         data_list = list(raw_data)
         for data in data_list:
             self.debug(f"W1 << OSM [{'%02x'% data}]")
 
-            command = self._ds18b20.COMMANDS.get(data, None)
-            if command is None:
+            found = False
+            for dev in self._devs:
+                command = dev.COMMANDS.get(data, None)
+                if command is not None:
+                    found = True
+                    break
+            if not found:
                 self.debug(f"Unknown command, skipping.")
                 return
             resp = command()
@@ -92,7 +100,18 @@ class w1_server_t(socket_server.socket_server_t):
 
 
 def main():
-    w1_sock = w1_server_t("/tmp/osm/w1_socket")
+    import argparse
+
+    def get_args():
+        parser = argparse.ArgumentParser(description='Fake W1 server.' )
+        parser.add_argument("-t", "--temperature", help='The temperature it is set to.', type=float, default=DS18B20_DEFAULT_TEMPERATURE)
+        return parser.parse_args()
+
+    args = get_args()
+
+    ds18b20 = ds18b20_t(args.temperature)
+    devs    = [ds18b20]
+    w1_sock = w1_server_t("/tmp/osm/w1_socket", devs)
     w1_sock.run_forever()
     return 0
 
