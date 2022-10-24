@@ -418,17 +418,17 @@ class dev_t(dev_base_t):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
     
     def change_samplec(self, meas, val):
-        self._ll.write(f"samplecount {meas} {val}")
+        self.do_cmd(f"samplecount {meas} {val}")
     
     def change_interval(self, meas, val):
-        self._ll.write(f"interval {meas} {val}")
+        self.do_cmd(f"interval {meas} {val}")
     
     def activate_io(self, meas, pin, pull):
         #Enabling one wire or pulsecount e.g. "en_w1 4 U"
-        self._ll.write(f"{meas} {pin} {pull}")
+        self.do_cmd(f"{meas} {pin} {pull}")
     
     def disable_io(self, pin):
-        self._ll.write(f"io {pin} : I N")
+        self.do_cmd(f"io {pin} : I N")
     
     @property
     def print_cc_gain(self):
@@ -441,10 +441,10 @@ class dev_t(dev_base_t):
         return self.do_cmd_multi(f"cc_mp {value} {phase}")
     
     def set_outer_inner_cc(self, phase, outer, inner):
-        self._ll.write(f"cc_gain {phase} {outer} {inner}")
+        self.do_cmd(f"cc_gain {phase} {outer} {inner}")
     
     def save(self):
-        self._ll.write("save")
+        self.do_cmd("save")
         
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")
@@ -557,7 +557,7 @@ class dev_t(dev_base_t):
 
     def do_debug(self, cmd):
         if cmd is not None:
-            self._ll.write(cmd)
+            self.do_cmd(cmd)
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
         r = self.do_cmd_multi(cmd, timeout)

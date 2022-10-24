@@ -627,13 +627,15 @@ class config_gui_window_t(Tk):
 
         if pin_is == meas:
             self._ios_label.configure(
-                text=f"{desc} enabled.", bg=LIME_GRN, fg=BLACK)
+                text=f"{desc} enabled.", 
+                bg=LIME_GRN, fg=BLACK)
         elif pin_is:
             self._ios_label.configure(
-                text=f"That IO is in use as {self._get_ios_meas_desc(pin_is)}.", bg=RED, fg=IVORY)
+                text=f"That IO is in use as {self._get_ios_meas_desc(pin_is)}.", 
+                bg=RED, fg=IVORY)
         else:
             self._ios_label.configure(
-                text=f"{desc} disabled.", bg=RED, fg=BLACK)
+                text=f"{desc} disabled.", bg=RED, fg=IVORY)
 
     def _do_ios_cmd(self, cmd, meas, pin_obj, pin_is):
         log_func(f"User attempting to {cmd} IO for {meas}")
@@ -683,9 +685,9 @@ class config_gui_window_t(Tk):
             io_d_label = Label(
                 self.ios_page,
                 text="Set Pull Up or Pull Down")
-            io_d_label.grid(column=1, row=2)
+            io_d_label.pack()
             self._up_d_non = Combobox(self.ios_page)
-            self._up_d_non.grid(column=1, row=3)
+            self._up_d_non.pack()
             self._up_d_non['values'] = ('Up', 'Down', 'None')
             if meas == 'CNT1':
                 self._up_d_non.set('Up')
@@ -711,19 +713,18 @@ class config_gui_window_t(Tk):
                                command=lambda: self._do_ios_cmd('disable', meas, pin_obj, pin_is),
                                bg=IVORY, fg=BLACK, font=FONT,
                                activebackground="green", activeforeground=IVORY)
-            dis_check.grid(column=0, row=4)
+            dis_check.pack()
         else:
             en_check = Button(self.ios_page,
                               text="Enable",
                               command=lambda: self._do_ios_cmd('enable', meas, pin_obj, pin_is),
                               bg=IVORY, fg=BLACK, font=FONT,
                               activebackground="green", activeforeground=IVORY)
-            en_check.grid(column=0, row=4)
-        self._ios_label = Label(self.ios_page, text="", bg=IVORY)
-        self._ios_label.grid(column=1, row=5)
+            en_check.pack()
+        self._ios_label = Label(self.ios_page, text="",
+            bg=IVORY, font=FONT)
+        self._ios_label.pack()
         self._set_ios_label(meas, pin_obj, pin_is)
-
-
 
     def _thread_debug(self):
         self._open_debug_w(self._debug_fr)
