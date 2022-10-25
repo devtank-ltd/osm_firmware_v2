@@ -171,6 +171,7 @@ class test_framework_t(object):
         passed = True
         passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
         passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
+        passed &= self._threshold_check("Light",              self._vosm_conn.light.value, 1000, 10)
         passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
         passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
@@ -286,8 +287,9 @@ class test_framework_t(object):
 
     def _i2c_run(self):
         htu_dev = i2c.i2c_device_htu21d_t()
-        devs = {i2c.VEML7700_ADDR: i2c.i2c_device_t(i2c.VEML7700_ADDR, i2c.VEML7700_CMDS),
-                htu_dev.addr:  htu_dev}
+        veml_dev = i2c.i2c_device_veml7700_t()
+        devs = {veml_dev.addr : veml_dev,
+                htu_dev.addr  : htu_dev}
         i2c_sock = i2c.i2c_server_t("/tmp/osm/i2c_socket", devs, logger=self._logger)
         i2c_sock.run_forever()
 

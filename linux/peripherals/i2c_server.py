@@ -10,6 +10,7 @@ import selectors
 
 from i2c_basetypes import i2c_device_t
 from i2c_htu21d import i2c_device_htu21d_t
+from i2c_veml7700 import i2c_device_veml7700_t
 
 
 """
@@ -40,16 +41,6 @@ COLOUR_CYAN   = "\033[36m"
 COLOUR_GREY   = "\033[37m"
 
 COLOUR_RESET  = COLOUR_WHITE
-
-
-VEML7700_ADDR = 0x10
-VEML7700_CMDS = {0x00: 0x0999,
-                 0x01: 0x0888,
-                 0x02: 0x0777,
-                 0x03: 0x0666,
-                 0x04: 0x7c01, # Raw light count = 380
-                 0x05: 0x0444,
-                 0x06: 0x0333}
 
 
 def log(file_, msg, colour=None):
@@ -261,8 +252,9 @@ class i2c_server_t(object):
 
 def main():
     htu_dev = i2c_device_htu21d_t()
-    devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS),
-            htu_dev.addr:  htu_dev}
+    veml_dev = i2c_device_veml7700_t()
+    devs = {veml_dev.addr : veml_dev,
+            htu_dev.addr  : htu_dev}
     if not os.path.exists("/tmp/osm"):
         os.mkdir("/tmp/osm")
     i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
