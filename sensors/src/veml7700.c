@@ -383,9 +383,11 @@ static bool _veml7700_increase_integration_time(void)
 {
     if (_veml7700_ctx.int_index + 1 == VEML7700_INT_COUNT)
     {
+        light_debug("Cannot increase the integration time any more.");
         return false;
     }
     _veml7700_ctx.int_index++;
+    light_debug("Increasing the integration time. (mode = %"PRIu8")", _veml7700_ctx.int_index);
     return true;
 }
 

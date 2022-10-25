@@ -26,10 +26,9 @@ class i2c_device_t(object):
         assert isinstance(w, list), "w must be a list"
         len_w = len(w)
         assert len_w >= 1, f"w must have at least 1 element ({len_w})."
-        cmd_code = w[0]
-        vals = w[1:]
+        vals = list(w)
         data = 0
-        for i in range(0, len_w - 1):
+        for i in range(0, len_w):
             data += (vals[i] & 0xFF) << (8 * i)
         self._cmds[cmd_code] = data
         return None

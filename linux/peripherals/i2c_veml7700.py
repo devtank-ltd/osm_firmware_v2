@@ -21,7 +21,7 @@ class i2c_device_veml7700_t(i2c_device_t):
     VEML7700_ALS_WHITE          = 0x05
     VEML7700_ALS_INT            = 0x06
 
-    VEML7700_CMDS   = {VEML7700_ALS_CONF_0      : 0x0100,
+    VEML7700_CMDS   = {VEML7700_ALS_CONF_0      : 0x0001,
                        VEML7700_ALS_WH          : 0x0000,
                        VEML7700_ALS_WL          : 0x0000,
                        VEML7700_ALS_POWER_SAVING: 0x0000,
@@ -34,7 +34,7 @@ class i2c_device_veml7700_t(i2c_device_t):
                        +5.1017e-04,
                        +6.2751e+00]
 
-    _ALS_GAIN_MASK  = 0x1800
+    _ALS_GAIN_MASK  = 0b11
     _ALS_GAIN_SHIFT = 11
     _ALS_GAIN_X1    = 0b00
     _ALS_GAIN_X2    = 0b01
@@ -49,7 +49,7 @@ class i2c_device_veml7700_t(i2c_device_t):
                                 _ALS_GAIN_X1_8 : 16   ,
                                 _ALS_GAIN_X1_4 : 8    }
 
-    _ALS_IT_MASK   = 0x03c0
+    _ALS_IT_MASK   = 0b1111
     _ALS_IT_SHIFT  = 6
     _ALS_IT_25_MS  = 0b1100
     _ALS_IT_50_MS  = 0b1000
@@ -85,11 +85,11 @@ class i2c_device_veml7700_t(i2c_device_t):
 
     @property
     def resolution(self):
-        conf = self._decode(self.VEML7700_CMDS[self.VEML7700_ALS_CONF_0])
-        gain_mode = (conf & self._ALS_GAIN_MASK) >> self._ALS_GAIN_SHIFT
+        conf = self._cmds[self.VEML7700_ALS_CONF_0]
+        gain_mode = (conf >> self._ALS_GAIN_SHIFT) & self._ALS_GAIN_MASK
         gain_multipler = self._ALS_GAIN_MULTIPLIERS[gain_mode]
 
-        integration_mode = (conf & self._ALS_IT_MASK) >> self._ALS_IT_SHIFT
+        integration_mode = (conf >> self._ALS_IT_SHIFT) & self._ALS_IT_MASK
         integration_multiplier = self._ALS_IT_MULTIPLIERS[integration_mode]
 
         return 0.0036 * gain_multipler * integration_multiplier
@@ -139,7 +139,7 @@ def main():
     print(veml7700.lux)
     veml7700.lux = 2300
     print(veml7700.lux)
-    veml7700.lux = 1
+    veml7700.lux = 0.1
     print(veml7700.lux)
     return 0
 
