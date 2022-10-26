@@ -149,7 +149,6 @@ class test_framework_t(object):
 
 
     def _start_osm_env(self):
-
         self._spawn_i2c()
         if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
             return False
@@ -160,12 +159,8 @@ class test_framework_t(object):
             self.error("Failed to spawn virtual OSM.")
             return False
 
-        if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
-            return False
-
         if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
             return False
-
 
 
     def test(self):
@@ -175,6 +170,9 @@ class test_framework_t(object):
             os.unlink(self.DEFAULT_DEBUG_PTY_PATH)
 
         self._start_osm_env()
+        if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
+            return False
+
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
