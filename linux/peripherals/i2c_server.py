@@ -8,7 +8,7 @@ import datetime
 import selectors
 
 
-from i2c_basetypes import i2c_device_t
+from basetypes import i2c_device_t
 from i2c_htu21d import i2c_device_htu21d_t
 from i2c_veml7700 import i2c_device_veml7700_t
 

@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
-from i2c_basetypes import i2c_device_t
+from basetypes import i2c_device_t
 
 
 VEML7700_DEFAULT_LUX = 1000
