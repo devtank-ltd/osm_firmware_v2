@@ -27,6 +27,7 @@ Application Guide:
 #define VEML7700_COUNT_LOWER_THRESHOLD          100
 #define VEML7700_DEFAULT_COLLECT_TIME           6600  // Max time in ms
 #define VEML7700_MAX_READ_TIME                  VEML7700_DEFAULT_COLLECT_TIME + 100
+#define VEML7700_TIMEOUT_TIME_MS                1000
 
 
 typedef enum
@@ -598,7 +599,7 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurem
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
-#define VEML7700_TIMEOUT_TIME_MS                   1000
+
 bool veml7700_get_lux(uint32_t* lux)
 {
     if (!lux)
