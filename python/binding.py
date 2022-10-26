@@ -282,6 +282,37 @@ class io_t(object):
     def configure(self, is_input: bool, bias: str):
         self._parent.configure_io(self._index, is_input, bias)
 
+    def activate_io(self, meas, pull):
+        #Enabling one wire or pulsecount e.g. "en_w1 4 U"
+        self._parent.do_cmd(f"en_{meas} {self._index} {pull}")
+
+    def disable_io(self):
+        self._parent.do_cmd(f"io {self._index} : I N")
+
+    def active_as(self):
+        line = self._parent.do_cmd(f"io {self._index}")
+        used_pos = line.find("USED")
+        if used_pos == -1:
+            return None
+        pin_is = line[used_pos:].split()[1]
+        if pin_is == "PLSCNT":
+            if self._index == 4:
+                return "CNT1"
+            elif self._index == 5:
+                return "CNT2"
+        elif pin_is == "W1":
+            if self._index == 4:
+                return "TMP2"
+            elif self._index == 5:
+                return "TMP3"
+
+    def active_pull(self):
+        line = self._parent.do_cmd(f"io {self._index}")
+        used_pos = line.find("USED")
+        if used_pos == -1:
+            return None
+        return line[used_pos:].split()[2]
+
 
 class ios_t(object):
     def __init__(self, parent, count):
@@ -335,7 +366,6 @@ class dev_t(dev_base_t):
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
             "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
             "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
-            "interval_mins": measurement_t("Interval Minutes", str   , "interval_mins", lambda s : parse_word(4, s), True ),
         }
         line = self.do_cmd("count")
         self._io_count = int(line.split()[-1])
@@ -349,14 +379,19 @@ class dev_t(dev_base_t):
         if child:
             return reader_child_t(self, child)
         self._log('No attribute "%s"' % attr)
-        return super().__getattribute__(attr)
+        raise AttributeError
 
     def _log(self, msg):
         self._log_obj.emit(msg)
 
     @property
-    def ios_output(self):
-        return self.do_cmd_multi("ios")
+    def interval_mins(self):
+        r = self.do_cmd_multi("interval_mins")
+        return int(r[0].split()[-1])
+
+    @interval_mins.setter
+    def interval_mins(self, value):
+        return self.do_cmd("interval_mins %u" % value)
 
     @property
     def app_key(self):
@@ -381,7 +416,36 @@ class dev_t(dev_base_t):
     @dev_eui.setter
     def dev_eui(self, eui):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
-
+    
+    def change_samplec(self, meas, val):
+        self.do_cmd(f"samplecount {meas} {val}")
+    
+    def change_interval(self, meas, val):
+        self.do_cmd(f"interval {meas} {val}")
+    
+    def activate_io(self, meas, pin, pull):
+        #Enabling one wire or pulsecount e.g. "en_w1 4 U"
+        self.do_cmd(f"{meas} {pin} {pull}")
+    
+    def disable_io(self, pin):
+        self.do_cmd(f"io {pin} : I N")
+    
+    @property
+    def print_cc_gain(self):
+        return self.do_cmd_multi("cc_gain")
+    
+    def get_midpoint(self, phase):
+        return self.do_cmd_multi(f"cc_mp {phase}")
+    
+    def update_midpoint(self, value, phase):
+        return self.do_cmd_multi(f"cc_mp {value} {phase}")
+    
+    def set_outer_inner_cc(self, phase, outer, inner):
+        self.do_cmd(f"cc_gain {phase} {outer} {inner}")
+    
+    def save(self):
+        self.do_cmd("save")
+        
     def get_modbus_val(self, val_name, timeout: float = 0.5):
         self._ll.write(f"mb_get_reg {val_name}")
         end_time = time.monotonic() + timeout
@@ -485,20 +549,15 @@ class dev_t(dev_base_t):
         return False
 
     def imp_readlines(self, timeout: float = 0.5):
-        r_str = ""
-        end_time = time.monotonic() + timeout
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines()
-            for line in new_lines:
-                r_str += line + "\n"
-        return r_str
+        new_lines = self._ll.readlines()
+        return "".join([str(line)+"\n" for line in new_lines])
 
     def dbg_readlines(self):
         return self._ll.readlines()
 
     def do_debug(self, cmd):
         if cmd is not None:
-            self._ll.write(cmd)
+            self.do_cmd(cmd)
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
         r = self.do_cmd_multi(cmd, timeout)
@@ -654,6 +713,9 @@ class dev_t(dev_base_t):
 
     def modbus_dev_del(self, device: str):
         self._ll.write(f"mb_dev_del {device}")
+    
+    def modbus_reg_del(self, reg: str):
+        self._ll.write(f"mb_reg_del {reg}")
 
     def current_clamp_calibrate(self):
         self._ll.write("cc_cal")
