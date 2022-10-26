@@ -61,21 +61,21 @@ class hpm_dev_t(pty_dev_t):
         self._logger.debug(f"Parsing {msg}")
         if msg == b"ON\n":
             self._on = True
-            self._logger.info("Turning on the HPM.")
+            self._logger.debug("Turning on the HPM.")
             self._send_hpm()
             return True
         elif msg == b"OFF\n":
             self._on = False
-            self._logger.info("Turning off the HPM.")
+            self._logger.debug("Turning off the HPM.")
             return True
         elif msg == bytes([0x68, 0x01, 0x04, 0x93]):
-            self._logger.info("Requested HPM values.")
+            self._logger.debug("Requested HPM values.")
             self._send_hpm()
             return True
         return False
 
     def _send_hpm(self):
-        self._logger.info(f"Sending HPM values. (PM2.5 = {self._pm2_5}, PM10 = {self._pm10})")
+        self._logger.debug(f"Sending HPM values. (PM2.5 = {self._pm2_5}, PM10 = {self._pm10})")
         head = 0x40
         len_ = 0x05
         cmd  = 0x04
