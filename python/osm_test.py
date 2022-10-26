@@ -16,6 +16,7 @@ sys.path.append("../linux/peripherals/")
 import i2c_server as i2c
 import modbus_server as modbus
 import w1_server as w1
+import hpm_virtual as hpm
 import basetypes
 
 
@@ -25,6 +26,7 @@ class test_framework_t(object):
     DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
     DEFAULT_RS485_PTY_PATH  = DEFAULT_OSM_BASE + "UART_RS485_slave"
+    DEFAULT_HPM_PTY_PATH    = DEFAULT_OSM_BASE + "UART_HPM_slave"
     DEFAULT_I2C_SCK_PATH    = DEFAULT_OSM_BASE + "i2c_socket"
     DEFAULT_W1_SCK_PATH     = DEFAULT_OSM_BASE + "w1_socket"
     DEFAULT_VALGRIND        = "valgrind"
@@ -45,6 +47,7 @@ class test_framework_t(object):
         self._i2c_process       = None
         self._modbus_process    = None
         self._w1_process        = None
+        self._hpm_process       = None
 
         self._done              = False
 
@@ -57,6 +60,7 @@ class test_framework_t(object):
     def exit(self):
         self._disconnect_osm()
         self._close_modbus()
+        self._close_hpm()
         self._close_virtual_osm()
         self._close_i2c()
         self._close_w1()
@@ -70,7 +74,7 @@ class test_framework_t(object):
         return True
 
     def _threshold_check(self, desc, value, ref, tolerance):
-        if isinstance(value, float):
+        if isinstance(value, float) or isinstance(value, int):
             passed = abs(float(value) - float(ref)) <= float(tolerance)
         else:
             self._logger.debug(f'Invalid test argument {value} for "{desc}"')
@@ -112,6 +116,9 @@ class test_framework_t(object):
         if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
             return False
 
+        if not self._spawn_hpm(self.DEFAULT_HPM_PTY_PATH):
+            return False
+
 
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
@@ -122,7 +129,6 @@ class test_framework_t(object):
         self._start_osm_env()
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
-
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
@@ -142,6 +148,9 @@ class test_framework_t(object):
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
         passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 25.0625, 0.01)
+        pm25, pm10 = self._vosm_conn.hpm.value
+        passed &= self._threshold_check("PM2.5",              pm25, 15, 0)
+        passed &= self._threshold_check("PM10",               pm10, 25, 0)
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)
@@ -311,6 +320,29 @@ class test_framework_t(object):
         self._w1_process.kill()
         self._logger.debug("Closed virtual W1.")
         self._w1_process = None
+
+    def _hpm_run(self, path):
+        hpm_dev = hpm.hpm_dev_t(path, logger=self._logger, log_file=self._log_file, pm2_5=15, pm10=25)
+        hpm_dev.run_forever()
+
+    def _spawn_hpm(self, path, timeout=1):
+        if not self._wait_for_file(path, timeout):
+            return False
+
+        self._logger.info("Spawning virtual HPM.")
+        self._hpm_process = multiprocessing.Process(target=self._hpm_run, name="hpm_device", args=(path,))
+        self._hpm_process.start()
+        self._logger.debug("Spawned virtual HPM.")
+        return True
+
+    def _close_hpm(self):
+        self._logger.info("Closing virtual HPM.")
+        if self._hpm_process is None:
+            self._logger.debug("Virtual HPM process isn't running, skip closing.")
+            return
+        self._hpm_process.kill()
+        self._logger.debug("Closed virtual HPM.")
+        self._hpm_process = None
 
 
 def main():

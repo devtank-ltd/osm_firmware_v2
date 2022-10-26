@@ -11,6 +11,7 @@ class pty_dev_t(object):
     def __init__(self, pty, logger=None, log_file=None):
         if logger is None:
             self._logger = basetypes.get_logger(log_file)
+        self._logger = logger
         self._serial_obj = serial.Serial(port=pty)
         self.fileno = self._serial_obj.fileno
         self._done = False
@@ -42,8 +43,8 @@ class pty_dev_t(object):
 class hpm_dev_t(pty_dev_t):
     def __init__(self, pty, logger=None, log_file=None, pm2_5=20, pm10=30):
         super().__init__(pty, logger=logger, log_file=log_file)
-        self._pm2_5    = 20
-        self._pm10     = 30
+        self._pm2_5    = pm2_5
+        self._pm10     = pm10
         self._on        = False
         self._logger.info("INITIALISED VIRTUAL HPM")
 
