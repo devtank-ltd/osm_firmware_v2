@@ -420,64 +420,6 @@ static bool _veml7700_increase_settings(void)
 }
 
 
-static bool _veml7700_get_als_count(uint16_t* counts)
-{
-    if (!_veml7700_set_config())
-    {
-        return false;
-    }
-    if (!_veml7700_turn_on())
-    {
-        return false;
-    }
-    uint32_t start_ms = get_since_boot_ms();
-    light_debug("Waiting %"PRIu32".%03"PRIu32" seconds", _veml7700_ctx.wait_time/1000, _veml7700_ctx.wait_time%1000);
-    while (since_boot_delta(get_since_boot_ms(), start_ms) < _veml7700_ctx.wait_time)
-        uart_rings_out_drain();
-
-    *counts = _veml7700_read_als();
-    if (!_veml7700_turn_off())
-    {
-        return false;
-    }
-    return true;
-}
-
-
-bool veml7700_get_lux(uint32_t* lux)
-{
-    if (!lux)
-    {
-        light_debug("Handed in null pointer.");
-        return false;
-    }
-    if (_veml7700_state_machine.state != VEML7700_STATE_OFF)
-    {
-        light_debug("Sensor is in wrong state = %d.", _veml7700_state_machine.state);
-        return false;
-    }
-    _veml7700_reset_ctx();
-    uint16_t counts;
-    if (!_veml7700_get_als_count(&counts))
-    {
-        return false;
-    }
-    while (counts < 100)
-    {
-        if (!_veml7700_increase_settings())
-        {
-            return false;
-        }
-        if (!_veml7700_get_als_count(&counts))
-        {
-            return false;
-        }
-    }
-    light_debug("Raw light count = %"PRIu16, counts);
-    return _veml7700_conv(lux, counts);
-}
-
-
 static bool _veml7700_get_counts_begin(void)
 {
     if (!_veml7700_set_config())
@@ -656,6 +598,60 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurem
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
+#define VEML7700_TIMEOUT_TIME_MS                   1000
+bool veml7700_get_lux(uint32_t* lux)
+{
+    if (!lux)
+    {
+        light_debug("Handed in null pointer.");
+        return false;
+    }
+    if (veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        light_debug("Failed to init light collection.");
+        return false;
+    }
+    uint32_t wait_time;
+    if (veml7700_measurements_collection_time(MEASUREMENTS_LIGHT_NAME, &wait_time) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        light_debug("Failed to collect the wait time.");
+        return false;
+    }
+    uint32_t start_time = get_since_boot_ms();
+    while (since_boot_delta(get_since_boot_ms(), start_time) < wait_time)
+    {
+        /* Watchdog? */
+        if (veml7700_iteration(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        {
+            light_debug("Iteration failed.");
+            return false;
+        }
+    }
+    measurements_reading_t v;
+    start_time = get_since_boot_ms();
+    while (since_boot_delta(get_since_boot_ms(), start_time) < VEML7700_TIMEOUT_TIME_MS)
+    {
+        measurements_sensor_state_t resp = veml7700_light_measurements_get(MEASUREMENTS_SENSOR_STATE_SUCCESS, &v);
+        switch (resp)
+        {
+            case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+                *lux = v.v_i64;
+                return true;
+            case MEASUREMENTS_SENSOR_STATE_BUSY:
+                break;
+            case MEASUREMENTS_SENSOR_STATE_ERROR:
+                light_debug("Failed to collect the light.");
+                return false;
+        }
+        if (veml7700_iteration(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        {
+            light_debug("Overtime iteration failed.");
+            return false;
+        }
+    }
+    light_debug("Timed out collecting light.");
+    return false;
+}
 
 
 void veml7700_init(void)
