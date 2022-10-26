@@ -70,6 +70,15 @@ def parse_humidity(r_str: str):
     return False
 
 
+def parse_light(r_str: str):
+    if "ERROR" in r_str:
+        return False
+    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+    if r:
+        return float(r[-1])
+    return False
+
+
 def parse_one_wire(r_str: str):
     if "ERROR" in r_str:
         return False
@@ -364,6 +373,7 @@ class dev_t(dev_base_t):
             "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
             "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
             "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
+            "light"     : measurement_t("Light"              , float , "light"     , parse_light          ),
             "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
             "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }

@@ -6,7 +6,6 @@ import sys
 import time
 import errno
 import subprocess
-import logging
 import signal
 import multiprocessing
 
@@ -17,44 +16,7 @@ sys.path.append("../linux/peripherals/")
 import i2c_server as i2c
 import modbus_server as modbus
 import w1_server as w1
-
-
-class test_logging_formatter_t(logging.Formatter):
-    GREEN       = "\033[32;20m"
-    WHITE       = "\033[0m"
-    GREY        = "\033[37;20m"
-    YELLOW      = "\033[33;20m"
-    RED         = "\033[31;20m"
-    BOLD_RED    = "\033[31;1m"
-    RESET       = WHITE
-    FORMAT      = "%(asctime)s.%(msecs)03dZ %(filename)s:%(lineno)d (%(process)d) [%(levelname)s]: %(message)s"
-
-    FORMATS = {
-        logging.DEBUG:    GREY     + FORMAT + RESET,
-        logging.INFO:     WHITE    + FORMAT + RESET,
-        logging.WARNING:  YELLOW   + FORMAT + RESET,
-        logging.ERROR:    RED      + FORMAT + RESET,
-        logging.CRITICAL: BOLD_RED + FORMAT + RESET
-    }
-
-    def _format_colour(self, record):
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        formatter.datefmt   = "%Y-%m-%dT%H:%M:%S"
-        formatter.converter = time.gmtime
-        return formatter.format(record)
-
-    def _format_no_colour(self, record):
-        formatter = logging.Formatter(self.FORMAT)
-        formatter.datefmt   = "%Y-%m-%dT%H:%M:%S"
-        formatter.converter = time.gmtime
-        return formatter.format(record)
-
-    def colour(self, enabled):
-        if enabled:
-            self.format = self._format_colour
-        else:
-            self.format = self._format_no_colour
+import basetypes
 
 
 class test_framework_t(object):
@@ -69,20 +31,8 @@ class test_framework_t(object):
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
 
     def __init__(self, osm_path, log_file=None):
-        level = logging.DEBUG if "DEBUG" in os.environ else logging.INFO
-        self._logger        = logging.getLogger(__name__)
-        self._logger.setLevel(level)
-        formatter           = test_logging_formatter_t()
-        self._log_file      = log_file
-        if self._log_file:
-            streamhandler   = logging.FileHandler(self._log_file)
-        else:
-            streamhandler   = logging.StreamHandler()
-        formatter.colour(self._log_file is None)
-        streamhandler.setLevel(level)
-
-        streamhandler.setFormatter(formatter)
-        self._logger.addHandler(streamhandler)
+        self._logger = basetypes.get_logger(log_file)
+        self._log_file = log_file
 
         if not os.path.exists(osm_path):
             self._logger.error("Cannot find fake OSM.")
@@ -128,8 +78,8 @@ class test_framework_t(object):
         op = "=" if passed else "!="
         prefix = poxtfix = ""
         if self._log_file is None:
-            prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
-            poxtfix = test_logging_formatter_t.RESET
+            prefix = basetypes.test_logging_formatter_t.GREEN if passed else basetypes.test_logging_formatter_t.RED
+            poxtfix = basetypes.test_logging_formatter_t.RESET
         self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref} +/- {tolerance})' + poxtfix)
         return passed
 
@@ -142,8 +92,8 @@ class test_framework_t(object):
         op = "=" if passed else "!="
         prefix = poxtfix = ""
         if self._log_file is None:
-            prefix = test_logging_formatter_t.GREEN if passed else test_logging_formatter_t.RED
-            poxtfix = test_logging_formatter_t.RESET
+            prefix = basetypes.test_logging_formatter_t.GREEN if passed else basetypes.test_logging_formatter_t.RED
+            poxtfix = basetypes.test_logging_formatter_t.RESET
         self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref})' + poxtfix)
         return passed
 
@@ -186,6 +136,7 @@ class test_framework_t(object):
         passed = True
         passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
         passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
+        passed &= self._threshold_check("Light",              self._vosm_conn.light.value, 10, 10)
         passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
         passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
@@ -292,8 +243,9 @@ class test_framework_t(object):
 
     def _i2c_run(self):
         htu_dev = i2c.i2c_device_htu21d_t()
-        devs = {i2c.VEML7700_ADDR: i2c.i2c_device_t(i2c.VEML7700_ADDR, i2c.VEML7700_CMDS),
-                htu_dev.addr:  htu_dev}
+        veml_dev = i2c.i2c_device_veml7700_t(lux=10)
+        devs = {veml_dev.addr : veml_dev,
+                htu_dev.addr  : htu_dev}
         i2c_sock = i2c.i2c_server_t("/tmp/osm/i2c_socket", devs, logger=self._logger)
         i2c_sock.run_forever()
 

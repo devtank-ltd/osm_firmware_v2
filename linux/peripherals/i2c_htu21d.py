@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-from i2c_basetypes import i2c_device_t
+from basetypes import i2c_device_t
 
 
 class i2c_device_htu21d_t(i2c_device_t):

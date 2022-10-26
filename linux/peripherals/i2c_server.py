@@ -8,8 +8,9 @@ import datetime
 import selectors
 
 import socket_server_base as socket_server
-from i2c_basetypes import i2c_device_t
+from basetypes import i2c_device_t
 from i2c_htu21d import i2c_device_htu21d_t
+from i2c_veml7700 import i2c_device_veml7700_t
 
 
 """
@@ -133,8 +134,9 @@ class i2c_server_t(socket_server.socket_server_t):
 
 def main():
     htu_dev = i2c_device_htu21d_t()
-    devs = {VEML7700_ADDR: i2c_device_t(VEML7700_ADDR, VEML7700_CMDS),
-            htu_dev.addr:  htu_dev}
+    veml_dev = i2c_device_veml7700_t()
+    devs = {veml_dev.addr : veml_dev,
+            htu_dev.addr  : htu_dev}
     if not os.path.exists("/tmp/osm"):
         os.mkdir("/tmp/osm")
     i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
