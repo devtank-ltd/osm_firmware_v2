@@ -147,8 +147,8 @@ class test_framework_t(object):
         self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref})' + poxtfix)
         return passed
 
-    def test(self):
-        self._logger.info("Starting Virtual OSM Test...")
+
+    def _start_osm_env(self):
 
         self._spawn_i2c()
         if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
@@ -165,6 +165,16 @@ class test_framework_t(object):
 
         if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
             return False
+
+
+
+    def test(self):
+        self._logger.info("Starting Virtual OSM Test...")
+
+        if os.path.exists(self.DEFAULT_DEBUG_PTY_PATH):
+            os.unlink(self.DEFAULT_DEBUG_PTY_PATH)
+
+        self._start_osm_env()
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
@@ -197,15 +207,7 @@ class test_framework_t(object):
     def run(self):
         self._logger.info("Starting Virtual OSM Test...")
 
-        self._spawn_i2c()
-        if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
-            return False
-        if not self._spawn_virtual_osm(self._vosm_path):
-            self.error("Failed to spawn virtual OSM.")
-            return False
-
-        if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
-            return False
+        self._start_osm_env()
 
         try:
             while not self._done:
@@ -248,8 +250,6 @@ class test_framework_t(object):
         self._vosm_proc = None
 
     def _spawn_virtual_osm(self, path):
-        if os.path.exists(self.DEFAULT_DEBUG_PTY_PATH):
-            os.unlink(self.DEFAULT_DEBUG_PTY_PATH)
         self._logger.info("Spawning virtual OSM.")
         command = self.DEFAULT_VALGRIND.split() + self.DEFAULT_VALGRIND_FLAGS.split() + path.split()
         debug_log = open(self.DEFAULT_OSM_BASE + "debug.log", "w")
