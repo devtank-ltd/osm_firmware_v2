@@ -3,9 +3,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/un.h>
 #include <inttypes.h>
+#include <sys/socket.h>
 
 #include "i2c.h"
 
@@ -19,27 +18,12 @@
 
 
 static bool _i2c_connected = false;
-static int  _socketfd;
-
-
-static bool _i2c_connect(void)
-{
-    struct sockaddr_un addr;
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, I2C_SERVER_LOC, sizeof(addr.sun_path));
-    _socketfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (connect(_socketfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
-    {
-        log_error("Could not bind the socket.");
-        return false;
-    }
-    return true;
-}
+static int  _i2c_socketfd;
 
 
 void i2cs_init(void)
 {
-    _i2c_connected = _i2c_connect();
+    _i2c_connected = socket_connect(I2C_SERVER_LOC, &_i2c_socketfd);
     if (!_i2c_connected)
     {
         log_error("Fake I2C Failed to connect to socket.");
@@ -50,7 +34,7 @@ void i2cs_init(void)
 
 void i2c_linux_deinit(void)
 {
-    close(_socketfd);
+    close(_i2c_socketfd);
 }
 
 
@@ -100,7 +84,7 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
     strncat(buf, tmp_buf, I2C_BUF_SIZ-1);
 
     int buf_siz = strnlen(buf, I2C_BUF_SIZ-1);
-    int send_size = send(_socketfd, buf, buf_siz, 0);
+    int send_size = send(_i2c_socketfd, buf, buf_siz, 0);
     if (send_size != buf_siz)
     {
         log_error("Failed to send the correct size I2C for the message. (%d != %d)", send_size, buf_siz);
@@ -108,7 +92,7 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
     }
     linux_port_debug("I2C sent %d", send_size);
 
-    int recv_siz = recv(_socketfd, buf, I2C_BUF_SIZ-1, 0);
+    int recv_siz = recv(_i2c_socketfd, buf, I2C_BUF_SIZ-1, 0);
     if (recv_siz < 0)
     {
         log_error("Failed to receive.");

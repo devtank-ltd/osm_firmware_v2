@@ -358,7 +358,7 @@ class dev_t(dev_base_t):
     def __init__(self, port):
         super().__init__(port)
         self._children = {
-            "w1"        : measurement_t("One Wire"           , float , "w1"        , parse_one_wire       ),
+            "w1"        : measurement_t("One Wire"           , float , "w1 TMP2"   , parse_one_wire       ),
             "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
             "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
             "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),

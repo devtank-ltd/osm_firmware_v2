@@ -22,13 +22,11 @@ Documents used:
         0 }                                                            \
 }
 
-#define DS18B20_DELAY_GET_TEMP_US   750000
-
 #define DS18B20_CMD_SKIP_ROM        0xCC
 #define DS18B20_CMD_CONV_T          0x44
 #define DS18B20_CMD_READ_SCP        0xBE
 
-#define DS18B20_DEFAULT_COLLECTION_TIME_MS DS18B20_DELAY_GET_TEMP_US/1000
+#define DS18B20_DEFAULT_COLLECTION_TIME_MS 750
 
 
 typedef union
@@ -63,14 +61,6 @@ static void _ds18b20_read_scpad(ds18b20_memory_t* d, ds18b20_instance_t* instanc
     {
         d->raw[i] = w1_read_byte(instance->w1_index);
     }
-}
-
-
-static void _ds18b20_delay_us(uint32_t delay)
-{
-    uint32_t start = get_since_boot_ms();
-    while (since_boot_delta(get_since_boot_ms(), start) < (delay/1000));
-    return;
 }
 
 
@@ -136,62 +126,14 @@ static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 }
 
 
-bool ds18b20_query_temp(float* temperature, char* name)
+static void _ds18b20_print_inst_names(void)
 {
-    ds18b20_instance_t* instance;
-    if (!_ds18b20_get_instance(&instance, name))
+    log_out("Available instances:");
+    for (uint8_t i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
     {
-        exttemp_debug("Cannot get instance.");
-        return false;
+        ds18b20_instance_t* inst = &_ds18b20_instances[i];
+        log_out("- '%s'", inst->info.name);
     }
-    if (!io_is_w1_now(instance->info.io))
-    {
-        exttemp_debug("IO not set.");
-        return false;
-    }
-
-    ds18b20_memory_t d; 
-    if (!w1_reset(instance->w1_index))
-    {
-        goto bad_exit;
-    }
-    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(instance->w1_index, DS18B20_CMD_CONV_T);
-    _ds18b20_delay_us(DS18B20_DELAY_GET_TEMP_US);
-    if (!w1_reset(instance->w1_index))
-    {
-        goto bad_exit;
-    }
-    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(instance->w1_index, DS18B20_CMD_READ_SCP);
-    _ds18b20_read_scpad(&d, instance);
-
-    if (!_ds18b20_crc_check(d.raw, 8))
-    {
-        exttemp_debug("Temperature data not confirmed by CRC");
-        return false;
-    }
-
-    if (!_ds18b20_empty_check(d.raw, 9))
-    {
-        exttemp_debug("Empty memory.");
-        return false;
-    }
-
-    int16_t integer_bits = d.t >> 4;
-    int8_t decimal_bits = d.t & 0x000F;
-    if (d.t & 0x8000)
-    {
-        integer_bits = integer_bits | 0xF000;
-        decimal_bits = (decimal_bits - 16) % 16;
-    }
-
-    *temperature = (float)integer_bits + (float)decimal_bits / 16.f;
-    exttemp_debug("T: %.03f C", *temperature);
-    return true;
-bad_exit:
-    exttemp_debug("Temperature probe did not respond");
-    return false;
 }
 
 
@@ -199,8 +141,6 @@ measurements_sensor_state_t ds18b20_measurements_init(char* name)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!io_is_w1_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!w1_reset(instance->w1_index))
     {
@@ -217,8 +157,6 @@ measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurement
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!io_is_w1_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     ds18b20_memory_t d;
     if (!w1_reset(instance->w1_index))
@@ -246,7 +184,7 @@ measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurement
     int8_t decimal_bits = d.t & 0x000F;
     if (d.t & 0x8000)
     {
-        integer_bits = integer_bits | 0xF000;
+        integer_bits = (integer_bits | 0xF000) + 1;
         decimal_bits = (decimal_bits - 16) % 16;
     }
 
@@ -263,6 +201,43 @@ measurements_sensor_state_t ds18b20_collection_time(char* name, uint32_t* collec
     }
     *collection_time = DS18B20_DEFAULT_COLLECTION_TIME_MS;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+bool ds18b20_query_temp(float* temperature, char* name)
+{
+    ds18b20_instance_t* inst;
+    if (!_ds18b20_get_instance(&inst, name))
+    {
+        log_out("Requested '%s', no instance with this name.", name);
+        _ds18b20_print_inst_names();
+        return false;
+    }
+
+    if (ds18b20_measurements_init(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        exttemp_debug("Could not init external temperature sensor.");
+        return false;
+    }
+    uint32_t wait_time;
+    if (ds18b20_collection_time(name, &wait_time) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        exttemp_debug("Could not get wait time for external temperature sensor.");
+        return false;
+    }
+    uint32_t start_time = get_since_boot_ms();
+    while (since_boot_delta(get_since_boot_ms(), start_time) < wait_time)
+    {
+        /* Watchdog? */
+    }
+    measurements_reading_t value;
+    if (ds18b20_measurements_collect(name, &value) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        exttemp_debug("Could not collect external temperature sensor.");
+        return false;
+    }
+    *temperature = (float)value.v_f32 / 1000.f;
+    return true;
 }
 
 

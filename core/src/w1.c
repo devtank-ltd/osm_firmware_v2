@@ -9,6 +9,7 @@
 #include "pinmap.h"
 #include "log.h"
 #include "base_types.h"
+#include "io.h"
 
 
 #define W1_DELAY_READ_START    2
@@ -28,11 +29,34 @@
 #define W1_LEVEL_HIGH       (uint8_t)1
 
 
-static port_n_pins_t _w1_pnp[] = { { W1_PULSE_PORT, W1_PULSE_1_PIN } };
+typedef struct
+{
+    port_n_pins_t   pnp;
+    unsigned        io;
+} w1_ios_t;
+
+
+static w1_ios_t _w1_ios[] = { {.pnp={ W1_PULSE_PORT, W1_PULSE_1_PIN }, .io=W1_PULSE_1_IO } };
 
 static void _w1_start_interrupt(void) {}
 
 static void _w1_stop_interrupt(void) {}
+
+
+static bool _w1_check_index(uint8_t index)
+{
+    if (index >= ARRAY_SIZE(_w1_ios))
+    {
+        log_error("W1 index references uninitialised memory.");
+        return false;
+    }
+    if (!io_is_w1_now(_w1_ios[index].io))
+    {
+        log_error("IO not set up for W1.");
+        return false;
+    }
+    return true;
+}
 
 
 static void _w1_delay_us(uint64_t delay)
@@ -43,48 +67,42 @@ static void _w1_delay_us(uint64_t delay)
 
 static void _w1_set_direction(uint8_t index, bool out)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to set w1 level from uninitialised memory.");
+    if (!_w1_check_index(index))
         return;
-    }
+
     if (out)
     {
-        gpio_mode_setup(_w1_pnp[index].port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, _w1_pnp[index].pins);
+        gpio_mode_setup(_w1_ios[index].pnp.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, _w1_ios[index].pnp.pins);
     }
     else
     {
-        gpio_mode_setup(_w1_pnp[index].port, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, _w1_pnp[index].pins);
+        gpio_mode_setup(_w1_ios[index].pnp.port, GPIO_MODE_INPUT, GPIO_PUPD_PULLUP, _w1_ios[index].pnp.pins);
     }
 }
 
 
 static void _w1_set_level(uint8_t index, uint8_t bit)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to set w1 level from uninitialised memory.");
+    if (!_w1_check_index(index))
         return;
-    }
+
     if (bit)
     {
-        gpio_set(_w1_pnp[index].port, _w1_pnp[index].pins);
+        gpio_set(_w1_ios[index].pnp.port, _w1_ios[index].pnp.pins);
     }
     else
     {
-        gpio_clear(_w1_pnp[index].port, _w1_pnp[index].pins);
+        gpio_clear(_w1_ios[index].pnp.port, _w1_ios[index].pnp.pins);
     }
 }
 
 
 static uint8_t _w1_get_level(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to get w1 level from uninitialised memory.");
+    if (!_w1_check_index(index))
         return 0;
-    }
-    if (gpio_get(_w1_pnp[index].port, _w1_pnp[index].pins))
+
+    if (gpio_get(_w1_ios[index].pnp.port, _w1_ios[index].pnp.pins))
     {
         return W1_LEVEL_HIGH;
     }
@@ -97,11 +115,9 @@ static uint8_t _w1_get_level(uint8_t index)
 
 static uint8_t _w1_read_bit(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to read w1 bit from uninitialised memory.");
+    if (!_w1_check_index(index))
         return 0;
-    }
+
     _w1_start_interrupt(); 
     _w1_set_direction(index, W1_DIRECTION_OUTPUT);
     _w1_set_level(index, W1_LEVEL_LOW);
@@ -117,11 +133,9 @@ static uint8_t _w1_read_bit(uint8_t index)
 
 static void _w1_send_bit(uint8_t index, int bit)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to send w1 bit from uninitialised memory.");
+    if (!_w1_check_index(index))
         return;
-    }
+
     _w1_start_interrupt();
     if (bit)
     {
@@ -143,11 +157,10 @@ static void _w1_send_bit(uint8_t index, int bit)
 
 bool w1_reset(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to reset w1 from uninitialised memory.");
-        return false;
-    }
+    if (!_w1_check_index(index))
+        return 0;
+
+
     _w1_set_direction(index, W1_DIRECTION_OUTPUT);
     _w1_set_level(index, W1_LEVEL_LOW);
     _w1_delay_us(W1_DELAY_RESET_SET);
@@ -164,11 +177,9 @@ bool w1_reset(uint8_t index)
 
 uint8_t w1_read_byte(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to read w1 byte from uninitialised memory.");
+    if (!_w1_check_index(index))
         return 0;
-    }
+
     uint8_t val = 0;
     for (uint8_t i = 0; i < 8; i++)
     {
@@ -180,11 +191,9 @@ uint8_t w1_read_byte(uint8_t index)
 
 void w1_send_byte(uint8_t index, uint8_t byte)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
-    {
-        log_error("Tried to send w1 byte from uninitialised memory.");
+    if (!_w1_check_index(index))
         return;
-    }
+
     _w1_set_direction(index, W1_DIRECTION_OUTPUT);
     for (uint8_t i = 0; i < 8; i++)
     {
@@ -202,10 +211,10 @@ void w1_send_byte(uint8_t index, uint8_t byte)
 
 void w1_init(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_pnp))
+    if (index >= ARRAY_SIZE(_w1_ios))
     {
         log_error("Tried to init w1 from uninitialised memory.");
         return;
     }
-    rcc_periph_clock_enable(PORT_TO_RCC(_w1_pnp[index].port));
+    rcc_periph_clock_enable(PORT_TO_RCC(_w1_ios[index].pnp.port));
 }
