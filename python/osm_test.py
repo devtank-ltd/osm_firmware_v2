@@ -280,7 +280,7 @@ class test_framework_t(object):
         modbus_server = modbus.modbus_server_t(path)
         modbus_server.run_forever()
 
-    def _spawn_modbus(self, path, timeout=1):
+    def _spawn_modbus(self, path, timeout=3):
         if not self._wait_for_file(path, timeout):
             return False
 
@@ -326,7 +326,7 @@ class test_framework_t(object):
         hpm_dev = hpm.hpm_dev_t(path, logger=self._logger, log_file=self._log_file, pm2_5=15, pm10=25)
         hpm_dev.run_forever()
 
-    def _spawn_hpm(self, path, timeout=1):
+    def _spawn_hpm(self, path, timeout=3):
         if not self._wait_for_file(path, timeout):
             return False
 
