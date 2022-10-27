@@ -148,7 +148,8 @@ class test_framework_t(object):
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
         passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 25.0625, 0.01)
-        pm25, pm10 = self._vosm_conn.hpm.value
+        hpm_r = self._vosm_conn.hpm.value
+        pm25, pm10 = hpm_r if isinstance(hpm_r, tuple) else (None, None)
         passed &= self._threshold_check("PM2.5",              pm25, 15, 0)
         passed &= self._threshold_check("PM10",               pm10, 25, 0)
 
@@ -279,7 +280,7 @@ class test_framework_t(object):
         modbus_server = modbus.modbus_server_t(path)
         modbus_server.run_forever()
 
-    def _spawn_modbus(self, path, timeout=1):
+    def _spawn_modbus(self, path, timeout=3):
         if not self._wait_for_file(path, timeout):
             return False
 
@@ -325,7 +326,7 @@ class test_framework_t(object):
         hpm_dev = hpm.hpm_dev_t(path, logger=self._logger, log_file=self._log_file, pm2_5=15, pm10=25)
         hpm_dev.run_forever()
 
-    def _spawn_hpm(self, path, timeout=1):
+    def _spawn_hpm(self, path, timeout=3):
         if not self._wait_for_file(path, timeout):
             return False
 

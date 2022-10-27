@@ -40,7 +40,7 @@ class test_logging_formatter_t(logging.Formatter):
         else:
             self.format = self._format_no_colour
 
-def get_logger(log_file):
+def get_logger(log_file=None):
     level = logging.DEBUG if "DEBUG" in os.environ else logging.INFO
     logger        = logging.getLogger(__name__)
     logger.setLevel(level)
@@ -51,7 +51,6 @@ def get_logger(log_file):
         streamhandler   = logging.StreamHandler()
     formatter.colour(log_file is None)
     streamhandler.setLevel(level)
-
     streamhandler.setFormatter(formatter)
     logger.addHandler(streamhandler)
     return logger
