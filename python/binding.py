@@ -245,7 +245,6 @@ class low_level_dev_t(object):
     def read(self):
         try:
             msg = self._serial.readline()
-            debug_print(f'<< "{msg}"')
         except UnicodeDecodeError:
             return None
         if msg == '':
