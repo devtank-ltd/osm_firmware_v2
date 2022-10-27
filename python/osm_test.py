@@ -148,7 +148,8 @@ class test_framework_t(object):
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
         passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 25.0625, 0.01)
-        pm25, pm10 = self._vosm_conn.hpm.value
+        hpm_r = self._vosm_conn.hpm.value
+        pm25, pm10 = hpm_r if isinstance(hpm_r, tuple) else (None, None)
         passed &= self._threshold_check("PM2.5",              pm25, 15, 0)
         passed &= self._threshold_check("PM10",               pm10, 25, 0)
 

@@ -106,7 +106,7 @@ def parse_particles(r_str: str):
         return False
     r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
     if r:
-        return [int(r[-3]), int(r[-1])]
+        return (int(r[-3]), int(r[-1]))
     return False
 
 
