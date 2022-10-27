@@ -1,46 +1,9 @@
 #!/usr/bin/env python3
 
-import time
-import select
-import serial
-
 import basetypes
 
 
-class pty_dev_t(object):
-    def __init__(self, pty, logger=None, log_file=None):
-        if logger is None:
-            logger = basetypes.get_logger(log_file)
-        self._logger = logger
-        self._serial_obj = serial.Serial(port=pty)
-        self.fileno = self._serial_obj.fileno
-        self._done = False
-
-    def run_forever(self, timeout=3):
-        while not self._done:
-            r = select.select([self], [], [], timeout)
-            if not r[0]:
-                continue
-            m = self._read()
-            self._parse_in(m)
-
-    def _parse_in(self, m):
-        raise NotImplemented
-
-    def _read(self):
-        data = self._serial_obj.read()
-        self._logger.debug(f"PTY << OSM {data}")
-        return data
-
-    def _write(self, data):
-        self._logger.debug(f"PTY >> OSM {data}")
-        r = self._serial_obj.write(data)
-        self._serial_obj.flush()
-        assert r == len(data), "Written length does not equal queued length."
-        return r
-
-
-class hpm_dev_t(pty_dev_t):
+class hpm_dev_t(basetypes.pty_dev_t):
     def __init__(self, pty, logger=None, log_file=None, pm2_5=20, pm10=30):
         super().__init__(pty, logger=logger, log_file=log_file)
         self._pm2_5    = pm2_5

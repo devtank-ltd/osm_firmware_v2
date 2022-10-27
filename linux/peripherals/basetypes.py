@@ -1,5 +1,7 @@
 import os
 import time
+import select
+import serial
 import logging
 
 
@@ -112,3 +114,36 @@ class i2c_device_t(object):
                 "w"      : w,
                 "rn"     : rn,
                 "r"      : r}
+
+
+class pty_dev_t(object):
+    def __init__(self, pty, logger=None, log_file=None):
+        if logger is None:
+            self._logger = basetypes.get_logger(log_file)
+        self._logger = logger
+        self._serial_obj = serial.Serial(port=pty)
+        self.fileno = self._serial_obj.fileno
+        self._done = False
+
+    def run_forever(self, timeout=3):
+        while not self._done:
+            r = select.select([self], [], [], timeout)
+            if not r[0]:
+                continue
+            m = self._read()
+            self._parse_in(m)
+
+    def _parse_in(self, m):
+        raise NotImplemented
+
+    def _read(self):
+        data = self._serial_obj.read()
+        self._logger.debug(f"PTY << OSM {data}")
+        return data
+
+    def _write(self, data):
+        self._logger.debug(f"PTY >> OSM {data}")
+        r = self._serial_obj.write(data)
+        self._serial_obj.flush()
+        assert r == len(data), "Written length does not equal queued length."
+        return r
