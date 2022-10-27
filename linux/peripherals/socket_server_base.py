@@ -4,27 +4,7 @@ import socket
 import datetime
 import selectors
 
-COLOUR_WHITE  = "\033[29m"
-COLOUR_BLACK  = "\033[30m"
-COLOUR_RED    = "\033[31m"
-COLOUR_GREEN  = "\033[32m"
-COLOUR_YELLOW = "\033[33m"
-COLOUR_BLUE   = "\033[34m"
-COLOUR_CYAN   = "\033[36m"
-COLOUR_GREY   = "\033[37m"
-
-COLOUR_RESET  = COLOUR_WHITE
-
-
-def log(file_, msg, colour=None):
-    if file_ is not sys.stdout and file_.closed:
-        file_.open()
-    payload = f"[{datetime.datetime.isoformat(datetime.datetime.utcnow())}] {msg}\n"
-    if file_ is sys.stdout and colour:
-        payload = colour + payload + COLOUR_RESET
-    file_.write(payload)
-    file_.flush()
-    return len(payload)
+import basetypes
 
 
 class socket_server_t(object):
@@ -45,21 +25,15 @@ class socket_server_t(object):
 
         self._done = False
 
-        if logger is None:
-            log_file_obj = sys.stdout if log_file is None else open(log_file, "a")
-            self._log = lambda m, c=None: log(log_file_obj, m, c)
-            self.info    = lambda m : self._log(f"{{INFO}}: {m}", COLOUR_GREY)
-            self.error   = lambda m : self._log(f"{{ERROR}}: {m}", COLOUR_RED)
-            self.warning = lambda m : self._log(f"{{WARNING}}: {m}", COLOUR_YELLOW)
-            if os.environ.get("DEBUG", None):
-                self.debug   = lambda m : self._log(f"{{DEBUG}}: {m}", COLOUR_CYAN)
-            else:
-                self.debug   = lambda *x : x
-        else:
-            self.info    = logger.info
-            self.error   = logger.error
-            self.warning = logger.warning
-            self.debug   = logger.debug if os.environ.get("DEBUG", None) else lambda *x : x
+        if not logger:
+            logger = basetypes.get_logger(log_file)
+
+        self._logger = logger
+
+        self.info    = logger.info
+        self.error   = logger.error
+        self.warning = logger.warning
+        self.debug   = logger.debug
 
         self._recv_size = 1024
 
