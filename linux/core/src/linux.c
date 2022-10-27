@@ -21,6 +21,7 @@
 #include "platform.h"
 #include "linux.h"
 #include "common.h"
+#include "uarts.h"
 
 
 #define LINUX_PTY_BUF_SIZ       64
@@ -733,7 +734,14 @@ bool platform_running(void)
 
 void platform_hpm_enable(bool enable)
 {
-    ;
+    const char* on_data = "ON\n";
+    const char* off_data = "OFF\n";
+    if (enable)
+    {
+        uart_blocking(HPM_UART, on_data, strlen(on_data));
+        return;
+    }
+    uart_blocking(HPM_UART, off_data, strlen(off_data));
 }
 
 
