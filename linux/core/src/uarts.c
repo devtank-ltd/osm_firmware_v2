@@ -174,13 +174,6 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
 }
 
 
-bool uart_single_out(unsigned uart, char c)
-{
-    _uart_blocking(uart, &c, 1);
-    return true;
-}
-
-
 void uart_blocking(unsigned uart, const char *data, int size)
 {
     _uart_blocking(uart, data, size);
