@@ -231,20 +231,19 @@ class log_t(object):
 
 class low_level_dev_t(object):
     def __init__(self, serial_obj, log_obj):
-        self._serial = io.TextIOWrapper(
-            io.BufferedRWPair(serial_obj, serial_obj), newline="\n")
+        self._serial = serial_obj
         self._log_obj = log_obj
         self.fileno = serial_obj.fileno
 
     def write(self, msg):
         self._log_obj.send(msg)
-        self._serial.write("%s\n" % msg)
+        self._serial.write(("%s\n" % msg).encode())
         self._serial.flush()
         time.sleep(0.3)
 
     def read(self):
         try:
-            msg = self._serial.readline()
+            msg = self._serial.readline().decode()
         except UnicodeDecodeError:
             return None
         if msg == '':
@@ -344,7 +343,7 @@ class dev_base_t(object):
                                              bytesize=serial.EIGHTBITS,
                                              parity=serial.PARITY_NONE,
                                              stopbits=serial.STOPBITS_ONE,
-                                             timeout=0,
+                                             timeout=0.1,
                                              xonxoff=False,
                                              rtscts=False,
                                              write_timeout=None,
