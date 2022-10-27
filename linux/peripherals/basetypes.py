@@ -117,27 +117,40 @@ class i2c_device_t(object):
 
 
 class pty_dev_t(object):
-    def __init__(self, pty, logger=None, log_file=None):
+    def __init__(self, pty, byte_parts=False, logger=None, log_file=None):
         if logger is None:
-            self._logger = basetypes.get_logger(log_file)
+            logger = get_logger(log_file)
         self._logger = logger
         self._serial_obj = serial.Serial(port=pty)
         self.fileno = self._serial_obj.fileno
         self._done = False
+        self._byte_parts = byte_parts
 
     def run_forever(self, timeout=3):
         while not self._done:
             r = select.select([self], [], [], timeout)
             if not r[0]:
                 continue
-            m = self._read()
-            self._parse_in(m)
+            if self._byte_parts:
+                m = self._read()
+                self._parse_in(m)
+            else:
+                line = self._readline()
+                self._parse_line(line)
 
     def _parse_in(self, m):
         raise NotImplemented
 
+    def _parse_line(self, line):
+        raise NotImplemented
+
     def _read(self):
         data = self._serial_obj.read()
+        self._logger.debug(f"PTY << OSM {data}")
+        return data
+
+    def _readline(self):
+        data = self._serial_obj.readline()
         self._logger.debug(f"PTY << OSM {data}")
         return data
 

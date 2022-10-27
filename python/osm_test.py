@@ -18,6 +18,7 @@ import i2c_server as i2c
 import modbus_server as modbus
 import w1_server as w1
 import hpm_virtual as hpm
+import comms_connection as comms
 import basetypes
 
 sys.path.append("../config_gui/release/")
@@ -32,10 +33,25 @@ class test_framework_t(object):
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
     DEFAULT_RS485_PTY_PATH  = DEFAULT_OSM_BASE + "UART_RS485_slave"
     DEFAULT_HPM_PTY_PATH    = DEFAULT_OSM_BASE + "UART_HPM_slave"
+    DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_LW_slave"
     DEFAULT_I2C_SCK_PATH    = DEFAULT_OSM_BASE + "i2c_socket"
     DEFAULT_W1_SCK_PATH     = DEFAULT_OSM_BASE + "w1_socket"
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
+    DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
+
+    DEFAULT_COMMS_MATCH_DICT = {'TEMP'    : 2159,
+                                'TEMP_min': 2159,
+                                'TEMP_max': 2159,
+                                'HUMI'    : 5119,
+                                'HUMI_min': 5119,
+                                'HUMI_max': 5119,
+                                'BAT'     : 10000,
+                                'BAT_min' : 10000,
+                                'BAT_max' : 10000,
+                                'LGHT'    : 6,
+                                'LGHT_min': 6,
+                                'LGHT_max': 6}
 
     def __init__(self, osm_path, log_file=None):
         self._logger = basetypes.get_logger(log_file)
@@ -168,6 +184,7 @@ class test_framework_t(object):
         self._start_osm_env()
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
+        self._vosm_conn.measurements_enable(False)
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
@@ -192,6 +209,28 @@ class test_framework_t(object):
         io.value = True
         passed &= self._bool_check("IO on", io.value, True)
 
+        self._vosm_conn.change_interval("CC1", 1)
+        self._vosm_conn.change_interval("CC2", 1)
+        self._vosm_conn.change_interval("CC3", 1)
+        self._vosm_conn.change_interval("TMP2", 1)
+        self._vosm_conn.change_interval("PM10", 1)
+        self._vosm_conn.change_interval("PM25", 1)
+        self._vosm_conn.change_interval("FW", 1)
+        self._vosm_conn.measurements_enable(True)
+        self._vosm_conn.interval_mins = 1
+
+        match_cb = lambda x : self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, x)
+        comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH, self.DEFAULT_PROTOCOL_PATH, match_cb=match_cb, logger=self._logger, log_file=self._log_file)
+        comms_conn.run_forever()
+        passed &= comms_conn.passed
+
+        return passed
+
+    def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
+        passed = True
+        for key, value in ref.items():
+            comp = dict_.get(key, None)
+            passed &= self._threshold_check(key, comp, value, value * 0.1)
         return passed
 
     def run(self):
@@ -271,7 +310,6 @@ class test_framework_t(object):
         self._vosm_conn = dev_t(path)
         if "DEBUG" in os.environ:
             set_debug_print(self._logger.debug)
-        self._vosm_conn.measurements_enable(False)
         self._logger.debug("Connected to the virtual OSM.")
 
     def _disconnect_osm(self):

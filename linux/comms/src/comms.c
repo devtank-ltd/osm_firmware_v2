@@ -45,7 +45,7 @@ void comms_send(int8_t* hex_arr, uint16_t arr_len)
     char buf[3];
     for (uint16_t i = 0; i < arr_len; i++)
     {
-        snprintf(buf, 3, "%.2"PRIu32, hex_arr[i]);
+        snprintf(buf, 3, "%.2"PRIx32, hex_arr[i]);
         uart_ring_out(COMMS_UART, buf, 2);
     }
     uart_ring_out(COMMS_UART, "\r\n", 2);

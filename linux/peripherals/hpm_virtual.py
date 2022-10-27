@@ -5,7 +5,7 @@ import basetypes
 
 class hpm_dev_t(basetypes.pty_dev_t):
     def __init__(self, pty, logger=None, log_file=None, pm2_5=20, pm10=30):
-        super().__init__(pty, logger=logger, log_file=log_file)
+        super().__init__(pty, byte_parts=True, logger=logger, log_file=log_file)
         self._pm2_5    = pm2_5
         self._pm10     = pm10
         self._on        = False
