@@ -2137,7 +2137,8 @@ class config_gui_window_t(Tk):
                             curr_devs.append(unit_id)
                         if reg_name not in curr_regs:
                             self._dev.modbus_reg_add(unit_id,
-                                                     binding.modbus_reg_t(reg_name,
+                                                     binding.modbus_reg_t(self._dev,
+                                                                  reg_name,
                                                                   int(hex_addr, 16),
                                                                   func_type,
                                                                   data_type,

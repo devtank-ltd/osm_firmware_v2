@@ -132,13 +132,14 @@ class test_framework_t(object):
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
-            modbus_reg_t("Power Factor"    , 0xc56e, 3, "U32", "PF"  ),
-            modbus_reg_t("Phase 1 volts"   , 0xc552, 3, "U32", "cVP1" )
+            modbus_reg_t(self._vosm_conn, "Power Factor"    , 0xc56e, 3, "U32", "PF"  ),
+            modbus_reg_t(self._vosm_conn, "Phase 1 volts"   , 0xc552, 3, "U32", "cVP1" )
             ])
         self._vosm_conn.setup_modbus_dev(1, "RIF", True, False, [
-            modbus_reg_t("CurrentP1" , 0x10, 4, "F", "AP1" ),
-            modbus_reg_t("CurrentP2" , 0x12, 4, "F", "AP2" )
+            modbus_reg_t(self._vosm_conn, "CurrentP1" , 0x10, 4, "F", "AP1" ),
+            modbus_reg_t(self._vosm_conn, "CurrentP2" , 0x12, 4, "F", "AP2" )
             ])
+        self._vosm_conn.hpm.enabled = True
         passed = True
         passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
         passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
