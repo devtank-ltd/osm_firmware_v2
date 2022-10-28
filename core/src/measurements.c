@@ -1493,6 +1493,8 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
+    uint32_t init_time = get_since_boot_ms();
+
     _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type};
     if (!main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
     {
@@ -1500,7 +1502,11 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
-    if (!main_loop_iterate_for(data->collection_time_cache/2, _measurements_get_reading_collection, &info))
+    uint32_t time_taken = since_boot_delta(get_since_boot_ms(), init_time);
+    uint32_t time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
+
+    measurements_debug("Waiting for collection.");
+    if (!main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info))
     {
         measurements_debug("Failed on collect.");
         return false;
