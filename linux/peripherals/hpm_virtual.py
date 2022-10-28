@@ -10,7 +10,7 @@ import basetypes
 class pty_dev_t(object):
     def __init__(self, pty, logger=None, log_file=None):
         if logger is None:
-            self._logger = basetypes.get_logger(log_file)
+            logger = basetypes.get_logger(log_file)
         self._logger = logger
         self._serial_obj = serial.Serial(port=pty)
         self.fileno = self._serial_obj.fileno
