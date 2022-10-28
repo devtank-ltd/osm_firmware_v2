@@ -268,24 +268,27 @@ class low_level_dev_t(object):
         return msg
 
     def readlines(self, end_line=None, timeout=1):
-        r = select.select([self], [], [], timeout)
-        if not r[0]:
-            debug_print("Lines timeout")
-            return []
-        new_msg = self.read()
+        now = time.monotonic()
+        end_time = now + timeout
+        new_msg = None
         msgs = []
-        if new_msg is None:
-            return msgs
-
-        while new_msg != end_line:
-            new_msg = new_msg.strip("\n\r")
-            msgs += [new_msg]
+        while now < end_time:
+            r = select.select([self], [], [], end_time - now)
+            if not r[0]:
+                debug_print("Lines timeout")
+                return []
+            # Should be echo of command
             new_msg = self.read()
             if new_msg is None:
-                return msgs
-
+                debug_print("NULL line read.")
+                return []
+            new_msg = new_msg.strip("\n\r")
+            if new_msg != end_line:
+                msgs += [new_msg]
+            else:
+                break
+            now = time.monotonic()
         return msgs
-
 
 class io_t(dev_child_t):
     def __init__(self, parent, index):
@@ -486,28 +489,18 @@ class dev_t(dev_base_t):
 
     def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> str:
         self._ll.write(cmd)
-        end_time = time.monotonic() + timeout
-        r = []
-        done = False
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines(_RESPONSE_END)
-            for line in new_lines:
-                if _RESPONSE_END in line:
-                    done = True
-            r += new_lines
-            if done:
-                break
-            assert not "ERROR" in r, "OSM Error"
+        debug_print(f"Reading with Timeout : {timeout}")
+        now = time.monotonic()
+        end_time = now + timeout
+        r = self._ll.readlines(_RESPONSE_END, end_time - now)
         start_pos = None
-        end_pos = None
         for n in range(0, len(r)):
             line = r[n]
             if line == _RESPONSE_BEGIN:
                 start_pos = n+1
-            elif line == _RESPONSE_END:
-                end_pos = n
-        if start_pos is not None and end_pos is not None:
-            return r[start_pos:end_pos]
+        if start_pos is not None:
+            return r[start_pos:]
+        debug_print("No response start found.")
         return None
 
     def measurements(self, cmd):
