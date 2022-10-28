@@ -169,6 +169,7 @@ class test_framework_t(object):
 
         self._start_osm_env()
 
+        self._logger.info("Waiting for Keyboard interrupt...")
         try:
             while not self._done:
                 time.sleep(0.5)
@@ -266,7 +267,7 @@ class test_framework_t(object):
         self._logger.info("Spawning virtual I2C.")
         self._i2c_process = multiprocessing.Process(target=self._i2c_run, name="i2c_server", args=())
         self._i2c_process.start()
-        self._logger.debug("Spawned virtual I2C.")
+        self._logger.debug(f"Spawned virtual I2C [{self._i2c_process.pid}]")
 
     def _close_i2c(self):
         self._logger.info("Closing virtual I2C.")
@@ -288,7 +289,7 @@ class test_framework_t(object):
         self._logger.info("Spawning virtual MODBUS.")
         self._modbus_process = multiprocessing.Process(target=self._modbus_run, name="modbus_server", args=(path,))
         self._modbus_process.start()
-        self._logger.debug("Spawned virtual MODBUS.")
+        self._logger.debug(f"Spawned virtual MODBUS [{self._modbus_process.pid}]")
         return True
 
     def _close_modbus(self):
@@ -312,7 +313,7 @@ class test_framework_t(object):
         self._logger.info("Spawning virtual W1.")
         self._w1_process = multiprocessing.Process(target=self._w1_run, name="w1_server", args=())
         self._w1_process.start()
-        self._logger.debug("Spawned virtual W1.")
+        self._logger.debug(f"Spawned virtual W1 [{self._w1_process.pid}]")
 
     def _close_w1(self):
         self._logger.info("Closing virtual W1.")
@@ -334,7 +335,7 @@ class test_framework_t(object):
         self._logger.info("Spawning virtual HPM.")
         self._hpm_process = multiprocessing.Process(target=self._hpm_run, name="hpm_device", args=(path,))
         self._hpm_process.start()
-        self._logger.debug("Spawned virtual HPM.")
+        self._logger.debug(f"Spawned virtual HPM [{self._hpm_process.pid}]")
         return True
 
     def _close_hpm(self):
