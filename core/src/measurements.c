@@ -1425,11 +1425,19 @@ void measurements_power_mode(measurements_power_mode_t mode)
     _measurements_power_mode = mode;
 }
 
+typedef struct
+{ 
+    measurements_info_t        base;
+    measurements_reading_t*    reading;
+    measurements_value_type_t* type;
+} _measurements_get_reading_iteration_packet_t;
+
 
 static bool _measurements_get_reading_iteration(void* userdata)
 {
-    measurements_info_t* info = (measurements_info_t*)userdata;
-    if (info->inf->iteration_cb && info->inf->iteration_cb(info->def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    _measurements_get_reading_iteration_packet_t* info = (_measurements_get_reading_iteration_packet_t*)userdata;
+    if (info->base.inf->iteration_cb && 
+        info->base.inf->iteration_cb(info->base.def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
         return true;
     return false;
 }
@@ -1437,13 +1445,13 @@ static bool _measurements_get_reading_iteration(void* userdata)
 
 static bool _measurements_get_reading_collection(void* userdata)
 {
-    measurements_info_t* info = (measurements_info_t*)userdata;
+    _measurements_get_reading_iteration_packet_t* info = (_measurements_get_reading_iteration_packet_t*)userdata;
 
-    measurements_sensor_state_t resp = info->inf->get_cb(info->def->name, reading);
+    measurements_sensor_state_t resp = info->base.inf->get_cb(info->base.def->name, info->reading);
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            *type = info->data->value_type;
+            *(info->type) = info->base.data->value_type;
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("Collect function returned an error.");
@@ -1485,14 +1493,14 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
-    measurements_info_t info = {def, data, &inf};
-    if (main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, (void*)(&info)))
+    _measurements_get_reading_iteration_packet_t info = {{def, data, &inf}, reading, type};
+    if (main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
     {
         measurements_debug("Failed on iterate.");
         return false;
     }
 
-    if (!main_loop_iterate_for(data->collection_time_cache/2, _measurements_get_reading_collection, (void*)(&info)))
+    if (!main_loop_iterate_for(data->collection_time_cache/2, _measurements_get_reading_collection, &info))
     {
         measurements_debug("Failed on collect.");
         return false;
