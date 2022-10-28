@@ -121,6 +121,9 @@ bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userda
     if (timeout > watch_dog_kick)
         log_debug(DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 
+    if (should_exit_db(userdata))
+        return true;
+
     while(since_boot_delta(get_since_boot_ms(), start_time) < timeout)
     {
         for(unsigned uart; uart < UART_CHANNELS_COUNT; uart++)

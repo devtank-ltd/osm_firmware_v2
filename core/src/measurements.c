@@ -1436,10 +1436,9 @@ typedef struct
 static bool _measurements_get_reading_iteration(void* userdata)
 {
     _measurements_get_reading_packet_t* info = (_measurements_get_reading_packet_t*)userdata;
-    if (info->base.inf->iteration_cb && 
-        info->base.inf->iteration_cb(info->base.def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (!info->base.inf->iteration_cb)
         return true;
-    return false;
+    return (info->base.inf->iteration_cb(info->base.def->name) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
 }
 
 
@@ -1455,6 +1454,7 @@ static bool _measurements_get_reading_collection(void* userdata)
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("Collect function returned an error.");
+            *(info->type) = MEASUREMENTS_VALUE_TYPE_INVALID;
             return true;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             break;
@@ -1494,7 +1494,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     }
 
     _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type};
-    if (main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
+    if (!main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
     {
         measurements_debug("Failed on iterate.");
         return false;
@@ -1506,8 +1506,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
-    measurements_debug("Timed out waiting for the measurement function.");
-    return false;
+    return true;
 }
 
 
