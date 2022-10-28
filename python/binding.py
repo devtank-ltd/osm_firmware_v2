@@ -466,108 +466,6 @@ class dev_t(dev_base_t):
     
     def save(self):
         self.do_cmd("save")
-        
-    def get_modbus_val(self, val_name, timeout: float = 0.5):
-        self._ll.write(f"mb_get_reg {val_name}")
-        end_time = time.monotonic() + timeout
-        last_line = ""
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines()
-            if not new_lines:
-                continue
-            new_lines[0] = last_line + new_lines[0]
-            last_line = new_lines[-1]
-            for line in new_lines:
-                if (f"Modbus: reg:{val_name}") in line:
-                    try:
-                        return int(line.split(':')[-1])
-                    except ValueError:
-                        pass
-        return False
-
-    def extract_val(self, cmd, val_name, timeout: float = 0.5):
-        if cmd:
-            self._ll.write(cmd)
-        end_time = time.monotonic() + timeout
-        last_line = ""
-        while time.monotonic() < end_time:
-            new_lines = self._ll.readlines()
-            if not new_lines:
-                continue
-            new_lines[0] = last_line + new_lines[0]
-            last_line = new_lines[-1]
-            for line in new_lines:
-                if ("Sound = ") in line:
-                    try:
-                        regex = re.findall(r"\d+\.", line)
-                        new_r = regex[0]
-                        new_str = new_r[:-1]
-                        return int(new_str)
-                    except ValueError:
-                        pass
-                if ("Lux: ") in line:
-                    try:
-                        return int(line.split(':')[-1])
-                    except ValueError:
-                        pass
-                elif ("PM25:") in line and val_name == "PM25":
-                    try:
-                        pm_values = re.split('[:,]', line)
-                        return int(pm_values[1])
-                    except ValueError:
-                        pass
-                elif ("PM10:") in line:
-                    try:
-                        pm_values = re.split('[:,]', line)
-                        return int(pm_values[3])
-                    except ValueError:
-                        pass
-                elif ("Temperature") in line:
-                    try:
-                        temp = re.findall(r"\d+", line)
-                        temp_float = '.'.join(temp)
-                        return float(temp_float)
-                    except ValueError:
-                        pass
-                elif ("Humidity") in line:
-                    try:
-                        humi = re.findall(r"\d+", line)
-                        humi_float = '.'.join(humi)
-                        return float(humi_float)
-                    except ValueError:
-                        pass
-                elif val_name in line and "CC" in line:
-                    try:
-                        cc = line.split()[2]
-                        return float(cc)
-                    except ValueError:
-                        pass
-                elif ("onnected") in line:
-                    try:
-                        return int(line[0])
-                    except ValueError:
-                        pass
-                elif ("CNT1") in line and val_name == "CNT1":
-                    try:
-                        cnt = line.split()[-1]
-                        return int(cnt)
-                    except ValueError:
-                        pass
-                elif ("CNT2") in line:
-                    try:
-                        cnt2 = line.split()[-1]
-                        return int(cnt2)
-                    except ValueError:
-                        pass
-                elif ("Temp") in line and val_name == "TMP2":
-                    s = re.findall('\d', line)
-                    v = ''.join(s)
-                    try:
-                        temp = v
-                        return int(temp)
-                    except ValueError:
-                        pass
-        return False
 
     def imp_readlines(self, timeout: float = 0.5):
         new_lines = self._ll.readlines()
@@ -710,13 +608,13 @@ class dev_t(dev_base_t):
         return True
 
     def modbus_dev_del(self, device: str):
-        self._ll.write(f"mb_dev_del {device}")
+        self.do_cmd(f"mb_dev_del {device}")
     
     def modbus_reg_del(self, reg: str):
-        self._ll.write(f"mb_reg_del {reg}")
+        self.do_cmd(f"mb_reg_del {reg}")
 
     def current_clamp_calibrate(self):
-        self._ll.write("cc_cal")
+        self.do_cmd("cc_cal")
 
     def write_lora(self):
         app_key = app_key_generator()
@@ -778,12 +676,6 @@ class dev_debug_t(dev_base_t):
             return (name, float(value))
         # Cannot find regular expression matching template
         return None
-
-    def parse_msgs(self, msgs):
-        resp = []
-        for msg in msgs:
-            resp.append(self.parse_msg(msg))
-        return resp
 
     def read_msgs(self, timeout=1.5):
         end_time = time.monotonic() + timeout
