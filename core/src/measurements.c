@@ -97,6 +97,14 @@ typedef struct
 } measurements_check_time_t;
 
 
+typedef struct
+{
+    measurements_def_t* def;
+    measurements_data_t* data;
+    measurements_inf_t* inf;
+} measurements_info_t;
+
+
 static uint32_t                     _last_sent_ms                                        = 0;
 static bool                         _pending_send                                        = false;
 static measurements_check_time_t    _check_time                                          = {0, 0};
@@ -1418,6 +1426,38 @@ void measurements_power_mode(measurements_power_mode_t mode)
 }
 
 
+static bool _measurements_get_reading_iteration(void* userdata)
+{
+    measurements_info_t* info = (measurements_info_t*)userdata;
+    if (info->inf->iteration_cb && info->inf->iteration_cb(info->def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        return true;
+    return false;
+}
+
+
+static bool _measurements_get_reading_collection(void* userdata)
+{
+    measurements_info_t* info = (measurements_info_t*)userdata;
+
+    measurements_sensor_state_t resp = info->inf->get_cb(info->def->name, reading);
+    switch (resp)
+    {
+        case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+            *type = info->data->value_type;
+            return true;
+        case MEASUREMENTS_SENSOR_STATE_ERROR:
+            measurements_debug("Collect function returned an error.");
+            return true;
+        case MEASUREMENTS_SENSOR_STATE_BUSY:
+            break;
+        default:
+            measurements_debug("Unknown response from collect function.");
+            return true;
+    }
+    return false;
+}
+
+
 bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
 {
     if (!measurement_name || !reading)
@@ -1445,37 +1485,19 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
-    uint32_t start_time = get_since_boot_ms();
-    bool need_watchdog = data->collection_time_cache > IWDG_NORMAL_TIME_MS / 2;
-    while (since_boot_delta(get_since_boot_ms(), start_time) < data->collection_time_cache)
+    measurements_info_t info = {def, data, &inf};
+    if (main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, (void*)(&info)))
     {
-        if (need_watchdog)
-            platform_watchdog_reset();
-
-        if (inf.iteration_cb && inf.iteration_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-            return false;
+        measurements_debug("Failed on iterate.");
+        return false;
     }
 
-    start_time = get_since_boot_ms();
-    uint32_t extra_time = data->collection_time_cache / 2;
-    while (since_boot_delta(get_since_boot_ms(), start_time) < extra_time)
+    if (!main_loop_iterate_for(data->collection_time_cache/2, _measurements_get_reading_collection, (void*)(&info)))
     {
-        measurements_sensor_state_t resp = inf.get_cb(def->name, reading);
-        switch (resp)
-        {
-            case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-                *type = data->value_type;
-                return true;
-            case MEASUREMENTS_SENSOR_STATE_ERROR:
-                measurements_debug("Collect function returned an error.");
-                return false;
-            case MEASUREMENTS_SENSOR_STATE_BUSY:
-                break;
-            default:
-                measurements_debug("Unknown response from collect function.");
-                return false;
-        }
+        measurements_debug("Failed on collect.");
+        return false;
     }
+
     measurements_debug("Timed out waiting for the measurement function.");
     return false;
 }
