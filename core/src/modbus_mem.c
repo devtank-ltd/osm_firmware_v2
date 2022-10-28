@@ -83,13 +83,13 @@ char * modbus_reg_type_get_str(modbus_reg_type_t type)
 
 static bool _modbus_reg_is_valid(modbus_reg_t * reg)
 {
-    return reg->class_data_b;
+    return (reg->value_state == MB_REG_READY);
 }
 
 
 static uint32_t _modbus_reg_get(modbus_reg_t * reg)
 {
-    return reg->class_data_a;
+    return reg->value_data;
 }
 
 
@@ -285,13 +285,11 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
     }
     memset(dst_reg->name, 0, MODBUS_NAME_LEN);
     memcpy(dst_reg->name, name, name_len);
-    dst_reg->reg_addr  = reg_addr;
-    dst_reg->type      = type;
-    dst_reg->func      = func;
-
-    /* For the current types, this start as zero. */
-    dst_reg->class_data_a = 0;
-    dst_reg->class_data_b = 0;
+    dst_reg->reg_addr    = reg_addr;
+    dst_reg->type        = type;
+    dst_reg->func        = func;
+    dst_reg->value_data  = 0;
+    dst_reg->value_state = 0;
 
     return true;
 }
@@ -397,6 +395,14 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
     }
 
     return NULL;
+}
+
+
+modbus_reg_state_t modbus_reg_get_state(modbus_reg_t * reg)
+{
+    if (!reg)
+        return MB_REG_INVALID;
+    return (modbus_reg_state_t)reg->value_state;
 }
 
 

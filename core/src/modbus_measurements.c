@@ -43,6 +43,15 @@ measurements_sensor_state_t modbus_measurements_get2(modbus_reg_t * reg, measure
 {
     if (!reg || !value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+    modbus_reg_state_t state = modbus_reg_get_state(reg);
+
+    if (state == MB_REG_WAITING)
+        return MEASUREMENTS_SENSOR_STATE_BUSY;
+
+    if (state != MB_REG_READY)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+
     switch(modbus_reg_get_type(reg))
     {
         case MODBUS_REG_TYPE_U16:

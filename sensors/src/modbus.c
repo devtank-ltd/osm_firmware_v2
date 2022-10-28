@@ -323,8 +323,7 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     }
     else uart_ring_out(RS485_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
 
-    /* All current types use this as is_valid. */
-    reg->class_data_b = 0;
+    reg->value_state = MB_REG_WAITING;
 }
 
 
@@ -367,8 +366,7 @@ bool modbus_start_read(modbus_reg_t * reg)
         return false;
     }
 
-    /* All current types use this as is_valid. */
-    reg->class_data_b = 0;
+    reg->value_state = MB_REG_WAITING;
 
     if (modbus_want_rx)
     {
@@ -559,6 +557,11 @@ void modbus_ring_process(ring_buf_t * ring)
         return;
     }
 
+    if (current_reg->value_state != MB_REG_WAITING)
+        modbus_debug("Reg :%."STR(MODBUS_NAME_LEN)"s not waiting!", current_reg->name);
+
+    current_reg->value_state = MB_REG_INVALID;
+
     if ( (modbuspacket[modbuspacket_len-1] == (crc >> 8)) &&
          (modbuspacket[modbuspacket_len-2] == (crc & 0xFF)) )
     {
@@ -656,8 +659,8 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
 
 static void _modbus_reg_set(modbus_reg_t * reg, uint32_t v)
 {
-    reg->class_data_a = v;
-    reg->class_data_b = true;
+    reg->value_data = v;
+    reg->value_state = MB_REG_READY;
 }
 
 static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)

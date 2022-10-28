@@ -110,14 +110,22 @@ typedef enum
 } modbus_word_orders_t;
 
 
+typedef enum
+{
+    MB_REG_INVALID,
+    MB_REG_WAITING,
+    MB_REG_READY
+} modbus_reg_state_t; 
+
+
 typedef struct
 {
     char              name[MODBUS_NAME_LEN];
-    uint32_t          class_data_a; /* what ever child class wants */
+    uint32_t          value_data;
     uint8_t           type; /*modbus_reg_type_t*/
     uint8_t           func;
     uint16_t          reg_addr;
-    uint32_t          class_data_b; /* what ever child class wants */
+    uint32_t          value_state; /*modbus_reg_state_t*/
 } __attribute__((__packed__)) modbus_reg_t;
 
 
