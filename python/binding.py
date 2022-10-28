@@ -9,6 +9,7 @@ import sys
 import io
 import os
 import re
+import weakref
 import string
 import random
 import json
@@ -120,8 +121,19 @@ def parse_word(index: int, r_str: str):
     return r_str.split()[index]
 
 
-class measurement_t(object):
-    def __init__(self, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False):
+class dev_child_t(object):
+    def __init__(self, parent):
+        self._parent = weakref.ref(parent)
+
+    @property
+    def parent(self):
+        return self._parent()
+    
+
+class measurement_t(dev_child_t):
+    def __init__(self, parent, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False, timeout: float = 1.0):
+        super().__init__(parent)
+        self.timeout = timeout
         self.name = name
         self.type_ = type_
         self.cmd = cmd
@@ -129,8 +141,15 @@ class measurement_t(object):
         self.parse_func = parse_func
         self.is_writable = is_writable
 
+    def _update(self, value_str):
+        v_str = value_str.replace(self.cmd, "")
+        self._value = self.parse_func(v_str)
+        self.type_ = type(self._value)
+
     @property
     def value(self):
+        r = self.parent.do_cmd(self.cmd, self.timeout)
+        self._update(r)
         try:
             if self.type_ == bool:
                 return bool(int(self._value) == 1)
@@ -141,22 +160,41 @@ class measurement_t(object):
             return False
         return self._value
 
-    def update(self, value_str):
-        v_str = value_str.replace(self.cmd, "")
-        self._value = self.parse_func(v_str)
-        self.type_ = type(self._value)
+    @value.setter
+    def value(self, v):
+        assert isinstance(v, cmd.type_)
+        assert self.is_writable
+        if self.type_ == bool:
+            v = 1 if v else 0
+        self.parent.do_cmd(f"{cmd.cmd} {v}")
+        self._update(v)
+
+
+class hpm_t(measurement_t):
+    def __init__(self, parent):
+        super().__init__(parent, "Particles (2.5|10)", str, "hpm 1", parse_particles)
+        self._enabled = False
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, enabled:bool):
+        v = 1 if enabled else 0
+        self.parent.do_cmd(f"hpm {v}")
+        self._enabled = enabled
 
 
 class modbus_reg_t(measurement_t):
-    def __init__(self, name: str, address: int, func: int, mb_type_: str, handle: str):
-        self.name = name
+    def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, handle: str):
+        super().__init__(parent, name, float, f"mb_get_reg {handle}", self._parse_func, False, 2.0)
         self.address = address
         self.func = func
         self.mb_type_ = mb_type_
         self.handle = handle
-        self.type_ = float
 
-    def parse_func(self, r_str):
+    def _parse_func(self, r_str):
         if "ERROR" in r_str:
             return False
         r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
@@ -165,17 +203,8 @@ class modbus_reg_t(measurement_t):
             return float(r[-1])
         return False
 
-    @property
-    def cmd(self) -> str:
-        return f"mb_get_reg {self.handle}"
-
     def __str__(self):
         return f'{str(self.name)}, {str(self.address)}, {str(self.mb_type_)}, {str(self.func)}'
-
-
-class mb_reg_t(modbus_reg_t):
-    def __init__(self, name, addr, dtype, func):
-        super().__init__(name, addr, func, dtype, name)
 
 
 class mb_dev_t(object):
@@ -197,21 +226,6 @@ class mb_bus_t(object):
 
     def __str__(self):
         return f'{self.config}, {self.devices}'
-
-
-class reader_child_t(object):
-    def __init__(self, parent, measurement):
-        self._parent = parent
-        self._measurement = measurement
-
-    @property
-    def value(self):
-        self._parent.get_val(self._measurement)
-        return self._measurement.value
-
-    @value.setter
-    def value(self, v):
-        self._parent.set_val(self._measurement, v)
 
 
 class log_t(object):
@@ -273,31 +287,31 @@ class low_level_dev_t(object):
         return msgs
 
 
-class io_t(object):
+class io_t(dev_child_t):
     def __init__(self, parent, index):
-        self._parent = parent
+        super().__init__(parent)
         self._index = index
 
     @property
     def value(self):
-        return self._parent.get_io(self._index)
+        return self.parent.get_io(self._index)
 
     @value.setter
     def value(self, v:bool):
-        self._parent.set_io(self._index, v)
+        self.parent.set_io(self._index, v)
 
     def configure(self, is_input: bool, bias: str):
-        self._parent.configure_io(self._index, is_input, bias)
+        self.parent.configure_io(self._index, is_input, bias)
 
     def activate_io(self, meas, pull):
         #Enabling one wire or pulsecount e.g. "en_w1 4 U"
-        self._parent.do_cmd(f"en_{meas} {self._index} {pull}")
+        self.parent.do_cmd(f"en_{meas} {self._index} {pull}")
 
     def disable_io(self):
         self._parent.do_cmd(f"io {self._index} : I N")
 
     def active_as(self):
-        line = self._parent.do_cmd(f"io {self._index}")
+        line = self.parent.do_cmd(f"io {self._index}")
         used_pos = line.find("USED")
         if used_pos == -1:
             return None
@@ -314,16 +328,16 @@ class io_t(object):
                 return "TMP3"
 
     def active_pull(self):
-        line = self._parent.do_cmd(f"io {self._index}")
+        line = self.parent.do_cmd(f"io {self._index}")
         used_pos = line.find("USED")
         if used_pos == -1:
             return None
         return line[used_pos:].split()[2]
 
 
-class ios_t(object):
+class ios_t(dev_child_t):
     def __init__(self, parent, count):
-        self._parent = parent
+        super().__init__(parent)
         self._count = count
 
     def __len__(self):
@@ -332,7 +346,7 @@ class ios_t(object):
     def __getitem__(self, index):
         if index > self._count or index < 0:
             raise IndexError('IO index out of range')
-        return io_t(self._parent, index)
+        return io_t(self.parent, index)
 
 
 class dev_base_t(object):
@@ -364,28 +378,27 @@ class dev_base_t(object):
 class dev_t(dev_base_t):
     def __init__(self, port):
         super().__init__(port)
-        self._children = {
-            "w1"        : measurement_t("One Wire"           , float , "w1 TMP2"   , parse_one_wire       ),
-            "cc"        : measurement_t("Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
-            "hpm"       : measurement_t("Particles (2.5|10)" , str   , "hpm 1"     , parse_particles      ),
-            "comms_conn" : measurement_t("LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
-            "temp"      : measurement_t("Temperature"        , float , "temp"      , parse_temp           ),
-            "humi"      : measurement_t("Humidity"           , float , "humi"      , parse_humidity       ),
-            "light"     : measurement_t("Light"              , float , "light"     , parse_light          ),
-            "version"   : measurement_t("FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
-            "serial_num": measurement_t("Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
-        }
         line = self.do_cmd("count")
+        debug_print(f"LINE '{line}'")
         self._io_count = int(line.split()[-1])
+        self._children = {
+            "ios"       : ios_t(self, self._io_count),
+            "w1"        : measurement_t(self, "One Wire"           , float , "w1 TMP2"   , parse_one_wire       ),
+            "cc"        : measurement_t(self, "Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
+            "hpm"       : hpm_t(self),
+            "comms_conn": measurement_t(self, "LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
+            "temp"      : measurement_t(self, "Temperature"        , float , "temp"      , parse_temp           ),
+            "humi"      : measurement_t(self, "Humidity"           , float , "humi"      , parse_humidity       ),
+            "light"     : measurement_t(self, "Light"              , float , "light"     , parse_light          , False, 10),
+            "version"   : measurement_t(self, "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
+            "serial_num": measurement_t(self, "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
+        }
         self.update_modbus_registers()
 
     def __getattr__(self, attr):
-        if attr == "ios":
-            return ios_t(self, self._io_count)
-
         child = self._children.get(attr, None)
         if child:
-            return reader_child_t(self, child)
+            return child
         self._log('No attribute "%s"' % attr)
         raise AttributeError
 
@@ -630,8 +643,9 @@ class dev_t(dev_base_t):
                     devs += [dev]
                 elif line.startswith("  - Reg"):
                     reg = line.split()[3:]
-                    reg = mb_reg_t(name=reg[2].strip('"'), addr=int(
-                        reg[0][2:], 16), dtype=reg[-1], func=int(reg[1][3:4]))
+                    name = reg[2].strip('"')
+                    reg = modbus_reg_t(self, name=name, address=int(
+                        reg[0][2:], 16), mb_type_=reg[-1], func=int(reg[1][3:4]), handle=name)
                     dev["regs"] += [reg]
         else:
             pass
@@ -648,27 +662,6 @@ class dev_t(dev_base_t):
         for device in mb_root.devices:
             for reg in device.regs:
                 self._children[reg.handle] = reg
-
-    def set_val(self, cmd: measurement_t, v):
-        assert isinstance(v, cmd.type_)
-        assert self.is_writable
-        if self._measurement.type_ == bool:
-            v = "1" if v else "0"
-        cmd.update(self.do_cmd(f"{cmd.cmd} {v}"))
-        self._parent.do_cmd(f"{self.cmd} {str(v)}")
-
-    def get_val(self, cmd: measurement_t):
-        assert isinstance(
-            cmd, measurement_t), "Commands should be of type measurement_t"
-        cmd.update(self.do_cmd(cmd.cmd))
-        if cmd.value is False:
-            debug_print("Trying get_val again...")
-            time.sleep(4)
-            cmd.update(self.do_cmd(cmd.cmd))
-
-    def get_vals(self, cmds: list):
-        for cmd in cmds:
-            self.get_val(cmd)
 
     def get_io(self, index: int) -> bool:
         line = self.do_cmd("io %u" % index)
@@ -705,17 +698,14 @@ class dev_t(dev_base_t):
 
     def setup_modbus(self, is_bin=False, baudrate=9600, bits=8, parity='N', stopbits=1):
         is_bin = "BIN" if is_bin else "RTU"
-        self._ll.write(f"mb_setup {is_bin} {baudrate} {bits}{parity}{stopbits}")
-        self._ll.readlines()
+        self.do_cmd(f"mb_setup {is_bin} {baudrate} {bits}{parity}{stopbits}")
 
     def setup_modbus_dev(self, slave_id: int, device: str, is_msb: bool, is_msw: bool, regs: list) -> bool:
         if not self.modbus_dev_add(slave_id, device, is_msb, is_msw):
             self._log("Could not add device.")
             return False
         for reg in regs:
-            self._ll.write(
-                f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
-            self._ll.readlines()
+            self.modbus_reg_add(slave_id, reg)
             self._children[reg.handle] = reg
         return True
 
