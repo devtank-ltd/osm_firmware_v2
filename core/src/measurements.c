@@ -1439,7 +1439,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
-    if (!inf.init_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (inf.init_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         measurements_debug("Could not begin the measurement.");
         return false;
