@@ -22,6 +22,7 @@
 #include "sleep.h"
 #include "uart_rings.h"
 #include "fw.h"
+#include "platform.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
@@ -118,12 +119,26 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60 * 1000)
 
 
-static bool _measurements_get_measurements_def(char* name, measurements_def_t** measurements_def)
+bool _measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
 {
-    if (!measurements_def)
+    if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
         return false;
-    *measurements_def = measurements_array_find(_measurements_arr.def, name);
-    return (*measurements_def != NULL);
+
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        measurements_def_t * def   = &_measurements_arr.def[i];
+        measurements_data_t * data = &_measurements_arr.data[i];
+        if (strncmp(def->name, name, MEASURE_NAME_LEN) == 0)
+        {
+            if (measurements_def)
+                *measurements_def = def;
+            if (measurements_data)
+                *measurements_data = data;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 
@@ -1009,17 +1024,17 @@ void measurements_derive_cc_phase(void)
     unsigned len = 0;
     adcs_type_t clamps[ADC_COUNT] = {0};
     measurements_def_t* def;
-    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def) &&
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def, NULL) &&
         _measurements_def_is_active(def) )
     {
         clamps[len++] = ADCS_TYPE_CC_CLAMP1;
     }
-    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def) &&
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def, NULL) &&
         _measurements_def_is_active(def) )
     {
         clamps[len++] = ADCS_TYPE_CC_CLAMP2;
     }
-    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def) &&
+    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def, NULL) &&
         _measurements_def_is_active(def) )
     {
         clamps[len++] = ADCS_TYPE_CC_CLAMP3;
@@ -1092,7 +1107,7 @@ bool measurements_del(char* name)
 bool measurements_set_interval(char* name, uint8_t interval)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!_measurements_get_measurements_def(name, &measurements_def))
+    if (!_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1105,7 +1120,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 bool measurements_get_interval(char* name, uint8_t * interval)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!interval || !_measurements_get_measurements_def(name, &measurements_def))
+    if (!interval || !_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1122,7 +1137,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurements_def_t* measurements_def = NULL;
-    if (!_measurements_get_measurements_def(name, &measurements_def))
+    if (!_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1135,7 +1150,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!samplecount || !_measurements_get_measurements_def(name, &measurements_def))
+    if (!samplecount || !_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1400,4 +1415,66 @@ void measurements_set_debug_mode(bool enable)
 void measurements_power_mode(measurements_power_mode_t mode)
 {
     _measurements_power_mode = mode;
+}
+
+
+bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading)
+{
+    if (!measurement_name || !reading)
+    {
+        measurements_debug("Handed NULL pointer.");
+        return false;
+    }
+    measurements_def_t* def;
+    measurements_data_t* data;
+    if (!_measurements_get_measurements_def(measurement_name, &def, &data))
+    {
+        measurements_debug("Could not get measurement definition and data.");
+        return false;
+    }
+    measurements_inf_t inf;
+    if (!_measurements_get_inf(def, data, &inf))
+    {
+        measurements_debug("Could not get measurement interface.");
+        return false;
+    }
+
+    if (!inf.init_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        measurements_debug("Could not begin the measurement.");
+        return false;
+    }
+
+    uint32_t start_time = get_since_boot_ms();
+    bool need_watchdog = data->collection_time_cache > IWDG_NORMAL_TIME_MS / 2;
+    while (since_boot_delta(get_since_boot_ms(), start_time) < data->collection_time_cache)
+    {
+        if (need_watchdog)
+            platform_watchdog_reset();
+
+        if (inf.iteration_cb && inf.iteration_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+            return false;
+    }
+
+    start_time = get_since_boot_ms();
+    uint32_t extra_time = data->collection_time_cache / 2;
+    while (since_boot_delta(get_since_boot_ms(), start_time) < extra_time)
+    {
+        measurements_sensor_state_t resp = inf.get_cb(def->name, reading);
+        switch (resp)
+        {
+            case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+                return true;
+            case MEASUREMENTS_SENSOR_STATE_ERROR:
+                measurements_debug("Collect function returned an error.");
+                return false;
+            case MEASUREMENTS_SENSOR_STATE_BUSY:
+                break;
+            default:
+                measurements_debug("Unknown response from collect function.");
+                return false;
+        }
+    }
+    measurements_debug("Timed out waiting for the measurement function.");
+    return false;
 }
