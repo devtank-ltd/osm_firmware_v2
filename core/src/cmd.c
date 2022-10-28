@@ -484,6 +484,26 @@ static void measurements_enable_cb(char *args)
 }
 
 
+static void measurement_get_cb(char* args)
+{
+    char * p = skip_space(args);
+    measurements_reading_t reading;
+    measurements_value_type_t type;
+    if (!measurements_get_reading(p, &reading, &type))
+    {
+        log_out("Failed to get measurement reading.");
+        return;
+    }
+    char text[16];
+    if (!measurements_reading_to_str(&reading, type, text, 16))
+    {
+        log_out("Could not convert the reading to a string.");
+        return;
+    }
+    log_out("%s: %s", p, text);
+}
+
+
 static void fw_add(char *args)
 {
     args = skip_space(args);
@@ -885,6 +905,7 @@ void cmds_process(char * command, unsigned len)
         { "save",         "Save config",              persist_commit                , false },
         { "measurements", "Print measurements",       measurements_cb               , false },
         { "meas_enable",  "Enable measuremnts.",      measurements_enable_cb        , false },
+        { "get_meas",     "Get a measurement",        measurement_get_cb            , false },
         { "fw+",          "Add chunk of new fw.",     fw_add                        , false },
         { "fw@",          "Finishing crc of new fw.", fw_fin                        , false },
         { "reset",        "Reset device.",            reset_cb                      , false },

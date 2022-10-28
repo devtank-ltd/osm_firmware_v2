@@ -1418,7 +1418,7 @@ void measurements_power_mode(measurements_power_mode_t mode)
 }
 
 
-bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading)
+bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
 {
     if (!measurement_name || !reading)
     {
@@ -1464,6 +1464,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         switch (resp)
         {
             case MEASUREMENTS_SENSOR_STATE_SUCCESS:
+                *type = data->value_type;
                 return true;
             case MEASUREMENTS_SENSOR_STATE_ERROR:
                 measurements_debug("Collect function returned an error.");
@@ -1476,5 +1477,32 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         }
     }
     measurements_debug("Timed out waiting for the measurement function.");
+    return false;
+}
+
+
+bool measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len)
+{
+    if (!reading || !text)
+        return false;
+    switch(type)
+    {
+        case MEASUREMENTS_VALUE_TYPE_I64:
+            snprintf(text, len, "%"PRIi64, reading->v_i64);
+            return true;
+        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+        {
+            uint32_t decimal = reading->v_f32 % 1000;
+            if (reading->v_f32 < 0)
+                decimal = (-reading->v_f32) % 1000;
+            snprintf(text, len, "%"PRIi32".%03"PRIi32, reading->v_f32 / 1000, decimal);
+            return true;
+        }
+        case MEASUREMENTS_VALUE_TYPE_STR:
+            strncpy(text, reading->v_str, len-1);
+            return true;
+        default:
+            break;
+    }
     return false;
 }

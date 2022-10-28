@@ -63,4 +63,5 @@ extern void     measurements_derive_cc_phase(void);
 extern bool     measurements_send_test(void);
 
 extern bool     measurements_enabled;
-extern bool     measurements_get_reading(char* measurement_name, measurements_reading_t* reading);
+extern bool     measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type);
+extern bool     measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
