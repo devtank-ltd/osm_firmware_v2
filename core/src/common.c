@@ -126,7 +126,7 @@ bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userda
 
     while(since_boot_delta(get_since_boot_ms(), start_time) < timeout)
     {
-        for(unsigned uart; uart < UART_CHANNELS_COUNT; uart++)
+        for(unsigned uart = 0; uart < UART_CHANNELS_COUNT; uart++)
         {
             if (uart != CMD_UART)
                 uart_ring_in_drain(uart);
