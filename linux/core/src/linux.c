@@ -22,7 +22,7 @@
 #include "linux.h"
 #include "common.h"
 #include "uarts.h"
-
+#include "log.h"
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_PTY_NAME_SIZE     16
@@ -592,6 +592,13 @@ void platform_init(void)
 
     if (getenv("DEBUG"))
         _linux_in_debug = true;
+
+    char * default_log_debug_mask = getenv("DFLT_DEBUG");
+    if (default_log_debug_mask)
+    {
+        linux_port_debug("Extra debug: %s", default_log_debug_mask);
+        log_debug_mask = DEBUG_SYS | strtoul(default_log_debug_mask, NULL, 16);
+    }
 
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());

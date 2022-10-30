@@ -24,7 +24,7 @@ void persistent_init(void)
         memset(&persist_data, 0, sizeof(persist_data));
         memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
-        persist_data.log_debug_mask = DEBUG_SYS;
+        persist_data.log_debug_mask = log_debug_mask;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
