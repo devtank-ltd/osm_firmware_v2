@@ -232,7 +232,7 @@ measurements_sensor_state_t htu21d_humi_measurements_init(char* name)
         return MEASUREMENTS_SENSOR_STATE_SUCCESS;
     }
     htu21d_debug("Requesting humidity.");
-    _htu21d_iteration_loop_req_temp();
+    _htu21d_iteration_loop_req_humi();
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
