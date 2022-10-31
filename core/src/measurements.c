@@ -1471,26 +1471,43 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     if (!measurement_name || !reading)
     {
         measurements_debug("Handed NULL pointer.");
-        return false;
+        goto bad_exit;
     }
     measurements_def_t* def;
     measurements_data_t* data;
     if (!_measurements_get_measurements_def(measurement_name, &def, &data))
     {
         measurements_debug("Could not get measurement definition and data.");
-        return false;
+        goto bad_exit;
     }
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Could not get measurement interface.");
-        return false;
+        goto bad_exit;
+    }
+
+    adcs_type_t clamps;
+    if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_LEN) == 0)
+    {
+        clamps = ADCS_TYPE_CC_CLAMP1;
+        cc_set_active_clamps(&clamps, 1);
+    }
+    else if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_LEN) == 0)
+    {
+        clamps = ADCS_TYPE_CC_CLAMP2;
+        cc_set_active_clamps(&clamps, 1);
+    }
+    else if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_LEN) == 0)
+    {
+        clamps = ADCS_TYPE_CC_CLAMP3;
+        cc_set_active_clamps(&clamps, 1);
     }
 
     if (inf.init_cb && inf.init_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         measurements_debug("Could not begin the measurement.");
-        return false;
+        goto bad_exit;
     }
 
     uint32_t init_time = get_since_boot_ms();
@@ -1499,7 +1516,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     if (!main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
     {
         measurements_debug("Failed on iterate.");
-        return false;
+        goto bad_exit;
     }
 
     uint32_t time_taken = since_boot_delta(get_since_boot_ms(), init_time);
@@ -1509,10 +1526,14 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     if (!main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info))
     {
         measurements_debug("Failed on collect.");
-        return false;
+        goto bad_exit;
     }
 
+    measurements_derive_cc_phase();
     return true;
+bad_exit:
+    measurements_derive_cc_phase();
+    return false;
 }
 
 
