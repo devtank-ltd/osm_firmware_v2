@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <math.h>
+#include <stddef.h>
 
 #include "adcs.h"
 
@@ -245,17 +246,17 @@ adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned nu
 }
 
 
+static bool _adcs_wait_loop_iteration(void* userdata)
+{
+    return !_adcs_in_use;
+}
+
+
 adcs_resp_t adcs_wait_done(uint32_t timeout, adcs_keys_t key)
 {
-    uint32_t start = get_since_boot_ms();
     if (_adcs_active_key != key)
         return ADCS_RESP_FAIL;
-    while (_adcs_in_use)
-    {
-        if (since_boot_delta(get_since_boot_ms(), start) > timeout)
-            return ADCS_RESP_FAIL;
-    }
-    return ADCS_RESP_OK;
+    return main_loop_iterate_for(timeout, _adcs_wait_loop_iteration, NULL) ? ADCS_RESP_OK : ADCS_RESP_FAIL;
 }
 
 

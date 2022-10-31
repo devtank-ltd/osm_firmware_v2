@@ -835,6 +835,12 @@ bool socket_connect(char* path, int* _socketfd)
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, path, sizeof(addr.sun_path));
     *_socketfd = socket(AF_UNIX, SOCK_STREAM, 0);
+
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 5000;
+    setsockopt(*_socketfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
     if (connect(*_socketfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
     {
         printf("Could not bind the socket.\n");
