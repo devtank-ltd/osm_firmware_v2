@@ -232,7 +232,7 @@ measurements_sensor_state_t htu21d_humi_measurements_init(char* name)
         return MEASUREMENTS_SENSOR_STATE_SUCCESS;
     }
     htu21d_debug("Requesting humidity.");
-    _htu21d_iteration_loop_req_humi();
+    _htu21d_iteration_loop_req_temp();
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -302,6 +302,7 @@ measurements_sensor_state_t htu21d_measurements_iteration(char* name)
         {
             if (!_htu21d_iteration_loop_collect_humi())
                 goto bad_humi_exit;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
     // Temp
@@ -313,6 +314,7 @@ measurements_sensor_state_t htu21d_measurements_iteration(char* name)
             if (!_htu21d_iteration_loop_collect_temp())
                 goto bad_temp_exit;
             htu21d_debug("Collected temperature into buffer.");
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
     // Humi
@@ -335,22 +337,23 @@ measurements_sensor_state_t htu21d_measurements_iteration(char* name)
                 goto bad_humi_exit;
             }
             _htu21d_reading.temperature.is_valid = false;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return MEASUREMENTS_SENSOR_STATE_BUSY;
 
 bad_temp_exit:
     if (strncmp(name, MEASUREMENTS_HTU21D_TEMP, MEASURE_NAME_LEN) == 0)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return MEASUREMENTS_SENSOR_STATE_BUSY;
 bad_humi_exit:
     if (strncmp(name, MEASUREMENTS_HTU21D_HUMI, MEASURE_NAME_LEN) == 0)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return MEASUREMENTS_SENSOR_STATE_BUSY;
 }
 
 
