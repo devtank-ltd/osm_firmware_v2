@@ -521,20 +521,16 @@ static bool _veml7700_iteration_off(void)
 
 measurements_sensor_state_t veml7700_iteration(char* name)
 {
-    bool (* iteration_function)(void) = NULL;
     switch (_veml7700_state_machine.state)
     {
         case VEML7700_STATE_DONE:
-            iteration_function = _veml7700_iteration_done;
-            break;
+            return _veml7700_iteration_done()    ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_READING:
-            iteration_function = _veml7700_iteration_reading;
-            break;
+            return _veml7700_iteration_reading() ? MEASUREMENTS_SENSOR_STATE_BUSY    : MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_OFF:
-            iteration_function = _veml7700_iteration_off;
-            break;
+            return _veml7700_iteration_off()     ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return ((iteration_function && iteration_function()) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
+    return MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
