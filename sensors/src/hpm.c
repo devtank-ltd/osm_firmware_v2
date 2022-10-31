@@ -9,6 +9,7 @@
 
 
 #define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
+#define HPM_TIMEOUT_MS                           (uint32_t)(MEASUREMENTS_COLLECT_TIME_HPM_MS * 1.5)
 
 #define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
 
@@ -26,7 +27,9 @@ typedef union
 unit_entry_t pm25_entry = {0};
 unit_entry_t pm10_entry = {0};
 
-static bool hpm_valid = false;
+static bool     hpm_valid               = false;
+static uint32_t _hpm_start_time         = 0;
+static uint32_t _hpm_last_collect_time  = MEASUREMENTS_COLLECT_TIME_HPM_MS;
 
 typedef struct
 {
@@ -60,6 +63,12 @@ static hpm_response_t responses[] =
 _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
 
 
+static void _hpm_is_valid(void)
+{
+    hpm_valid = true;
+    _hpm_last_collect_time = since_boot_delta(get_since_boot_ms(), _hpm_start_time);
+}
+
 
 static void process_part_measure_response(const uint8_t *data)
 {
@@ -88,7 +97,7 @@ static void process_part_measure_response(const uint8_t *data)
     pm25_entry.l = data[4];
     pm10_entry.h = data[5];
     pm10_entry.l = data[6];
-    hpm_valid = true;
+    _hpm_is_valid();
 }
 
 
@@ -218,6 +227,7 @@ void hpm_enable(bool enable)
 
     if (enable)
     {
+        _hpm_start_time = get_since_boot_ms();
         hpm_use_ref++;
         hpm_debug("Power On (ref:%u)", hpm_use_ref);
         return;
@@ -252,19 +262,15 @@ measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = MEASUREMENTS_COLLECT_TIME_HPM_MS;
+    *collection_time = _hpm_last_collect_time * 1.1f;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val)
 {
-    bool was_valid = hpm_valid;
-    hpm_enable(false);
-    if (!val || !was_valid)
-    {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
+    if (!val || !hpm_valid)
+        return since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS ? MEASUREMENTS_SENSOR_STATE_BUSY : MEASUREMENTS_SENSOR_STATE_ERROR;
     val->v_i64 = (int64_t)pm10_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -272,12 +278,8 @@ measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val
 
 measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val)
 {
-    bool was_valid = hpm_valid;
-    hpm_enable(false);
-    if (!val || !was_valid)
-    {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
+    if (!val || !hpm_valid)
+        return since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS ? MEASUREMENTS_SENSOR_STATE_BUSY : MEASUREMENTS_SENSOR_STATE_ERROR;
     val->v_i64 = (int64_t)pm25_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
