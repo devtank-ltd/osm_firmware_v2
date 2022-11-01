@@ -53,61 +53,12 @@ def get_debug_print():
     return _debug_fnc
 
 
-def parse_temp(r_str: str):
+def parse_float(r_str: str):
     if "ERROR" in r_str:
         return False
     r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
     if r:
         return float(r[-1])
-    return False
-
-
-def parse_humidity(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_light(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_one_wire(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_current_clamp(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_particles(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    if "No HPM data." in r_str:
-        return False
-    if "HPM disabled" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return (int(r[-3]), int(r[-1]))
     return False
 
 
@@ -128,9 +79,9 @@ class dev_child_t(object):
     @property
     def parent(self):
         return self._parent()
-    
 
-class measurement_t(dev_child_t):
+
+class property_t(dev_child_t):
     def __init__(self, parent, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False, timeout: float = 1.0):
         super().__init__(parent)
         self.timeout = timeout
@@ -170,38 +121,18 @@ class measurement_t(dev_child_t):
         self._update(v)
 
 
-class hpm_t(measurement_t):
-    def __init__(self, parent):
-        super().__init__(parent, "Particles (2.5|10)", str, "hpm 1", parse_particles)
-        self._enabled = False
 
-    @property
-    def enabled(self):
-        return self._enabled
-
-    @enabled.setter
-    def enabled(self, enabled:bool):
-        v = 1 if enabled else 0
-        self.parent.do_cmd(f"hpm {v}")
-        self._enabled = enabled
+class measurement_t(property_t):
+    pass
 
 
 class modbus_reg_t(measurement_t):
     def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, handle: str):
-        super().__init__(parent, name, float, f"mb_get_reg {handle}", self._parse_func, False, 2.0)
+        super().__init__(parent, name, float, f"get_meas {handle}", parse_float, False, 2.0)
         self.address = address
         self.func = func
         self.mb_type_ = mb_type_
         self.handle = handle
-
-    def _parse_func(self, r_str):
-        if "ERROR" in r_str:
-            return False
-        r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-        # r = re.findall(r'0x[0-9A-F]+', r_str)
-        if r:
-            return float(r[-1])
-        return False
 
     def __str__(self):
         return f'{str(self.name)}, {str(self.address)}, {str(self.mb_type_)}, {str(self.func)}'
@@ -386,15 +317,16 @@ class dev_t(dev_base_t):
         self._io_count = int(line.split()[-1])
         self._children = {
             "ios"       : ios_t(self, self._io_count),
-            "w1"        : measurement_t(self, "One Wire"           , float , "w1 TMP2"   , parse_one_wire       ),
-            "cc"        : measurement_t(self, "Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
-            "hpm"       : hpm_t(self),
-            "comms_conn": measurement_t(self, "LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
-            "temp"      : measurement_t(self, "Temperature"        , float , "temp"      , parse_temp           ),
-            "humi"      : measurement_t(self, "Humidity"           , float , "humi"      , parse_humidity       ),
-            "light"     : measurement_t(self, "Light"              , float , "light"     , parse_light          , False, 10),
-            "version"   : measurement_t(self, "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
-            "serial_num": measurement_t(self, "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
+            "w1"        : measurement_t(self, "One Wire"           , float , "get_meas TMP2"  , parse_float ),
+            "cc"        : measurement_t(self, "Current Clamp"      , int   , "get_meas CC1"   , parse_float ),
+            "pm10"      : measurement_t(self, "PM10"               , int   , "get_meas PM10"  , parse_float ),
+            "pm25"      : measurement_t(self, "PM2.5"              , int   , "get_meas PM25"  , parse_float ),
+            "temp"      : measurement_t(self, "Temperature"        , float , "get_meas TEMP"  , parse_float ),
+            "humi"      : measurement_t(self, "Humidity"           , float , "get_meas HUMI"  , parse_float ),
+            "light"     : measurement_t(self, "Light"              , float , "get_meas LGHT"  , parse_float , False, 10),
+            "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
+            "version"   : property_t(self,    "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
+            "serial_num": property_t(self,    "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
         self.update_modbus_registers()
 

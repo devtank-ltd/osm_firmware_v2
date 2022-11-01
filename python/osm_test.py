@@ -139,20 +139,17 @@ class test_framework_t(object):
             modbus_reg_t(self._vosm_conn, "CurrentP1" , 0x10, 4, "F", "AP1" ),
             modbus_reg_t(self._vosm_conn, "CurrentP2" , 0x12, 4, "F", "AP2" )
             ])
-        self._vosm_conn.hpm.enabled = True
         passed = True
-        passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
-        passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
+        passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 2000,  500)
+        passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 5000, 1000)
         passed &= self._threshold_check("Light",              self._vosm_conn.light.value, 10, 10)
         passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
         passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
         passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
         passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
         passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 25.0625, 0.01)
-        hpm_r = self._vosm_conn.hpm.value
-        pm25, pm10 = hpm_r if isinstance(hpm_r, tuple) else (None, None)
-        passed &= self._threshold_check("PM2.5",              pm25, 15, 0)
-        passed &= self._threshold_check("PM10",               pm10, 25, 0)
+        passed &= self._threshold_check("PM2.5",              self._vosm_conn.pm25.value, 15, 0)
+        passed &= self._threshold_check("PM10",               self._vosm_conn.pm10.value, 25, 0)
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)
