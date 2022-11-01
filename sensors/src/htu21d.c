@@ -199,7 +199,7 @@ static void _htu21d_iteration_loop_req_humi(void)
 }
 
 
-measurements_sensor_state_t htu21d_temp_measurements_init(char* name)
+measurements_sensor_state_t htu21d_temp_measurements_init(char* name, bool in_isolation)
 {
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_TEMPERATURE)
     {
@@ -218,7 +218,7 @@ measurements_sensor_state_t htu21d_temp_measurements_init(char* name)
 }
 
 
-measurements_sensor_state_t htu21d_humi_measurements_init(char* name)
+measurements_sensor_state_t htu21d_humi_measurements_init(char* name, bool in_isolation)
 {
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_HUMIDITY)
     {
@@ -418,7 +418,7 @@ bool htu21d_read_temp(int32_t* temp)
         htu21d_debug("Handed a NULL pointer for temperature.");
         return false;
     }
-    if (htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_HUMI) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_HUMI, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         htu21d_debug("Failed to begin the temperature measurement.");
         return false;
@@ -461,7 +461,7 @@ bool htu21d_read_humidity(int32_t* humidity)
         htu21d_debug("Handed a NULL pointer for humidity.");
         return false;
     }
-    if (htu21d_humi_measurements_init(MEASUREMENTS_HTU21D_HUMI) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (htu21d_humi_measurements_init(MEASUREMENTS_HTU21D_HUMI, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         htu21d_debug("Failed to begin the humidity measurement.");
         return false;

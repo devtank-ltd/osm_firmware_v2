@@ -589,7 +589,7 @@ measurements_sensor_state_t sai_collection_time(char* name, uint32_t* collection
 }
 
 
-measurements_sensor_state_t sai_measurements_init(char* name)
+measurements_sensor_state_t sai_measurements_init(char* name, bool in_isolation)
 {
     _sai_dma_init();
     _sai_dma_on();

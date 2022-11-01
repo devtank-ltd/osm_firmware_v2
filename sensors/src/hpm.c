@@ -285,7 +285,7 @@ measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val
 }
 
 
-measurements_sensor_state_t hpm_init(char* name)
+measurements_sensor_state_t hpm_init(char* name, bool in_isolation)
 {
     hpm_enable(true);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;

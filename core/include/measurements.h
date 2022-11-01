@@ -34,10 +34,12 @@ typedef enum
 typedef struct
 {
     measurements_sensor_state_t     (* collection_time_cb)(char* name, uint32_t* collection_time);  // Function to retrieve the time in ms between calling the init function (init_cb) and collecting the value (get_cb)
-    measurements_sensor_state_t     (* init_cb)(char* name);                                        // Function to start the process of retrieving the data
+    measurements_sensor_state_t     (* init_cb)(char* name, bool in_isolation);                     // Function to start the process of retrieving the data
     measurements_sensor_state_t     (* get_cb)(char* name, measurements_reading_t* value);          // Function to collect the value
     void                            (* acked_cb)(char* name);                                       // Function to tell subsystem measurement was successfully sent.
     measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
+    void                            (* add_cb)(char* name);                                         // Measurement added to active measurements.
+    void                            (* del_cb)(char* name);                                         // Measurement removed from active measurements.
 } measurements_inf_t;
 
 

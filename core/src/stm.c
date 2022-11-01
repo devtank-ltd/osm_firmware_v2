@@ -307,6 +307,8 @@ static uint8_t _stm_adcs_get_channel(adcs_type_t adcs_type)
             return ADC1_CHANNEL_CURRENT_CLAMP_2;
         case ADCS_TYPE_CC_CLAMP3:
             return ADC1_CHANNEL_CURRENT_CLAMP_3;
+        default:
+            break;
     }
     return 0;
 }

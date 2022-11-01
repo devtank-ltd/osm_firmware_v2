@@ -42,18 +42,18 @@ static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
 
 static void _debug_mode_init_iteration(void)
 {
-    htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_TEMP);
-    htu21d_humi_measurements_init(MEASUREMENTS_HTU21D_HUMI);
-    hpm_init(MEASUREMENTS_PM25_NAME);
-    hpm_init(MEASUREMENTS_PM10_NAME);
-    ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_1);
-    sai_measurements_init(MEASUREMENTS_SOUND_NAME);
-    veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME);
-    pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1);
-    pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_2);
-    cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME);
-    cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME);
-    cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME);
+    htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_TEMP, false);
+    htu21d_humi_measurements_init(MEASUREMENTS_HTU21D_HUMI, false);
+    hpm_init(MEASUREMENTS_PM25_NAME, false);
+    hpm_init(MEASUREMENTS_PM10_NAME, false);
+    ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_1, false);
+    sai_measurements_init(MEASUREMENTS_SOUND_NAME, false);
+    veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME, false);
+    pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1, false);
+    pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_2, false);
+    cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false);
+    cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false);
+    cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false);
     if (!_debug_mode_modbus_waiting)
         modbus_for_all_regs(_debug_modbus_init, NULL);
 }
@@ -216,5 +216,4 @@ void debug_mode(void)
         platform_blink_led_toggle();
         platform_watchdog_reset();
     }
-    measurements_derive_cc_phase();
 }

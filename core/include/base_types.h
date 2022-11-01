@@ -162,6 +162,7 @@ typedef enum
     ADCS_TYPE_CC_CLAMP1,
     ADCS_TYPE_CC_CLAMP2,
     ADCS_TYPE_CC_CLAMP3,
+    ADCS_TYPE_INVALID,
 } adcs_type_t;
 
 

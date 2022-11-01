@@ -137,7 +137,7 @@ static void _ds18b20_print_inst_names(void)
 }
 
 
-measurements_sensor_state_t ds18b20_measurements_init(char* name)
+measurements_sensor_state_t ds18b20_measurements_init(char* name, bool in_isolation)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
@@ -214,7 +214,7 @@ bool ds18b20_query_temp(float* temperature, char* name)
         return false;
     }
 
-    if (ds18b20_measurements_init(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (ds18b20_measurements_init(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         exttemp_debug("Could not init external temperature sensor.");
         return false;

@@ -34,7 +34,7 @@ measurements_sensor_state_t sai_iteration_callback(char* name)
 }
 
 
-measurements_sensor_state_t sai_measurements_init(char* name)
+measurements_sensor_state_t sai_measurements_init(char* name, bool in_isolation)
 {
     return MEASUREMENTS_SENSOR_STATE_ERROR;
 }

@@ -593,6 +593,8 @@ static bool _measurements_get_inf(measurements_def_t * def, measurements_data_t*
             inf->collection_time_cb = cc_collection_time;
             inf->init_cb            = cc_begin;
             inf->get_cb             = cc_get;
+            inf->add_cb             = cc_add;
+            inf->del_cb             = cc_del;
             data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case W1_PROBE:
@@ -710,7 +712,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         measurements_debug("%s has no init function (optional).", def->name);
         return;
     }
-    measurements_sensor_state_t resp = inf.init_cb(def->name);
+    measurements_sensor_state_t resp = inf.init_cb(def->name, false);
     switch(resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
@@ -1038,30 +1040,6 @@ uint16_t measurements_num_measurements(void)
 }
 
 
-void measurements_derive_cc_phase(void)
-{
-    unsigned len = 0;
-    adcs_type_t clamps[ADC_COUNT] = {0};
-    measurements_def_t* def;
-    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_1_NAME, &def, NULL) &&
-        _measurements_def_is_active(def) )
-    {
-        clamps[len++] = ADCS_TYPE_CC_CLAMP1;
-    }
-    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_2_NAME, &def, NULL) &&
-        _measurements_def_is_active(def) )
-    {
-        clamps[len++] = ADCS_TYPE_CC_CLAMP2;
-    }
-    if (_measurements_get_measurements_def(MEASUREMENTS_CURRENT_CLAMP_3_NAME, &def, NULL) &&
-        _measurements_def_is_active(def) )
-    {
-        clamps[len++] = ADCS_TYPE_CC_CLAMP3;
-    }
-    cc_set_active_clamps(clamps, len);
-}
-
-
 bool measurements_add(measurements_def_t* measurements_def)
 {
     bool                    found_space = false;
@@ -1098,8 +1076,9 @@ bool measurements_add(measurements_def_t* measurements_def)
             if (!_measurements_get_inf(def, data, &inf))
                 return false;
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+            if (inf.add_cb && def->interval)
+                inf.add_cb(def->name);
         }
-        measurements_derive_cc_phase();
         return true;
     }
     log_error("Could not find a space to add %s", measurements_def->name);
@@ -1113,9 +1092,15 @@ bool measurements_del(char* name)
     {
         if (strcmp(name, _measurements_arr.def[i].name) == 0)
         {
-            memset(&_measurements_arr.def[i], 0, sizeof(measurements_def_t));
-            memset(&_measurements_arr.data[i], 0, sizeof(measurements_data_t));
-            measurements_derive_cc_phase();
+            measurements_def_t*  def = &_measurements_arr.def[i];
+            measurements_data_t* data = &_measurements_arr.data[i];
+            measurements_inf_t inf;
+            if (!_measurements_get_inf(def, data, &inf))
+                return false;
+            if (inf.del_cb && def->interval)
+                inf.del_cb(def->name);
+            memset(def, 0, sizeof(measurements_def_t));
+            memset(data, 0, sizeof(measurements_data_t));
             return true;
         }
     }
@@ -1125,13 +1110,29 @@ bool measurements_del(char* name)
 
 bool measurements_set_interval(char* name, uint8_t interval)
 {
-    measurements_def_t* measurements_def = NULL;
-    if (!_measurements_get_measurements_def(name, &measurements_def, NULL))
+    measurements_def_t* def = NULL;
+    measurements_data_t* data;
+    if (!_measurements_get_measurements_def(name, &def, &data))
     {
         return false;
     }
-    measurements_def->interval = interval;
-    measurements_derive_cc_phase();
+
+    measurements_inf_t inf;
+    if (!_measurements_get_inf(def, data, &inf))
+        return false;
+
+    if (def->interval)
+    {
+        if (!interval && inf.del_cb)
+            inf.del_cb(name);
+    }
+    else
+    {
+        if (interval && inf.del_cb)
+            inf.add_cb(name);
+    }
+
+    def->interval = interval;
     return true;
 }
 
@@ -1161,7 +1162,6 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurements_def->samplecount = samplecount;
-    measurements_derive_cc_phase();
     return true;
 }
 
@@ -1366,6 +1366,8 @@ void measurements_init(void)
         if (!_measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
+        if (inf.add_cb && def->interval)
+            inf.add_cb(def->name);
     }
 
     if (!found)
@@ -1383,7 +1385,6 @@ void measurements_init(void)
         log_error("Could not load measurements interval.");
         transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     }
-    measurements_derive_cc_phase();
 }
 
 
@@ -1506,24 +1507,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         return false;
     }
 
-    adcs_type_t clamps;
-    if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_LEN) == 0)
-    {
-        clamps = ADCS_TYPE_CC_CLAMP1;
-        cc_set_active_clamps(&clamps, 1);
-    }
-    else if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_LEN) == 0)
-    {
-        clamps = ADCS_TYPE_CC_CLAMP2;
-        cc_set_active_clamps(&clamps, 1);
-    }
-    else if (strncmp(def->name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_LEN) == 0)
-    {
-        clamps = ADCS_TYPE_CC_CLAMP3;
-        cc_set_active_clamps(&clamps, 1);
-    }
-
-    if (inf.init_cb && inf.init_cb(def->name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (inf.init_cb && inf.init_cb(def->name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         measurements_debug("Could not begin the measurement.");
         goto bad_exit;
@@ -1549,10 +1533,8 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         goto bad_exit;
     }
 
-    measurements_derive_cc_phase();
     return true;
 bad_exit:
-    measurements_derive_cc_phase();
     data->is_collecting = 0;
     return false;
 }

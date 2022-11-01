@@ -16,7 +16,7 @@ extern void hpm_enable(bool enable);
 extern bool hpm_get(uint16_t * pm25, uint16_t * pm10);
 
 
-extern measurements_sensor_state_t hpm_init(char* name);
+extern measurements_sensor_state_t hpm_init(char* name, bool in_isolation);
 extern measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val);
 extern measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val);
 extern measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection_time);

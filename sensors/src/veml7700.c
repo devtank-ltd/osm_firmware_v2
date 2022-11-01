@@ -545,7 +545,7 @@ measurements_sensor_state_t veml7700_measurements_collection_time(char* name, ui
 }
 
 
-measurements_sensor_state_t veml7700_light_measurements_init(char* name)
+measurements_sensor_state_t veml7700_light_measurements_init(char* name, bool in_isolation)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -603,7 +603,7 @@ bool veml7700_get_lux(uint32_t* lux)
         light_debug("Handed in null pointer.");
         return false;
     }
-    if (veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         light_debug("Failed to init light collection.");
         return false;

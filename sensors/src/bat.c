@@ -121,7 +121,7 @@ measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection
 }
 
 
-measurements_sensor_state_t bat_begin(char* name)
+measurements_sensor_state_t bat_begin(char* name, bool in_isolation)
 {
     if (_bat_running && _bat_check_request())
     {
@@ -194,7 +194,7 @@ measurements_sensor_state_t bat_get(char* name, measurements_reading_t* value)
 
 bool bat_get_blocking(char* name, measurements_reading_t* value)
 {
-    if (bat_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (bat_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Could not start BAT.");
         return false;
@@ -221,7 +221,7 @@ static bool _bat_get_on_battery(bool* on_battery)
         return false;
     }
 
-    measurements_sensor_state_t resp = bat_begin(NULL);
+    measurements_sensor_state_t resp = bat_begin(NULL, true);
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:

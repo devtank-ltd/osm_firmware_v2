@@ -7,7 +7,7 @@
 extern void                         cc_init(void);
 
 extern measurements_sensor_state_t  cc_collection_time(char* name, uint32_t* collection_time);
-extern measurements_sensor_state_t  cc_begin(char* name);
+extern measurements_sensor_state_t  cc_begin(char* name, bool in_isolation);
 extern measurements_sensor_state_t  cc_get(char* name, measurements_reading_t* value);
 
 extern bool                         cc_get_blocking(char* name, measurements_reading_t* value);
@@ -18,3 +18,5 @@ extern bool                         cc_get_midpoint(uint32_t* midpoint, char* na
 extern bool                         cc_calibrate(void);
 
 extern bool                         cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
+extern void                         cc_add(char* name);
+extern void                         cc_del(char* name);

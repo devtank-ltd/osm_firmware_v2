@@ -34,7 +34,7 @@ measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* col
 }
 
 
-measurements_sensor_state_t pulsecount_begin(char* name)
+measurements_sensor_state_t pulsecount_begin(char* name, bool in_isolation)
 {
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }

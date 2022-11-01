@@ -29,6 +29,7 @@ typedef struct
 static adcs_type_t          _cc_adc_clamp_array[ADC_CC_COUNT]   = ADC_TYPES_ALL_CC;
 static uint32_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_active_clamps_t   _cc_adc_active_clamps               = {0};
+static adcs_type_t          _cc_running_isolated                = ADCS_TYPE_INVALID;
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
 static cc_config_t*         _configs;
@@ -267,45 +268,74 @@ measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_
 }
 
 
-measurements_sensor_state_t cc_begin(char* name)
+measurements_sensor_state_t cc_begin(char* name, bool in_isolation)
 {
-    if (!_cc_adc_active_clamps.len)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-
-    uint8_t index, active_index;
-
-    if (!_cc_get_info(name, &index, &active_index, NULL))
+    uint8_t index;
+    if (!_cc_get_index(&index, name))
     {
-        adc_debug("Cannot get CC info.");
+        adc_debug("Cannot get index.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+    if (index >= ADC_CC_COUNT)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+    adcs_resp_t resp;
+
+    if (in_isolation)
     {
-        if (i == index)
-            continue;
-        if (_cc_running[i])
+        adcs_type_t lone_cc = ADCS_TYPE_CC_CLAMP1 + index;
+
+        for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         {
-            if (index >= ADC_CC_COUNT)
+            if (i == index)
+                continue;
+            if (_cc_running[i])
+            {
+                adc_debug("Cannot start CC in isolation when running.");
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
-            _cc_running[index] = true;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            }
         }
+
+        _cc_running_isolated = lone_cc;
+
+        resp = adcs_begin(&lone_cc, 1, CC_NUM_SAMPLES, ADCS_KEY_CC);
     }
-    adcs_resp_t resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    else
+    {
+        if (!_cc_adc_active_clamps.len)
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        if (_cc_running_isolated != ADCS_TYPE_INVALID)
+        {
+            adc_debug("Cannot start CC non isolated as isolation running.");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        }
+
+        for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+        {
+            if (i == index)
+                continue;
+            if (_cc_running[i])
+            {
+                _cc_running[index] = true;
+                return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            }
+        }
+        resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    }
+
     switch(resp)
     {
         case ADCS_RESP_FAIL:
             adc_debug("Failed to begin CC ADC.");
+            if (_cc_running_isolated != ADCS_TYPE_INVALID)
+                _cc_running_isolated = ADCS_TYPE_INVALID;
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case ADCS_RESP_OK:
             break;
     }
-
-    if (index >= ADC_CC_COUNT)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
     _cc_running[index] = true;
     adc_debug("Started ADC reading for CC.");
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
@@ -333,7 +363,17 @@ measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
     uint32_t adcs_rms;
     uint32_t midpoint = _cc_midpoints[index];
 
-    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+    unsigned cc_len;
+
+    if (_cc_running_isolated != ADCS_TYPE_INVALID)
+        cc_len = 1;
+    else
+        cc_len = _cc_adc_active_clamps.len;
+
+    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+
+    _cc_running_isolated = ADCS_TYPE_INVALID;
+
     switch (resp)
     {
         case ADCS_RESP_FAIL:
@@ -474,21 +514,7 @@ bool cc_calibrate(void)
 
 bool cc_get_blocking(char* name, measurements_reading_t* value)
 {
-    adcs_type_t clamp;
-    if (!_cc_get_info(name, NULL, NULL, &clamp))
-    {
-        adc_debug("Cannot get info.");
-        return false;
-    }
-    cc_active_clamps_t prev_cc_adc_active_clamps;
-    memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len);
-    prev_cc_adc_active_clamps.len = _cc_adc_active_clamps.len;
-    if (!cc_set_active_clamps(&clamp, 1))
-    {
-        adc_debug("Cannot set active clamp.");
-        return false;
-    }
-    if (cc_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
@@ -497,7 +523,6 @@ bool cc_get_blocking(char* name, measurements_reading_t* value)
         return false;
     bool r = (cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
     _cc_release_all();
-    cc_set_active_clamps(prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
     return r;
 }
 
@@ -515,19 +540,19 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
@@ -558,6 +583,56 @@ bad_exit:
     _cc_release_all();
     adc_debug("Couldnt get %s value.", name);
     return false;
+}
+
+
+void  cc_add(char* name)
+{
+    uint8_t index_local;
+    if (!_cc_get_index(&index_local, name))
+    {
+        adc_debug("Cannot get index.");
+        return;
+    }
+
+    adcs_type_t clamps[ADC_CC_COUNT] = {0};
+    unsigned len = 0;
+
+    adcs_type_t new_cc = ADCS_TYPE_CC_CLAMP1 + index_local;
+
+    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+        if (_cc_adc_active_clamps.active[i] < new_cc)
+            clamps[len++] = _cc_adc_active_clamps.active[i];
+
+    clamps[len++] = new_cc;
+
+    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+        if (_cc_adc_active_clamps.active[i] > new_cc)
+            clamps[len++] = _cc_adc_active_clamps.active[i];
+
+    cc_set_active_clamps(clamps, len);
+}
+
+
+void  cc_del(char* name)
+{
+    uint8_t index_local;
+    if (!_cc_get_index(&index_local, name))
+    {
+        adc_debug("Cannot get index.");
+        return;
+    }
+
+    adcs_type_t clamps[ADC_CC_COUNT] = {0};
+    unsigned len = 0;
+
+    adcs_type_t old_cc = ADCS_TYPE_CC_CLAMP1 + index_local;
+
+    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+        if (_cc_adc_active_clamps.active[i] != old_cc)
+            clamps[len++] = _cc_adc_active_clamps.active[i];
+
+    cc_set_active_clamps(clamps, len);
 }
 
 

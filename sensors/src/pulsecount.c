@@ -204,7 +204,7 @@ static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* nam
 }
 
 
-measurements_sensor_state_t pulsecount_begin(char* name)
+measurements_sensor_state_t pulsecount_begin(char* name, bool in_isolation)
 {
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))

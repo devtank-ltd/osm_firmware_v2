@@ -20,8 +20,12 @@ measurements_sensor_state_t modbus_measurements_collection_time(char* name, uint
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
-measurements_sensor_state_t modbus_measurements_init(char* name)
+measurements_sensor_state_t modbus_measurements_init(char* name, bool in_isolation)
 {
+    if (in_isolation)
+    {
+    }
+
     return modbus_measurements_init2(modbus_get_reg(name));
 }
 
