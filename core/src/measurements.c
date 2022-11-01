@@ -75,7 +75,8 @@ typedef struct
 typedef struct
 {
     measurements_value_t    value;
-    uint8_t                 value_type;                                 /* measurements_value_type_t */
+    uint8_t                 value_type:7;                                 /* measurements_value_type_t */
+    uint8_t                 is_collecting:1;
     uint8_t                 num_samples;
     uint8_t                 num_samples_init;
     uint8_t                 num_samples_collected;
@@ -694,10 +695,18 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_collected++;
         return;
     }
+    if (data->is_collecting)
+    {
+        measurements_debug("Measurement %s already collecting.", def->name);
+        data->num_samples_init++;
+        data->num_samples_collected++;
+        return;
+    }
     if (!inf.init_cb)
     {
         // Init functions are optional
         data->num_samples_init++;
+        data->is_collecting = 1;
         measurements_debug("%s has no init function (optional).", def->name);
         return;
     }
@@ -707,6 +716,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             measurements_debug("%s successfully init'd.", def->name);
             data->num_samples_init++;
+            data->is_collecting = 1;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s could not init, will not collect.", def->name);
@@ -762,6 +772,7 @@ static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_
     }
     /* Each function should check if this has been initialised */
     measurements_sensor_state_t resp = inf->get_cb(def->name, new_value);
+    data->is_collecting = 0;
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
@@ -1447,6 +1458,7 @@ static bool _measurements_get_reading_collection(void* userdata)
     _measurements_get_reading_packet_t* info = (_measurements_get_reading_packet_t*)userdata;
 
     measurements_sensor_state_t resp = info->base.inf->get_cb(info->base.def->name, info->reading);
+    info->base.data->is_collecting = 0;
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
@@ -1471,20 +1483,27 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     if (!measurement_name || !reading)
     {
         measurements_debug("Handed NULL pointer.");
-        goto bad_exit;
+        return false;
     }
     measurements_def_t* def;
     measurements_data_t* data;
     if (!_measurements_get_measurements_def(measurement_name, &def, &data))
     {
         measurements_debug("Could not get measurement definition and data.");
-        goto bad_exit;
+        return false;
     }
+
+    if (data->is_collecting)
+    {
+        measurements_debug("Measurement already being collected.");
+        return false;
+    }
+
     measurements_inf_t inf;
     if (!_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Could not get measurement interface.");
-        goto bad_exit;
+        return false;
     }
 
     adcs_type_t clamps;
@@ -1510,6 +1529,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         goto bad_exit;
     }
 
+    data->is_collecting = 1;
     uint32_t init_time = get_since_boot_ms();
 
     _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type};
@@ -1533,6 +1553,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     return true;
 bad_exit:
     measurements_derive_cc_phase();
+    data->is_collecting = 0;
     return false;
 }
 
