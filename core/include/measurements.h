@@ -39,8 +39,7 @@ typedef struct
     measurements_sensor_state_t     (* get_cb)(char* name, measurements_reading_t* value);          // Function to collect the value
     void                            (* acked_cb)(char* name);                                       // Function to tell subsystem measurement was successfully sent.
     measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
-    void                            (* add_cb)(char* name);                                         // Measurement added to active measurements.
-    void                            (* del_cb)(char* name);                                         // Measurement removed from active measurements.
+    void                            (* enable_cb)(char* name, bool enabled);                        // Function to inform measurement if active or not.
 } measurements_inf_t;
 
 

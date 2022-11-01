@@ -53,8 +53,7 @@ bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, m
             inf->collection_time_cb = cc_collection_time;
             inf->init_cb            = cc_begin;
             inf->get_cb             = cc_get;
-            inf->add_cb             = cc_add;
-            inf->del_cb             = cc_del;
+            inf->enable_cb          = cc_enable;
             data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
             break;
         case W1_PROBE:

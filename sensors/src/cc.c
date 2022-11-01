@@ -586,7 +586,7 @@ bad_exit:
 }
 
 
-void  cc_add(char* name)
+void  cc_enable(char* name, bool enabled)
 {
     uint8_t index_local;
     if (!_cc_get_index(&index_local, name))
@@ -598,39 +598,26 @@ void  cc_add(char* name)
     adcs_type_t clamps[ADC_CC_COUNT] = {0};
     unsigned len = 0;
 
-    adcs_type_t new_cc = ADCS_TYPE_CC_CLAMP1 + index_local;
+    adcs_type_t target_cc = ADCS_TYPE_CC_CLAMP1 + index_local;
 
-    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
-        if (_cc_adc_active_clamps.active[i] < new_cc)
-            clamps[len++] = _cc_adc_active_clamps.active[i];
-
-    clamps[len++] = new_cc;
-
-    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
-        if (_cc_adc_active_clamps.active[i] > new_cc)
-            clamps[len++] = _cc_adc_active_clamps.active[i];
-
-    cc_set_active_clamps(clamps, len);
-}
-
-
-void  cc_del(char* name)
-{
-    uint8_t index_local;
-    if (!_cc_get_index(&index_local, name))
+    if (enabled)
     {
-        adc_debug("Cannot get index.");
-        return;
+        for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+            if (_cc_adc_active_clamps.active[i] < target_cc)
+                clamps[len++] = _cc_adc_active_clamps.active[i];
+
+        clamps[len++] = target_cc;
+
+        for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+            if (_cc_adc_active_clamps.active[i] > target_cc)
+                clamps[len++] = _cc_adc_active_clamps.active[i];
     }
-
-    adcs_type_t clamps[ADC_CC_COUNT] = {0};
-    unsigned len = 0;
-
-    adcs_type_t old_cc = ADCS_TYPE_CC_CLAMP1 + index_local;
-
-    for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
-        if (_cc_adc_active_clamps.active[i] != old_cc)
-            clamps[len++] = _cc_adc_active_clamps.active[i];
+    else
+    {
+        for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+            if (_cc_adc_active_clamps.active[i] != target_cc)
+                clamps[len++] = _cc_adc_active_clamps.active[i];
+    }
 
     cc_set_active_clamps(clamps, len);
 }

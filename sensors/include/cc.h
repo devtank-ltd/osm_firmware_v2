@@ -18,5 +18,4 @@ extern bool                         cc_get_midpoint(uint32_t* midpoint, char* na
 extern bool                         cc_calibrate(void);
 
 extern bool                         cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
-extern void                         cc_add(char* name);
-extern void                         cc_del(char* name);
+extern void                         cc_enable(char* nam, bool enabled);

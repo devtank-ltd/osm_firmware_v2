@@ -953,8 +953,8 @@ bool measurements_add(measurements_def_t* measurements_def)
             if (!measurements_get_inf(def, data, &inf))
                 return false;
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
-            if (inf.add_cb && def->interval)
-                inf.add_cb(def->name);
+            if (inf.enable_cb)
+                inf.enable_cb(def->name, def->interval > 0);
         }
         return true;
     }
@@ -974,8 +974,8 @@ bool measurements_del(char* name)
             measurements_inf_t inf;
             if (!measurements_get_inf(def, data, &inf))
                 return false;
-            if (inf.del_cb && def->interval)
-                inf.del_cb(def->name);
+            if (inf.enable_cb)
+                inf.enable_cb(def->name, false);
             memset(def, 0, sizeof(measurements_def_t));
             memset(data, 0, sizeof(measurements_data_t));
             return true;
@@ -998,16 +998,8 @@ bool measurements_set_interval(char* name, uint8_t interval)
     if (!measurements_get_inf(def, data, &inf))
         return false;
 
-    if (def->interval)
-    {
-        if (!interval && inf.del_cb)
-            inf.del_cb(name);
-    }
-    else
-    {
-        if (interval && inf.del_cb)
-            inf.add_cb(name);
-    }
+    if (inf.enable_cb && ((interval > 0) != (def->interval > 0)))
+        inf.enable_cb(name, interval > 0);
 
     def->interval = interval;
     return true;
@@ -1243,8 +1235,8 @@ void measurements_init(void)
         if (!measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
-        if (inf.add_cb && def->interval)
-            inf.add_cb(def->name);
+        if (inf.enable_cb)
+            inf.enable_cb(def->name, def->interval > 0);
     }
 
     if (!found)
