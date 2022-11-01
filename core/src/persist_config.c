@@ -60,7 +60,7 @@ void persist_set_fw_ready(uint32_t size)
 
 void persist_set_log_debug_mask(uint32_t mask)
 {
-    persist_data.log_debug_mask = mask;
+    persist_data.log_debug_mask = mask | DEBUG_SYS;
     persist_commit();
 }
 

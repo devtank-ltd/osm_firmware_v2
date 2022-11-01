@@ -260,6 +260,12 @@ void platform_clear_flash_flags(void)
 }
 
 
+void platform_start(void)
+{
+    ;
+}
+
+
 bool platform_running(void)
 {
     return true;

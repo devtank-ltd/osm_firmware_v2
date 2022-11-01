@@ -81,6 +81,7 @@ int main(void)
         log_sys_debug("Left debug_mode");
     }
 
+    platform_start();
     log_async_log = true;
 
     uint32_t prev_now = 0;

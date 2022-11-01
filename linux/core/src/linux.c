@@ -22,7 +22,9 @@
 #include "linux.h"
 #include "common.h"
 #include "uarts.h"
-
+#include "persist_config.h"
+#include "log.h"
+#include "measurements.h"
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_PTY_NAME_SIZE     16
@@ -600,6 +602,27 @@ void platform_init(void)
     _linux_setup_fd_handlers();
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
+}
+
+
+void platform_start(void)
+{
+    char * overloaded_log_debug_mask = getenv("DEBUG_MASK");
+    if (overloaded_log_debug_mask)
+    {
+        linux_port_debug("New debug mask: %s", overloaded_log_debug_mask);
+        log_debug_mask = DEBUG_SYS | strtoul(overloaded_log_debug_mask, NULL, 16);
+        persist_set_log_debug_mask(log_debug_mask);
+        log_debug_mask = log_debug_mask;
+    }
+    char * meas_interval = getenv("MEAS_INTERVAL");
+    if (meas_interval)
+    {
+        unsigned mins = strtoul(meas_interval, NULL, 10);
+        linux_port_debug("New Measurement Interval: %u", mins);
+        persist_set_mins_interval(mins);
+        transmit_interval = mins;
+    }
 }
 
 
