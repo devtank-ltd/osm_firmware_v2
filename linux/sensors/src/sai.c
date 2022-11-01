@@ -6,12 +6,6 @@ void sai_init(void)
 }
 
 
-bool sai_get_sound(uint32_t* dB)
-{
-    return false;
-}
-
-
 bool sai_set_coeff(uint8_t index, float coeff)
 {
     return false;

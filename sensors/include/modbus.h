@@ -21,6 +21,8 @@ extern bool modbus_add_dev_from_str(char* str);
 extern uint32_t modbus_start_delay(void);
 extern uint32_t modbus_stop_delay(void);
 
-extern void  modbus_log();
+extern bool modbus_has_pending(void);
+
+extern void modbus_log();
 
 extern void modbus_init(void);

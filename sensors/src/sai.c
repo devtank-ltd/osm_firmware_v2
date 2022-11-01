@@ -627,18 +627,6 @@ void sai_print_coeffs(void)
 }
 
 
-bool sai_get_sound(uint32_t* dB)
-{
-    uint32_t rms;
-    if (!_sai_rms_adaptive(&rms, _sai_array, SAI_ARRAY_SIZE))
-    {
-        return false;
-    }
-    *dB = _sai_conv_dB(rms);
-    return true;
-}
-
-
 bool sai_set_coeff(uint8_t index, float coeff)
 {
     if (index > SAI_NUM_CAL_COEFFS)

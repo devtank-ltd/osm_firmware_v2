@@ -255,6 +255,12 @@ uint32_t modbus_stop_delay(void)
 }
 
 
+bool modbus_has_pending(void)
+{
+    return (modbus_want_rx || ring_buf_get_pending(&_message_queue));
+}
+
+
 void modbus_use_do_binary_framing(bool enable)
 {
     do_binary_framing = enable;

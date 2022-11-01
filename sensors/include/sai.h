@@ -5,7 +5,6 @@
 
 
 extern void                         sai_init(void);
-extern bool                         sai_get_sound(uint32_t* dB);
 extern bool                         sai_set_coeff(uint8_t index, float coeff);
 extern void                         sai_print_coeffs(void);
 

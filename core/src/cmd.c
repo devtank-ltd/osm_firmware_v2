@@ -326,34 +326,6 @@ static void debug_cb(char * args)
 }
 
 
-static void hpm_cb(char *args)
-{
-    if (args[0] == '1')
-    {
-        hpm_enable(true);
-        log_out("HPM enabled");
-    }
-
-    uint16_t pm25;
-    uint16_t pm10;
-
-    if (hpm_get(&pm25, &pm10))
-    {
-        log_out("PM25:%"PRIu16", PM10:%"PRIu16, pm25, pm10);
-    }
-    else
-    {
-        log_out("No HPM data.");
-    }
-
-    if (args[0] == '0')
-    {
-        hpm_enable(false);
-        log_out("HPM disabled");
-    }
-}
-
-
 static void modbus_setup_cb(char *args)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
@@ -429,43 +401,6 @@ static void modbus_add_reg_cb(char * args)
             log_out("Failed to add modbus reg to measurements!");
     }
     else log_out("Failed to add modbus reg.");
-}
-
-
-static void modbus_get_reg_cb(char * args)
-{
-    char * name = skip_space(args);
-
-    modbus_reg_t * reg = modbus_get_reg(name);
-
-    if (!reg)
-    {
-        log_out("Unknown modbus register.");
-        return;
-    }
-
-    if (!modbus_start_read(reg))
-    {
-        log_out("Unknown to read modbus register.");
-        return;
-    }
-
-    uint32_t start_time = get_since_boot_ms();
-
-    measurements_reading_t value;
-
-    while(since_boot_delta(get_since_boot_ms(), start_time) < 1000)
-    {
-        uart_rings_in_drain();
-        uart_rings_out_drain();
-        platform_tight_loop();
-        if (modbus_measurements_get2(reg, &value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        {
-            log_out("%s : %"PRId32, name, value.v_f32);
-            return;
-        }
-    }
-    log_out("Timed out");
 }
 
 
@@ -652,18 +587,6 @@ syntax_exit:
 }
 
 
-static void ds18b20_cb(char* args)
-{
-    float ds18b20_temp;
-    if (!ds18b20_query_temp(&ds18b20_temp, args))
-    {
-        log_error("Could not get a temperature from the onewire.");
-        return;
-    }
-    log_out("Temp: %.03f degC.", ds18b20_temp);
-}
-
-
 static void timer_cb(char* args)
 {
     char* pos = skip_space(args);
@@ -671,22 +594,6 @@ static void timer_cb(char* args)
     uint32_t start_time = get_since_boot_ms();
     timer_delay_us_64(delay_ms * 1000);
     log_out("Time elapsed: %"PRIu32, since_boot_delta(get_since_boot_ms(), start_time));
-}
-
-
-static void temperature_cb(char* args)
-{
-    int32_t temp;
-    if (htu21d_read_temp(&temp))
-        log_out("Temperature: %0.3fdegC", (float)temp/100.f);
-}
-
-
-static void humidity_cb(char* args)
-{
-    int32_t humi;
-    if (htu21d_read_humidity(&humi))
-        log_out("Humidity: %0.3f%%", (float)humi/100.f);
 }
 
 
@@ -745,30 +652,6 @@ static void comms_dbg_cb(char* args)
 {
     uart_ring_out(COMMS_UART, args, strlen(args));
     uart_ring_out(COMMS_UART, "\r\n", 2);
-}
-
-
-static void light_cb(char* args)
-{
-    uint32_t lux;
-    if (!veml7700_get_lux(&lux))
-    {
-        log_out("Could not get light level");
-        return;
-    }
-    log_out("Lux: %"PRIu32, lux);
-}
-
-
-static void sound_cb(char* args)
-{
-    uint32_t dB;
-    if (!sai_get_sound(&dB))
-    {
-        log_out("Can not get the sound.");
-        return;
-    }
-    log_out("Sound = %"PRIu32".%"PRIu32" dB", dB/10, dB%10);
 }
 
 
@@ -894,11 +777,9 @@ void cmds_process(char * command, unsigned len)
         { "interval",     "Set the interval",         interval_cb                   , false },
         { "samplecount",  "Set the samplecount",      samplecount_cb                , false },
         { "debug",        "Set hex debug mask",       debug_cb                      , false },
-        { "hpm",          "Enable/Disable HPM",       hpm_cb                        , false },
         { "mb_setup",     "Change Modbus comms",      modbus_setup_cb               , false },
         { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb             , false },
         { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb             , false },
-        { "mb_get_reg",   "Get modbus reg",           modbus_get_reg_cb             , false },
         { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg    , false },
         { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev    , false },
         { "mb_log",       "Show modbus setup",        modbus_log                    , false },
@@ -913,16 +794,10 @@ void cmds_process(char * command, unsigned len)
         { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb               , false },
         { "cc_mp",        "Set the CC midpoint",      cc_mp_cb                      , false },
         { "cc_gain",      "Set the max int and ext",  cc_gain                       , false },
-        { "w1",           "Get temperature with w1",  ds18b20_cb                    , false },
         { "timer",        "Test usecs timer",         timer_cb                      , false },
-        { "temp",         "Get the temperature",      temperature_cb                , false },
-        { "humi",         "Get the humidity",         humidity_cb                   , false },
         { "wipe",         "Factory Reset",            wipe_cb                       , false },
         { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false },
         { "bat",          "Get battery level.",       bat_cb                        , false },
-        { "pulsecount",   "Show pulsecount.",         pulsecount_log                , false },
-        { "light",        "Get the light in lux.",    light_cb                      , false },
-        { "sound",        "Get the sound in lux.",    sound_cb                      , false },
         { "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false },
         { "repop",        "Repopulate measurements.", repop_cb                      , false },
         { "sleep",        "Sleep",                    sleep_cb                      , false },

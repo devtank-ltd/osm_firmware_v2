@@ -126,17 +126,6 @@ static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 }
 
 
-static void _ds18b20_print_inst_names(void)
-{
-    log_out("Available instances:");
-    for (uint8_t i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
-    {
-        ds18b20_instance_t* inst = &_ds18b20_instances[i];
-        log_out("- '%s'", inst->info.name);
-    }
-}
-
-
 measurements_sensor_state_t ds18b20_measurements_init(char* name, bool in_isolation)
 {
     ds18b20_instance_t* instance;
@@ -201,43 +190,6 @@ measurements_sensor_state_t ds18b20_collection_time(char* name, uint32_t* collec
     }
     *collection_time = DS18B20_DEFAULT_COLLECTION_TIME_MS;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
-
-
-bool ds18b20_query_temp(float* temperature, char* name)
-{
-    ds18b20_instance_t* inst;
-    if (!_ds18b20_get_instance(&inst, name))
-    {
-        log_out("Requested '%s', no instance with this name.", name);
-        _ds18b20_print_inst_names();
-        return false;
-    }
-
-    if (ds18b20_measurements_init(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        exttemp_debug("Could not init external temperature sensor.");
-        return false;
-    }
-    uint32_t wait_time;
-    if (ds18b20_collection_time(name, &wait_time) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        exttemp_debug("Could not get wait time for external temperature sensor.");
-        return false;
-    }
-    uint32_t start_time = get_since_boot_ms();
-    while (since_boot_delta(get_since_boot_ms(), start_time) < wait_time)
-    {
-        /* Watchdog? */
-    }
-    measurements_reading_t value;
-    if (ds18b20_measurements_collect(name, &value) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        exttemp_debug("Could not collect external temperature sensor.");
-        return false;
-    }
-    *temperature = (float)value.v_f32 / 1000.f;
-    return true;
 }
 
 

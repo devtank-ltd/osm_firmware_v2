@@ -211,12 +211,12 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
     }
 }
 
-
+/*
 void hpm_request(void)
 {
     // Send the request for the measurement, though it does send measurements on power up, and we power it up/down each time.
     uart_ring_out(HPM_UART, (char*)(uint8_t[]){0x68, 0x01, 0x04, 0x93}, 4);
-}
+}*/
 
 
 void hpm_enable(bool enable)
@@ -245,16 +245,6 @@ void hpm_enable(bool enable)
 }
 
 
-bool hpm_get(uint16_t * pm25, uint16_t * pm10)
-{
-    if (!pm25 || !pm10 || !hpm_valid)
-        return false;
-
-    *pm10 = pm10_entry.d;
-    *pm25 = pm25_entry.d;
-    return true;
-}
-
 
 measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection_time)
 {
@@ -269,8 +259,16 @@ measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection
 
 measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val)
 {
-    if (!val || !hpm_valid)
-        return since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS ? MEASUREMENTS_SENSOR_STATE_BUSY : MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!val)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!hpm_valid)
+    {
+        if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        hpm_enable(false);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    hpm_enable(false);
     val->v_i64 = (int64_t)pm10_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -278,8 +276,16 @@ measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val
 
 measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val)
 {
-    if (!val || !hpm_valid)
-        return since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS ? MEASUREMENTS_SENSOR_STATE_BUSY : MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!val)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (!hpm_valid)
+    {
+        if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        hpm_enable(false);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    hpm_enable(false);
     val->v_i64 = (int64_t)pm25_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }

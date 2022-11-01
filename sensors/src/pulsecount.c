@@ -154,23 +154,6 @@ void pulsecount_enable(bool enable)
 }
 
 
-void _pulsecount_log_instance(pulsecount_instance_t* instance)
-{
-    if (!io_is_pulsecount_now(instance->info.io))
-        return;
-    log_out("%s : %"PRIu32, instance->info.name, instance->count);
-}
-
-
-void pulsecount_log()
-{
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
-    {
-        _pulsecount_log_instance(&_pulsecount_instances[i]);
-    }
-}
-
-
 measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)

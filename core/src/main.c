@@ -75,9 +75,7 @@ int main(void)
     {
         log_async_log = true;
         log_sys_debug("Booted in debug_mode");
-        hpm_enable(true);
         debug_mode();
-        hpm_enable(false);
         log_sys_debug("Left debug_mode");
     }
 

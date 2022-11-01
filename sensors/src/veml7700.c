@@ -596,61 +596,6 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurem
 }
 
 
-bool veml7700_get_lux(uint32_t* lux)
-{
-    if (!lux)
-    {
-        light_debug("Handed in null pointer.");
-        return false;
-    }
-    if (veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        light_debug("Failed to init light collection.");
-        return false;
-    }
-    uint32_t wait_time;
-    if (veml7700_measurements_collection_time(MEASUREMENTS_LIGHT_NAME, &wait_time) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        light_debug("Failed to collect the wait time.");
-        return false;
-    }
-    uint32_t start_time = get_since_boot_ms();
-    while (since_boot_delta(get_since_boot_ms(), start_time) < wait_time)
-    {
-        /* Watchdog? */
-        if (veml7700_iteration(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        {
-            light_debug("Iteration failed.");
-            return false;
-        }
-    }
-    measurements_reading_t v;
-    start_time = get_since_boot_ms();
-    while (since_boot_delta(get_since_boot_ms(), start_time) < VEML7700_TIMEOUT_TIME_MS)
-    {
-        measurements_sensor_state_t resp = veml7700_light_measurements_get(MEASUREMENTS_SENSOR_STATE_SUCCESS, &v);
-        switch (resp)
-        {
-            case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-                *lux = v.v_i64;
-                return true;
-            case MEASUREMENTS_SENSOR_STATE_BUSY:
-                break;
-            case MEASUREMENTS_SENSOR_STATE_ERROR:
-                light_debug("Failed to collect the light.");
-                return false;
-        }
-        if (veml7700_iteration(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        {
-            light_debug("Overtime iteration failed.");
-            return false;
-        }
-    }
-    light_debug("Timed out collecting light.");
-    return false;
-}
-
-
 void veml7700_init(void)
 {
 }

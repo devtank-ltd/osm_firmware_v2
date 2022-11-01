@@ -24,13 +24,14 @@ measurements_sensor_state_t modbus_measurements_init(char* name, bool in_isolati
 {
     if (in_isolation)
     {
+        if (modbus_has_pending())
+        {
+            modbus_debug("Unable to get modbus reg in isolation as bus is busy.");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        }
     }
 
-    return modbus_measurements_init2(modbus_get_reg(name));
-}
-
-measurements_sensor_state_t modbus_measurements_init2(modbus_reg_t * reg)
-{
+    modbus_reg_t * reg = modbus_get_reg(name);
     if (!reg)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     return (modbus_start_read(reg) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
@@ -39,13 +40,10 @@ measurements_sensor_state_t modbus_measurements_init2(modbus_reg_t * reg)
 
 measurements_sensor_state_t modbus_measurements_get(char* name, measurements_reading_t* value)
 {
-    return modbus_measurements_get2(modbus_get_reg(name), value);
-}
-
-
-measurements_sensor_state_t modbus_measurements_get2(modbus_reg_t * reg, measurements_reading_t* value)
-{
-    if (!reg || !value)
+    if (!value)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    modbus_reg_t * reg = modbus_get_reg(name);
+    if (!reg)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     modbus_reg_state_t state = modbus_reg_get_state(reg);

@@ -96,7 +96,7 @@ static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
     char name[MEASURE_NAME_NULLED_LEN] = {0};
     if (modbus_reg_get_name(reg, name))
     {
-        measurements_sensor_state_t r = modbus_measurements_get2(reg, &value);
+        measurements_sensor_state_t r = modbus_measurements_get(name, &value);
         if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
         {
             _debug_mode_send_value(r, name, MEASUREMENTS_VALUE_TYPE_I64, &value);
