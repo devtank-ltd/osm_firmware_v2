@@ -10,6 +10,7 @@
 #include "measurements_mem.h"
 
 #define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)15
+#define MEASUREMENTS_VALUE_STR_LEN              23
 
 extern uint32_t transmit_interval;
 
@@ -43,6 +44,42 @@ typedef struct
 } measurements_inf_t;
 
 
+typedef struct
+{
+    union
+    {
+        struct
+        {
+            int64_t sum;
+            int64_t max;
+            int64_t min;
+        } value_64;
+        struct
+        {
+            int32_t sum;
+            int32_t max;
+            int32_t min;
+        } value_f;
+        struct
+        {
+            char    str[MEASUREMENTS_VALUE_STR_LEN];
+        } value_s;
+    };
+} measurements_value_t;
+
+
+typedef struct
+{
+    measurements_value_t    value;
+    uint8_t                 value_type:7;                                 /* measurements_value_type_t */
+    uint8_t                 is_collecting:1;
+    uint8_t                 num_samples;
+    uint8_t                 num_samples_init;
+    uint8_t                 num_samples_collected;
+    uint32_t                collection_time_cache;
+} measurements_data_t;
+
+
 extern uint16_t measurements_num_measurements(void);
 extern char*    measurements_get_name(unsigned index);
 
@@ -50,7 +87,6 @@ extern void     measurements_print(void);
 
 extern bool     measurements_add(measurements_def_t* measurement);
 extern bool     measurements_del(char* name);
-extern void     measurements_repopulate(void);
 
 extern bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
 extern bool     measurements_get_interval(char* name, uint8_t * interval);     // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
@@ -63,8 +99,12 @@ extern void     measurements_set_debug_mode(bool enable);
 
 extern void     measurements_power_mode(measurements_power_mode_t mode);
 extern void     measurements_derive_cc_phase(void);
-extern bool     measurements_send_test(void);
+extern bool     measurements_send_test(char * name);
 
 extern bool     measurements_enabled;
 extern bool     measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type);
 extern bool     measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
+
+
+extern bool     measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
+extern void     measurements_repopulate(void);

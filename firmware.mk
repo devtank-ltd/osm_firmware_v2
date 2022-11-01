@@ -11,6 +11,7 @@ firmware_SOURCES := \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
            core/src/measurements.c \
+           core/src/measurements_env01.c \
            core/src/measurements_mem.c \
            core/src/modbus_measurements.c \
            core/src/update.c \

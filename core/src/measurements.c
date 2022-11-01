@@ -8,25 +8,15 @@
 #include "comms.h"
 #include "log.h"
 #include "config.h"
-#include "hpm.h"
-#include "cc.h"
-#include "bat.h"
 #include "common.h"
 #include "persist_config.h"
-#include "modbus_measurements.h"
-#include "ds18b20.h"
-#include "htu21d.h"
-#include "pulsecount.h"
-#include "veml7700.h"
-#include "sai.h"
 #include "sleep.h"
 #include "uart_rings.h"
-#include "fw.h"
+#include "bat.h"
 #include "platform.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
-#define MEASUREMENTS_VALUE_STR_LEN              23
 #define MEASUREMENTS_SEND_STR_LEN               8
 
 
@@ -46,42 +36,6 @@ typedef enum
     MEASUREMENTS_SEND_TYPE_FLOAT   = 5 | MEASUREMENTS_SEND_IS_SIGNED,
     MEASUREMENTS_SEND_TYPE_STR     = 0x20,
 } measurements_send_type_t;
-
-
-typedef struct
-{
-    union
-    {
-        struct
-        {
-            int64_t sum;
-            int64_t max;
-            int64_t min;
-        } value_64;
-        struct
-        {
-            int32_t sum;
-            int32_t max;
-            int32_t min;
-        } value_f;
-        struct
-        {
-            char    str[MEASUREMENTS_VALUE_STR_LEN];
-        } value_s;
-    };
-} measurements_value_t;
-
-
-typedef struct
-{
-    measurements_value_t    value;
-    uint8_t                 value_type:7;                                 /* measurements_value_type_t */
-    uint8_t                 is_collecting:1;
-    uint8_t                 num_samples;
-    uint8_t                 num_samples_init;
-    uint8_t                 num_samples_collected;
-    uint32_t                collection_time_cache;
-} measurements_data_t;
 
 
 typedef struct
@@ -367,7 +321,7 @@ static bool _measurements_send_start(void)
 }
 
 
-bool measurements_send_test(void)
+bool measurements_send_test(char * name)
 {
     if (!comms_get_connected() || !comms_send_ready())
     {
@@ -382,19 +336,38 @@ bool measurements_send_test(void)
     }
 
     measurements_reading_t v;
+    measurements_value_type_t v_type;
 
-    char id[4] = MEASUREMENTS_FW_VERSION;
+    if (!measurements_get_reading(name, &v, &v_type))
+    {
+        measurements_debug("Failed to get reading of %s.", name);
+        return false;
+    }
 
-    bool r = _measurements_arr_append_i32(*(int32_t*)id);
-    r &= _measurements_arr_append_i8((int8_t)MEASUREMENTS_DATATYPE_SINGLE);
-    r &= fw_version_get(NULL, &v) == MEASUREMENTS_SENSOR_STATE_SUCCESS;
-    r &= _measurements_arr_append_str(v.v_str, MEASUREMENTS_VALUE_STR_LEN);
+    bool r = true;
 
-    if (!r)
-        measurements_debug("Failed to add to array.");
+    switch(v_type)
+    {
+        case MEASUREMENTS_VALUE_TYPE_I64:
+            r |= !_measurements_append_i64(&v.v_i64);
+            break;
+        case MEASUREMENTS_VALUE_TYPE_STR:
+            r |= !_measurements_append_str(v.v_str);
+            break;
+        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+            r |= !_measurements_append_float(&v.v_f32);
+            break;
+        default:
+            measurements_debug("Unknown type '%"PRIu8"'.", v_type);
+            return false;
+    }
 
-    measurements_debug("Sending test array.");
-    comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+    if (r)
+    {
+        measurements_debug("Sending test array.");
+        comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+    }
+    else measurements_debug("Failed to add to array.");
 
     return r;
 }
@@ -555,102 +528,6 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 }
 
 
-static bool _measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
-{
-    if (!def || !data || !inf)
-    {
-        measurements_debug("Handed NULL pointer.");
-        return false;
-    }
-    // Optional callbacks: get is not optional, neither is collection
-    // time if init given are not optional.
-    memset(inf, 0, sizeof(measurements_inf_t));
-    switch(def->type)
-    {
-        case FW_VERSION:
-            inf->get_cb             = fw_version_get;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_STR;
-            break;
-        case PM10:
-            inf->collection_time_cb = hpm_collection_time;
-            inf->init_cb            = hpm_init;
-            inf->get_cb             = hpm_get_pm10;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case PM25:
-            inf->collection_time_cb = hpm_collection_time;
-            inf->init_cb            = hpm_init;
-            inf->get_cb             = hpm_get_pm25;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case MODBUS:
-            inf->collection_time_cb = modbus_measurements_collection_time;
-            inf->init_cb            = modbus_measurements_init;
-            inf->get_cb             = modbus_measurements_get;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case CURRENT_CLAMP:
-            inf->collection_time_cb = cc_collection_time;
-            inf->init_cb            = cc_begin;
-            inf->get_cb             = cc_get;
-            inf->add_cb             = cc_add;
-            inf->del_cb             = cc_del;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case W1_PROBE:
-            inf->collection_time_cb = ds18b20_collection_time;
-            inf->init_cb            = ds18b20_measurements_init;
-            inf->get_cb             = ds18b20_measurements_collect;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_FLOAT;
-            break;
-        case HTU21D_TMP:
-            inf->collection_time_cb = htu21d_measurements_collection_time;
-            inf->init_cb            = htu21d_temp_measurements_init;
-            inf->get_cb             = htu21d_temp_measurements_get;
-            inf->iteration_cb       = htu21d_measurements_iteration;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case HTU21D_HUM:
-            inf->collection_time_cb = htu21d_measurements_collection_time;
-            inf->init_cb            = htu21d_humi_measurements_init;
-            inf->get_cb             = htu21d_humi_measurements_get;
-            inf->iteration_cb       = htu21d_measurements_iteration;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case BAT_MON:
-            inf->collection_time_cb = bat_collection_time;
-            inf->init_cb            = bat_begin;
-            inf->get_cb             = bat_get;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case PULSE_COUNT:
-            inf->collection_time_cb = pulsecount_collection_time;
-            inf->init_cb            = pulsecount_begin;
-            inf->get_cb             = pulsecount_get;
-            inf->acked_cb           = pulsecount_ack;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case LIGHT:
-            inf->collection_time_cb = veml7700_measurements_collection_time;
-            inf->init_cb            = veml7700_light_measurements_init;
-            inf->get_cb             = veml7700_light_measurements_get;
-            inf->iteration_cb       = veml7700_iteration;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case SOUND:
-            inf->collection_time_cb = sai_collection_time;
-            inf->init_cb            = sai_measurements_init;
-            inf->get_cb             = sai_measurements_get;
-            inf->iteration_cb       = sai_iteration_callback;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        default:
-            log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
-    }
-    return true;
-}
-
-
 void on_comms_sent_ack(bool ack)
 {
     if (!ack)
@@ -667,7 +544,7 @@ void on_comms_sent_ack(bool ack)
         if (!def->name[0])
             continue;
         measurements_inf_t inf;
-        if (!_measurements_get_inf(def, data, &inf))
+        if (!measurements_get_inf(def, data, &inf))
             continue;
 
         if (inf.acked_cb)
@@ -690,7 +567,7 @@ static bool _measurements_def_is_active(measurements_def_t* def)
 static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, data, &inf))
+    if (!measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
@@ -736,7 +613,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, data, &inf))
+    if (!measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
@@ -905,7 +782,7 @@ good_exit:
 static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, data, &inf))
+    if (!measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_collected++;
@@ -1073,7 +950,7 @@ bool measurements_add(measurements_def_t* measurements_def)
         memset(data, 0, sizeof(measurements_data_t));
         {
             measurements_inf_t inf;
-            if (!_measurements_get_inf(def, data, &inf))
+            if (!measurements_get_inf(def, data, &inf))
                 return false;
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
             if (inf.add_cb && def->interval)
@@ -1095,7 +972,7 @@ bool measurements_del(char* name)
             measurements_def_t*  def = &_measurements_arr.def[i];
             measurements_data_t* data = &_measurements_arr.data[i];
             measurements_inf_t inf;
-            if (!_measurements_get_inf(def, data, &inf))
+            if (!measurements_get_inf(def, data, &inf))
                 return false;
             if (inf.del_cb && def->interval)
                 inf.del_cb(def->name);
@@ -1118,7 +995,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
     }
 
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, data, &inf))
+    if (!measurements_get_inf(def, data, &inf))
         return false;
 
     if (def->interval)
@@ -1363,7 +1240,7 @@ void measurements_init(void)
             continue;
 
         measurements_inf_t inf;
-        if (!_measurements_get_inf(def, data, &inf))
+        if (!measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
         if (inf.add_cb && def->interval)
@@ -1385,40 +1262,6 @@ void measurements_init(void)
         log_error("Could not load measurements interval.");
         transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     }
-}
-
-
-void measurements_repopulate(void)
-{
-    measurements_def_t def;
-    measurements_setup_default(&def, MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_BATMON_NAME,          1,  5,  BAT_MON         );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
-    measurements_add(&def);
-    measurements_setup_default(&def, MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
-    measurements_add(&def);
 }
 
 
@@ -1501,7 +1344,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     }
 
     measurements_inf_t inf;
-    if (!_measurements_get_inf(def, data, &inf))
+    if (!measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Could not get measurement interface.");
         return false;

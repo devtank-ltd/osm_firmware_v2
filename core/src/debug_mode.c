@@ -113,7 +113,7 @@ static void _lw_send_msg(void)
 {
     measurements_reading_t val;
     val.v_i64 = 1;
-    _debug_mode_send_value(measurements_send_test()?MEASUREMENTS_SENSOR_STATE_SUCCESS:MEASUREMENTS_SENSOR_STATE_ERROR, "LORA", MEASUREMENTS_VALUE_TYPE_I64, &val);
+    _debug_mode_send_value(measurements_send_test(MEASUREMENTS_FW_VERSION)?MEASUREMENTS_SENSOR_STATE_SUCCESS:MEASUREMENTS_SENSOR_STATE_ERROR, "LORA", MEASUREMENTS_VALUE_TYPE_I64, &val);
 }
 
 
