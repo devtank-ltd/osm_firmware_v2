@@ -32,6 +32,7 @@ void persistent_init(void)
             persist_data.cc_configs[i].ext_max_mA = 100000;
             persist_data.cc_configs[i].int_max_mV = 50;
         }
+        persist_data_valid = true;
         return;
     }
 
