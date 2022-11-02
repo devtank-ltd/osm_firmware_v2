@@ -254,7 +254,7 @@ static void _cc_release_all(void)
 }
 
 
-measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _cc_get_collection_time(char* name, uint32_t* collection_time)
 {
     /**
     Could calculate how long it should take to get the results. For now use 2 seconds.
@@ -268,7 +268,7 @@ measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_
 }
 
 
-measurements_sensor_state_t cc_begin(char* name, bool in_isolation)
+static measurements_sensor_state_t _cc_begin(char* name, bool in_isolation)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
@@ -342,7 +342,7 @@ measurements_sensor_state_t cc_begin(char* name, bool in_isolation)
 }
 
 
-measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* value)
 {
     uint8_t index, active_index;
     if (!_cc_get_info(name, &index, &active_index, NULL))
@@ -514,14 +514,14 @@ bool cc_calibrate(void)
 
 bool cc_get_blocking(char* name, measurements_reading_t* value)
 {
-    if (cc_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
     if (!_cc_wait())
         return false;
-    bool r = (cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
+    bool r = (_cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
     _cc_release_all();
     return r;
 }
@@ -540,19 +540,19 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
@@ -561,17 +561,17 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
     if (!_cc_wait())
         return false;
     char name[MEASURE_NAME_NULLED_LEN] = {0};
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
@@ -586,7 +586,7 @@ bad_exit:
 }
 
 
-void  cc_enable(char* name, bool enabled)
+static void  _cc_enable(char* name, bool enabled)
 {
     uint8_t index_local;
     if (!_cc_get_index(&index_local, name))
@@ -620,6 +620,16 @@ void  cc_enable(char* name, bool enabled)
     }
 
     cc_set_active_clamps(clamps, len);
+}
+
+
+void cc_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _cc_get_collection_time;
+    inf->init_cb            = _cc_begin;
+    inf->get_cb             = _cc_get;
+    inf->enable_cb          = _cc_enable;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 

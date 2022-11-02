@@ -26,36 +26,24 @@
 
 static bool _debug_mode_enabled = false;
 
-static unsigned _debug_mode_modbus_waiting = 0;
-
 static bool _debug_mode_init_get_toggle = true;
 
 
-static bool _debug_modbus_init(modbus_reg_t * reg, void * userdata)
+
+static bool _debug_mode_init_iteration_cb(measurements_def_t* def, void *data)
 {
-    (void)userdata;
-    if (modbus_start_read(reg))
-        _debug_mode_modbus_waiting++;
+    measurements_inf_t inf;
+    if (!measurements_get_inf(def, NULL, &inf))
+        return false;
+    if ( inf.init_cb)
+        inf.init_cb(def->name, false);
     return true;
 }
 
 
 static void _debug_mode_init_iteration(void)
 {
-    htu21d_temp_measurements_init(MEASUREMENTS_HTU21D_TEMP, false);
-    htu21d_humi_measurements_init(MEASUREMENTS_HTU21D_HUMI, false);
-    hpm_init(MEASUREMENTS_PM25_NAME, false);
-    hpm_init(MEASUREMENTS_PM10_NAME, false);
-    ds18b20_measurements_init(MEASUREMENTS_W1_PROBE_NAME_1, false);
-    sai_measurements_init(MEASUREMENTS_SOUND_NAME, false);
-    veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME, false);
-    pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_1, false);
-    pulsecount_begin(MEASUREMENTS_PULSE_COUNT_NAME_2, false);
-    cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false);
-    cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false);
-    cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false);
-    if (!_debug_mode_modbus_waiting)
-        modbus_for_all_regs(_debug_modbus_init, NULL);
+    measurements_for_each(_debug_mode_init_iteration_cb, NULL);
 }
 
 
@@ -82,33 +70,6 @@ bad_exit:
 }
 
 
-static void _debug_mode_collect_sensor(char* name, measurements_value_type_t value_type, measurements_sensor_state_t (* function)(char* name, measurements_reading_t* value))
-{
-    measurements_reading_t value;
-    _debug_mode_send_value(function(name, &value), name, value_type, &value);
-}
-
-
-static bool _debug_modbus_get(modbus_reg_t * reg, void * userdata)
-{
-    (void)userdata;
-    measurements_reading_t value;
-    char name[MEASURE_NAME_NULLED_LEN] = {0};
-    if (modbus_reg_get_name(reg, name))
-    {
-        measurements_sensor_state_t r = modbus_measurements_get(name, &value);
-        if (r == MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        {
-            _debug_mode_send_value(r, name, MEASUREMENTS_VALUE_TYPE_I64, &value);
-            _debug_mode_modbus_waiting--;
-            if (!_debug_modbus_init(reg, userdata)) /*Start this one again,  marking it as not having a valid value*/
-                log_error("Failed to re-queue modbus reg %s", name);
-        }
-    }
-    return true;
-}
-
-
 static void _lw_send_msg(void)
 {
     measurements_reading_t val;
@@ -117,39 +78,45 @@ static void _lw_send_msg(void)
 }
 
 
+static bool _debug_mode_collect_iteration_cb(measurements_def_t* def, void * data)
+{
+    measurements_inf_t inf;
+    if (!measurements_get_inf(def, NULL, &inf))
+        return false;
+    measurements_reading_t value;
+    _debug_mode_send_value(inf.get_cb(def->name, &value), def->name, inf.value_type, &value);
+    return true;
+}
+
+
 static void _debug_mode_collect_iteration(void)
 {
-    _debug_mode_collect_sensor(MEASUREMENTS_HTU21D_TEMP, MEASUREMENTS_VALUE_TYPE_I64, htu21d_temp_measurements_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_HTU21D_HUMI, MEASUREMENTS_VALUE_TYPE_I64, htu21d_humi_measurements_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_PM25_NAME, MEASUREMENTS_VALUE_TYPE_I64, hpm_get_pm25);
-    _debug_mode_collect_sensor(MEASUREMENTS_PM10_NAME, MEASUREMENTS_VALUE_TYPE_I64, hpm_get_pm10);
-    _debug_mode_collect_sensor(MEASUREMENTS_W1_PROBE_NAME_1, MEASUREMENTS_VALUE_TYPE_FLOAT, ds18b20_measurements_collect);
-    _debug_mode_collect_sensor(MEASUREMENTS_SOUND_NAME, MEASUREMENTS_VALUE_TYPE_I64, sai_measurements_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_LIGHT_NAME, MEASUREMENTS_VALUE_TYPE_I64, veml7700_light_measurements_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_1, MEASUREMENTS_VALUE_TYPE_I64, pulsecount_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_PULSE_COUNT_NAME_2, MEASUREMENTS_VALUE_TYPE_I64, pulsecount_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASUREMENTS_VALUE_TYPE_I64, cc_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASUREMENTS_VALUE_TYPE_I64, cc_get);
-    _debug_mode_collect_sensor(MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASUREMENTS_VALUE_TYPE_I64, cc_get);
+    measurements_for_each(_debug_mode_collect_iteration_cb, NULL);
     can_impl_send_example();
     static int lw_counter = 0;
     if (lw_counter == 10)
     {
         _lw_send_msg();
         lw_counter = 0;
-        if (_debug_mode_modbus_waiting)
-            modbus_for_all_regs(_debug_modbus_get, NULL);
     }
     lw_counter++;
 }
 
 
+static bool _debug_mode_fast_iteration_cb(measurements_def_t* def, void * data)
+{
+    measurements_inf_t inf;
+    if (!measurements_get_inf(def, NULL, &inf))
+        return false;
+    if (inf.iteration_cb)
+        inf.iteration_cb(def->name);
+    return true;
+}
+
+
 static void _debug_mode_fast_iteration(void)
 {
-    htu21d_measurements_iteration(MEASUREMENTS_HTU21D_TEMP);
-    htu21d_measurements_iteration(MEASUREMENTS_HTU21D_HUMI);
-    sai_iteration_callback(MEASUREMENTS_SOUND_NAME);
-    veml7700_iteration(MEASUREMENTS_LIGHT_NAME);
+    measurements_for_each(_debug_mode_fast_iteration_cb, NULL);
 }
 
 

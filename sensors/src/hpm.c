@@ -246,7 +246,7 @@ void hpm_enable(bool enable)
 
 
 
-measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _hpm_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -257,7 +257,7 @@ measurements_sensor_state_t hpm_collection_time(char* name, uint32_t* collection
 }
 
 
-measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val)
+static measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_reading_t* val)
 {
     if (!val)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -274,7 +274,7 @@ measurements_sensor_state_t hpm_get_pm10(char* name, measurements_reading_t* val
 }
 
 
-measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val)
+static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_reading_t* val)
 {
     if (!val)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -291,8 +291,26 @@ measurements_sensor_state_t hpm_get_pm25(char* name, measurements_reading_t* val
 }
 
 
-measurements_sensor_state_t hpm_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
 {
     hpm_enable(true);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+void hpm_pm10_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _hpm_collection_time;
+    inf->init_cb            = _hpm_init;
+    inf->get_cb             = _hpm_get_pm10;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void hpm_pm25_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _hpm_collection_time;
+    inf->init_cb            = _hpm_init;
+    inf->get_cb             = _hpm_get_pm25;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }

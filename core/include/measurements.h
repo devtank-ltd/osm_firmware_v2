@@ -40,6 +40,7 @@ typedef struct
     void                            (* acked_cb)(char* name);                                       // Function to tell subsystem measurement was successfully sent.
     measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
     void                            (* enable_cb)(char* name, bool enabled);                        // Function to inform measurement if active or not.
+    measurements_value_type_t       value_type;
 } measurements_inf_t;
 
 
@@ -79,8 +80,9 @@ typedef struct
 } measurements_data_t;
 
 
-extern uint16_t measurements_num_measurements(void);
-extern char*    measurements_get_name(unsigned index);
+typedef bool (*measurements_for_each_cb_t)(measurements_def_t* def, void * data);
+
+extern bool     measurements_for_each(measurements_for_each_cb_t cb, void * data);
 
 extern void     measurements_print(void);
 

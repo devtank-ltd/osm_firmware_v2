@@ -17,7 +17,7 @@
 
 bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
-    if (!def || !data || !inf)
+    if (!def || !inf)
     {
         measurements_debug("Handed NULL pointer.");
         return false;
@@ -27,85 +27,26 @@ bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, m
     memset(inf, 0, sizeof(measurements_inf_t));
     switch(def->type)
     {
-        case FW_VERSION:
-            inf->get_cb             = fw_version_get;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_STR;
-            break;
-        case PM10:
-            inf->collection_time_cb = hpm_collection_time;
-            inf->init_cb            = hpm_init;
-            inf->get_cb             = hpm_get_pm10;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case PM25:
-            inf->collection_time_cb = hpm_collection_time;
-            inf->init_cb            = hpm_init;
-            inf->get_cb             = hpm_get_pm25;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case MODBUS:
-            inf->collection_time_cb = modbus_measurements_collection_time;
-            inf->init_cb            = modbus_measurements_init;
-            inf->get_cb             = modbus_measurements_get;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case CURRENT_CLAMP:
-            inf->collection_time_cb = cc_collection_time;
-            inf->init_cb            = cc_begin;
-            inf->get_cb             = cc_get;
-            inf->enable_cb          = cc_enable;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case W1_PROBE:
-            inf->collection_time_cb = ds18b20_collection_time;
-            inf->init_cb            = ds18b20_measurements_init;
-            inf->get_cb             = ds18b20_measurements_collect;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_FLOAT;
-            break;
-        case HTU21D_TMP:
-            inf->collection_time_cb = htu21d_measurements_collection_time;
-            inf->init_cb            = htu21d_temp_measurements_init;
-            inf->get_cb             = htu21d_temp_measurements_get;
-            inf->iteration_cb       = htu21d_measurements_iteration;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case HTU21D_HUM:
-            inf->collection_time_cb = htu21d_measurements_collection_time;
-            inf->init_cb            = htu21d_humi_measurements_init;
-            inf->get_cb             = htu21d_humi_measurements_get;
-            inf->iteration_cb       = htu21d_measurements_iteration;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case BAT_MON:
-            inf->collection_time_cb = bat_collection_time;
-            inf->init_cb            = bat_begin;
-            inf->get_cb             = bat_get;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case PULSE_COUNT:
-            inf->collection_time_cb = pulsecount_collection_time;
-            inf->init_cb            = pulsecount_begin;
-            inf->get_cb             = pulsecount_get;
-            inf->acked_cb           = pulsecount_ack;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case LIGHT:
-            inf->collection_time_cb = veml7700_measurements_collection_time;
-            inf->init_cb            = veml7700_light_measurements_init;
-            inf->get_cb             = veml7700_light_measurements_get;
-            inf->iteration_cb       = veml7700_iteration;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
-        case SOUND:
-            inf->collection_time_cb = sai_collection_time;
-            inf->init_cb            = sai_measurements_init;
-            inf->get_cb             = sai_measurements_get;
-            inf->iteration_cb       = sai_iteration_callback;
-            data->value_type        = MEASUREMENTS_VALUE_TYPE_I64;
-            break;
+        case FW_VERSION:    fw_version_inf_init(inf);  break;
+        case PM10:          hpm_pm10_inf_init(inf);    break;
+        case PM25:          hpm_pm25_inf_init(inf);    break;
+        case MODBUS:        modbus_inf_init(inf);      break;
+        case CURRENT_CLAMP: cc_inf_init(inf);          break;
+        case W1_PROBE:      ds18b20_inf_init(inf);     break;
+        case HTU21D_TMP:    htu21d_temp_inf_init(inf); break;
+        case HTU21D_HUM:    htu21d_humi_inf_init(inf); break;
+        case BAT_MON:       bat_inf_init(inf);         break;
+        case PULSE_COUNT:   pulsecount_inf_init(inf);  break;
+        case LIGHT:         veml7700_inf_init(inf);    break;
+        case SOUND:         sai_inf_init(inf);         break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
+            return false;
     }
+
+    if (data)
+        data->value_type = inf->value_type;
+
     return true;
 }
 

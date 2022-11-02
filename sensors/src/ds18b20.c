@@ -126,7 +126,7 @@ static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 }
 
 
-measurements_sensor_state_t ds18b20_measurements_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool in_isolation)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
@@ -142,7 +142,7 @@ measurements_sensor_state_t ds18b20_measurements_init(char* name, bool in_isolat
 }
 
 
-measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, measurements_reading_t* value)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
@@ -182,7 +182,7 @@ measurements_sensor_state_t ds18b20_measurements_collect(char* name, measurement
 }
 
 
-measurements_sensor_state_t ds18b20_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _ds18b20_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -190,6 +190,15 @@ measurements_sensor_state_t ds18b20_collection_time(char* name, uint32_t* collec
     }
     *collection_time = DS18B20_DEFAULT_COLLECTION_TIME_MS;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+void                         ds18b20_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _ds18b20_collection_time;
+    inf->init_cb            = _ds18b20_measurements_init;
+    inf->get_cb             = _ds18b20_measurements_collect;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 

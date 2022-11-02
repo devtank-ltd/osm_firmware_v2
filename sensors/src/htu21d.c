@@ -172,7 +172,7 @@ static bool _htu21d_humi_full(int32_t temp, uint16_t s_humi, int32_t* humi)
 }
 
 
-measurements_sensor_state_t htu21d_measurements_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _htu21d_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -199,7 +199,7 @@ static void _htu21d_iteration_loop_req_humi(void)
 }
 
 
-measurements_sensor_state_t htu21d_temp_measurements_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _htu21d_temp_measurements_init(char* name, bool in_isolation)
 {
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_TEMPERATURE)
     {
@@ -218,7 +218,7 @@ measurements_sensor_state_t htu21d_temp_measurements_init(char* name, bool in_is
 }
 
 
-measurements_sensor_state_t htu21d_humi_measurements_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _htu21d_humi_measurements_init(char* name, bool in_isolation)
 {
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_HUMIDITY)
     {
@@ -283,7 +283,7 @@ static bool _htu21d_iteration_loop_collect_humi(void)
 }
 
 
-measurements_sensor_state_t htu21d_measurements_iteration(char* name)
+static measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     // Both
@@ -357,7 +357,7 @@ bad_humi_exit:
 }
 
 
-measurements_sensor_state_t htu21d_temp_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _htu21d_temp_measurements_get(char* name, measurements_reading_t* value)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     _htu21d_state_machine.flags &= ~HTU21D_STATE_FLAG_TEMPERATURE;
@@ -381,7 +381,7 @@ measurements_sensor_state_t htu21d_temp_measurements_get(char* name, measurement
 }
 
 
-measurements_sensor_state_t htu21d_humi_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _htu21d_humi_measurements_get(char* name, measurements_reading_t* value)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     _htu21d_state_machine.flags &= ~HTU21D_STATE_FLAG_HUMIDITY;
@@ -402,6 +402,26 @@ measurements_sensor_state_t htu21d_humi_measurements_get(char* name, measurement
     }
     value->v_i64 = (int64_t)_htu21d_reading.humidity.value;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+void htu21d_temp_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _htu21d_measurements_collection_time;
+    inf->init_cb            = _htu21d_temp_measurements_init;
+    inf->get_cb             = _htu21d_temp_measurements_get;
+    inf->iteration_cb       = _htu21d_measurements_iteration;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void htu21d_humi_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _htu21d_measurements_collection_time;
+    inf->init_cb            = _htu21d_humi_measurements_init;
+    inf->get_cb             = _htu21d_humi_measurements_get;
+    inf->iteration_cb       = _htu21d_measurements_iteration;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 

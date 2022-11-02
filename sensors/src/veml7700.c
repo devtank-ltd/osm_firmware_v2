@@ -519,7 +519,7 @@ static bool _veml7700_iteration_off(void)
 }
 
 
-measurements_sensor_state_t veml7700_iteration(char* name)
+static measurements_sensor_state_t _veml7700_iteration(char* name)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -534,7 +534,7 @@ measurements_sensor_state_t veml7700_iteration(char* name)
 }
 
 
-measurements_sensor_state_t veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -545,7 +545,7 @@ measurements_sensor_state_t veml7700_measurements_collection_time(char* name, ui
 }
 
 
-measurements_sensor_state_t veml7700_light_measurements_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _veml7700_light_measurements_init(char* name, bool in_isolation)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -571,7 +571,7 @@ measurements_sensor_state_t veml7700_light_measurements_init(char* name, bool in
 }
 
 
-measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _veml7700_light_measurements_get(char* name, measurements_reading_t* value)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -598,4 +598,14 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurem
 
 void veml7700_init(void)
 {
+}
+
+
+void veml7700_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _veml7700_measurements_collection_time;
+    inf->init_cb            = _veml7700_light_measurements_init;
+    inf->get_cb             = _veml7700_light_measurements_get;
+    inf->iteration_cb       = _veml7700_iteration;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }

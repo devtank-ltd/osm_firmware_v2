@@ -107,7 +107,7 @@ static uint16_t _bat_conv(uint32_t raw)
 }
 
 
-measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _bat_collection_time_cb(char* name, uint32_t* collection_time)
 {
     /**
     Could calculate how long it should take to get the results. For now use 2 seconds.
@@ -121,7 +121,7 @@ measurements_sensor_state_t bat_collection_time(char* name, uint32_t* collection
 }
 
 
-measurements_sensor_state_t bat_begin(char* name, bool in_isolation)
+static measurements_sensor_state_t _bat_begin(char* name, bool in_isolation)
 {
     if (_bat_running && _bat_check_request())
     {
@@ -147,7 +147,7 @@ measurements_sensor_state_t bat_begin(char* name, bool in_isolation)
 }
 
 
-measurements_sensor_state_t bat_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* value)
 {
     if (!_bat_running)
     {
@@ -194,7 +194,7 @@ measurements_sensor_state_t bat_get(char* name, measurements_reading_t* value)
 
 bool bat_get_blocking(char* name, measurements_reading_t* value)
 {
-    if (bat_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_bat_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Could not start BAT.");
         return false;
@@ -204,7 +204,7 @@ bool bat_get_blocking(char* name, measurements_reading_t* value)
         adc_debug("BAT Wait failed.");
         return false;
     }
-    if (!bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (!_bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Failed get BAT.");
         return false;
@@ -221,7 +221,7 @@ static bool _bat_get_on_battery(bool* on_battery)
         return false;
     }
 
-    measurements_sensor_state_t resp = bat_begin(NULL, true);
+    measurements_sensor_state_t resp = _bat_begin(NULL, true);
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
@@ -283,4 +283,13 @@ bool bat_on_battery(bool* on_battery)
         *on_battery = true;
     }
     return true;
+}
+
+
+void                         bat_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _bat_collection_time_cb;
+    inf->init_cb            = _bat_begin;
+    inf->get_cb             = _bat_get;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }

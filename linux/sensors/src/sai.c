@@ -16,25 +16,35 @@ void sai_print_coeffs(void)
 {
 }
 
-measurements_sensor_state_t sai_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _sai_collection_time(char* name, uint32_t* collection_time)
 {
     return MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-measurements_sensor_state_t sai_iteration_callback(char* name)
+static measurements_sensor_state_t _sai_iteration_callback(char* name)
 {
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-measurements_sensor_state_t sai_measurements_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _sai_measurements_init(char* name, bool in_isolation)
 {
     return MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-measurements_sensor_state_t sai_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _sai_measurements_get(char* name, measurements_reading_t* value)
 {
     return MEASUREMENTS_SENSOR_STATE_ERROR;
+}
+
+
+void  sai_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _sai_collection_time;
+    inf->init_cb            = _sai_measurements_init;
+    inf->get_cb             = _sai_measurements_get;
+    inf->iteration_cb       = _sai_iteration_callback;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }

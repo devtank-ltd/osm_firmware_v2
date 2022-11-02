@@ -10,7 +10,7 @@
 #define MODBUS_COLLECTION_MS 20000
 
 
-measurements_sensor_state_t modbus_measurements_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _modbus_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -20,7 +20,7 @@ measurements_sensor_state_t modbus_measurements_collection_time(char* name, uint
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
-measurements_sensor_state_t modbus_measurements_init(char* name, bool in_isolation)
+static measurements_sensor_state_t _modbus_measurements_init(char* name, bool in_isolation)
 {
     if (in_isolation)
     {
@@ -38,7 +38,7 @@ measurements_sensor_state_t modbus_measurements_init(char* name, bool in_isolati
 }
 
 
-measurements_sensor_state_t modbus_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _modbus_measurements_get(char* name, measurements_reading_t* value)
 {
     if (!value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -89,6 +89,15 @@ measurements_sensor_state_t modbus_measurements_get(char* name, measurements_rea
         default: break;
     }
    return MEASUREMENTS_SENSOR_STATE_ERROR;
+}
+
+
+void modbus_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _modbus_measurements_collection_time;
+    inf->init_cb            = _modbus_measurements_init;
+    inf->get_cb             = _modbus_measurements_get;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 

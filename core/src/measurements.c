@@ -540,11 +540,10 @@ void on_comms_sent_ack(bool ack)
     for (unsigned i = _measurements_chunk_prev_start_pos; i < _measurements_chunk_start_pos; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
-        measurements_data_t* data = &_measurements_arr.data[i];
         if (!def->name[0])
             continue;
         measurements_inf_t inf;
-        if (!measurements_get_inf(def, data, &inf))
+        if (!measurements_get_inf(def, NULL, &inf))
             continue;
 
         if (inf.acked_cb)
@@ -899,21 +898,19 @@ static void _measurements_sample(void)
 }
 
 
-uint16_t measurements_num_measurements(void)
+bool     measurements_for_each(measurements_for_each_cb_t cb, void * data)
 {
-    uint16_t count = 0;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
 
-        // Breakout if the interval is 0 or has no name
         if (def->interval == 0 || !def->name[0])
             continue;
 
-        count++;
+        if (!cb(def, data))
+            return false;
     }
-
-    return count;
+    return true;
 }
 
 

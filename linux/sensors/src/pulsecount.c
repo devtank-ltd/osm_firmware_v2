@@ -23,7 +23,7 @@ void pulsecount_log()
 }
 
 
-measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _pulsecount_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -34,18 +34,28 @@ measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* col
 }
 
 
-measurements_sensor_state_t pulsecount_begin(char* name, bool in_isolation)
+static measurements_sensor_state_t _pulsecount_begin(char* name, bool in_isolation)
 {
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-measurements_sensor_state_t pulsecount_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _pulsecount_get(char* name, measurements_reading_t* value)
 {
     return MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-void pulsecount_ack(char* name)
+static void _pulsecount_ack(char* name)
 {
+}
+
+
+void     pulsecount_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _pulsecount_collection_time;
+    inf->init_cb            = _pulsecount_begin;
+    inf->get_cb             = _pulsecount_get;
+    inf->acked_cb           = _pulsecount_ack;
+    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
 }
