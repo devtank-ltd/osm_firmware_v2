@@ -126,6 +126,9 @@ class test_framework_t(object):
         if os.path.exists(self.DEFAULT_DEBUG_PTY_PATH):
             os.unlink(self.DEFAULT_DEBUG_PTY_PATH)
 
+        os.environ["AUTO_MEAS"] = "0"
+        os.environ["MEAS_INTERVAL"] = "1"
+
         self._start_osm_env()
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False

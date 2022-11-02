@@ -774,7 +774,7 @@ class config_gui_window_t(Tk):
 
     def _load_debug_meas(self, frame):
         hdrs = [('Measurement', 'Value')]
-        mmnts = self._dev.measurements('measurements')
+        mmnts = self._dev.measurements()
         meas = []
         self._dbg_sec_fr = Frame(self._dbg_canv)
         self._dbg_sec_fr.grid(column=0, row=0)

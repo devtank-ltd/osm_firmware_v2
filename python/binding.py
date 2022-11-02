@@ -123,7 +123,18 @@ class property_t(dev_child_t):
 
 
 class measurement_t(property_t):
-    pass
+    def __init__(self, parent, name: str, interval:int, samples:int, is_writable: bool = False, timeout: float = 1.0):
+        super().__init__(parent, name, None, f"get_meas {nane}", self._parse, is_writable, timeout)
+        self._interval = interval
+        self._samples = samples
+
+    def _parse(self, r_str:str):
+        if "ERROR" in r_str:
+            return False
+        r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
+        if r:
+            return float(r[-1])
+        return r_str
 
 
 class modbus_reg_t(measurement_t):
@@ -317,18 +328,11 @@ class dev_t(dev_base_t):
         self._io_count = int(line.split()[-1])
         self._children = {
             "ios"       : ios_t(self, self._io_count),
-            "w1"        : measurement_t(self, "One Wire"           , float , "get_meas TMP2"  , parse_float ),
-            "cc"        : measurement_t(self, "Current Clamp"      , int   , "get_meas CC1"   , parse_float ),
-            "pm10"      : measurement_t(self, "PM10"               , int   , "get_meas PM10"  , parse_float ),
-            "pm25"      : measurement_t(self, "PM2.5"              , int   , "get_meas PM25"  , parse_float ),
-            "temp"      : measurement_t(self, "Temperature"        , float , "get_meas TEMP"  , parse_float ),
-            "humi"      : measurement_t(self, "Humidity"           , float , "get_meas HUMI"  , parse_float ),
-            "light"     : measurement_t(self, "Light"              , float , "get_meas LGHT"  , parse_float , False, 10),
             "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
             "version"   : property_t(self,    "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
             "serial_num": property_t(self,    "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
-        self.update_modbus_registers()
+        self.update_measurements()
 
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
@@ -443,6 +447,23 @@ class dev_t(dev_base_t):
             meas_list = [line.replace("\t\t", "\t").split("\t") for line in r]
         return meas_list
 
+    def update_measurements(self):
+        new_chldren = {}
+        for key, child in self._children.items():
+            if not isinstance(child, measurement_t):
+                new_chldren[key] = child
+        self._children = new_chldren
+        r = self.do_cmd_multi('measurements')
+        assert r
+        r = r[2:]
+        for line in r:
+            name, interval, sample_count = line.split()
+            interval=int(interval.split('x')[0])
+            sample_count=int(sample_count)
+            self._children[name] = measurement_t(name, interval, sample_count)
+
+
+
     def measurements_enable(self, value):
         self.do_cmd("meas_enable %s" % ("1" if value else "0"))
 
@@ -474,17 +495,6 @@ class dev_t(dev_base_t):
             pass
 
         return mb_bus_t(config=bus_config, devices=[mb_dev_t(**dev) for dev in devs])
-
-    def update_modbus_registers(self):
-        new_chldren = {}
-        for key, child in self._children.items():
-            if not isinstance(child, modbus_reg_t):
-                new_chldren[key] = child
-        self._children = new_chldren
-        mb_root = self.get_modbus()
-        for device in mb_root.devices:
-            for reg in device.regs:
-                self._children[reg.handle] = reg
 
     def get_io(self, index: int) -> bool:
         line = self.do_cmd("io %u" % index)
