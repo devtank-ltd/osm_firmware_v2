@@ -623,6 +623,13 @@ void platform_start(void)
         persist_set_mins_interval(mins);
         transmit_interval = mins;
     }
+    char * auto_meas = getenv("AUTO_MEAS");
+    if (auto_meas)
+    {
+        unsigned auto_meas_int = strtoul(auto_meas, NULL, 10);
+        measurements_enabled = (auto_meas_int > 0);
+        linux_port_debug("Auto Measurements: %u", auto_meas_int);
+    }
 }
 
 
