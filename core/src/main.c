@@ -17,18 +17,6 @@
 #include "measurements.h"
 #include "debug_mode.h"
 
-#include "pulsecount.h"
-#include "sai.h"
-#include "hpm.h"
-#include "modbus.h"
-#include "timers.h"
-#include "htu21d.h"
-#include "veml7700.h"
-#include "cc.h"
-#include "can_impl.h"
-#include "ds18b20.h"
-#include "version.h"
-
 
 #define SLOW_FLASHING_TIME_SEC              3000
 #define NORMAL_FLASHING_TIME_SEC            1000
@@ -49,20 +37,11 @@ int main(void)
     log_sys_debug("Version : %s", GIT_VERSION);
 
     persistent_init();
-    timers_init();
     log_init();
     cmds_init();
-    ios_init();
-    sai_init();
-    adcs_init();
-    cc_init();
-    htu21d_init();
-    veml7700_init();
-    ds18b20_temp_init();
-    sai_init();
-    pulsecount_init();
-    modbus_init();
-    can_impl_init();
+
+    sensors_init();
+
     comms_init();
 
     platform_watchdog_init(IWDG_NORMAL_TIME_MS);

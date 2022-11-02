@@ -1,6 +1,10 @@
 #include <string.h>
 
 #include "measurements.h"
+#include "timers.h"
+#include "io.h"
+#include "adcs.h"
+#include "can_impl.h"
 #include "log.h"
 #include "config.h"
 #include "hpm.h"
@@ -14,6 +18,22 @@
 #include "sai.h"
 #include "fw.h"
 
+
+void sensors_init(void)
+{
+    timers_init();
+    ios_init();
+    sai_init();
+    adcs_init();
+    cc_init();
+    htu21d_init();
+    veml7700_init();
+    ds18b20_temp_init();
+    sai_init();
+    pulsecount_init();
+    modbus_init();
+    can_impl_init();
+}
 
 bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
