@@ -503,8 +503,8 @@ class dev_t(dev_base_t):
         debug_print("No response start found.")
         return None
 
-    def measurements(self, cmd):
-        r = self.do_cmd_multi(cmd)
+    def measurements(self):
+        r = self.do_cmd_multi("measurements")
         meas_list = []
         if r:
             r = r[2:]

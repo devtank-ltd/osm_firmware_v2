@@ -879,7 +879,7 @@ class config_gui_window_t(Tk):
 
     def _load_headers(self, window, idy, get_mins):
         log_func("Getting measurements")
-        self._sens_meas = self._dev.measurements("measurements")
+        self._sens_meas = self._dev.measurements()
         log_func("Got measurements")
         if idy == "mb":
             tablist = [('Device', 'Name', 'Hex Address',
