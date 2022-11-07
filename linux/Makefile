@@ -96,7 +96,7 @@ cppcheck:
 	cppcheck --enable=all --std=c11 --inline-suppr `find core -name "*.[ch]"` `find sensors -name "*.[ch]"`  -I core/include -I sensors/include
 
 update_db: $(SQLITE_DB)
-	sqlite3 $< "UPDATE measurements SET reference=\"$(shell echo "ibase=16; $(GIT_SHA1)"|bc)\" WHERE handle = \"FW\";"
+	sqlite3 $< "UPDATE measurements SET reference=\"$(shell echo "ibase=16; $(GIT_SHA1)" | awk '{printf("%s %s\n", $$1, toupper($$2))}' |bc)\" WHERE handle = \"FW\";"
 
 test: default update_db
 	mkdir -p /tmp/osm/
