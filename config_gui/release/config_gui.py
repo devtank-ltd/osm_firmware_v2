@@ -144,8 +144,8 @@ class config_gui_window_t(Tk):
     def __init__(self):
         super().__init__()
         signal.signal(signal.SIGINT, handle_exit)
-        self.db = modb_database_t()
-        self._modb_funcs = modbus_funcs_t()
+        self.db = modb_database_t(modbus_db.find_path())
+        self._modb_funcs = modbus_funcs_t(self.db)
         self._connected = False
         self._changes = False
         self._widg_del = False
@@ -2125,7 +2125,7 @@ class config_gui_window_t(Tk):
                     curr_regs = []
                     for dev in self._modbus.devices:
                         for reg in dev.regs:
-                            curr_regs += [ reg.handle ]
+                            curr_regs += [ reg.name ]
                     for reg in regs:
                         unit_id, bytes_fmt, hex_addr, func_type, \
                             data_type, reg_name, dev_name = reg

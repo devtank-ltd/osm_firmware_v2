@@ -16,8 +16,8 @@ GET_TMP_N = modbus_db.GET_TMP_N
 PATH = find_path()
 
 class modbus_funcs_t():
-    def __init__(self):
-        self.db = modb_database_t()
+    def __init__(self, db):
+        self.db = db
 
     def revert_mb(self):
         # clear the yaml files from previous sessions

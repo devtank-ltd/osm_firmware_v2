@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import math
 import time
 import errno
 import subprocess
@@ -18,6 +19,10 @@ import modbus_server as modbus
 import w1_server as w1
 import hpm_virtual as hpm
 import basetypes
+
+sys.path.append("../config_gui/release/")
+
+import modbus_db
 
 
 class test_framework_t(object):
@@ -51,6 +56,8 @@ class test_framework_t(object):
 
         self._done              = False
 
+        self._db                = modbus_db.modb_database_t(modbus_db.find_path() + "/../config_gui/release")
+
     def __enter__(self):
         return self
 
@@ -73,7 +80,9 @@ class test_framework_t(object):
                 return False
         return True
 
-    def _threshold_check(self, desc, value, ref, tolerance):
+    def _threshold_check(self, desc, value, ref, tolerance, is_hex=False):
+        if is_hex:
+            value = int(str(round(float(value))), 16)
         if isinstance(value, float) or isinstance(value, int):
             passed = abs(float(value) - float(ref)) <= float(tolerance)
         else:
@@ -119,6 +128,32 @@ class test_framework_t(object):
         if not self._spawn_hpm(self.DEFAULT_HPM_PTY_PATH):
             return False
 
+    def _get_active_measurements(self) -> list:
+        actives = []
+        for measurement in self._vosm_conn.measurements():
+            if len(measurement) != 3:
+                continue
+            name, interval_txt, sample_count_txt = measurement
+            interval = int(interval_txt.split("x")[0])
+            sample_count = int(sample_count_txt)
+            if interval and sample_count:
+                actives.append(name)
+        return actives
+
+    def _get_measurement_info(self, measurement_handle):
+        self._logger.debug(f"DB RETRIEVE MEASUREMENT '{measurement_handle}'...")
+        measurement_obj = getattr(self._vosm_conn, measurement_handle)
+        resp = self._db.get_measurement_info(measurement_handle)
+        if resp is None:
+            self._logger.debug(f"DB '{measurement_handle}' IS NOT REGULAR, CHECK MODBUS...")
+            resp = self._db.get_modbus_measurement_info(measurement_handle)
+            if resp is None:
+                self._logger.debug(f"DB NO DATA FOR '{measurement_handle}'")
+                return (measurement_handle, measurement_obj, 0, 0)
+        description, ref, threshold = resp
+        data = (description, measurement_obj, ref, threshold)
+        self._logger.debug(f"DB GOT MEASUREMENT '{measurement_handle}: '{data}'")
+        return data
 
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
@@ -143,16 +178,10 @@ class test_framework_t(object):
             modbus_reg_t(self._vosm_conn, "AP2" , 0x12, 4, "F" )
             ])
         passed = True
-        passed &= self._threshold_check("Temperature",        self._vosm_conn.TEMP.value, 2000,  500)
-        passed &= self._threshold_check("Humidity",           self._vosm_conn.HUMI.value, 5000, 1000)
-        passed &= self._threshold_check("Light",              self._vosm_conn.LGHT.value, 10, 10)
-        passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
-        passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
-        passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
-        passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
-        passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.TMP2.value, 25.0625, 0.01)
-        passed &= self._threshold_check("PM2.5",              self._vosm_conn.PM25.value, 15, 0)
-        passed &= self._threshold_check("PM10",               self._vosm_conn.PM10.value, 25, 0)
+
+        for active in self._get_active_measurements():
+            description, measurement_obj, ref, threshold = self._get_measurement_info(active)
+            passed &= self._threshold_check(description, getattr(measurement_obj, "value"), ref,  threshold, is_hex=active=="FW")
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)

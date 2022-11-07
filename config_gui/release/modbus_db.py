@@ -87,6 +87,15 @@ CREATE_TEMP_REG_TABLE = ''' CREATE TABLE IF NOT EXISTS templateRegister
                                 FOREIGN KEY (register_id) REFERENCES registers (register_id)
                             )'''
 
+CREATE_MEASUREMENT_TABLE = ''' CREATE TABLE IF NOT EXISTS measurements
+                            (
+                                measurement_id INTEGER PRIMARY KEY,
+                                handle VARCHAR(4) NOT NULL UNIQUE,
+                                description VARCHAR(255),
+                                reference FLOAT NOT NULL,
+                                threshold FLOAT NOT NULL
+                            )'''
+
 
 INS_TMP_REG = lambda tmp_id, reg_id : '''INSERT INTO templateRegister (template_id, register_id)
                                             VALUES (%u, %u)''' % (tmp_id, reg_id)
@@ -167,15 +176,20 @@ GET_HEX_REG = lambda hex: "SELECT register_id FROM registers WHERE hex_address =
 GET_TMP_N = "SELECT template_name FROM templates"
 
 GET_REG_DESC = lambda reg: "SELECT reg_desc FROM registers WHERE reg_name = '%s'" % reg
+
+GET_MEASUREMENT_INFO = "SELECT description, reference, threshold FROM measurements WHERE handle = ?"
+
+GET_MODBUS_MEASUREMENT_INFO = "SELECT reg_desc, reference, threshold FROM registers WHERE reg_name = ?"
+
+
 def find_path():
     PATH = os.environ.get("_MEIPASS2",os.path.abspath("."))
     return PATH
 
-PATH=find_path()
-class modb_database_t():
-    def __init__(self):
-        self.conn = sqlite3.connect(
-            PATH + '/config_database/modbus_templates', check_same_thread=False)
+class modb_database_t(object):
+    def __init__(self, path):
+        self.path = path
+        self.conn = sqlite3.connect(path + '/config_database/modbus_templates', check_same_thread=False)
         self.cur = self.conn.cursor()
 
     def get_reg_ids(self, hex_addr):
@@ -262,7 +276,7 @@ class modb_database_t():
 
     def get_regs(self, chosen_template):
         results = []
-        with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
+        with open(self.path + '/yaml_files/modbus_data.yaml', 'r') as f:
             document = yaml.full_load(f)
             for doc in document:
                 register = doc['registers'][0]
@@ -289,3 +303,17 @@ class modb_database_t():
         for row in data:
             results.append(row)
         return results
+
+    def get_measurement_info(self, handle):
+        with self.conn as conn:
+            data = conn.execute(GET_MEASUREMENT_INFO, (str(handle),))
+        return data.fetchone()
+
+    def get_modbus_measurement_info(self, handle):
+        with self.conn as conn:
+            data = conn.execute(GET_MODBUS_MEASUREMENT_INFO, (str(handle),))
+        return data.fetchone()
+
+if __name__ == "__main__":
+    db = modb_database_t(modbus_db.find_path())
+    print(db.get_measurement_info("HUMI"))

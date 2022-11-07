@@ -25,6 +25,9 @@ LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $
 LINK_FLAGS += -lgcov --coverage -pthread -lutil
 
 
+SQLITE_DB = ../config_gui/release/config_database/modbus_templates
+
+
 BUILD_DIR := build
 
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
@@ -92,13 +95,15 @@ clean:
 cppcheck:
 	cppcheck --enable=all --std=c11 --inline-suppr `find core -name "*.[ch]"` `find sensors -name "*.[ch]"`  -I core/include -I sensors/include
 
+update_db: $(SQLITE_DB)
+	sqlite3 $< "UPDATE measurements SET reference=\"$(shell echo "ibase=16; $(GIT_SHA1)"|bc)\" WHERE handle = \"FW\";"
 
-test: default
+test: default update_db
 	mkdir -p /tmp/osm/
 	../python/osm_test.py
 
 
-coverage: default
+coverage: default update_db
 	lcov --zerocounters -d $(BUILD_DIR)/
 	lcov --capture --initial -d $(BUILD_DIR)/ --output-file $(BUILD_DIR)/coverage.info
 	mkdir -p /tmp/osm/
@@ -109,12 +114,12 @@ coverage: default
 	sensible-browser $(BUILD_DIR)/coverage/index.html
 
 
-run: default
+run: default update_db
 	mkdir -p /tmp/osm/
 	../python/osm_test.py --run
 
 
-soak: default
+soak: default update_db
 	loop=0; while [ "$$?" = "0" ]; do loop=$$(($$loop + 1));make test; done; date; echo "Loops:" $$loop
 
 
