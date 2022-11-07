@@ -124,7 +124,7 @@ class property_t(dev_child_t):
 
 class measurement_t(property_t):
     def __init__(self, parent, name: str, interval:int, samples:int, is_writable: bool = False, timeout: float = 1.0):
-        super().__init__(parent, name, None, f"get_meas {nane}", self._parse, is_writable, timeout)
+        super().__init__(parent, name, None, f"get_meas {name}", self._parse, is_writable, timeout)
         self._interval = interval
         self._samples = samples
 
@@ -138,12 +138,11 @@ class measurement_t(property_t):
 
 
 class modbus_reg_t(measurement_t):
-    def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, handle: str):
-        super().__init__(parent, name, float, f"get_meas {handle}", parse_float, False, 2.0)
+    def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, interval: int = 1, samples: int = 1, timeout: float = 2.0):
+        super().__init__(parent, name, interval, samples, is_writable = False, timeout = timeout)
         self.address = address
         self.func = func
         self.mb_type_ = mb_type_
-        self.handle = handle
 
     def __str__(self):
         return f'{str(self.name)}, {str(self.address)}, {str(self.mb_type_)}, {str(self.func)}'
@@ -460,7 +459,7 @@ class dev_t(dev_base_t):
             name, interval, sample_count = line.split()
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
-            self._children[name] = measurement_t(name, interval, sample_count)
+            self._children[name] = measurement_t(self, name, interval, sample_count)
 
 
 
@@ -489,7 +488,7 @@ class dev_t(dev_base_t):
                     reg = line.split()[3:]
                     name = reg[2].strip('"')
                     reg = modbus_reg_t(self, name=name, address=int(
-                        reg[0][2:], 16), mb_type_=reg[-1], func=int(reg[1][3:4]), handle=name)
+                        reg[0][2:], 16), mb_type_=reg[-1], func=int(reg[1][3:4]))
                     dev["regs"] += [reg]
         else:
             pass
@@ -525,8 +524,8 @@ class dev_t(dev_base_t):
             self._log("Registers should be an object of register")
             return False
         r = self.do_cmd(
-            f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
-        self._children[reg.handle] = reg
+            f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.name}")
+        self._children[reg.name] = reg
         return "Added modbus reg" in r
 
     def setup_modbus(self, is_bin=False, baudrate=9600, bits=8, parity='N', stopbits=1):
@@ -539,7 +538,7 @@ class dev_t(dev_base_t):
             return False
         for reg in regs:
             self.modbus_reg_add(slave_id, reg)
-            self._children[reg.handle] = reg
+            self._children[reg.name] = reg
         return True
 
     def modbus_dev_del(self, device: str):
