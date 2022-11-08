@@ -38,7 +38,6 @@
 #define MAX_MODBUS_PACKET_SIZE    127
 
 static modbus_bus_t * modbus_bus = NULL;
-static modbus_dev_t * modbus_devices = NULL;
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
 static uint8_t tx_modbuspacket[10];
@@ -723,24 +722,21 @@ void modbus_init(void)
 
     modbus_devices = modbus_bus->modbus_devices;
 
-    if (modbus_bus->version == MODBUS_BLOB_VERSION &&
-        modbus_bus->max_dev_num == MODBUS_MAX_DEV      &&
-        modbus_bus->max_reg_num == MODBUS_DEV_REGS)
+    if (modbus_bus->version == MODBUS_BLOB_VERSION)
     {
         modbus_debug("Loaded modbus defs");
     }
     else
     {
         modbus_debug("Failed to load modbus defs");
-        memset(modbus_devices, 0, sizeof(modbus_dev_t) * MODBUS_MAX_DEV);
+        memset(modbus_bus, 0, sizeof(modbus_bus_t)*2);
         modbus_bus->version = MODBUS_BLOB_VERSION;
-        modbus_bus->max_dev_num = MODBUS_MAX_DEV;
-        modbus_bus->max_reg_num = MODBUS_DEV_REGS;
         modbus_bus->baudrate    = MODBUS_SPEED;
         modbus_bus->databits    = MODBUS_DATABITS;
         modbus_bus->parity      = MODBUS_PARITY;
         modbus_bus->stopbits    = MODBUS_STOP;
         modbus_bus->binary_protocol = false;
+        modbus_bus->free_offset = ((uintptr_t)&modbus_bus[1]) - ((uintptr_t)modbus_bus);
     }
 
     modbus_setup(modbus_bus->baudrate,

@@ -45,9 +45,7 @@
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
-#define MODBUS_BLOB_VERSION 1
-#define MODBUS_MAX_DEV 4
-#define MODBUS_DEV_REGS 16
+#define MODBUS_BLOB_VERSION 2
 
 #define ALIGN_TO(_x, _y) ((_x + _y -1 ) & ~(_y - 1)) ///< Align one number to another, for instance 16 for optimial addressing.
 #define ALIGN_16(_x) ALIGN_TO(_x, 16)                ///< Align given number to 16.

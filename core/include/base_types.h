@@ -98,23 +98,23 @@ typedef enum
 
 typedef enum
 {
-    MODBUS_BYTE_ORDER_MSB,
-    MODBUS_BYTE_ORDER_LSB,
+    MODBUS_BYTE_ORDER_MSB = 0,
+    MODBUS_BYTE_ORDER_LSB = 1,
 } modbus_byte_orders_t;
 
 
 typedef enum
 {
-    MODBUS_WORD_ORDER_MSW,
-    MODBUS_WORD_ORDER_LSW,
+    MODBUS_WORD_ORDER_MSW = 0,
+    MODBUS_WORD_ORDER_LSW = 1,
 } modbus_word_orders_t;
 
 
 typedef enum
 {
-    MB_REG_INVALID,
-    MB_REG_WAITING,
-    MB_REG_READY
+    MB_REG_INVALID = 0,
+    MB_REG_WAITING = 1,
+    MB_REG_READY   = 2
 } modbus_reg_state_t; 
 
 
@@ -123,9 +123,10 @@ typedef struct
     char              name[MODBUS_NAME_LEN];
     uint32_t          value_data;
     uint8_t           type; /*modbus_reg_type_t*/
-    uint8_t           func;
+    uint8_t           func:4;
+    uint8_t           value_state:4; /*modbus_reg_state_t*/
     uint16_t          reg_addr;
-    uint32_t          value_state; /*modbus_reg_state_t*/
+    uint32_t          next_reg_offset;
 } __attribute__((__packed__)) modbus_reg_t;
 
 
@@ -135,24 +136,29 @@ typedef struct
     uint8_t        slave_id;
     uint8_t        byte_order; /* modbus_byte_orders_t */
     uint8_t        word_order; /* modbus_word_orders_t */
-    uint8_t        _; /* pad.*/
-    modbus_reg_t   regs[MODBUS_DEV_REGS];
+    uint8_t        reg_count;
+    uint32_t       first_reg_offset;
+    uint32_t       next_dev_offset;
 } __attribute__((__packed__)) modbus_dev_t;
-
 
 typedef struct
 {
-    uint8_t version;
-    uint8_t max_dev_num;
-    uint8_t max_reg_num;
-    uint8_t _;
+    uint64_t _;
     uint32_t __;
-    uint32_t baudrate;
+    uint32_t next_free_offset;
+} __attribute__((__packed__)) modbus_free_t;
+
+typedef struct
+{
+    uint8_t  version;
     uint8_t  binary_protocol; /* BIN or RTU */
-    uint8_t  databits;        /* 8? */
-    uint8_t  stopbits;        /* uart_stop_bits_t */
-    uint8_t  parity;          /* uart_parity_t */
-    modbus_dev_t            modbus_devices[MODBUS_MAX_DEV];
+    uint8_t  databits:4;        /* 8? */
+    uint8_t  stopbits:2;        /* uart_stop_bits_t */
+    uint8_t  parity:2;          /* uart_parity_t */
+    uint8_t  dev_count;
+    uint32_t baudrate;
+    uint32_t dev_offset;
+    uint32_t free_offset;
 } __attribute__((__packed__)) modbus_bus_t;
 
 
