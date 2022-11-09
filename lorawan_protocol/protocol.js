@@ -175,7 +175,7 @@ function Decode(fPort, bytes, variables)
 
     var protocol_version = bytes[pos++];
 
-    if (protocol_version != 1 || protocol_version != 2)
+    if (protocol_version != 1 && protocol_version != 2)
     {
         return obj;
     }
