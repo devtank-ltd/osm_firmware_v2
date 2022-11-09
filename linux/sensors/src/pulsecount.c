@@ -51,11 +51,17 @@ static void _pulsecount_ack(char* name)
 }
 
 
+static measurements_value_type_t _pulsecount_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
 void     pulsecount_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _pulsecount_collection_time;
     inf->init_cb            = _pulsecount_begin;
     inf->get_cb             = _pulsecount_get;
     inf->acked_cb           = _pulsecount_ack;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _pulsecount_value_type;
 }

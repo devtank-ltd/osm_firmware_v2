@@ -84,7 +84,7 @@ static bool _debug_mode_collect_iteration_cb(measurements_def_t* def, void * dat
     if (!measurements_get_inf(def, NULL, &inf))
         return false;
     measurements_reading_t value;
-    _debug_mode_send_value(inf.get_cb(def->name, &value), def->name, inf.value_type, &value);
+    _debug_mode_send_value(inf.get_cb(def->name, &value), def->name, inf.value_type_cb(def->name), &value);
     return true;
 }
 

@@ -601,11 +601,17 @@ void veml7700_init(void)
 }
 
 
+static measurements_value_type_t _veml7700_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
 void veml7700_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _veml7700_measurements_collection_time;
     inf->init_cb            = _veml7700_light_measurements_init;
     inf->get_cb             = _veml7700_light_measurements_get;
     inf->iteration_cb       = _veml7700_iteration;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _veml7700_value_type;
 }

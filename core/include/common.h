@@ -28,3 +28,4 @@ extern bool     u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, ui
 extern bool     u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2);
 extern void     spin_blocking_ms(uint32_t ms);
 extern bool     main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata);
+extern int32_t  to_f32_from_float(float in);

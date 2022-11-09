@@ -145,3 +145,9 @@ bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userda
     }
     return false;
 }
+
+
+int32_t to_f32_from_float(float in)
+{
+    return (int32_t)(in * 1000);
+}

@@ -65,7 +65,7 @@ bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, m
     }
 
     if (data)
-        data->value_type = inf->value_type;
+        data->value_type = inf->value_type_cb(def->name);
 
     return true;
 }

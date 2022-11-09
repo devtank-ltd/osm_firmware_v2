@@ -636,11 +636,17 @@ bool sai_set_coeff(uint8_t index, float coeff)
 }
 
 
+static measurements_value_type_t _sai_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
 void  sai_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _sai_collection_time;
     inf->init_cb            = _sai_measurements_init;
     inf->get_cb             = _sai_measurements_get;
     inf->iteration_cb       = _sai_iteration_callback;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _sai_value_type;
 }

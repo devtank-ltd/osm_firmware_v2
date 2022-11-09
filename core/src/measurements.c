@@ -747,7 +747,7 @@ static bool _measurements_sample_get_float_iteration(measurements_def_t* def, me
     {
         return false;
     }
-    measurements_debug("Value : %"PRIi32, new_value.v_f32);
+    measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value.v_f32/1000, (uint32_t)abs(new_value.v_f32)%1000);
 
     if (data->num_samples == 0)
     {
@@ -770,9 +770,9 @@ static bool _measurements_sample_get_float_iteration(measurements_def_t* def, me
         data->value.value_f.min = new_value.v_f32;
 
 good_exit:
-    measurements_debug("Sum : %"PRIi32, data->value.value_f.sum);
-    measurements_debug("Min : %"PRIi32, data->value.value_f.min);
-    measurements_debug("Max : %"PRIi32, data->value.value_f.max);
+    measurements_debug("Sum : %"PRIi32".%03"PRIu32, data->value.value_f.sum/1000, (uint32_t)abs(data->value.value_f.sum)%1000);
+    measurements_debug("Min : %"PRIi32".%03"PRIu32, data->value.value_f.min/1000, (uint32_t)abs(data->value.value_f.min)%1000);
+    measurements_debug("Max : %"PRIi32".%03"PRIu32, data->value.value_f.max/1000, (uint32_t)abs(data->value.value_f.max)%1000);
 
     return true;
 }

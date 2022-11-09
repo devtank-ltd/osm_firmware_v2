@@ -376,7 +376,7 @@ static measurements_sensor_state_t _htu21d_temp_measurements_get(char* name, mea
         htu21d_debug("Temperature value is not valid (old).");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_i64 = (int64_t)_htu21d_reading.temperature.value;
+    value->v_f32 = to_f32_from_float((float)_htu21d_reading.temperature.value / 100.f);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -400,8 +400,14 @@ static measurements_sensor_state_t _htu21d_humi_measurements_get(char* name, mea
         htu21d_debug("Temperature or humidity value is not valid (old).");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_i64 = (int64_t)_htu21d_reading.humidity.value;
+    value->v_f32 = to_f32_from_float((float)_htu21d_reading.humidity.value / 100.f);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+static measurements_value_type_t _htu21d_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
@@ -411,7 +417,7 @@ void htu21d_temp_inf_init(measurements_inf_t* inf)
     inf->init_cb            = _htu21d_temp_measurements_init;
     inf->get_cb             = _htu21d_temp_measurements_get;
     inf->iteration_cb       = _htu21d_measurements_iteration;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _htu21d_value_type;
 }
 
 
@@ -421,7 +427,7 @@ void htu21d_humi_inf_init(measurements_inf_t* inf)
     inf->init_cb            = _htu21d_humi_measurements_init;
     inf->get_cb             = _htu21d_humi_measurements_get;
     inf->iteration_cb       = _htu21d_measurements_iteration;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _htu21d_value_type;
 }
 
 

@@ -2,6 +2,7 @@
 
 #include "modbus_measurements.h"
 #include "modbus.h"
+#include "common.h"
 
 /* On tests it's about 300ms per register @9600 with the RI-F220
  * Max 4 devices with max 16 registers
@@ -83,7 +84,7 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
             if (!modbus_reg_get_float(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-            value->v_i64 = (int64_t)(v * 1000);
+            value->v_f32 = to_f32_from_float(v);
             return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
         default: break;
@@ -92,12 +93,32 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
 }
 
 
+static measurements_value_type_t _modbus_measurements_value_type(char* name)
+{
+    modbus_reg_t* reg = modbus_get_reg(name);
+    modbus_reg_type_t reg_type = modbus_reg_get_type(reg);
+    switch(reg_type)
+    {
+        case MODBUS_REG_TYPE_FLOAT:
+            return MEASUREMENTS_VALUE_TYPE_FLOAT;
+        case MODBUS_REG_TYPE_U16:
+            return MEASUREMENTS_VALUE_TYPE_I64;
+        case MODBUS_REG_TYPE_U32:
+            return MEASUREMENTS_VALUE_TYPE_I64;
+        default:
+            modbus_debug("Unknown modbus register type.");
+            break;
+    }
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
 void modbus_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _modbus_measurements_collection_time;
     inf->init_cb            = _modbus_measurements_init;
     inf->get_cb             = _modbus_measurements_get;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _modbus_measurements_value_type;
 }
 
 

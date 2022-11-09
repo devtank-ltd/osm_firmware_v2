@@ -184,7 +184,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
 
     _bat_update_on_battery(perc < BAT_ON_BAT_THRESHOLD);
 
-    value->v_i64 = (int64_t)perc;
+    value->v_f32 = to_f32_from_float((float)perc / 100.f);
 
     adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
@@ -286,10 +286,16 @@ bool bat_on_battery(bool* on_battery)
 }
 
 
+static measurements_value_type_t _bat_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+}
+
+
 void                         bat_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _bat_collection_time_cb;
     inf->init_cb            = _bat_begin;
     inf->get_cb             = _bat_get;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _bat_value_type;
 }

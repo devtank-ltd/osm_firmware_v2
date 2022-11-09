@@ -176,8 +176,8 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
         integer_bits = (integer_bits | 0xF000) + 1;
         decimal_bits = (decimal_bits - 16) % 16;
     }
-
-    value->v_f32 = (int32_t)integer_bits * 1000 + ((int32_t)decimal_bits * 1000) / 16;
+    float temperature = (float)integer_bits + (float)decimal_bits / 16.f;
+    value->v_f32 = to_f32_from_float(temperature);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -193,12 +193,18 @@ static measurements_sensor_state_t _ds18b20_collection_time(char* name, uint32_t
 }
 
 
+static measurements_value_type_t _ds18b20_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+}
+
+
 void                         ds18b20_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _ds18b20_collection_time;
     inf->init_cb            = _ds18b20_measurements_init;
     inf->get_cb             = _ds18b20_measurements_collect;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_FLOAT;
+    inf->value_type_cb      = _ds18b20_value_type;
 }
 
 

@@ -131,10 +131,10 @@ class measurement_t(property_t):
     def _parse(self, r_str:str):
         if "ERROR" in r_str:
             return False
-        r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-        if r:
-            return float(r[-1])
-        return r_str
+        r = r_str.replace(f"{self.name}: ", "")
+        if re.match("^[0-9\.]+$", r):
+            return float(r)
+        return r
 
 
 class modbus_reg_t(measurement_t):

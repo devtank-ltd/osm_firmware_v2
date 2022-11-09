@@ -623,13 +623,19 @@ static void  _cc_enable(char* name, bool enabled)
 }
 
 
+static measurements_value_type_t _cc_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
 void cc_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _cc_get_collection_time;
     inf->init_cb            = _cc_begin;
     inf->get_cb             = _cc_get;
     inf->enable_cb          = _cc_enable;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _cc_value_type;
 }
 
 

@@ -298,12 +298,18 @@ static measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
 }
 
 
+static measurements_value_type_t _hpm_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
 void hpm_pm10_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _hpm_collection_time;
     inf->init_cb            = _hpm_init;
     inf->get_cb             = _hpm_get_pm10;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _hpm_value_type;
 }
 
 
@@ -312,5 +318,5 @@ void hpm_pm25_inf_init(measurements_inf_t* inf)
     inf->collection_time_cb = _hpm_collection_time;
     inf->init_cb            = _hpm_init;
     inf->get_cb             = _hpm_get_pm25;
-    inf->value_type         = MEASUREMENTS_VALUE_TYPE_I64;
+    inf->value_type_cb      = _hpm_value_type;
 }

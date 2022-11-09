@@ -82,7 +82,8 @@ class test_framework_t(object):
 
     def _threshold_check(self, desc, value, ref, tolerance, is_hex=False):
         if is_hex:
-            value = int(str(round(float(value))), 16)
+            print(value)
+            value = float(int(value, 16))
         if isinstance(value, float) or isinstance(value, int):
             passed = abs(float(value) - float(ref)) <= float(tolerance)
         else:
