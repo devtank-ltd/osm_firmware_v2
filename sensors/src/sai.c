@@ -613,7 +613,7 @@ static measurements_sensor_state_t _sai_measurements_get(char* name, measurement
 
     sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
     sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
-    value->v_i64 = (int64_t)dB;
+    value->v_f32 = to_f32_from_float((float)dB / 10.f);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -638,7 +638,7 @@ bool sai_set_coeff(uint8_t index, float coeff)
 
 static measurements_value_type_t _sai_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
