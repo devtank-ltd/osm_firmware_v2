@@ -11,6 +11,7 @@ firmware_SOURCES := \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
            core/src/env01.c \
+           core/src/modbus.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \
            core/src/modbus_measurements.c \
@@ -31,7 +32,6 @@ firmware_SOURCES := \
            comms/src/rak3172.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
-           sensors/src/modbus.c \
            sensors/src/ds18b20.c \
            sensors/src/pulsecount.c \
            sensors/src/veml7700.c \

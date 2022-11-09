@@ -54,6 +54,7 @@ firmware_SOURCES := \
            core/src/io.c \
            core/src/ring.c \
            core/src/i2c.c \
+           core/src/modbus.c \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
            core/src/measurements.c \
@@ -74,7 +75,6 @@ firmware_SOURCES := \
            comms/src/comms.c \
            sensors/src/hpm.c \
            sensors/src/htu21d.c \
-           sensors/src/modbus.c \
            sensors/src/ds18b20.c \
            sensors/src/pulsecount.c \
            sensors/src/veml7700.c \
