@@ -21,7 +21,7 @@
 #define MODBUS_BIN_START '{'
 #define MODBUS_BIN_STOP '}'
 
-#define MODBUS_SLOTS  (MODBUS_MAX_DEV * MODBUS_DEV_REGS)
+#define MODBUS_SLOTS  (MODBUS_BLOCKS / MODBUS_BLOCK_SIZE)
 
 #define MODBUS_MAX_RETRANSMITS 10
 
@@ -37,7 +37,6 @@
 
 #define MAX_MODBUS_PACKET_SIZE    127
 
-static modbus_bus_t * modbus_bus = NULL;
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
 static uint8_t tx_modbuspacket[10];
@@ -59,8 +58,6 @@ static uint32_t modbus_send_start_delay = 0;
 static uint32_t modbus_send_stop_delay = 0;
 
 static uint32_t modbus_retransmit_count = 0;
-
-static bool do_binary_framing = false; /* This is to support pymodbus.framer.binary_framer and http://jamod.sourceforge.net/. */
 
 
 
@@ -114,7 +111,7 @@ static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, u
 
 static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
-    if (do_binary_framing)
+    if (modbus_bus->binary_protocol)
     {
         modbus_send_start_delay = 0;
         modbus_send_stop_delay = _modbus_get_deci_char_time(10 /*1.0*/, speed, databits, parity, stop);
@@ -124,13 +121,12 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t
         modbus_send_start_delay = _modbus_get_deci_char_time(35 /*3.5*/, speed, databits, parity, stop);
         modbus_send_stop_delay = _modbus_get_deci_char_time(35 /*3.5*/, speed, databits, parity, stop);
     }
-    modbus_debug("Modbus @ %s %u %u%c%s", (do_binary_framing)?"BIN":"RTU", speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_str(stop));
+    modbus_debug("Modbus @ %s %u %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_str(stop));
 
     modbus_bus->baudrate    = speed;
     modbus_bus->databits    = databits;
     modbus_bus->parity      = parity;
     modbus_bus->stopbits    = stop;
-    modbus_bus->binary_protocol = do_binary_framing;
 }
 
 
@@ -138,7 +134,7 @@ void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_s
 {
     uart_resetup(RS485_UART, speed, databits, parity, stop);
 
-    do_binary_framing = binary_framing;
+    modbus_bus->binary_protocol = binary_framing;
 
     _modbus_setup_delays(speed, databits, parity, stop);
 }
@@ -184,7 +180,7 @@ bool modbus_setup_from_str(char * str)
 
     uart_get_setup(RS485_UART, &speed, &databits, &parity, &stop);
 
-    do_binary_framing = binary_framing;
+    modbus_bus->binary_protocol = binary_framing;
 
     _modbus_setup_delays(speed, databits, parity, stop);
 
@@ -194,14 +190,14 @@ bool modbus_setup_from_str(char * str)
 
 bool modbus_add_dev_from_str(char* str)
 {
-    /*<slave_id> <LSB/MSB> <LSW/MSW> <name>
+    /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
      * (name can only be 4 char long)
      * EXAMPLES:
      * 0x1 MSB MSW TEST
      */
     char * pos = skip_space(str);
 
-    uint16_t slave_id = strtoul(pos, &pos, 16);
+    uint16_t unit_id = strtoul(pos, &pos, 16);
     pos = skip_space(pos);
 
     if (!(toupper(pos[1]) == 'S') &&
@@ -231,7 +227,7 @@ bool modbus_add_dev_from_str(char* str)
 
     char * name = skip_space(pos);
 
-    if (modbus_add_device(slave_id, name, byte_order, word_order))
+    if (modbus_add_device(unit_id, name, byte_order, word_order))
         log_out("Added modbus device");
     else
         log_out("Failed to add modbus device.");
@@ -260,15 +256,9 @@ bool modbus_has_pending(void)
 }
 
 
-void modbus_use_do_binary_framing(bool enable)
-{
-    do_binary_framing = enable;
-}
-
-
 static void _modbus_do_start_read(modbus_reg_t * reg)
 {
-    modbus_dev_t * dev = modbus_reg_get_dev(reg);
+    uint8_t unit_id = modbus_reg_get_unit_id(reg);
 
     unsigned reg_count = 1;
 
@@ -280,14 +270,14 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         default: break;
     }
 
-    modbus_debug("Reading %"PRIu8" of %."STR(MODBUS_NAME_LEN)"s (0x%"PRIx8":0x%"PRIx16")" , reg_count, reg->name, dev->slave_id, reg->reg_addr);
+    modbus_debug("Reading %"PRIu8" of %."STR(MODBUS_NAME_LEN)"s (0x%"PRIx8":0x%"PRIx16")" , reg_count, reg->name, unit_id, reg->reg_addr);
 
     unsigned body_size = 4;
 
     if (reg->func == MODBUS_READ_HOLDING_FUNC)
     {
         /* ADU Header (Application Data Unit) */
-        tx_modbuspacket[0] = dev->slave_id;
+        tx_modbuspacket[0] = unit_id;
         /* ====================================== */
         /* PDU payload (Protocol Data Unit) */
         tx_modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
@@ -301,7 +291,7 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     else if (reg->func == MODBUS_READ_INPUT_FUNC)
     {
         /* ADU Header (Application Data Unit) */
-        tx_modbuspacket[0] = dev->slave_id;
+        tx_modbuspacket[0] = unit_id;
         /* ====================================== */
         /* PDU payload (Protocol Data Unit) */
         tx_modbuspacket[1] = MODBUS_READ_INPUT_FUNC; /*Input*/
@@ -320,7 +310,7 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     modbus_want_rx = true;
     modbus_cur_send_time = get_since_boot_ms();
 
-    if (do_binary_framing)
+    if (modbus_bus->binary_protocol)
     {
         uart_ring_out(RS485_UART, (char[]){MODBUS_BIN_START}, 1);
         tx_modbuspacket[8] = MODBUS_BIN_STOP;
@@ -460,7 +450,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     if (!modbuspacket_len)
     {
-        if ((!do_binary_framing && len > 2) || (do_binary_framing && len > 3))
+        if ((!modbus_bus->binary_protocol && len > 2) || (modbus_bus->binary_protocol && len > 3))
         {
             modbus_read_timing_init = 0;
             ring_buf_read(ring, (char*)modbuspacket, 1);
@@ -471,7 +461,7 @@ void modbus_ring_process(ring_buf_t * ring)
                 return;
             }
 
-            if (do_binary_framing)
+            if (modbus_bus->binary_protocol)
             {
                 if (modbuspacket[0] != MODBUS_BIN_START)
                 {
@@ -503,7 +493,7 @@ void modbus_ring_process(ring_buf_t * ring)
                 return;
             }
 
-            if (do_binary_framing)
+            if (modbus_bus->binary_protocol)
                 modbuspacket_len++;
 
             modbus_read_timing_init = get_since_boot_ms();
@@ -536,7 +526,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     ring_buf_read(ring, (char*)modbuspacket + 3, modbuspacket_len);
 
-    if (do_binary_framing)
+    if (modbus_bus->binary_protocol)
     {
         if (modbuspacket[modbuspacket_len + 3 - 1] != MODBUS_BIN_STOP)
         {
@@ -593,7 +583,7 @@ void modbus_ring_process(ring_buf_t * ring)
 
     modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
 
-    if (dev->slave_id != modbuspacket[0])
+    if (dev->unit_id != modbuspacket[0])
     {
         log_error("Modbus comms issues!");
         return;

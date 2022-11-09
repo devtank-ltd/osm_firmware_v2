@@ -8,6 +8,7 @@
 
 #define MODBUS_NAME_LEN             MEASURE_NAME_LEN
 
+#define MODBUS_MEMORY_SIZE 1024
 
 /* On some versions of gcc this header isn't defining it. Quick fix. */
 #ifndef PRIu64

@@ -151,20 +151,23 @@ void modbus_measurement_del_reg(char * name)
     modbus_reg_del(reg);
 }
 
+
+static bool _modbus_measurement_del_dev_reg(modbus_reg_t * reg, void * userdata)
+{
+    char name[MODBUS_NAME_LEN+1];
+    if (modbus_reg_get_name(reg, name))
+        measurements_del(name);
+    return false;
+}
+
+
 void modbus_measurement_del_dev(char * dev_name)
 {
     modbus_dev_t * dev = modbus_get_device_by_name(dev_name);
     if (!dev)
         return;
 
-    modbus_reg_t * reg = modbus_dev_get_reg(dev, 0);
-    while (reg)
-    {
-        char name[MODBUS_NAME_LEN+1];
-        modbus_reg_get_name(reg, name);
-        measurements_del(name);
-        modbus_reg_del(reg);
-        reg = modbus_dev_get_reg(dev, 0);
-    }
+    modbus_dev_for_each_reg(dev, _modbus_measurement_del_dev_reg, NULL);
+
     modbus_dev_del(dev);
 }

@@ -83,6 +83,9 @@ typedef struct
     uint8_t  type;                                      // measurement_def_type_t
 } measurements_def_t;
 
+#define MODBUS_BLOCK_SIZE 16
+#define MODBUS_BLOCKS  ((MODBUS_MEMORY_SIZE / MODBUS_BLOCK_SIZE) - 1) /* We have 1k and the first block is the bus description.*/
+
 #define MODBUS_READ_HOLDING_FUNC 3
 #define MODBUS_READ_INPUT_FUNC 4
 
@@ -126,20 +129,22 @@ typedef struct
     uint8_t           func:4;
     uint8_t           value_state:4; /*modbus_reg_state_t*/
     uint16_t          reg_addr;
-    uint32_t          dev_id:8;
-    uint32_t          next_reg_offset:24;
+    uint16_t          unit_id;
+    uint16_t          next_reg_offset;
 } __attribute__((__packed__)) modbus_reg_t;
 
 
 typedef struct
 {
     char           name[MODBUS_NAME_LEN];
-    uint8_t        slave_id;
     uint8_t        byte_order; /* modbus_byte_orders_t */
     uint8_t        word_order; /* modbus_word_orders_t */
     uint8_t        reg_count;
-    uint32_t       first_reg_offset;
-    uint32_t       next_dev_offset;
+    uint8_t        _;
+    uint16_t       unit_id;
+    uint16_t       first_reg_offset;
+    uint16_t       next_dev_offset;
+    uint16_t       __;
 } __attribute__((__packed__)) modbus_dev_t;
 
 typedef struct
@@ -152,16 +157,23 @@ typedef struct
 typedef struct
 {
     uint8_t  version;
-    uint8_t  binary_protocol; /* BIN or RTU */
+    uint8_t  binary_protocol; /* BIN or RTU */ /* This is to support pymodbus.framer.binary_framer and http://jamod.sourceforge.net/. */
     uint8_t  databits:4;        /* 8? */
     uint8_t  stopbits:2;        /* uart_stop_bits_t */
     uint8_t  parity:2;          /* uart_parity_t */
     uint8_t  dev_count;
     uint32_t baudrate;
-    uint32_t first_dev_offset;
-    uint32_t first_free_offset;
+    uint16_t first_dev_offset;
+    uint16_t first_free_offset;
+    uint32_t _;
+    modbus_free_t  blocks[MODBUS_BLOCKS];
 } __attribute__((__packed__)) modbus_bus_t;
 
+_Static_assert(((sizeof(modbus_bus_t) % MODBUS_BLOCK_SIZE) == 0) &&
+               (sizeof(modbus_free_t) == MODBUS_BLOCK_SIZE) &&
+               (sizeof(modbus_dev_t) == MODBUS_BLOCK_SIZE) &&
+               (sizeof(modbus_reg_t) == MODBUS_BLOCK_SIZE),
+               "Modbus blocks broken.");
 
 typedef enum
 {

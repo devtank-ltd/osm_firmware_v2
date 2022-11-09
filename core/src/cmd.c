@@ -337,21 +337,21 @@ static void modbus_setup_cb(char *args)
 
 static void modbus_add_dev_cb(char * args)
 {
-    /*<slave_id> <LSB/MSB> <LSW/MSW> <name>
+    /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
      * (name can only be 4 char long)
      * EXAMPLES:
      * 0x1 MSB MSW TEST
      */
     if (!modbus_add_dev_from_str(args))
     {
-        log_out("<slave_id> <LSB/MSB> <LSW/MSW> <name>");
+        log_out("<unit_id> <LSB/MSB> <LSW/MSW> <name>");
     }
 }
 
 
 static void modbus_add_reg_cb(char * args)
 {
-    /*<slave_id> <reg_addr> <modbus_func> <type> <name>
+    /*<unit_id> <reg_addr> <modbus_func> <type> <name>
      * (name can only be 4 char long)
      * Only Modbus Function 3, Hold Read supported right now.
      * 0x1 0x16 3 F   T-Hz
@@ -364,7 +364,7 @@ static void modbus_add_reg_cb(char * args)
     if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
         pos += 2;
 
-    uint16_t slave_id = strtoul(pos, &pos, 16);
+    uint16_t unit_id = strtoul(pos, &pos, 16);
 
     pos = skip_space(pos);
 
@@ -387,7 +387,7 @@ static void modbus_add_reg_cb(char * args)
 
     char * name = pos;
 
-    modbus_dev_t * dev = modbus_get_device_by_id(slave_id);
+    modbus_dev_t * dev = modbus_get_device_by_id(unit_id);
     if (!dev)
     {
         log_out("Unknown modbus device.");
