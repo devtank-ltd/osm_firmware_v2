@@ -4,7 +4,7 @@
 
 #define MEASUREMENTS_MAX_NUMBER                   256
 
-#define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x01
+#define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x02
 #define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
 #define MEASUREMENTS_DATATYPE_AVERAGED     (uint8_t)0x02
 
