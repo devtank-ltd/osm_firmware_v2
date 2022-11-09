@@ -383,7 +383,7 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
     dst_reg->func        = func;
     dst_reg->value_data  = 0;
     dst_reg->value_state = 0;
-
+    dst_reg->unit_id     = dev->unit_id;
     dst_reg->next_reg_offset = dev->first_reg_offset;
 
     dev->first_reg_offset = _modbus_get_offset(dst_reg);
