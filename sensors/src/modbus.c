@@ -714,34 +714,3 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, mod
         default: log_error("Unknown modbus reg type."); break;
     }
 }
-
-
-void modbus_init(void)
-{
-    modbus_bus = persist_get_modbus_bus();
-
-    modbus_devices = modbus_bus->modbus_devices;
-
-    if (modbus_bus->version == MODBUS_BLOB_VERSION)
-    {
-        modbus_debug("Loaded modbus defs");
-    }
-    else
-    {
-        modbus_debug("Failed to load modbus defs");
-        memset(modbus_bus, 0, sizeof(modbus_bus_t)*2);
-        modbus_bus->version = MODBUS_BLOB_VERSION;
-        modbus_bus->baudrate    = MODBUS_SPEED;
-        modbus_bus->databits    = MODBUS_DATABITS;
-        modbus_bus->parity      = MODBUS_PARITY;
-        modbus_bus->stopbits    = MODBUS_STOP;
-        modbus_bus->binary_protocol = false;
-        modbus_bus->free_offset = ((uintptr_t)&modbus_bus[1]) - ((uintptr_t)modbus_bus);
-    }
-
-    modbus_setup(modbus_bus->baudrate,
-                 modbus_bus->databits,
-                 modbus_bus->parity,
-                 modbus_bus->stopbits,
-                 modbus_bus->binary_protocol);
-}

@@ -126,7 +126,8 @@ typedef struct
     uint8_t           func:4;
     uint8_t           value_state:4; /*modbus_reg_state_t*/
     uint16_t          reg_addr;
-    uint32_t          next_reg_offset;
+    uint32_t          dev_id:8;
+    uint32_t          next_reg_offset:24;
 } __attribute__((__packed__)) modbus_reg_t;
 
 
@@ -157,8 +158,8 @@ typedef struct
     uint8_t  parity:2;          /* uart_parity_t */
     uint8_t  dev_count;
     uint32_t baudrate;
-    uint32_t dev_offset;
-    uint32_t free_offset;
+    uint32_t first_dev_offset;
+    uint32_t first_free_offset;
 } __attribute__((__packed__)) modbus_bus_t;
 
 
