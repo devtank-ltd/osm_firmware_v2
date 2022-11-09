@@ -343,6 +343,8 @@ modbus_dev_t * modbus_add_device(unsigned unit_id, char *name, modbus_byte_order
     dev->unit_id = unit_id;
     dev->byte_order = byte_order;
     dev->word_order = word_order;
+    dev->next_dev_offset = modbus_bus->first_dev_offset;
+    modbus_bus->first_dev_offset = _modbus_get_offset(dev);
     modbus_debug("Added device 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", unit_id, name);
     return dev;
 }
