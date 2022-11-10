@@ -143,6 +143,11 @@ GPIO16 D2                   IO 11
 
 #define W1_PULSE_ISR                exti15_10_isr
 
+#define W1_PULSE_1_PULLUP_EN_PORT   GPIOC
+#define W1_PULSE_1_PULLUP_EN_PIN    GPIO7
+#define W1_PULSE_2_PULLUP_EN_PORT   GPIOC
+#define W1_PULSE_2_PULLUP_EN_PIN    GPIO6
+
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
 #define RE_485_PIN  { GPIOC, GPIO12 }

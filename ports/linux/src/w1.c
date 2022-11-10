@@ -64,3 +64,8 @@ void w1_linux_deinit(void)
     if (_w1_connected)
         close(_w1_socketfd);
 }
+
+
+void w1_enable(unsigned io, bool enabled)
+{
+}

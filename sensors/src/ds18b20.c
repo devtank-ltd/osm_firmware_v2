@@ -105,11 +105,6 @@ static bool _ds18b20_empty_check(const uint8_t* mem, unsigned size)
 }
 
 
-void ds18b20_enable(bool enable)
-{
-}
-
-
 static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 {
     ds18b20_instance_t* inst;

@@ -8,7 +8,7 @@
 #include "pulsecount.h"
 #include "uarts.h"
 #include "platform.h"
-#include "ds18b20.h"
+#include "w1.h"
 #include "persist_config.h"
 #include "common.h"
 
@@ -121,7 +121,7 @@ bool io_enable_w1(unsigned io)
     ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] |= IO_ONEWIRE;
-    ds18b20_enable(true);
+    w1_enable(true, io);
     io_debug("%02u : USED W1", io);
     return true;
 }
@@ -193,7 +193,7 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
             return;
         }
         ios_state[io] &= ~IO_ONEWIRE;
-        ds18b20_enable(false);
+        w1_enable(io, false);
         io_debug("%02u : W1 NO LONGER", io);
         return;
     }

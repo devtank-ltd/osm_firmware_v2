@@ -578,7 +578,7 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
         {
-            snprintf(fd->name, LINUX_PTY_NAME_SIZE, pty_name);
+            strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
             fd->type = LINUX_FD_TYPE_PTY;
             fd->pty.uart = uart;
             fd->cb = linux_uart_proc;
