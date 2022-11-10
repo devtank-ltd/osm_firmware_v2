@@ -32,6 +32,26 @@ static volatile uint32_t    _adcs_end_time      = 0;
 static adc_setup_config_t _adcs_config = {.mem_addr = (uintptr_t)_adcs_buffer};
 
 
+bool adcs_to_mV(uint32_t value, uint32_t* mV)
+{
+    // Linear scale without calibration.
+    // ADC of    0 -> 0V
+    //        4096 -> 3.3V
+
+    const uint16_t max_value = ADC_MAX_VAL;
+    const uint16_t min_value = 0;
+    const uint16_t max_mV = ADC_MAX_MV;
+    const uint16_t min_mV = 0;
+    uint32_t inter_val;
+
+    inter_val = value * (max_mV - min_mV);
+    inter_val /= (max_value - min_value);
+
+    *mV = inter_val;
+    return true;
+}
+
+
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
  * buffer, the step and start index are required to find the correct RMS.*/
 #ifdef __ADC_RMS_FULL__

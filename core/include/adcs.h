@@ -22,6 +22,8 @@ typedef enum
 } adcs_resp_t;
 
 
+extern bool adcs_to_mV(uint32_t value, uint32_t* mV);
+
 extern void adcs_off(void);
 extern void adcs_init(void);
 

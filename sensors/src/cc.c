@@ -38,26 +38,6 @@ static uint32_t             _cc_collection_time                 = CC_DEFAULT_COL
 static cc_config_t*         _configs;
 
 
-static bool _cc_to_mV(uint32_t value, uint32_t* mV)
-{
-    // Linear scale without calibration.
-    // ADC of    0 -> 0V
-    //        4096 -> 3.3V
-
-    const uint16_t max_value = ADC_MAX_VAL;
-    const uint16_t min_value = 0;
-    const uint16_t max_mV = ADC_MAX_MV;
-    const uint16_t min_mV = 0;
-    uint32_t inter_val;
-
-    inter_val = value * (max_mV - min_mV);
-    inter_val /= (max_value - min_value);
-
-    *mV = inter_val;
-    return true;
-}
-
-
 static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor)
 {
     /**
@@ -89,7 +69,7 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
     adc_debug("Difference = %"PRIu32".%03"PRIu32, adc_diff/1000, adc_diff%1000);
 
     // Once the conversion is no longer linearly multiplicative this needs to be changed.
-    if (!_cc_to_mV(adc_diff, &inter_value))
+    if (!adcs_to_mV(adc_diff, &inter_value))
     {
         adc_debug("Cannot get mV value of midpoint.");
         return false;
