@@ -1,4 +1,4 @@
-firmware_SOURCES := \
+env01_SOURCES := \
            core/src/main.c \
            core/src/base.c \
            core/src/log.c \
@@ -40,3 +40,4 @@ firmware_SOURCES := \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
            sensors/src/fw.c
+env01_LINK_SCRIPT := core/stm32l4.ld
