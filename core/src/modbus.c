@@ -6,6 +6,8 @@
 
 #include "log.h"
 #include "modbus.h"
+#include "modbus_measurements.h"
+#include "modbus_mem.h"
 #include "uart_rings.h"
 #include "uarts.h"
 #include "common.h"
@@ -762,4 +764,94 @@ void modbus_init(void)
                  bus->parity,
                  bus->stopbits,
                  bus->binary_protocol);
+}
+
+
+static void modbus_setup_cb(char *args)
+{
+    /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
+     * EXAMPLE: RTU 115200 8N1
+     */
+    modbus_setup_from_str(args);
+}
+
+
+static void modbus_add_dev_cb(char * args)
+{
+    /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
+     * (name can only be 4 char long)
+     * EXAMPLES:
+     * 0x1 MSB MSW TEST
+     */
+    if (!modbus_add_dev_from_str(args))
+    {
+        log_out("<unit_id> <LSB/MSB> <LSW/MSW> <name>");
+    }
+}
+
+
+static void modbus_add_reg_cb(char * args)
+{
+    /*<unit_id> <reg_addr> <modbus_func> <type> <name>
+     * (name can only be 4 char long)
+     * Only Modbus Function 3, Hold Read supported right now.
+     * 0x1 0x16 3 F   T-Hz
+     * 1 22 3 F       T-Hz
+     * 0x2 0x30 3 U16 T-As
+     * 0x2 0x32 3 U32 T-Vs
+     */
+    char * pos = skip_space(args);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t unit_id = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t reg_addr = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    uint8_t func = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
+
+    modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
+    if (type == MODBUS_REG_TYPE_INVALID)
+        return;
+
+    pos = skip_space(pos);
+
+    char * name = pos;
+
+    modbus_dev_t * dev = modbus_get_device_by_id(unit_id);
+    if (!dev)
+    {
+        log_out("Unknown modbus device.");
+        return;
+    }
+
+    if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
+    {
+        log_out("Added modbus reg %s", name);
+        if (!modbus_measurement_add(modbus_dev_get_reg_by_name(dev, name)))
+            log_out("Failed to add modbus reg to measurements!");
+    }
+    else log_out("Failed to add modbus reg.");
+}
+
+
+struct cmd_link_t* modbus_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "mb_setup",     "Change Modbus comms",      modbus_setup_cb               , false , NULL },
+                                       { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb             , false , NULL },
+                                       { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb             , false , NULL },
+                                       { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg    , false , NULL },
+                                       { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev    , false , NULL },
+                                       { "mb_log",       "Show modbus setup",        modbus_log                    , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

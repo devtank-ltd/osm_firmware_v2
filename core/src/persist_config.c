@@ -8,6 +8,7 @@
 #include "timers.h"
 #include "persist_config_header.h"
 #include "platform.h"
+#include "common.h"
 
 static bool                             persist_data_valid = false;
 static persist_storage_t                persist_data __attribute__((aligned (16)));
@@ -168,4 +169,25 @@ cc_config_t * persist_get_cc_configs(void)
 char* persist_get_serial_number(void)
 {
     return persist_data.serial_number;
+}
+
+
+static void reset_cb(char *args)
+{
+    platform_reset_sys();
+}
+
+
+static void wipe_cb(char* args)
+{
+    persistent_wipe();
+}
+
+
+struct cmd_link_t* persist_config_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "save",         "Save config",              persist_commit                , false , NULL },
+                                       { "reset",        "Reset device.",            reset_cb                      , false , NULL },
+                                       { "wipe",         "Factory Reset",            wipe_cb                       , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

@@ -299,3 +299,23 @@ void                         bat_inf_init(measurements_inf_t* inf)
     inf->get_cb             = _bat_get;
     inf->value_type_cb      = _bat_value_type;
 }
+
+
+static void bat_cb(char* args)
+{
+    measurements_reading_t value;
+    if (!bat_get_blocking(NULL, &value))
+    {
+        log_out("Could not get bat value.");
+        return;
+    }
+
+    log_out("Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
+}
+
+
+struct cmd_link_t* bat_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = { { "bat",          "Get battery level.",       bat_cb                        , false , NULL } };
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}

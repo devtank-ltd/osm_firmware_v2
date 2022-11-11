@@ -109,3 +109,5 @@ extern bool     measurements_reading_to_str(measurements_reading_t* reading, mea
 
 extern bool     measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
 extern void     measurements_repopulate(void);
+
+extern struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail);

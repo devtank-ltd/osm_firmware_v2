@@ -31,3 +31,5 @@ extern unsigned io_get_bias(unsigned io);
 extern void     io_on(unsigned io, bool on_off);
 extern void     io_log(unsigned io);
 extern void     ios_log();
+
+extern struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail);

@@ -2,6 +2,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 
 #include "cc.h"
 
@@ -650,4 +653,117 @@ void cc_init(void)
         cc_set_midpoints(midpoints);
     }
     _configs = persist_get_cc_configs();
+}
+
+
+static void cc_cb(char* args)
+{
+    char* p;
+    uint8_t cc_num = strtoul(args, &p, 10);
+    measurements_reading_t value_1;
+    if (p == args)
+    {
+        measurements_reading_t value_2, value_3;
+        if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
+        {
+            log_out("Could not get CC values.");
+            return;
+        }
+        log_out("CC1 = %"PRIi64".%"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        log_out("CC2 = %"PRIi64".%"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        log_out("CC3 = %"PRIi64".%"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
+        return;
+    }
+    if (cc_num > 3 || cc_num == 0)
+    {
+        log_out("cc [1/2/3]");
+        return;
+    }
+    char name[4];
+    snprintf(name, 4, "CC%"PRIu8, cc_num);
+    if (!cc_get_blocking(name, &value_1))
+    {
+        log_out("Could not get adc value.");
+        return;
+    }
+
+    log_out("CC = %"PRIi64"mA", value_1.v_i64);
+}
+
+
+static void cc_calibrate_cb(char *args)
+{
+    cc_calibrate();
+}
+
+
+static void cc_mp_cb(char* args)
+{
+    // 2046 CC1
+    char* p;
+    float new_mp = strtof(args, &p);
+    p = skip_space(p);
+    uint32_t new_mp32;
+    if (p == args)
+    {
+        cc_get_midpoint(&new_mp32, p);
+        log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
+        return;
+    }
+    new_mp32 = new_mp * 1000;
+    p = skip_space(p);
+    if (!cc_set_midpoint(new_mp32, p))
+        log_out("Failed to set the midpoint.");
+}
+
+
+static void cc_gain(char* args)
+{
+    // <index> <ext_A> <int_mV>
+    // 1       100     50
+    cc_config_t* cc_conf = persist_get_cc_configs();
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    p = skip_space(p);
+    if (strlen(p) == 0)
+    {
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].ext_max_mA/1000, cc_conf[i].ext_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, cc_conf[i].int_max_mV/1000, cc_conf[i].int_max_mV%1000);
+        }
+        return;
+    }
+    if (index == 0 || index > ADC_CC_COUNT + 1 || p == args)
+        goto syntax_exit;
+    index--;
+
+    char* q;
+    float ext_A = strtof(p, &q);
+    if (q == p)
+        goto print_exit;
+    q = skip_space(q);
+    uint32_t int_mA = strtoul(q, &p, 10);
+    if (p == q)
+        goto syntax_exit;
+    cc_conf[index].ext_max_mA = ext_A * 1000;
+    cc_conf[index].int_max_mV = int_mA;
+    log_out("Set the CC gain:");
+print_exit:
+    log_out("EXT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].ext_max_mA/1000, cc_conf[index].ext_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"V", cc_conf[index].int_max_mV/1000, cc_conf[index].int_max_mV%1000);
+    return;
+syntax_exit:
+    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
+    log_out("e.g cc_gain 3 100 50");
+}
+
+
+struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "cc",           "CC value",                 cc_cb                         , false , NULL },
+                                       { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb               , false , NULL },
+                                       { "cc_mp",        "Set the CC midpoint",      cc_mp_cb                      , false , NULL },
+                                       { "cc_gain",      "Set the max int and ext",  cc_gain                       , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

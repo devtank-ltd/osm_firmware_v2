@@ -27,3 +27,5 @@ extern bool modbus_uart_ring_do_out_drain(ring_buf_t * ring);
 
 extern void modbus_bus_init(modbus_bus_t * bus);
 extern void modbus_init(void);
+
+extern struct cmd_link_t* modbus_add_commands(struct cmd_link_t* tail);

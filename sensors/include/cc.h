@@ -16,3 +16,5 @@ extern bool                         cc_calibrate(void);
 extern bool                         cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
 
 extern void                         cc_inf_init(measurements_inf_t* inf);
+
+extern struct cmd_link_t*           cc_add_commands(struct cmd_link_t* tail);

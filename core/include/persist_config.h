@@ -38,3 +38,5 @@ extern void persistent_wipe();
 extern cc_config_t * persist_get_cc_configs(void);
 
 extern char* persist_get_serial_number(void);
+
+extern struct cmd_link_t* persist_config_add_commands(struct cmd_link_t* tail);

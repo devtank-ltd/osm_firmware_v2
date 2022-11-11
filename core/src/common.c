@@ -151,3 +151,19 @@ int32_t to_f32_from_float(float in)
 {
     return (int32_t)(in * 1000);
 }
+
+
+struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds)
+{
+    if (!tail | !cmds)
+    {
+        log_error("Tail or command list is NULL");
+        return tail;
+    }
+    for (unsigned i = 0; i < num_cmds; i++)
+    {
+        tail->next = &cmds[i];
+        tail = tail->next;
+    }
+    return tail;
+}

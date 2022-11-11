@@ -22,6 +22,11 @@
 #include "veml7700.h"
 #include "sai.h"
 #include "fw.h"
+#include "persist_config.h"
+#include "debug_mode.h"
+#include "sleep.h"
+#include "update.h"
+#include "modbus.h"
 
 
 void sensors_init(void)
@@ -133,6 +138,23 @@ void measurements_repopulate(void)
     measurements_add(&def);
     measurements_setup_default(&def, MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
     measurements_add(&def);
+}
+
+
+void cmds_add_all(struct cmd_link_t* tail)
+{
+    tail = bat_add_commands(tail);
+    tail = cc_add_commands(tail);
+    tail = can_impl_add_commands(tail);
+    tail = sai_add_commands(tail);
+    tail = persist_config_add_commands(tail);
+    tail = measurements_add_commands(tail);
+    tail = ios_add_commands(tail);
+    tail = debug_mode_add_commands(tail);
+    tail = modbus_add_commands(tail);
+    tail = sleep_add_commands(tail);
+    tail = update_add_commands(tail);
+    tail = comms_add_commands(tail);
 }
 
 #endif

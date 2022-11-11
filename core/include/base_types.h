@@ -32,6 +32,7 @@ extern bool decompose_uart_str(char             * str,
                                uart_stop_bits_t * stop);
 
 extern char * skip_space(char * pos);
+extern char * skip_to_space(char * pos);
 
 #define IO_PULL_MASK    0x0003
 #define IO_TYPE_MASK    0xF000
@@ -223,3 +224,13 @@ typedef union
     int32_t v_f32;
     char*   v_str;
 } measurements_reading_t;
+
+
+struct cmd_link_t
+{
+    const char * key;
+    const char * desc;
+    void (*cb)(char * args);
+    bool hidden;
+    struct cmd_link_t * next;
+};
