@@ -5,6 +5,7 @@
 
 #include "platform_base_types.h"
 #include "config.h"
+#include "pinmap.h"
 
 /*subset of usb_cdc_line_coding_bParityType*/
 typedef enum
@@ -73,6 +74,7 @@ typedef enum
     LIGHT         = 10,
     SOUND         = 11,
     FW_VERSION    = 12,
+    FTMA          = 13,
 } measurements_def_type_t;
 
 
@@ -182,6 +184,10 @@ typedef enum
     ADCS_TYPE_CC_CLAMP1,
     ADCS_TYPE_CC_CLAMP2,
     ADCS_TYPE_CC_CLAMP3,
+    ADCS_TYPE_FTMA1,
+    ADCS_TYPE_FTMA2,
+    ADCS_TYPE_FTMA3,
+    ADCS_TYPE_FTMA4,
     ADCS_TYPE_INVALID,
 } adcs_type_t;
 
@@ -190,11 +196,46 @@ typedef enum
                            ADCS_TYPE_CC_CLAMP2,  \
                            ADCS_TYPE_CC_CLAMP3   }
 
+#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
+                             ADCS_TYPE_FTMA2,    \
+                             ADCS_TYPE_FTMA3,    \
+                             ADCS_TYPE_FTMA4     }
+
+
 typedef struct
 {
     uint32_t ext_max_mA;
     uint32_t int_max_mV;
 } cc_config_t;
+
+
+typedef enum
+{
+    ADC_PERSIST_CONFIG_TYPE_CC,
+    ADC_PERSIST_CONFIG_TYPE_FTMA,
+} adc_persist_config_type_enum_t;
+
+
+typedef struct
+{
+    char        name[MEASURE_NAME_NULLED_LEN];
+    float       coeffs[FTMA_NUM_COEFFS];
+} ftma_config_t;
+
+
+typedef struct
+{
+    uint8_t         config_type; /* adc_persist_config_type_enum_t */
+    union
+    {
+        struct
+        {
+            uint32_t    cc_midpoints[ADC_CC_COUNT];
+            cc_config_t cc_configs[ADC_CC_COUNT];
+        } cc;
+        ftma_config_t   ftma[ADC_FTMA_COUNT];
+    };
+} adc_persist_config_t;
 
 
 typedef enum

@@ -234,6 +234,32 @@ adcs_resp_t adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned num_
 }
 
 
+adcs_resp_t adcs_collect_avg(uint32_t avg, unsigned num_channels, unsigned num_samples, unsigned index, adcs_keys_t key, uint32_t* time_taken)
+{
+    if (!avg)
+    {
+        adc_debug("Handed NULL pointer.");
+        return ADCS_RESP_FAIL;
+    }
+    if (_adcs_in_use)
+    {
+        return ADCS_RESP_WAIT;
+    }
+    if (_adcs_active_key != key)
+        return ADCS_RESP_WAIT;
+
+    if (!_adcs_get_avg(_adcs_buffer, num_samples, avg, index, num_channels))
+    {
+        adc_debug("Could not get AVG value for pos %u", index);
+        return ADCS_RESP_FAIL;
+    }
+
+    if (time_taken)
+        *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
+    return ADCS_RESP_OK;
+}
+
+
 adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avgs)
@@ -256,7 +282,7 @@ adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned nu
         }
         if (!_adcs_get_avg(_adcs_buffer, num_samples, avgs++, i, num_channels))
         {
-            adc_debug("Could not get RMS value for pos %u", i);
+            adc_debug("Could not get AVG value for pos %u", i);
             return ADCS_RESP_FAIL;
         }
     }

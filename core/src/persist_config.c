@@ -117,7 +117,7 @@ bool persist_set_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
     {
         return false;
     }
-    memcpy(persist_data.cc_midpoints, midpoints, ADC_CC_COUNT * sizeof(persist_data.cc_midpoints[0]));
+    memcpy(persist_data.adc_persist_config.cc.cc_midpoints, midpoints, ADC_CC_COUNT * sizeof(persist_data.adc_persist_config.cc.cc_midpoints[0]));
     persist_commit();
     return true;
 }
@@ -129,7 +129,7 @@ bool persist_get_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
     {
         return false;
     }
-    memcpy(midpoints, persist_data.cc_midpoints, ADC_CC_COUNT * sizeof(persist_data.cc_midpoints[0]));
+    memcpy(midpoints, persist_data.adc_persist_config.cc.cc_midpoints, ADC_CC_COUNT * sizeof(persist_data.adc_persist_config.cc.cc_midpoints[0]));
     return true;
 }
 
@@ -162,13 +162,19 @@ void    persistent_wipe(void)
 
 cc_config_t * persist_get_cc_configs(void)
 {
-    return persist_data.cc_configs;
+    return persist_data.adc_persist_config.cc.cc_configs;
 }
 
 
 char* persist_get_serial_number(void)
 {
     return persist_data.serial_number;
+}
+
+
+adc_persist_config_t* persist_get_adc_config(void)
+{
+    return persist_data.adc_persist_config;
 }
 
 

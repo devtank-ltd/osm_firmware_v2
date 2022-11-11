@@ -36,14 +36,12 @@ typedef struct
     uint32_t                mins_interval;
     modbus_bus_t            modbus_bus;
     comms_config_t          comms_config;
-    uint32_t                cc_midpoints[ADC_CC_COUNT];
-    uint8_t                 _[16-((ADC_CC_COUNT * sizeof(uint32_t))%16)];
+    adc_persist_config_t    adc_persist_config;
+    uint8_t                 _[16-(sizeof(adc_persist_config_t)%16)];
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
     uint8_t                 ___[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
-    cc_config_t             cc_configs[ADC_CC_COUNT];
-    uint8_t                 ____[16-((ADC_CC_COUNT * sizeof(cc_config_t))%16)];
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
 } __attribute__((__packed__)) persist_storage_t;
 

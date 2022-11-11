@@ -206,6 +206,8 @@ GPIO16 D2                   IO 11
 #define ADC_COUNT       6
 #define ADC_CC_COUNT    3
 
+#define ADC_FTMA_COUNT  4
+
 #define CMD_UART   0
 #define COMMS_UART 1
 #define HPM_UART   2

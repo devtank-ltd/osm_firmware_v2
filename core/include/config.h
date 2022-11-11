@@ -27,6 +27,8 @@
 #define ADCS_NUM_SAMPLES  1500
 #define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2)
 
+#define FTMA_NUM_COEFFS      4
+
 #define SAI_NUM_CAL_COEFFS   5
 
 #define UART1_PRIORITY 3
