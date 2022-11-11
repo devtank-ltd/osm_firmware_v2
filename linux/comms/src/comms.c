@@ -49,6 +49,7 @@ void comms_send(int8_t* hex_arr, uint16_t arr_len)
         uart_ring_out(COMMS_UART, buf, 2);
     }
     uart_ring_out(COMMS_UART, "\r\n", 2);
+    on_comms_sent_ack(true);
 }
 
 
