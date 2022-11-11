@@ -40,15 +40,15 @@ class test_framework_t(object):
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
 
-    DEFAULT_COMMS_MATCH_DICT = {'TEMP'    : 2159,
-                                'TEMP_min': 2159,
-                                'TEMP_max': 2159,
-                                'HUMI'    : 5119,
-                                'HUMI_min': 5119,
-                                'HUMI_max': 5119,
-                                'BAT'     : 10000,
-                                'BAT_min' : 10000,
-                                'BAT_max' : 10000,
+    DEFAULT_COMMS_MATCH_DICT = {'TEMP'    : 21.59,
+                                'TEMP_min': 21.59,
+                                'TEMP_max': 21.59,
+                                'HUMI'    : 65.284,
+                                'HUMI_min': 65.284,
+                                'HUMI_max': 65.284,
+                                'BAT'     : 131.071,
+                                'BAT_min' : 131.071,
+                                'BAT_max' : 131.071,
                                 'LGHT'    : 6,
                                 'LGHT_min': 6,
                                 'LGHT_max': 6}
@@ -198,6 +198,8 @@ class test_framework_t(object):
         passed = True
 
         for active in self._get_active_measurements():
+            if active == "SND":
+                continue
             description, measurement_obj, ref, threshold = self._get_measurement_info(active)
             passed &= self._threshold_check(description, getattr(measurement_obj, "value"), ref,  threshold, is_hex=active=="FW")
 
@@ -209,13 +211,10 @@ class test_framework_t(object):
         io.value = True
         passed &= self._bool_check("IO on", io.value, True)
 
-        self._vosm_conn.change_interval("CC1", 1)
-        self._vosm_conn.change_interval("CC2", 1)
-        self._vosm_conn.change_interval("CC3", 1)
-        self._vosm_conn.change_interval("TMP2", 1)
-        self._vosm_conn.change_interval("PM10", 1)
-        self._vosm_conn.change_interval("PM25", 1)
-        self._vosm_conn.change_interval("FW", 1)
+        self._logger.info("Running measurement loop...")
+        for sample in self.DEFAULT_COMMS_MATCH_DICT.keys():
+            if not sample.endswith("_min") and not sample.endswith("_max"):
+                self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
         self._vosm_conn.interval_mins = 1
 
@@ -230,7 +229,7 @@ class test_framework_t(object):
         passed = True
         for key, value in ref.items():
             comp = dict_.get(key, None)
-            passed &= self._threshold_check(key, comp, value, value * 0.1)
+            passed &= self._threshold_check(key, comp, value, 0.1)
         return passed
 
     def run(self):
