@@ -40,3 +40,4 @@ sens01_SOURCES := \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
            sensors/src/ftma.c
+sens01_LINK_SCRIPT := core/stm32l4.ld
