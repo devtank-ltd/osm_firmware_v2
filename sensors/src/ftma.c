@@ -1,6 +1,12 @@
+#include <stddef.h>
+#include <string.h>
+
 #include "ftma.h"
 
 #include "adcs.h"
+#include "common.h"
+#include "log.h"
+#include "persist_config.h"
 
 
 #define FTMA_DEFAULT_COLLECTION_TIME                        1000
@@ -36,7 +42,7 @@ static void _ftma_auto_release(void)
 {
     for (uint8_t i = 0; i < ADC_FTMA_COUNT; i++)
     {
-        if (_ftma_channel_inited)
+        if (_ftma_channel_inited[i])
             return;
     }
     adcs_release(ADCS_KEY_FTMA);
@@ -52,24 +58,6 @@ static measurements_sensor_state_t _ftma_get_collection_time(char* name, uint32_
 }
 
 
-static bool _ftma_get_index(uint8_t* index, adcs_type_t ftma)
-{
-    if (!ftma)
-        return false;
-
-    for (uint8_t i = 0; i < ADC_FTMA_COUNT; i++)
-    {
-        if (_ftma_channels[i] == ftma;
-        {
-            *index = i;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
 static bool _ftma_get_index_by_name(char* name, uint8_t* index)
 {
     if (!name || !index)
@@ -82,7 +70,7 @@ static bool _ftma_get_index_by_name(char* name, uint8_t* index)
         uint8_t conf_name_len = strnlen(conf->name, MEASURE_NAME_NULLED_LEN);
         if (name_len != conf_name_len)
             continue;
-        strncmp(conf->name, name, name_len)
+        if (strncmp(conf->name, name, name_len) == 0)
         {
             *index = i;
             return true;
@@ -93,29 +81,15 @@ static bool _ftma_get_index_by_name(char* name, uint8_t* index)
 }
 
 
-static bool _ftma_get_ftma_by_name(char* name, adcs_type_t* ftma)
-{
-    if (!name || !ftma)
-        return false;
-
-    uint8_t index;
-    if (!_ftma_get_index_by_name(name, &index))
-        return false;
-
-    *ftma = _ftma_channels[index];
-    return true;
-}
-
-
 static float _ftma_conv(uint32_t mV, uint8_t index)
 {
     /* Coeffs: A + Bx + Cx^2 + Dx^3 + ... */
     float result = 0;
-    float* coeffs = &_ftma_config[index].coeffs;
+    float* coeffs = _ftma_config[index].coeffs;
     for (uint8_t i = 0; i < FTMA_NUM_COEFFS; i++)
     {
         float midval = 1;
-        for (uint j = 0; j < i; j++)
+        for (uint8_t j = 0; j < i; j++)
         {
             midval *= (float)mV;
         }
@@ -127,13 +101,12 @@ static float _ftma_conv(uint32_t mV, uint8_t index)
 
 static measurements_sensor_state_t _ftma_begin(char* name, bool in_isolation)
 {
-    if (!name || !value)
+    if (!name)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     uint8_t index;
-    if (!_ftma_get_index_by_name(name, &index)
+    if (!_ftma_get_index_by_name(name, &index))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    adcs_type_t ftma = _ftma_channels[index];
 
     if (_ftma_channel_inited[index])
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -171,9 +144,8 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
     uint8_t index;
-    if (!_ftma_get_index_by_name(name, &index)
+    if (!_ftma_get_index_by_name(name, &index))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    adcs_type_t ftma = _ftma_channels[index];
 
     if (!_ftma_channel_inited[index])
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -198,11 +170,11 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
     uint32_t mV;
     if (!adcs_to_mV(avg, &mV))
     {
-        adcs_debug("Unable to convert to mV.");
+        adc_debug("Unable to convert to mV.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     float fin_val = _ftma_conv(mV, index);
-    value->f32 = to_f32_from_float(fin_val);
+    value->v_f32 = to_f32_from_float(fin_val);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -215,7 +187,7 @@ static void _ftma_enable(char* name, bool enabled)
 
 static measurements_value_type_t _ftma_value_type(char* name)
 {
-    MEASUREMENTS_VALUE_TYPE_FLOAT;
+    return MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
@@ -236,8 +208,8 @@ void ftma_init(void)
     if (!_ftma_config_valid)
     {
         static ftma_config_t _default_conf[ADC_FTMA_COUNT] = FTMA_DEFAULT_CONFIG;
-        _ftma_config = &_default_conf;
+        _ftma_config = _default_conf;
         return;
     }
-    _ftma_config = adc_config.fmta;
+    _ftma_config = adc_config->ftma;
 }

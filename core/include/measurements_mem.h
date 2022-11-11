@@ -32,6 +32,6 @@
 
 extern unsigned measurements_add_defaults(measurements_def_t * measurements_arr);
 extern void measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
-extern void measurement_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
+extern void measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
 
 extern measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name);

@@ -234,7 +234,7 @@ adcs_resp_t adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned num_
 }
 
 
-adcs_resp_t adcs_collect_avg(uint32_t avg, unsigned num_channels, unsigned num_samples, unsigned index, adcs_keys_t key, uint32_t* time_taken)
+adcs_resp_t adcs_collect_avg(uint32_t* avg, unsigned num_channels, unsigned num_samples, unsigned index, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avg)
     {

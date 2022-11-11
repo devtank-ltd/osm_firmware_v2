@@ -27,11 +27,12 @@ void persistent_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+        persist_data.adc_persist_config.config_type = ADC_PERSIST_CONFIG_TYPE_CC;
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
-            persist_data.cc_midpoints[i] = CC_DEFAULT_MIDPOINT;
-            persist_data.cc_configs[i].ext_max_mA = 100000;
-            persist_data.cc_configs[i].int_max_mV = 50;
+            persist_data.adc_persist_config.cc.cc_midpoints[i] = CC_DEFAULT_MIDPOINT;
+            persist_data.adc_persist_config.cc.cc_configs[i].ext_max_mA = 100000;
+            persist_data.adc_persist_config.cc.cc_configs[i].int_max_mV = 50;
         }
         persist_data_valid = true;
         return;
@@ -174,7 +175,7 @@ char* persist_get_serial_number(void)
 
 adc_persist_config_t* persist_get_adc_config(void)
 {
-    return persist_data.adc_persist_config;
+    return &persist_data.adc_persist_config;
 }
 
 

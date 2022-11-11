@@ -1,5 +1,6 @@
 #include <string.h>
 #include "measurements_mem.h"
+#include "measurements.h"
 #include "log.h"
 
 
