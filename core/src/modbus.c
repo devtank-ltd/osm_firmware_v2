@@ -52,7 +52,6 @@ static uint32_t modbus_read_timing_init = 0;
 static uint32_t modbus_read_last_good = 0;
 static uint32_t modbus_cur_send_time = 0;
 static bool     modbus_want_rx = false;
-static bool     modbus_has_rx = false;
 
 static uint32_t modbus_send_start_delay = 0;
 static uint32_t modbus_send_stop_delay = 0;
@@ -336,16 +335,7 @@ bool modbus_start_read(modbus_reg_t * reg)
 
     if (ring_buf_is_full(&_message_queue))
     {
-        if (modbus_has_rx)
-        {
-            uint32_t delta = since_boot_delta(get_since_boot_ms(), modbus_read_last_good);
-            if (delta < MODBUS_SENT_TIMEOUT_MS)
-            {
-                modbus_debug("No slot free.. comms??");
-                return false;
-            }
-        }
-        else
+        if (modbus_want_rx)
         {
             uint32_t delta = since_boot_delta(get_since_boot_ms(), modbus_cur_send_time);
             if (delta < MODBUS_RESP_TIMEOUT_MS)
@@ -354,13 +344,13 @@ bool modbus_start_read(modbus_reg_t * reg)
                 return false;
             }
         }
+        else modbus_debug("No slot free, but not waiting?.. comms??");
 
         modbus_debug("Previous comms issue. Restarting slots.");
         ring_buf_clear(&_message_queue);
 
         modbus_read_last_good = 0;
         modbus_cur_send_time = 0;
-        modbus_has_rx = false;
         modbus_want_rx = false;
     }
 
@@ -410,7 +400,6 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     modbuspacket_len = 0;
     modbus_read_timing_init = 0;
     modbus_want_rx = false;
-    modbus_has_rx = false;
     ring_buf_clear(ring);
 
     modbus_retransmit_count++;
@@ -579,7 +568,6 @@ void modbus_ring_process(ring_buf_t * ring)
     modbus_debug("Good CRC");
     modbuspacket_len = 0;
     modbus_read_last_good = get_since_boot_ms();
-    modbus_has_rx = true;
     modbus_want_rx = false;
 
     modbus_retransmit_count = 0;
