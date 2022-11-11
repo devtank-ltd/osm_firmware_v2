@@ -1,4 +1,4 @@
-firmware_SOURCES := \
+sens01_SOURCES := \
            core/src/main.c \
            core/src/base.c \
            core/src/log.c \

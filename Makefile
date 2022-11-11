@@ -47,7 +47,7 @@ RELEASE_NAME := $(GIT_TAG)_release_bundle
 
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
 
-FW_NAME ?= env01
+FW_NAME ?= sens01
 
 FW_IMG := $(BUILD_DIR)/$(FW_NAME).bin
 BL_IMG := $(BUILD_DIR)/bootloader.bin
