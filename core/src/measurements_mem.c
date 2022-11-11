@@ -11,6 +11,15 @@ void measurements_setup_default(measurements_def_t* def, char* name, uint8_t int
     def->type        = type;
 }
 
+
+void measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)
+{
+    measurements_def_t def;
+    measurements_setup_default(&def, name, interval, samplecount, type);
+    measurements_add(&def);
+}
+
+
 measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name)
 {
     if (!measurements_arr || !name || strlen(name) > MEASURE_NAME_LEN || !name[0])
