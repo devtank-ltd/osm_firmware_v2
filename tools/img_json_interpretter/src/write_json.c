@@ -172,7 +172,7 @@ static void _write_cc_midpoints_json(struct json_object * root)
     char name[4];
     for (unsigned n = 0; n < ADC_CC_COUNT; n++)
     {
-        midpoint = &osm_mem.config.cc_midpoints[n];
+        midpoint = &osm_mem.config.adc_persist_config.cc.cc_midpoints[n];
         snprintf(name, 4, "CC%u", n+1);
         json_object_object_add(cc_midpoints_node, name, json_object_new_int(*midpoint));
     }

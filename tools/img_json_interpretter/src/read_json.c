@@ -343,7 +343,7 @@ static bool _read_cc_midpoints_json(struct json_object * root)
                 log_error("Bad midpoint for \"%s\"", cc_midpoints_name);
                 return false;
             }
-            osm_mem.config.cc_midpoints[index-1] = midpoint;
+            osm_mem.config.adc_persist_config.cc.cc_midpoints[index-1] = midpoint;
         }
     }
     return true;
