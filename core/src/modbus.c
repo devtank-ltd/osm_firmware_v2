@@ -11,6 +11,7 @@
 #include "common.h"
 #include "cmd.h"
 #include "persist_config.h"
+#include "platform.h"
 
 #define MODBUS_RESP_TIMEOUT_MS 2000
 #define MODBUS_SENT_TIMEOUT_MS 2000
@@ -424,7 +425,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
 
-void modbus_ring_process(ring_buf_t * ring)
+void ext_uart_ring_in_process(ring_buf_t * ring)
 {
     if (!modbus_want_rx)
     {
@@ -701,6 +702,54 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, mod
         case MODBUS_REG_TYPE_FLOAT:  _modbus_reg_float_cb(reg, data, size, byte_order, word_order); break;
         default: log_error("Unknown modbus reg type."); break;
     }
+}
+
+
+bool ext_uart_ring_do_out_drain(ring_buf_t * ring)
+{
+    unsigned len = ring_buf_get_pending(ring);
+
+    static bool rs485_transmitting = false;
+    static uint32_t rs485_start_transmitting = 0;
+
+    if (!len)
+    {
+        if (rs485_transmitting && uart_is_tx_empty(EXT_UART))
+        {
+            static bool rs485_transmit_stopping = false;
+            static uint32_t rs485_stop_transmitting = 0;
+            if (!rs485_transmit_stopping)
+            {
+                modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
+                rs485_stop_transmitting = get_since_boot_ms();
+                rs485_transmit_stopping = true;
+            }
+            else if (since_boot_delta(get_since_boot_ms(), rs485_stop_transmitting) > modbus_stop_delay())
+            {
+                rs485_transmitting = false;
+                rs485_transmit_stopping = false;
+                platform_set_rs485_mode(false);
+            }
+        }
+        return false;
+    }
+
+    if (!rs485_transmitting)
+    {
+        rs485_transmitting = true;
+        platform_set_rs485_mode(true);
+        rs485_start_transmitting = get_since_boot_ms();
+        modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
+        return false;
+    }
+    else
+    {
+        if (since_boot_delta(get_since_boot_ms(), rs485_start_transmitting) < modbus_start_delay())
+            return false;
+    }
+
+    modbus_debug("Sending %u", len);
+    return true;
 }
 
 

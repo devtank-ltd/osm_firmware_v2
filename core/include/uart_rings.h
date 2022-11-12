@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "ring.h"
 
 extern unsigned uart_ring_in(unsigned uart, const char* s, unsigned len);
 extern unsigned uart_ring_out(unsigned uart, const char* s, unsigned len);
@@ -16,3 +17,5 @@ extern void uart_rings_check();
 
 extern void uart_rings_init(void);
 
+extern void ext_uart_ring_in_process(ring_buf_t * ring);
+extern bool ext_uart_ring_do_out_drain(ring_buf_t * ring);

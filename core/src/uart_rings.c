@@ -10,7 +10,6 @@
 #include "uarts.h"
 #include "comms.h"
 #include "hpm.h"
-#include "modbus.h"
 #include "platform.h"
 
 #include "common.h"
@@ -143,19 +142,19 @@ void uart_ring_in_drain(unsigned uart)
 
     ring_buf_t * ring = &ring_in_bufs[uart];
 
+    unsigned len = ring_buf_get_pending(ring);
+
+    if (uart && len)
+        log_debug(DEBUG_UART(uart), "UART %u IN %u", uart, len);
+
     if (uart == EXT_UART)
     {
-        modbus_ring_process(ring);
+        ext_uart_ring_in_process(ring);
         return;
     }
 
-    unsigned len = ring_buf_get_pending(ring);
-
     if (!len)
         return;
-
-    if (uart)
-        log_debug(DEBUG_UART(uart), "UART %u IN %u", uart, len);
 
     if (uart == CMD_UART)
     {
@@ -197,54 +196,14 @@ static void uart_ring_out_drain(unsigned uart)
 
     ring_buf_t * ring = &ring_out_bufs[uart];
 
-    unsigned len = ring_buf_get_pending(ring);
-
     if (uart == EXT_UART)
     {
-        static bool rs485_transmitting = false;
-        static uint32_t rs485_start_transmitting = 0;
-
-        if (!len)
-        {
-            if (rs485_transmitting && uart_is_tx_empty(EXT_UART))
-            {
-                static bool rs485_transmit_stopping = false;
-                static uint32_t rs485_stop_transmitting = 0;
-                if (!rs485_transmit_stopping)
-                {
-                    modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
-                    rs485_stop_transmitting = get_since_boot_ms();
-                    rs485_transmit_stopping = true;
-                    return;
-                }
-                else if (since_boot_delta(get_since_boot_ms(), rs485_stop_transmitting) > modbus_stop_delay())
-                {
-                    rs485_transmitting = false;
-                    rs485_transmit_stopping = false;
-                    platform_set_rs485_mode(false);
-                    return;
-                }
-            }
+        if(!ext_uart_ring_do_out_drain(ring))
             return;
-        }
-
-        if (!rs485_transmitting)
-        {
-            rs485_transmitting = true;
-            platform_set_rs485_mode(true);
-            rs485_start_transmitting = get_since_boot_ms();
-            modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
-            return;
-        }
-        else
-        {
-            if (since_boot_delta(get_since_boot_ms(), rs485_start_transmitting) < modbus_start_delay())
-                return;
-        }
-
-        modbus_debug("Sending %u", len);
     }
-    else if (!len)
+    unsigned len = ring_buf_get_pending(ring);
+
+    if (!len)
         return;
 
     if (uart_is_tx_empty(uart))

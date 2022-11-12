@@ -8,10 +8,7 @@
 
 extern uint16_t modbus_crc(uint8_t * buf, unsigned length);
 
-
 extern bool modbus_start_read(modbus_reg_t * reg);
-
-extern void modbus_ring_process(ring_buf_t * ring);
 
 extern void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop, bool binary_framing);
 
