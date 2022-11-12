@@ -1390,7 +1390,7 @@ bool measurements_reading_to_str(measurements_reading_t* reading, measurements_v
             return true;
         }
         case MEASUREMENTS_VALUE_TYPE_STR:
-            strncpy(text, reading->v_str, len-1);
+            snprintf(text, len, "\"%s\"", reading->v_str);
             return true;
         default:
             break;

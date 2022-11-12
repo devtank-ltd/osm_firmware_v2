@@ -135,6 +135,8 @@ class measurement_t(property_t):
         if r is None:
             return False
         r_str = r_str[r.end():]
+        if r_str[0] == '"':
+            return r_str
         if re.match("^[0-9.+-]+$", r_str):
             return float(r_str)
         return r_str
