@@ -96,11 +96,13 @@ class test_framework_t(object):
                 return False
         return True
 
-    def _threshold_check(self, desc, value, ref, tolerance, is_hex=False):
-        if is_hex:
-            print(value)
-            value = float(int(value, 16))
-        if isinstance(value, float) or isinstance(value, int):
+    def _threshold_check(self, name, desc, value, ref, tolerance):
+        if isinstance(value, str):
+            assert name == "FW"
+            ref = '"%s"' % os.popen('git log -n 1 --format="%h"').read().strip()
+            passed = value == ref
+            tolerance = 0
+        elif isinstance(value, float) or isinstance(value, int):
             passed = abs(float(value) - float(ref)) <= float(tolerance)
         else:
             self._logger.debug(f'Invalid test argument {value} for "{desc}"')
@@ -201,7 +203,7 @@ class test_framework_t(object):
             if active == "SND":
                 continue
             description, measurement_obj, ref, threshold = self._get_measurement_info(active)
-            passed &= self._threshold_check(description, getattr(measurement_obj, "value"), ref,  threshold, is_hex=active=="FW")
+            passed &= self._threshold_check(active, description, getattr(measurement_obj, "value"), ref,  threshold)
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)
@@ -229,7 +231,7 @@ class test_framework_t(object):
         passed = True
         for key, value in ref.items():
             comp = dict_.get(key, None)
-            passed &= self._threshold_check(key, comp, value, 0.1)
+            passed &= self._threshold_check(key, key, comp, value, 0.1)
         return passed
 
     def run(self):
