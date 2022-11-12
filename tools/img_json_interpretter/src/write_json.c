@@ -2,14 +2,91 @@
 
 #define WORD_BYTE_ORDER_TXT_SIZE            3
 
+static bool _reg2json_cb(modbus_reg_t * reg, void * userdata)
+{
+    struct json_object * registers_node=(struct json_object*)userdata;
+    struct json_object * register_node = json_object_new_object();
+
+    char name[MODBUS_NAME_LEN+1];
+
+    memcpy(name, reg->name, MODBUS_NAME_LEN);
+    name[MODBUS_NAME_LEN] = 0;
+
+    json_object_object_add(registers_node, name, register_node);
+
+    const char * type = modbus_reg_type_get_str(reg->type);
+
+    if (!type)
+    {
+        log_error("Config has invalid register type for \"%s\"", name);
+        return true;
+    }
+
+    json_object_object_add(register_node, "type", json_object_new_string(type));
+    json_object_object_add(register_node, "reg", json_object_new_int(reg->reg_addr));
+    json_object_object_add(register_node, "func", json_object_new_int(reg->func));
+
+    return false;
+}
+
+
+static bool _dev2json_cb(modbus_dev_t * dev, void * userdata)
+{
+    struct json_object * modbus_devices_node=(struct json_object*)userdata;
+    struct json_object * dev_node = json_object_new_object();
+
+    char name[MODBUS_NAME_LEN+1];
+
+    memcpy(name, dev->name, MODBUS_NAME_LEN);
+    name[MODBUS_NAME_LEN] = 0;
+
+    json_object_object_add(modbus_devices_node, name, dev_node);
+
+    char w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE + 1];
+    switch(dev->word_order)
+    {
+        case MODBUS_WORD_ORDER_LSW:
+            strncpy(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE);
+            break;
+        case MODBUS_WORD_ORDER_MSW:
+            strncpy(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE);
+            break;
+        default:
+            strncpy(w_b_order_txt, "NA ", WORD_BYTE_ORDER_TXT_SIZE);
+            break;
+    }
+    w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
+    json_object_object_add(dev_node, "word_order", json_object_new_string(w_b_order_txt));
+    switch(dev->byte_order)
+    {
+        case MODBUS_WORD_ORDER_LSW:
+            strncpy(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE);
+            break;
+        case MODBUS_WORD_ORDER_MSW:
+            strncpy(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE);
+            break;
+        default:
+            strncpy(w_b_order_txt, "NA", WORD_BYTE_ORDER_TXT_SIZE);
+            break;
+    }
+    w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
+    json_object_object_add(dev_node, "byte_order", json_object_new_string(w_b_order_txt));
+
+    json_object_object_add(dev_node, "unit_id", json_object_new_int(dev->unit_id));
+
+    struct json_object * registers_node = json_object_new_object();
+
+    json_object_object_add(dev_node, "registers", registers_node);
+
+    return modbus_dev_for_each_reg(dev, _reg2json_cb, registers_node);
+}
+
 
 static bool _write_modbus_json(struct json_object * root)
 {
     modbus_bus_t* modbus = &osm_mem.config.modbus_bus;
 
-    if (modbus->version == MODBUS_BLOB_VERSION &&
-        modbus->max_dev_num == MODBUS_MAX_DEV &&
-        modbus->max_reg_num == MODBUS_DEV_REGS)
+    if (modbus->version == MODBUS_BLOB_VERSION)
     {
         struct json_object * modbus_node = json_object_new_object();
 
@@ -27,83 +104,7 @@ static bool _write_modbus_json(struct json_object * root)
         struct json_object * modbus_devices_node = json_object_new_object();
         json_object_object_add(modbus_node, "modbus_devices", modbus_devices_node);
 
-        for(unsigned n = 0; n < MODBUS_MAX_DEV; n++)
-        {
-            modbus_dev_t * dev = &modbus->modbus_devices[n];
-            if (dev->name[0])
-            {
-                struct json_object * dev_node = json_object_new_object();
-
-                char name[MODBUS_NAME_LEN+1];
-
-                memcpy(name, dev->name, MODBUS_NAME_LEN);
-                name[MODBUS_NAME_LEN] = 0;
-
-                json_object_object_add(modbus_devices_node, name, dev_node);
-
-                char w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE + 1];
-                switch(dev->word_order)
-                {
-                    case MODBUS_WORD_ORDER_LSW:
-                        strncpy(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE);
-                        break;
-                    case MODBUS_WORD_ORDER_MSW:
-                        strncpy(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE);
-                        break;
-                    default:
-                        strncpy(w_b_order_txt, "NA ", WORD_BYTE_ORDER_TXT_SIZE);
-                        break;
-                }
-                w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
-                json_object_object_add(dev_node, "word_order", json_object_new_string(w_b_order_txt));
-                switch(dev->byte_order)
-                {
-                    case MODBUS_WORD_ORDER_LSW:
-                        strncpy(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE);
-                        break;
-                    case MODBUS_WORD_ORDER_MSW:
-                        strncpy(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE);
-                        break;
-                    default:
-                        strncpy(w_b_order_txt, "NA", WORD_BYTE_ORDER_TXT_SIZE);
-                        break;
-                }
-                w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
-                json_object_object_add(dev_node, "byte_order", json_object_new_string(w_b_order_txt));
-
-                json_object_object_add(dev_node, "unit_id", json_object_new_int(dev->slave_id));
-
-                struct json_object * registers_node = json_object_new_object();
-
-                json_object_object_add(dev_node, "registers", registers_node);
-
-                for (unsigned i = 0; i < MODBUS_DEV_REGS; i++)
-                {
-                    modbus_reg_t * reg = &dev->regs[i];
-                    if (reg->name[0])
-                    {
-                        struct json_object * register_node = json_object_new_object();
-
-                        memcpy(name, reg->name, MODBUS_NAME_LEN);
-                        name[MODBUS_NAME_LEN] = 0;
-
-                        json_object_object_add(registers_node, name, register_node);
-
-                        const char * type = modbus_reg_type_get_str(reg->type);
-
-                        if (!type)
-                        {
-                            log_error("Config has invalid register type for \"%s\"", name);
-                            return false;
-                        }
-
-                        json_object_object_add(register_node, "type", json_object_new_string(type));
-                        json_object_object_add(register_node, "reg", json_object_new_int(reg->reg_addr));
-                        json_object_object_add(register_node, "func", json_object_new_int(reg->func));
-                    }
-                }
-            }
-        }
+        modbus_for_each_dev(_dev2json_cb, modbus_devices_node);
     }
     return true;
 }

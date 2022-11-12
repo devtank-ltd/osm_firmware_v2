@@ -18,6 +18,7 @@ extern modbus_dev_t * modbus_get_device_by_name(char * name);
 
 extern modbus_dev_t * modbus_add_device(unsigned slave_id, char *name, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
 
+extern bool           modbus_for_each_dev(bool (*cb)(modbus_dev_t * dev, void * userdata), void * userdata);
 extern bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_type_t type, uint8_t func, uint16_t reg_addr);
 extern modbus_reg_t * modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name);
 extern uint16_t       modbus_dev_get_unit_id(modbus_dev_t * dev);

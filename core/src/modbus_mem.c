@@ -233,6 +233,19 @@ uint16_t       modbus_dev_get_unit_id(modbus_dev_t * dev)
 }
 
 
+bool           modbus_for_each_dev(bool (exit_cb)(modbus_dev_t * dev, void * userdata), void * userdata)
+{
+    modbus_dev_t * dev = _modbus_get_first_dev();
+    while(dev)
+    {
+        if (exit_cb(dev, userdata))
+            return true;
+        dev = _modbus_get_next_dev(dev);
+    }
+    return false;
+}
+
+
 bool           modbus_dev_for_each_reg(modbus_dev_t * dev, bool (exit_cb)(modbus_reg_t * reg, void * userdata), void * userdata)
 {
     modbus_reg_t * reg = _modbus_get_first_reg(dev);
@@ -468,9 +481,9 @@ modbus_reg_state_t modbus_reg_get_state(modbus_reg_t * reg)
 }
 
 
-void modbus_init(void)
+void modbus_bus_init(modbus_bus_t * bus)
 {
-    modbus_bus = persist_get_modbus_bus();
+    modbus_bus = bus;
 
     if (modbus_bus->version == MODBUS_BLOB_VERSION)
     {
@@ -490,11 +503,5 @@ void modbus_init(void)
         for(unsigned n = 0; n < (MODBUS_BLOCKS-1) /*Last is zeroed*/; n++)
             modbus_bus->blocks[n].next_free_offset = _modbus_get_offset(&modbus_bus->blocks[n+1]);
     }
-
-    modbus_setup(modbus_bus->baudrate,
-                 modbus_bus->databits,
-                 modbus_bus->parity,
-                 modbus_bus->stopbits,
-                 modbus_bus->binary_protocol);
 }
 

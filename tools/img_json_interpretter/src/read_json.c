@@ -99,8 +99,6 @@ static bool _read_modbus_json(struct json_object * root)
     if (modbus_bus)
     {
         osm_mem.config.modbus_bus.version     = MODBUS_BLOB_VERSION;
-        osm_mem.config.modbus_bus.max_dev_num = MODBUS_MAX_DEV;
-        osm_mem.config.modbus_bus.max_reg_num = MODBUS_DEV_REGS;
         osm_mem.config.modbus_bus.binary_protocol = (uint8_t)json_object_get_boolean(json_object_object_get(modbus_bus, "binary_protocol"));
 
         char con_str[16];
@@ -109,10 +107,12 @@ static bool _read_modbus_json(struct json_object * root)
         {
             uart_parity_t parity;
             uart_stop_bits_t stopbits;
+            uint8_t databits;;
+
 
             if (!decompose_uart_str(con_str,
                                &osm_mem.config.modbus_bus.baudrate,
-                               &osm_mem.config.modbus_bus.databits,
+                               &databits,
                                &parity,
                                &stopbits))
             {
@@ -120,6 +120,7 @@ static bool _read_modbus_json(struct json_object * root)
                 return false;
             }
 
+            osm_mem.config.modbus_bus.databits = databits;
             osm_mem.config.modbus_bus.parity   = parity;
             osm_mem.config.modbus_bus.stopbits = stopbits;
         }
@@ -197,8 +198,6 @@ static bool _read_modbus_json(struct json_object * root)
                             log_error("Modbus register name \"%s\" too long.", reg_name);
                             return false;
                         }
-
-                        modbus_reg_t * reg = &dev->regs[reg_index++];
 
                         struct json_object * reg_type = json_object_object_get(reg_node, "type");
                         if (!reg_type)

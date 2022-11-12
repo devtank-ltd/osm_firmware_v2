@@ -25,4 +25,5 @@ extern bool modbus_has_pending(void);
 
 extern void modbus_log();
 
+extern void modbus_bus_init(modbus_bus_t * bus);
 extern void modbus_init(void);

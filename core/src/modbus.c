@@ -702,3 +702,15 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, mod
         default: log_error("Unknown modbus reg type."); break;
     }
 }
+
+
+void modbus_init(void)
+{
+    modbus_bus_t * bus = persist_get_modbus_bus();
+    modbus_bus_init(bus);
+    modbus_setup(bus->baudrate,
+                 bus->databits,
+                 bus->parity,
+                 bus->stopbits,
+                 bus->binary_protocol);
+}
