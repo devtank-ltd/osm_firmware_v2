@@ -67,7 +67,7 @@ bool penguin_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
-        modbus_uart_ring_in_process(ring);
+        ext_uart_ring_in_process(ring);
         return true;
     }
     else if (uart == HPM_UART)
@@ -83,7 +83,7 @@ bool penguin_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 bool penguin_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
-        return modbus_uart_ring_do_out_drain(ring);
+        ext_uart_ring_out_drain(ring);
     return true;
 }
 

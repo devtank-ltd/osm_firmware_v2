@@ -19,3 +19,6 @@ extern void uart_rings_check();
 extern void uart_rings_init(void);
 
 extern char line_buffer[CMD_LINELEN];
+
+extern void ext_uart_ring_in_process(ring_buf_t * ring);
+extern void ext_uart_ring_out_drain(ring_buf_t * ring);
