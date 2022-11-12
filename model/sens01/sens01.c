@@ -77,7 +77,7 @@ void sens01_post_init(void)
 
 bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
-    if (uart == RS485_UART)
+    if (uart == EXT_UART)
     {
         modbus_uart_ring_in_process(ring);
         return true;
@@ -94,7 +94,7 @@ bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 
 bool sens01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
-    if (uart == RS485_UART)
+    if (uart == EXT_UART)
         return modbus_uart_ring_do_out_drain(ring);
     return true;
 }

@@ -28,6 +28,8 @@ class test_framework_t(object):
     DEFAULT_OSM_BASE        = "/tmp/osm/"
     DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
+    DEFAULT_EXT_PTY_PATH    = DEFAULT_OSM_BASE + "UART_EXT_slave"
+    DEFAULT_HPM_PTY_PATH    = DEFAULT_OSM_BASE + "UART_HPM_slave"
     DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_LW_slave"
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
@@ -120,6 +122,11 @@ class test_framework_t(object):
             self.error("Failed to spawn virtual OSM.")
             return False
 
+        if not self._spawn_modbus(self.DEFAULT_EXT_PTY_PATH):
+            return False
+
+        if not self._spawn_hpm(self.DEFAULT_HPM_PTY_PATH):
+            return False
 
     def _get_active_measurements(self) -> list:
         actives = []

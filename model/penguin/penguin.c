@@ -65,7 +65,7 @@ void penguin_post_init(void)
 
 bool penguin_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
-    if (uart == RS485_UART)
+    if (uart == EXT_UART)
     {
         modbus_uart_ring_in_process(ring);
         return true;
@@ -82,7 +82,7 @@ bool penguin_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 
 bool penguin_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
-    if (uart == RS485_UART)
+    if (uart == EXT_UART)
         return modbus_uart_ring_do_out_drain(ring);
     return true;
 }
@@ -202,7 +202,7 @@ unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr
 
 void penguin_linux_spawn_fakes(void)
 {
-    peripherals_add_modbus(RS485_UART);
+    peripherals_add_modbus(EXT_UART);
     peripherals_add_hpm(HPM_UART);
     peripherals_add_w1(1000000);
     peripherals_add_i2c(2000000);

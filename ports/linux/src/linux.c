@@ -25,37 +25,13 @@
 #include "linux.h"
 #include "common.h"
 #include "uarts.h"
-
-#include "measurements.h"
-
-#include "timers.h"
-#include "io.h"
-#include "adcs.h"
-#include "can_impl.h"
-#include "log.h"
-#include "config.h"
-#include "pinmap.h"
-#include "uart_rings.h"
-#include "hpm.h"
-#include "cc.h"
-#include "bat.h"
-#include "modbus_measurements.h"
-#include "ds18b20.h"
-#include "htu21d.h"
-#include "pulsecount.h"
-#include "veml7700.h"
-#include "sai.h"
-#include "fw.h"
 #include "persist_config.h"
-#include "debug_mode.h"
-#include "sleep.h"
-#include "update.h"
-#include "modbus.h"
-
-#include "platform_model.h"
 #include "log.h"
+#include "measurements.h"
+#include "platform_model.h"
 
 #define LINUX_PTY_BUF_SIZ       64
+#define LINUX_PTY_NAME_SIZE     16
 #define LINUX_LINE_BUF_SIZ      32
 #define LINUX_MAX_NFDS          32
 
@@ -64,6 +40,10 @@
 
 #define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
 #define LINUX_REBOOT_FILE_LOC   LINUX_FILE_LOC"reboot.dat"
+
+
+extern int errno;
+
 
 typedef enum
 {
@@ -127,18 +107,21 @@ static bool _ios_enabled[IOS_COUNT] = {0};
 uint32_t                rcc_ahb_frequency;
 
 
-static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
-                                                    .name={"UART_DEBUG"},
-                                                    .pty = {.uart = CMD_UART},
-                                                    .cb=linux_uart_proc
-                                                    },
-                                                   {.type=LINUX_FD_TYPE_PTY,
-                                                    .name={"UART_LW"},
-                                                    .pty = {.uart = COMMS_UART},
-                                                    .cb=linux_uart_proc},
-                                                   {.type=LINUX_FD_TYPE_EVENT,
-                                                    .name={"ADC_GEN_EVENT"},
-                                                    .cb=linux_adc_generate}};
+static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
+                                      .name={"UART_DEBUG"},
+                                      .cb=uart_debug_cb},
+                                     {.type=LINUX_FD_TYPE_PTY,
+                                      .name={"UART_LW"},
+                                      .cb=uart_lw_cb},
+                                     {.type=LINUX_FD_TYPE_PTY,
+                                      .name={"UART_HPM"},
+                                      .cb=uart_hpm_cb},
+                                     {.type=LINUX_FD_TYPE_PTY,
+                                      .name={"UART_EXT"},
+                                      .cb=uart_rs485_cb},
+                                     {.type=LINUX_FD_TYPE_EVENT,
+                                      .name={"ADC_GEN_EVENT"},
+                                      .cb=linux_adc_generate}};
 
 
 

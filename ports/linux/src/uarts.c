@@ -41,6 +41,30 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
 }
 
 
+void uart_debug_cb(char* in, unsigned len)
+{
+    linux_uart_proc(CMD_UART, in, len);
+}
+
+
+void uart_lw_cb(char* in, unsigned len)
+{
+    linux_uart_proc(COMMS_UART, in, len);
+}
+
+
+void uart_hpm_cb(char* in, unsigned len)
+{
+    linux_uart_proc(HPM_UART, in, len);
+}
+
+
+void uart_rs485_cb(char* in, unsigned len)
+{
+    linux_uart_proc(EXT_UART, in, len);
+}
+
+
 void uarts_setup(void)
 {
 }

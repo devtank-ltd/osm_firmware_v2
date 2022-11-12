@@ -75,7 +75,7 @@
     CMD_UART   0
     LW_UART    1
     HPM_UART   2
-    RS485_UART 3
+    EXT_UART 3
 */
 
 /* Uart Index on STM Uart */
