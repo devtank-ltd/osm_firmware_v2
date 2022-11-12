@@ -123,7 +123,7 @@ class property_t(dev_child_t):
 
 
 class measurement_t(property_t):
-    def __init__(self, parent, name: str, interval:int, samples:int, is_writable: bool = False, timeout: float = 1.0):
+    def __init__(self, parent, name: str, interval:int, samples:int, is_writable: bool = False, timeout: float = 2.0):
         super().__init__(parent, name, None, f"get_meas {name}", self._parse, is_writable, timeout)
         self._interval = interval
         self._samples = samples
