@@ -209,7 +209,7 @@ GPIO16 D2                   IO 11
 #define CMD_UART   0
 #define COMMS_UART 1
 #define HPM_UART   2
-#define RS485_UART 3
+#define EXT_UART   3
 
 #define UART_CHANNELS_COUNT 4
 

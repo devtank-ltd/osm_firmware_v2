@@ -131,7 +131,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t
 
 void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop, bool binary_framing)
 {
-    uart_resetup(RS485_UART, speed, databits, parity, stop);
+    uart_resetup(EXT_UART, speed, databits, parity, stop);
 
     modbus_bus->binary_protocol = binary_framing;
 
@@ -169,7 +169,7 @@ bool modbus_setup_from_str(char * str)
 
     pos+=3;
 
-    if (!uart_resetup_str(RS485_UART, skip_space(pos)))
+    if (!uart_resetup_str(EXT_UART, skip_space(pos)))
         return false;
 
     unsigned speed;
@@ -177,7 +177,7 @@ bool modbus_setup_from_str(char * str)
     uart_parity_t parity;
     uart_stop_bits_t stop;
 
-    uart_get_setup(RS485_UART, &speed, &databits, &parity, &stop);
+    uart_get_setup(EXT_UART, &speed, &databits, &parity, &stop);
 
     modbus_bus->binary_protocol = binary_framing;
 
@@ -311,11 +311,11 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
 
     if (modbus_bus->binary_protocol)
     {
-        uart_ring_out(RS485_UART, (char[]){MODBUS_BIN_START}, 1);
+        uart_ring_out(EXT_UART, (char[]){MODBUS_BIN_START}, 1);
         tx_modbuspacket[8] = MODBUS_BIN_STOP;
-        uart_ring_out(RS485_UART, (char*)tx_modbuspacket, 9);
+        uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 9);
     }
-    else uart_ring_out(RS485_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
+    else uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
 
     reg->value_state = MB_REG_WAITING;
 }

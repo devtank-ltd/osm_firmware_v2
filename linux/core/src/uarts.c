@@ -61,7 +61,7 @@ void uart_hpm_cb(char* in, unsigned len)
 
 void uart_rs485_cb(char* in, unsigned len)
 {
-    _uart_proc(RS485_UART, in, len);
+    _uart_proc(EXT_UART, in, len);
 }
 
 

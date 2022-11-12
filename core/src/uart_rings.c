@@ -143,7 +143,7 @@ void uart_ring_in_drain(unsigned uart)
 
     ring_buf_t * ring = &ring_in_bufs[uart];
 
-    if (uart == RS485_UART)
+    if (uart == EXT_UART)
     {
         modbus_ring_process(ring);
         return;
@@ -199,14 +199,14 @@ static void uart_ring_out_drain(unsigned uart)
 
     unsigned len = ring_buf_get_pending(ring);
 
-    if (uart == RS485_UART)
+    if (uart == EXT_UART)
     {
         static bool rs485_transmitting = false;
         static uint32_t rs485_start_transmitting = 0;
 
         if (!len)
         {
-            if (rs485_transmitting && uart_is_tx_empty(RS485_UART))
+            if (rs485_transmitting && uart_is_tx_empty(EXT_UART))
             {
                 static bool rs485_transmit_stopping = false;
                 static uint32_t rs485_stop_transmitting = 0;
