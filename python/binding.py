@@ -141,6 +141,15 @@ class measurement_t(property_t):
             return float(r_str)
         return r_str
 
+    @property
+    def interval(self):
+        return self._interval
+
+    @interval.setter
+    def interval(self, v):
+        self.parent.change_interval(self.name, v)
+        self._interval = v
+
 
 class modbus_reg_t(measurement_t):
     def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, interval: int = 1, samples: int = 1, timeout: float = 2.0):
