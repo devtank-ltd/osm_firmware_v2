@@ -187,6 +187,8 @@ class test_framework_t(object):
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
         self._vosm_conn.measurements_enable(False)
+        self._vosm_conn.PM10.interval = 1
+        self._vosm_conn.PM25.interval = 1
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
