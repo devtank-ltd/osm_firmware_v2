@@ -10,6 +10,8 @@
 #include "can_impl.h"
 #include "log.h"
 #include "config.h"
+#include "pinmap.h"
+#include "uart_rings.h"
 #include "hpm.h"
 #include "cc.h"
 #include "bat.h"
@@ -37,6 +39,32 @@ void sensors_init(void)
     modbus_init();
     can_impl_init();
 }
+
+
+bool uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+{
+    if (uart == RS485_UART)
+    {
+        modbus_uart_ring_in_process(ring);
+        return true;
+    }
+    else if (uart == HPM_UART)
+    {
+        hpm_ring_process(ring, line_buffer, CMD_LINELEN);
+        return true;
+    }
+
+    return false;
+}
+
+
+bool uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+{
+    if (uart == RS485_UART)
+        return modbus_uart_ring_do_out_drain(ring);
+    return true;
+}
+
 
 bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {

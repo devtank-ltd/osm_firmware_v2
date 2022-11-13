@@ -66,7 +66,7 @@
     CMD_UART   0
     LW_UART    1
     HPM_UART   2
-    EXT_UART 3
+    RS485_UART 3
 */
 
 #define UART_0_IN_BUF_SIZE  CMD_LINELEN

@@ -17,5 +17,7 @@ extern void uart_rings_check();
 
 extern void uart_rings_init(void);
 
-extern void ext_uart_ring_in_process(ring_buf_t * ring);
-extern bool ext_uart_ring_do_out_drain(ring_buf_t * ring);
+extern char line_buffer[CMD_LINELEN];
+
+extern bool uart_ring_done_in_process(unsigned uart, ring_buf_t * ring);
+extern bool uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring);

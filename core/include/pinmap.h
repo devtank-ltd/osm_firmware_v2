@@ -209,9 +209,34 @@ GPIO16 D2                   IO 11
 #define CMD_UART   0
 #define COMMS_UART 1
 #define HPM_UART   2
-#define EXT_UART   3
+#define RS485_UART 3
 
 #define UART_CHANNELS_COUNT 4
+
+#define UART_BUFFERS_INIT                \
+char uart_0_in_buf[UART_0_IN_BUF_SIZE];  \
+char uart_0_out_buf[UART_0_OUT_BUF_SIZE];\
+char uart_1_in_buf[UART_1_IN_BUF_SIZE];  \
+char uart_1_out_buf[UART_1_OUT_BUF_SIZE];\
+char uart_2_in_buf[UART_2_IN_BUF_SIZE];  \
+char uart_2_out_buf[UART_2_OUT_BUF_SIZE];\
+char uart_3_in_buf[UART_3_IN_BUF_SIZE];  \
+char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
+
+#define UART_IN_RINGS                                   \
+{                                                       \
+    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),\
+    RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),\
+    RING_BUF_INIT(uart_2_in_buf, sizeof(uart_2_in_buf)),\
+    RING_BUF_INIT(uart_3_in_buf, sizeof(uart_3_in_buf)),\
+}
+
+#define UART_OUT_RINGS                                    \
+{                                                         \
+    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),\
+    RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
+    RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf)),\
+    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),}
 
 #define IOS_COUNT 10
 #define W1_PULSE_1_IO               4

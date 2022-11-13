@@ -464,7 +464,7 @@ static void _linux_exit(int err)
 
 bool linux_write_pty(unsigned index, const char *data, unsigned size)
 {
-    if (index > EXT_UART)
+    if (index > RS485_UART)
         return false;
 
     fd_t * fd_handler = &fd_list[index];
