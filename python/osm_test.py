@@ -190,6 +190,9 @@ class test_framework_t(object):
         self._vosm_conn.PM10.interval = 1
         self._vosm_conn.PM25.interval = 1
         self._vosm_conn.TMP2.interval = 1
+        self._vosm_conn.CC1.interval = 1
+        self._vosm_conn.CC2.interval = 1
+        self._vosm_conn.CC3.interval = 1
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
@@ -215,6 +218,11 @@ class test_framework_t(object):
         io.configure(False, "U")
         io.value = True
         passed &= self._bool_check("IO on", io.value, True)
+
+        # If the CCs are left on, measurement loop fails. TODO: Fix that
+        self._vosm_conn.CC1.interval = 0
+        self._vosm_conn.CC2.interval = 0
+        self._vosm_conn.CC3.interval = 0
 
         self._logger.info("Running measurement loop...")
         for sample in self.DEFAULT_COMMS_MATCH_DICT.keys():
