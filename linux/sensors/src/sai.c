@@ -1,4 +1,9 @@
+#include <stdlib.h>
+
 #include "sai.h"
+
+#include "log.h"
+#include "common.h"
 
 
 void sai_init(void)
@@ -53,4 +58,27 @@ void  sai_inf_init(measurements_inf_t* inf)
     inf->get_cb             = _sai_measurements_get;
     inf->iteration_cb       = _sai_iteration_callback;
     inf->value_type_cb      = _pulsecount_value_type;
+}
+
+
+static void sound_cal_cb(char* args)
+{
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    if (index < 1 || index > SAI_NUM_CAL_COEFFS)
+    {
+        log_out("Index out of range.");
+        return;
+    }
+    p = skip_space(p);
+    float coeff = strtof(p, NULL);
+    if (!sai_set_coeff(index-1, coeff))
+        log_out("Could not set the coefficient.");
+}
+
+
+struct cmd_link_t* sai_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

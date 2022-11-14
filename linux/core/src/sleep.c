@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "sleep.h"
 
@@ -78,4 +79,41 @@ turn_on_sleep:
     _sleep_on_wakeup();
     sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));
     return true;
+}
+
+
+void sleep_cb(char* args)
+{
+    char* p;
+    uint32_t sleep_ms = strtoul(args, &p, 10);
+    if (p == args)
+    {
+        log_out("<TIME(MS)>");
+        return;
+    }
+    log_out("Sleeping for %"PRIu32"ms.", sleep_ms);
+    sleep_for_ms(sleep_ms);
+}
+
+
+void power_mode_cb(char* args)
+{
+    measurements_power_mode_t mode;
+    if (args[0] == 'A')
+        mode = MEASUREMENTS_POWER_MODE_AUTO;
+    else if (args[0] == 'B')
+        mode = MEASUREMENTS_POWER_MODE_BATTERY;
+    else if (args[0] == 'P')
+        mode = MEASUREMENTS_POWER_MODE_PLUGGED;
+    else
+        return;
+    measurements_power_mode(mode);
+}
+
+
+struct cmd_link_t* sleep_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    sleep_cb                      , false , NULL },
+                                       { "power_mode",   "Power mode setting",       power_mode_cb                 , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
