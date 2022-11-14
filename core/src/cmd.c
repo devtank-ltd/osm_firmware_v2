@@ -122,7 +122,7 @@ void cmds_process(char * command, unsigned len)
     bool found = false;
     log_out(LOG_START_SPACER);
     char * args;
-    for(struct cmd_link_t * cmd = _cmds; cmd->next; cmd = cmd->next)
+    for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
     {
         unsigned keylen = strlen(cmd->key);
         if(rx_buffer_len >= keylen &&
@@ -157,13 +157,12 @@ void cmds_init(void)
         { "debug",        "Set hex debug mask",       debug_cb                      , false , NULL},
         { "timer",        "Test usecs timer",         timer_cb                      , false , NULL},
         { "serial_num",   "Set/get serial number",    serial_num_cb                 , true  , NULL},
-        { NULL },
     };
 
-    struct cmd_link_t* tail;
-    for (tail = cmds+1; tail->key; tail++)
-        (tail-1)->next = tail;
-    tail--;
+    struct cmd_link_t* tail = &cmds[ARRAY_SIZE(cmds)-1];
+
+    for (struct cmd_link_t* cur = cmds; cur != tail; cur++)
+        cur->next = cur + 1;
 
     cmds_add_all(tail);
     _cmds = cmds;
