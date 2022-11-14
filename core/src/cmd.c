@@ -5,34 +5,13 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "log.h"
 #include "cmd.h"
-#include "uarts.h"
-#include "adcs.h"
-#include "pulsecount.h"
 #include "io.h"
 #include "timers.h"
 #include "persist_config.h"
-#include "sai.h"
-#include "comms.h"
-#include "measurements.h"
-#include "hpm.h"
-#include "modbus_measurements.h"
-#include "update.h"
-#include "ds18b20.h"
 #include "common.h"
-#include "htu21d.h"
 #include "log.h"
-#include "uart_rings.h"
-#include "veml7700.h"
-#include "cc.h"
-#include "bat.h"
-#include "sleep.h"
-#include "can_impl.h"
-#include "debug_mode.h"
-#include "platform.h"
 #include "version.h"
-#include "base_types.h"
 
 
 static char   * rx_buffer;
