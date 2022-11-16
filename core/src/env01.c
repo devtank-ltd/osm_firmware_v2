@@ -107,6 +107,13 @@ bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, m
 }
 
 
+void debug_mode_enable_all(void)
+{
+    adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
+    cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
+}
+
+
 void measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );

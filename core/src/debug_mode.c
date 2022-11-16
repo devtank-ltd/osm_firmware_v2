@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "debug_mode.h"
+
 #include "measurements.h"
 #include "persist_config.h"
 #include "base_types.h"
@@ -159,8 +161,7 @@ void debug_mode(void)
         _debug_mode_enabled = false;
         return;
     }
-    adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
-    cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
+    debug_mode_enable_all();
 
     _debug_mode_enabled = true;
 
