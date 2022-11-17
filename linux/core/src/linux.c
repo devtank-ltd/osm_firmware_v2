@@ -620,7 +620,7 @@ void platform_start(void)
     {
         unsigned mins = strtoul(meas_interval, NULL, 10);
         linux_port_debug("New Measurement Interval: %u", mins);
-        persist_set_mins_interval(mins);
+        persist_data.model_config.mins_interval = mins;
         transmit_interval = mins;
     }
     char * auto_meas = getenv("AUTO_MEAS");

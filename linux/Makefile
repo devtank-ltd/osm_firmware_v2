@@ -14,7 +14,7 @@ CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-addr
 CFLAGS		+= -fstack-usage -Wstack-usage=500
 CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
-CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D__LINUX__
 CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 BUILD_DIR := build
@@ -84,7 +84,8 @@ firmware_SOURCES := \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
-	   model/$(FW_NAME)/$(FW_NAME).c
+	   model/$(FW_NAME)/$(FW_NAME).c \
+	   model/$(FW_NAME)/persist_config_model.c
 
 firmware_OBJS=$(firmware_SOURCES:%.c=$(BUILD_DIR)/%.o)
 

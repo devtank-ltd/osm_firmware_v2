@@ -114,6 +114,7 @@
 }
 
 
+#ifndef __LINUX__
 #define IOS_PORT_N_PINS            \
 {                                  \
     {GPIOC, GPIO6 },   /* IO 0  */ \
@@ -127,6 +128,21 @@
     {GPIOB, GPIO5 },   /* IO 8  */ \
     {GPIOD, GPIO2 },   /* IO 9 */ \
 }
+#else
+#define IOS_PORT_N_PINS            \
+{                                  \
+    {0},   /* IO 0  */ \
+    {1},   /* IO 1 */ \
+    {2},   /* IO 2  */ \
+    {3},   /* IO 3  */ \
+    {4},   /* IO 4  */ \
+    {5},   /* IO 5  */ \
+    {6},   /* IO 6  */ \
+    {7},   /* IO 7  */ \
+    {8},   /* IO 8  */ \
+    {9},   /* IO 9 */ \
+}
+#endif // __LINUX__
 
 /*
 Schematic name, STM pin
