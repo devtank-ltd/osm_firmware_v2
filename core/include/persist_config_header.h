@@ -10,7 +10,8 @@
 
 typedef struct
 {
-    uint32_t                version;
+    uint16_t                version;
+    uint16_t                model_code;
     uint32_t                log_debug_mask;
     uint32_t                pending_fw;
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
