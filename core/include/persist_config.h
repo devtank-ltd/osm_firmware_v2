@@ -3,8 +3,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "persist_config_header.h"
+#include "persist_config_model.h"
 
-extern bool     persistent_base_init(void* mem_pos);
+
+extern persist_storage_t               persist_data __attribute__((aligned (16)));
+extern persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));
+
+extern bool     persistent_init(void);
 
 extern void     persist_commit();
 extern void     persistent_wipe(void);

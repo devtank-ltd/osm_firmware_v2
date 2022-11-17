@@ -635,7 +635,7 @@ void cc_setup_default_mem(cc_config_t* memory, unsigned size)
 
 void cc_init(void)
 {
-    _configs = persist_get_cc_config();
+    _configs = persist_data.model_config.cc_configs;
     if (!_configs)
     {
         adc_debug("Failed to load persistent midpoint.");

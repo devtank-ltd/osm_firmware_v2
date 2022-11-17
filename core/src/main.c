@@ -48,7 +48,7 @@ int main(void)
 
     measurements_init();
 
-    bool boot_debug_mode = DEBUG_MODE & persist_get_log_debug_mask();
+    bool boot_debug_mode = DEBUG_MODE & persist_data.log_debug_mask;
 
     if (boot_debug_mode)
     {

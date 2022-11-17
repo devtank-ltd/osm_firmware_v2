@@ -2,12 +2,10 @@
 
 #include <stdint.h>
 
-
-#include "persist_config_header_base.h"
 #include "measurements.h"
 #include "config.h"
 #include "pinmap.h"
-#include "cc.h"
+#include "ftma.h"
 
 
 #define FLASH_ADDRESS               0x8000000
@@ -32,17 +30,12 @@
 
 typedef struct
 {
-    persist_storage_base_t  base;
     uint32_t                mins_interval;
     modbus_bus_t            modbus_bus;
     comms_config_t          comms_config;
-    cc_config_t             cc_configs[ADC_CC_COUNT];
-    uint8_t                 _[16-(ADC_CC_COUNT * sizeof(cc_config_t)%16)];
+    ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
+    uint8_t                 _[16-(ADC_FTMA_COUNT * sizeof(ftma_config_t)%16)];
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-} __attribute__((__packed__)) persist_storage_t;
-
-
-_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
-_Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");
+} persist_model_config_t;

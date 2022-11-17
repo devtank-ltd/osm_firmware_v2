@@ -1195,7 +1195,7 @@ static void _measurements_update_def(measurements_def_t* def)
 
 void measurements_init(void)
 {
-    _measurements_arr.def = persist_get_measurements();
+    _measurements_arr.def = persist_measurements.measurements_arr;
 
     unsigned found = 0;
 
@@ -1240,18 +1240,9 @@ void measurements_init(void)
     if (!found)
         persist_commit();
 
-    if (persist_get_mins_interval(&transmit_interval))
-    {
-        if (!transmit_interval)
-            transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+    transmit_interval = persist_data.model_config.mins_interval;
 
-        measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval);
-    }
-    else
-    {
-        log_error("Could not load measurements interval.");
-        transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-    }
+    measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval);
 }
 
 
@@ -1528,7 +1519,7 @@ static void interval_mins_cb(char* args)
             new_interval_mins = 5;
 
         log_out("Setting interval minutes to %"PRIu32, new_interval_mins);
-        persist_set_mins_interval(new_interval_mins);
+        persist_data.model_config.mins_interval = new_interval_mins;
         transmit_interval = new_interval_mins;
     }
     else

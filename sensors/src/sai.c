@@ -319,7 +319,7 @@ static void _sai_dma_init(void)
 
 static bool _sai_load_coeffs(void)
 {
-    _sai_calibration_coeffs = persist_get_sai_cal_coeffs();
+    _sai_calibration_coeffs = persist_data.model_config.sai_cal_coeffs;
     for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
     {
         if (_sai_calibration_coeffs[i] != 0)

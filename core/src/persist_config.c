@@ -10,12 +10,11 @@
 #include "common.h"
 
 
-static bool                             persist_data_valid = false;
-static persist_storage_t                persist_data __attribute__((aligned (16)));
-static persist_measurements_storage_t   persist_measurements __attribute__((aligned (16)));
+persist_storage_t               persist_data __attribute__((aligned (16)));
+persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));
 
 
-bool persistent_base_init(void)
+bool persistent_init(void)
 {
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
     persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
@@ -27,13 +26,12 @@ bool persistent_base_init(void)
         memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
-        persist_data_valid = true;
+        persist_config_model_init(&persist_data.model_config);
         return false;
     }
 
     memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
     memcpy(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements));
-    persist_data_valid = true;
     return true;
 }
 
@@ -41,11 +39,9 @@ bool persistent_base_init(void)
 void persist_commit()
 {
     if (platform_persist_commit(&persist_data, &persist_measurements))
-    {
         log_sys_debug("Flash successfully written.");
-        persist_data_valid = true;
-    }
-    else log_error("Flash write failed");
+    else
+        log_error("Flash write failed");
 }
 
 void persist_set_fw_ready(uint32_t size)
@@ -63,14 +59,11 @@ void persist_set_log_debug_mask(uint32_t mask)
 
 uint32_t persist_get_log_debug_mask(void)
 {
-    if (!persist_data_valid)
-        return DEBUG_SYS;
-
     return persist_data.log_debug_mask;
 }
 
 
-void    persistent_wipe(void)
+void persistent_wipe(void)
 {
     platform_persist_wipe();
     platform_raw_msg("Factory Reset");

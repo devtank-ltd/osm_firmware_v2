@@ -757,7 +757,7 @@ bool modbus_uart_ring_do_out_drain(ring_buf_t * ring)
 
 void modbus_init(void)
 {
-    modbus_bus_t * bus = persist_get_modbus_bus();
+    modbus_bus_t * bus = &persist_data.model_config.modbus_bus;
     modbus_bus_init(bus);
     modbus_setup(bus->baudrate,
                  bus->databits,
