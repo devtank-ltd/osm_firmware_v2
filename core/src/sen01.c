@@ -21,6 +21,11 @@
 #include "sai.h"
 #include "fw.h"
 #include "uart_rings.h"
+#include "persist_config.h"
+#include "debug_mode.h"
+#include "sleep.h"
+#include "update.h"
+#include "modbus.h"
 
 
 void sensors_init(void)
@@ -123,6 +128,23 @@ void measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_FTMA_2_NAME,          0,  5,  FTMA            );
     measurements_repop_indiv(MEASUREMENTS_FTMA_3_NAME,          0,  5,  FTMA            );
     measurements_repop_indiv(MEASUREMENTS_FTMA_4_NAME,          0,  5,  FTMA            );
+}
+
+
+void cmds_add_all(struct cmd_link_t* tail)
+{
+    tail = bat_add_commands(tail);
+    tail = ftma_add_commands(tail);
+    tail = can_impl_add_commands(tail);
+    tail = sai_add_commands(tail);
+    tail = persist_config_add_commands(tail);
+    tail = measurements_add_commands(tail);
+    tail = ios_add_commands(tail);
+    tail = debug_mode_add_commands(tail);
+    tail = modbus_add_commands(tail);
+    tail = sleep_add_commands(tail);
+    tail = update_add_commands(tail);
+    tail = comms_add_commands(tail);
 }
 
 #endif

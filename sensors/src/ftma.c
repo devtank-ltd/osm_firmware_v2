@@ -213,3 +213,9 @@ void ftma_init(void)
     }
     _ftma_config = adc_config->ftma;
 }
+
+
+struct cmd_link_t* ftma_add_commands(struct cmd_link_t* tail)
+{
+    return tail;
+}
