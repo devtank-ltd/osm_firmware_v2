@@ -37,4 +37,4 @@ typedef struct
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-} persist_sens01_config_t;
+} persist_sens01_config_v1_t;

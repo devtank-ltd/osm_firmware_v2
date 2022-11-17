@@ -19,4 +19,4 @@
 
 #define PERSIST_VERSION              SENS01_PERSIST_VERSION
 
-#define persist_model_config_t       persist_sens01_config_t
+#define persist_model_config_t       persist_sens01_config_v1_t
