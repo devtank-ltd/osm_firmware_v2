@@ -68,6 +68,9 @@
 
 #define ADC_DMA_CHANNELS_COUNT  1
 
+#define ADC_COUNT       6
+#define ADC_CC_COUNT    3
+
 #define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
 #define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */
 #define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */

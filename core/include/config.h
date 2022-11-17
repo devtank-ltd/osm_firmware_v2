@@ -140,8 +140,3 @@
 
 #define SERIAL_NUM_LEN         41
 #define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
-
-#define ADC_COUNT       6
-#define ADC_CC_COUNT    3
-
-#define ADC_FTMA_COUNT  4

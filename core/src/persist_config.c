@@ -9,6 +9,7 @@
 #include "persist_config_header.h"
 #include "platform.h"
 #include "common.h"
+#include "adcs.h"
 
 static bool                             persist_data_valid = false;
 static persist_storage_t                persist_data __attribute__((aligned (16)));
@@ -27,13 +28,7 @@ void persistent_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-        persist_data.adc_persist_config.config_type = ADC_PERSIST_CONFIG_TYPE_CC;
-        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
-        {
-            persist_data.adc_persist_config.cc.cc_midpoints[i] = CC_DEFAULT_MIDPOINT;
-            persist_data.adc_persist_config.cc.cc_configs[i].ext_max_mA = 100000;
-            persist_data.adc_persist_config.cc.cc_configs[i].int_max_mV = 50;
-        }
+        adcs_setup_default_mem(&persist_data.adc_persist_config, sizeof(adc_persist_config_t));
         persist_data_valid = true;
         return;
     }
@@ -111,30 +106,6 @@ bool persist_set_mins_interval(uint32_t mins_interval)
 }
 
 
-
-bool persist_set_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
-{
-    if (!persist_data_valid)
-    {
-        return false;
-    }
-    memcpy(persist_data.adc_persist_config.cc.cc_midpoints, midpoints, ADC_CC_COUNT * sizeof(persist_data.adc_persist_config.cc.cc_midpoints[0]));
-    persist_commit();
-    return true;
-}
-
-
-bool persist_get_cc_midpoints(uint32_t midpoints[ADC_CC_COUNT])
-{
-    if (!persist_data_valid)
-    {
-        return false;
-    }
-    memcpy(midpoints, persist_data.adc_persist_config.cc.cc_midpoints, ADC_CC_COUNT * sizeof(persist_data.adc_persist_config.cc.cc_midpoints[0]));
-    return true;
-}
-
-
 uint16_t *  persist_get_ios_state(void)
 {
     return (uint16_t*)persist_data.ios_state;
@@ -161,12 +132,6 @@ void    persistent_wipe(void)
 }
 
 
-cc_config_t * persist_get_cc_configs(void)
-{
-    return persist_data.adc_persist_config.cc.cc_configs;
-}
-
-
 char* persist_get_serial_number(void)
 {
     return persist_data.serial_number;
@@ -175,6 +140,8 @@ char* persist_get_serial_number(void)
 
 adc_persist_config_t* persist_get_adc_config(void)
 {
+    if (!persist_data_valid)
+        return NULL;
     return &persist_data.adc_persist_config;
 }
 

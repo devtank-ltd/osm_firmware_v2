@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "base_types.h"
+#include "types.h"
 
 
 typedef enum
@@ -37,3 +38,5 @@ extern adcs_resp_t adcs_wait_done(uint32_t timeout, adcs_keys_t key);
 extern void adcs_release(adcs_keys_t key);
 
 extern void adcs_dma_complete(void);
+
+extern void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size) __attribute__((weak)); // To be implemented by caller.

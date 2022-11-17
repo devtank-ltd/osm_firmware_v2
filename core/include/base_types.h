@@ -201,43 +201,6 @@ typedef enum
                              ADCS_TYPE_FTMA3,    \
                              ADCS_TYPE_FTMA4     }
 
-
-typedef struct
-{
-    uint32_t ext_max_mA;
-    uint32_t int_max_mV;
-} cc_config_t;
-
-
-typedef enum
-{
-    ADC_PERSIST_CONFIG_TYPE_CC,
-    ADC_PERSIST_CONFIG_TYPE_FTMA,
-} adc_persist_config_type_enum_t;
-
-
-typedef struct
-{
-    char        name[MEASURE_NAME_NULLED_LEN];
-    float       coeffs[FTMA_NUM_COEFFS];
-} ftma_config_t;
-
-
-typedef struct
-{
-    uint8_t         config_type; /* adc_persist_config_type_enum_t */
-    union
-    {
-        struct
-        {
-            uint32_t    cc_midpoints[ADC_CC_COUNT];
-            cc_config_t cc_configs[ADC_CC_COUNT];
-        } cc;
-        ftma_config_t   ftma[ADC_FTMA_COUNT];
-    };
-} adc_persist_config_t;
-
-
 typedef enum
 {
     COMMS_TYPE_LW,

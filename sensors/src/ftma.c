@@ -201,17 +201,33 @@ void ftma_inf_init(measurements_inf_t* inf)
 }
 
 
+void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size)
+{
+    ftma_config_t* ftma_mem = memory;
+    uint8_t num_ftma_configs = ADC_FTMA_COUNT;
+    if (sizeof(ftma_config_t) * ADC_FTMA_COUNT > size)
+    {
+        log_error("FTMA config is larger than the size of memory given.");
+        num_cc_configs = size / sizeof(ftma_config_t);
+    }
+    float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
+    for (uint8_t i = 0; i < num_ftma_configs; i++)
+    {
+        strncpy(ftma_mem[i].name, MEASUREMENTS_FTMA_1_NAME, MEASURE_NAME_NULLED_LEN);
+        memcpy(ftma_mem[i].coeffs[i], default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
+    }
+}
+
+
 void ftma_init(void)
 {
-    adc_persist_config_t* adc_config = persist_get_adc_config();
-    _ftma_config_valid = adc_config->config_type == ADC_PERSIST_CONFIG_TYPE_FTMA;
-    if (!_ftma_config_valid)
+    _ftma_config = persist_get_adc_config();
+    if (!_ftma_config)
     {
-        static ftma_config_t _default_conf[ADC_FTMA_COUNT] = FTMA_DEFAULT_CONFIG;
+        static ftma_config_t _default_conf[ADC_FTMA_COUNT];
+        adcs_setup_default_mem(_default_conf, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
         _ftma_config = _default_conf;
-        return;
     }
-    _ftma_config = adc_config->ftma;
 }
 
 

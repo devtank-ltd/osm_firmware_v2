@@ -21,6 +21,9 @@
 
 #define CC_RESISTOR_OHM                     22
 
+#define CC_DEFAULT_EXT_MAX_MA               (100 * 1000)
+#define CC_DEFAULT_INT_MAX_MV               50
+
 
 typedef struct
 {
@@ -344,7 +347,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
     }
 
     uint32_t adcs_rms;
-    uint32_t midpoint = _cc_midpoints[index];
+    uint32_t midpoint = _configs[index].midpoint;
 
     unsigned cc_len;
 
@@ -387,19 +390,15 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 }
 
 
-bool cc_set_midpoints(uint32_t new_midpoints[ADC_CC_COUNT])
+static bool _cc_set_midpoints(uint32_t new_midpoints[ADC_CC_COUNT])
 {
-    memcpy(_cc_midpoints, new_midpoints, ADC_CC_COUNT * sizeof(_cc_midpoints[0]));
-    if (!persist_set_cc_midpoints(new_midpoints))
-    {
-        adc_debug("Could not set the persistent storage for the midpoint.");
-        return false;
-    }
+    for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        _configs[i].midpoint = new_midpoints[i];
     return true;
 }
 
 
-bool cc_set_midpoint(uint32_t midpoint, char* name)
+static bool _cc_set_midpoint(uint32_t midpoint, char* name)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
@@ -408,17 +407,12 @@ bool cc_set_midpoint(uint32_t midpoint, char* name)
     {
         return false;
     }
-    _cc_midpoints[index] = midpoint;
-    if (!persist_set_cc_midpoints(_cc_midpoints))
-    {
-        adc_debug("Could not set the persistent storage for the midpoint.");
-        return false;
-    }
+    _configs[index].midpoint = midpoint;
     return true;
 }
 
 
-bool cc_get_midpoint(uint32_t* midpoint, char* name)
+static bool _cc_get_midpoint(uint32_t* midpoint, char* name)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
@@ -430,7 +424,7 @@ bool cc_get_midpoint(uint32_t* midpoint, char* name)
 }
 
 
-bool cc_calibrate(void)
+static bool _cc_calibrate(void)
 {
     adcs_type_t all_cc_clamps[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
     cc_active_clamps_t prev_cc_adc_active_clamps = {0};
@@ -488,7 +482,7 @@ bool cc_calibrate(void)
 
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         adc_debug("MP CC%u: %"PRIu32".%03"PRIu32, i+1, midpoints[i]/1000, midpoints[i]%1000);
-    cc_set_midpoints(midpoints);
+    _cc_set_midpoints(midpoints);
     memcpy(_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
     _cc_adc_active_clamps.len = prev_cc_adc_active_clamps.len;
     return true;
@@ -622,17 +616,34 @@ void cc_inf_init(measurements_inf_t* inf)
 }
 
 
+void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size)
+{
+    cc_config_t* cc_mem = memory;
+    uint8_t num_cc_configs = ADC_CC_COUNT;
+    if (sizeof(cc_config_t) * ADC_CC_COUNT > size)
+    {
+        log_error("CC config is larger than the size of memory given.");
+        num_cc_configs = size / sizeof(cc_config_t);
+    }
+    for (uint8_t i = 0; i < num_cc_configs; i++)
+    {
+        cc_mem[i].midpoint      = CC_DEFAULT_MIDPOINT;
+        cc_mem[i].ext_max_mA    = CC_DEFAULT_EXT_MAX_MA;
+        cc_mem[i].int_max_mV    = CC_DEFAULT_INT_MAX_MV;
+    }
+}
+
+
 void cc_init(void)
 {
-    // Get the midpoints
-    if (!persist_get_cc_midpoints(_cc_midpoints))
+    _configs = persist_get_adc_config();
+    if (!_configs)
     {
-        // Assume it to be the theoretical midpoint
         adc_debug("Failed to load persistent midpoint.");
-        uint32_t midpoints[ADC_CC_COUNT] = {CC_DEFAULT_MIDPOINT, CC_DEFAULT_MIDPOINT, CC_DEFAULT_MIDPOINT};
-        cc_set_midpoints(midpoints);
+        static cc_config_t default_configs[ADC_CC_COUNT];
+        adcs_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
+        _configs = default_configs;
     }
-    _configs = persist_get_cc_configs();
 }
 
 
@@ -673,7 +684,7 @@ static void cc_cb(char* args)
 
 static void cc_calibrate_cb(char *args)
 {
-    cc_calibrate();
+    _cc_calibrate();
 }
 
 
@@ -686,13 +697,13 @@ static void cc_mp_cb(char* args)
     uint32_t new_mp32;
     if (p == args)
     {
-        cc_get_midpoint(&new_mp32, p);
+        _cc_get_midpoint(&new_mp32, p);
         log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return;
     }
     new_mp32 = new_mp * 1000;
     p = skip_space(p);
-    if (!cc_set_midpoint(new_mp32, p))
+    if (!_cc_set_midpoint(new_mp32, p))
         log_out("Failed to set the midpoint.");
 }
 
@@ -701,7 +712,6 @@ static void cc_gain(char* args)
 {
     // <index> <ext_A> <int_mV>
     // 1       100     50
-    cc_config_t* cc_conf = persist_get_cc_configs();
     char* p;
     uint8_t index = strtoul(args, &p, 10);
     p = skip_space(p);
@@ -709,8 +719,8 @@ static void cc_gain(char* args)
     {
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
-            log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, cc_conf[i].ext_max_mA/1000, cc_conf[i].ext_max_mA%1000);
-            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, cc_conf[i].int_max_mV/1000, cc_conf[i].int_max_mV%1000);
+            log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000);
         }
         return;
     }
@@ -726,12 +736,12 @@ static void cc_gain(char* args)
     uint32_t int_mA = strtoul(q, &p, 10);
     if (p == q)
         goto syntax_exit;
-    cc_conf[index].ext_max_mA = ext_A * 1000;
-    cc_conf[index].int_max_mV = int_mA;
+    _configs[index].ext_max_mA = ext_A * 1000;
+    _configs[index].int_max_mV = int_mA;
     log_out("Set the CC gain:");
 print_exit:
-    log_out("EXT max: %"PRIu32".%03"PRIu32"A", cc_conf[index].ext_max_mA/1000, cc_conf[index].ext_max_mA%1000);
-    log_out("INT max: %"PRIu32".%03"PRIu32"V", cc_conf[index].int_max_mV/1000, cc_conf[index].int_max_mV%1000);
+    log_out("EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"V", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000);
     return;
 syntax_exit:
     log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");

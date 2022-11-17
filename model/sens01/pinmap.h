@@ -34,31 +34,21 @@
     {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
 }
 
-#define ADC1_CHANNEL_CURRENT_CLAMP_1    6
-#define ADC1_CHANNEL_CURRENT_CLAMP_2    16
-#define ADC1_CHANNEL_CURRENT_CLAMP_3    9
+#define ADC1_CHANNEL_FTMA_1             6
+#define ADC1_CHANNEL_FTMA_2             16
+#define ADC1_CHANNEL_FTMA_3             9
+#define ADC1_CHANNEL_FTMA_4             10
 #define ADC1_CHANNEL_BAT_MON            1
 #define ADC1_CHANNEL_3V3_RAIL_MON       3
 #define ADC1_CHANNEL_5V_RAIL_MON        4
 
-#define ADC_INDEX_CURRENT_CLAMP_1 0
-#define ADC_INDEX_CURRENT_CLAMP_2 1
-#define ADC_INDEX_CURRENT_CLAMP_3 2
-#define ADC_INDEX_BAT_MON         3
-#define ADC_INDEX_3V3_RAIL_MON    4
-#define ADC_INDEX_5V_RAIL_MON     5
-
-#define ADC_CHANNELS  { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                        ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                        ADC1_CHANNEL_CURRENT_CLAMP_3,  \
-                        ADC1_CHANNEL_BAT_MON,          \
-                        ADC1_CHANNEL_3V3_RAIL_MON,     \
-                        ADC1_CHANNEL_5V_RAIL_MON       }
-
-
-#define ADC_CC_CHANNELS { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                          ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                          ADC1_CHANNEL_CURRENT_CLAMP_3   }
+#define ADC_INDEX_FTMA_1            0
+#define ADC_INDEX_FTMA_2            1
+#define ADC_INDEX_FTMA_3            2
+#define ADC_INDEX_FTMA_4            3
+#define ADC_INDEX_BAT_MON           4
+#define ADC_INDEX_3V3_RAIL_MON      5
+#define ADC_INDEX_5V_RAIL_MON       6
 
 
 #define ADC_DMA_CHANNELS                                                        \
@@ -67,6 +57,9 @@
 }
 
 #define ADC_DMA_CHANNELS_COUNT  1
+
+#define ADC_COUNT       7
+#define ADC_FTMA_COUNT  4
 
 #define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
 #define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */
