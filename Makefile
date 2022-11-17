@@ -24,9 +24,11 @@ CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
 CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
 
+FW_NAME ?= sens01
+
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include
+INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/$(FW_NAME)
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4
@@ -41,19 +43,17 @@ BUILD_DIR := build
 RELEASE_DIR := releases
 JSON_CONV_DIR := tools/img_json_interpretter
 
-MEM_JSON := $(JSON_CONV_DIR)/default_mem.json
+MEM_JSON := $(JSON_CONV_DIR)/$(FW_NAME)_default_mem.json
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
 DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
 
-FW_NAME ?= sens01
-
 FW_IMG := $(BUILD_DIR)/$(FW_NAME).bin
 BL_IMG := $(BUILD_DIR)/bootloader.bin
 WHOLE_IMG := $(BUILD_DIR)/complete.bin
 JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
-MEM_IMG := $(BUILD_DIR)/mem.bin
+MEM_IMG := $(BUILD_DIR)/$(FW_NAME)_mem.bin
 
 default: $(WHOLE_IMG)
 

@@ -10,7 +10,6 @@ sens01_SOURCES := \
            core/src/i2c.c \
            core/src/modbus_mem.c \
            core/src/persist_config.c \
-           core/src/sen01.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \
            core/src/modbus_measurements.c \
@@ -39,5 +38,6 @@ sens01_SOURCES := \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
-           sensors/src/ftma.c
+           sensors/src/ftma.c \
+           model/sens01/sens01.c
 sens01_LINK_SCRIPT := core/stm32l4.ld

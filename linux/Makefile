@@ -19,7 +19,9 @@ CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Icore/include -Isensors/include -Icomms/include $(shell pkg-config --cflags json-c)
+FW_NAME ?= sens01
+
+INCLUDE_PATHS += -Icore/include -Isensors/include -Imodel/$(FW_NAME) -Icomms/include $(shell pkg-config --cflags json-c)
 
 LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINK_FLAGS += -lgcov --coverage -pthread -lutil
@@ -59,7 +61,6 @@ firmware_SOURCES := \
            core/src/persist_config.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \
-           core/src/env01.c \
            core/src/modbus_measurements.c \
            core/src/update.c \
            core/src/adcs.c \
@@ -79,10 +80,11 @@ firmware_SOURCES := \
            sensors/src/pulsecount.c \
            sensors/src/veml7700.c \
            sensors/src/sai.c \
-           sensors/src/cc.c \
+           sensors/src/ftma.c \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
-           sensors/src/fw.c
+           sensors/src/fw.c \
+	   model/$(FW_NAME)/$(FW_NAME).c
 
 firmware_OBJS=$(firmware_SOURCES:%.c=$(BUILD_DIR)/%.o)
 

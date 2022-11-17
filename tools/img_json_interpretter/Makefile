@@ -1,7 +1,9 @@
 
 BUILD_DIR := build
 
-CFLAGS := -I../../core/include -I../../sensors/include -I../../comms/include -I../../libs/libopencm3/include/ -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+FW_NAME ?= sens01
+
+CFLAGS := -I../../core/include -I../../sensors/include -I../../comms/include -I../../model/$(FW_NAME)/ -I../../libs/libopencm3/include/ -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 CFLAGS += -MMD -MP -g -DSTM32L4 -D__CONFIGTOOL__
 LDFLAGS := $(shell pkg-config --libs json-c)
 
@@ -9,7 +11,7 @@ SRC := src/main.c \
        src/base.c \
        src/modbus_mem.c \
        src/measurements_mem.c \
-       src/env01.c \
+       src/$(FW_NAME).c \
        src/read_json.c \
        src/write_json.c
 

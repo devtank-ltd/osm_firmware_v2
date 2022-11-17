@@ -6,6 +6,10 @@
 #define ADC_INDEX_BAT_MON         3
 #define ADC_INDEX_3V3_RAIL_MON    4
 #define ADC_INDEX_5V_RAIL_MON     5
+#define ADC_INDEX_FTMA1           6
+#define ADC_INDEX_FTMA2           7
+#define ADC_INDEX_FTMA3           8
+#define ADC_INDEX_FTMA4           9
 
 #define ADC_COUNT       6
 #define ADC_CC_COUNT    3
