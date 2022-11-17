@@ -9,7 +9,7 @@ env01_SOURCES := \
            core/src/ring.c \
            core/src/i2c.c \
            core/src/modbus_mem.c \
-           core/src/persist_config.c \
+           core/src/persist_config_base.c \
            core/src/modbus.c \
            core/src/measurements.c \
            core/src/measurements_mem.c \
@@ -39,5 +39,6 @@ env01_SOURCES := \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
-           model/env01/env01.c
+           model/env01/env01.c \
+           model/env01/persist_config.c
 env01_LINK_SCRIPT := core/stm32l4.ld

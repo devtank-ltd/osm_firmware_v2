@@ -616,9 +616,8 @@ void cc_inf_init(measurements_inf_t* inf)
 }
 
 
-void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size)
+void cc_setup_default_mem(cc_config_t* memory, unsigned size)
 {
-    cc_config_t* cc_mem = memory;
     uint8_t num_cc_configs = ADC_CC_COUNT;
     if (sizeof(cc_config_t) * ADC_CC_COUNT > size)
     {
@@ -627,21 +626,21 @@ void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size)
     }
     for (uint8_t i = 0; i < num_cc_configs; i++)
     {
-        cc_mem[i].midpoint      = CC_DEFAULT_MIDPOINT;
-        cc_mem[i].ext_max_mA    = CC_DEFAULT_EXT_MAX_MA;
-        cc_mem[i].int_max_mV    = CC_DEFAULT_INT_MAX_MV;
+        memory[i].midpoint      = CC_DEFAULT_MIDPOINT;
+        memory[i].ext_max_mA    = CC_DEFAULT_EXT_MAX_MA;
+        memory[i].int_max_mV    = CC_DEFAULT_INT_MAX_MV;
     }
 }
 
 
 void cc_init(void)
 {
-    _configs = persist_get_adc_config();
+    _configs = persist_get_cc_config();
     if (!_configs)
     {
         adc_debug("Failed to load persistent midpoint.");
         static cc_config_t default_configs[ADC_CC_COUNT];
-        adcs_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
+        cc_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
         _configs = default_configs;
     }
 }

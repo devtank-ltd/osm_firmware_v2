@@ -106,12 +106,12 @@ int main(void)
 
     persist_storage_t * config = (persist_storage_t*)PERSIST_RAW_DATA;
 
-    if (config->pending_fw && config->pending_fw != 0xFFFFFFFF)
+    if (config->base.pending_fw && config->base.pending_fw != 0xFFFFFFFF)
     {
         uart_send_str("New Firmware Flag");
         if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
         {
-            uint32_t size = config->pending_fw;
+            uint32_t size = config->base.pending_fw;
             unsigned page_count = size / FLASH_PAGE_SIZE;
             if (size % FLASH_PAGE_SIZE)
                 page_count++;
@@ -158,7 +158,7 @@ int main(void)
         else uart_send_str("No New Firmware!");
 
         _config = *config;
-        _config.pending_fw = 0;
+        _config.base.pending_fw = 0;
         flash_unlock();
         flash_erase_page(FLASH_CONFIG_PAGE);
         flash_set_data(config, &_config, sizeof(_config));

@@ -3,10 +3,11 @@
 #include <stdint.h>
 
 
+#include "persist_config_header_base.h"
 #include "measurements.h"
 #include "config.h"
 #include "pinmap.h"
-#include "types.h"
+#include "cc.h"
 
 
 #define FLASH_ADDRESS               0x8000000
@@ -31,26 +32,17 @@
 
 typedef struct
 {
-    uint32_t                version;
-    uint32_t                log_debug_mask;
-    uint32_t                pending_fw;
+    persist_storage_base_t  base;
     uint32_t                mins_interval;
     modbus_bus_t            modbus_bus;
     comms_config_t          comms_config;
-    adc_persist_config_t    adc_persist_config;
-    uint8_t                 _[16-(sizeof(adc_persist_config_t)%16)];
+    cc_config_t             cc_configs[ADC_CC_COUNT];
+    uint8_t                 _[16-(ADC_CC_COUNT * sizeof(cc_config_t)%16)];
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-    uint8_t                 ___[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
-    char                    serial_number[SERIAL_NUM_LEN_NULLED];
 } __attribute__((__packed__)) persist_storage_t;
 
-
-typedef struct
-{
-    measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
-} persist_measurements_storage_t;
 
 _Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
 _Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");

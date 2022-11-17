@@ -22,3 +22,5 @@ extern bool                         cc_set_active_clamps(adcs_type_t* clamps, un
 extern void                         cc_inf_init(measurements_inf_t* inf);
 
 extern struct cmd_link_t*           cc_add_commands(struct cmd_link_t* tail);
+
+extern void                         cc_setup_default_mem(cc_config_t* memory, unsigned size);

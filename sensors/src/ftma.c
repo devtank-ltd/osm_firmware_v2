@@ -200,10 +200,8 @@ void ftma_inf_init(measurements_inf_t* inf)
     inf->value_type_cb      = _ftma_value_type;
 }
 
-
-void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size)
+void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
 {
-    ftma_config_t* ftma_mem = memory;
     uint8_t num_ftma_configs = ADC_FTMA_COUNT;
     if (sizeof(ftma_config_t) * ADC_FTMA_COUNT > size)
     {
@@ -213,8 +211,8 @@ void adcs_setup_default_mem(adc_persist_config_t* memory, unsigned size)
     float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
     for (uint8_t i = 0; i < num_ftma_configs; i++)
     {
-        strncpy(ftma_mem[i].name, MEASUREMENTS_FTMA_1_NAME, MEASURE_NAME_NULLED_LEN);
-        memcpy(ftma_mem[i].coeffs[i], default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
+        strncpy(memory[i].name, MEASUREMENTS_FTMA_1_NAME, MEASURE_NAME_NULLED_LEN);
+        memcpy(memory[i].coeffs[i], default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
     }
 }
 

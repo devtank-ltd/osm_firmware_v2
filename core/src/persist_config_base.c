@@ -15,7 +15,7 @@ static persist_storage_t                persist_data __attribute__((aligned (16)
 static persist_measurements_storage_t   persist_measurements __attribute__((aligned (16)));
 
 
-bool persistent_base_init(void)
+bool persistent_base_init(persist_storage_t* persist_data_ptr, persist_measurements_storage_t* persist_measurements_ptr)
 {
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
     persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
@@ -28,12 +28,16 @@ bool persistent_base_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data_valid = true;
+        persist_data_ptr = &persist_data;
+        persist_measurements_ptr = &persist_measurements;
         return false;
     }
 
     memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
     memcpy(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements));
     persist_data_valid = true;
+    persist_data_ptr = &persist_data;
+    persist_measurements_ptr = &persist_measurements;
     return true;
 }
 
