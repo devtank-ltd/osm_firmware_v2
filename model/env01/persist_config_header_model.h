@@ -21,3 +21,5 @@
 #define PERSIST_VERSION               ENV01_PERSIST_VERSION
 
 #define persist_model_config_t        persist_env01_config_v1_t
+
+#define MODEL_NUM                     MODEL_NUM_ENV01

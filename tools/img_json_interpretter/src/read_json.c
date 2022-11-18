@@ -12,6 +12,16 @@ static int _get_defaulted_int(struct json_object * root, char * name, int defaul
     return json_object_get_int(tmp);
 }
 
+
+static int _get_defaulted_double(struct json_object * root, char * name, float default_value)
+{
+    struct json_object * tmp = json_object_object_get(root, name);
+    if (!tmp)
+        return default_value;
+    return json_object_get_double(tmp);
+}
+
+
 static bool _get_string_buf(struct json_object * root, char * name, char * buf, unsigned len)
 {
     struct json_object * tmp = json_object_object_get(root, name);
@@ -93,17 +103,22 @@ static uint16_t _get_io_dir(const char * str, uint16_t current)
 }
 
 
-static bool _read_modbus_json(struct json_object * root)
+static bool _read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
 {
-    struct json_object * modbus_bus = json_object_object_get(root, "modbus_bus");
-    if (modbus_bus)
+    if (!root || !modbus_bus)
     {
-        osm_mem.config.modbus_bus.version     = MODBUS_BLOB_VERSION;
-        osm_mem.config.modbus_bus.binary_protocol = (uint8_t)json_object_get_boolean(json_object_object_get(modbus_bus, "binary_protocol"));
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
+    struct json_object * modbus_bus_json = json_object_object_get(root, "modbus_bus");
+    if (modbus_bus_json)
+    {
+        modbus_bus->version     = MODBUS_BLOB_VERSION;
+        modbus_bus->binary_protocol = (uint8_t)json_object_get_boolean(json_object_object_get(modbus_bus_json, "binary_protocol"));
 
         char con_str[16];
 
-        if (_get_string_buf(modbus_bus, "con_str", con_str, sizeof(con_str)))
+        if (_get_string_buf(modbus_bus_json, "con_str", con_str, sizeof(con_str)))
         {
             uart_parity_t parity;
             uart_stop_bits_t stopbits;
@@ -111,7 +126,7 @@ static bool _read_modbus_json(struct json_object * root)
 
 
             if (!decompose_uart_str(con_str,
-                               &osm_mem.config.modbus_bus.baudrate,
+                               &modbus_bus->baudrate,
                                &databits,
                                &parity,
                                &stopbits))
@@ -120,19 +135,19 @@ static bool _read_modbus_json(struct json_object * root)
                 return false;
             }
 
-            osm_mem.config.modbus_bus.databits = databits;
-            osm_mem.config.modbus_bus.parity   = parity;
-            osm_mem.config.modbus_bus.stopbits = stopbits;
+            modbus_bus->databits = databits;
+            modbus_bus->parity   = parity;
+            modbus_bus->stopbits = stopbits;
         }
         else
         {
-            osm_mem.config.modbus_bus.baudrate = UART_4_SPEED;
-            osm_mem.config.modbus_bus.databits = UART_4_DATABITS;
-            osm_mem.config.modbus_bus.parity   = UART_4_PARITY;
-            osm_mem.config.modbus_bus.stopbits = UART_4_STOP;
+            modbus_bus->baudrate = UART_4_SPEED;
+            modbus_bus->databits = UART_4_DATABITS;
+            modbus_bus->parity   = UART_4_PARITY;
+            modbus_bus->stopbits = UART_4_STOP;
         }
 
-        struct json_object * devices = json_object_object_get(modbus_bus, "modbus_devices");
+        struct json_object * devices = json_object_object_get(modbus_bus_json, "modbus_devices");
         if (devices)
         {
             json_object_object_foreach(devices, dev_name, dev_node)
@@ -269,11 +284,16 @@ static bool _read_measurements_json(struct json_object * root)
 }
 
 
-static bool _read_ios_json(struct json_object * root)
+static bool _read_ios_json(struct json_object * root, uint16_t* ios_state)
 {
+    if (!root || !ios_state)
+    {
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
     {
         uint16_t ios_init_state[IOS_COUNT] = IOS_STATE;
-        memcpy(osm_mem.config.ios_state, ios_init_state, sizeof(ios_init_state));
+        memcpy(ios_state, ios_init_state, sizeof(ios_init_state));
     }
 
     struct json_object * ios_node = json_object_object_get(root, "ios");
@@ -287,7 +307,7 @@ static bool _read_ios_json(struct json_object * root)
                 log_error("Too many IOs");
                 return false;
             }
-            uint16_t state = osm_mem.config.ios_state[index];
+            uint16_t state = ios_state[index];
             uint16_t pull    = _get_io_pull(json_object_get_string(json_object_object_get(io_node, "pull")), state & IO_PULL_MASK);
             uint16_t dir     = _get_io_dir(json_object_get_string(json_object_object_get(io_node, "direction")), state & IO_AS_INPUT);
             uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_ONEWIRE:0;
@@ -309,7 +329,7 @@ static bool _read_ios_json(struct json_object * root)
             if (!dir)
                 state |= (json_object_get_boolean(json_object_object_get(io_node, "out_high")))?IO_OUT_ON:0;
 
-            osm_mem.config.ios_state[index] = state | (pull | dir | w1_mode | pcnt_mode);
+            ios_state[index] = state | (pull | dir | w1_mode | pcnt_mode);
         }
     }
 
@@ -317,35 +337,158 @@ static bool _read_ios_json(struct json_object * root)
 }
 
 
-static bool _read_cc_midpoints_json(struct json_object * root)
+static bool _read_cc_midpoints_json(struct json_object * root, cc_config_t* cc_config)
 {
-    struct json_object * cc_midpoints_node = json_object_object_get(root, "cc_midpoints");
-    if (cc_midpoints_node)
+    if (!root || !cc_config)
     {
-        json_object_object_foreach(cc_midpoints_node, cc_midpoints_name, cc_midpoint_node)
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
+
+    struct json_object * cc_configs_json = json_object_object_get(root, "cc_config");
+    if (cc_configs_json)
+    {
+        json_object_object_foreach(cc_configs_json, cc_config_name, cc_config_json)
         {
-            char* p = cc_midpoints_name;
+            char* p = cc_config_name;
             if (strncmp(p, "CC", 2) != 0)
             {
-                log_error("Bad name midpoint for \"%s\"", cc_midpoints_name);
+                log_error("Bad name midpoint for \"%s\"", cc_config_name);
                 return false;
             }
             p += 2;
             int index = strtoul(p, NULL, 10);
             if (index < 1 || index > 3)
             {
-                log_error("Bad name midpoint for \"%s\"", cc_midpoints_name);
+                log_error("Bad name midpoint for \"%s\"", cc_config_name);
                 return false;
             }
-            int midpoint = _get_defaulted_int(cc_midpoint_node, "interval", 1);
-            if (midpoint < 0 || midpoint > 0xFFFF)
+            double midpointf = _get_defaulted_double(cc_config_json, "midpoint", CC_DEFAULT_MIDPOINT / 1000.);
+            midpointf *= 1000.;
+            int midpoint = midpointf;
+            if (midpoint < 0 || midpoint > UINT32_MAX)
             {
-                log_error("Bad midpoint for \"%s\"", cc_midpoints_name);
+                log_error("Bad midpoint for \"%s\"", cc_config_name);
                 return false;
             }
-            osm_mem.config.adc_persist_config.cc.cc_midpoints[index-1] = midpoint;
+            cc_config[index-1].midpoint = midpoint;
+            int ext_max_mA = _get_defaulted_int(cc_config_json, "ext_max_mA", CC_DEFAULT_EXT_MAX_MA);
+            if (ext_max_mA < 0 || ext_max_mA > UINT32_MAX)
+            {
+                log_error("Bad external maximum mA.");
+                return false;
+            }
+            cc_config[index-1].ext_max_mA = ext_max_mA;
+            int int_max_mV = _get_defaulted_int(cc_config_json, "int_max_mV", CC_DEFAULT_INT_MAX_MV);
+            if (int_max_mV < 0 || ext_max_mA > UINT32_MAX)
+            {
+                log_error("Bad internal maximum mV.");
+                return false;
+            }
+            cc_config[index-1].int_max_mV = int_max_mV;
         }
     }
+    return true;
+}
+
+
+static bool _read_json_to_img_base(struct json_object * root, persist_storage_t* config)
+{
+    if (!root || !config)
+    {
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
+    struct json_object * obj = json_object_object_get(root, "version");
+    if (!obj)
+    {
+        log_error("No version given.");
+        return false;
+    }
+
+    config->version = json_object_get_int(obj);
+    if (config->version > PERSIST_VERSION)
+    {
+        log_error("Wrong version.");
+        return false;
+    }
+    log_out("JSON version = %"PRIu8, config->version);
+    log_out("IMG  version = %"PRIu8, PERSIST_VERSION);
+    if (config->version != PERSIST_VERSION)
+        log_out("WARNING: Check compatibility!");
+
+    config->model_code = _get_defaulted_int(root, "model_code", -1);
+
+    config->log_debug_mask = _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
+
+    return true;
+}
+
+
+static bool _read_json_to_img_env01(struct json_object * root, persist_env01_config_v1_t * model_config)
+{
+    if (!root || !model_config)
+    {
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
+    int tmp = _get_defaulted_int(root, "mins_interval",  15);
+    if (tmp < 1 || tmp > (60 * 24))
+    {
+        log_error("Unsupported mins_interval");
+        return false;
+    }
+    model_config->mins_interval  = tmp;
+
+    comms_config_t* comms_config = &model_config->comms_config;
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+            if (!_get_string_buf(root, "lw_dev_eui", ((lw_config_t*)(comms_config->setup))->dev_eui, LW_DEV_EUI_LEN) ||
+                !_get_string_buf(root, "lw_app_key", ((lw_config_t*)(comms_config->setup))->app_key, LW_APP_KEY_LEN))
+            {
+                log_error("No LoRaWAN keys.");
+                return false;
+            }
+            break;
+    }
+
+    measurements_add_defaults(osm_mem.measurements.measurements_arr);
+
+    if (!_read_modbus_json(root, &model_config->modbus_bus))
+        return false;
+
+    if (!_read_measurements_json(root))
+        return false;
+
+    if (!_read_ios_json(root, model_config->ios_state))
+        return false;
+
+    if (!_read_cc_midpoints_json(root, model_config->cc_configs))
+        return false;
+
+    return true;
+}
+
+
+static bool _read_json_to_img_save(const char * filename)
+{
+    FILE * f = fopen(filename,"w");
+
+    if (!f)
+    {
+        perror("Failed to open file.");
+        return false;
+    }
+
+    if (fwrite(&osm_mem, sizeof(osm_mem), 1, f) != 1)
+    {
+        perror("Failed to write file.");
+        fclose(f);
+        return false;
+    }
+    fclose(f);
+
     return true;
 }
 
@@ -356,82 +499,32 @@ int read_json_to_img(const char * filename)
     if (!root)
     {
         log_error("Failed to read json : %s", json_util_get_last_err());
-        return EXIT_FAILURE;
-    }
-
-    struct json_object * obj = json_object_object_get(root, "version");
-    if (!obj)
-    {
-        log_error("No version given.");
         goto bad_exit;
     }
 
     memset(&osm_mem, 0, sizeof(osm_mem));
 
-    osm_mem.config.version = json_object_get_int(obj);
-    if (osm_mem.config.version > PERSIST_VERSION)
-    {
-        log_error("Wrong version.");
+    if (!_read_json_to_img_base(root, &osm_mem.config))
         goto bad_exit;
-    }
-    log_out("JSON version = %"PRIu8, osm_mem.config.version);
-    log_out("IMG  version = %"PRIu8, PERSIST_VERSION);
-    if (osm_mem.config.version != PERSIST_VERSION)
-        log_out("WARNING: Check compatibility!");
 
-    osm_mem.config.log_debug_mask = _get_defaulted_int(root, "log_debug_mask", DEBUG_SYS);
-    int tmp = _get_defaulted_int(root, "mins_interval",  15);
-    if (tmp < 1 || tmp > (60 * 24))
+    bool r;
+    switch (osm_mem.config.model_code)
     {
-        log_error("Unsupported mins_interval");
-        goto bad_exit;
-    }
-    osm_mem.config.mins_interval  = tmp;
-
-    comms_config_t* comms_config = &osm_mem.config.comms_config;
-    switch(comms_config->type)
-    {
-        case COMMS_TYPE_LW:
-            if (!_get_string_buf(root, "lw_dev_eui", ((lw_config_t*)(comms_config->setup))->dev_eui, LW_DEV_EUI_LEN) ||
-                !_get_string_buf(root, "lw_app_key", ((lw_config_t*)(comms_config->setup))->app_key, LW_APP_KEY_LEN))
-            {
-                log_error("No LoRaWAN keys.");
-                goto bad_exit;
-            }
+        case MODEL_NUM_ENV01:
+            persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
+            r = _read_json_to_img_env01(root, model_config);
+            break;
+        default:
+            r = false;
             break;
     }
-
-    measurements_add_defaults(osm_mem.measurements.measurements_arr);
-
-    if (!_read_modbus_json(root))
+    if (!r)
         goto bad_exit;
 
-    if (!_read_measurements_json(root))
+    if (!_read_json_to_img_save(filename))
         goto bad_exit;
-
-    if (!_read_ios_json(root))
-        goto bad_exit;
-
-    if (!_read_cc_midpoints_json(root))
-        goto bad_exit;
-
-    FILE * f = fopen(filename,"w");
-
-    if (!f)
-    {
-        perror("Failed to open file.");
-        goto bad_exit;
-    }
-
-    if (fwrite(&osm_mem, sizeof(osm_mem), 1, f) != 1)
-    {
-        perror("Failed to write file.");
-        fclose(f);
-        goto bad_exit;
-    }
 
     json_object_put(root);
-    fclose(f);
 
     return EXIT_SUCCESS;
 

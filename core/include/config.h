@@ -25,7 +25,9 @@
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300
 #define ADCS_NUM_SAMPLES  1500
-#define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2)
+#define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2 - 1)
+#define CC_DEFAULT_EXT_MAX_MA               (100 * 1000)
+#define CC_DEFAULT_INT_MAX_MV               50
 
 #define FTMA_NUM_COEFFS      4
 
@@ -140,3 +142,10 @@
 
 #define SERIAL_NUM_LEN         41
 #define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
+
+
+typedef enum
+{
+    MODEL_NUM_ENV01,
+    MODEL_NUM_SENS01,
+} model_num_enum_t;

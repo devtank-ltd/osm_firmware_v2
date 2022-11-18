@@ -21,9 +21,6 @@
 
 #define CC_RESISTOR_OHM                     22
 
-#define CC_DEFAULT_EXT_MAX_MA               (100 * 1000)
-#define CC_DEFAULT_INT_MAX_MV               50
-
 
 typedef struct
 {
@@ -33,7 +30,6 @@ typedef struct
 
 
 static adcs_type_t          _cc_adc_clamp_array[ADC_CC_COUNT]   = ADC_TYPES_ALL_CC;
-static uint32_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_active_clamps_t   _cc_adc_active_clamps               = {0};
 static adcs_type_t          _cc_running_isolated                = ADCS_TYPE_INVALID;
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
@@ -419,7 +415,7 @@ static bool _cc_get_midpoint(uint32_t* midpoint, char* name)
         return false;
     if (index >= ADC_CC_COUNT)
         return false;
-    *midpoint = _cc_midpoints[index];
+    *midpoint = _configs[index].midpoint;
     return true;
 }
 
