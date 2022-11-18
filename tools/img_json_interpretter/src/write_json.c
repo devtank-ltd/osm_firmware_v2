@@ -82,27 +82,25 @@ static bool _dev2json_cb(modbus_dev_t * dev, void * userdata)
 }
 
 
-static bool _write_modbus_json(struct json_object * root)
+static bool _write_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
 {
-    modbus_bus_t* modbus = &osm_mem.config.modbus_bus;
-
-    if (modbus->version == MODBUS_BLOB_VERSION)
+    if (modbus_bus->version == MODBUS_BLOB_VERSION)
     {
-        struct json_object * modbus_node = json_object_new_object();
+        struct json_object * modbus_json = json_object_new_object();
 
-        json_object_object_add(root, "modbus_bus", modbus_node);
+        json_object_object_add(root, "modbus_bus", modbus_json);
 
-        if (modbus->binary_protocol)
-            json_object_object_add(modbus_node, "binary_protocol", json_object_new_boolean(true));
+        if (modbus_bus->binary_protocol)
+            json_object_object_add(modbus_json, "binary_protocol", json_object_new_boolean(true));
 
         char con_str[32];
 
-        snprintf(con_str, sizeof(con_str), "%"PRIu32" %u%c%s", modbus->baudrate, modbus->databits, uart_parity_as_char(modbus->parity), uart_stop_bits_as_str(modbus->stopbits));
+        snprintf(con_str, sizeof(con_str), "%"PRIu32" %u%c%s", modbus_bus->baudrate, modbus_bus->databits, uart_parity_as_char(modbus_bus->parity), uart_stop_bits_as_str(modbus_bus->stopbits));
 
-        json_object_object_add(modbus_node, "con_str", json_object_new_string(con_str));
+        json_object_object_add(modbus_json, "con_str", json_object_new_string(con_str));
 
         struct json_object * modbus_devices_node = json_object_new_object();
-        json_object_object_add(modbus_node, "modbus_devices", modbus_devices_node);
+        json_object_object_add(modbus_json, "modbus_devices", modbus_devices_node);
 
         modbus_for_each_dev(_dev2json_cb, modbus_devices_node);
     }
@@ -131,14 +129,14 @@ static void _write_measurements_json(struct json_object * root)
 }
 
 
-static void _write_ios_json(struct json_object * root)
+static void _write_ios_json(struct json_object * root, uint16_t* ios_state)
 {
     struct json_object * ios_node = json_object_new_object();
     json_object_object_add(root, "ios", ios_node);
 
     for(unsigned n = 0; n < IOS_COUNT; n++)
     {
-        uint16_t state = osm_mem.config.ios_state[n];
+        uint16_t state = ios_state[n];
         struct json_object * io_node = json_object_new_object();
 
         char name[8];
@@ -164,20 +162,60 @@ static void _write_ios_json(struct json_object * root)
 }
 
 
-static void _write_cc_midpoints_json(struct json_object * root)
+static void _write_cc_midpoints_json(struct json_object * root, cc_config_t* cc_configs)
 {
-    struct json_object * cc_midpoints_node = json_object_new_object();
-    json_object_object_add(root, "cc_midpoints", cc_midpoints_node);
-    uint32_t* midpoint;
+    struct json_object * cc_configs_json = json_object_new_object();
+    json_object_object_add(root, "cc_configs", cc_configs_json);
     char name[4];
     for (unsigned n = 0; n < ADC_CC_COUNT; n++)
     {
-        midpoint = &osm_mem.config.adc_persist_config.cc.cc_midpoints[n];
         snprintf(name, 4, "CC%u", n+1);
-        json_object_object_add(cc_midpoints_node, name, json_object_new_int(*midpoint));
+        struct json_object * cc_config_json = json_object_new_object();
+        json_object_object_add(cc_configs_json, name, cc_config_json);
+
+        json_object_object_add(cc_config_json, name, json_object_new_double((double)cc_configs[n].midpoint / 1000.));
+        json_object_object_add(cc_config_json, name, json_object_new_int(cc_configs[n].ext_max_mA));
+        json_object_object_add(cc_config_json, name, json_object_new_int(cc_configs[n].int_max_mV));
     }
 }
 
+
+static bool _write_json_from_img_base(struct json_object * root, persist_storage_t* config)
+{
+    json_object_object_add(root, "version", json_object_new_int(PERSIST_VERSION));
+
+    json_object_object_add(root, "log_debug_mask", json_object_new_int(config->log_debug_mask));
+    return true;
+}
+
+
+static bool _write_json_from_img_env01(struct json_object * root, persist_env01_config_v1_t* model_config)
+{
+    json_object_object_add(root, "mins_interval", json_object_new_int(model_config->mins_interval));
+
+    comms_config_t* comms_config = &model_config->comms_config;
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(((lw_config_t*)comms_config->setup)->dev_eui, LW_DEV_EUI_LEN));
+            json_object_object_add(root, "lw_app_key", json_object_new_string_len(((lw_config_t*)comms_config->setup)->app_key, LW_APP_KEY_LEN));
+            break;
+    }
+
+
+    _write_cc_midpoints_json(root, model_config->cc_configs);
+
+    if (!_write_modbus_json(root, &model_config->modbus_bus))
+    {
+        json_object_put(root);
+        return false;
+    }
+
+    _write_measurements_json(root);
+
+    _write_ios_json(root, model_config->ios_state);
+    return true;
+}
 
 
 int write_json_from_img(const char * filename)
@@ -199,36 +237,30 @@ int write_json_from_img(const char * filename)
 
     struct json_object * root = json_object_new_object();
 
-    json_object_object_add(root, "version", json_object_new_int(PERSIST_VERSION));
+    if (!_write_json_from_img_base(root, &osm_mem.config))
+        goto bad_exit;
 
-    json_object_object_add(root, "log_debug_mask", json_object_new_int(osm_mem.config.log_debug_mask));
-
-    json_object_object_add(root, "mins_interval", json_object_new_int(osm_mem.config.mins_interval));
-
-    comms_config_t* comms_config = &osm_mem.config.comms_config;
-    switch(comms_config->type)
+    bool r;
+    int model_num = MODEL_NUM_ENV01; // TODO: Come up with a way to determine
+    switch (model_num)
     {
-        case COMMS_TYPE_LW:
-            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(((lw_config_t*)comms_config->setup)->dev_eui, LW_DEV_EUI_LEN));
-            json_object_object_add(root, "lw_app_key", json_object_new_string_len(((lw_config_t*)comms_config->setup)->app_key, LW_APP_KEY_LEN));
-            break;
+        case MODEL_NUM_ENV01:
+        {
+            persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
+            r = _write_json_from_img_env01(root, model_config);
+        }
+        default:
+            r = false;
     }
-
-
-    _write_cc_midpoints_json(root);
-
-    if (!_write_modbus_json(root))
-    {
-        json_object_put(root);
-        return EXIT_FAILURE;
-    }
-
-    _write_measurements_json(root);
-
-    _write_ios_json(root);
+    if (!r)
+        goto bad_exit;
 
     json_object_to_fd(1, root, JSON_C_TO_STRING_PRETTY);
     json_object_put(root);
 
     return EXIT_SUCCESS;
+
+bad_exit:
+    json_object_put(root);
+    return EXIT_FAILURE;
 }

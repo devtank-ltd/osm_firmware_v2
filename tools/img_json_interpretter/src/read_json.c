@@ -345,7 +345,7 @@ static bool _read_cc_midpoints_json(struct json_object * root, cc_config_t* cc_c
         return false;
     }
 
-    struct json_object * cc_configs_json = json_object_object_get(root, "cc_config");
+    struct json_object * cc_configs_json = json_object_object_get(root, "cc_configs");
     if (cc_configs_json)
     {
         json_object_object_foreach(cc_configs_json, cc_config_name, cc_config_json)

@@ -39,12 +39,6 @@ void log_error(char *fmt, ...)
 }
 
 
-modbus_bus_t* persist_get_modbus_bus(void)
-{
-    return &osm_mem.config.modbus_bus;
-}
-
-
 static void _print_help(void)
 {
     fprintf(stderr, "Arguments:\n"
