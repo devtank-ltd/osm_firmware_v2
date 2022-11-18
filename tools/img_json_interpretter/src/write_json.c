@@ -162,7 +162,7 @@ static void _write_ios_json(struct json_object * root, uint16_t* ios_state)
 }
 
 
-static void _write_cc_midpoints_json(struct json_object * root, cc_config_t* cc_configs)
+static void _write_cc_config_json(struct json_object * root, cc_config_t* cc_configs)
 {
     struct json_object * cc_configs_json = json_object_new_object();
     json_object_object_add(root, "cc_configs", cc_configs_json);
@@ -176,6 +176,26 @@ static void _write_cc_midpoints_json(struct json_object * root, cc_config_t* cc_
         json_object_object_add(cc_config_json, name, json_object_new_double((double)cc_configs[n].midpoint / 1000.));
         json_object_object_add(cc_config_json, name, json_object_new_int(cc_configs[n].ext_max_mA));
         json_object_object_add(cc_config_json, name, json_object_new_int(cc_configs[n].int_max_mV));
+    }
+}
+
+
+static bool _write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs)
+{
+    struct json_object * ftma_configs_json = json_object_new_object();
+    json_object_object_add(root, "ftma_configs", ftma_configs_json);
+    char name[MEASURE_NAME_NULLED_LEN];
+    for (unsigned n = 0; n < ADC_FTMA_COUNT; n++)
+    {
+        snprintf(name, MEASURE_NAME_NULLED_LEN, "FTA%u", n+1);
+        struct json_object * ftma_config_json = json_object_new_object();
+        json_object_object_add(ftma_configs_json, name, ftma_config_json);
+
+        json_object_object_add(ftma_config_json, "name", json_object_new_string_len(ftma_configs[n].name, MEASURE_NAME_LEN));
+        struct json_object * coeff_array_json = json_object_new_array();
+        json_object_object_add(ftma_config_json, "coeffs", coeff_array_json);
+        for (unsigned m = 0; m < FTMA_NUM_COEFFS; n++)
+            json_object_array_add(coeff_array_json, json_object_new_double(ftma_configs[n].coeffs[m]));
     }
 }
 
@@ -203,7 +223,36 @@ static bool _write_json_from_img_env01(struct json_object * root, persist_env01_
     }
 
 
-    _write_cc_midpoints_json(root, model_config->cc_configs);
+    _write_cc_config_json(root, model_config->cc_configs);
+
+    if (!_write_modbus_json(root, &model_config->modbus_bus))
+    {
+        json_object_put(root);
+        return false;
+    }
+
+    _write_measurements_json(root);
+
+    _write_ios_json(root, model_config->ios_state);
+    return true;
+}
+
+
+static bool _write_json_from_img_sens01(struct json_object * root, persist_sens01_config_v1_t* model_config)
+{
+    json_object_object_add(root, "mins_interval", json_object_new_int(model_config->mins_interval));
+
+    comms_config_t* comms_config = &model_config->comms_config;
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(((lw_config_t*)comms_config->setup)->dev_eui, LW_DEV_EUI_LEN));
+            json_object_object_add(root, "lw_app_key", json_object_new_string_len(((lw_config_t*)comms_config->setup)->app_key, LW_APP_KEY_LEN));
+            break;
+    }
+
+
+    _write_fmta_config_json(root, model_config->ftma_configs);
 
     if (!_write_modbus_json(root, &model_config->modbus_bus))
     {
@@ -248,6 +297,11 @@ int write_json_from_img(const char * filename)
         {
             persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
             r = _write_json_from_img_env01(root, model_config);
+        }
+        case MODEL_NUM_SENS01:
+        {
+            persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config.model_config;
+            r = _write_json_from_img_sens01(root, model_config);
         }
         default:
             r = false;

@@ -14,6 +14,7 @@
 #include "modbus_mem.h"
 #include "lw.h"
 #include "cc.h"
+#include "ftma.h"
 
 #include "persist_config_header.h"
 
