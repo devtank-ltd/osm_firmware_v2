@@ -32,7 +32,6 @@ static ftma_config_t*   _ftma_config                            = NULL;
 static uint32_t         _ftma_collection_time                   = FTMA_DEFAULT_COLLECTION_TIME;
 static adcs_type_t      _ftma_channels[ADC_FTMA_COUNT]          = ADC_TYPES_ALL_FTMA;
 static uint8_t          _ftma_num_channels                      = ARRAY_SIZE(_ftma_channels);
-static bool             _ftma_config_valid                      = false;
 static bool             _ftma_is_running                        = false;
 static uint32_t         _ftma_start_time                        = 0;
 static bool             _ftma_channel_inited[ADC_FTMA_COUNT]    = {false};
@@ -206,24 +205,24 @@ void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
     if (sizeof(ftma_config_t) * ADC_FTMA_COUNT > size)
     {
         log_error("FTMA config is larger than the size of memory given.");
-        num_cc_configs = size / sizeof(ftma_config_t);
+        num_ftma_configs = size / sizeof(ftma_config_t);
     }
     float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
     for (uint8_t i = 0; i < num_ftma_configs; i++)
     {
         strncpy(memory[i].name, MEASUREMENTS_FTMA_1_NAME, MEASURE_NAME_NULLED_LEN);
-        memcpy(memory[i].coeffs[i], default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
+        memcpy(memory[i].coeffs, default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
     }
 }
 
 
 void ftma_init(void)
 {
-    _ftma_config = persist_get_adc_config();
+    _ftma_config = persist_data.model_config.ftma_configs;
     if (!_ftma_config)
     {
         static ftma_config_t _default_conf[ADC_FTMA_COUNT];
-        adcs_setup_default_mem(_default_conf, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
+        ftma_setup_default_mem(_default_conf, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
         _ftma_config = _default_conf;
     }
 }
