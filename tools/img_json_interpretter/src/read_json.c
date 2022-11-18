@@ -337,7 +337,7 @@ static bool _read_ios_json(struct json_object * root, uint16_t* ios_state)
 }
 
 
-static bool _read_cc_midpoints_json(struct json_object * root, cc_config_t* cc_config)
+static bool _read_cc_configs_json(struct json_object * root, cc_config_t* cc_config)
 {
     if (!root || !cc_config)
     {
@@ -386,6 +386,56 @@ static bool _read_cc_midpoints_json(struct json_object * root, cc_config_t* cc_c
                 return false;
             }
             cc_config[index-1].int_max_mV = int_max_mV;
+        }
+    }
+    return true;
+}
+
+
+static bool _read_ftma_configs_json(struct json_object * root, ftma_config_t* ftma_configs)
+{
+    if (!root || !ftma_configs)
+    {
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
+
+    struct json_object * ftma_configs_json = json_object_object_get(root, "ftma_configs");
+    if (ftma_configs_json)
+    {
+        json_object_object_foreach(ftma_configs_json, ftma_config_name, ftma_config_json)
+        {
+            char* p = ftma_config_name;
+            if (strncmp(p, "FTA", 3) != 0)
+            {
+                log_error("Bad name for \"%s\"", ftma_config_name);
+                return false;
+            }
+            p += 3;
+            int index = strtoul(p, NULL, 10);
+            if (index < 1 || index > 4)
+            {
+                log_error("Bad name for \"%s\"", ftma_config_name);
+                return false;
+            }
+            ftma_config_t* ftma = &ftma_configs[index-1];
+            if (!_get_string_buf(ftma_config_json, "name", ftma->name, MEASURE_NAME_LEN))
+                return false;
+            struct json_object * coeffs_json = json_object_object_get(ftma_config_json, "coeffs");
+            int num_coeffs = json_object_array_length(coeffs_json);
+            if (num_coeffs > FTMA_NUM_COEFFS)
+            {
+                log_error("Too many FTMA coeffs.");
+                return false;
+            }
+            unsigned n;
+            for (n = 0; n < num_coeffs; n++)
+            {
+                struct json_object * coeff_index = json_object_array_get_idx(coeffs_json, n);
+                ftma->coeffs[n] = json_object_get_double(coeff_index);
+            }
+            for (; n < FTMA_NUM_COEFFS; n++)
+                ftma->coeffs[n] = 0;
         }
     }
     return true;
@@ -464,7 +514,53 @@ static bool _read_json_to_img_env01(struct json_object * root, persist_env01_con
     if (!_read_ios_json(root, model_config->ios_state))
         return false;
 
-    if (!_read_cc_midpoints_json(root, model_config->cc_configs))
+    if (!_read_cc_configs_json(root, model_config->cc_configs))
+        return false;
+
+    return true;
+}
+
+
+static bool _read_json_to_img_sens01(struct json_object * root, persist_sens01_config_v1_t * model_config)
+{
+    if (!root || !model_config)
+    {
+        log_error("Handed a NULL pointer.");
+        return false;
+    }
+    int tmp = _get_defaulted_int(root, "mins_interval",  15);
+    if (tmp < 1 || tmp > (60 * 24))
+    {
+        log_error("Unsupported mins_interval");
+        return false;
+    }
+    model_config->mins_interval  = tmp;
+
+    comms_config_t* comms_config = &model_config->comms_config;
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+            if (!_get_string_buf(root, "lw_dev_eui", ((lw_config_t*)(comms_config->setup))->dev_eui, LW_DEV_EUI_LEN) ||
+                !_get_string_buf(root, "lw_app_key", ((lw_config_t*)(comms_config->setup))->app_key, LW_APP_KEY_LEN))
+            {
+                log_error("No LoRaWAN keys.");
+                return false;
+            }
+            break;
+    }
+
+    measurements_add_defaults(osm_mem.measurements.measurements_arr);
+
+    if (!_read_modbus_json(root, &model_config->modbus_bus))
+        return false;
+
+    if (!_read_measurements_json(root))
+        return false;
+
+    if (!_read_ios_json(root, model_config->ios_state))
+        return false;
+
+    if (!_read_ftma_configs_json(root, model_config->ftma_configs))
         return false;
 
     return true;
@@ -511,9 +607,17 @@ int read_json_to_img(const char * filename)
     switch (osm_mem.config.model_code)
     {
         case MODEL_NUM_ENV01:
+        {
             persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
             r = _read_json_to_img_env01(root, model_config);
             break;
+        }
+        case MODEL_NUM_SENS01:
+        {
+            persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config.model_config;
+            r = _read_json_from_img_sens01(root, model_config);
+            break;
+        }
         default:
             r = false;
             break;

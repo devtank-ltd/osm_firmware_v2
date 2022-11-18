@@ -297,14 +297,17 @@ int write_json_from_img(const char * filename)
         {
             persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
             r = _write_json_from_img_env01(root, model_config);
+            break;
         }
         case MODEL_NUM_SENS01:
         {
             persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config.model_config;
             r = _write_json_from_img_sens01(root, model_config);
+            break;
         }
         default:
             r = false;
+            break;
     }
     if (!r)
         goto bad_exit;
