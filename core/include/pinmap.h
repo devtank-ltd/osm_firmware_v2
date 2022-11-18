@@ -11,8 +11,7 @@
 
 #include "base_types.h"
 
-#include "env01_pinmap.h"
-#include "sens01_pinmap.h"
+#include "model_pinmap.h"
 
 #define I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, GPIO_AF4, {GPIOB, GPIO8|GPIO9} }}
 

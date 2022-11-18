@@ -29,6 +29,18 @@
 #include "ftma.h"
 
 
+uint8_t stm_adcs_get_channel(adcs_type_t adcs_type)
+{
+    switch(adcs_type)
+    {
+        case ADCS_TYPE_BAT:
+            return ADC1_CHANNEL_BAT_MON;
+        default:                                                                    break;
+    }
+    return 0;
+}
+
+
 void persist_config_model_init(persist_model_config_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;

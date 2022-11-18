@@ -35,6 +35,7 @@
 #define ADC_CCR_PRESCALE_MASK  0xF
 #define ADC_CCR_PRESCALE_SHIFT 18
 
+extern uint8_t stm_adcs_get_channel(adcs_type_t adcs_type);
 
 static volatile uint32_t since_boot_ms = 0;
 
@@ -295,30 +296,11 @@ void platform_setup_adc(adc_setup_config_t* config)
 }
 
 
-static uint8_t _stm_adcs_get_channel(adcs_type_t adcs_type)
-{
-    switch(adcs_type)
-    {
-        case ADCS_TYPE_BAT:
-            return ADC1_CHANNEL_BAT_MON;
-        case ADCS_TYPE_CC_CLAMP1:
-            return ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2:
-            return ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3:
-            return ADC1_CHANNEL_CURRENT_CLAMP_3;
-        default:
-            break;
-    }
-    return 0;
-}
-
-
 void platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
 {
     uint8_t channels[ADC_COUNT];
     for (uint8_t i = 0; i < num_adcs_types; i++)
-        channels[i] = _stm_adcs_get_channel(adcs_types[i]);
+        channels[i] = stm_adcs_get_channel(adcs_types[i]);
     adc_set_regular_sequence(ADC1, num_adcs_types, channels);
 }
 

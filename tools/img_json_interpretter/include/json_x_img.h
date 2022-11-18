@@ -16,6 +16,8 @@
 #include "cc.h"
 #include "ftma.h"
 
+#include "env01_pinmap.h"
+#include "sens01_pinmap.h"
 #include "persist_config_header.h"
 #include "env01_config.h"
 #include "sens01_config.h"

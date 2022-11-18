@@ -28,7 +28,7 @@ FW_NAME ?= sens01
 
 BUILD_DIR := build
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/env01/ -Imodel/sens01
+INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/$(FW_NAME)
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4
