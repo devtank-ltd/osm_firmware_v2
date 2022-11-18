@@ -39,6 +39,5 @@ env01_SOURCES := \
            sensors/src/bat.c \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
-           model/env01/env01.c \
-           model/env01/persist_config_model.c
+           model/env01/env01.c 
 env01_LINK_SCRIPT := core/stm32l4.ld

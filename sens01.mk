@@ -39,6 +39,5 @@ sens01_SOURCES := \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
            sensors/src/ftma.c \
-           model/sens01/sens01.c \
-           model/sens01/persist_config_model.c
+           model/sens01/sens01.c
 sens01_LINK_SCRIPT := core/stm32l4.ld
