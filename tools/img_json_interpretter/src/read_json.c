@@ -615,7 +615,7 @@ int read_json_to_img(const char * filename)
         case MODEL_NUM_SENS01:
         {
             persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config.model_config;
-            r = _read_json_from_img_sens01(root, model_config);
+            r = _read_json_to_img_sens01(root, model_config);
             break;
         }
         default:
