@@ -7,6 +7,10 @@
 #include "pinmap.h"
 #include "cc.h"
 
+#define __MODEL_CONFIG__
+
+#define FW_NAME ENV01
+
 #define ENV01_FLASH_ADDRESS               0x8000000
 #define ENV01_FLASH_PAGE_SIZE             2048
 
@@ -16,15 +20,18 @@
 #define ENV01_NEW_FW_PAGE                 120
 
 #define ENV01_FW_PAGES                    100
-#define ENV01_FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
-#define ENV01_PAGE2ADDR(_page_)           (FLASH_ADDRESS + (FLASH_PAGE_SIZE * _page_))
-#define ENV01_FW_ADDR                     PAGE2ADDR(FW_PAGE)
-#define ENV01_NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
-#define ENV01_PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
-#define ENV01_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
+#define ENV01_FW_MAX_SIZE                 (ENV01_FW_PAGES * ENV01_FLASH_PAGE_SIZE)
+#define ENV01_PAGE2ADDR(_page_)           (ENV01_FLASH_ADDRESS + (ENV01_FLASH_PAGE_SIZE * _page_))
+#define ENV01_FW_ADDR                     ENV01_PAGE2ADDR(ENV01_FW_PAGE)
+#define ENV01_NEW_FW_ADDR                 ENV01_PAGE2ADDR(ENV01_NEW_FW_PAGE)
+#define ENV01_PERSIST_RAW_DATA            ((const uint8_t*)ENV01_PAGE2ADDR(ENV01_FLASH_CONFIG_PAGE))
+#define ENV01_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)ENV01_PAGE2ADDR(ENV01_FLASH_MEASUREMENTS_PAGE))
 
 #define ENV01_PERSIST_VERSION             3
 
+#define ENV01_MODEL_NUM                   1
+
+#define ENV01_PERSIST_MODEL_CONFIG_T      persist_env01_config_v1_t
 
 typedef struct
 {

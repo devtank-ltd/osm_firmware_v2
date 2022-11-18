@@ -7,6 +7,10 @@
 #include "pinmap.h"
 #include "ftma.h"
 
+#define __MODEL_CONFIG__
+
+#define FW_NAME SENS01
+
 
 #define SENS01_FLASH_ADDRESS               0x8000000
 #define SENS01_FLASH_PAGE_SIZE             2048
@@ -16,16 +20,19 @@
 #define SENS01_FW_PAGE                     4
 #define SENS01_NEW_FW_PAGE                 120
 #define SENS01_FW_PAGES                    100
-#define SENS01_FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
-#define SENS01_PAGE2ADDR(_page_)           (FLASH_ADDRESS + (FLASH_PAGE_SIZE * _page_))
-#define SENS01_FW_ADDR                     PAGE2ADDR(FW_PAGE)
-#define SENS01_NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
+#define SENS01_FW_MAX_SIZE                 (SENS01_FW_PAGES * SENS01_FLASH_PAGE_SIZE)
+#define SENS01_PAGE2ADDR(_page_)           (SENS01_FLASH_ADDRESS + (SENS01_FLASH_PAGE_SIZE * _page_))
+#define SENS01_FW_ADDR                     SENS01_PAGE2ADDR(SENS01_FW_PAGE)
+#define SENS01_NEW_FW_ADDR                 SENS01_PAGE2ADDR(SENS01_NEW_FW_PAGE)
 
-#define SENS01_PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
-#define SENS01_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
+#define SENS01_PERSIST_RAW_DATA            ((const uint8_t*)SENS01_PAGE2ADDR(SENS01_FLASH_CONFIG_PAGE))
+#define SENS01_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)SENS01_PAGE2ADDR(SENS01_FLASH_MEASUREMENTS_PAGE))
 
 #define SENS01_PERSIST_VERSION             3
 
+#define SENS01_MODEL_NUM                   1
+
+#define SENS01_PERSIST_MODEL_CONFIG_T      persist_sens01_config_v1_t
 
 typedef struct
 {
