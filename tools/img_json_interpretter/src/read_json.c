@@ -503,7 +503,7 @@ static bool _read_json_to_img_env01(struct json_object * root, persist_env01_con
             break;
     }
 
-    measurements_add_defaults(osm_mem.measurements.measurements_arr);
+    env01_measurements_add_defaults(osm_mem.measurements.measurements_arr);
 
     if (!_read_modbus_json(root, &model_config->modbus_bus))
         return false;
@@ -549,7 +549,7 @@ static bool _read_json_to_img_sens01(struct json_object * root, persist_sens01_c
             break;
     }
 
-    measurements_add_defaults(osm_mem.measurements.measurements_arr);
+    sens01_measurements_add_defaults(osm_mem.measurements.measurements_arr);
 
     if (!_read_modbus_json(root, &model_config->modbus_bus))
         return false;

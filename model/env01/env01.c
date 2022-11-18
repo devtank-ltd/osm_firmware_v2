@@ -177,10 +177,11 @@ void cmds_add_all(struct cmd_link_t* tail)
     tail = comms_add_commands(tail);
 }
 
-#endif
-
 
 unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
+#else
+unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr)
+#endif
 {
     if (!measurements_arr)
         return 0;

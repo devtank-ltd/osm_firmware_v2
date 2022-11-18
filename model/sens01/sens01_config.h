@@ -9,8 +9,9 @@
 
 #define __MODEL_CONFIG__
 
+#ifndef FW_NAME
 #define FW_NAME SENS01
-
+#endif
 
 #define SENS01_FLASH_ADDRESS               0x8000000
 #define SENS01_FLASH_PAGE_SIZE             2048
@@ -45,3 +46,5 @@ typedef struct
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
 } persist_sens01_config_v1_t;
+
+extern unsigned sens01_measurements_add_defaults(measurements_def_t * measurements_arr);
