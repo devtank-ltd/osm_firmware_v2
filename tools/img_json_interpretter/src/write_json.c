@@ -252,7 +252,7 @@ static bool _write_json_from_img_sens01(struct json_object * root, persist_sens0
     }
 
 
-    _write_fmta_config_json(root, model_config->ftma_configs);
+    _write_ftma_config_json(root, model_config->ftma_configs);
 
     if (!_write_modbus_json(root, &model_config->modbus_bus))
     {

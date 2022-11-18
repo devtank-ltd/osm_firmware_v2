@@ -692,8 +692,8 @@ static void cc_mp_cb(char* args)
     uint32_t new_mp32;
     if (p == args)
     {
-        _cc_get_midpoint(&new_mp32, p);
-        log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
+        if (_cc_get_midpoint(&new_mp32, p))
+            log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return;
     }
     new_mp32 = new_mp * 1000;

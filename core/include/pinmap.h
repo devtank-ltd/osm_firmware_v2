@@ -11,6 +11,9 @@
 
 #include "base_types.h"
 
+#include "env01_pinmap.h"
+#include "sens01_pinmap.h"
+
 #define I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, GPIO_AF4, {GPIOB, GPIO8|GPIO9} }}
 
 #define HTU21D_I2C          I2C1
@@ -24,52 +27,16 @@
 #define LED_PORT   GPIOA
 #define LED_PIN    GPIO0
 
-#define ADCS_PORT_N_PINS                            \
-{                                                   \
-    {GPIOA, GPIO1},      /* ADC 1  = Channel 6  */  \
-    {GPIOB, GPIO1},      /* ADC 1  = Channel 16 */  \
-    {GPIOA, GPIO4},      /* ADC 1  = Channel 9  */  \
-    {GPIOC, GPIO0},      /* ADC 1  = Channel 1  */  \
-    {GPIOC, GPIO2},      /* ADC 1  = Channel 3  */  \
-    {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
-}
+#define ADCS_PORT_N_PINS                CONCAT(FW_NAME,_ADCS_PORT_N_PINS)
 
-#define ADC1_CHANNEL_CURRENT_CLAMP_1    6
-#define ADC1_CHANNEL_CURRENT_CLAMP_2    16
-#define ADC1_CHANNEL_CURRENT_CLAMP_3    9
-#define ADC1_CHANNEL_BAT_MON            1
-#define ADC1_CHANNEL_3V3_RAIL_MON       3
-#define ADC1_CHANNEL_5V_RAIL_MON        4
+#define ADC1_CHANNEL_BAT_MON            CONCAT(FW_NAME,_ADC1_CHANNEL_BAT_MON)
+#define ADC1_CHANNEL_3V3_RAIL_MON       CONCAT(FW_NAME,_ADC1_CHANNEL_3V3_RAIL_MON)
+#define ADC1_CHANNEL_5V_RAIL_MON        CONCAT(FW_NAME,_ADC1_CHANNEL_5V_RAIL_MON)
 
-#define ADC_INDEX_CURRENT_CLAMP_1 0
-#define ADC_INDEX_CURRENT_CLAMP_2 1
-#define ADC_INDEX_CURRENT_CLAMP_3 2
-#define ADC_INDEX_BAT_MON         3
-#define ADC_INDEX_3V3_RAIL_MON    4
-#define ADC_INDEX_5V_RAIL_MON     5
+#define ADC_DMA_CHANNELS                CONCAT(FW_NAME,_ADC_DMA_CHANNELS)
+#define ADC_DMA_CHANNELS_COUNT          CONCAT(FW_NAME,_ADC_DMA_CHANNELS_COUNT)
 
-#define ADC_CHANNELS  { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                        ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                        ADC1_CHANNEL_CURRENT_CLAMP_3,  \
-                        ADC1_CHANNEL_BAT_MON,          \
-                        ADC1_CHANNEL_3V3_RAIL_MON,     \
-                        ADC1_CHANNEL_5V_RAIL_MON       }
-
-
-#define ADC_CC_CHANNELS { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                          ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                          ADC1_CHANNEL_CURRENT_CLAMP_3   }
-
-
-#define ADC_DMA_CHANNELS                                                        \
-{                                                                               \
-    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
-}
-
-#define ADC_DMA_CHANNELS_COUNT  1
-
-#define ADC_COUNT       6
-#define ADC_CC_COUNT    3
+#define ADC_COUNT                       CONCAT(FW_NAME,_ADC_COUNT)
 
 #define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
 #define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */
