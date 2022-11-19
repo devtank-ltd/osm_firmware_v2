@@ -29,7 +29,7 @@
 #include "modbus.h"
 
 
-uint8_t stm_adcs_get_channel(adcs_type_t adcs_type)
+uint8_t env01_stm_adcs_get_channel(adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
@@ -48,16 +48,14 @@ uint8_t stm_adcs_get_channel(adcs_type_t adcs_type)
 }
 
 
-
-
-void persist_config_model_init(persist_model_config_t* model_config)
+void env01_persist_config_model_init(persist_model_config_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
 }
 
 
-void sensors_init(void)
+void env01_sensors_init(void)
 {
     timers_init();
     ios_init();
@@ -74,7 +72,7 @@ void sensors_init(void)
 }
 
 
-bool uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool env01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == RS485_UART)
     {
@@ -91,7 +89,7 @@ bool uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool env01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == RS485_UART)
         return modbus_uart_ring_do_out_drain(ring);
@@ -99,7 +97,7 @@ bool uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool env01_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -135,14 +133,14 @@ bool measurements_get_inf(measurements_def_t * def, measurements_data_t* data, m
 }
 
 
-void debug_mode_enable_all(void)
+void env01_debug_mode_enable_all(void)
 {
     adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
     cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
 }
 
 
-void measurements_repopulate(void)
+void env01_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
@@ -161,7 +159,7 @@ void measurements_repopulate(void)
 }
 
 
-void cmds_add_all(struct cmd_link_t* tail)
+void env01_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = bat_add_commands(tail);
     tail = cc_add_commands(tail);
@@ -177,11 +175,10 @@ void cmds_add_all(struct cmd_link_t* tail)
     tail = comms_add_commands(tail);
 }
 
-
-unsigned measurements_add_defaults(measurements_def_t * measurements_arr)
-#else
-unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr)
 #endif
+
+
+unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;

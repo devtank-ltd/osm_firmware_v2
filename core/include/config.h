@@ -48,6 +48,9 @@
 #define CMD_VUART 0
 #define UART_ERR_NU 0
 
+#define CONCAT2(a, b) a##b
+#define CONCAT(a, b) CONCAT2(a, b)
+
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
 #define MODBUS_BLOB_VERSION 2
