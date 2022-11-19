@@ -53,8 +53,6 @@ MEM_JSON := $(JSON_CONV_DIR)/$(FW_NAME)_default_mem.json
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
-DEPS = $(shell find "$(BUILD_DIR)" -name "*.d")
-
 FW_IMG := $(BUILD_DIR)/$(FW_NAME).bin
 BL_IMG := $(BUILD_DIR)/bootloader.bin
 WHOLE_IMG := $(BUILD_DIR)/complete.bin
