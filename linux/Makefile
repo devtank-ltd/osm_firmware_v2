@@ -19,8 +19,6 @@ CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 BUILD_DIR := build
 
-FW_NAME ?= sens01
-
 INCLUDE_PATHS += -Icore/include -Isensors/include -Imodel/$(FW_NAME) -Icomms/include $(shell pkg-config --cflags json-c)
 
 LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
@@ -82,10 +80,9 @@ firmware_SOURCES := \
            sensors/src/sai.c \
            sensors/src/ftma.c \
            sensors/src/bat.c \
+           sensors/src/cc.c \
            sensors/src/can_impl.c \
-           sensors/src/fw.c \
-	   model/$(FW_NAME)/$(FW_NAME).c \
-	   model/$(FW_NAME)/persist_config_model.c
+           sensors/src/fw.c
 
 firmware_OBJS=$(firmware_SOURCES:%.c=$(BUILD_DIR)/%.o)
 
