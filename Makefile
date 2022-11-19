@@ -89,6 +89,9 @@ $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 $(BASE_BUILD_DIR)/%/complete.bin:
 	$(MAKE) FW_NAME=$$(basename $$(dirname $@))
 
+$(MODELS): %: $(BASE_BUILD_DIR)/%/complete.bin
+
+
 define PROGRAM_template
   include $(1)
   $(2)_OBJS=$$($(2)_SOURCES:%.c=$(BUILD_DIR)/%.o)
