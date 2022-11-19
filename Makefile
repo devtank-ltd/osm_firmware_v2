@@ -15,6 +15,9 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
+FW_NAME ?= sens01
+UP_FW_NAME=$(shell echo $(FW_NAME) | tr a-z A-Z)
+
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
 CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
@@ -23,9 +26,7 @@ CFLAGS		+= -MMD -MP
 CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 CFLAGS		+= $(CPU_DEFINES) --specs=picolibc.specs
 CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
-CFLAGS		+= -Dfw_name=$(FW_NAME)
-
-FW_NAME ?= sens01
+CFLAGS		+= -Dfw_name=$(FW_NAME) -DFW_NAME=$(UP_FW_NAME)
 
 
 INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/$(FW_NAME)

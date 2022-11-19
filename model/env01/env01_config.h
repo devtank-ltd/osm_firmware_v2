@@ -9,10 +9,6 @@
 
 #define __MODEL_CONFIG__
 
-#ifndef FW_NAME
-#define FW_NAME ENV01
-#endif
-
 #define ENV01_FLASH_ADDRESS               0x8000000
 #define ENV01_FLASH_PAGE_SIZE             2048
 

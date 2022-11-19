@@ -9,10 +9,6 @@
 
 #define __MODEL_CONFIG__
 
-#ifndef FW_NAME
-#define FW_NAME SENS01
-#endif
-
 #define SENS01_FLASH_ADDRESS               0x8000000
 #define SENS01_FLASH_PAGE_SIZE             2048
 
