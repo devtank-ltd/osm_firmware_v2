@@ -26,7 +26,6 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_S
 
 FW_NAME ?= sens01
 
-BUILD_DIR := build
 
 INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/$(FW_NAME)
 
@@ -39,7 +38,7 @@ LINK_FLAGS += $(CPU_DEFINES) --specs=picolibc.specs
 
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32l4.a
 
-BUILD_DIR := build
+BUILD_DIR := build/$(FW_NAME)
 RELEASE_DIR := releases
 JSON_CONV_DIR := tools/img_json_interpretter
 
