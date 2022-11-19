@@ -17,7 +17,7 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
-FW_NAME ?= sens01
+FW_NAME ?=
 UP_FW_NAME=$(shell echo $(FW_NAME) | tr a-z A-Z)
 
 MODELS = $(shell find model/* -type d -printf '%f\n')
@@ -59,7 +59,9 @@ WHOLE_IMG := $(BUILD_DIR)/complete.bin
 JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
 MEM_IMG := $(BUILD_DIR)/$(FW_NAME)_mem.bin
 
+ifdef FW_NAME
 default: $(WHOLE_IMG)
+endif
 
 all: $(MODELS_FW)
 
