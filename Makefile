@@ -7,6 +7,8 @@ OBJDUMP = $(TOOLCHAIN)-objdump
 SIZE = $(TOOLCHAIN)-size
 NM =$(TOOLCHAIN)-nm
 
+BASE_BUILD_DIR := build
+
 #Target CPU options
 CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
@@ -17,6 +19,9 @@ GIT_TAG ?= $(shell git tag --points-at HEAD)
 
 FW_NAME ?= sens01
 UP_FW_NAME=$(shell echo $(FW_NAME) | tr a-z A-Z)
+
+MODELS = $(shell find model/* -type d -printf '%f\n')
+MODELS_FW = $(MODELS:%=$(BASE_BUILD_DIR)/%/complete.bin)
 
 #Compiler options
 CFLAGS		+= -Os -g -c -std=gnu11
@@ -40,7 +45,7 @@ LINK_FLAGS += $(CPU_DEFINES) --specs=picolibc.specs
 
 LIBOPENCM3 := libs/libopencm3/lib/libopencm3_stm32l4.a
 
-BUILD_DIR := build/$(FW_NAME)
+BUILD_DIR := $(BASE_BUILD_DIR)/$(FW_NAME)
 RELEASE_DIR := releases
 JSON_CONV_DIR := tools/img_json_interpretter
 
@@ -57,6 +62,8 @@ JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
 MEM_IMG := $(BUILD_DIR)/$(FW_NAME)_mem.bin
 
 default: $(WHOLE_IMG)
+
+all: $(MODELS_FW)
 
 $(JSON_CONV) : $(LIBOPENCM3)
 	$(MAKE) -C $(JSON_CONV_DIR)
@@ -81,6 +88,8 @@ $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p "$(@D)"
 	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
 
+$(BASE_BUILD_DIR)/%/complete.bin:
+	$(MAKE) FW_NAME=$$(basename $$(dirname $@))
 
 define PROGRAM_template
   include $(1)
