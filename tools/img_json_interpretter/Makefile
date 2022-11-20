@@ -1,10 +1,9 @@
 
 BUILD_DIR := build
 
-FW_NAME ?= sens01
-
-CFLAGS := -I../../core/include -I../../sensors/include -I../../comms/include -I../../model/env01/ -I../../model/sens01/ -I../../libs/libopencm3/include/ -Iinclude $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+CFLAGS := -Iinclude -I../../core/include -I../../sensors/include -I../../comms/include -I../../model/env01/ -I../../model/sens01/ -I../../libs/libopencm3/include/ $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 CFLAGS += -MMD -MP -g -DSTM32L4 -D__CONFIGTOOL__
+CFLAGS += -Dfw_name=tool -DFW_NAME=TOOL
 LDFLAGS := $(shell pkg-config --libs json-c)
 
 SRC := src/main.c \

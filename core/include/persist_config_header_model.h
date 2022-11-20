@@ -1,8 +1,6 @@
 #pragma once
 
-#ifndef __MODEL_CONFIG__
 #include "model_config.h"
-#endif //__MODEL_CONFIG__
 
 #define FLASH_ADDRESS                 CONCAT(FW_NAME,_FLASH_ADDRESS)
 #define FLASH_PAGE_SIZE               CONCAT(FW_NAME,_FLASH_PAGE_SIZE)
