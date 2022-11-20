@@ -83,6 +83,7 @@ $(WHOLE_IMG) : $(BL_IMG) $(FW_IMG) $(MEM_IMG)
 	dd of=$@ if=$(BL_IMG) bs=2k
 	dd of=$@ if=$(MEM_IMG) seek=2 conv=notrunc bs=2k
 	dd of=$@ if=$(FW_IMG)  seek=4 conv=notrunc bs=2k
+	echo $@: $^> $@.d
 
 $(BUILD_DIR)/%.o: %.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p "$(@D)"
@@ -99,6 +100,7 @@ define PROGRAM_template
   $(2)_OBJS=$$($(2)_SOURCES:%.c=$(BUILD_DIR)/%.o)
   $(BUILD_DIR)/$(2).elf: $$($(2)_OBJS) $$($(2)_LINK_SCRIPT)
 	$(CC) $$($(2)_OBJS) $$(LINK_FLAGS) -T$$($(2)_LINK_SCRIPT) -o $$@
+	echo $$@: $$($(2)_OBJS) >$$@.d
 endef
 
 PROGRAMS_MKS = $(shell find . -maxdepth 1 -name "*.mk" -printf "%f\n")
@@ -109,6 +111,7 @@ $(foreach file_mk,$(PROGRAMS_MKS),$(eval $(call PROGRAM_template,$(file_mk),$(fi
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@
+	echo $@: $< > $@.d
 
 serial_program: $(WHOLE_IMG)
 	KEEPCONFIG=1 ./tools/config_scripts/program.sh $<
@@ -156,4 +159,4 @@ release_bundle : default
 	  echo "NO RELEASE TAG CHECKED OUT"; \
 	fi \
 
--include $(shell find "$(BUILD_DIR)" -name "*.d")
+-include $(shell find "$(BASE_BUILD_DIR)" -name "*.d")
