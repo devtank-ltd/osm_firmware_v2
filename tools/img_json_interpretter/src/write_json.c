@@ -205,6 +205,8 @@ static bool _write_json_from_img_base(struct json_object * root, persist_storage
     json_object_object_add(root, "version", json_object_new_int(PERSIST_VERSION));
 
     json_object_object_add(root, "log_debug_mask", json_object_new_int(config->log_debug_mask));
+
+    json_object_object_add(root, "model_code", json_object_new_int(config->model_code));
     return true;
 }
 
@@ -290,8 +292,7 @@ int write_json_from_img(const char * filename)
         goto bad_exit;
 
     bool r;
-    int model_num = MODEL_NUM_ENV01; // TODO: Come up with a way to determine
-    switch (model_num)
+    switch (osm_mem.config.model_code)
     {
         case MODEL_NUM_ENV01:
         {
