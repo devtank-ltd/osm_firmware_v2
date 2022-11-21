@@ -149,6 +149,6 @@
 
 typedef enum
 {
-    MODEL_NUM_ENV01,
-    MODEL_NUM_SENS01,
+    MODEL_NUM_ENV01 = 1,
+    MODEL_NUM_SENS01 = 2,
 } model_num_enum_t;
