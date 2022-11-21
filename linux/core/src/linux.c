@@ -901,7 +901,7 @@ bool socket_connect(char* path, int* _socketfd)
 void persist_config_model_init(persist_model_config_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-    cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
+    cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
 }
 
 

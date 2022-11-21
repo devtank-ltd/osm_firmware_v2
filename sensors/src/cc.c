@@ -373,6 +373,11 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 
     uint32_t cc_mA;
 
+    if (_configs[index].int_max_mV == 0)
+    {
+        adc_debug("Tried to read CC but int_max_mV is 0.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
     uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mV;
     if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
     {
