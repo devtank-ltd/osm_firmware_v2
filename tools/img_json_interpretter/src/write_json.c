@@ -173,9 +173,9 @@ static void _write_cc_config_json(struct json_object * root, cc_config_t* cc_con
         struct json_object * cc_config_json = json_object_new_object();
         json_object_object_add(cc_configs_json, name, cc_config_json);
 
-        json_object_object_add(cc_config_json, name, json_object_new_double((double)cc_configs[n].midpoint / 1000.));
-        json_object_object_add(cc_config_json, name, json_object_new_int(cc_configs[n].ext_max_mA));
-        json_object_object_add(cc_config_json, name, json_object_new_int(cc_configs[n].int_max_mV));
+        json_object_object_add(cc_config_json, "midpoint", json_object_new_double((double)cc_configs[n].midpoint / 1000.));
+        json_object_object_add(cc_config_json, "ext_max_mA", json_object_new_int(cc_configs[n].ext_max_mA));
+        json_object_object_add(cc_config_json, "int_max_mV", json_object_new_int(cc_configs[n].int_max_mV));
     }
 }
 
