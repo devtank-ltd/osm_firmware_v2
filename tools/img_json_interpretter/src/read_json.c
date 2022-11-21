@@ -13,7 +13,7 @@ static int _get_defaulted_int(struct json_object * root, char * name, int defaul
 }
 
 
-static int _get_defaulted_double(struct json_object * root, char * name, float default_value)
+static double _get_defaulted_double(struct json_object * root, char * name, float default_value)
 {
     struct json_object * tmp = json_object_object_get(root, name);
     if (!tmp)
