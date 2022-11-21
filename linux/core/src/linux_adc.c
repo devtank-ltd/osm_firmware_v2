@@ -69,10 +69,10 @@ static uint16_t*    _adcs_buf                           = NULL;         /* sizeo
 static unsigned     _adcs_num_data                      = 0;
 static uint8_t      _adcs_num_active_channels           = 0;
 static adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
-static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
+static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
+                                                            {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=2*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_2 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=4*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_3 */
-                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
                                                             {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_WAVE_DC_DEFAULT_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* 3V3_RAIL_MON    */
                                                             {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_WAVE_DC_DEFAULT_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } };     /* 5V_RAIL_MON     */
 
@@ -92,9 +92,13 @@ static uint16_t _adcs_calculate_ac_wave(adcs_wave_t* wave, float x)
 
 static void _adcs_fill_buffer(void)
 {
+    adc_debug("Active:");
+    for (uint8_t i = 0; i < _adcs_num_active_channels; i++)
+        adc_debug("- %"PRIu8, _adcs_active_channels[i]);
+
     for (unsigned i = 0; i < _adcs_num_data; i++)
     {
-        adcs_type_t* chan = &_adcs_active_channels[i % _adcs_num_active_channels];
+        adcs_type_t* chan = (adcs_type_t*)&_adcs_active_channels[i % _adcs_num_active_channels];
         adcs_wave_t* wave;
         switch(*chan)
         {
@@ -242,7 +246,7 @@ void platform_setup_adc(adc_setup_config_t* config)
 void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
 {
     _adcs_num_active_channels = num_channels;
-    memcpy(_adcs_active_channels, channels, sizeof(adcs_type_t) * num_channels);
+    memcpy((adcs_type_t*)_adcs_active_channels, channels, sizeof(adcs_type_t) * num_channels);
 }
 
 
