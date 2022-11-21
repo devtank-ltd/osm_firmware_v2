@@ -194,7 +194,7 @@ static bool _write_ftma_config_json(struct json_object * root, ftma_config_t* ft
         json_object_object_add(ftma_config_json, "name", json_object_new_string_len(ftma_configs[n].name, MEASURE_NAME_LEN));
         struct json_object * coeff_array_json = json_object_new_array();
         json_object_object_add(ftma_config_json, "coeffs", coeff_array_json);
-        for (unsigned m = 0; m < FTMA_NUM_COEFFS; n++)
+        for (unsigned m = 0; m < FTMA_NUM_COEFFS; m++)
             json_object_array_add(coeff_array_json, json_object_new_double(ftma_configs[n].coeffs[m]));
     }
 }
