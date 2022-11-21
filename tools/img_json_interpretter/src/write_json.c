@@ -116,7 +116,7 @@ static void _write_measurements_json(struct json_object * root)
 
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t * def = &osm_mem.measurements.measurements_arr[i];
+        measurements_def_t * def = &osm_mem.measurements->measurements_arr[i];
         if (def->name[0])
         {
             struct json_object * measurement_node = json_object_new_object();
@@ -191,7 +191,8 @@ static bool _write_ftma_config_json(struct json_object * root, ftma_config_t* ft
         struct json_object * ftma_config_json = json_object_new_object();
         json_object_object_add(ftma_configs_json, name, ftma_config_json);
 
-        json_object_object_add(ftma_config_json, "name", json_object_new_string_len(ftma_configs[n].name, MEASURE_NAME_LEN));
+        unsigned name_len = strnlen(ftma_configs[n].name, MEASURE_NAME_LEN);
+        json_object_object_add(ftma_config_json, "name", json_object_new_string_len(ftma_configs[n].name, name_len));
         struct json_object * coeff_array_json = json_object_new_array();
         json_object_object_add(ftma_config_json, "coeffs", coeff_array_json);
         for (unsigned m = 0; m < FTMA_NUM_COEFFS; m++)
@@ -216,12 +217,24 @@ static bool _write_json_from_img_env01(struct json_object * root, persist_env01_
     json_object_object_add(root, "mins_interval", json_object_new_int(model_config->mins_interval));
 
     comms_config_t* comms_config = &model_config->comms_config;
+    json_object_object_add(root, "comms_type", json_object_new_int(comms_config->type));
     switch(comms_config->type)
     {
         case COMMS_TYPE_LW:
-            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(((lw_config_t*)comms_config->setup)->dev_eui, LW_DEV_EUI_LEN));
-            json_object_object_add(root, "lw_app_key", json_object_new_string_len(((lw_config_t*)comms_config->setup)->app_key, LW_APP_KEY_LEN));
+        {
+            char* dev_eui = ((lw_config_t*)comms_config->setup)->dev_eui;
+            char* app_key = ((lw_config_t*)comms_config->setup)->app_key;
+            unsigned dev_eui_len = strnlen(dev_eui, LW_DEV_EUI_LEN);
+            unsigned app_key_len = strnlen(app_key, LW_APP_KEY_LEN);
+            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(dev_eui, dev_eui_len));
+            json_object_object_add(root, "lw_app_key", json_object_new_string_len(app_key, app_key_len));
             break;
+        }
+        default:
+        {
+            log_error("Unknown comms type.");
+            return false;
+        }
     }
 
 
@@ -245,12 +258,24 @@ static bool _write_json_from_img_sens01(struct json_object * root, persist_sens0
     json_object_object_add(root, "mins_interval", json_object_new_int(model_config->mins_interval));
 
     comms_config_t* comms_config = &model_config->comms_config;
+    json_object_object_add(root, "comms_type", json_object_new_int(comms_config->type));
     switch(comms_config->type)
     {
         case COMMS_TYPE_LW:
-            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(((lw_config_t*)comms_config->setup)->dev_eui, LW_DEV_EUI_LEN));
-            json_object_object_add(root, "lw_app_key", json_object_new_string_len(((lw_config_t*)comms_config->setup)->app_key, LW_APP_KEY_LEN));
+        {
+            char* dev_eui = ((lw_config_t*)comms_config->setup)->dev_eui;
+            char* app_key = ((lw_config_t*)comms_config->setup)->app_key;
+            unsigned dev_eui_len = strnlen(dev_eui, LW_DEV_EUI_LEN);
+            unsigned app_key_len = strnlen(app_key, LW_APP_KEY_LEN);
+            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(dev_eui, dev_eui_len));
+            json_object_object_add(root, "lw_app_key", json_object_new_string_len(app_key, app_key_len));
             break;
+        }
+        default:
+        {
+            log_error("Unknown comms type.");
+            return false;
+        }
     }
 
 
@@ -275,39 +300,132 @@ int write_json_from_img(const char * filename)
 
     if (!f)
     {
-        perror("Failed to open file.");
+        log_error("Failed to open file.");
         return EXIT_FAILURE;
     }
-    if (fread(&osm_mem, sizeof(osm_mem), 1, f) != 1)
+
+    persist_storage_t base = {0};
+
+    if (fread(&base, sizeof(base), 1, f) != 1)
     {
-        perror("Failed to read file.");
+        log_error("Failed to read base.");
         fclose(f);
         return EXIT_FAILURE;
     }
-    fclose(f);
 
     struct json_object * root = json_object_new_object();
 
-    if (!_write_json_from_img_base(root, &osm_mem.config))
+    if (!_write_json_from_img_base(root, &base))
         goto bad_exit;
 
     bool r;
-    switch (osm_mem.config.model_code)
+    switch (base.model_code)
     {
         case MODEL_NUM_ENV01:
         {
-            persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
+            osm_mem.config_size = sizeof(persist_storage_t) + sizeof(persist_env01_config_v1_t);
+
+            osm_mem.config = malloc(osm_mem.config_size);
+            if (!osm_mem.config)
+            {
+                log_error("Failed to allocate memory for config.");
+                goto bad_exit;
+            }
+            osm_mem.measurements_size = sizeof(measurements_def_t) * MEASUREMENTS_MAX_NUMBER;
+            osm_mem.measurements = malloc(osm_mem.measurements_size);
+            if (!osm_mem.measurements)
+            {
+                log_error("Failed to allocate memory for measurements.");
+                goto bad_exit;
+            }
+            memcpy(osm_mem.config, &base, sizeof(base));
+            persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)((uint8_t*)osm_mem.config) + sizeof(persist_storage_t);
+
+            if (fread(model_config, sizeof(persist_env01_config_v1_t), 1, f) != 1)
+            {
+                log_error("Failed to read config.");
+                r = false;
+                goto env01_exit;
+            }
+
+            if (fseek(f, TOOL_FLASH_PAGE_SIZE, SEEK_SET) != 0)
+            {
+                log_error("Failed to seek.");
+                r = false;
+                goto env01_exit;
+            }
+
+            if (fread(osm_mem.measurements, osm_mem.measurements_size, 1, f) != 1)
+            {
+                log_error("Failed to read measurements.");
+                r = false;
+                goto env01_exit;
+            }
+
             r = _write_json_from_img_env01(root, model_config);
+
+env01_exit:
+            free(osm_mem.config);
+            osm_mem.config = NULL;
+            free(osm_mem.measurements);
+            osm_mem.measurements = NULL;
             break;
         }
         case MODEL_NUM_SENS01:
         {
-            persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config.model_config;
+            osm_mem.config_size = sizeof(persist_storage_t) + sizeof(persist_sens01_config_v1_t);
+
+            osm_mem.config = malloc(osm_mem.config_size);
+            if (!osm_mem.config)
+            {
+                log_error("Failed to allocate memory for config.");
+                goto bad_exit;
+            }
+            osm_mem.measurements_size = sizeof(measurements_def_t) * MEASUREMENTS_MAX_NUMBER;
+            osm_mem.measurements = malloc(osm_mem.measurements_size);
+            if (!osm_mem.measurements)
+            {
+                free(osm_mem.config);
+                osm_mem.config = NULL;
+                log_error("Failed to allocate memory for measurements.");
+                goto bad_exit;
+            }
+            memcpy(osm_mem.config, &base, sizeof(base));
+            persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config[1];
+
+            if (fread(model_config, sizeof(persist_sens01_config_v1_t), 1, f) != 1)
+            {
+                log_error("Failed to read config.");
+                r = false;
+                goto sens01_exit;
+            }
+
+            if (fseek(f, TOOL_FLASH_PAGE_SIZE, SEEK_SET) != 0)
+            {
+                log_error("Failed to seek.");
+                r = false;
+                goto sens01_exit;
+            }
+
+            if (fread(osm_mem.measurements, osm_mem.measurements_size, 1, f) != 1)
+            {
+                log_error("Failed to read measurements.");
+                r = false;
+                goto sens01_exit;
+            }
+
             r = _write_json_from_img_sens01(root, model_config);
+
+sens01_exit:
+            free(osm_mem.config);
+            osm_mem.config = NULL;
+            free(osm_mem.measurements);
+            osm_mem.measurements = NULL;
             break;
         }
         default:
             r = false;
+            log_error("Unknown model code");
             break;
     }
     if (!r)
@@ -315,10 +433,12 @@ int write_json_from_img(const char * filename)
 
     json_object_to_fd(1, root, JSON_C_TO_STRING_PRETTY);
     json_object_put(root);
+    fclose(f);
 
     return EXIT_SUCCESS;
 
 bad_exit:
+    fclose(f);
     json_object_put(root);
     return EXIT_FAILURE;
 }

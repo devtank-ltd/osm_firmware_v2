@@ -17,13 +17,12 @@
 #define TOOL_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)TOOL_PAGE2ADDR(TOOL_FLASH_MEASUREMENTS_PAGE))
 
 #define TOOL_PERSIST_VERSION             3
-                                                                        #define TOOL_MODEL_NUM                   1
+#define TOOL_MODEL_NUM                   1
 
 #define TOOL_PERSIST_MODEL_CONFIG_T      persist_tool_config_v1_t
 
 typedef union
 {
-    uint8_t                    buf[1024];
 } persist_tool_config_v1_t;
 
 

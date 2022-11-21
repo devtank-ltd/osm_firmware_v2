@@ -203,7 +203,7 @@ typedef enum
 
 typedef enum
 {
-    COMMS_TYPE_LW,
+    COMMS_TYPE_LW = 1,
 } comms_type_lw_t;
 
 

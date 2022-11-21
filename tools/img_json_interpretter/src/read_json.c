@@ -46,7 +46,7 @@ static void _measurement_del(const char * name)
 {
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
-        char * def_name = osm_mem.measurements.measurements_arr[i].name;
+        char * def_name = osm_mem.measurements->measurements_arr[i].name;
         if (strcmp(name, def_name) == 0)
         {
             def_name[0] = 0;
@@ -230,7 +230,7 @@ static bool _read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bu
 
                         _measurement_del(reg_name);
 
-                        measurements_def_t * def = _measurement_get_free(osm_mem.measurements.measurements_arr);
+                        measurements_def_t * def = _measurement_get_free(osm_mem.measurements->measurements_arr);
                         if (!def)
                             return false;
                         memcpy(def->name, reg_name, MODBUS_NAME_LEN);
@@ -256,7 +256,7 @@ static bool _read_measurements_json(struct json_object * root)
     {
         json_object_object_foreach(measurements_node, measurement_name, measurement_node)
         {
-            measurements_def_t * def = measurements_array_find(osm_mem.measurements.measurements_arr, measurement_name);
+            measurements_def_t * def = measurements_array_find(osm_mem.measurements->measurements_arr, measurement_name);
             if (!def)
             {
                 log_error("Unknown measurement \"%s\"", measurement_name);
@@ -420,7 +420,10 @@ static bool _read_ftma_configs_json(struct json_object * root, ftma_config_t* ft
             }
             ftma_config_t* ftma = &ftma_configs[index-1];
             if (!_get_string_buf(ftma_config_json, "name", ftma->name, MEASURE_NAME_LEN))
+            {
+                log_error("Invalid name for %s.", ftma_config_name);
                 return false;
+            }
             struct json_object * coeffs_json = json_object_object_get(ftma_config_json, "coeffs");
             int num_coeffs = json_object_array_length(coeffs_json);
             if (num_coeffs > FTMA_NUM_COEFFS)
@@ -503,7 +506,7 @@ static bool _read_json_to_img_env01(struct json_object * root, persist_env01_con
             break;
     }
 
-    env01_measurements_add_defaults(osm_mem.measurements.measurements_arr);
+    env01_measurements_add_defaults(osm_mem.measurements->measurements_arr);
 
     if (!_read_modbus_json(root, &model_config->modbus_bus))
         return false;
@@ -528,6 +531,7 @@ static bool _read_json_to_img_sens01(struct json_object * root, persist_sens01_c
         log_error("Handed a NULL pointer.");
         return false;
     }
+
     int tmp = _get_defaulted_int(root, "mins_interval",  15);
     if (tmp < 1 || tmp > (60 * 24))
     {
@@ -537,6 +541,7 @@ static bool _read_json_to_img_sens01(struct json_object * root, persist_sens01_c
     model_config->mins_interval  = tmp;
 
     comms_config_t* comms_config = &model_config->comms_config;
+    comms_config->type = _get_defaulted_int(root, "comms_type",  COMMS_TYPE_LW);
     switch(comms_config->type)
     {
         case COMMS_TYPE_LW:
@@ -549,7 +554,7 @@ static bool _read_json_to_img_sens01(struct json_object * root, persist_sens01_c
             break;
     }
 
-    sens01_measurements_add_defaults(osm_mem.measurements.measurements_arr);
+    sens01_measurements_add_defaults(osm_mem.measurements->measurements_arr);
 
     if (!_read_modbus_json(root, &model_config->modbus_bus))
         return false;
@@ -573,13 +578,27 @@ static bool _read_json_to_img_save(const char * filename)
 
     if (!f)
     {
-        perror("Failed to open file.");
+        log_error("Failed to open file.");
         return false;
     }
 
-    if (fwrite(&osm_mem, sizeof(osm_mem), 1, f) != 1)
+    if (fwrite(osm_mem.config, osm_mem.config_size, 1, f) != 1)
     {
-        perror("Failed to write file.");
+        log_error("Failed to write config.");
+        fclose(f);
+        return false;
+    }
+
+    if (fseek(f, TOOL_FLASH_PAGE_SIZE, SEEK_SET) != 0)
+    {
+        log_error("Failed to seek.");
+        fclose(f);
+        return false;
+    }
+
+    if (fwrite(osm_mem.measurements, osm_mem.measurements_size, 1, f) != 1)
+    {
+        log_error("Failed to write measurements.");
         fclose(f);
         return false;
     }
@@ -598,28 +617,69 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
 
-    memset(&osm_mem, 0, sizeof(osm_mem));
+    persist_storage_t base = {0};
 
-    if (!_read_json_to_img_base(root, &osm_mem.config))
+    if (!_read_json_to_img_base(root, &base))
         goto bad_exit;
 
     bool r;
-    switch (osm_mem.config.model_code)
+    switch (base.model_code)
     {
         case MODEL_NUM_ENV01:
         {
-            persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)&osm_mem.config.model_config;
+            osm_mem.config_size = sizeof(persist_storage_t) + sizeof(persist_env01_config_v1_t);
+
+            osm_mem.config = calloc(osm_mem.config_size, 1);
+            if (!osm_mem.config)
+            {
+                log_error("Failed to allocate memory for config");
+                goto bad_exit;
+            }
+
+            osm_mem.measurements_size = sizeof(measurements_def_t) * MEASUREMENTS_MAX_NUMBER;
+            osm_mem.measurements = calloc(osm_mem.measurements_size, 1);
+            if (!osm_mem.measurements)
+            {
+                free(osm_mem.config);
+                osm_mem.config = NULL;
+                log_error("Failed to allocate memory for measurements");
+                goto bad_exit;
+            }
+
+            memcpy(osm_mem.config, &base, sizeof(base));
+            persist_env01_config_v1_t * model_config = (persist_env01_config_v1_t*)((uint8_t*)osm_mem.config) + sizeof(persist_storage_t);
             r = _read_json_to_img_env01(root, model_config);
             break;
         }
         case MODEL_NUM_SENS01:
         {
-            persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config.model_config;
+            osm_mem.config_size = sizeof(persist_storage_t) + sizeof(persist_sens01_config_v1_t);
+
+            osm_mem.config = calloc(osm_mem.config_size, 1);
+            if (!osm_mem.config)
+            {
+                log_error("Failed to allocate memory for config");
+                goto bad_exit;
+            }
+
+            osm_mem.measurements_size = sizeof(measurements_def_t) * MEASUREMENTS_MAX_NUMBER;
+            osm_mem.measurements = calloc(osm_mem.measurements_size, 1);
+            if (!osm_mem.measurements)
+            {
+                free(osm_mem.config);
+                osm_mem.config = NULL;
+                log_error("Failed to allocate memory for measurements");
+                goto bad_exit;
+            }
+
+            memcpy(osm_mem.config, &base, sizeof(base));
+            persist_sens01_config_v1_t * model_config = (persist_sens01_config_v1_t*)&osm_mem.config[1];
             r = _read_json_to_img_sens01(root, model_config);
             break;
         }
         default:
             r = false;
+            log_error("Unknown model code");
             break;
     }
     if (!r)
@@ -628,11 +688,25 @@ int read_json_to_img(const char * filename)
     if (!_read_json_to_img_save(filename))
         goto bad_exit;
 
+    free(osm_mem.config);
+    osm_mem.config = NULL;
+    osm_mem.config_size = 0;
+    free(osm_mem.measurements);
+    osm_mem.measurements = NULL;
+    osm_mem.measurements_size = 0;
+
     json_object_put(root);
 
     return EXIT_SUCCESS;
 
 bad_exit:
+    free(osm_mem.config);
+    osm_mem.config = NULL;
+    osm_mem.config_size = 0;
+    free(osm_mem.measurements);
+    osm_mem.measurements = NULL;
+    osm_mem.measurements_size = 0;
+
     json_object_put(root);
     return EXIT_FAILURE;
 }

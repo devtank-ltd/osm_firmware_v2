@@ -1,11 +1,7 @@
 #include "json_x_img.h"
 
 
-json_x_img_mem_t osm_mem =
-{
-    .config={   .version = PERSIST_VERSION,
-                .log_debug_mask = DEBUG_SYS}
-};
+json_x_img_mem_t osm_mem;
 
 
 void log_debug(uint32_t flag, char *fmt, ...)

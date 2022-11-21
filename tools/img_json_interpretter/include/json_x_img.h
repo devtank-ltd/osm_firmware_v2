@@ -25,8 +25,10 @@
 
 typedef struct
 {
-    persist_measurements_storage_t  measurements    __attribute__((aligned (2048)));
-    persist_storage_t               config          __attribute__((aligned (2048)));
+    persist_measurements_storage_t  * measurements;
+    unsigned                          measurements_size;
+    persist_storage_t               * config;
+    unsigned                          config_size;
 } json_x_img_mem_t;
 
 
