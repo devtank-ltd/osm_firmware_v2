@@ -1030,6 +1030,7 @@ void cmds_add_all(struct cmd_link_t* tail)
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
+    tail = ftma_add_commands(tail);
 }
 
 

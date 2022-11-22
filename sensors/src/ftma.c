@@ -255,7 +255,52 @@ void ftma_init(void)
 }
 
 
+static void _ftma_name_cb(char* args)
+{
+    /* <original_name> <new_name>
+     *      FTA1          TMP9
+     */
+    char* new_name = skip_to_space(args);
+    *new_name = '\0';
+    new_name++;
+    char* orig_name = args;
+
+    uint8_t index;
+    if (!_ftma_get_index_by_name(orig_name, &index))
+    {
+        log_out("Failed to get FTMA with name '%s'.", orig_name);
+        return;
+    }
+    if (index > ADC_FTMA_COUNT)
+    {
+        log_out("Index is out of range.");
+        return;
+    }
+    unsigned new_len = strlen(new_name);
+    if (new_len > MEASURE_NAME_LEN)
+    {
+        log_out("Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
+        return;
+    }
+    if (!measurements_rename(orig_name, new_name))
+    {
+        log_out("Failed to rename the measurement.");
+        return;
+    }
+    strncpy(_ftma_config[index].name, new_name, MEASURE_NAME_LEN);
+    log_out("Measurement '%s' is now called '%s'.", orig_name, new_name);
+}
+
+
+static void _ftma_coeff_cb(char* args)
+{
+    ;
+}
+
+
 struct cmd_link_t* ftma_add_commands(struct cmd_link_t* tail)
 {
-    return tail;
+    static struct cmd_link_t cmds[] = {{ "ftma_name",   "Set the FTMA name",            _ftma_name_cb   , false , NULL },
+                                       { "ftma_coeff",  "Set the FTMA coefficients",    _ftma_coeff_cb  , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

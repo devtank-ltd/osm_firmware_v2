@@ -1391,6 +1391,31 @@ bool measurements_reading_to_str(measurements_reading_t* reading, measurements_v
 }
 
 
+bool measurements_rename(char* orig_name, char* new_name_raw)
+{
+    if (!orig_name || !new_name_raw)
+    {
+        measurements_debug("Handed a NULL pointer.");
+        return false;
+    }
+    char new_name[MEASURE_NAME_NULLED_LEN] = {0};
+    strncpy(new_name, new_name_raw, MEASURE_NAME_LEN);
+    if (_measurements_get_measurements_def(new_name, NULL, NULL))
+    {
+        measurements_debug("Measurement with new name already exists.");
+        return false;
+    }
+    measurements_def_t* def;
+    if (!_measurements_get_measurements_def(orig_name, &def, NULL))
+    {
+        measurements_debug("Can not get the measurements def.");
+        return false;
+    }
+    strncpy(def->name, new_name, MEASURE_NAME_NULLED_LEN);
+    return true;
+}
+
+
 static void measurements_cb(char *args)
 {
     measurements_print();
