@@ -1,6 +1,8 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #include "ftma.h"
 
@@ -260,9 +262,14 @@ static void _ftma_name_cb(char* args)
     /* <original_name> <new_name>
      *      FTA1          TMP9
      */
-    char* new_name = skip_to_space(args);
+    char* new_name = strchr(args, ' ');
+    if (!new_name)
+    {
+        log_out("No new name given.");
+        return;
+    }
     *new_name = '\0';
-    new_name++;
+    new_name = skip_space(++new_name);
     char* orig_name = args;
 
     uint8_t index;
@@ -282,6 +289,19 @@ static void _ftma_name_cb(char* args)
         log_out("Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
         return;
     }
+    if (new_len == 0)
+    {
+        log_out("No new name given.");
+        return;
+    }
+    for (char* c = new_name; *c; c++)
+    {
+        if (!isascii(*c))
+        {
+            log_out("New name '%s' contains none ascii characters.", new_name);
+            return;
+        }
+    }
     if (!measurements_rename(orig_name, new_name))
     {
         log_out("Failed to rename the measurement.");
@@ -294,7 +314,56 @@ static void _ftma_name_cb(char* args)
 
 static void _ftma_coeff_cb(char* args)
 {
-    ;
+    /* <name>  <A>  <B>    <C>      <D>
+     *  FTA3  -2.1  13.2  -0.01  -0.00001
+     *  FTA3  -2.1  13.2
+     * Coeffs: A + Bx + Cx^2 + Dx^3
+     * If only 2 coefficients are needed (A and B) then C and D can be
+     * left blank
+     */
+    bool just_print = false;
+    char* p = strchr(args, ' ');
+    if (!p)
+        just_print = true;
+    else
+    {
+        *p = '\0';
+        p = skip_space(++p);
+    }
+    uint8_t index;
+    if (!_ftma_get_index_by_name(args, &index))
+    {
+        log_out("Failed to get FTMA with name '%s'.", args);
+        return;
+    }
+    if (index > ADC_FTMA_COUNT)
+    {
+        log_out("Index is out of range.");
+        return;
+    }
+    ftma_config_t* ftma = &_ftma_config[index];
+
+    if (!just_print)
+    {
+        char* np;
+        double A = strtod(p, &np);
+        if (np != p)
+        {
+            p = np;
+            unsigned i = 0;
+            if (FTMA_NUM_COEFFS > i)
+                ftma->coeffs[i++] = A;
+            for (; i < FTMA_NUM_COEFFS; i++)
+                ftma->coeffs[i] = strtod(p, &p);
+            log_out("Set new coefficients for '%s'", args);
+        }
+    }
+
+    log_out("Coeffients for '%s':", args);
+    for (unsigned i = 0; i < FTMA_NUM_COEFFS; i++)
+    {
+        log_out("%c: %.06f", 'A'+i, ftma->coeffs[i]);
+    }
 }
 
 
