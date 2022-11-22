@@ -32,9 +32,9 @@
 #define ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE   100
 
 #define ADCS_FTMA_4MA_AMPLITUDE                 0.f
-#define ADCS_FTMA_8MA_AMPLITUDE                 1024.f
-#define ADCS_FTMA_12MA_AMPLITUDE                2048.f
-#define ADCS_FTMA_16MA_AMPLITUDE                3072.f
+#define ADCS_FTMA_8MA_AMPLITUDE                 1023.f
+#define ADCS_FTMA_12MA_AMPLITUDE                2047.f
+#define ADCS_FTMA_16MA_AMPLITUDE                3071.f
 #define ADCS_FTMA_20MA_AMPLITUDE                4095.f
 
 
