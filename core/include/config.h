@@ -51,6 +51,9 @@
 #define CONCAT2(a, b) a##b
 #define CONCAT(a, b) CONCAT2(a, b)
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
 #define MODBUS_BLOB_VERSION 2

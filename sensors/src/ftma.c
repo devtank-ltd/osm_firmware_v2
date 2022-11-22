@@ -235,7 +235,7 @@ void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
         num_ftma_configs = size / sizeof(ftma_config_t);
     }
     float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
-    for (uint8_t i = 0; i < num_ftma_configs; i++)
+    for (uint8_t i = 0; i < MIN(num_ftma_configs,9); i++)
     {
         char name[MEASURE_NAME_NULLED_LEN+1];
         snprintf(name, MEASURE_NAME_NULLED_LEN, "FTA%"PRIu8, i+1);
