@@ -139,7 +139,7 @@ void cmds_process(char * command, unsigned len)
     {
         log_out("Unknown command \"%s\"", rx_buffer);
         log_out(LOG_SPACER);
-        for(struct cmd_link_t * cmd = _cmds; cmd->next; cmd = cmd->next)
+        for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
         {
             if (!cmd->hidden)
                 log_out("%10s : %s", cmd->key, cmd->desc);
