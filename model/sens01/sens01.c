@@ -33,9 +33,12 @@ uint8_t sens01_stm_adcs_get_channel(adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_BAT:
-            return ADC1_CHANNEL_BAT_MON;
-        default:                                                                    break;
+        case ADCS_TYPE_BAT:   return SENS01_ADC1_CHANNEL_BAT_MON;
+        case ADCS_TYPE_FTMA1: return SENS01_ADC1_CHANNEL_FTMA_1;
+        case ADCS_TYPE_FTMA2: return SENS01_ADC1_CHANNEL_FTMA_2;
+        case ADCS_TYPE_FTMA3: return SENS01_ADC1_CHANNEL_FTMA_3;
+        case ADCS_TYPE_FTMA4: return SENS01_ADC1_CHANNEL_FTMA_4;
+        default: break;
     }
     return 0;
 }

@@ -11,32 +11,12 @@
     {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
 }
 
-#define ADC1_CHANNEL_CURRENT_CLAMP_1         6
-#define ADC1_CHANNEL_CURRENT_CLAMP_2         16
-#define ADC1_CHANNEL_CURRENT_CLAMP_3         9
+#define ENV01_ADC1_CHANNEL_CURRENT_CLAMP_1    6
+#define ENV01_ADC1_CHANNEL_CURRENT_CLAMP_2   16
+#define ENV01_ADC1_CHANNEL_CURRENT_CLAMP_3    9
 #define ENV01_ADC1_CHANNEL_BAT_MON            1
 #define ENV01_ADC1_CHANNEL_3V3_RAIL_MON       3
 #define ENV01_ADC1_CHANNEL_5V_RAIL_MON        4
-
-#define ENV01_ADC_INDEX_CURRENT_CLAMP_1 0
-#define ENV01_ADC_INDEX_CURRENT_CLAMP_2 1
-#define ENV01_ADC_INDEX_CURRENT_CLAMP_3 2
-#define ENV01_ADC_INDEX_BAT_MON         3
-#define ENV01_ADC_INDEX_3V3_RAIL_MON    4
-#define ENV01_ADC_INDEX_5V_RAIL_MON     5
-
-#define ENV01_ADC_CHANNELS  { ENV01_ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                              ENV01_ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                              ENV01_ADC1_CHANNEL_CURRENT_CLAMP_3,  \
-                              ENV01_ADC1_CHANNEL_BAT_MON,          \
-                              ENV01_ADC1_CHANNEL_3V3_RAIL_MON,     \
-                              ENV01_ADC1_CHANNEL_5V_RAIL_MON       }
-
-
-#define ADC_CC_CHANNELS { ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                          ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                          ADC1_CHANNEL_CURRENT_CLAMP_3   }
-
 
 #define ENV01_ADC_DMA_CHANNELS                                                  \
 {                                                                               \

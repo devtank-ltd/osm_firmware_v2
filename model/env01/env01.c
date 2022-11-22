@@ -33,14 +33,10 @@ uint8_t env01_stm_adcs_get_channel(adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_BAT:
-            return ADC1_CHANNEL_BAT_MON;
-        case ADCS_TYPE_CC_CLAMP1:
-            return ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2:
-            return ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3:
-            return ADC1_CHANNEL_CURRENT_CLAMP_3;
+        case ADCS_TYPE_BAT: return ENV01_ADC1_CHANNEL_BAT_MON;
+        case ADCS_TYPE_CC_CLAMP1: return ENV01_ADC1_CHANNEL_CURRENT_CLAMP_1;
+        case ADCS_TYPE_CC_CLAMP2: return ENV01_ADC1_CHANNEL_CURRENT_CLAMP_2;
+        case ADCS_TYPE_CC_CLAMP3: return ENV01_ADC1_CHANNEL_CURRENT_CLAMP_3;
         default:
             break;
     }
