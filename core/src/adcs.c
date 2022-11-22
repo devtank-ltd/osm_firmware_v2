@@ -42,12 +42,12 @@ bool adcs_to_mV(uint32_t value, uint32_t* mV)
     const uint16_t min_value = 0;
     const uint16_t max_mV = ADC_MAX_MV;
     const uint16_t min_mV = 0;
-    uint32_t inter_val;
+    uint64_t inter_val;
 
-    inter_val = value * (max_mV - min_mV);
+    inter_val = (uint64_t)value * (max_mV - min_mV);
     inter_val /= (max_value - min_value);
 
-    *mV = inter_val;
+    *mV = (uint32_t)inter_val;
     return true;
 }
 

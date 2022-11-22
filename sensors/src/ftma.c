@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "ftma.h"
 
@@ -13,8 +14,11 @@
 #define FTMA_NUM_SAMPLES                                    ADCS_NUM_SAMPLES
 #define FTMA_TIMEOUT_MS                                     3000
 
-#define FTMA_DEFAULT_COEFF_A                                4.f
-#define FTMA_DEFAULT_COEFF_B                                (20.f / 3.3f)
+#define FTMA_MIN_MA                                         4.f
+#define FTMA_MAX_MA                                         20.f
+
+#define FTMA_DEFAULT_COEFF_A                                FTMA_MIN_MA
+#define FTMA_DEFAULT_COEFF_B                                ((FTMA_MAX_MA - FTMA_DEFAULT_COEFF_A) / ADC_MAX_MV)
 #define FTMA_DEFAULT_COEFF_C                                0.f
 #define FTMA_DEFAULT_COEFF_D                                0.f
 #define FTMA_DEFAULT_COEFFS                                 { FTMA_DEFAULT_COEFF_A , \
@@ -90,7 +94,7 @@ static float _ftma_conv(uint32_t mV, uint8_t index)
         float midval = 1;
         for (uint8_t j = 0; j < i; j++)
         {
-            midval *= (float)mV;
+            midval *= (float)mV / 1000.f;
         }
         result += midval * coeffs[i];
     }
@@ -101,36 +105,55 @@ static float _ftma_conv(uint32_t mV, uint8_t index)
 static measurements_sensor_state_t _ftma_begin(char* name, bool in_isolation)
 {
     if (!name)
+    {
+        adc_debug("Handed a NULL pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     uint8_t index;
     if (!_ftma_get_index_by_name(name, &index))
+    {
+        adc_debug("'%s' does not match any FTMAs.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     if (_ftma_channel_inited[index])
+    {
+        adc_debug("FTMA is already inited.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     if (_ftma_is_running)
     {
         /* Will return error if has been started for more then FTMA_TIMEOUT_MS, else return success. */
         if (since_boot_delta(get_since_boot_ms(), _ftma_start_time) > FTMA_TIMEOUT_MS)
+        {
+            adc_debug("ADC been running too long.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
+        }
         goto good_exit;
     }
     adcs_resp_t resp = adcs_begin(_ftma_channels, _ftma_num_channels, FTMA_NUM_SAMPLES, ADCS_KEY_FTMA);
     switch (resp)
     {
         case ADCS_RESP_FAIL:
+        {
+            adc_debug("ADC begin failed.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
+        }
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case ADCS_RESP_OK:
             break;
         default:
+        {
+            adc_debug("Unexpected response from ADC.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
+        }
     }
     _ftma_is_running = true;
     _ftma_start_time = get_since_boot_ms();
+    adc_debug("ADC successfully started for FTMA.");
 good_exit:
     _ftma_channel_inited[index] = true;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
@@ -155,23 +178,25 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
     {
         case ADCS_RESP_FAIL:
             _ftma_is_running = false;
-            _ftma_auto_release();
             _ftma_channel_inited[index] = false;
+            _ftma_auto_release();
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case ADCS_RESP_OK:
             _ftma_is_running = false;
-            _ftma_auto_release();
             _ftma_channel_inited[index] = false;
+            _ftma_auto_release();
             break;
     }
+    adc_debug("FTMA Raw: %"PRIu32, avg);
     uint32_t mV;
     if (!adcs_to_mV(avg, &mV))
     {
         adc_debug("Unable to convert to mV.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
+    adc_debug("FTMA: %"PRIu32" mV", mV);
     float fin_val = _ftma_conv(mV, index);
     value->v_f32 = to_f32_from_float(fin_val);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
@@ -210,7 +235,9 @@ void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
     float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
     for (uint8_t i = 0; i < num_ftma_configs; i++)
     {
-        strncpy(memory[i].name, MEASUREMENTS_FTMA_1_NAME, MEASURE_NAME_NULLED_LEN);
+        char name[MEASURE_NAME_NULLED_LEN+1];
+        snprintf(name, MEASURE_NAME_NULLED_LEN, "FTA%"PRIu8, i+1);
+        strncpy(memory[i].name, name, MEASURE_NAME_LEN);
         memcpy(memory[i].coeffs, default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
     }
 }

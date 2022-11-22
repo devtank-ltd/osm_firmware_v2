@@ -31,9 +31,10 @@
 #define ADCS_WAVE_DC_DEFAULT_AMPLITUDE          ADCS_5A_AMPLITUDE
 #define ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE   100
 
-#define ADCS_FTMA_5MA_AMPLITUDE                 0.f
-#define ADCS_FTMA_10MA_AMPLITUDE                1365.f
-#define ADCS_FTMA_15MA_AMPLITUDE                2730.f
+#define ADCS_FTMA_4MA_AMPLITUDE                 0.f
+#define ADCS_FTMA_8MA_AMPLITUDE                 1024.f
+#define ADCS_FTMA_12MA_AMPLITUDE                2048.f
+#define ADCS_FTMA_16MA_AMPLITUDE                3072.f
 #define ADCS_FTMA_20MA_AMPLITUDE                4095.f
 
 
@@ -73,8 +74,10 @@ static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYP
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=2*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_2 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=4*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_3 */
-                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_WAVE_DC_DEFAULT_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* 3V3_RAIL_MON    */
-                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_WAVE_DC_DEFAULT_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } };     /* 5V_RAIL_MON     */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_FTMA_4MA_AMPLITUDE,  .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,      /* FTMA_1       */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_FTMA_8MA_AMPLITUDE,  .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,      /* FTMA_2       */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_FTMA_16MA_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,      /* FTMA_3       */
+                                                            {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADCS_FTMA_20MA_AMPLITUDE, .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } };     /* FTMA_4       */
 
 
 static uint16_t _adcs_calculate_dc_wave(adcs_wave_t* wave)
@@ -114,9 +117,21 @@ static void _adcs_fill_buffer(void)
             case ADCS_TYPE_CC_CLAMP3:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_3];
                 break;
+            case ADCS_TYPE_FTMA1:
+                wave = &_adcs_waves[ADC_INDEX_FTMA_1];
+                break;
+            case ADCS_TYPE_FTMA2:
+                wave = &_adcs_waves[ADC_INDEX_FTMA_2];
+                break;
+            case ADCS_TYPE_FTMA3:
+                wave = &_adcs_waves[ADC_INDEX_FTMA_3];
+                break;
+            case ADCS_TYPE_FTMA4:
+                wave = &_adcs_waves[ADC_INDEX_FTMA_4];
+                break;
             default:
                 adc_debug("Fake ADC failed, unknown channel type.");
-                break;
+                continue;
         }
         switch(wave->type)
         {
@@ -128,7 +143,7 @@ static void _adcs_fill_buffer(void)
                 break;
             default:
                 adc_debug("Fake ADC failed, unknown wave type.");
-                break;
+                continue;
         }
     }
 }

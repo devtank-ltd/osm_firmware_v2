@@ -12,12 +12,16 @@
 
 #define IOS_COUNT 10
 #define ADC_CC_COUNT    3
-#define ADC_COUNT 6
+#define ADC_COUNT 10
 
 #define ADC_INDEX_BAT_MON         0
 #define ADC_INDEX_CURRENT_CLAMP_1 1
 #define ADC_INDEX_CURRENT_CLAMP_2 2
 #define ADC_INDEX_CURRENT_CLAMP_3 3
+#define ADC_INDEX_FTMA_1          4
+#define ADC_INDEX_FTMA_2          5
+#define ADC_INDEX_FTMA_3          6
+#define ADC_INDEX_FTMA_4          7
 
 
 #define ADC_FTMA_COUNT  4
