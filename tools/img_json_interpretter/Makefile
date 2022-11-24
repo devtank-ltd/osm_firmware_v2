@@ -29,7 +29,7 @@ default: $(BUILD_DIR)/json_x_img
 
 $(BUILD_DIR)/%/config_tool.o : ../../model/%/config_tool.c
 	mkdir -p "$(@D)"
-	$(CC) -c $(CFLAGS) -I../../model/`basename $(@D)` $< -o $@
+	$(CC) -c -I../../model/`basename $(@D)` $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c Makefile
 	mkdir -p "$(@D)"
