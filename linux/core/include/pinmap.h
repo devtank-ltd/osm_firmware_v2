@@ -82,3 +82,11 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
 }
 
+#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
+                           ADCS_TYPE_CC_CLAMP2,  \
+                           ADCS_TYPE_CC_CLAMP3   }
+
+#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
+                             ADCS_TYPE_FTMA2,    \
+                             ADCS_TYPE_FTMA3,    \
+                             ADCS_TYPE_FTMA4     }
