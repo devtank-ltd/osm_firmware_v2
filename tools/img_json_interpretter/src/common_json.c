@@ -649,12 +649,12 @@ void write_ios_json(struct json_object * root, uint16_t* ios_state)
 }
 
 
-void write_cc_config_json(struct json_object * root, cc_config_t* cc_configs)
+void write_cc_config_json(struct json_object * root, cc_config_t* cc_configs, unsigned cc_count)
 {
     struct json_object * cc_configs_json = json_object_new_object();
     json_object_object_add(root, "cc_configs", cc_configs_json);
     char name[4];
-    for (unsigned n = 0; n < ADC_CC_COUNT; n++)
+    for (unsigned n = 0; n < cc_count; n++)
     {
         snprintf(name, 4, "CC%u", n+1);
         struct json_object * cc_config_json = json_object_new_object();

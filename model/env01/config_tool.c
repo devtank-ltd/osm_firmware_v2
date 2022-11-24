@@ -28,7 +28,7 @@ static bool _write_json_from_img_env01(struct json_object * root, void * model_c
     }
 
 
-    write_cc_config_json(root, model_config->cc_configs);
+    write_cc_config_json(root, model_config->cc_configs, ADC_CC_COUNT);
 
     if (!write_modbus_json(root, &model_config->modbus_bus))
     {
