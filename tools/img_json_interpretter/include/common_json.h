@@ -25,4 +25,4 @@ bool                write_modbus_json(struct json_object * root, modbus_bus_t* m
 void                write_measurements_json(struct json_object * root);
 void                write_ios_json(struct json_object * root, uint16_t* ios_state);
 void                write_cc_config_json(struct json_object * root, cc_config_t* cc_configs);
-bool                write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs);
+bool                write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs, unsigned ftma_count);

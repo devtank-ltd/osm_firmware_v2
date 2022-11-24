@@ -1,3 +1,5 @@
+#include "sens01_pinmap.h"
+
 #include "common_json.h"
 #include "sens01_config.h"
 
@@ -28,7 +30,7 @@ static bool _write_json_from_img_sens01(struct json_object * root, persist_sens0
     }
 
 
-    write_ftma_config_json(root, model_config->ftma_configs);
+    write_ftma_config_json(root, model_config->ftma_configs, ADC_FTMA_COUNT);
 
     if (!write_modbus_json(root, &model_config->modbus_bus))
     {

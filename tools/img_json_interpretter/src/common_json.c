@@ -667,12 +667,12 @@ void write_cc_config_json(struct json_object * root, cc_config_t* cc_configs)
 }
 
 
-bool write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs)
+bool write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs, unsigned ftma_count)
 {
     struct json_object * ftma_configs_json = json_object_new_object();
     json_object_object_add(root, "ftma_configs", ftma_configs_json);
     char name[MEASURE_NAME_NULLED_LEN];
-    for (unsigned n = 0; n < ADC_FTMA_COUNT; n++)
+    for (unsigned n = 0; n < ftma_count; n++)
     {
         snprintf(name, MEASURE_NAME_NULLED_LEN, "FTA%u", n+1);
         struct json_object * ftma_config_json = json_object_new_object();
