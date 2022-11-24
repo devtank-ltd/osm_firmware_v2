@@ -6,6 +6,7 @@
     {GPIOA, GPIO1},      /* ADC 1  = Channel 6  */  \
     {GPIOB, GPIO1},      /* ADC 1  = Channel 16 */  \
     {GPIOA, GPIO4},      /* ADC 1  = Channel 9  */  \
+    {GPIOA, GPIO5},      /* ADC 1  = Channel 10 */  \
     {GPIOC, GPIO0},      /* ADC 1  = Channel 1  */  \
     {GPIOC, GPIO2},      /* ADC 1  = Channel 3  */  \
     {GPIOC, GPIO3},      /* ADC 1  = Channel 4  */  \
@@ -34,9 +35,10 @@
                                SENS01_ADC1_CHANNEL_BAT_MON,         \
                                SENS01_ADC1_CHANNEL_3V3_RAIL_MON,    \
                                SENS01_ADC1_CHANNEL_5V_RAIL_MON      }
-#define ADC_FTMA_CHANNELS { SENS01_ADC1_CHANNEL_CURRENT_CLAMP_1,  \
-                            SENS01_ADC1_CHANNEL_CURRENT_CLAMP_2,  \
-                            SENS01_ADC1_CHANNEL_CURRENT_CLAMP_3   }
+#define ADC_FTMA_CHANNELS { SENS01_ADC1_CHANNEL_FTMA_1,  \
+                            SENS01_ADC1_CHANNEL_FTMA_2,  \
+                            SENS01_ADC1_CHANNEL_FTMA_3,  \
+                            SENS01_ADC1_CHANNEL_FTMA_4   }
 
 #define SENS01_ADC_DMA_CHANNELS                                                        \
 {                                                                               \
