@@ -8,13 +8,20 @@
 #include "persist_config_header_model.h"
 
 
+#define MODEL_NAME_LEN                      8
+
+
 typedef struct
 {
     uint16_t                version;
-    uint16_t                model_code;
     uint32_t                log_debug_mask;
-    uint32_t                pending_fw;
+    uint16_t                pending_fw:1;
+    uint16_t                _reserved:15;
+    char                    model_name[MODEL_NAME_LEN];
+    /* 16 byte boundary */
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
+    uint8_t                 _[6];
+    /* 16 byte boundary */
     persist_model_config_t  model_config;
 } __attribute__((__packed__)) persist_storage_t;
 

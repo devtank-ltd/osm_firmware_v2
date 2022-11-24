@@ -27,8 +27,6 @@
 
 #define SENS01_PERSIST_VERSION             3
 
-#define SENS01_MODEL_NUM                   1
-
 #define SENS01_PERSIST_MODEL_CONFIG_T      persist_sens01_config_v1_t
 
 typedef struct

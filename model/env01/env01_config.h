@@ -27,8 +27,6 @@
 
 #define ENV01_PERSIST_VERSION             3
 
-#define ENV01_MODEL_NUM                   1
-
 #define ENV01_PERSIST_MODEL_CONFIG_T      persist_env01_config_v1_t
 
 typedef struct

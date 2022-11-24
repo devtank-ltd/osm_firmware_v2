@@ -148,10 +148,3 @@
 
 #define SERIAL_NUM_LEN         41
 #define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
-
-
-typedef enum
-{
-    MODEL_NUM_ENV01 = 1,
-    MODEL_NUM_SENS01 = 2,
-} model_num_enum_t;

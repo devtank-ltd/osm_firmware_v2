@@ -22,4 +22,4 @@
 
 #define persist_model_config_t        CONCAT(FW_NAME,_PERSIST_MODEL_CONFIG_T)
 
-#define MODEL_NUM                     CONCAT(FW_NAME,_MODEL_NUM)
+#define MODEL_NAME                    FW_NAME

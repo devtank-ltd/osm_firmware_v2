@@ -10,10 +10,9 @@ SRC := src/main.c \
        src/base.c \
        src/modbus_mem.c \
        src/measurements_mem.c \
-       src/env01.c \
-       src/sens01.c \
        src/read_json.c \
-       src/write_json.c
+       src/write_json.c \
+       src/common_json.c
 
 OBJS := $(SRC:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:%.o=%.d)

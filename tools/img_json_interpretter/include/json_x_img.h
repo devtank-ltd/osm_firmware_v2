@@ -10,17 +10,10 @@
 #include <json-c/json.h>
 #include <json-c/json_util.h>
 
-#include "pinmap.h"
-#include "modbus_mem.h"
-#include "lw.h"
-#include "cc.h"
-#include "ftma.h"
 
-#include "env01_pinmap.h"
-#include "sens01_pinmap.h"
+#include "lw.h"
+
 #include "persist_config_header.h"
-#include "env01_config.h"
-#include "sens01_config.h"
 
 
 typedef struct
@@ -30,6 +23,17 @@ typedef struct
     persist_storage_t               * config;
     unsigned                          config_size;
 } json_x_img_mem_t;
+
+
+struct model_config_funcs_t
+{
+    char        model_name[MODEL_NAME_LEN];
+    unsigned    model_config_size;
+    bool        (*write_json_from_img_cb)(struct json_object * root, void* model_config);
+    bool        (*read_json_to_img_cb)(struct json_object * root, void* model_config);
+
+    struct model_config_funcs_t * next;
+};
 
 
 extern json_x_img_mem_t osm_mem;
