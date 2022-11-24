@@ -27,3 +27,8 @@
 
 #define ENV01_ADC_COUNT       6
 #define ADC_CC_COUNT    3
+
+
+#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
+                           ADCS_TYPE_CC_CLAMP2,  \
+                           ADCS_TYPE_CC_CLAMP3   }

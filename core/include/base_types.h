@@ -192,15 +192,6 @@ typedef enum
 } adcs_type_t;
 
 
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
-
-#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
-                             ADCS_TYPE_FTMA2,    \
-                             ADCS_TYPE_FTMA3,    \
-                             ADCS_TYPE_FTMA4     }
-
 typedef enum
 {
     COMMS_TYPE_LW = 1,
