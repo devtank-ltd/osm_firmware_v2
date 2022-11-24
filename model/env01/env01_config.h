@@ -29,6 +29,8 @@
 
 #define ENV01_PERSIST_MODEL_CONFIG_T      persist_env01_config_v1_t
 
+#define ENV01_MODEL_NAME                  "ENV01"
+
 typedef struct
 {
     uint32_t                mins_interval;

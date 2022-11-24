@@ -9,6 +9,9 @@
 #define WORD_BYTE_ORDER_TXT_SIZE            3
 
 
+static struct model_config_funcs_t * _all_funcs = NULL;
+
+
 void free_osm_mem(void)
 {
     if (osm_mem.config)
@@ -31,7 +34,7 @@ bool model_config_get(char* model_name, struct model_config_funcs_t ** funcs)
 {
     if (!model_name || !funcs)
         return false;
-    for (struct model_config_funcs_t * f; f; f = f->next)
+    for (struct model_config_funcs_t * f = _all_funcs; f; f = f->next)
     {
         size_t f_ptr_len = strlen(f->model_name);
         size_t funcs_len = strlen(model_name);
@@ -685,4 +688,18 @@ bool write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_confi
         for (unsigned m = 0; m < FTMA_NUM_COEFFS; m++)
             json_object_array_add(coeff_array_json, json_object_new_double(ftma_configs[n].coeffs[m]));
     }
+}
+
+
+void model_config_funcs_register(struct model_config_funcs_t * funcs)
+{
+    static struct model_config_funcs_t * tail = NULL;
+    if (!tail)
+    {
+        _all_funcs = funcs;
+        tail = _all_funcs;
+    }
+    else
+        tail->next = funcs;
+    tail = tail->next;
 }

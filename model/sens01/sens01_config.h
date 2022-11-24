@@ -29,6 +29,8 @@
 
 #define SENS01_PERSIST_MODEL_CONFIG_T      persist_sens01_config_v1_t
 
+#define SENS01_MODEL_NAME                  "SENS01"
+
 typedef struct
 {
     uint32_t                mins_interval;

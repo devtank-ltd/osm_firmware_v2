@@ -98,7 +98,7 @@ void env01_register_config(void)
     static struct model_config_funcs_t model_config_funcs = {ENV01_MODEL_NAME,
                                                              sizeof(persist_env01_config_v1_t),
                                                              _write_json_from_img_env01,
-                                                             _read_json_to_img_sens01};
+                                                             _read_json_to_img_env01};
 
     model_config_funcs_register(&model_config_funcs);
 }
