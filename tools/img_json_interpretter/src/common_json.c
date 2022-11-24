@@ -492,6 +492,27 @@ bool read_ftma_configs_json(struct json_object * root, ftma_config_t* ftma_confi
 }
 
 
+bool read_comms_json(struct json_object * root, comms_config_t* comms_config)
+{
+    comms_config->type = get_defaulted_int(root, "comms_type",  COMMS_TYPE_LW);
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+            if (!get_string_buf(root, "lw_dev_eui", ((lw_config_t*)(comms_config->setup))->dev_eui, LW_DEV_EUI_LEN) ||
+                !get_string_buf(root, "lw_app_key", ((lw_config_t*)(comms_config->setup))->app_key, LW_APP_KEY_LEN))
+            {
+                log_error("No LoRaWAN keys.");
+                return false;
+            }
+            break;
+        default:
+            log_error("Unknown comms num.");
+            return false;
+    }
+    return true;
+}
+
+
 static bool _reg2json_cb(modbus_reg_t * reg, void * userdata)
 {
     struct json_object * registers_node=(struct json_object*)userdata;
@@ -691,15 +712,34 @@ bool write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_confi
 }
 
 
+bool write_comms_json(struct json_object * root, comms_config_t* comms_config)
+{
+    json_object_object_add(root, "comms_type", json_object_new_int(comms_config->type));
+    switch(comms_config->type)
+    {
+        case COMMS_TYPE_LW:
+        {
+            char* dev_eui = ((lw_config_t*)comms_config->setup)->dev_eui;
+            char* app_key = ((lw_config_t*)comms_config->setup)->app_key;
+            unsigned dev_eui_len = strnlen(dev_eui, LW_DEV_EUI_LEN);
+            unsigned app_key_len = strnlen(app_key, LW_APP_KEY_LEN);
+            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(dev_eui, dev_eui_len));
+            json_object_object_add(root, "lw_app_key", json_object_new_string_len(app_key, app_key_len));
+            break;
+        }
+        default:
+        {
+            log_error("Unknown comms type.");
+            return false;
+        }
+    }
+    return true;
+}
+
+
 void model_config_funcs_register(struct model_config_funcs_t * funcs)
 {
-    static struct model_config_funcs_t * tail = NULL;
-    if (!tail)
-    {
-        _all_funcs = funcs;
-        tail = _all_funcs;
-    }
-    else
-        tail->next = funcs;
-    tail = tail->next;
+    if (_all_funcs)
+        funcs->next = _all_funcs;
+    _all_funcs = funcs;
 }

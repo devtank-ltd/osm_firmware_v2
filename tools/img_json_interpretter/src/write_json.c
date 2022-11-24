@@ -9,7 +9,7 @@ static bool _write_json_from_img_base(struct json_object * root, persist_storage
 
     json_object_object_add(root, "log_debug_mask", json_object_new_int(config->log_debug_mask));
 
-    json_object_object_add(root, "model_name", json_object_new_string_len(config->model_name, MODEL_NAME_LEN));
+    json_object_object_add(root, "model_name", json_object_new_string_len(config->model_name, strnlen(config->model_name, MODEL_NAME_LEN)));
     return true;
 }
 
@@ -42,7 +42,7 @@ int write_json_from_img(const char * filename)
 
     if (!model_config_get(base.model_name, &model_config_funcs))
     {
-        log_error("Unknown model for config.");
+        log_error("Unknown model for config \"%s\"", base.model_name);
         goto bad_exit;
     }
 

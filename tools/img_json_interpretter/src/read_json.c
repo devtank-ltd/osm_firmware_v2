@@ -94,7 +94,7 @@ int read_json_to_img(const char * filename)
 
     if (!model_config_get(base.model_name, &model_config_funcs))
     {
-        log_error("Unknown model for config.");
+        log_error("Unknown model for config \"%s\"", base.model_name);
         goto bad_exit;
     }
 
@@ -123,7 +123,7 @@ int read_json_to_img(const char * filename)
         goto bad_exit;
     }
 
-    if (!model_config_funcs->read_json_to_img_cb(root, (void*)osm_mem.config))
+    if (!model_config_funcs->read_json_to_img_cb(root, (void*)&osm_mem.config->model_config))
     {
         log_error("Failed to read json for this model.");
         goto bad_exit;

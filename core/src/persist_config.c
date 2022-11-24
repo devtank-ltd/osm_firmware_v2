@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "config.h"
 #include "log.h"
@@ -26,6 +27,7 @@ bool persistent_init(void)
         memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
+        snprintf(persist_data.model_name, MODEL_NAME_LEN, MODEL_NAME);
         persist_config_model_init(&persist_data.model_config);
         return false;
     }

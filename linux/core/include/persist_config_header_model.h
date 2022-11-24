@@ -13,6 +13,7 @@
 #define FW_MAX_SIZE (1024*100)
 #define NEW_FW_ADDR 0x800000
 #define NEW_FW_PAGE 100
+#define MODEL_NAME "LINUX"
 
 typedef struct
 {

@@ -10,26 +10,8 @@ static bool _write_json_from_img_sens01(struct json_object * root, void * model_
     json_object_object_add(root, "mins_interval", json_object_new_int(model_config->mins_interval));
 
     comms_config_t* comms_config = &model_config->comms_config;
-    json_object_object_add(root, "comms_type", json_object_new_int(comms_config->type));
-    switch(comms_config->type)
-    {
-        case COMMS_TYPE_LW:
-        {
-            char* dev_eui = ((lw_config_t*)comms_config->setup)->dev_eui;
-            char* app_key = ((lw_config_t*)comms_config->setup)->app_key;
-            unsigned dev_eui_len = strnlen(dev_eui, LW_DEV_EUI_LEN);
-            unsigned app_key_len = strnlen(app_key, LW_APP_KEY_LEN);
-            json_object_object_add(root, "lw_dev_eui", json_object_new_string_len(dev_eui, dev_eui_len));
-            json_object_object_add(root, "lw_app_key", json_object_new_string_len(app_key, app_key_len));
-            break;
-        }
-        default:
-        {
-            log_error("Unknown comms type.");
-            return false;
-        }
-    }
-
+    if (!write_comms_json(root, comms_config))
+        return false;
 
     write_ftma_config_json(root, model_config->ftma_configs, ADC_FTMA_COUNT);
 
@@ -64,18 +46,8 @@ static bool _read_json_to_img_sens01(struct json_object * root, void * model_con
     model_config->mins_interval  = tmp;
 
     comms_config_t* comms_config = &model_config->comms_config;
-    comms_config->type = get_defaulted_int(root, "comms_type",  COMMS_TYPE_LW);
-    switch(comms_config->type)
-    {
-        case COMMS_TYPE_LW:
-            if (!get_string_buf(root, "lw_dev_eui", ((lw_config_t*)(comms_config->setup))->dev_eui, LW_DEV_EUI_LEN) ||
-                !get_string_buf(root, "lw_app_key", ((lw_config_t*)(comms_config->setup))->app_key, LW_APP_KEY_LEN))
-            {
-                log_error("No LoRaWAN keys.");
-                return false;
-            }
-            break;
-    }
+    if (!read_comms_json(root, comms_config))
+        return false;
 
     sens01_measurements_add_defaults(osm_mem.measurements->measurements_arr);
 
