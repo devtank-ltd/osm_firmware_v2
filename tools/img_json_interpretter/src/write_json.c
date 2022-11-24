@@ -70,6 +70,18 @@ int write_json_from_img(const char * filename)
         goto bad_exit;
     }
 
+    if (fseek(f, TOOL_FLASH_PAGE_SIZE, SEEK_SET) != 0)
+    {
+        log_error("Failed to seek.");
+        goto bad_exit;
+    }
+
+    if (fread(osm_mem.measurements, osm_mem.measurements_size, 1, f) != 1)
+    {
+        log_error("Failed to read config.");
+        goto bad_exit;
+    }
+
     if (!model_config_funcs->write_json_from_img_cb)
     {
         log_error("Model config has no write function.");
