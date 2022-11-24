@@ -4,8 +4,9 @@
 #include "sens01_config.h"
 
 
-static bool _write_json_from_img_sens01(struct json_object * root, persist_sens01_config_v1_t* model_config)
+static bool _write_json_from_img_sens01(struct json_object * root, void * model_config_raw)
 {
+    persist_sens01_config_v1_t* model_config = (persist_sens01_config_v1_t*)model_config_raw;
     json_object_object_add(root, "mins_interval", json_object_new_int(model_config->mins_interval));
 
     comms_config_t* comms_config = &model_config->comms_config;
@@ -45,8 +46,9 @@ static bool _write_json_from_img_sens01(struct json_object * root, persist_sens0
 }
 
 
-static bool _read_json_to_img_sens01(struct json_object * root, persist_sens01_config_v1_t * model_config)
+static bool _read_json_to_img_sens01(struct json_object * root, void * model_config_raw)
 {
+    persist_sens01_config_v1_t* model_config = (persist_sens01_config_v1_t*)model_config_raw;
     if (!root || !model_config)
     {
         log_error("Handed a NULL pointer.");
