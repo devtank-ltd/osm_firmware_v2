@@ -114,7 +114,14 @@ class i2c_device_t(object):
                 "w"      : w,
                 "rn"     : rn,
                 "r"      : r}
-
+"""
+            if self._byte_parts:
+                m = self._read()
+                self._parse_in(m)
+            else:
+                line = self._readline()
+                self._parse_line(line)
+"""
 
 class pty_dev_t(object):
     def __init__(self, pty, byte_parts=False, logger=None, log_file=None):
@@ -131,17 +138,9 @@ class pty_dev_t(object):
             r = select.select([self], [], [], timeout)
             if not r[0]:
                 continue
-            if self._byte_parts:
-                m = self._read()
-                self._parse_in(m)
-            else:
-                line = self._readline()
-                self._parse_line(line)
+            self._read_pending()
 
-    def _parse_in(self, m):
-        raise NotImplemented
-
-    def _parse_line(self, line):
+    def _read_pending(self):
         raise NotImplemented
 
     def _read(self):
