@@ -10,6 +10,7 @@
 #include "common.h"
 #include "log.h"
 #include "persist_config.h"
+#include "pinmap.h"
 
 
 #define FTMA_DEFAULT_COLLECTION_TIME                        1000
