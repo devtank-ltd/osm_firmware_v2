@@ -34,7 +34,7 @@ CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_S
 CFLAGS		+= -Dfw_name=$(FW_NAME) -DFW_NAME=$(UP_FW_NAME)
 
 
-INCLUDE_PATHS += -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/$(FW_NAME)
+INCLUDE_PATHS += -Istm/include -Ilibs/libopencm3/include -Icore/include -Isensors/include -Icomms/include -Imodel/$(FW_NAME)
 
 LINK_FLAGS =  -Llibs/libopencm3/lib --static -nostartfiles
 LINK_FLAGS += -Llibs/libopencm3/lib/stm32/l4
@@ -160,3 +160,4 @@ release_bundle : default
 	fi \
 
 -include $(shell find "$(BASE_BUILD_DIR)" -name "*.d")
+

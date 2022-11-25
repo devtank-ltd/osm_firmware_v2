@@ -1,1 +1,0 @@
-../../../sensors/src/cc.c

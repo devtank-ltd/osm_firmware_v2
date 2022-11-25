@@ -7,9 +7,11 @@ TOOL_DIR ?= .
 CORE_DIR ?= $(OSM_DIR)/core
 SENS_DIR ?= $(OSM_DIR)/sensors
 COMM_DIR ?= $(OSM_DIR)/comms
+STM_DIR ?= $(OSM_DIR)/stm
+
 MODL_DIR ?= $(OSM_DIR)/model
 
-CFLAGS := -I$(TOOL_DIR)/include -I$(CORE_DIR)/include -I$(SENS_DIR)/include -I$(COMM_DIR)/include -I$(OSM_DIR)/libs/libopencm3/include/ $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+CFLAGS := -I$(STM_DIR)/include -I$(TOOL_DIR)/include -I$(CORE_DIR)/include -I$(SENS_DIR)/include -I$(COMM_DIR)/include -I$(OSM_DIR)/libs/libopencm3/include/ $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 CFLAGS += -MMD -MP -g -DSTM32L4 -D__CONFIGTOOL__
 CFLAGS += -Dfw_name=tool -DFW_NAME=TOOL
 LDFLAGS := $(shell pkg-config --libs json-c)
