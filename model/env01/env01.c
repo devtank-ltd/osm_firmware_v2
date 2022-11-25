@@ -68,6 +68,11 @@ void env01_sensors_init(void)
 }
 
 
+void env01_post_init(void)
+{
+}
+
+
 bool env01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == RS485_UART)

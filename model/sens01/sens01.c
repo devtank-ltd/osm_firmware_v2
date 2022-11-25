@@ -68,6 +68,11 @@ void sens01_sensors_init(void)
 }
 
 
+void sens01_post_init(void)
+{
+}
+
+
 bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == RS485_UART)
