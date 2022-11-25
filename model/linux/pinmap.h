@@ -24,6 +24,15 @@
 #define ADC_INDEX_FTMA_4          7
 
 
+#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
+                           ADCS_TYPE_CC_CLAMP2,  \
+                           ADCS_TYPE_CC_CLAMP3   }
+
+#define ADC_FTMA_CHANNELS { ADC1_CHANNEL_FTMA_1,  \
+                            ADC1_CHANNEL_FTMA_2,  \
+                            ADC1_CHANNEL_FTMA_3,  \
+                            ADC1_CHANNEL_FTMA_4   }
+
 #define ADC_FTMA_COUNT  4
 
 #define W1_PULSE_1_IO               4

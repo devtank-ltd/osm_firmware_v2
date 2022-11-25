@@ -75,6 +75,8 @@ typedef enum
     SOUND         = 11,
     FW_VERSION    = 12,
     FTMA          = 13,
+    CUSTOM_0      = 14,
+    CUSTOM_1      = 15,
 } measurements_def_type_t;
 
 
