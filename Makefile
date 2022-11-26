@@ -10,6 +10,8 @@ GIT_TAG ?= $(shell git tag --points-at HEAD)
 MODELS = $(shell find $(MODEL_DIR)/* -type d -printf '%f\n')
 MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/complete.bin)
 
+$(info $(MODEL_FW))
+
 RELEASE_DIR := releases
 JSON_CONV_DIR := $(OSM_DIR)/tools/img_json_interpretter
 
@@ -27,6 +29,7 @@ $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 
 include tools/img_json_interpretter/Makefile
 include stm/stm.mk
+include linux/linux.mk
 
 define PROGRAM_template
   include $(1)
