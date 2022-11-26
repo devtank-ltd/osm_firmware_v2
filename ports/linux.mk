@@ -1,7 +1,6 @@
 #Toolchain settings
 
-ifndef LINUXDIR
-LINUXDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+LINUXDIR := $(OSM_DIR)/ports/linux
 
 LINUX_CC = gcc
 
@@ -70,4 +69,3 @@ $(1)_valgrind: $$(BUILD_DIR)/$(1)/firmware.elf
 	valgrind --leak-check=full $$(BUILD_DIR)/$(1)/firmware.elf
 
 endef
-endif

@@ -32,15 +32,15 @@ env01_SOURCES := \
            sensors/src/can_impl.c \
            sensors/src/fw.c \
            model/env01/env01.c \
-           stm/src/can_comm.c \
-           stm/src/stm.c \
-           stm/src/i2c.c \
-           stm/src/sleep.c \
-           stm/src/timers.c \
-           stm/src/uarts.c \
-           stm/src/version.c \
-           stm/src/w1.c
+           ports/stm/src/can_comm.c \
+           ports/stm/src/stm.c \
+           ports/stm/src/i2c.c \
+           ports/stm/src/sleep.c \
+           ports/stm/src/timers.c \
+           ports/stm/src/uarts.c \
+           ports/stm/src/version.c \
+           ports/stm/src/w1.c
 
-env01_LINK_SCRIPT := stm/stm32l4.ld
+env01_LINK_SCRIPT := ports/stm/stm32l4.ld
 
 $(eval $(call STM_FIRMWARE,env01))

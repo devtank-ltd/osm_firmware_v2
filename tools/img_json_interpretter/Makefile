@@ -6,7 +6,7 @@ OSM_DIR ?= $(TOOL_DIR)/../..
 CORE_DIR ?= $(OSM_DIR)/core
 SENS_DIR ?= $(OSM_DIR)/sensors
 COMM_DIR ?= $(OSM_DIR)/comms
-STM_DIR ?= $(OSM_DIR)/stm
+STM_DIR ?= $(OSM_DIR)/ports/stm
 
 MODL_DIR ?= $(OSM_DIR)/model
 

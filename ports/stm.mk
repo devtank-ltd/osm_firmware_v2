@@ -19,7 +19,7 @@ STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs
 STM_CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
 STM_CFLAGS		+= 
-STM_INCLUDE_PATHS += -I$(OSM_DIR)/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include
+STM_INCLUDE_PATHS += -I$(OSM_DIR)/ports/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include
 
 STM_LINK_FLAGS =  -L$(OSM_DIR)/libs/libopencm3/lib --static -nostartfiles
 STM_LINK_FLAGS += -L$(OSM_DIR)/libs/libopencm3/lib/stm32/l4
@@ -47,7 +47,7 @@ $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$(OSM_DIR)/$$($(1)_LINK_SCRIPT)
 $$(BUILD_DIR)/$(1)/config.bin : $$(JSON_CONV_DIR)/$(1)_default_mem.json $$(JSON_CONV)
 	$$(JSON_CONV) $$@ < $$<
 
-$$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/stm/bootloader/%.c $$(LIBOPENCM3)
+$$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBOPENCM3)
 	mkdir -p "$$(@D)"
 	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(OSM_DIR)/model/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
