@@ -1,12 +1,13 @@
 OSM_DIR ?= .
-BUILD_DIR ?= build
+BUILD_DIR ?= $(OSM_DIR)/build
+MODEL_DIR ?= $(OSM_DIR)/model
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
-MODELS = $(shell find model/* -type d -printf '%f\n')
+MODELS = $(shell find $(MODEL_DIR)/* -type d -printf '%f\n')
 MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/complete.bin)
 
 RELEASE_DIR := releases
@@ -15,18 +16,16 @@ JSON_CONV_DIR := $(OSM_DIR)/tools/img_json_interpretter
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
-JSON_CONV := $(JSON_CONV_DIR)/build/json_x_img
+JSON_CONV := $(BUILD_DIR)/tool/json_x_img
 
 all: $(MODELS_FW)
-
-$(JSON_CONV) : $(LIBOPENCM3)
-	$(MAKE) -C $(JSON_CONV_DIR)
 
 $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 	mkdir -p "$(@D)"
 	rm -f $(BUILD_DIR)/.git.*
 	touch $@
 
+include tools/img_json_interpretter/Makefile
 include stm/stm.mk
 
 define PROGRAM_template
