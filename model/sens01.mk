@@ -42,3 +42,5 @@ sens01_SOURCES := \
            stm/src/w1.c
 
 sens01_LINK_SCRIPT := stm/stm32l4.ld
+
+$(eval $(call STM_FIRMWARE,sens01))
