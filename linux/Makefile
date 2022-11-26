@@ -1,66 +1,70 @@
 #Toolchain settings
 
+LINXDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+
 CC = gcc
 OBJCOPY = objcopy
 OBJDUMP = objdump
 
+OSM_DIR ?= $(LINXDIR)/..
 BUILD_DIR ?= build
+LINX_BUILD_DIR ?= $(BUILD_DIR)/linux
 
+ifndef GIT_COMMITS
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
-
-OSM_DIR ?= ..
+endif
 
 CORE_DIR ?= $(OSM_DIR)/core
 SENS_DIR ?= $(OSM_DIR)/sensors
 COMM_DIR ?= $(OSM_DIR)/comms
 MODL_DIR ?= $(OSM_DIR)/model
-LINU_DIR ?= ./
 
 #Compiler options
-CFLAGS		+= -O0 -g -c -std=gnu11 -pedantic
-CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
-CFLAGS		+= -fstack-usage -Wstack-usage=500
-CFLAGS		+= -MMD -MP
-CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
-CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D__LINUX__
-CFLAGS		+= -g -fprofile-arcs -ftest-coverage
+LINX_CFLAGS		+= -O0 -g -c -std=gnu11 -pedantic
+LINX_CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
+LINX_CFLAGS		+= -fstack-usage -Wstack-usage=500
+LINX_CFLAGS		+= -MMD -MP
+LINX_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
+LINX_CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D__LINUX__
+LINX_CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 
-INCLUDE_PATHS += -I$(LINU_DIR)/include -I$(CORE_DIR)/include -I$(SENS_DIR)/include -I$(COMM_DIR)/include $(shell pkg-config --cflags json-c)
+LINX_INCLUDE_PATHS += -I$(LINXDIR)/include -I$(CORE_DIR)/include -I$(SENS_DIR)/include -I$(COMM_DIR)/include $(shell pkg-config --cflags json-c)
 
-LINK_FLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
-LINK_FLAGS += -lgcov --coverage -pthread -lutil
+LINX_LDFLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
+LINX_LDFLAGS += -lgcov --coverage -pthread -lutil
 
 
 SQLITE_DB = $(OSM_DIR)/config_gui/release/config_database/modbus_templates
 
 
-default: $(BUILD_DIR)/firmware.elf
+default: $(LINX_BUILD_DIR)/firmware.elf
 
-$(BUILD_DIR)/.git.$(GIT_COMMIT):
+$(LINX_BUILD_DIR)/.git.$(GIT_COMMIT):
 	mkdir -p "$(@D)"
-	rm -f $(BUILD_DIR)/.git.*
+	rm -f $(LINX_BUILD_DIR)/.git.*
 	touch $@
 
 LINUX_SRC := \
-    $(LINU_DIR)/src/uarts.c \
-    $(LINU_DIR)/src/linux_adc.c \
-    $(LINU_DIR)/src/sleep.c \
-    $(LINU_DIR)/src/platform_common.c \
-    $(LINU_DIR)/src/can_comm.c \
-    $(LINU_DIR)/src/linux.c \
-    $(LINU_DIR)/src/timers.c \
-    $(LINU_DIR)/src/i2c.c \
-    $(LINU_DIR)/src/w1.c \
-    $(LINU_DIR)/src/version.c \
-    $(LINU_DIR)/src/pulsecount.c \
-    $(LINU_DIR)/src/sai.c \
-    $(LINU_DIR)/src/comms.c
+    $(LINXDIR)/src/uarts.c \
+    $(LINXDIR)/src/linux_adc.c \
+    $(LINXDIR)/src/sleep.c \
+    $(LINXDIR)/src/platform_common.c \
+    $(LINXDIR)/src/can_comm.c \
+    $(LINXDIR)/src/linux.c \
+    $(LINXDIR)/src/timers.c \
+    $(LINXDIR)/src/i2c.c \
+    $(LINXDIR)/src/w1.c \
+    $(LINXDIR)/src/version.c \
+    $(LINXDIR)/src/pulsecount.c \
+    $(LINXDIR)/src/sai.c \
+    $(LINXDIR)/src/comms.c
 
 
-OSM_SRC := $(OSM_DIR)/core/src/main.c \
+LINX_OSM_SRC := \
+           $(OSM_DIR)/core/src/main.c \
            $(OSM_DIR)/core/src/base.c \
            $(OSM_DIR)/core/src/log.c \
            $(OSM_DIR)/core/src/uart_rings.c \
@@ -87,27 +91,26 @@ OSM_SRC := $(OSM_DIR)/core/src/main.c \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c
 
-LINUX_OBJS=$(LINUX_SRC:%.c=$(BUILD_DIR)/%.o)
+LINUX_OBJS=$(LINUX_SRC:$(LINXDIR)/%.c=$(LINX_BUILD_DIR)/%.o)
 
-OSM_OBJS:=$(OSM_SRC:$(OSM_DIR)/%.c=$(BUILD_DIR)/%.o)
+LINX_OSM_OBJS:=$(LINX_OSM_SRC:$(OSM_DIR)/%.c=$(LINX_BUILD_DIR)/%.o)
 
-OBJS := $(LINUX_OBJS) $(OSM_OBJS)
+LINX_OBJS := $(LINUX_OBJS) $(LINX_OSM_OBJS)
+LINX_DEPS := $(LINX_OBJS:%.o=%.d)
 
-DEPS := $(OBJS:%.o=%.d)
-
-$(OSM_OBJS): $(BUILD_DIR)/%.o: $(OSM_DIR)/%.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
+$(LINX_OSM_OBJS): $(LINX_BUILD_DIR)/%.o: $(OSM_DIR)/%.c $(LINX_BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p "$(@D)"
-	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
+	$(CC) $(LINX_CFLAGS) $(LINX_INCLUDE_PATHS) $< -o $@
 
-$(LINUX_OBJS): $(BUILD_DIR)/%.o: $(LINU_DIR)/%.c $(BUILD_DIR)/.git.$(GIT_COMMIT)
+$(LINUX_OBJS): $(LINX_BUILD_DIR)/%.o: $(LINXDIR)/%.c $(LINX_BUILD_DIR)/.git.$(GIT_COMMIT)
 	mkdir -p "$(@D)"
-	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $< -o $@
+	$(CC) $(LINX_CFLAGS) $(LINX_INCLUDE_PATHS) $< -o $@
 
-$(BUILD_DIR)/firmware.elf : $(OBJS)
-	$(CC) $(OBJS) $(LINK_FLAGS) -o $@
+$(LINX_BUILD_DIR)/firmware.elf : $(LINX_OBJS)
+	$(CC) $(LINX_OBJS) $(LINX_LDFLAGS) -o $@
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(LINX_BUILD_DIR)
 
 cppcheck:
 	cppcheck --enable=all --std=c11 --inline-suppr `find $(CORE_DIR) "*.[ch]"` `find $(SENS_DIR) -name "*.[ch]"`  -I $(CORE_DIR)/include -I $(SENS_DIR)/include
@@ -118,14 +121,14 @@ test: default
 
 
 coverage: default
-	lcov --zerocounters -d $(BUILD_DIR)/
-	lcov --capture --initial -d $(BUILD_DIR)/ --output-file $(BUILD_DIR)/coverage.info
+	lcov --zerocounters -d $(LINX_BUILD_DIR)/
+	lcov --capture --initial -d $(LINX_BUILD_DIR)/ --output-file $(LINX_BUILD_DIR)/coverage.info
 	mkdir -p /tmp/osm/
 	$(OSM_DIR)/python/osm_test.py
-	lcov --capture -d $(BUILD_DIR)/ --output-file $(BUILD_DIR)/coverage.info
-	mkdir -p $(BUILD_DIR)/coverage
-	cd $(BUILD_DIR)/coverage && genhtml ../coverage.info
-	sensible-browser $(BUILD_DIR)/coverage/index.html
+	lcov --capture -d $(LINX_BUILD_DIR)/ --output-file $(LINX_BUILD_DIR)/coverage.info
+	mkdir -p $(LINX_BUILD_DIR)/coverage
+	cd $(LINX_BUILD_DIR)/coverage && genhtml ../coverage.info
+	sensible-browser $(LINX_BUILD_DIR)/coverage/index.html
 
 
 run: default
@@ -138,7 +141,7 @@ soak: default
 
 
 valgrind: default
-	valgrind --leak-check=full $(BUILD_DIR)/firmware.elf
+	valgrind --leak-check=full $(LINX_BUILD_DIR)/firmware.elf
 
 
--include $(DEPS)
+-include $(LINX_DEPS)
