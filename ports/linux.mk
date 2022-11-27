@@ -37,8 +37,8 @@ $$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS)
 	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o $$@
 
-$$(BUILD_DIR)/$(1)/complete.bin: $$(BUILD_DIR)/$(1)/firmware.elf
-	ln -fs firmware.elf $$@
+$$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/firmware.elf
+	touch $$@
 
 $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/

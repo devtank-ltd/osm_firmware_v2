@@ -62,6 +62,8 @@ $$(BUILD_DIR)/$(1)/complete.bin: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)
 	dd of=$$@ if=$$(BUILD_DIR)/$(1)/config.bin seek=2 conv=notrunc bs=2k
 	dd of=$$@ if=$$(BUILD_DIR)/$(1)/firmware.bin seek=4 conv=notrunc bs=2k
 
+$$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/complete.bin
+	touch $$@
 
 $(1)_serial_program: $$(BUILD_DIR)/$(1)/complete.bin
 	KEEPCONFIG=1 ./tools/config_scripts/program.sh $$<

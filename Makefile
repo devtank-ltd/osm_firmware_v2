@@ -8,7 +8,7 @@ GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
 MODELS = $(shell find $(MODEL_DIR)/* -type d -printf '%f\n')
-MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/complete.bin)
+MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/.complete)
 
 RELEASE_DIR := releases
 JSON_CONV_DIR := $(OSM_DIR)/tools/img_json_interpretter
