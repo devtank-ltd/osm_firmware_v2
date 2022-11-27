@@ -12,7 +12,7 @@ import multiprocessing
 
 from binding import modbus_reg_t, dev_t, set_debug_print
 
-sys.path.append("../linux/peripherals/")
+sys.path.append("../ports/linux/peripherals/")
 
 import i2c_server as i2c
 import modbus_server as modbus
@@ -431,7 +431,7 @@ class test_framework_t(object):
 def main():
     import argparse
 
-    DEFAULT_FAKE_OSM_PATH = "%s/../linux/build/firmware.elf"% os.path.dirname(__file__)
+    DEFAULT_FAKE_OSM_PATH = "%s/../build/linux/firmware.elf"% os.path.dirname(__file__)
 
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )

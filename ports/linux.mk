@@ -42,13 +42,13 @@ $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/firmware.elf
 
 $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/
-	$$(OSM_DIR)/python/osm_test.py
+	cd $$(OSM_DIR)/python/; ./osm_test.py
 
 $(1)_coverage: $$(BUILD_DIR)/$(1)/firmware.elf
 	lcov --zerocounters -d $$(BUILD_DIR)/$(1)/
 	lcov --capture --initial -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p /tmp/osm/
-	$$(OSM_DIR)/python/osm_test.py
+	cd $$(OSM_DIR)/python; ./osm_test.py
 	lcov --capture -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p $$(BUILD_DIR)/$(1)/coverage
 	cd $$(BUILD_DIR)/$(1)/coverage && genhtml ../coverage.info
@@ -57,12 +57,12 @@ $(1)_coverage: $$(BUILD_DIR)/$(1)/firmware.elf
 
 $(1)_run: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/
-	$$(OSM_DIR)/python/osm_test.py --run
+	cd $$(OSM_DIR)/python; ./osm_test.py --run
 
 
 $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/
-	loop=0; while [ "$$?" = "0" ]; do loop=$$(($$loop + 1));$$(OSM_DIR)/python/osm_test.py --run; done; date; echo "Loops:" $$loop
+	cd $$(OSM_DIR)/python; loop=0; while [ "$$?" = "0" ]; do loop=$$(($$loop + 1)); ./osm_test.py --run; done; date; echo "Loops:" $$loop
 
 
 $(1)_valgrind: $$(BUILD_DIR)/$(1)/firmware.elf
