@@ -40,6 +40,8 @@ $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS)
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/firmware.elf
 	touch $$@
 
+$(1): $$(BUILD_DIR)/$(1)/.complete
+
 $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/
 	cd $$(OSM_DIR)/python/; ./osm_test.py
