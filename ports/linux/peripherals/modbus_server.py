@@ -83,7 +83,11 @@ class modbus_server_t(object):
 
 
 def main(args):
-    modbus_server = modbus_server_t(args[1])
+    if len(args) > 1:
+        dev = args[1]
+    else:
+        dev = "/tmp/osm/UART_EXT_slave"
+    modbus_server = modbus_server_t(dev)
     modbus_server.run_forever()
     return 0
 

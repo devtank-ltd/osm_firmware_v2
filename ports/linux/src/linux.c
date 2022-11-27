@@ -17,6 +17,9 @@
 #include <sys/eventfd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <libgen.h>
+#include <linux/limits.h>
+#include <spawn.h>
 
 #include "platform.h"
 #include "linux.h"
@@ -62,8 +65,10 @@
 #define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
 #define LINUX_REBOOT_FILE_LOC   LINUX_FILE_LOC"reboot.dat"
 
-
-extern int errno;
+#define FAKE_I2C_SERVER     "peripherals/i2c_server.py"
+#define FAKE_W1_SERVER      "peripherals/w1_server.py"
+#define FAKE_HPM_SERVER     "peripherals/hpm_virtual.py"
+#define FAKE_MODBUS_SERVER  "peripherals/modbus_server.py"
 
 
 typedef enum
@@ -184,6 +189,40 @@ static void _linux_error(char* fmt, ...)
     fprintf(stderr, " (%s)", strerror(errno));
     fprintf(stderr, "\n");
     exit(-1);
+}
+
+
+bool linux_spawn(const char * rel_path)
+{
+    static char full_path[PATH_MAX];
+    if (readlink("/proc/self/exe", full_path, PATH_MAX) < 0)
+    {
+        _linux_error("Failed start spawn : %s", rel_path);
+        return false;
+    }
+    const char *exec_dir = dirname(full_path);
+    unsigned used = PATH_MAX-strlen(exec_dir);
+    strncat(full_path, "/", used);
+    strncat(full_path, rel_path, used - 1);
+
+    //char full_path[PATH_MAX];
+    //int r = snprintf(full_path, sizeof(full_path), "%s/%s", exec_dir, rel_path);
+    //if (r < 0 || r > PATH_MAX-1)
+    //{
+    //    _linux_error("Failed to spawn (too long) : %s", rel_path);
+    //    return false;
+    //}
+
+    pid_t pid;
+    char *argv[] = {full_path, NULL};
+    int r = posix_spawn(&pid, full_path, NULL, NULL, argv, environ);
+    if (r)
+    {
+        _linux_error("Spawn failed %s : %s\n", full_path, strerror(r));
+        return false;
+    }
+    linux_port_debug("Spawned %s pid: %i\n", full_path, pid);
+    return true;
 }
 
 
@@ -655,6 +694,7 @@ void platform_start(void)
         measurements_enabled = (auto_meas_int > 0);
         linux_port_debug("Auto Measurements: %u", auto_meas_int);
     }
+    linux_spawn(FAKE_MODBUS_SERVER);
 }
 
 
@@ -908,6 +948,9 @@ void persist_config_model_init(persist_model_config_t* model_config)
 
 void sensors_init(void)
 {
+    linux_spawn(FAKE_I2C_SERVER);
+    linux_spawn(FAKE_W1_SERVER);
+    linux_spawn(FAKE_HPM_SERVER);
     timers_init();
     ios_init();
     sai_init();
