@@ -36,7 +36,7 @@ define PROGRAM_template
 PROGRAMS_MKS = $(shell find $(MODEL_DIR) -maxdepth 1 -name "*.mk" -printf "%p\n")
 
 # To see what it's doing, just replace "eval" with "info"
-$(foreach file_mk,$(PROGRAMS_MKS),$(eval $(call PROGRAM_template,$(file_mk),$(file_mk:$(MODEL_DIR)/%.mk=%))))
+$(foreach file_mk,$(PROGRAMS_MKS),$(eval $(call PROGRAM_template,$(file_mk))))
 
 clean:
 	make -C $(OSM_DIR)/libs/libopencm3 $@ TARGETS=stm32/l4
