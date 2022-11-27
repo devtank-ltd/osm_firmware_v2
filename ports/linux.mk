@@ -28,11 +28,24 @@ SQLITE_DB = $(OSM_DIR)/config_gui/release/config_database/modbus_templates
 
 define LINUX_FIRMWARE
 $(1)_UP_NAME=$$(shell echo $(1) | tr a-z A-Z)
-$(1)_OBJS=$$($(1)_SOURCES:%.c=$$(BUILD_DIR)/$(1)/%.o)
 
-$$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
+$(1)_IOSM_SRC=$$(filter-out $$(MODEL_DIR)/%,$$($(1)_SOURCES))
+$(1)_NOSM_SRC=$$(filter $$(MODEL_DIR)/%,$$($(1)_SOURCES))
+
+$(1)_IOSM_OBJS=$$($(1)_IOSM_SRC:$$(OSM_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
+
+$(1)_NOSM_OBJS=$$($(1)_NOSM_SRC:$$(MODEL_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
+
+$(1)_OBJS:= $$($(1)_IOSM_OBJS) $$($(1)_NOSM_OBJS)
+
+$$($(1)_IOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
 	mkdir -p "$$(@D)"
-	$$(LINUX_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(LINUX_CFLAGS) -I$$(OSM_DIR)/model/$(1) $$(LINUX_INCLUDE_PATHS) $$< -o $$@
+	$$(LINUX_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(LINUX_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(LINUX_INCLUDE_PATHS) $$< -o $$@
+
+$$($(1)_NOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(MODEL_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
+	mkdir -p "$$(@D)"
+	$$(LINUX_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(LINUX_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(LINUX_INCLUDE_PATHS) $$< -o $$@
+
 
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS)
 	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o $$@

@@ -35,24 +35,36 @@ $(LIBOPENCM3) :
 
 define STM_FIRMWARE
 $(1)_UP_NAME=$$(shell echo $(1) | tr a-z A-Z)
-$(1)_OBJS=$$($(1)_SOURCES:%.c=$$(BUILD_DIR)/$(1)/%.o)
 
-$$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
+$(1)_IOSM_SRC=$$(filter-out $$(MODEL_DIR)/%,$$($(1)_SOURCES))
+$(1)_NOSM_SRC=$$(filter $$(MODEL_DIR)/%,$$($(1)_SOURCES))
+
+$(1)_IOSM_OBJS=$$($(1)_IOSM_SRC:$$(OSM_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
+
+$(1)_NOSM_OBJS=$$($(1)_NOSM_SRC:$$(MODEL_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
+
+$(1)_OBJS:= $$($(1)_IOSM_OBJS) $$($(1)_NOSM_OBJS)
+
+$$($(1)_IOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
 	mkdir -p "$$(@D)"
-	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(OSM_DIR)/model/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
+	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
-$$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$(OSM_DIR)/$$($(1)_LINK_SCRIPT)
-	$$(STM_CC) $$($(1)_OBJS) $$(STM_LINK_FLAGS) -T$$(OSM_DIR)/$$($(1)_LINK_SCRIPT) -o $$@
+$$($(1)_NOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(MODEL_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
+	mkdir -p "$$(@D)"
+	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
-$$(BUILD_DIR)/$(1)/config.bin : $$(JSON_CONV_DIR)/$(1)_default_mem.json $$(JSON_CONV)
+$$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_LINK_SCRIPT)
+	$$(STM_CC) $$($(1)_OBJS) $$(STM_LINK_FLAGS) -T$$($(1)_LINK_SCRIPT) -o $$@
+
+$$(BUILD_DIR)/$(1)/config.bin : $$(MODEL_DIR)/$(1)_default_mem.json $$(JSON_CONV)
 	$$(JSON_CONV) $$@ < $$<
 
 $$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBOPENCM3)
 	mkdir -p "$$(@D)"
-	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(OSM_DIR)/model/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
+	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
 $$(BUILD_DIR)/$(1)/bootloader.elf : $$(BUILD_DIR)/$(1)/bootloader/bootloader.o
-	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$(OSM_DIR)/$$($(1)_LINK_SCRIPT) -o $$@
+	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$($(1)_LINK_SCRIPT) -o $$@
 
 $$(BUILD_DIR)/$(1)/%.bin: $$(BUILD_DIR)/$(1)/%.elf
 	$$(STM_OBJCOPY) -O binary $$< $$@
