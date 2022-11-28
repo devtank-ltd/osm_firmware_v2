@@ -80,7 +80,7 @@ $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/complete.bin
 $(1): $$(BUILD_DIR)/$(1)/.complete
 
 $(1)_serial_program: $$(BUILD_DIR)/$(1)/complete.bin
-	KEEPCONFIG=1 ./tools/config_scripts/program.sh $$<
+	KEEPCONFIG=1 $(OSM_DIR)/tools/config_scripts/program.sh $$<
 
 $(1)_flash: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin
 	openocd -f interface/stlink-v2-1.cfg \
