@@ -66,7 +66,8 @@ $$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBO
 include $(OSM_DIR)/ports/stm/bootloader.mk
 
 $$(BUILD_DIR)/$(1)/bootloader.elf : $$(BUILD_DIR)/$(1)/bootloader/bootloader.o
-	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$(bootloader_LINK_SCRIPT) -o $$@
+	echo $$(bootloader_LINK_SCRIPT)
+	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$(bootloader_LINK_SCRIPT) -o $$@
 
 $$(BUILD_DIR)/$(1)/%.bin: $$(BUILD_DIR)/$(1)/%.elf
 	$$(STM_OBJCOPY) -O binary $$< $$@
