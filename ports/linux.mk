@@ -40,11 +40,7 @@ $(1)_OBJS:= $$($(1)_IOSM_OBJS) $$($(1)_NOSM_OBJS)
 
 $(1)_PERIPHERALS_SRC:=$$(shell find $$(OSM_DIR)/ports/linux/peripherals -name "*.py")
 
-$$(info src $$($(1)_PERIPHERALS_SRC))
-
 $(1)_PERIPHERALS_DST:=$$($(1)_PERIPHERALS_SRC:$$(OSM_DIR)/ports/linux/%=$$(BUILD_DIR)/$(1)/%)
-
-$$(info dst $$($(1)_PERIPHERALS_DST))
 
 $$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/%
 	mkdir -p "$$(@D)"
