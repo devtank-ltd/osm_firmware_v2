@@ -106,3 +106,5 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
                              ADCS_TYPE_FTMA2,    \
                              ADCS_TYPE_FTMA3,    \
                              ADCS_TYPE_FTMA4     }
+
+#define     post_init()

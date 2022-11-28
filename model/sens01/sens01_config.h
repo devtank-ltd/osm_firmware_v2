@@ -44,3 +44,4 @@ typedef struct
 } persist_sens01_config_v1_t;
 
 extern unsigned sens01_measurements_add_defaults(measurements_def_t * measurements_arr);
+extern void     sens01_post_init(void);
