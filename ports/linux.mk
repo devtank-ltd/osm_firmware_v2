@@ -5,13 +5,13 @@ LINUXDIR := $(OSM_DIR)/ports/linux
 LINUX_CC = gcc
 
 #Compiler options
-LINUX_CFLAGS		+= -O0 -g -c -std=gnu11 -pedantic
+LINUX_CFLAGS		+= -O0 -g -std=gnu11 -pedantic -D_GNU_SOURCE
 LINUX_CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
 LINUX_CFLAGS		+= -fstack-usage
 LINUX_CFLAGS		+= -MMD -MP
 LINUX_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
-LINUX_CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" -D__LINUX__ -D_GNU_SOURCE
-LINUX_CFLAGS		+= -g -fprofile-arcs -ftest-coverage
+LINUX_CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+LINUX_CFLAGS		+= -fprofile-arcs -ftest-coverage
 
 
 LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)

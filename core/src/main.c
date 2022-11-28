@@ -3,6 +3,8 @@
 #include <stddef.h>
 
 #include "platform.h"
+#include "platform_model.h"
+
 #include "common.h"
 #include "log.h"
 #include "uart_rings.h"
@@ -40,7 +42,7 @@ int main(void)
     log_init();
     cmds_init();
 
-    sensors_init();
+    model_sensors_init();
 
     comms_init();
 
@@ -48,7 +50,7 @@ int main(void)
 
     measurements_init();
 
-    post_init();
+    model_post_init();
 
     bool boot_debug_mode = DEBUG_MODE & persist_data.log_debug_mask;
 

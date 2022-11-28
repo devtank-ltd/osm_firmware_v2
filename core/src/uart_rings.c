@@ -11,6 +11,7 @@
 #include "uarts.h"
 #include "comms.h"
 #include "platform.h"
+#include "platform_model.h"
 
 #include "common.h"
 
@@ -125,7 +126,7 @@ void uart_ring_in_drain(unsigned uart)
     if (uart && len)
         log_debug(DEBUG_UART(uart), "UART %u IN %u", uart, len);
 
-    if (uart_ring_done_in_process(uart, ring))
+    if (model_uart_ring_done_in_process(uart, ring))
         return;
 
     if (!len)
@@ -167,7 +168,7 @@ static void uart_ring_out_drain(unsigned uart)
 
     ring_buf_t * ring = &ring_out_bufs[uart];
 
-    if(!uart_ring_do_out_drain(uart, ring))
+    if(!model_uart_ring_do_out_drain(uart, ring))
         return;
 
     unsigned len = ring_buf_get_pending(ring);

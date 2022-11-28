@@ -16,6 +16,7 @@
 #include "sos.h"
 #include "pinmap.h"
 #include "log.h"
+#include "platform_model.h"
 
 #include "adcs.h"
 
@@ -34,8 +35,6 @@
 #define ADC_CCR_PRESCALE_256   0xB  /* 0b1011 */
 #define ADC_CCR_PRESCALE_MASK  0xF
 #define ADC_CCR_PRESCALE_SHIFT 18
-
-extern uint8_t stm_adcs_get_channel(adcs_type_t adcs_type);
 
 static volatile uint32_t since_boot_ms = 0;
 
@@ -300,7 +299,7 @@ void platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs
 {
     uint8_t channels[ADC_COUNT];
     for (uint8_t i = 0; i < num_adcs_types; i++)
-        channels[i] = stm_adcs_get_channel(adcs_types[i]);
+        channels[i] = model_stm_adcs_get_channel(adcs_types[i]);
     adc_set_regular_sequence(ADC1, num_adcs_types, channels);
 }
 

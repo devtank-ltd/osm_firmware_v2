@@ -107,8 +107,9 @@ extern bool     measurements_get_reading(char* measurement_name, measurements_re
 extern bool     measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
 
 
-extern bool     measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
-extern void     measurements_repopulate(void);
+extern bool     model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
+extern void     model_measurements_repopulate(void);
+
 extern bool     measurements_rename(char* orig_name, char* new_name_raw);
 
 extern struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail);

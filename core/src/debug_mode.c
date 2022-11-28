@@ -22,6 +22,7 @@
 #include "cc.h"
 
 #include "modbus_measurements.h"
+#include "platform_model.h"
 
 
 #define DEBUG_MODE_STR_LEN   10
@@ -35,7 +36,7 @@ static bool _debug_mode_init_get_toggle = true;
 static bool _debug_mode_init_iteration_cb(measurements_def_t* def, void *data)
 {
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, NULL, &inf))
+    if (!model_measurements_get_inf(def, NULL, &inf))
         return false;
     if ( inf.init_cb)
         inf.init_cb(def->name, false);
@@ -83,7 +84,7 @@ static void _lw_send_msg(void)
 static bool _debug_mode_collect_iteration_cb(measurements_def_t* def, void * data)
 {
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, NULL, &inf))
+    if (!model_measurements_get_inf(def, NULL, &inf))
         return false;
     measurements_reading_t value;
     _debug_mode_send_value(inf.get_cb(def->name, &value), def->name, inf.value_type_cb(def->name), &value);
@@ -108,7 +109,7 @@ static void _debug_mode_collect_iteration(void)
 static bool _debug_mode_fast_iteration_cb(measurements_def_t* def, void * data)
 {
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, NULL, &inf))
+    if (!model_measurements_get_inf(def, NULL, &inf))
         return false;
     if (inf.iteration_cb)
         inf.iteration_cb(def->name);
@@ -161,7 +162,7 @@ void debug_mode(void)
         _debug_mode_enabled = false;
         return;
     }
-    debug_mode_enable_all();
+    model_debug_mode_enable_all();
 
     _debug_mode_enabled = true;
 

@@ -13,7 +13,6 @@
 #define FW_MAX_SIZE (1024*100)
 #define NEW_FW_ADDR 0x800000
 #define NEW_FW_PAGE 100
-#define MODEL_NAME "LINUX"
 
 #define CMD_LINELEN 128
 
@@ -40,5 +39,6 @@ typedef struct
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
     ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
-} persist_model_config_t;
+} persist_penguin_config_v1_t;
 
+#define persist_model_config_t        persist_penguin_config_v1_t

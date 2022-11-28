@@ -1,4 +1,4 @@
-linux_SOURCES := \
+penguin_SOURCES := \
     $(OSM_DIR)/ports/linux/src/uarts.c \
     $(OSM_DIR)/ports/linux/src/linux_adc.c \
     $(OSM_DIR)/ports/linux/src/sleep.c \
@@ -37,6 +37,7 @@ linux_SOURCES := \
     $(OSM_DIR)/sensors/src/bat.c \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
-    $(OSM_DIR)/sensors/src/fw.c
+    $(OSM_DIR)/sensors/src/fw.c \
+    $(MODEL_DIR)/penguin/penguin.c \
 
-$(eval $(call LINUX_FIRMWARE,linux))
+$(eval $(call LINUX_FIRMWARE,penguin))

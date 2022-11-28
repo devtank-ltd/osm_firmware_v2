@@ -1,7 +1,5 @@
 #pragma once
 
-#define ADC1_CHANNEL_BAT_MON            1
-
 
 #define CMD_UART   0
 #define COMMS_UART 1

@@ -27,6 +27,7 @@
 #include "update.h"
 #include "modbus.h"
 #include "ftma.h"
+#include "model.h"
 
 
 uint8_t sens01_stm_adcs_get_channel(adcs_type_t adcs_type)

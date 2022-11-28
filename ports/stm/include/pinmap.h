@@ -80,7 +80,6 @@
 }
 
 
-#ifndef __LINUX__
 #define IOS_PORT_N_PINS            \
 {                                  \
     {GPIOC, GPIO6 },   /* IO 0  */ \
@@ -94,21 +93,7 @@
     {GPIOB, GPIO5 },   /* IO 8  */ \
     {GPIOD, GPIO2 },   /* IO 9 */ \
 }
-#else
-#define IOS_PORT_N_PINS            \
-{                                  \
-    {0},   /* IO 0  */ \
-    {1},   /* IO 1 */ \
-    {2},   /* IO 2  */ \
-    {3},   /* IO 3  */ \
-    {4},   /* IO 4  */ \
-    {5},   /* IO 5  */ \
-    {6},   /* IO 6  */ \
-    {7},   /* IO 7  */ \
-    {8},   /* IO 8  */ \
-    {9},   /* IO 9 */ \
-}
-#endif // __LINUX__
+
 
 /*
 Schematic name, STM pin
@@ -222,18 +207,3 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define IOS_COUNT 10
 #define W1_PULSE_1_IO               4
 #define W1_PULSE_2_IO               5
-
-
-#define stm_adcs_get_channel         CONCAT(fw_name, _stm_adcs_get_channel)
-#define persist_config_model_init    CONCAT(fw_name, _persist_config_model_init)
-#define sensors_init                 CONCAT(fw_name,_sensors_init)
-#define post_init                    CONCAT(fw_name,_post_init)
-#define uart_ring_done_in_process    CONCAT(fw_name,_uart_ring_done_in_process)
-#define uart_ring_do_out_drain       CONCAT(fw_name,_uart_ring_do_out_drain)
-#define measurements_get_inf         CONCAT(fw_name,_measurements_get_inf)
-#define debug_mode_enable_all        CONCAT(fw_name,_debug_mode_enable_all)
-#define measurements_repopulate      CONCAT(fw_name,_measurements_repopulate)
-#define cmds_add_all                 CONCAT(fw_name,_cmds_add_all)
-#define measurements_add_defaults    CONCAT(fw_name,_measurements_add_defaults)
-
-

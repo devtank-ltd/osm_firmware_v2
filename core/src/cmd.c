@@ -164,6 +164,6 @@ void cmds_init(void)
     for (struct cmd_link_t* cur = cmds; cur != tail; cur++)
         cur->next = cur + 1;
 
-    cmds_add_all(tail);
+    model_cmds_add_all(tail);
     _cmds = cmds;
 }

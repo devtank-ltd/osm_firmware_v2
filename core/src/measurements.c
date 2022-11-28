@@ -15,6 +15,7 @@
 #include "uart_rings.h"
 #include "bat.h"
 #include "platform.h"
+#include "platform_model.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
@@ -544,7 +545,7 @@ void on_comms_sent_ack(bool ack)
         if (!def->name[0])
             continue;
         measurements_inf_t inf;
-        if (!measurements_get_inf(def, NULL, &inf))
+        if (!model_measurements_get_inf(def, NULL, &inf))
             continue;
 
         if (inf.acked_cb)
@@ -567,7 +568,7 @@ static bool _measurements_def_is_active(measurements_def_t* def)
 static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, data, &inf))
+    if (!model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
@@ -613,7 +614,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
 static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, data, &inf))
+    if (!model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
@@ -782,7 +783,7 @@ good_exit:
 static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, data, &inf))
+    if (!model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_collected++;
@@ -948,7 +949,7 @@ bool measurements_add(measurements_def_t* measurements_def)
         memset(data, 0, sizeof(measurements_data_t));
         {
             measurements_inf_t inf;
-            if (!measurements_get_inf(def, data, &inf))
+            if (!model_measurements_get_inf(def, data, &inf))
                 return false;
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
             if (inf.enable_cb)
@@ -970,7 +971,7 @@ bool measurements_del(char* name)
             measurements_def_t*  def = &_measurements_arr.def[i];
             measurements_data_t* data = &_measurements_arr.data[i];
             measurements_inf_t inf;
-            if (!measurements_get_inf(def, data, &inf))
+            if (!model_measurements_get_inf(def, data, &inf))
                 return false;
             if (inf.enable_cb)
                 inf.enable_cb(def->name, false);
@@ -993,7 +994,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
     }
 
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, data, &inf))
+    if (!model_measurements_get_inf(def, data, &inf))
         return false;
 
     if (inf.enable_cb && ((interval > 0) != (def->interval > 0)))
@@ -1217,7 +1218,7 @@ void measurements_init(void)
     if (!found)
     {
         log_error("No persistent loaded, load defaults.");
-        measurements_add_defaults(_measurements_arr.def);
+        model_measurements_add_defaults(_measurements_arr.def);
     }
     else measurements_debug("Loading measurements.");
 
@@ -1230,7 +1231,7 @@ void measurements_init(void)
             continue;
 
         measurements_inf_t inf;
-        if (!measurements_get_inf(def, data, &inf))
+        if (!model_measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
         if (inf.enable_cb)
@@ -1325,7 +1326,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     }
 
     measurements_inf_t inf;
-    if (!measurements_get_inf(def, data, &inf))
+    if (!model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Could not get measurement interface.");
         return false;
@@ -1530,7 +1531,7 @@ static void samplecount_cb(char * args)
 
 static void repop_cb(char* args)
 {
-    measurements_repopulate();
+    model_measurements_repopulate();
     log_out("Repopulated measurements.");
 }
 

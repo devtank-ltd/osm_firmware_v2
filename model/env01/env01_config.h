@@ -57,6 +57,3 @@ typedef struct
     uint8_t                 __[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
 } persist_env01_config_v1_t;
-
-extern unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr);
-extern void     env01_post_init(void);

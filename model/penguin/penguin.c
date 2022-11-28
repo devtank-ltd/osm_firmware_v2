@@ -1,8 +1,5 @@
-#include <string.h>
-
-#include "measurements.h"
-
 #ifndef __CONFIGTOOL__
+#include <string.h>
 
 #include "timers.h"
 #include "io.h"
@@ -27,32 +24,20 @@
 #include "sleep.h"
 #include "update.h"
 #include "modbus.h"
+
+#include "platform.h"
 #include "model.h"
 
 
-uint8_t env01_stm_adcs_get_channel(adcs_type_t adcs_type)
-{
-    switch(adcs_type)
-    {
-        case ADCS_TYPE_BAT: return ENV01_ADC1_CHANNEL_BAT_MON;
-        case ADCS_TYPE_CC_CLAMP1: return ENV01_ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2: return ENV01_ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3: return ENV01_ADC1_CHANNEL_CURRENT_CLAMP_3;
-        default:
-            break;
-    }
-    return 0;
-}
-
-
-void env01_persist_config_model_init(persist_env01_config_v1_t* model_config)
+void penguin_persist_config_model_init(persist_penguin_config_v1_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-    cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
+    cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
+    ftma_setup_default_mem(model_config->ftma_configs, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
 }
 
 
-void env01_sensors_init(void)
+void penguin_sensors_init(void)
 {
     timers_init();
     ios_init();
@@ -66,15 +51,16 @@ void env01_sensors_init(void)
     pulsecount_init();
     modbus_init();
     can_impl_init();
+    ftma_init();
 }
 
 
-void env01_post_init(void)
+void penguin_post_init(void)
 {
 }
 
 
-bool env01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool penguin_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == RS485_UART)
     {
@@ -91,7 +77,7 @@ bool env01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool env01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool penguin_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == RS485_UART)
         return modbus_uart_ring_do_out_drain(ring);
@@ -99,7 +85,7 @@ bool env01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool env01_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool penguin_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -123,6 +109,7 @@ bool env01_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case PULSE_COUNT:   pulsecount_inf_init(inf);  break;
         case LIGHT:         veml7700_inf_init(inf);    break;
         case SOUND:         sai_inf_init(inf);         break;
+        case FTMA:          ftma_inf_init(inf);        break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -135,14 +122,14 @@ bool env01_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
 }
 
 
-void env01_debug_mode_enable_all(void)
+void penguin_debug_mode_enable_all(void)
 {
     adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
     cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
 }
 
 
-void env01_measurements_repopulate(void)
+void penguin_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
@@ -158,10 +145,14 @@ void env01_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
     measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
     measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
+    measurements_repop_indiv(MEASUREMENTS_FTMA_1_NAME,          0,  25, FTMA            );
+    measurements_repop_indiv(MEASUREMENTS_FTMA_2_NAME,          0,  25, FTMA            );
+    measurements_repop_indiv(MEASUREMENTS_FTMA_3_NAME,          0,  25, FTMA            );
+    measurements_repop_indiv(MEASUREMENTS_FTMA_4_NAME,          0,  25, FTMA            );
 }
 
 
-void env01_cmds_add_all(struct cmd_link_t* tail)
+void penguin_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = bat_add_commands(tail);
     tail = cc_add_commands(tail);
@@ -175,12 +166,11 @@ void env01_cmds_add_all(struct cmd_link_t* tail)
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
+    tail = ftma_add_commands(tail);
 }
 
-#endif
 
-
-unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;
@@ -199,5 +189,10 @@ unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_1_NAME,          0,  25, FTMA            );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_2_NAME,          0,  25, FTMA            );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_3_NAME,          0,  25, FTMA            );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_4_NAME,          0,  25, FTMA            );
     return pos;
 }
+#endif //__CONFIGTOOL__
