@@ -11,7 +11,6 @@ MODELS = $(shell find $(MODEL_DIR)/* -type d -printf '%f\n')
 MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/.complete)
 
 RELEASE_DIR ?= $(BUILD_DIR)/releases
-JSON_CONV_DIR := $(OSM_DIR)/tools/img_json_interpretter
 
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
@@ -25,9 +24,9 @@ $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 	rm -f $(BUILD_DIR)/.git.*
 	touch $@
 
-include $(OSM_DIR)/tools/img_json_interpretter/Makefile
 include $(OSM_DIR)/ports/stm.mk
 include $(OSM_DIR)/ports/linux.mk
+include $(OSM_DIR)/tools/img_json_interpretter/tool.mk
 
 define PROGRAM_template
   include $(1)
@@ -40,8 +39,6 @@ $(foreach file_mk,$(PROGRAMS_MKS),$(eval $(call PROGRAM_template,$(file_mk))))
 
 clean:
 	make -C $(OSM_DIR)/libs/libopencm3 $@ TARGETS=stm32/l4
-	make -C $(JSON_CONV_DIR) $@
 	rm -rf $(BUILD_DIR)
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
-

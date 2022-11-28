@@ -1,23 +1,9 @@
-BUILD_DIR ?= build
+TOOL_DIR := $(OSM_DIR)/tools/img_json_interpretter
 
-TOOL_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
-OSM_DIR ?= $(TOOL_DIR)/../..
-
-CORE_DIR ?= $(OSM_DIR)/core
-SENS_DIR ?= $(OSM_DIR)/sensors
-COMM_DIR ?= $(OSM_DIR)/comms
-STM_DIR ?= $(OSM_DIR)/ports/stm
-
-MODEL_DIR ?= $(OSM_DIR)/model
-
-TOOL_CFLAGS := -I$(STM_DIR)/include -I$(TOOL_DIR)/include -I$(CORE_DIR)/include -I$(SENS_DIR)/include -I$(COMM_DIR)/include -I$(OSM_DIR)/libs/libopencm3/include/ $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
+TOOL_CFLAGS := -I$(OSM_DIR)/ports/stm/include -I$(TOOL_DIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include -I$(OSM_DIR)/libs/libopencm3/include/ $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 TOOL_CFLAGS += -MMD -MP -g -DSTM32L4 -D__CONFIGTOOL__
 TOOL_CFLAGS += -Dfw_name=tool -DFW_NAME=TOOL
 TOOL_LDFLAGS := $(shell pkg-config --libs json-c)
-
-ifndef MODELS
-MODELS = $(shell find $(MODEL_DIR)/* -type d -printf '%f\n')
-endif
 
 TOOL_CFLAGS += $(MODELS:%=-I$(MODEL_DIR)/%/)
 
@@ -45,24 +31,17 @@ TOOL_OSM_OBJS := $(TOOL_OSM_SRC:$(OSM_DIR)/%.c=$(BUILD_DIR)/tool/%.o)
 
 TOOL_ALL_OBJS := $(TOOL_OBJS) $(TOOL_OSM_OBJS) $(TOOL_MODEL_OBJS)
 
-default: $(BUILD_DIR)/tool/json_x_img
-
-$(TOOL_OBJS): $(BUILD_DIR)/tool/%.o: $(TOOL_DIR)/%.c $(TOOL_DIR)/Makefile
+$(TOOL_OBJS): $(BUILD_DIR)/tool/%.o: $(TOOL_DIR)/%.c $(TOOL_DIR)/tool.mk $(LIBOPENCM3)
 	mkdir -p "$(@D)"
 	$(CC) -c $(TOOL_CFLAGS) $< -o $@
 
-$(TOOL_OSM_OBJS): $(BUILD_DIR)/tool/%.o: $(OSM_DIR)/%.c $(TOOL_DIR)/Makefile
+$(TOOL_OSM_OBJS): $(BUILD_DIR)/tool/%.o: $(OSM_DIR)/%.c $(TOOL_DIR)/tool.mk $(LIBOPENCM3)
 	mkdir -p "$(@D)"
 	$(CC) -c $(TOOL_CFLAGS) $< -o $@
 
-$(TOOL_MODEL_OBJS): $(BUILD_DIR)/tool/%.o: $(MODEL_DIR)/%.c $(TOOL_DIR)/Makefile
+$(TOOL_MODEL_OBJS): $(BUILD_DIR)/tool/%.o: $(MODEL_DIR)/%.c $(TOOL_DIR)/tool.mk $(LIBOPENCM3)
 	mkdir -p "$(@D)"
 	$(CC) -c $(TOOL_CFLAGS) $< -o $@
 
 $(BUILD_DIR)/tool/json_x_img : $(TOOL_ALL_OBJS)
 	gcc $(TOOL_ALL_OBJS) $(TOOL_LDFLAGS)  -o $@
-
-clean:
-	rm -rf $(BUILD_DIR)
-
--include $(shell find $(BUILD_DIR) -name "*.d")

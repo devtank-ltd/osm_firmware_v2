@@ -45,11 +45,11 @@ $(1)_NOSM_OBJS=$$($(1)_NOSM_SRC:$$(MODEL_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
 
 $(1)_OBJS:= $$($(1)_IOSM_OBJS) $$($(1)_NOSM_OBJS)
 
-$$($(1)_IOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
+$$($(1)_IOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT) $(LIBOPENCM3)
 	mkdir -p "$$(@D)"
 	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
-$$($(1)_NOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(MODEL_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT)
+$$($(1)_NOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(MODEL_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT) $(LIBOPENCM3)
 	mkdir -p "$$(@D)"
 	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
@@ -63,11 +63,9 @@ $$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBO
 	mkdir -p "$$(@D)"
 	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
-include $(OSM_DIR)/ports/stm/bootloader.mk
-
 $$(BUILD_DIR)/$(1)/bootloader.elf : $$(BUILD_DIR)/$(1)/bootloader/bootloader.o
 	echo $$(bootloader_LINK_SCRIPT)
-	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$(bootloader_LINK_SCRIPT) -o $$@
+	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$(OSM_DIR)/ports/stm/bootloader/stm32l4.ld -o $$@
 
 $$(BUILD_DIR)/$(1)/%.bin: $$(BUILD_DIR)/$(1)/%.elf
 	$$(STM_OBJCOPY) -O binary $$< $$@

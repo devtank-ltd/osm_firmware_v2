@@ -4,10 +4,6 @@ LINUXDIR := $(OSM_DIR)/ports/linux
 
 LINUX_CC = gcc
 
-SENS_DIR ?= $(OSM_DIR)/sensors
-COMM_DIR ?= $(OSM_DIR)/comms
-MODL_DIR ?= $(OSM_DIR)/model
-
 #Compiler options
 LINUX_CFLAGS		+= -O0 -g -c -std=gnu11 -pedantic
 LINUX_CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
@@ -18,7 +14,7 @@ LINUX_CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$
 LINUX_CFLAGS		+= -g -fprofile-arcs -ftest-coverage
 
 
-LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(CORE_DIR)/include -I$(SENS_DIR)/include -I$(COMM_DIR)/include $(shell pkg-config --cflags json-c)
+LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)
 
 LINUX_LDFLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINUX_LDFLAGS += -lgcov --coverage -pthread -lutil
