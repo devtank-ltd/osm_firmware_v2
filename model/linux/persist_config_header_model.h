@@ -15,6 +15,20 @@
 #define NEW_FW_PAGE 100
 #define MODEL_NAME "LINUX"
 
+#define CMD_LINELEN 128
+
+#define UART_0_IN_BUF_SIZE  CMD_LINELEN
+#define UART_0_OUT_BUF_SIZE 2048
+
+#define UART_1_IN_BUF_SIZE  256
+#define UART_1_OUT_BUF_SIZE 512
+
+#define UART_2_IN_BUF_SIZE  64
+#define UART_2_OUT_BUF_SIZE 64
+
+#define UART_3_IN_BUF_SIZE  128
+#define UART_3_OUT_BUF_SIZE 128
+
 typedef struct
 {
     uint32_t                mins_interval;

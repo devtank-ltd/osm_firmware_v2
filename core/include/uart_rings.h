@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include "ring.h"
+#include "persist_config_header.h"
 
 extern unsigned uart_ring_in(unsigned uart, const char* s, unsigned len);
 extern unsigned uart_ring_out(unsigned uart, const char* s, unsigned len);
