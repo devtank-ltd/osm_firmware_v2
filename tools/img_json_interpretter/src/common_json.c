@@ -252,7 +252,6 @@ bool read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
                 struct json_object * registers = json_object_object_get(dev_node, "registers");
                 if (registers)
                 {
-                    unsigned reg_index = 0;
                     json_object_object_foreach(registers, reg_name, reg_node)
                     {
                         if (strlen(reg_name) > MODBUS_NAME_LEN)
@@ -412,22 +411,22 @@ bool read_cc_configs_json(struct json_object * root, cc_config_t* cc_config)
             }
             double midpointf = get_defaulted_double(cc_config_json, "midpoint", CC_DEFAULT_MIDPOINT / 1000.);
             midpointf *= 1000.;
-            int midpoint = midpointf;
-            if (midpoint < 0 || midpoint > UINT32_MAX)
+            int64_t midpoint = midpointf;
+            if (midpoint < 0 || midpoint > (int64_t)UINT32_MAX)
             {
                 log_error("Bad midpoint for \"%s\"", cc_config_name);
                 return false;
             }
             cc_config[index-1].midpoint = midpoint;
-            int ext_max_mA = get_defaulted_int(cc_config_json, "ext_max_mA", CC_DEFAULT_EXT_MAX_MA);
-            if (ext_max_mA < 0 || ext_max_mA > UINT32_MAX)
+            int64_t ext_max_mA = get_defaulted_int(cc_config_json, "ext_max_mA", CC_DEFAULT_EXT_MAX_MA);
+            if (ext_max_mA < 0 || ext_max_mA > (int64_t)UINT32_MAX)
             {
                 log_error("Bad external maximum mA.");
                 return false;
             }
             cc_config[index-1].ext_max_mA = ext_max_mA;
-            int int_max_mV = get_defaulted_int(cc_config_json, "int_max_mV", CC_DEFAULT_INT_MAX_MV);
-            if (int_max_mV < 0 || ext_max_mA > UINT32_MAX)
+            int64_t int_max_mV = get_defaulted_int(cc_config_json, "int_max_mV", CC_DEFAULT_INT_MAX_MV);
+            if (int_max_mV < 0 || ext_max_mA > (int64_t)UINT32_MAX)
             {
                 log_error("Bad internal maximum mV.");
                 return false;
@@ -478,7 +477,7 @@ bool read_ftma_configs_json(struct json_object * root, ftma_config_t* ftma_confi
                 log_error("Too many FTMA coeffs.");
                 return false;
             }
-            unsigned n;
+            int n;
             for (n = 0; n < num_coeffs; n++)
             {
                 struct json_object * coeff_index = json_object_array_get_idx(coeffs_json, n);
@@ -557,13 +556,13 @@ static bool _dev2json_cb(modbus_dev_t * dev, void * userdata)
     switch(dev->word_order)
     {
         case MODBUS_WORD_ORDER_LSW:
-            strncpy(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE);
+            strncpy(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
         case MODBUS_WORD_ORDER_MSW:
-            strncpy(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE);
+            strncpy(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
         default:
-            strncpy(w_b_order_txt, "NA ", WORD_BYTE_ORDER_TXT_SIZE);
+            strncpy(w_b_order_txt, "NA ", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
     }
     w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
@@ -571,13 +570,13 @@ static bool _dev2json_cb(modbus_dev_t * dev, void * userdata)
     switch(dev->byte_order)
     {
         case MODBUS_WORD_ORDER_LSW:
-            strncpy(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE);
+            strncpy(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
         case MODBUS_WORD_ORDER_MSW:
-            strncpy(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE);
+            strncpy(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
         default:
-            strncpy(w_b_order_txt, "NA", WORD_BYTE_ORDER_TXT_SIZE);
+            strncpy(w_b_order_txt, "NA", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
     }
     w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE] = 0;
@@ -661,10 +660,10 @@ void write_ios_json(struct json_object * root, uint16_t* ios_state)
 
         json_object_object_add(io_node, "direction", json_object_new_string(dir));
 
-        if (io_is_special(state) && ((state & IO_STATE_MASK) == IO_ONEWIRE))
+        if (io_is_special(state) && ((state & IO_TYPE_ON_MASK) == IO_ONEWIRE))
             json_object_object_add(io_node, "use_w1", json_object_new_boolean(true));
 
-        if (io_is_special(state) && ((state & IO_STATE_MASK) == IO_PULSE))
+        if (io_is_special(state) && ((state & IO_TYPE_ON_MASK) == IO_PULSE))
             json_object_object_add(io_node, "use_pcnt", json_object_new_boolean(true));
 
         if (!(state & IO_AS_INPUT) && ((state & IO_STATE_MASK) == IO_OUT_ON))
@@ -691,7 +690,7 @@ void write_cc_config_json(struct json_object * root, cc_config_t* cc_configs, un
 }
 
 
-bool write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs, unsigned ftma_count)
+void write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_configs, unsigned ftma_count)
 {
     struct json_object * ftma_configs_json = json_object_new_object();
     json_object_object_add(root, "ftma_configs", ftma_configs_json);

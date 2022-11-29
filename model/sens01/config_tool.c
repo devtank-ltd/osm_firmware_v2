@@ -76,7 +76,8 @@ void sens01_register_config(void)
     static struct model_config_funcs_t model_config_funcs = {SENS01_MODEL_NAME,
                                                              sizeof(persist_sens01_config_v1_t),
                                                              _write_json_from_img_sens01,
-                                                             _read_json_to_img_sens01};
+                                                             _read_json_to_img_sens01,
+                                                             NULL};
 
     model_config_funcs_register(&model_config_funcs);
 }

@@ -12,7 +12,7 @@ STM_CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -
 
 #Compiler options
 STM_CFLAGS		:= -Os -g -std=gnu11
-STM_CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
+STM_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 STM_CFLAGS		+= -fstack-usage -Wstack-usage=100
 STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections

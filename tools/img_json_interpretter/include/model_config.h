@@ -34,8 +34,12 @@
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
 
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 typedef union
 {
 } persist_tool_config_v1_t;
+#pragma GCC diagnostic pop
 
 

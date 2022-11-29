@@ -6,7 +6,7 @@ LINUX_CC = gcc
 
 #Compiler options
 LINUX_CFLAGS		+= -O0 -g -std=gnu11 -pedantic -D_GNU_SOURCE
-LINUX_CFLAGS		+= -Wall -Wextra -Werror -fms-extensions -Wno-unused-parameter -Wno-address-of-packed-member
+LINUX_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 LINUX_CFLAGS		+= -fstack-usage
 LINUX_CFLAGS		+= -MMD -MP
 LINUX_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections

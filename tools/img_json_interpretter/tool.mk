@@ -3,6 +3,7 @@ TOOL_DIR := $(OSM_DIR)/tools/img_json_interpretter
 TOOL_CFLAGS := -I$(OSM_DIR)/ports/stm/include -I$(TOOL_DIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include -I$(OSM_DIR)/libs/libopencm3/include/ $(shell pkg-config --cflags json-c) -Wno-address-of-packed-member
 TOOL_CFLAGS += -MMD -MP -g -DSTM32L4 -D__CONFIGTOOL__
 TOOL_CFLAGS += -Dfw_name=tool -DFW_NAME=TOOL
+TOOL_CFLAGS += -pedantic -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 TOOL_LDFLAGS := $(shell pkg-config --libs json-c)
 
 TOOL_CFLAGS += $(MODELS:%=-I$(MODEL_DIR)/%/)
