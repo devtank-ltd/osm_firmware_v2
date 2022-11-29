@@ -5,6 +5,7 @@
 #include <linux/limits.h>
 
 #include "linux.h"
+#include "peripherals.h"
 
 #define FAKE_I2C_SERVER     "peripherals/i2c_server.py"
 #define FAKE_W1_SERVER      "peripherals/w1_server.py"
@@ -26,6 +27,7 @@ void peripherals_add_modbus(unsigned uart)
     linux_spawn(FAKE_MODBUS_SERVER);
 }
 
+
 void peripherals_add_hpm(unsigned uart)
 {
     peripherals_add_uart_tty_bridge(FAKE_HPM_TTY, uart);
@@ -33,8 +35,22 @@ void peripherals_add_hpm(unsigned uart)
 }
 
 
-static bool _wait_for_file(unsigned pid, const char * path, unsigned timeout_us)
+void peripherals_add_w1(unsigned timeout_us)
 {
+    peripherals_add(FAKE_W1_SERVER, FAKE_W1_SERVER, timeout_us);
+}
+
+
+void peripherals_add_i2c(unsigned timeout_us)
+{
+    peripherals_add(FAKE_I2C_SERVER, FAKE_I2C_SERVER, timeout_us);
+}
+
+
+bool peripherals_add(const char * app_rel_path, const char * ready_path, unsigned timeout_us)
+{
+    unlink(ready_path);
+    unsigned pid = linux_spawn(app_rel_path);
     char pid_path[PATH_MAX];
 
     snprintf(pid_path, PATH_MAX, "/proc/%u", pid);
@@ -46,32 +62,14 @@ static bool _wait_for_file(unsigned pid, const char * path, unsigned timeout_us)
         struct stat buf;
         if (stat(pid_path, &buf) != 0)
         {
-            linux_error("While, waiting for %s, PID:%u closed.", path, pid);
+            linux_error("While, waiting for %s, PID:%u closed.", ready_path, pid);
             return false;
         }
-        if (stat(path, &buf) == 0)
+        if (stat(ready_path, &buf) == 0)
             return true;
         usleep(1000);
     }
-    linux_error("Wait of %u for %s failed", timeout_us, path);
+    linux_error("Wait of %u for %s failed", timeout_us, ready_path);
     return false;
-}
-
-
-void peripherals_add_w1(unsigned timeout_us)
-{
-    unlink(FAKE_1W_SOCKET);
-    unsigned pid = linux_spawn(FAKE_W1_SERVER);
-    if (_wait_for_file(pid, FAKE_1W_SOCKET, timeout_us))
-        linux_port_debug("w1 Ready");
-}
-
-
-void peripherals_add_i2c(unsigned timeout_us)
-{
-    unlink(FAKE_I2C_SOCKET);
-    unsigned pid = linux_spawn(FAKE_I2C_SERVER);
-    if (!_wait_for_file(pid, FAKE_I2C_SOCKET, timeout_us))
-        linux_port_debug("i2c Ready");
 }
 
