@@ -5,11 +5,12 @@
 
 #define LINUX_FILE_LOC          "/tmp/osm/"
 
+#define LINUX_PTY_NAME_SIZE     16
 
 extern volatile bool linux_threads_deinit;
 
 
-bool linux_write_pty(unsigned index, const char *data, unsigned size);
+bool linux_write_pty(unsigned uart, const char *data, unsigned size);
 
 void uart_debug_cb(char* in, unsigned len) __attribute__((weak));
 void uart_lw_cb(char* in, unsigned len)  __attribute__((weak));
@@ -29,3 +30,8 @@ void linux_port_debug(char * fmt, ...);
 void linux_usleep(unsigned usecs);
 void linux_awaken(void);
 bool socket_connect(char* path, int* _socketfd);
+
+bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart);
+void linux_uart_proc(unsigned uart, char* in, unsigned len);
+
+bool linux_spawn(const char * rel_path);

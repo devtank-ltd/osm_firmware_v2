@@ -24,7 +24,7 @@
 static uart_channel_t uart_channels[] = UART_CHANNELS_LINUX;
 
 
-static void _uart_proc(unsigned uart, char* in, unsigned len)
+void linux_uart_proc(unsigned uart, char* in, unsigned len)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
@@ -38,30 +38,6 @@ static void _uart_proc(unsigned uart, char* in, unsigned len)
             sleep_exit_sleep_mode();
         }
     }
-}
-
-
-void uart_debug_cb(char* in, unsigned len)
-{
-    _uart_proc(CMD_UART, in, len);
-}
-
-
-void uart_lw_cb(char* in, unsigned len)
-{
-    _uart_proc(COMMS_UART, in, len);
-}
-
-
-void uart_hpm_cb(char* in, unsigned len)
-{
-    _uart_proc(HPM_UART, in, len);
-}
-
-
-void uart_rs485_cb(char* in, unsigned len)
-{
-    _uart_proc(RS485_UART, in, len);
 }
 
 

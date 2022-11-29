@@ -26,6 +26,8 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "update.h"
 #include "modbus.h"
 
+#include "peripherals.h"
+
 #include "platform.h"
 #include "model.h"
 
@@ -196,4 +198,14 @@ unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_4_NAME,          0,  25, FTMA            );
     return pos;
 }
+
+
+void penguin_linux_spawn_fakes(void)
+{
+    peripherals_add_modbus(RS485_UART);
+    peripherals_add_hpm(HPM_UART);
+    peripherals_add_w1();
+    peripherals_add_i2c();
+}
+
 #endif //__CONFIGTOOL__

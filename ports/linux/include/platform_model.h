@@ -11,5 +11,6 @@
 #define model_measurements_repopulate      CONCAT(fw_name,_measurements_repopulate)
 #define model_cmds_add_all                 CONCAT(fw_name,_cmds_add_all)
 #define model_measurements_add_defaults    CONCAT(fw_name,_measurements_add_defaults)
+#define model_linux_spawn_fakes            CONCAT(fw_name,_linux_spawn_fakes)
 
 #define MODEL_NAME STR(FW_NAME)

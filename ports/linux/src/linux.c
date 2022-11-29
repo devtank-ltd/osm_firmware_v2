@@ -52,10 +52,10 @@
 #include "update.h"
 #include "modbus.h"
 
+#include "platform_model.h"
 #include "log.h"
 
 #define LINUX_PTY_BUF_SIZ       64
-#define LINUX_PTY_NAME_SIZE     16
 #define LINUX_LINE_BUF_SIZ      32
 #define LINUX_MAX_NFDS          32
 
@@ -64,12 +64,6 @@
 
 #define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
 #define LINUX_REBOOT_FILE_LOC   LINUX_FILE_LOC"reboot.dat"
-
-#define FAKE_I2C_SERVER     "peripherals/i2c_server.py"
-#define FAKE_W1_SERVER      "peripherals/w1_server.py"
-#define FAKE_HPM_SERVER     "peripherals/hpm_virtual.py"
-#define FAKE_MODBUS_SERVER  "peripherals/modbus_server.py"
-
 
 typedef enum
 {
@@ -88,6 +82,7 @@ typedef struct
         {
             int32_t master_fd;
             int32_t slave_fd;
+            unsigned uart;
         } pty;
         struct
         {
@@ -132,21 +127,18 @@ static bool _ios_enabled[IOS_COUNT] = {0};
 uint32_t                rcc_ahb_frequency;
 
 
-static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_DEBUG"},
-                                      .cb=uart_debug_cb},
-                                     {.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_LW"},
-                                      .cb=uart_lw_cb},
-                                     {.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_HPM"},
-                                      .cb=uart_hpm_cb},
-                                     {.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_EXT"},
-                                      .cb=uart_rs485_cb},
-                                     {.type=LINUX_FD_TYPE_EVENT,
-                                      .name={"ADC_GEN_EVENT"},
-                                      .cb=linux_adc_generate}};
+static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
+                                                    .name={"UART_DEBUG"},
+                                                    .pty = {.uart = CMD_UART},
+                                                    .cb=linux_uart_proc
+                                                    },
+                                                   {.type=LINUX_FD_TYPE_PTY,
+                                                    .name={"UART_LW"},
+                                                    .pty = {.uart = COMMS_UART},
+                                                    .cb=linux_uart_proc},
+                                                   {.type=LINUX_FD_TYPE_EVENT,
+                                                    .name={"ADC_GEN_EVENT"},
+                                                    .cb=linux_adc_generate}};
 
 
 
@@ -164,7 +156,7 @@ void linux_port_debug(char * fmt, ...)
 }
 
 
-void _linux_sig_handler(int signo)
+static void _linux_sig_handler(int signo)
 {
     if (signo == SIGINT)
     {
@@ -179,7 +171,7 @@ void _linux_sig_handler(int signo)
 }
 
 
-static void _linux_error(char* fmt, ...)
+void linux_error(char* fmt, ...)
 {
     fprintf(stderr, "LINUX ERROR: ");
     va_list v;
@@ -197,7 +189,7 @@ bool linux_spawn(const char * rel_path)
     static char full_path[PATH_MAX];
     if (readlink("/proc/self/exe", full_path, PATH_MAX) < 0)
     {
-        _linux_error("Failed start spawn : %s", rel_path);
+        linux_error("Failed start spawn : %s", rel_path);
         return false;
     }
     const char *exec_dir = dirname(full_path);
@@ -205,23 +197,15 @@ bool linux_spawn(const char * rel_path)
     strncat(full_path, "/", used);
     strncat(full_path, rel_path, used - 1);
 
-    //char full_path[PATH_MAX];
-    //int r = snprintf(full_path, sizeof(full_path), "%s/%s", exec_dir, rel_path);
-    //if (r < 0 || r > PATH_MAX-1)
-    //{
-    //    _linux_error("Failed to spawn (too long) : %s", rel_path);
-    //    return false;
-    //}
-
     pid_t pid;
     char *argv[] = {full_path, NULL};
     int r = posix_spawn(&pid, full_path, NULL, NULL, argv, environ);
     if (r)
     {
-        _linux_error("Spawn failed %s : %s\n", full_path, strerror(r));
+        linux_error("Spawn failed %s : %s", full_path, strerror(r));
         return false;
     }
-    linux_port_debug("Spawned %s pid: %i\n", full_path, pid);
+    linux_port_debug("Spawned %s pid: %i", full_path, pid);
     return true;
 }
 
@@ -231,7 +215,7 @@ static int64_t _linux_get_current_us(void)
     struct timespec ts;
 
     if (clock_gettime(CLOCK_REALTIME, &ts))
-        _linux_error("Failed to get the realtime of the clock.");
+        linux_error("Failed to get the realtime of the clock.");
 
     return (int64_t)(ts.tv_nsec / 1000LL) + (int64_t)(ts.tv_sec * 1000000);
 }
@@ -273,7 +257,7 @@ static void _linux_remove_symlink(char name[LINUX_PTY_NAME_SIZE])
     strncat(buf, name, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     strncat(buf, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     if (remove(buf))
-        _linux_error("FAIL PTY SYMLINK CLEANUP: %s", buf);
+        linux_error("FAIL PTY SYMLINK CLEANUP: %s", buf);
 }
 
 
@@ -284,19 +268,19 @@ static void _linux_pty_symlink(int32_t fd, char* new_tty_name)
     if (ttyname_r(fd, initial_tty, sizeof(initial_tty)))
     {
         close(fd);
-        _linux_error("FAIL PTY FIND TTY");
+        linux_error("FAIL PTY FIND TTY");
     }
 
     if (!access(new_tty_name, F_OK) && remove(new_tty_name))
     {
         close(fd);
-        _linux_error("FAIL REMOVE OLD SYMLINK");
+        linux_error("FAIL REMOVE OLD SYMLINK");
     }
 
     if (symlink(initial_tty, new_tty_name))
     {
         close(fd);
-        _linux_error("FAIL SYMLINK TTY");
+        linux_error("FAIL SYMLINK TTY");
     }
 }
 
@@ -319,10 +303,10 @@ static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd,
 
 bad_exit:
     if (!close(*master_fd))
-        _linux_error("Fail to close master fd when couldnt open PTY %s", name);
+        linux_error("Fail to close master fd when couldnt open PTY %s", name);
     if (!close(*slave_fd))
-        _linux_error("Fail to close slave fd when couldnt open PTY %s", name);
-    _linux_error("Fail to setup PTY.");
+        linux_error("Fail to close slave fd when couldnt open PTY %s", name);
+    linux_error("Fail to setup PTY.");
 }
 
 
@@ -330,7 +314,7 @@ static void _linux_save_fd_file(void)
 {
     FILE* osm_reboot_file = fopen(LINUX_REBOOT_FILE_LOC, "w");
     if (!osm_reboot_file)
-        _linux_error("Could not make a OSM reboot file.");
+        linux_error("Could not make a OSM reboot file.");
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
@@ -407,7 +391,7 @@ static void _linux_setup_systick(int32_t* fd)
     if (timerfd_settime(*fd, 0, &timerspec, NULL))
     {
         close(*fd);
-        _linux_error("Failed set time of timer file descriptor");
+        linux_error("Failed set time of timer file descriptor");
     }
 }
 
@@ -445,7 +429,7 @@ static void _linux_setup_event(int* fd)
 {
     int _fd_ = eventfd(0, EFD_CLOEXEC);
     if (_fd_ < 0)
-        _linux_error("Failed to create event fd.");
+        linux_error("Failed to create event fd.");
     *fd = _fd_;
 }
 
@@ -458,7 +442,7 @@ static void _linux_setup_fd_handlers(void)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
-            continue;
+            break; /*End of used slots.*/
         switch(fd->type)
         {
             case LINUX_FD_TYPE_PTY:
@@ -474,10 +458,31 @@ static void _linux_setup_fd_handlers(void)
                     _linux_setup_event(&fd->event.fd);
                 break;
             default:
-                _linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
+                linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
                 break;
         }
     }
+}
+
+
+bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
+{
+    if (strlen(pty_name) >  (LINUX_PTY_NAME_SIZE - 1))
+        return false;
+    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* fd = &fd_list[i];
+        if (!fd->name[0] || !isascii(fd->name[0]))
+        {
+            snprintf(fd->name, LINUX_PTY_NAME_SIZE, pty_name);
+            fd->type = LINUX_FD_TYPE_PTY;
+            fd->pty.uart = uart;
+            fd->cb = linux_uart_proc;
+            _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -492,21 +497,21 @@ static void _linux_cleanup_fd_handlers(void)
         {
             case LINUX_FD_TYPE_PTY:
                 if (close(fd->pty.master_fd))
-                    _linux_error("Fail close PTY master '%s'.", fd->name);
+                    linux_error("Fail close PTY master '%s'.", fd->name);
                 if (close(fd->pty.slave_fd))
-                    _linux_error("Fail close PTY slave '%s'.", fd->name);
+                    linux_error("Fail close PTY slave '%s'.", fd->name);
                 _linux_remove_symlink(fd->name);
                 break;
             case LINUX_FD_TYPE_TIMER:
                 if (close(fd->timer.fd))
-                    _linux_error("Fail close TIMER '%s'", fd->name);
+                    linux_error("Fail close TIMER '%s'", fd->name);
                 break;
             case LINUX_FD_TYPE_EVENT:
                 if (close(fd->event.fd))
-                    _linux_error("Fail close EVENT '%s'", fd->name);
+                    linux_error("Fail close EVENT '%s'", fd->name);
                 break;
             default:
-                _linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
+                linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
                 break;
         }
     }
@@ -526,25 +531,30 @@ static void _linux_exit(int err)
 }
 
 
-bool linux_write_pty(unsigned index, const char *data, unsigned size)
+bool linux_write_pty(unsigned uart, const char *data, unsigned size)
 {
-    if (index > RS485_UART)
-        return false;
-
-    fd_t * fd_handler = &fd_list[index];
-    if (index != CMD_UART)
+    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        for(unsigned n = 0; n < size; n++)
+        fd_t* fd_handler = &fd_list[i];
+        if (!fd_handler->name[0] || !isascii(fd_handler->name[0]))
+            return false;
+        if (fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart)
         {
-            char c = data[n];
-            if (isgraph(c))
-                linux_port_debug("%s >> '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
-            else
-                linux_port_debug("%s >> [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+            if (uart != CMD_UART)
+            {
+                for(unsigned n = 0; n < size; n++)
+                {
+                    char c = data[n];
+                    if (isgraph(c))
+                        linux_port_debug("%s >> '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
+                    else
+                        linux_port_debug("%s >> [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+                }
+            }
+            return (write(fd_handler->pty.master_fd, data, size) != 0);
         }
     }
-
-    return (write(fd_handler->pty.master_fd, data, size) != 0);
+    return false;
 }
 
 
@@ -556,7 +566,7 @@ static void _linux_setup_poll(void)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
-            continue;
+            return;
         switch (fd->type)
         {
             case LINUX_FD_TYPE_PTY:
@@ -572,7 +582,7 @@ static void _linux_setup_poll(void)
                 pfds[i].events = POLLIN;
                 break;
             default:
-                _linux_error("Not implemented.");
+                linux_error("Not implemented.");
                 break;
         }
         nfds++;
@@ -586,7 +596,7 @@ void _linux_iterate(void)
     if (linux_threads_deinit)
         return;
     if (ready == -1)
-        _linux_error("TIMEOUT");
+        linux_error("TIMEOUT");
     for (uint32_t i = 0; i < nfds; i++)
     {
         if (pfds[i].revents == 0)
@@ -599,7 +609,7 @@ void _linux_iterate(void)
 
             fd_t* fd_handler = _linux_get_fd_handler(pfds[i].fd);
             if (!fd_handler)
-                _linux_error("PTY is NULL pointer");
+                linux_error("PTY is NULL pointer");
             int r;
             switch(fd_handler->type)
             {
@@ -614,7 +624,7 @@ void _linux_iterate(void)
                         else
                             linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
                         if (fd_handler->cb)
-                            fd_handler->cb(&c, 1);
+                            fd_handler->cb(fd_handler->pty.uart, &c, 1);
                     }
                     break;
                 case LINUX_FD_TYPE_TIMER:
@@ -666,6 +676,8 @@ void platform_init(void)
     _linux_setup_fd_handlers();
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
+
+    model_linux_spawn_fakes();
 }
 
 
@@ -694,10 +706,6 @@ void platform_start(void)
         measurements_enabled = (auto_meas_int > 0);
         linux_port_debug("Auto Measurements: %u", auto_meas_int);
     }
-    linux_spawn(FAKE_I2C_SERVER);
-    linux_spawn(FAKE_W1_SERVER);
-    linux_spawn(FAKE_HPM_SERVER);
-    linux_spawn(FAKE_MODBUS_SERVER);
 }
 
 
@@ -753,7 +761,7 @@ void platform_reset_sys(void)
     link_addr[len] = 0;
     char *const __argv[1] = {0};
     if (execv(link_addr, __argv))
-        _linux_error("Could not re-exec firmware");
+        linux_error("Could not re-exec firmware");
 }
 
 

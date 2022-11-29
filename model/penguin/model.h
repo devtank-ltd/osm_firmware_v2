@@ -16,3 +16,4 @@ extern void     penguin_debug_mode_enable_all(void);
 extern void     penguin_measurements_repopulate(void);
 extern void     penguin_cmds_add_all(struct cmd_link_t* tail);
 extern unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr);
+extern void     penguin_linux_spawn_fakes(void);

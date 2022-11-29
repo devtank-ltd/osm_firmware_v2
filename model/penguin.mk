@@ -12,6 +12,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/ports/linux/src/pulsecount.c \
     $(OSM_DIR)/ports/linux/src/sai.c \
     $(OSM_DIR)/ports/linux/src/comms.c \
+    $(OSM_DIR)/ports/linux/src/peripherals.c \
     $(OSM_DIR)/core/src/main.c \
     $(OSM_DIR)/core/src/base.c \
     $(OSM_DIR)/core/src/log.c \
