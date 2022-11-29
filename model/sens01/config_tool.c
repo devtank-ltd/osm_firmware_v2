@@ -2,6 +2,7 @@
 
 #include "common_json.h"
 #include "sens01_config.h"
+#include "sens01.h"
 
 
 static bool _write_json_from_img_sens01(struct json_object * root, void * model_config_raw)

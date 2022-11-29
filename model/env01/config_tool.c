@@ -1,5 +1,6 @@
 #include "common_json.h"
 #include "env01_config.h"
+#include "env01.h"
 
 static bool _write_json_from_img_env01(struct json_object * root, void * model_config_raw)
 {
