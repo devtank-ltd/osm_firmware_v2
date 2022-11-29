@@ -204,8 +204,8 @@ void penguin_linux_spawn_fakes(void)
 {
     peripherals_add_modbus(RS485_UART);
     peripherals_add_hpm(HPM_UART);
-    peripherals_add_w1();
-    peripherals_add_i2c();
+    peripherals_add_w1(1000000);
+    peripherals_add_i2c(2000000);
 }
 
 #endif //__CONFIGTOOL__

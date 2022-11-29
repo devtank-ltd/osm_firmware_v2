@@ -184,13 +184,13 @@ void linux_error(char* fmt, ...)
 }
 
 
-bool linux_spawn(const char * rel_path)
+unsigned linux_spawn(const char * rel_path)
 {
     static char full_path[PATH_MAX];
     if (readlink("/proc/self/exe", full_path, PATH_MAX) < 0)
     {
         linux_error("Failed start spawn : %s", rel_path);
-        return false;
+        return 0;
     }
     const char *exec_dir = dirname(full_path);
     unsigned used = PATH_MAX-strlen(exec_dir);
@@ -203,14 +203,14 @@ bool linux_spawn(const char * rel_path)
     if (r)
     {
         linux_error("Spawn failed %s : %s", full_path, strerror(r));
-        return false;
+        return 0;
     }
     linux_port_debug("Spawned %s pid: %i", full_path, pid);
-    return true;
+    return (unsigned)pid;
 }
 
 
-static int64_t _linux_get_current_us(void)
+int64_t linux_get_current_us(void)
 {
     struct timespec ts;
 
@@ -663,13 +663,16 @@ void* thread_proc(void* vargp)
 
 void platform_init(void)
 {
-    _linux_boot_time_us = _linux_get_current_us();
+    _linux_boot_time_us = linux_get_current_us();
 
     if (setvbuf(stdout, NULL, _IOLBF, 1024) < 0)
         fprintf(stderr, "ERROR : %s\n", strerror(errno));
 
     if (getenv("DEBUG"))
+    {
         _linux_in_debug = true;
+        linux_port_debug("Enabled Linux Debug");
+    }
 
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
@@ -856,7 +859,7 @@ void platform_hpm_enable(bool enable)
 void platform_tight_loop(void)
 {
     static int64_t last_call = 0;
-    int64_t now = _linux_get_current_us();
+    int64_t now = linux_get_current_us();
     if (!last_call)
     {
         last_call = now;
@@ -871,7 +874,7 @@ void platform_tight_loop(void)
 
 uint32_t get_since_boot_ms(void)
 {
-    int64_t t = (_linux_get_current_us() - _linux_boot_time_us) / 1000;
+    int64_t t = (linux_get_current_us() - _linux_boot_time_us) / 1000;
     return t;
 }
 
@@ -944,7 +947,7 @@ bool socket_connect(char* path, int* _socketfd)
 
     if (connect(*_socketfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
     {
-        printf("Could not bind the socket.\n");
+        printf("Could not bind the socket : %s\n", path);
         return false;
     }
     return true;

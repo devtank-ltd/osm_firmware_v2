@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-
+#include <stdint.h>
 
 #define LINUX_FILE_LOC          "/tmp/osm/"
 
@@ -34,4 +34,8 @@ bool socket_connect(char* path, int* _socketfd);
 bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart);
 void linux_uart_proc(unsigned uart, char* in, unsigned len);
 
-bool linux_spawn(const char * rel_path);
+unsigned linux_spawn(const char * rel_path);
+
+void linux_error(char* fmt, ...);
+
+int64_t linux_get_current_us(void);
