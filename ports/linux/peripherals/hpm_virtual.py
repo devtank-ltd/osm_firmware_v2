@@ -13,6 +13,9 @@ class hpm_dev_t(basetypes.pty_dev_t):
 
         self._msg       = b""
 
+    def _read_pending(self):
+        self._parse_in(self._read())
+
     def _parse_in(self, m):
         self._msg += m
         if len(self._msg) > 4:
