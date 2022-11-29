@@ -25,6 +25,12 @@ class comms_dev_t(basetypes.pty_dev_t):
             self._done = True
             self.passed = self._match_cb(resp_dict)
 
+    def _read_pending(self):
+        line = self._readline()
+        if line:
+            self._parse_line(line)
+
+
 def main():
     
     import argparse
