@@ -226,7 +226,7 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         if (!fd_list[i].name[0])
-            continue;
+            return NULL;
 
         fd_t* fd_h = &fd_list[i];
         switch (fd_h->type)
@@ -244,7 +244,7 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
                     return fd_h;
                 break;
             default:
-                continue;
+                return NULL;
         }
     }
     return NULL;
@@ -465,27 +465,6 @@ static void _linux_setup_fd_handlers(void)
 }
 
 
-bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
-{
-    if (strlen(pty_name) >  (LINUX_PTY_NAME_SIZE - 1))
-        return false;
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
-    {
-        fd_t* fd = &fd_list[i];
-        if (!fd->name[0] || !isascii(fd->name[0]))
-        {
-            snprintf(fd->name, LINUX_PTY_NAME_SIZE, pty_name);
-            fd->type = LINUX_FD_TYPE_PTY;
-            fd->pty.uart = uart;
-            fd->cb = linux_uart_proc;
-            _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-            return true;
-        }
-    }
-    return false;
-}
-
-
 static void _linux_cleanup_fd_handlers(void)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
@@ -587,6 +566,29 @@ static void _linux_setup_poll(void)
         }
         nfds++;
     }
+}
+
+
+bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
+{
+    if (strlen(pty_name) >  (LINUX_PTY_NAME_SIZE - 1))
+        return false;
+    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* fd = &fd_list[i];
+        if (!fd->name[0] || !isascii(fd->name[0]))
+        {
+            snprintf(fd->name, LINUX_PTY_NAME_SIZE, pty_name);
+            fd->type = LINUX_FD_TYPE_PTY;
+            fd->pty.uart = uart;
+            fd->cb = linux_uart_proc;
+            _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
+            linux_port_debug("UART %u is now "LINUX_FILE_LOC"%s", uart, pty_name);
+            _linux_setup_poll();
+            return true;
+        }
+    }
+    return false;
 }
 
 
