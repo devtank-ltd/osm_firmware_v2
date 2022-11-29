@@ -14,10 +14,7 @@ from binding import modbus_reg_t, dev_t, set_debug_print
 
 sys.path.append("../ports/linux/peripherals/")
 
-import i2c_server as i2c
 import modbus_server as modbus
-import w1_server as w1
-import hpm_virtual as hpm
 import comms_connection as comms
 import basetypes
 
@@ -31,11 +28,7 @@ class test_framework_t(object):
     DEFAULT_OSM_BASE        = "/tmp/osm/"
     DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
-    DEFAULT_EXT_PTY_PATH    = DEFAULT_OSM_BASE + "UART_EXT_slave"
-    DEFAULT_HPM_PTY_PATH    = DEFAULT_OSM_BASE + "UART_HPM_slave"
     DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_LW_slave"
-    DEFAULT_I2C_SCK_PATH    = DEFAULT_OSM_BASE + "i2c_socket"
-    DEFAULT_W1_SCK_PATH     = DEFAULT_OSM_BASE + "w1_socket"
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
@@ -65,10 +58,6 @@ class test_framework_t(object):
 
         self._vosm_proc         = None
         self._vosm_conn         = None
-        self._i2c_process       = None
-        self._modbus_process    = None
-        self._w1_process        = None
-        self._hpm_process       = None
 
         self._done              = False
 
@@ -82,11 +71,7 @@ class test_framework_t(object):
 
     def exit(self):
         self._disconnect_osm()
-        self._close_modbus()
-        self._close_hpm()
         self._close_virtual_osm()
-        self._close_i2c()
-        self._close_w1()
 
     def _wait_for_file(self, path, timeout):
         start_time = time.monotonic()
@@ -131,21 +116,10 @@ class test_framework_t(object):
 
 
     def _start_osm_env(self):
-        self._spawn_i2c()
-        if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
-            return False
-        self._spawn_w1()
-        if not self._wait_for_file(self.DEFAULT_W1_SCK_PATH, 3):
-            return False
         if not self._spawn_virtual_osm(self._vosm_path):
             self.error("Failed to spawn virtual OSM.")
             return False
 
-        if not self._spawn_modbus(self.DEFAULT_EXT_PTY_PATH):
-            return False
-
-        if not self._spawn_hpm(self.DEFAULT_HPM_PTY_PATH):
-            return False
 
     def _get_active_measurements(self) -> list:
         actives = []
@@ -297,10 +271,10 @@ class test_framework_t(object):
         debug_log = open(self.DEFAULT_OSM_BASE + "debug.log", "w")
         if os.path.exists(self.DEFAULT_OSM_CONFIG):
             os.unlink(self.DEFAULT_OSM_CONFIG)
-        self._vosm_proc = subprocess.Popen(command, stdout=debug_log, stderr=subprocess.PIPE)
+        self._vosm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=debug_log)
         self._logger.debug("Opened virtual OSM.")
-        pattern_str = "^==[0-9]+== Command: .*build/firmware.elf$"
-        return bool(self._wait_for_line(self._vosm_proc.stderr, re.compile(pattern_str)))
+        pattern_str = "^----start----$"
+        return bool(self._wait_for_line(self._vosm_proc.stdout, re.compile(pattern_str)))
 
     def _connect_osm(self, path, timeout=3):
         self._logger.info("Connecting to the virtual OSM.")
@@ -333,105 +307,11 @@ class test_framework_t(object):
         self._logger.debug("Disconnected from the virtual OSM.")
         self._vosm_conn = None
 
-    def _i2c_run(self):
-        htu_dev = i2c.i2c_device_htu21d_t()
-        veml_dev = i2c.i2c_device_veml7700_t(lux=10)
-        devs = {veml_dev.addr : veml_dev,
-                htu_dev.addr  : htu_dev}
-        i2c_sock = i2c.i2c_server_t("/tmp/osm/i2c_socket", devs, logger=self._logger)
-        i2c_sock.run_forever()
-
-    def _spawn_i2c(self):
-        if os.path.exists(self.DEFAULT_I2C_SCK_PATH):
-            os.unlink(self.DEFAULT_I2C_SCK_PATH)
-        self._logger.info("Spawning virtual I2C.")
-        self._i2c_process = multiprocessing.Process(target=self._i2c_run, name="i2c_server", args=())
-        self._i2c_process.start()
-        self._logger.debug(f"Spawned virtual I2C [{self._i2c_process.pid}]")
-
-    def _close_i2c(self):
-        self._logger.info("Closing virtual I2C.")
-        if self._i2c_process is None:
-            self._logger.debug("Virtual I2C process isn't running, skip closing.")
-            return
-        self._i2c_process.kill()
-        self._logger.debug("Closed virtual I2C.")
-        self._i2c_process = None
-
-    def _modbus_run(self, path):
-        modbus_server = modbus.modbus_server_t(path)
-        modbus_server.run_forever()
-
-    def _spawn_modbus(self, path, timeout=3):
-        if not self._wait_for_file(path, timeout):
-            return False
-
-        self._logger.info("Spawning virtual MODBUS.")
-        self._modbus_process = multiprocessing.Process(target=self._modbus_run, name="modbus_server", args=(path,))
-        self._modbus_process.start()
-        self._logger.debug(f"Spawned virtual MODBUS [{self._modbus_process.pid}]")
-        return True
-
-    def _close_modbus(self):
-        self._logger.info("Closing virtual MODBUS.")
-        if self._modbus_process is None:
-            self._logger.debug("Virtual MODBUS process isn't running, skip closing.")
-            return
-        self._modbus_process.kill()
-        self._logger.debug("Closed virtual MODBUS.")
-        self._modbus_process = None
-
-    def _w1_run(self):
-        ds18b20 = w1.ds18b20_t(logger=self._logger)
-        devs    = [ds18b20]
-        w1_sock = w1.w1_server_t("/tmp/osm/w1_socket", devs, logger=self._logger)
-        w1_sock.run_forever()
-
-    def _spawn_w1(self):
-        if os.path.exists(self.DEFAULT_W1_SCK_PATH):
-            os.unlink(self.DEFAULT_W1_SCK_PATH)
-        self._logger.info("Spawning virtual W1.")
-        self._w1_process = multiprocessing.Process(target=self._w1_run, name="w1_server", args=())
-        self._w1_process.start()
-        self._logger.debug(f"Spawned virtual W1 [{self._w1_process.pid}]")
-
-    def _close_w1(self):
-        self._logger.info("Closing virtual W1.")
-        if self._w1_process is None:
-            self._logger.debug("Virtual W1 process isn't running, skip closing.")
-            return
-        self._w1_process.kill()
-        self._logger.debug("Closed virtual W1.")
-        self._w1_process = None
-
-    def _hpm_run(self, path):
-        hpm_dev = hpm.hpm_dev_t(path, logger=self._logger, log_file=self._log_file, pm2_5=15, pm10=25)
-        hpm_dev.run_forever()
-
-    def _spawn_hpm(self, path, timeout=3):
-        if not self._wait_for_file(path, timeout):
-            return False
-
-        self._logger.info("Spawning virtual HPM.")
-        self._hpm_process = multiprocessing.Process(target=self._hpm_run, name="hpm_device", args=(path,))
-        self._hpm_process.start()
-        self._logger.debug(f"Spawned virtual HPM [{self._hpm_process.pid}]")
-        return True
-
-    def _close_hpm(self):
-        self._logger.info("Closing virtual HPM.")
-        if self._hpm_process is None:
-            self._logger.debug("Virtual HPM process isn't running, skip closing.")
-            return
-        self._hpm_process.kill()
-        self._logger.debug("Closed virtual HPM.")
-        self._hpm_process = None
-
 
 def main():
     import argparse
 
-    DEFAULT_FAKE_OSM_PATH = "%s/../build/linux/firmware.elf"% os.path.dirname(__file__)
+    DEFAULT_FAKE_OSM_PATH = "%s/../build/penguin/firmware.elf"% os.path.dirname(__file__)
 
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )
