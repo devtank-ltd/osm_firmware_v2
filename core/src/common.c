@@ -153,6 +153,12 @@ int32_t to_f32_from_float(float in)
 }
 
 
+int32_t to_f32_from_double(double in)
+{
+    return (int32_t)(in * 1000);
+}
+
+
 struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds)
 {
     if (!tail | !cmds)
