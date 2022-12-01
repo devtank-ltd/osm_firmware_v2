@@ -39,12 +39,18 @@ bool lw_persist_data_is_valid(void)
     for (uint8_t i = 0; i < LW_DEV_EUI_LEN; i++)
     {
         if (!isascii(config->dev_eui[i]) || config->dev_eui[i] == 0)
+        {
+            log_out("Dev EUI = %s", config->dev_eui);
             return false;
+        }
     }
     for (uint8_t i = 0; i < LW_APP_KEY_LEN; i++)
     {
         if (!isascii(config->app_key[i]) || config->app_key[i] == 0)
+        {
+            log_out("App Key = %s", config->app_key);
             return false;
+        }
     }
     return true;
 }
@@ -66,6 +72,12 @@ bool lw_config_setup_str(char * str)
     uint8_t wordlen = np - p;
 
     lw_config_t* config = lw_get_config();
+
+    if (!config)
+    {
+        log_out("Could not get the LW config.");
+        return false;
+    }
 
     if (strncmp(p, "dev-eui", wordlen) == 0)
     {
