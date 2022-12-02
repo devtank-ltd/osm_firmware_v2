@@ -1,6 +1,7 @@
 typedef int iso_is_annoying_go_away_pls_t;
 #ifndef __CONFIGTOOL__
 #include <string.h>
+#include <signal.h>
 
 #include "timers.h"
 #include "io.h"
@@ -200,12 +201,32 @@ unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr
 }
 
 
+static unsigned _penguin_pids[4] = {0};
+
+
 void penguin_linux_spawn_fakes(void)
 {
-    peripherals_add_modbus(EXT_UART);
-    peripherals_add_hpm(HPM_UART);
-    peripherals_add_w1(1000000);
-    peripherals_add_i2c(2000000);
+    peripherals_add_modbus(EXT_UART , &_penguin_pids[0]);
+    peripherals_add_hpm(HPM_UART    , &_penguin_pids[1]);
+    peripherals_add_w1(1000000      , &_penguin_pids[2]);
+    peripherals_add_i2c(2000000     , &_penguin_pids[3]);
 }
+
+
+void __attribute__((destructor)) penguin_linux_close_fakes(void);
+
+
+void penguin_linux_close_fakes(void)
+{
+    if (_penguin_pids[0])
+        kill(_penguin_pids[0], SIGINT);
+    if (_penguin_pids[1])
+        kill(_penguin_pids[1], SIGINT);
+    if (_penguin_pids[2])
+        kill(_penguin_pids[2], SIGINT);
+    if (_penguin_pids[3])
+        kill(_penguin_pids[3], SIGINT);
+}
+
 
 #endif //__CONFIGTOOL__

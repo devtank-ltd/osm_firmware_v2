@@ -21,39 +21,39 @@
 
 
 
-void peripherals_add_modbus(unsigned uart)
+void peripherals_add_modbus(unsigned uart, unsigned* pid)
 {
     peripherals_add_uart_tty_bridge(FAKE_MODBUS_TTY, uart);
-    linux_spawn(FAKE_MODBUS_SERVER);
+    *pid = linux_spawn(FAKE_MODBUS_SERVER);
 }
 
 
-void peripherals_add_hpm(unsigned uart)
+void peripherals_add_hpm(unsigned uart, unsigned* pid)
 {
     peripherals_add_uart_tty_bridge(FAKE_HPM_TTY, uart);
-    linux_spawn(FAKE_HPM_SERVER);
+    *pid = linux_spawn(FAKE_HPM_SERVER);
 }
 
 
-void peripherals_add_w1(unsigned timeout_us)
+void peripherals_add_w1(unsigned timeout_us, unsigned* pid)
 {
-    peripherals_add(FAKE_W1_SERVER, FAKE_1W_SOCKET, timeout_us);
+    peripherals_add(FAKE_W1_SERVER, FAKE_1W_SOCKET, timeout_us, pid);
 }
 
 
-void peripherals_add_i2c(unsigned timeout_us)
+void peripherals_add_i2c(unsigned timeout_us, unsigned* pid)
 {
-    peripherals_add(FAKE_I2C_SERVER, FAKE_I2C_SOCKET, timeout_us);
+    peripherals_add(FAKE_I2C_SERVER, FAKE_I2C_SOCKET, timeout_us, pid);
 }
 
 
-bool peripherals_add(const char * app_rel_path, const char * ready_path, unsigned timeout_us)
+bool peripherals_add(const char * app_rel_path, const char * ready_path, unsigned timeout_us, unsigned* pid)
 {
     unlink(ready_path);
-    unsigned pid = linux_spawn(app_rel_path);
+    *pid = linux_spawn(app_rel_path);
     char pid_path[PATH_MAX];
 
-    snprintf(pid_path, PATH_MAX, "/proc/%u", pid);
+    snprintf(pid_path, PATH_MAX, "/proc/%u", *pid);
 
     int64_t start_time = linux_get_current_us();
 
@@ -62,7 +62,7 @@ bool peripherals_add(const char * app_rel_path, const char * ready_path, unsigne
         struct stat buf;
         if (stat(pid_path, &buf) != 0)
         {
-            linux_error("While, waiting for %s, PID:%u closed.", ready_path, pid);
+            linux_error("While, waiting for %s, PID:%u closed.", ready_path, *pid);
             return false;
         }
         if (stat(ready_path, &buf) == 0)
