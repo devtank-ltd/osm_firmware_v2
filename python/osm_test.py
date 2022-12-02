@@ -44,9 +44,9 @@ class test_framework_t(object):
                                 'BAT'     : 131.071,
                                 'BAT_min' : 131.071,
                                 'BAT_max' : 131.071,
-                                'LGHT'    : 6,
-                                'LGHT_min': 6,
-                                'LGHT_max': 6}
+                                'LGHT'    : 1023,
+                                'LGHT_min': 1023,
+                                'LGHT_max': 1023}
 
     def __init__(self, osm_path, log_file=None):
         self._logger = basetypes.get_logger(log_file)
