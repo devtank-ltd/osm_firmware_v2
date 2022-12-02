@@ -278,7 +278,7 @@ class test_framework_t(object):
             os.unlink(self.DEFAULT_OSM_CONFIG)
         self._vosm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=debug_log)
         self._logger.debug("Opened virtual OSM.")
-        pattern_str = "^-------------$"
+        pattern_str = "^----start----$"
         return bool(self._wait_for_line(self._vosm_proc.stdout, re.compile(pattern_str)))
 
     def _connect_osm(self, path, timeout=3):
