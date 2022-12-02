@@ -119,8 +119,9 @@ class test_framework_t(object):
 
     def _start_osm_env(self):
         if not self._spawn_virtual_osm(self._vosm_path):
-            self.error("Failed to spawn virtual OSM.")
+            self._logger.error("Failed to spawn virtual OSM.")
             return False
+        return True
 
     def _get_active_measurements(self) -> list:
         actives = []
@@ -158,7 +159,8 @@ class test_framework_t(object):
         os.environ["AUTO_MEAS"] = "0"
         os.environ["MEAS_INTERVAL"] = "1"
 
-        self._start_osm_env()
+        if not self._start_osm_env():
+            return False
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
         self._vosm_conn.measurements_enable(False)
@@ -236,6 +238,8 @@ class test_framework_t(object):
         start = time.monotonic()
         while start + timeout >= time.monotonic():
             line = stream.readline().decode().replace("\n", "").replace("\r", "")
+            if not len(line):
+                continue
             self._logger.debug(line)
             match = pattern.search(line)
             if match:
@@ -274,7 +278,7 @@ class test_framework_t(object):
             os.unlink(self.DEFAULT_OSM_CONFIG)
         self._vosm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=debug_log)
         self._logger.debug("Opened virtual OSM.")
-        pattern_str = "^----start----$"
+        pattern_str = "^-------------$"
         return bool(self._wait_for_line(self._vosm_proc.stdout, re.compile(pattern_str)))
 
     def _connect_osm(self, path, timeout=3):
