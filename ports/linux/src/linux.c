@@ -107,23 +107,18 @@ static bool _ios_enabled[IOS_COUNT] = {0};
 uint32_t                rcc_ahb_frequency;
 
 
-static fd_t             fd_list[] = {{.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_DEBUG"},
-                                      .cb=uart_debug_cb},
-                                     {.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_LW"},
-                                      .cb=uart_lw_cb},
-                                     {.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_HPM"},
-                                      .cb=uart_hpm_cb},
-                                     {.type=LINUX_FD_TYPE_PTY,
-                                      .name={"UART_EXT"},
-                                      .cb=uart_rs485_cb},
-                                     {.type=LINUX_FD_TYPE_EVENT,
-                                      .name={"ADC_GEN_EVENT"},
-                                      .cb=linux_adc_generate}};
-
-
+static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
+                                                    .name={"UART_DEBUG"},
+                                                    .pty = {.uart = CMD_UART},
+                                                    .cb=linux_uart_proc
+                                                    },
+                                                   {.type=LINUX_FD_TYPE_PTY,
+                                                    .name={"UART_LW"},
+                                                    .pty = {.uart = COMMS_UART},
+                                                    .cb=linux_uart_proc},
+                                                   {.type=LINUX_FD_TYPE_EVENT,
+                                                    .name={"ADC_GEN_EVENT"},
+                                                    .cb=linux_adc_generate}};
 
 void linux_port_debug(char * fmt, ...)
 {
