@@ -37,13 +37,13 @@ void peripherals_add_hpm(unsigned uart)
 
 void peripherals_add_w1(unsigned timeout_us)
 {
-    peripherals_add(FAKE_W1_SERVER, FAKE_W1_SERVER, timeout_us);
+    peripherals_add(FAKE_W1_SERVER, FAKE_1W_SOCKET, timeout_us);
 }
 
 
 void peripherals_add_i2c(unsigned timeout_us)
 {
-    peripherals_add(FAKE_I2C_SERVER, FAKE_I2C_SERVER, timeout_us);
+    peripherals_add(FAKE_I2C_SERVER, FAKE_I2C_SOCKET, timeout_us);
 }
 
 
