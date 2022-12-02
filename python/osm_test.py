@@ -122,12 +122,6 @@ class test_framework_t(object):
             self.error("Failed to spawn virtual OSM.")
             return False
 
-        if not self._spawn_modbus(self.DEFAULT_EXT_PTY_PATH):
-            return False
-
-        if not self._spawn_hpm(self.DEFAULT_HPM_PTY_PATH):
-            return False
-
     def _get_active_measurements(self) -> list:
         actives = []
         for measurement in self._vosm_conn.measurements():
