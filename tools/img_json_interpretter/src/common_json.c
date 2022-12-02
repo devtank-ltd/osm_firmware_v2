@@ -676,6 +676,11 @@ void write_cc_config_json(struct json_object * root, cc_config_t* cc_configs, un
 {
     struct json_object * cc_configs_json = json_object_new_object();
     json_object_object_add(root, "cc_configs", cc_configs_json);
+    if (cc_count > 8)
+    {
+        log_error("CC count beyond supported.");
+        return;
+    }
     char name[4];
     for (unsigned n = 0; n < cc_count; n++)
     {
@@ -694,6 +699,11 @@ void write_ftma_config_json(struct json_object * root, ftma_config_t* ftma_confi
 {
     struct json_object * ftma_configs_json = json_object_new_object();
     json_object_object_add(root, "ftma_configs", ftma_configs_json);
+    if (ftma_count > 8)
+    {
+        log_error("FTMA count beyond supported.");
+        return;
+    }
     char name[MEASURE_NAME_NULLED_LEN];
     for (unsigned n = 0; n < ftma_count; n++)
     {
