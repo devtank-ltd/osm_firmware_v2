@@ -8,17 +8,17 @@ STM_SIZE = $(STM_TOOLCHAIN)-size
 STM_NM =$(STM_TOOLCHAIN)-nm
 
 #Target CPU options
-STM_CPU_DEFINES = -mthumb -mcpu=cortex-m4 -DSTM32L4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
+STM_DEFINES = -DSTM32L4 -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+
+STM_CPU_DEFINES = -mthumb -mcpu=cortex-m4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 #Compiler options
-STM_CFLAGS		:= -Os -g -std=gnu11
+STM_CFLAGS		:= -Os -g -std=gnu11 $(STM_DEFINES)
 STM_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 STM_CFLAGS		+= -fstack-usage -Wstack-usage=100
 STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs
-STM_CFLAGS		+= -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
-STM_CFLAGS		+= 
 STM_INCLUDE_PATHS += -I$(OSM_DIR)/ports/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include
 
 STM_LINK_FLAGS =  -L$(OSM_DIR)/libs/libopencm3/lib --static -nostartfiles
@@ -34,24 +34,9 @@ $(LIBOPENCM3) :
 	$(MAKE) -C $(OSM_DIR)/libs/libopencm3 TARGETS=stm32/l4
 
 define STM_FIRMWARE
-$(1)_UP_NAME=$$(shell echo $(1) | tr a-z A-Z)
+$(call PORT_BASE_RULES,$(1),STM)
 
-$(1)_IOSM_SRC=$$(filter-out $$(MODEL_DIR)/%,$$($(1)_SOURCES))
-$(1)_NOSM_SRC=$$(filter $$(MODEL_DIR)/%,$$($(1)_SOURCES))
-
-$(1)_IOSM_OBJS=$$($(1)_IOSM_SRC:$$(OSM_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
-
-$(1)_NOSM_OBJS=$$($(1)_NOSM_SRC:$$(MODEL_DIR)/%.c=$$(BUILD_DIR)/$(1)/%.o)
-
-$(1)_OBJS:= $$($(1)_IOSM_OBJS) $$($(1)_NOSM_OBJS)
-
-$$($(1)_IOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(OSM_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT) $(LIBOPENCM3)
-	mkdir -p "$$(@D)"
-	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
-
-$$($(1)_NOSM_OBJS): $$(BUILD_DIR)/$(1)/%.o: $$(MODEL_DIR)/%.c $$(BUILD_DIR)/.git.$$(GIT_COMMIT) $(LIBOPENCM3)
-	mkdir -p "$$(@D)"
-	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
+$$($(1)_OBJS): $(LIBOPENCM3)
 
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_LINK_SCRIPT)
 	$$(STM_CC) $$($(1)_OBJS) $$(STM_LINK_FLAGS) -T$$($(1)_LINK_SCRIPT) -o $$@
