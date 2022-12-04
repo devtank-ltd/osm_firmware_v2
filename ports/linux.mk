@@ -58,11 +58,6 @@ $(1)_coverage: $$(BUILD_DIR)/$(1)/firmware.elf
 	sensible-browser $$(BUILD_DIR)/$(1)/coverage/index.html
 
 
-$(1)_run: $$(BUILD_DIR)/$(1)/firmware.elf
-	mkdir -p /tmp/osm/
-	cd $$(OSM_DIR)/python; ./osm_test.py --run
-
-
 $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/
 	cd $$(OSM_DIR)/python; loop=0; while [ "$$?" = "0" ]; do loop=$$(($$loop + 1)); ./osm_test.py --run; done; date; echo "Loops:" $$loop
