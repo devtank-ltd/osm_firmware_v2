@@ -28,8 +28,6 @@ class test_framework_t(object):
     DEFAULT_OSM_BASE        = "/tmp/osm/"
     DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
-    DEFAULT_EXT_PTY_PATH    = DEFAULT_OSM_BASE + "UART_EXT_slave"
-    DEFAULT_HPM_PTY_PATH    = DEFAULT_OSM_BASE + "UART_HPM_slave"
     DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_LW_slave"
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
