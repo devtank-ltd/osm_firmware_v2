@@ -146,9 +146,9 @@ static void _linux_sig_handler(int signo)
     {
         _linux_in_debug = !_linux_in_debug;
     }
-    else if (signo == SIGSEGV)
+    else
     {
-        fprintf(stderr, "Segmentation Fault.\n");
+        fprintf(stderr, "Fatal Signal : %s\n", strsignal(signo));
         model_linux_close_fakes();
         exit(-1);
     }
@@ -663,6 +663,11 @@ void platform_init(void)
     signal(SIGINT, _linux_sig_handler);
     signal(SIGUSR1, _linux_sig_handler);
     signal(SIGSEGV, _linux_sig_handler);
+    signal(SIGTERM, _linux_sig_handler);
+    signal(SIGFPE, _linux_sig_handler);
+    signal(SIGQUIT, _linux_sig_handler);
+    signal(SIGBUS, _linux_sig_handler);
+    signal(SIGILL, _linux_sig_handler);
     _linux_setup_fd_handlers();
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
