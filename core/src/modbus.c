@@ -63,29 +63,6 @@ static uint32_t modbus_retransmit_count = 0;
 
 
 
-uint16_t modbus_crc(uint8_t * buf, unsigned length)
-{
-    uint16_t crc = 0xFFFF;
-
-    for (unsigned pos = 0; pos < length; pos++)
-    {
-        crc ^= (uint16_t)buf[pos];        // XOR byte into least sig. byte of crc
-
-        for (int i = 8; i != 0; i--)      // Loop over each bit
-        {
-            if ((crc & 0x0001) != 0)      // If the LSB is set
-            {
-                crc >>= 1;                // Shift right and XOR 0xA001
-                crc ^= 0xA001;
-            }
-            else                          // Else LSB is not set
-                crc >>= 1;                // Just shift right
-        }
-    }
-    return crc;
-}
-
-
 static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
     databits *= 10; /* *10 to support half bit. */
