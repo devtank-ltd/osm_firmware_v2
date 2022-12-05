@@ -427,7 +427,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
 
-void ext_uart_ring_in_process(ring_buf_t * ring)
+void modbus_uart_ring_in_process(ring_buf_t * ring)
 {
     if (!modbus_want_rx)
     {
@@ -707,7 +707,7 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, mod
 }
 
 
-void ext_uart_ring_out_drain(ring_buf_t * ring)
+bool modbus_uart_ring_do_out_drain(ring_buf_t * ring)
 {
     unsigned len = ring_buf_get_pending(ring);
 
@@ -725,17 +725,15 @@ void ext_uart_ring_out_drain(ring_buf_t * ring)
                 modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
                 rs485_stop_transmitting = get_since_boot_ms();
                 rs485_transmit_stopping = true;
-                return;
             }
             else if (since_boot_delta(get_since_boot_ms(), rs485_stop_transmitting) > modbus_stop_delay())
             {
                 rs485_transmitting = false;
                 rs485_transmit_stopping = false;
                 platform_set_rs485_mode(false);
-                return;
             }
         }
-        return;
+        return false;
     }
 
     if (!rs485_transmitting)
@@ -744,15 +742,16 @@ void ext_uart_ring_out_drain(ring_buf_t * ring)
         platform_set_rs485_mode(true);
         rs485_start_transmitting = get_since_boot_ms();
         modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
-        return;
+        return false;
     }
     else
     {
         if (since_boot_delta(get_since_boot_ms(), rs485_start_transmitting) < modbus_start_delay())
-            return;
+            return false;
     }
 
     modbus_debug("Sending %u", len);
+    return true;
 }
 
 

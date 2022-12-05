@@ -79,7 +79,7 @@ bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
-        ext_uart_ring_in_process(ring);
+        modbus_uart_ring_in_process(ring);
         return true;
     }
     else if (uart == HPM_UART)
@@ -95,7 +95,7 @@ bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 bool sens01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
-        ext_uart_ring_out_drain(ring);
+        return modbus_uart_ring_do_out_drain(ring);
     return true;
 }
 

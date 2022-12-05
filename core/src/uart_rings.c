@@ -10,7 +10,6 @@
 #include "cmd.h"
 #include "uarts.h"
 #include "comms.h"
-#include "hpm.h"
 #include "platform.h"
 #include "platform_model.h"
 
