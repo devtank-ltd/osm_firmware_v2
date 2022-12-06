@@ -3,8 +3,8 @@
 #define TOOL_FLASH_ADDRESS               0x8000000
 #define TOOL_FLASH_PAGE_SIZE             2048
 
-#define TOOL_FLASH_MEASUREMENTS_PAGE     2
-#define TOOL_FLASH_CONFIG_PAGE           3
+#define TOOL_FLASH_CONFIG_PAGE           2
+#define TOOL_FLASH_MEASUREMENTS_PAGE     3
 #define TOOL_FW_PAGE                     4
 #define TOOL_NEW_FW_PAGE                 120
 

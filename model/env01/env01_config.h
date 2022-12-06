@@ -12,8 +12,8 @@
 #define ENV01_FLASH_ADDRESS               0x8000000
 #define ENV01_FLASH_PAGE_SIZE             2048
 
-#define ENV01_FLASH_MEASUREMENTS_PAGE     2
-#define ENV01_FLASH_CONFIG_PAGE           3
+#define ENV01_FLASH_CONFIG_PAGE           2
+#define ENV01_FLASH_MEASUREMENTS_PAGE     3
 #define ENV01_FW_PAGE                     4
 #define ENV01_NEW_FW_PAGE                 120
 

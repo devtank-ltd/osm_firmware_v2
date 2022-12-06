@@ -12,8 +12,8 @@
 #define SENS01_FLASH_ADDRESS               0x8000000
 #define SENS01_FLASH_PAGE_SIZE             2048
 
-#define SENS01_FLASH_MEASUREMENTS_PAGE     2
-#define SENS01_FLASH_CONFIG_PAGE           3
+#define SENS01_FLASH_CONFIG_PAGE           2
+#define SENS01_FLASH_MEASUREMENTS_PAGE     3
 #define SENS01_FW_PAGE                     4
 #define SENS01_NEW_FW_PAGE                 120
 #define SENS01_FW_PAGES                    100
