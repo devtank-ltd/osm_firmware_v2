@@ -81,7 +81,7 @@ static unsigned _measurements_chunk_prev_start_pos = 0;
 
 uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
 
-#define INTERVAL_TRANSMIT_MS   (transmit_interval * 60 * 1000)
+#define INTERVAL_TRANSMIT_MS   (transmit_interval * 60)
 
 
 bool _measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
@@ -1173,7 +1173,10 @@ void measurements_print(void)
         unsigned char id_start = measurements_def->name[0];
         if (!id_start || id_start == 0xFF)
             continue;
-        log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval, measurements_def->samplecount);
+        if (transmit_interval % 1000)
+            log_out("%s\t%"PRIu8"x%"PRIu32".%03"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, transmit_interval%1000, measurements_def->samplecount);
+        else
+            log_out("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, measurements_def->samplecount);
     }
 }
 
@@ -1243,7 +1246,10 @@ void measurements_init(void)
 
     transmit_interval = persist_data.model_config.mins_interval;
 
-    measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval);
+    if (transmit_interval % 1000)
+        measurements_debug("Loading interval of %"PRIu32".%03"PRIu32" minutes", transmit_interval/1000, transmit_interval%1000);
+    else
+        measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval/1000);
 }
 
 
@@ -1540,17 +1546,25 @@ static void interval_mins_cb(char* args)
 {
     if (args[0])
     {
-        uint32_t new_interval_mins = strtoul(args, NULL, 10);
-        if (!new_interval_mins)
-            new_interval_mins = 5;
+        double new_interval_mins_f = strtod(args, NULL);
+        if (!new_interval_mins_f)
+            new_interval_mins_f = 5.;
 
-        log_out("Setting interval minutes to %"PRIu32, new_interval_mins);
+        uint32_t new_interval_mins = (new_interval_mins_f * 1000.);
+
+        if (new_interval_mins % 1000)
+            log_out("Setting interval minutes to %"PRIu32".03%"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
+        else
+            log_out("Setting interval minutes to %"PRIu32, new_interval_mins/1000);
         persist_data.model_config.mins_interval = new_interval_mins;
         transmit_interval = new_interval_mins;
     }
     else
     {
-        log_out("Current interval minutes is %"PRIu32, transmit_interval);
+        if (transmit_interval % 1000)
+            log_out("Current interval minutes is %"PRIu32".03%"PRIu32, transmit_interval/1000, transmit_interval%1000);
+        else
+            log_out("Current interval minutes is %"PRIu32, transmit_interval/1000);
     }
 }
 

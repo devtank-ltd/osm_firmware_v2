@@ -9,7 +9,7 @@
 
 #include "measurements_mem.h"
 
-#define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)15
+#define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)(15 * 1000)
 #define MEASUREMENTS_VALUE_STR_LEN              23
 
 extern uint32_t transmit_interval;
