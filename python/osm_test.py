@@ -200,11 +200,11 @@ class test_framework_t(object):
         self._vosm_conn.CC3.interval = 0
 
         self._logger.info("Running measurement loop...")
+        self._vosm_conn.interval_mins = 1
         for sample in self.DEFAULT_COMMS_MATCH_DICT.keys():
             if not sample.endswith("_min") and not sample.endswith("_max"):
                 self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
-        self._vosm_conn.interval_mins = 1
 
         match_cb = lambda x : self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, x)
         comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH, self.DEFAULT_PROTOCOL_PATH, match_cb=match_cb, logger=self._logger, log_file=self._log_file)
