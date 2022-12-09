@@ -171,6 +171,7 @@ void linux_error(char* fmt, ...)
 unsigned linux_spawn(const char * rel_path)
 {
     static char full_path[PATH_MAX];
+    memset(full_path, 0, PATH_MAX);
     if (readlink("/proc/self/exe", full_path, PATH_MAX) < 0)
     {
         linux_error("Failed start spawn : %s", rel_path);
