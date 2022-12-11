@@ -7,7 +7,7 @@ GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
-MODELS = $(shell find $(MODEL_DIR)/* -type d -printf '%f\n')
+MODELS = $(shell find $(MODEL_DIR)/* -maxdepth 0 -type d -printf '%f\n')
 MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/.complete)
 MODELS_CPPCHECK = $(MODELS:%=%_cppcheck)
 

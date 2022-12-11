@@ -23,6 +23,14 @@ LINUX_LDFLAGS += -lgcov --coverage -pthread -lutil
 
 SQLITE_DB ?= $(OSM_DIR)/config_gui/release/config_database/modbus_templates
 
+define LINUX_MODEL_PERIPHERAL
+$$(BUILD_DIR)/$(1)/peripherals/$(2) : $$(MODEL_DIR)/$(1)/peripherals/$(2)
+	mkdir -p "$$(@D)"
+	cp -v $$< $$@
+
+$$(BUILD_DIR)/$(1)/firmware.elf : $$(BUILD_DIR)/$(1)/peripherals/$(2)
+endef
+
 define LINUX_FIRMWARE
 $(call PORT_BASE_RULES,$(1),LINUX)
 
