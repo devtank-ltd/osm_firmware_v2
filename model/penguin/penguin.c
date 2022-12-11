@@ -213,9 +213,6 @@ void penguin_linux_spawn_fakes(void)
 }
 
 
-void __attribute__((destructor)) penguin_linux_close_fakes(void);
-
-
 void penguin_linux_close_fakes(void)
 {
     if (_penguin_pids[0])
