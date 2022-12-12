@@ -30,6 +30,9 @@ STM_LINK_FLAGS += $(STM_CPU_DEFINES) --specs=picolibc.specs
 #STM Port Dependencies
 STM := stm32flash
 GCC := arm-none-eabi-gcc
+PKGCONF := python3-pkgconfig
+LIBJSON := libjson-c-dev
+GIT := git
 PATHS := /usr/lib/picolibc/arm-none-eabi/picolibc.specs /usr/local/lib/picolibc/arm-none-eabi/picolibc.specs
 
 LIBOPENCM3 := $(OSM_DIR)/libs/libopencm3/lib/libopencm3_stm32l4.a
@@ -44,6 +47,9 @@ $(BUILD_DIR)/.stm_build_env:
 	done)
 	which $(STM) || (echo EXITING.. MISSING PACKAGE: $(STM); exit 1)
 	which $(GCC) || (echo EXITING.. MISSING PACKAGE: $(GCC); exit 1)
+	which $(LIBJSON) || (echo EXITING.. MISSING PACKAGE: $(LIBJSON); exit 1)
+	which $(PKGCONF) || (echo EXITING.. MISSING PACKAGE: $(PKGCONF); exit 1)
+	which $(GIT) || (echo EXITING.. MISSING PACKAGE: $(GIT); exit 1)
 	touch $@
 
 define STM_FIRMWARE
