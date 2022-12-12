@@ -25,9 +25,7 @@ SQLITE_DB ?= $(OSM_DIR)/config_gui/release/config_database/modbus_templates
 
 
 #Linux Port Dependencies
-GCC     := arm-none-eabi-gcc
-VALG    := valgrind
-PY      := python3
+LINUX_EXES     := gcc valgrind python3 pkg-config git
 PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse csv ctypes \
                datetime errno fnmatch json logging math multiprocessing numpy random re select \
 			   selectors signal socket sqlite3 \
@@ -54,11 +52,11 @@ $$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BU
 	cp $$< $$@
 
 $$(BUILD_DIR)/$(1).linux_build_env:
-	which $$(GCC) || (echo EXITING.. MISSING PACKAGE: $$(GCC); exit 1)
-	which $$(VALG) || (echo EXITING.. MISSING PACKAGE: $$(VALG); exit 1)
-	which $$(PY) || (echo EXITING.. MISSING PACKAGE: $$(PY); exit 1)
+	for i in $$(LINUX_EXECS) ; do \
+		if ! which $$$$i; then echo MISSING EXECUTABLE: $$$$i; exit 1; fi; \
+	done
 	for i in $$(PY_MODULES) ; do \
-		if ! python -c "import $$$$i"; then echo MISSING PYMODULE: $$$$i; exit 1; fi; \
+		if ! python3 -c "import $$$$i"; then echo MISSING PYMODULE: $$$$i; exit 1; fi; \
 	done
 	touch $$@
 

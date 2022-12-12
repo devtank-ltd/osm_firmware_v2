@@ -28,11 +28,10 @@ STM_LINK_FLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-s
 STM_LINK_FLAGS += $(STM_CPU_DEFINES) --specs=picolibc.specs
 
 #STM Port Dependencies
-STM := stm32flash
-GCC := arm-none-eabi-gcc
-LIBJSON := /usr/lib/x86_64-linux-gnu/pkgconfig/json-c.pc
-GIT := git
-PATHS := /usr/lib/picolibc/arm-none-eabi/picolibc.specs /usr/local/lib/picolibc/arm-none-eabi/picolibc.specs
+
+STM_EXES := stm32flash arm-none-eabi-gcc pkg-config git
+STM_PATHS := /usr/lib/picolibc/arm-none-eabi/picolibc.specs /usr/local/lib/picolibc/arm-none-eabi/picolibc.spec /usr/lib/gcc/arm-none-eabi/`arm-none-eabi-gcc  -dumpversion`/picolibc.specs /usr/local/lib/gcc/arm-none-eabi/`arm-none-eabi-gcc  -dumpversion`/picolibc.specs
+STM_PKGS := json-c
 
 LIBOPENCM3 := $(OSM_DIR)/libs/libopencm3/lib/libopencm3_stm32l4.a
 
@@ -41,13 +40,16 @@ $(LIBOPENCM3) : $(BUILD_DIR)/.stm_build_env
 
 $(BUILD_DIR)/.stm_build_env:
 	mkdir -p $(BUILD_DIR)
-	(for P in $(PATHS); do \
-		ls $$P && break || (echo MISSING FILE: $$P; exit 1) ; \
-	done)
-	which $(STM) || (echo EXITING.. MISSING PACKAGE: $(STM); exit 1)
-	which $(GCC) || (echo EXITING.. MISSING PACKAGE: $(GCC); exit 1)
-	ls $(LIBJSON) || (echo EXITING.. MISSING PACKAGE: $(LIBJSON); exit 1)
-	which $(GIT) || (echo EXITING.. MISSING PACKAGE: $(GIT); exit 1)
+	FOUND=0; for P in $(STM_PATHS); do \
+		if [ -e $$P ]; then FOUND=1; break; fi \
+	done; \
+	if [ "$$FOUND" = "0" ]; then echo "NO PICOLIB FOUND"; exit 1; fi
+	for i in $(STM_EXECS) ; do \
+		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
+	done
+	for p in $(STM_PKGS) ; do \
+		if ! pkg-config --cflags $$p; then echo MISSING PKF-CONFIG: $$p; exit 1; fi; \
+	done
 	touch $@
 
 define STM_FIRMWARE
