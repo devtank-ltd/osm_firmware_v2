@@ -1,5 +1,4 @@
 from imp import reload
-import threading
 import serial
 import select
 import datetime

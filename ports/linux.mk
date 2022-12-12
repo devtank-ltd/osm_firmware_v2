@@ -28,7 +28,11 @@ SQLITE_DB ?= $(OSM_DIR)/config_gui/release/config_database/modbus_templates
 GCC     := arm-none-eabi-gcc
 VALG    := valgrind
 PY      := python3
-MODULES := basetypes i2c_device_t chirpstack_api.as_pb.external api collections OrderedDict crccheck.crc CrcModbus crccheck.crc CrcModbus __future__ print_function i2c_htu21d i2c_device_htu21d_t i2c_veml7700 i2c_device_veml7700_t idlelib.tooltip Hovertip imp reload influxdb.exceptions InfluxDBClientError influxdb InfluxDBClient modbus_db modb_database_t find_path modbus_funcs modbus_funcs_t PIL ImageTk Image pymodbus.constants Endian pymodbus.datastore ModbusSlaveContext ModbusServerContext ModbusSparseDataBlock pymodbus.device ModbusDeviceIdentification pymodbus.payload BinaryPayloadBuilder pymodbus.server StartSerialServer pymodbus.server.sync StartSerialServer pymodbus.transaction ModbusBinaryFramer pymodbus.version version scipy.interpolate interp1d setuptools setup stat tkinter.filedialog askopenfilename tkinter tkinter.ttk Combobox Notebook Progressbar Style xml.etree ElementTree argparse argparse array basetypes binding can comms_connection comms csv ctypes datetime errno fnmatch grpc io json libsocketcan logging math matplotlib.pyplot modbus_db modbus_server multiprocessing numpy os platform random re select selectors serial serial.tools.list_ports signal socket socket_server_base sqlite3 string struct subprocess sys sys threading time tkinter.messagebox traceback unittest usb.core usb.util weakref webbrowser xmlrunner yaml
+PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse csv ctypes \
+               datetime errno fnmatch json logging math multiprocessing numpy random re select \
+			   selectors signal socket sqlite3 \
+			   string struct subprocess threading time traceback \
+			   weakref webbrowser yaml
 
 define LINUX_MODEL_PERIPHERAL
 $$(BUILD_DIR)/$(1)/peripherals/$(2) : $$(MODEL_DIR)/$(1)/peripherals/$(2)
@@ -45,17 +49,21 @@ $(1)_PERIPHERALS_SRC:=$$(shell find $$(OSM_DIR)/ports/linux/peripherals -name "*
 
 $(1)_PERIPHERALS_DST:=$$($(1)_PERIPHERALS_SRC:$$(OSM_DIR)/ports/linux/%=$$(BUILD_DIR)/$(1)/%)
 
-$$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $(BUILD_DIR)/.linux_build_env
+$$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BUILD_DIR)/$(1).linux_build_env
 	mkdir -p "$$(@D)"
 	cp $$< $$@
 
-$(BUILD_DIR)/.linux_build_env:
-	which $(GCC) || (echo EXITING.. MISSING PACKAGE: $(GCC); exit 1)
-	which $(VALG) || (echo EXITING.. MISSING PACKAGE: $(VALG); exit 1)
-	which $(PY) || (echo EXITING.. MISSING PACKAGE: $(PY); exit 1)
-	(for i in $(MODULES); do \
-		python -c "import $$i" || (echo MISSING PYMODULE: $$i; exit 1) ; \
-	done)
+$$(BUILD_DIR)/$(1).linux_build_env:
+	which $$(GCC) || (echo EXITING.. MISSING PACKAGE: $$(GCC); exit 1)
+	which $$(VALG) || (echo EXITING.. MISSING PACKAGE: $$(VALG); exit 1)
+	which $$(PY) || (echo EXITING.. MISSING PACKAGE: $$(PY); exit 1)
+	for i in $$(PY_MODULES) ; do \
+		if ! python -c "import $$$$i"; then echo MISSING PYMODULE: $$$$i; exit 1; fi; \
+	done
+	touch $$@
+
+$$($(1)_OBJS) : $$(BUILD_DIR)/$(1).linux_build_env
+
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_PERIPHERALS_DST)
 	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o $$@
 
