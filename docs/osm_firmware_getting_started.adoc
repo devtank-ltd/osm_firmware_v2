@@ -1,0 +1,76 @@
+= Compile
+
+== Before Building OSM
+
+Before building this on Debian/Ubuntu based distributions, you will need
+the "build-essential" package for GCC and GNU Make, this package
+includes libc, gcc, g++, make, dpkg-dev and more. You will also need
+"git" installed. These can be added to your machine with the commands
+"sudo apt install build-essential" and "sudo apt install git".
+
+== Build OSM
+
+After you have cloned osm_firmware.git, the first step is to initialise
+the git submodule and update it.
+
+image::Images/submodule.png[]
+
+You will need to compile the software which can be done by executing the
+Makefile with the command "make" at the top level of the repository.
+
+If make fails to compile, this may be due to missing packages and
+modules. For example, on this fresh Ubuntu virtual machine I received
+the error "NO PICOLIB FOUND".
+
+image::Images/git_error.png[]
+
+The Makefile will you tell you about missing files and packages that you
+will need to install to compile successfully.
+
+In this case, I needed the picolibc-arm-none-eabi, pkg-config and
+arm-none-eabi-gcc packages to continue. If you are running Debian
+Stable, you may need to install picolibc from source as the version
+installed on the Debian package manager is too old. You will need
+version 1.7.4-1 at least.
+
+image::Images/cc_nogcc.png[]
+
+Another issue you may find is that the Makefile will fail if it attempts
+to compile using cc, the build-essential package was required by my
+virtual machine in order for it to use the correct tools.
+
+There may be a few Python modules that will require installing, go
+through each of these until the Makefile compiles successfully.
+
+image::Images/compiled.png[]
+
+== Test
+
+image::Images/penguin_test.png[]
+
+Now that osm_firmware has compiled, we can begin running tests and
+communicating with the fake osm. To run a test for the virtual OSM,
+enter make penguin_test in the top level directory. This will spawn the
+virtual OSM test, connect to the virtual OSM and test values for each
+measurement, ensure you wait for the measurement loop to finish.
+
+== Run
+
+To communicate with the virtual OSM, you will need to run firmware.elf
+which is located in osm_firmware/build/penguin/firmware.elf. Once this
+is running, you can use minicom to open up communications with the fake
+sensor.
+
+image::Images/firmware_elf.png[]
+
+image::Images/minicom_conn.png[]
+
+The device should spawn in /tmp/osm/ and UART_DEBUG_slave is the
+special device that you want to connect to. Supply the baudrate of
+115200 to minicom with the flag -b and supply the device with the flag
+-D.
+
+image::Images/in_minicom.png[]
+
+image::Images/measurements.png[]
+

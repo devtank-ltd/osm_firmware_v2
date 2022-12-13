@@ -32,8 +32,8 @@ TOOL_OSM_OBJS := $(TOOL_OSM_SRC:$(OSM_DIR)/%.c=$(BUILD_DIR)/tool/%.o)
 
 TOOL_ALL_OBJS := $(TOOL_OBJS) $(TOOL_OSM_OBJS) $(TOOL_MODEL_OBJS)
 
-TOOL_PKGS := pkg-config json-c
-TOOL_EXES := gcc 
+TOOL_PKGS := json-c
+TOOL_EXES := pkg-config gcc 
 
 $(TOOL_OBJS): $(BUILD_DIR)/tool/%.o: $(TOOL_DIR)/%.c $(TOOL_DIR)/tool.mk $(LIBOPENCM3) $(BUILD_DIR)/tool/.tool_build_env
 	mkdir -p "$(@D)"
@@ -57,4 +57,5 @@ $(BUILD_DIR)/tool/.tool_build_env:
 	for i in $(TOOL_EXES) ; do \
 		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
 	done
-	touch $@ 
+	touch $@
+	
