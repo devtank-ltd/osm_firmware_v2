@@ -18,11 +18,12 @@ typedef struct
     uint16_t                pending_fw:1;
     uint16_t                _reserved:15;
     char                    model_name[MODEL_NAME_LEN];
-    /* 16 byte boundary */
+    /* 16 byte boundary ---- */
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
     uint8_t                 _[6];
-    /* 16 byte boundary */
+    /* 16 byte boundary ---- */
     persist_model_config_t  model_config;
+    /* 16 byte boundary ---- */
 } __attribute__((__packed__)) persist_storage_t;
 
 
