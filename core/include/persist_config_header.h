@@ -20,7 +20,7 @@ typedef struct
     char                    model_name[MODEL_NAME_LEN];
     /* 16 byte boundary ---- */
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
-    uint8_t                 _[6];
+    uint8_t                 _[16-(SERIAL_NUM_LEN_NULLED%16)];
     /* 16 byte boundary ---- */
     persist_model_config_t  model_config;
     /* 16 byte boundary ---- */
