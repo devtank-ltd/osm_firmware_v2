@@ -52,7 +52,7 @@ $$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BU
 	cp $$< $$@
 
 $$(BUILD_DIR)/$(1).linux_build_env:
-	for i in $$(LINUX_EXECS) ; do \
+	for i in $$(LINUX_EXES) ; do \
 		if ! which $$$$i; then echo MISSING EXECUTABLE: $$$$i; exit 1; fi; \
 	done
 	for i in $$(PY_MODULES) ; do \

@@ -44,7 +44,7 @@ $(BUILD_DIR)/.stm_build_env:
 		if [ -e $$P ]; then FOUND=1; break; fi \
 	done; \
 	if [ "$$FOUND" = "0" ]; then echo "NO PICOLIB FOUND"; exit 1; fi
-	for i in $(STM_EXECS) ; do \
+	for i in $(STM_EXES) ; do \
 		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
 	done
 	for p in $(STM_PKGS) ; do \

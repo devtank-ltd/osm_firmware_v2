@@ -32,7 +32,10 @@ TOOL_OSM_OBJS := $(TOOL_OSM_SRC:$(OSM_DIR)/%.c=$(BUILD_DIR)/tool/%.o)
 
 TOOL_ALL_OBJS := $(TOOL_OBJS) $(TOOL_OSM_OBJS) $(TOOL_MODEL_OBJS)
 
-$(TOOL_OBJS): $(BUILD_DIR)/tool/%.o: $(TOOL_DIR)/%.c $(TOOL_DIR)/tool.mk $(LIBOPENCM3)
+TOOL_PKGS := pkg-config json-c
+TOOL_EXES := gcc 
+
+$(TOOL_OBJS): $(BUILD_DIR)/tool/%.o: $(TOOL_DIR)/%.c $(TOOL_DIR)/tool.mk $(LIBOPENCM3) $(BUILD_DIR)/tool/.tool_build_env
 	mkdir -p "$(@D)"
 	$(CC) -c $(TOOL_CFLAGS) $< -o $@
 
@@ -46,3 +49,12 @@ $(TOOL_MODEL_OBJS): $(BUILD_DIR)/tool/%.o: $(MODEL_DIR)/%.c $(TOOL_DIR)/tool.mk 
 
 $(BUILD_DIR)/tool/json_x_img : $(TOOL_ALL_OBJS)
 	gcc $(TOOL_ALL_OBJS) $(TOOL_LDFLAGS)  -o $@
+
+$(BUILD_DIR)/tool/.tool_build_env:
+	for p in $(TOOL_PKGS) ; do \
+		if ! pkg-config --cflags $$p; then echo MISSING PKF-CONFIG: $$p; exit 1; fi; \
+	done
+	for i in $(TOOL_EXES) ; do \
+		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
+	done
+	touch $@ 
