@@ -73,6 +73,7 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
         adc_debug("Cannot get mV value of midpoint.");
         return false;
     }
+    adc_debug("V = %"PRIu32".%03"PRIu32"mV", inter_value/1000, inter_value%1000);
 
     if (inter_value / 1000 > UINT32_MAX / scale_factor)
     {

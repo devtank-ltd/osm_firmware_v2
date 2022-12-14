@@ -31,11 +31,13 @@
 #define ADCS_WAVE_DC_DEFAULT_AMPLITUDE          ADCS_5A_AMPLITUDE
 #define ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE   100
 
-#define ADCS_FTMA_4MA_AMPLITUDE                 0.f
-#define ADCS_FTMA_8MA_AMPLITUDE                 1023.f
-#define ADCS_FTMA_12MA_AMPLITUDE                2047.f
-#define ADCS_FTMA_16MA_AMPLITUDE                3071.f
-#define ADCS_FTMA_20MA_AMPLITUDE                4095.f
+/*  */
+
+#define ADCS_FTMA_4MA_AMPLITUDE                 744.860f
+#define ADCS_FTMA_8MA_AMPLITUDE                 1487.718f
+#define ADCS_FTMA_12MA_AMPLITUDE                2231.578f
+#define ADCS_FTMA_16MA_AMPLITUDE                2975.437f
+#define ADCS_FTMA_20MA_AMPLITUDE                3719.296f
 
 
 typedef enum
