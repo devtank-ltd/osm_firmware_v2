@@ -170,6 +170,8 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
     {
         integer_bits = (integer_bits | 0xF000) + 1;
         decimal_bits = (decimal_bits - 16) % 16;
+        if (!decimal_bits)
+            integer_bits--;
     }
     float temperature = (float)integer_bits + (float)decimal_bits / 16.f;
     value->v_f32 = to_f32_from_float(temperature);
