@@ -4,6 +4,8 @@
 
 #ifndef __CONFIGTOOL__
 
+#include <libopencm3/stm32/gpio.h>
+
 #include "timers.h"
 #include "io.h"
 #include "adcs.h"
@@ -28,6 +30,7 @@
 #include "update.h"
 #include "modbus.h"
 #include "model.h"
+#include "platform.h"
 
 
 uint8_t env01c_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -53,8 +56,17 @@ void env01c_persist_config_model_init(persist_env01c_config_v1_t* model_config)
 }
 
 
+static void _env01c_core_3v3_init(void)
+{
+    const port_n_pins_t core_3v3_port_n_pins = CORE_3V3_EN_PORT_N_PINS;
+    platform_gpio_setup(&core_3v3_port_n_pins, false, IO_PUPD_NONE);
+    platform_gpio_set(&core_3v3_port_n_pins, true);
+}
+
+
 void env01c_sensors_init(void)
 {
+    _env01c_core_3v3_init();
     timers_init();
     ios_init();
     sai_init();

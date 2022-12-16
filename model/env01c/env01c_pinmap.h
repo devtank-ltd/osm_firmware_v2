@@ -30,7 +30,7 @@
 #define ENV01C_ADC_COUNT       7
 #define ADC_CC_COUNT    3
 
-#define _3V3_CORE_EN_PORT_N_PINS     {GPIOB, GPIO3}
+#define CORE_3V3_EN_PORT_N_PINS     {GPIOB, GPIO3}
 
 
 #define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
