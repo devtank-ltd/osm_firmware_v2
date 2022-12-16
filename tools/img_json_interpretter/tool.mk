@@ -51,6 +51,7 @@ $(BUILD_DIR)/tool/json_x_img : $(TOOL_ALL_OBJS)
 	gcc $(TOOL_ALL_OBJS) $(TOOL_LDFLAGS)  -o $@
 
 $(BUILD_DIR)/tool/.tool_build_env:
+	mkdir -p "$(@D)"
 	for p in $(TOOL_PKGS) ; do \
 		if ! pkg-config --cflags $$p; then echo MISSING PKF-CONFIG: $$p; exit 1; fi; \
 	done
@@ -58,4 +59,3 @@ $(BUILD_DIR)/tool/.tool_build_env:
 		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
 	done
 	touch $@
-	

@@ -1,76 +1,99 @@
-= Compile
+= Getting Started With OpenSmartMonitor
+:revdate: December 16, 2022
+:revnumber: 1.0 
+:revremark: {doctitle} 
+:version-label!: 1.0
+Marcus Holder
 
-== Before Building OSM
+== Setup
 
-Before building this on Debian/Ubuntu based distributions, you will need
-the "build-essential" package for GCC and GNU Make, this package
-includes libc, gcc, g++, make, dpkg-dev and more. You will also need
-"git" installed. These can be added to your machine with the commands
-"sudo apt install build-essential" and "sudo apt install git".
+To clone the repository, execute the following command in your desired directory.
 
-== Build OSM
+[source]
+----
+git clone --recursive git.devtank.co.uk:/git/osm_firmware.git
+git pull
+git submodule init
+git submodule update
+----
 
-After you have cloned osm_firmware.git, the first step is to initialise
-the git submodule and update it.
+There are several dependencies required for OSM to compile successfully, install these on your machine with the following command:
 
-image::Images/submodule.png[]
+[source]
+----
+sudo apt install \
+  build-essential \
+  git \
+  pkg-config \
+  libjson-c-dev \
+  picolibc-arm-none-eabi \
+  stm32flash \
+  valgrind \
+  minicom \
+  idle-python3.10 \
+  python3-influxdb \
+  python3-pil \
+  python3-pymodbus \
+  python3-scipy
+----
 
-You will need to compile the software which can be done by executing the
-Makefile with the command "make" at the top level of the repository.
+Note that if you are running Debian Stable, you may need to install picolibc from source as the version installed on the Debian package manager is too old. You will need version 1.7.4-1 at least.
 
-If make fails to compile, this may be due to missing packages and
-modules. For example, on this fresh Ubuntu virtual machine I received
-the error "NO PICOLIB FOUND".
+== Build
 
-image::Images/git_error.png[]
+In order to build OSM, run the command:
 
-The Makefile will you tell you about missing files and packages that you
-will need to install to compile successfully.
+[source]
+----
+make -j8
+----
 
-In this case, I needed the picolibc-arm-none-eabi, pkg-config and
-arm-none-eabi-gcc packages to continue. If you are running Debian
-Stable, you may need to install picolibc from source as the version
-installed on the Debian package manager is too old. You will need
-version 1.7.4-1 at least.
-
-image::Images/cc_nogcc.png[]
-
-Another issue you may find is that the Makefile will fail if it attempts
-to compile using cc, the build-essential package was required by my
-virtual machine in order for it to use the correct tools.
-
-There may be a few Python modules that will require installing, go
-through each of these until the Makefile compiles successfully.
-
-image::Images/compiled.png[]
+You can also run 'make' but the above command will compile much faster.
 
 == Test
 
-image::Images/penguin_test.png[]
 
 Now that osm_firmware has compiled, we can begin running tests and
 communicating with the fake osm. To run a test for the virtual OSM,
-enter make penguin_test in the top level directory. This will spawn the
-virtual OSM test, connect to the virtual OSM and test values for each
+enter the following command in the top level directory.
+
+[source]
+----
+make penguin_test
+----
+
+This will spawn the virtual OSM test, connect to the virtual OSM and test values for each
 measurement, ensure you wait for the measurement loop to finish.
 
 == Run
 
-To communicate with the virtual OSM, you will need to run firmware.elf
-which is located in osm_firmware/build/penguin/firmware.elf. Once this
-is running, you can use minicom to open up communications with the fake
-sensor.
+To spawn the Virtual OSM, use the following command:
 
-image::Images/firmware_elf.png[]
+[source]
+----
+./build/penguin/firmware.elf
+----
 
-image::Images/minicom_conn.png[]
+Once this is running, you can use minicom to open up communications with the fake
+sensor. The device that you will want to supply to minicom is created when starting the Virtual OSM and is called 'UART_DEBUG_slave'.
 
-The device should spawn in /tmp/osm/ and UART_DEBUG_slave is the
-special device that you want to connect to. Supply the baudrate of
-115200 to minicom with the flag -b and supply the device with the flag
--D.
+[source]
+----
+minicom -b 115200 -D /tmp/osm/UART_DEBUG_slave
+----
 
-image::Images/in_minicom.png[]
+You can now communicate with the Virtual OSM through serial.
 
-image::Images/measurements.png[]
+== Config GUI
 
+To use the Configuration GUI, you will need the Virtual OSM running as it requires an OSM sensor in order to connect. 
+
+To start the GUI, run the following commands:
+
+[source]
+----
+cd config_gui/release
+./config_gui.py
+----
+
+Select UART_DEBUG_slave from the dropdown menu and press connect.
