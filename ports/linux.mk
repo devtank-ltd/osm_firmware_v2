@@ -32,13 +32,15 @@ PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse c
 			   string struct subprocess threading time traceback \
 			   weakref webbrowser yaml
 
-define LINUX_MODEL_PERIPHERAL
-$$(BUILD_DIR)/$(1)/peripherals/$(2) : $$(MODEL_DIR)/$(1)/peripherals/$(2)
-	mkdir -p "$$(@D)"
-	cp -v $$< $$@
-
-$$(BUILD_DIR)/$(1)/firmware.elf : $$(BUILD_DIR)/$(1)/peripherals/$(2)
-endef
+$(BUILD_DIR)/.linux_build_env:
+	mkdir -p "$(@D)"
+	for i in $(LINUX_EXES) ; do \
+		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
+	done
+	for i in $(PY_MODULES) ; do \
+		if ! python3 -c "import $$i"; then echo MISSING PYMODULE: $$i; exit 1; fi; \
+	done
+	touch $@
 
 define LINUX_FIRMWARE
 $(call PORT_BASE_RULES,$(1),LINUX)
@@ -47,20 +49,11 @@ $(1)_PERIPHERALS_SRC:=$$(shell find $$(OSM_DIR)/ports/linux/peripherals -name "*
 
 $(1)_PERIPHERALS_DST:=$$($(1)_PERIPHERALS_SRC:$$(OSM_DIR)/ports/linux/%=$$(BUILD_DIR)/$(1)/%)
 
-$$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BUILD_DIR)/$(1).linux_build_env
+$$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BUILD_DIR)/.linux_build_env
 	mkdir -p "$$(@D)"
 	cp $$< $$@
 
-$$(BUILD_DIR)/$(1).linux_build_env:
-	for i in $$(LINUX_EXES) ; do \
-		if ! which $$$$i; then echo MISSING EXECUTABLE: $$$$i; exit 1; fi; \
-	done
-	for i in $$(PY_MODULES) ; do \
-		if ! python3 -c "import $$$$i"; then echo MISSING PYMODULE: $$$$i; exit 1; fi; \
-	done
-	touch $$@
-
-$$($(1)_OBJS) : $$(BUILD_DIR)/$(1).linux_build_env
+$$($(1)_OBJS) : $$(BUILD_DIR)/.linux_build_env
 
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_PERIPHERALS_DST)
 	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o $$@
