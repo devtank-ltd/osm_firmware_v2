@@ -34,7 +34,8 @@ sudo apt install \
   python3-influxdb \
   python3-pil \
   python3-pymodbus \
-  python3-scipy
+  python3-scipy \
+  nodejs
 ----
 
 Note that if you are running Debian Stable, you may need to install picolibc from source as the version installed on the Debian package manager is too old. You will need version 1.7.4-1 at least.

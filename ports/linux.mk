@@ -25,7 +25,7 @@ SQLITE_DB ?= $(OSM_DIR)/config_gui/release/config_database/modbus_templates
 
 
 #Linux Port Dependencies
-LINUX_EXES     := gcc valgrind python3 pkg-config git
+LINUX_EXES     := gcc valgrind python3 pkg-config git js
 PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse csv ctypes \
                datetime errno fnmatch json logging math multiprocessing numpy random re select \
 			   selectors signal socket sqlite3 \
