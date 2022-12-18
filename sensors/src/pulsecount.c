@@ -17,11 +17,11 @@
 
 #define PULSECOUNT_INSTANCES   {                                       \
     { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
-        W1_PULSE_1_PIN  , W1_PULSE_1_EXTI,                             \
+        W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
         W1_PULSE_1_EXTI_IRQ,                                           \
         0, 0 },                                                        \
     { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
-        W1_PULSE_2_PIN , W1_PULSE_2_EXTI,                              \
+        W1_PULSE_2_PORT_N_PINS , W1_PULSE_2_EXTI,                      \
         W1_PULSE_2_EXTI_IRQ,                                           \
         0, 0 }                                                         \
 }
@@ -30,7 +30,7 @@
 typedef struct
 {
     special_io_info_t   info;
-    uint16_t            pin;
+    port_n_pins_t       pnp;
     uint32_t            exti;
     uint8_t             exti_irq;
     volatile uint32_t   count;
@@ -98,10 +98,10 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
             return;
     }
 
-    rcc_periph_clock_enable(PORT_TO_RCC(W1_PULSE_PORT));
-    gpio_mode_setup(W1_PULSE_PORT, GPIO_MODE_INPUT, pupd, instance->pin);
+    rcc_periph_clock_enable(PORT_TO_RCC(instance->pnp.port));
+    gpio_mode_setup(instance->pnp.port, GPIO_MODE_INPUT, pupd, instance->pnp.pins);
 
-    exti_select_source(instance->exti, W1_PULSE_PORT);
+    exti_select_source(instance->exti, instance->pnp.port);
     exti_set_trigger(instance->exti, trig);
     exti_enable_request(instance->exti);
 

@@ -32,3 +32,12 @@
 #define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
                            ADCS_TYPE_CC_CLAMP2,  \
                            ADCS_TYPE_CC_CLAMP3   }
+                           
+
+#define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
+#define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */
+#define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */
+
+
+#define W1_PULSE_1_PORT_N_PINS      { GPIOA, GPIO11 }
+#define W1_PULSE_2_PORT_N_PINS      { GPIOA, GPIO12 }

@@ -37,10 +37,6 @@
 
 #define ADC_COUNT                       CONCAT(FW_NAME,_ADC_COUNT)
 
-#define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
-#define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */
-#define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */
-
 #define PPS_PORT_N_PINS             \
 {                                   \
     {GPIOB, GPIO3},     /* PPS 0 */ \
@@ -128,15 +124,8 @@ GPIO16 D2                   IO 11
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
 }
 
-
-#define W1_PULSE_PORT               GPIOA
-
-#define W1_PULSE_1_PIN              GPIO11
-
 #define W1_PULSE_1_EXTI             EXTI11
 #define W1_PULSE_1_EXTI_IRQ NVIC_EXTI15_10_IRQ
-
-#define W1_PULSE_2_PIN              GPIO12
 
 #define W1_PULSE_2_EXTI             EXTI12
 #define W1_PULSE_2_EXTI_IRQ NVIC_EXTI15_10_IRQ

@@ -38,7 +38,7 @@ typedef struct
 } w1_ios_t;
 
 
-static w1_ios_t _w1_ios[] = { {.pnp={ W1_PULSE_PORT, W1_PULSE_1_PIN }, .io=W1_PULSE_1_IO, .pupd_pnp={W1_PULSE_1_PULLUP_EN_PORT, W1_PULSE_1_PULLUP_EN_PIN}} };
+static w1_ios_t _w1_ios[] = { {.pnp=W1_PULSE_2_PORT_N_PINS, .io=W1_PULSE_1_IO, .pupd_pnp={W1_PULSE_1_PULLUP_EN_PORT, W1_PULSE_1_PULLUP_EN_PIN}} };
 
 static void _w1_start_interrupt(void) {}
 

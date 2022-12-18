@@ -55,3 +55,12 @@
                              ADCS_TYPE_FTMA2,    \
                              ADCS_TYPE_FTMA3,    \
                              ADCS_TYPE_FTMA4     }
+
+
+#define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
+#define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */
+#define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */
+
+
+#define W1_PULSE_1_PORT_N_PINS      { GPIOA, GPIO11 }
+#define W1_PULSE_2_PORT_N_PINS      { GPIOA, GPIO12 }
