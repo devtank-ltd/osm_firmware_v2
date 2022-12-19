@@ -25,15 +25,6 @@
 #define FTMA_MIN_MA                                         4.f
 #define FTMA_MAX_MA                                         20.f
 
-#define FTMA_DEFAULT_COEFF_A                                0.f
-#define FTMA_DEFAULT_COEFF_B                                FTMA_HARDWARD_GAIN
-#define FTMA_DEFAULT_COEFF_C                                0.f
-#define FTMA_DEFAULT_COEFF_D                                0.f
-#define FTMA_DEFAULT_COEFFS                                 { FTMA_DEFAULT_COEFF_A , \
-                                                              FTMA_DEFAULT_COEFF_B , \
-                                                              FTMA_DEFAULT_COEFF_C , \
-                                                              FTMA_DEFAULT_COEFF_D   }
-
 #define FTMA_DEFAULT_CONFIG                                 { { MEASUREMENTS_FTMA_1_NAME , FTMA_DEFAULT_COEFFS } , \
                                                               { MEASUREMENTS_FTMA_2_NAME , FTMA_DEFAULT_COEFFS } , \
                                                               { MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \

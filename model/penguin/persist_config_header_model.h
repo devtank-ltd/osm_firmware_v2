@@ -53,3 +53,18 @@ typedef struct
 } persist_penguin_config_v1_t;
 
 #define persist_model_config_t        persist_penguin_config_v1_t
+
+#define FTMA_RESISTOR_S_OHM                                 30
+#define FTMA_RESISTOR_0_OHM                                 50000
+#define FTMA_RESISTOR_G_OHM                                 12400
+#define FTMA_HARDWARD_GAIN                                  (1.f / ((float)FTMA_RESISTOR_S_OHM * (((float)FTMA_RESISTOR_0_OHM / (float)FTMA_RESISTOR_G_OHM) + 1.f)))
+
+#define FTMA_DEFAULT_COEFF_A                                  0.f
+#define FTMA_DEFAULT_COEFF_B                                  FTMA_HARDWARD_GAIN
+#define FTMA_DEFAULT_COEFF_C                                  0.f
+#define FTMA_DEFAULT_COEFF_D                                  0.f
+
+#define FTMA_DEFAULT_COEFFS                                 { FTMA_DEFAULT_COEFF_A , \
+                                                              FTMA_DEFAULT_COEFF_B , \
+                                                              FTMA_DEFAULT_COEFF_C , \
+                                                              FTMA_DEFAULT_COEFF_D   }
