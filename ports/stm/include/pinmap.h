@@ -75,55 +75,6 @@
     { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10|GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, UART4_PRIORITY, true }, \
 }
 
-
-#define IOS_PORT_N_PINS            \
-{                                  \
-    {GPIOC, GPIO6 },   /* IO 0  */ \
-    {GPIOB, GPIO2 },   /* IO 1 */ \
-    {GPIOC, GPIO9 },   /* IO 2  */ \
-    {GPIOB, GPIO3 },   /* IO 3  */ \
-    {GPIOA, GPIO11 },  /* IO 4  */ \
-    {GPIOA, GPIO12 },  /* IO 5  */ \
-    {GPIOC, GPIO7 },   /* IO 6  */ \
-    {GPIOB, GPIO4 },   /* IO 7  */ \
-    {GPIOB, GPIO5 },   /* IO 8  */ \
-    {GPIOD, GPIO2 },   /* IO 9 */ \
-}
-
-
-/*
-Schematic name, STM pin
-GPIO01 C6                   IO 0
-GPIO02 C8                   IO 1
-GPIO03 B2                   IO 2
-GPIO04 C9                   IO 3
-GPIO06 B3                   IO 4
-GPIO07 C12  - RE_485
-GPIO08 A11  - PULSE2_OUT/1W IO 5
-GPIO09 A12  - PULSE1_OUT    IO 6
-GPIO10 A15  - DE_485
-GPIO11 C7                   IO 7
-GPIO12 B4                   IO 8
-GPIO13 B5                   IO 9
-GPIO14 B14                  IO 10
-GPIO15 B15  - HPM_EN
-GPIO16 D2                   IO 11
-*/
-
-#define IOS_STATE                                                      \
-{                                                                      \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 4   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 5   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
-}
-
 #define W1_PULSE_1_EXTI             EXTI11
 #define W1_PULSE_1_EXTI_IRQ NVIC_EXTI15_10_IRQ
 

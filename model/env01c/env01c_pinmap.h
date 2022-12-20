@@ -45,3 +45,31 @@
 
 #define W1_PULSE_1_PORT_N_PINS      { GPIOB, GPIO5 }
 #define W1_PULSE_2_PORT_N_PINS      { GPIOC, GPIO11 }
+
+
+#define IOS_PORT_N_PINS            \
+{                                  \
+    {GPIOC, GPIO6 },   /* IO 0  */ \
+    {GPIOB, GPIO2 },   /* IO 1 */ \
+    {GPIOC, GPIO9 },   /* IO 2  */ \
+    {GPIOA, GPIO11 },  /* IO 4  */ \
+    {GPIOA, GPIO12 },  /* IO 5  */ \
+    {GPIOC, GPIO7 },   /* IO 6  */ \
+    {GPIOB, GPIO4 },   /* IO 7  */ \
+    {GPIOB, GPIO5 },   /* IO 8  */ \
+    {GPIOD, GPIO2 },   /* IO 9 */ \
+}
+
+
+#define IOS_STATE                                                      \
+{                                                                      \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
+    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 4   */ \
+    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 5   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
+}
