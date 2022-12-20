@@ -331,7 +331,7 @@ class config_gui_window_t(Tk):
                         self._main_fr, text="Current Measurements on OSM",
                         font=FONT_L, bg=IVORY)
                     self._load_meas_l.grid(
-                        column=1, row=5, columnspan=2, sticky=E)
+                        column=1, row=5)
 
                     self._main_fr.img_list = []
                     img = Image.open(DVT_IMG)
@@ -853,8 +853,9 @@ class config_gui_window_t(Tk):
         if reg in spec_m:
             self._e.configure(cursor='hand2')
         elif desc is None:
-            descr = self.db.conn.execute(GET_REG_DESC(reg))
-            desc = descr.fetchone()[0]
+            description = self.db.conn.execute(GET_REG_DESC(reg))
+            if desc:
+                desc = description.fetchone()[0]
         return desc
 
     def _change_uplink(self, frame, widg):
@@ -918,12 +919,9 @@ class config_gui_window_t(Tk):
                     tablist.append(row)
             else:
                 log_func("No measurements on sensor detected.")
-            c_u_label = Label(window, text="Uplink Interval",
-                              font=FONT, bg=IVORY)
-            c_u_label.grid(column=0, row=15)
             entry_change_uplink = Entry(
                 window, width=40, fg=CHARCOAL, font=FONT_L)
-            entry_change_uplink.grid(column=1, row=15)
+            entry_change_uplink.grid(column=0, columnspan=2, row=15)
             entry_change_uplink.insert(
                 0, 'Enter a number and hit return to set uplink.')
             entry_change_uplink.bind(
@@ -939,20 +937,25 @@ class config_gui_window_t(Tk):
     def _load_measurements(self, window, idy, tablist):
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
+        window.columnconfigure([0,4], weight=1)
+        window.rowconfigure(19, weight=1)
         if idy == "mb":
             self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY, width=720, height=240)
-            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
+                self._main_frame, bg=IVORY, height=240)
+            self._my_canvas.grid(column=0, row=0, sticky=EW)
             self._main_frame.grid(
-                column=3, row=0, rowspan=9, padx=30, columnspan=5)
+                column=3, row=0, rowspan=9, columnspan=5)
         else:
             self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY, width=625, height=400)
-            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
+                self._main_frame, bg=IVORY)
+            self._my_canvas.grid(column=0, row=0, sticky=EW)
             self._main_frame.grid(column=0, columnspan=3,
-                                  row=6, rowspan=9)
+                                  row=6, rowspan=9, sticky=EW)
         self._second_frame = Frame(self._my_canvas)
         self._second_frame.grid(column=0, row=0)
+        self._my_canvas.columnconfigure(0, weight=1)
+        self._main_frame.columnconfigure(0, weight=1)
+        self._second_frame.columnconfigure(0, weight=1)
         sb = Scrollbar(self._main_frame, orient='vertical',
                        command=self._my_canvas.yview)
         sb.grid(column=0, row=0, sticky="NSE")
@@ -982,10 +985,10 @@ class config_gui_window_t(Tk):
             newrow = []
             for j in range(total_columns):
                 if idy == 'mb':
-                    self._e = Entry(self._second_frame, width=int(fifth_width), fg=BLACK, bg=IVORY,
+                    self._e = Entry(self._second_frame, fg=BLACK, bg=IVORY,
                                     font=FONT_L)
                 else:
-                    self._e = Entry(self._second_frame, width=int(quart_width), bg=IVORY, fg=BLACK,
+                    self._e = Entry(self._second_frame, bg=IVORY, fg=BLACK,
                                     font=FONT_L)
                 self._e.grid(row=i, column=j)
                 self._e.insert(END, tablist[i][j])
@@ -1297,7 +1300,7 @@ class config_gui_window_t(Tk):
                              bg=IVORY, font=FONT_L)
         lora_c_label.grid(column=5, row=6, sticky="E", columnspan=2)
 
-        lora_label = Label(frame, text="Device EUI: ",
+        lora_label = Label(frame, text="Dev EUI: ",
                            bg=IVORY, font=FONT)
         lora_label.grid(column=4, row=7, sticky="E")
 
@@ -1309,9 +1312,9 @@ class config_gui_window_t(Tk):
                              activebackground="green", activeforeground=IVORY)
         add_eui_btn.grid(column=7, row=7, sticky="NSEW")
 
-        app_label = Label(frame, text="Application Key: ",
+        app_label = Label(frame, text="AppKey: ",
                           bg=IVORY, font=FONT)
-        app_label.grid(column=4, row=8, sticky="E", padx=(30, 0))
+        app_label.grid(column=4, row=8, sticky="E")
 
         self._app_entry = Entry(frame, font=FONT, bg=IVORY)
         self._app_entry.grid(column=5, row=8, sticky="NSEW", columnspan=2)
