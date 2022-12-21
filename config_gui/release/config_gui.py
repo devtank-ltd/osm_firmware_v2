@@ -350,7 +350,7 @@ class config_gui_window_t(Tk):
                     web_url.configure(cursor='hand2')
 
                     banner_fr = Canvas(self._main_fr, bg=IVORY)
-                    banner_fr.grid(column=0, row=20, columnspan=7, pady=100)
+                    banner_fr.grid(column=0, row=20, columnspan=7)
                     img3 = Image.open(ICONS_T)
                     emc_img = ImageTk.PhotoImage(img3)
                     emc_lab = Label(banner_fr, image=emc_img, bg=IVORY)
@@ -920,8 +920,9 @@ class config_gui_window_t(Tk):
             else:
                 log_func("No measurements on sensor detected.")
             entry_change_uplink = Entry(
-                window, width=40, fg=CHARCOAL, font=FONT_L)
-            entry_change_uplink.grid(column=0, columnspan=2, row=15)
+                window, fg=CHARCOAL, font=FONT_L)
+            entry_change_uplink.grid(column=0, columnspan=5, row=15, 
+                sticky=EW, padx=(0,50))
             entry_change_uplink.insert(
                 0, 'Enter a number and hit return to set uplink.')
             entry_change_uplink.bind(
@@ -933,12 +934,18 @@ class config_gui_window_t(Tk):
             entry_change_uplink.configure(validate="key", validatecommand=(
                 window.register(self._handle_input), '%P', '%d'))
         self._load_measurements(window, idy, tablist)
+    
+    def _on_canvas_config(self, e):
+        self._my_canvas.configure(
+            scrollregion=self._my_canvas.bbox("all"))
+        self._my_canvas.itemconfig('frame', height=self._my_canvas.winfo_height(), width=self._my_canvas.winfo_width())
+
 
     def _load_measurements(self, window, idy, tablist):
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
-        window.columnconfigure([0,4], weight=1)
-        window.rowconfigure(19, weight=1)
+        window.columnconfigure([0,4,6], weight=1)
+        window.rowconfigure(20, weight=1)
         if idy == "mb":
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY, height=240)
@@ -947,23 +954,23 @@ class config_gui_window_t(Tk):
                 column=3, row=0, rowspan=9, columnspan=5)
         else:
             self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY)
+                self._main_frame, bg=IVORY, height=350)
             self._my_canvas.grid(column=0, row=0, sticky=EW)
-            self._main_frame.grid(column=0, columnspan=3,
-                                  row=6, rowspan=9, sticky=EW)
+            self._main_frame.grid(column=0, columnspan=5,
+                                  row=6, rowspan=9, sticky=EW, padx=(0, 50))
         self._second_frame = Frame(self._my_canvas)
-        self._second_frame.grid(column=0, row=0)
-        self._my_canvas.columnconfigure(0, weight=1)
+        self._second_frame.pack(expand=True, fill='both')
+        #self._my_canvas.columnconfigure(0, weight=1)
         self._main_frame.columnconfigure(0, weight=1)
-        self._second_frame.columnconfigure(0, weight=1)
+        #self._second_frame.columnconfigure(0, weight=1)
+
         sb = Scrollbar(self._main_frame, orient='vertical',
                        command=self._my_canvas.yview)
         sb.grid(column=0, row=0, sticky="NSE")
         self._my_canvas.configure(yscrollcommand=sb.set)
-        self._my_canvas.bind('<Configure>', lambda e: self._my_canvas.configure(
-            scrollregion=self._my_canvas.bbox("all")))
+        self._my_canvas.bind('<Configure>', self._on_canvas_config)
         self._my_canvas.create_window(
-            (0, 0), window=self._second_frame, anchor="nw")
+            (0, 0), window=self._second_frame, anchor="nw", tags="frame")
         self._my_canvas.bind_all(
             "<MouseWheel>", lambda: self._on_mousewheel(self._my_canvas))
         if tablist:
@@ -990,7 +997,8 @@ class config_gui_window_t(Tk):
                 else:
                     self._e = Entry(self._second_frame, bg=IVORY, fg=BLACK,
                                     font=FONT_L)
-                self._e.grid(row=i, column=j)
+                self._e.grid(row=i, column=j, sticky=EW)
+                self._second_frame.columnconfigure(j, weight=1)
                 self._e.insert(END, tablist[i][j])
                 newrow.append(self._e)
                 if total_columns == 5:
@@ -1040,7 +1048,7 @@ class config_gui_window_t(Tk):
                                              onvalue=i, offvalue=0,
                                              command=lambda: self._check_clicked(window, idy,
                                                                                  meas_var_list))
-                    check_meas.grid(row=i, column=j+1)
+                    check_meas.grid(row=i, column=j+1, padx=(0,15))
 
     def _remove_reg(self, idy, check):
         ticked = []
@@ -1302,10 +1310,10 @@ class config_gui_window_t(Tk):
 
         lora_label = Label(frame, text="Dev EUI: ",
                            bg=IVORY, font=FONT)
-        lora_label.grid(column=4, row=7, sticky="E")
+        lora_label.grid(column=5, row=7, sticky="E")
 
         self._eui_entry = Entry(frame, font=FONT, bg=IVORY)
-        self._eui_entry.grid(column=5, row=7, sticky="NSEW", columnspan=2)
+        self._eui_entry.grid(column=6, row=7, sticky="NSEW")
 
         add_eui_btn = Button(frame, image=icon,
                              command=self._insert_eui, bg=IVORY, fg=BLACK, font=FONT,
@@ -1314,10 +1322,10 @@ class config_gui_window_t(Tk):
 
         app_label = Label(frame, text="AppKey: ",
                           bg=IVORY, font=FONT)
-        app_label.grid(column=4, row=8, sticky="E")
+        app_label.grid(column=5, row=8, sticky="E")
 
         self._app_entry = Entry(frame, font=FONT, bg=IVORY)
-        self._app_entry.grid(column=5, row=8, sticky="NSEW", columnspan=2)
+        self._app_entry.grid(column=6, row=8, sticky="NSEW")
 
         add_app_btn = Button(frame, image=icon,
                              command=self._insert_lora,
@@ -1337,15 +1345,15 @@ class config_gui_window_t(Tk):
 
         lora_l = Label(frame, text="Status: ",
                        bg=IVORY, font=FONT)
-        lora_l.grid(column=4, row=9, sticky="E")
+        lora_l.grid(column=5, row=9, sticky="E")
 
         self._lora_status = Label(frame, text="",
                                   bg=IVORY, font=FONT)
-        self._lora_status.grid(column=5, row=9)
+        self._lora_status.grid(column=6, row=9, sticky=W)
 
         self._lora_confirm = Label(frame, text="",
                                    font=FONT, bg=IVORY)
-        self._lora_confirm.grid(column=6, row=9, sticky="NSEW")
+        self._lora_confirm.grid(column=6, row=9, sticky="E")
 
         self._get_lora_status()
 
