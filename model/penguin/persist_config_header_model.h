@@ -49,7 +49,10 @@ typedef struct
     ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
     uint8_t                 _____[16-((ADC_FTMA_COUNT * sizeof(ftma_config_t))%16)];
     /* 16 byte boundary ---- */
-    /* 7 x 16 bytes          */
+    uint32_t                sai_no_buf;
+    uint8_t                 ______[16-(sizeof(uint32_t)%16)];
+    /* 16 byte boundary ---- */
+    /* 8 x 16 bytes          */
 } persist_penguin_config_v1_t;
 
 #define persist_model_config_t        persist_penguin_config_v1_t

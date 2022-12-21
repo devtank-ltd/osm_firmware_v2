@@ -253,6 +253,10 @@ enum sai_xsr_flvl {
     }
 
 
+#define SAI_MAX_NO_BUF                      1000
+#define SAI_MIN_NO_BUF                      1
+
+
 typedef volatile    int32_t     sai_arr_t[SAI_ARRAY_SIZE];
 typedef const       uint32_t    sai_overflow_arr[SAI_NUM_OFLOW_SCALES];
 
@@ -567,19 +571,36 @@ void dma2_channel1_isr(void)
 }
 
 
+static uint32_t _sai_get_no_buf(void)
+{
+    return persist_data.model_config.sai_no_buf;
+}
+
+
+static void _sai_set_no_buf(uint32_t new_no_buf)
+{
+    persist_data.model_config.sai_no_buf = new_no_buf;
+}
+
+
 static measurements_sensor_state_t _sai_iteration_callback(char* name)
 {
+    if (_sai_sample.num_rms >= _sai_get_no_buf())
+        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+
     if (_sai_sample.finished)
     {
         _sai_sample.finished = false;
         if (_sai_collect())
         {
+            if (_sai_sample.num_rms >= _sai_get_no_buf())
+                return MEASUREMENTS_SENSOR_STATE_SUCCESS;
             _sai_dma_init();
             _sai_dma_on();
         }
         else sound_debug("Failed to collect.");
     }
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return MEASUREMENTS_SENSOR_STATE_BUSY;
 }
 
 
@@ -669,8 +690,33 @@ static void sound_cal_cb(char* args)
 }
 
 
+static void sai_set_target_no_buf(char* args)
+{
+    char* p;
+    uint32_t no_buf = strtoul(args, &p, 10);
+    if (p == args)
+    {
+        log_out("Target number of buffers: %"PRIu32, _sai_get_no_buf());
+        return;
+    }
+    if (no_buf > SAI_MAX_NO_BUF)
+    {
+        log_out("Largest target number of buffers is %d", SAI_MAX_NO_BUF);
+        return;
+    }
+    if (no_buf <= SAI_MIN_NO_BUF)
+    {
+        log_out("Smallest target number of buffers is %d", SAI_MIN_NO_BUF);
+        return;
+    }
+    _sai_set_no_buf(no_buf);
+    log_out("Set target number of buffers: %"PRIu32, _sai_get_no_buf());
+}
+
+
 struct cmd_link_t* sai_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false , NULL },
+                                       { "sound_no_buf", "Set the cal num buffers.", sai_set_target_no_buf         , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

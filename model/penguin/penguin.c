@@ -39,6 +39,7 @@ void penguin_persist_config_model_init(persist_penguin_config_v1_t* model_config
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
     ftma_setup_default_mem(model_config->ftma_configs, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
+    model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }
 
 

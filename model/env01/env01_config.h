@@ -64,5 +64,8 @@ typedef struct
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
     uint8_t                 ____[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
-    /* 6 x 16 bytes          */
+    uint32_t                sai_no_buf;
+    uint8_t                 _____[16-(sizeof(uint32_t)%16)];
+    /* 16 byte boundary ---- */
+    /* 7 x 16 bytes          */
 } persist_env01_config_v1_t;
