@@ -121,8 +121,6 @@ static measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool i
     if (!_ds18b20_get_instance(&instance, name))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    log_out("io = %u", instance->w1_index);
-
     if (!w1_reset(instance->w1_index))
     {
         exttemp_debug("Temperature probe did not respond");
