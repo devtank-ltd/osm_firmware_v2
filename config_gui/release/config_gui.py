@@ -317,7 +317,7 @@ class config_gui_window_t(Tk):
                         self._notebook.add(
                             self._modb_fr, text="Modbus Config")
                         self._notebook.add(self._debug_fr, text="Debug Mode")
-                    self._notebook.select(1)
+                    self._notebook.select(3)
                     self._sensor_name = Label(self._main_fr, text="",
                                               bg=IVORY)
                     self._sensor_name.grid(
@@ -938,7 +938,7 @@ class config_gui_window_t(Tk):
     def _on_canvas_config(self, e):
         self._my_canvas.configure(
             scrollregion=self._my_canvas.bbox("all"))
-        self._my_canvas.itemconfig('frame', height=self._my_canvas.winfo_height(), width=self._my_canvas.winfo_width())
+        self._my_canvas.itemconfig('frame', width=self._my_canvas.winfo_width())
 
 
     def _load_measurements(self, window, idy, tablist):
@@ -948,22 +948,20 @@ class config_gui_window_t(Tk):
         window.rowconfigure(20, weight=1)
         if idy == "mb":
             self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY, height=240)
-            self._my_canvas.grid(column=0, row=0, sticky=EW)
+                self._main_frame, bg=IVORY)
+            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(
-                column=3, row=0, rowspan=9, columnspan=5, 
+                column=3, row=1, rowspan=6, columnspan=5, 
                 sticky=EW, padx=(50, 0))
         else:
             self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY, height=350)
+                self._main_frame, bg=IVORY)
             self._my_canvas.grid(column=0, row=0, sticky=EW)
             self._main_frame.grid(column=0, columnspan=5,
                                   row=6, rowspan=9, sticky=EW, padx=(0, 50))
         self._second_frame = Frame(self._my_canvas)
         self._second_frame.pack(expand=True, fill='both')
-        #self._my_canvas.columnconfigure(0, weight=1)
         self._main_frame.columnconfigure(0, weight=1)
-        #self._second_frame.columnconfigure(0, weight=1)
 
         sb = Scrollbar(self._main_frame, orient='vertical',
                        command=self._my_canvas.yview)
@@ -987,8 +985,7 @@ class config_gui_window_t(Tk):
         mb_var_list = []
         self._check_meas = []
         self._check_mb = []
-        quart_width = self._my_canvas.winfo_reqwidth() / ((4 * 10)) - 1
-        fifth_width = self._my_canvas.winfo_reqwidth() / ((5 * 10)) - 1
+
         for i in range(total_rows):
             newrow = []
             for j in range(total_columns):
@@ -1110,7 +1107,7 @@ class config_gui_window_t(Tk):
                                           bg=IVORY, fg=BLACK, font=FONT,
                                           activebackground="green", activeforeground=IVORY,
                                           command=lambda: self._remove_reg(idy, check))
-                    self._rm_int.grid(column=2, row=15)
+                    self._rm_int.grid(column=2, row=16)
 
     def _change_on_hover(self, entry):
         e = entry.get()
@@ -1502,7 +1499,7 @@ class config_gui_window_t(Tk):
 
         self._current_mb = Label(
             self._modb_fr, text="Current Modbus Settings on OSM", font=FONT, bg=IVORY)
-        self._current_mb.grid(column=3, row=0, columnspan=3)
+        self._current_mb.grid(column=3, row=0, columnspan=3, sticky=NSEW)
         self.template_list.curselection()
         with self.db.conn:
             data = self.db.cur.execute(GET_TMP_N)
@@ -1519,21 +1516,29 @@ class config_gui_window_t(Tk):
         dev_lab = Label(self._modb_fr, image=param_logo, bg=IVORY)
         dev_lab.grid(column=3, row=9, rowspan=5, padx=(20,0), sticky=EW)
         self._modb_fr.img_list.append(param_logo)
+        # self._modb_fr.bind('<Configure>', lambda e : self._resize_frame_img(e, dev_lab, img))
 
         canv = Canvas(self._modb_fr)
         canv.grid(column=0, row=15, columnspan=10)
 
-        img_os = Image.open(OPEN_S)
-        os_logo = ImageTk.PhotoImage(img_os)
-        os_lab = Label(canv, image=os_logo, bg=IVORY)
-        os_lab.grid(column=0, row=0)
+        self.img_os = Image.open(OPEN_S)
+        os_logo = ImageTk.PhotoImage(self.img_os)
+        self.os_lab = Label(canv, image=os_logo, bg=IVORY)
+        self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
-        root.update()
         self._load_headers(self._modb_fr, "mb", True)
 
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
-        self._modb_fr.rowconfigure([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], weight=1)
-
+        self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], weight=1)
+        
+    # def _resize_image(self, e, canv, img):
+    #     new_width  = canv.winfo_reqwidth()
+    #     new_height = canv.winfo_reqheight()
+    #     image = img.resize((new_width, new_height))
+    #     new_image = ImageTk.PhotoImage(image)
+    #     canv.create_image(0, 0, image=new_image, anchor="nw")
+    #     self._modb_fr.img_list.append(new_image)
+    
     def _close_save(self, window):
         if self._changes == True:
             yesno = tkinter.messagebox.askyesnocancel("Quit?",
