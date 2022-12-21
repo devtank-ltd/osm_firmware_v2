@@ -951,7 +951,8 @@ class config_gui_window_t(Tk):
                 self._main_frame, bg=IVORY, height=240)
             self._my_canvas.grid(column=0, row=0, sticky=EW)
             self._main_frame.grid(
-                column=3, row=0, rowspan=9, columnspan=5)
+                column=3, row=0, rowspan=9, columnspan=5, 
+                sticky=EW, padx=(50, 0))
         else:
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY, height=350)
@@ -1040,7 +1041,7 @@ class config_gui_window_t(Tk):
                                           onvalue=i, offvalue=0,
                                           command=lambda: self._check_clicked(window, idy,
                                                                               mb_var_list))
-                    check_m.grid(row=i, column=j+1)
+                    check_m.grid(row=i, column=j+1, padx=(0,15))
                 else:
                     self._check_meas.append(IntVar())
                     meas_var_list.append(self._check_meas[i-1])
@@ -1103,7 +1104,7 @@ class config_gui_window_t(Tk):
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
                                            command=lambda: self._remove_reg(idy, check))
-                    self._del_reg.grid(column=3, row=8)
+                    self._del_reg.grid(column=3, row=8, sticky=E)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
@@ -1400,65 +1401,65 @@ class config_gui_window_t(Tk):
         self.template_list = Listbox(
             self._modb_fr, height=10, exportselection=False)
         self.template_list.grid(column=1, ipadx=150,
-                                ipady=50, row=1, rowspan=7)
+                                ipady=50, row=1, rowspan=7, sticky=NSEW)
         self.template_list.bind("<<ListboxSelect>>", self._callback)
 
         delete_button = Button(self._modb_fr, text="Delete",
                                command=lambda: self._delete_template(
                                    self.template_list),
-                               width=5, bg=IVORY, fg=BLACK, font=FONT,
+                                   bg=IVORY, fg=BLACK, font=FONT,
                                activebackground="green", activeforeground=IVORY)
-        delete_button.grid(column=2, row=1)
+        delete_button.grid(column=2, row=1, sticky=EW)
         tt_del_btn = Hovertip(delete_button, 'Remove template.')
 
-        edit_template_button = Button(self._modb_fr, text="Edit", width=5,
+        edit_template_button = Button(self._modb_fr, text="Edit",
                                       command=lambda: self._add_template_w(
                                           'edit'),
                                       bg=IVORY, fg=BLACK, font=FONT,
                                       activebackground="green", activeforeground=IVORY)
-        edit_template_button.grid(column=2, row=2)
+        edit_template_button.grid(column=2, row=2, sticky=EW)
         tt_edit_btn = Hovertip(edit_template_button,
                                'Edit template.')
 
         add_template_button = Button(self._modb_fr, text="Add",
                                      command=lambda: self._add_template_w(
                                          None),
-                                     width=5, bg=IVORY, fg=BLACK, font=FONT,
+                                     bg=IVORY, fg=BLACK, font=FONT,
                                      activebackground="green", activeforeground=IVORY)
-        add_template_button.grid(column=2, row=3)
+        add_template_button.grid(column=2, row=3, sticky=EW)
         tt_add_btn = Hovertip(add_template_button, 'Create a new template.')
 
-        apply_template_button = Button(self._modb_fr, text="Apply", width=5,
+        apply_template_button = Button(self._modb_fr, text="Apply",
                                        command=lambda: self._write_to_dev(
                                            self.template_list),
                                        bg=IVORY, fg=BLACK, font=FONT,
                                        activebackground="green", activeforeground=IVORY)
-        apply_template_button.grid(column=2, row=4)
+        apply_template_button.grid(column=2, row=4, sticky=EW)
         tt_apply_btn = Hovertip(apply_template_button,
                                 'Write template to device.')
 
-        copy_template_button = Button(self._modb_fr, text="Copy", width=5,
+        copy_template_button = Button(self._modb_fr, text="Copy",
                                       command=lambda: self._add_template_w(
                                           " (copy)"),
                                       bg=IVORY, fg=BLACK, font=FONT,
                                       activebackground="green", activeforeground=IVORY)
-        copy_template_button.grid(column=2, row=5)
+        copy_template_button.grid(column=2, row=5, sticky=EW)
         tt_copy_btn = Hovertip(copy_template_button,
                                'Duplicate template.')
 
-        revert_template_button = Button(self._modb_fr, text="Revert", width=5,
+        revert_template_button = Button(self._modb_fr, text="Revert",
                                         command=self._reset_listb,
                                         bg=IVORY, fg=BLACK, font=FONT,
                                         activebackground="green", activeforeground=IVORY)
-        revert_template_button.grid(column=2, row=6)
+        revert_template_button.grid(column=2, row=6, sticky=EW)
         tt_revert_btn = Hovertip(
             revert_template_button, 'Undo unsaved changes.')
 
-        save_template_button = Button(self._modb_fr, text="Save", width=5,
+        save_template_button = Button(self._modb_fr, text="Save",
                                       command=self._send_to_save,
                                       bg=IVORY, fg=BLACK, font=FONT,
                                       activebackground="green", activeforeground=IVORY)
-        save_template_button.grid(column=2, row=7)
+        save_template_button.grid(column=2, row=7, sticky=EW)
         tt_save_btn = Hovertip(save_template_button, 'Save all changes.')
 
         unit_id = Label(self._modb_fr, text="Modbus Registers on Template",
@@ -1467,36 +1468,36 @@ class config_gui_window_t(Tk):
 
         self.template_regs_box = Listbox(self._modb_fr, exportselection=False)
         self.template_regs_box.grid(
-            column=1, ipadx=150, ipady=50, row=9, rowspan=4)
+            column=1, ipadx=150, ipady=50, row=9, rowspan=4, sticky=EW)
 
-        del_reg_button = Button(self._modb_fr, text="Delete", width=5,
+        del_reg_button = Button(self._modb_fr, text="Delete",
                                 command=lambda:
                                 self._del_reg_tmp(self.template_regs_box, None,
                                                   self.template_list,
                                                   None, 'temp_reg_box'),
                                 bg=IVORY, fg=BLACK, font=FONT,
                                 activebackground="green", activeforeground=IVORY)
-        del_reg_button.grid(column=2, row=9)
+        del_reg_button.grid(column=2, row=9, sticky=EW)
         tt_del_r_btn = Hovertip(del_reg_button, 'Remove register.')
 
-        shift_up_button = Button(self._modb_fr, text="▲", width=5,
+        shift_up_button = Button(self._modb_fr, text="▲",
                                  command=lambda:
                                  self._shift_up(self.template_regs_box,
                                                 self.template_list,
                                                 None, 'temp_reg_box'),
                                  bg=IVORY, fg=BLACK, font=FONT,
                                  activebackground="green", activeforeground=IVORY)
-        shift_up_button.grid(column=2, row=10)
+        shift_up_button.grid(column=2, row=10, sticky=EW)
         tt_sh_u_btn = Hovertip(shift_up_button, 'Shift up')
 
-        shift_down_button = Button(self._modb_fr, text="▼", width=5,
+        shift_down_button = Button(self._modb_fr, text="▼",
                                    command=lambda:
                                    self._shift_down(self.template_regs_box,
                                                     self.template_list,
                                                     None, 'temp_reg_box'),
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    activebackground="green", activeforeground=IVORY)
-        shift_down_button.grid(column=2, row=11)
+        shift_down_button.grid(column=2, row=11, sticky=EW)
         tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down')
 
         self._current_mb = Label(
@@ -1516,11 +1517,11 @@ class config_gui_window_t(Tk):
         param_logo = ImageTk.PhotoImage(img)
         self._modb_fr.img_list = []
         dev_lab = Label(self._modb_fr, image=param_logo, bg=IVORY)
-        dev_lab.grid(column=3, row=9, rowspan=5, padx=20)
+        dev_lab.grid(column=3, row=9, rowspan=5, padx=(20,0), sticky=EW)
         self._modb_fr.img_list.append(param_logo)
 
         canv = Canvas(self._modb_fr)
-        canv.grid(column=0, row=15, columnspan=10, pady=70)
+        canv.grid(column=0, row=15, columnspan=10)
 
         img_os = Image.open(OPEN_S)
         os_logo = ImageTk.PhotoImage(img_os)
@@ -1529,6 +1530,9 @@ class config_gui_window_t(Tk):
         self._modb_fr.img_list.append(os_logo)
         root.update()
         self._load_headers(self._modb_fr, "mb", True)
+
+        self._modb_fr.columnconfigure([1,3,4,9], weight=1)
+        self._modb_fr.rowconfigure([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], weight=1)
 
     def _close_save(self, window):
         if self._changes == True:
