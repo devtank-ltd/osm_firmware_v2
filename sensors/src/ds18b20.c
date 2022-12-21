@@ -16,12 +16,6 @@ Documents used:
 #include "ds18b20.h"
 #include "pinmap.h"
 
-
-#define DS18B20_INSTANCES   {                                          \
-    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
-        0 }                                                            \
-}
-
 #define DS18B20_CMD_SKIP_ROM        0xCC
 #define DS18B20_CMD_CONV_T          0x44
 #define DS18B20_CMD_READ_SCP        0xBE
@@ -126,6 +120,9 @@ static measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool i
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+    log_out("io = %u", instance->w1_index);
+
     if (!w1_reset(instance->w1_index))
     {
         exttemp_debug("Temperature probe did not respond");

@@ -69,6 +69,9 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
+    if (ios_state[io] && IO_ONEWIRE)
+        w1_enable(io, true);
+
     io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
@@ -121,7 +124,7 @@ bool io_enable_w1(unsigned io)
     ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] |= IO_ONEWIRE;
-    w1_enable(true, io);
+    w1_enable(io, true);
     io_debug("%02u : USED W1", io);
     return true;
 }

@@ -31,6 +31,7 @@
 #include "modbus.h"
 #include "model.h"
 #include "platform.h"
+#include "w1.h"
 
 
 uint8_t env01c_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -53,6 +54,7 @@ void env01c_persist_config_model_init(persist_env01c_config_v1_t* model_config)
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
     model_config->comms_config.type = COMMS_TYPE_LW;
+    model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }
 
 
@@ -164,6 +166,7 @@ void env01c_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
+    measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
     measurements_repop_indiv(MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
     measurements_repop_indiv(MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
     measurements_repop_indiv(MEASUREMENTS_BATMON_NAME,          1,  5,  BAT_MON         );
@@ -190,6 +193,39 @@ void env01c_cmds_add_all(struct cmd_link_t* tail)
     tail = comms_add_commands(tail);
 }
 
+
+void env01c_w1_enable_pupd(unsigned io, bool enabled)
+{
+    port_n_pins_t w1_pupd_en_pnp;
+    switch (io)
+    {
+        case W1_PULSE_1_IO:
+        {
+            port_n_pins_t t = W1_PULSE_1_PULLUP_EN_PORT_N_PINS;
+            memcpy(&w1_pupd_en_pnp, &t, sizeof(port_n_pins_t));
+            break;
+        }
+        case W1_PULSE_2_IO:
+        {
+            port_n_pins_t t = W1_PULSE_2_PULLUP_EN_PORT_N_PINS;
+            memcpy(&w1_pupd_en_pnp, &t, sizeof(port_n_pins_t));
+            break;
+        }
+        default:
+        {
+            log_error("Given IO which is not a valid W1 to set a pullup.");
+            return;
+        }
+    }
+
+    rcc_periph_clock_enable(PORT_TO_RCC(w1_pupd_en_pnp.port));
+    gpio_mode_setup(w1_pupd_en_pnp.port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, w1_pupd_en_pnp.pins);
+    if (enabled)
+        gpio_set(w1_pupd_en_pnp.port, w1_pupd_en_pnp.pins);
+    else
+        gpio_clear(w1_pupd_en_pnp.port, w1_pupd_en_pnp.pins);
+}
+
 #endif
 
 
@@ -205,6 +241,7 @@ unsigned env01c_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_BATMON_NAME,          1,  5,  BAT_MON         );

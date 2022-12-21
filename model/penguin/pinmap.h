@@ -40,8 +40,6 @@
 
 #define ADC_FTMA_COUNT  4
 
-#define W1_PULSE_1_IO               4
-
 
 #define UART_BUFFERS_INIT                \
 char uart_0_in_buf[UART_0_IN_BUF_SIZE];  \
@@ -104,5 +102,14 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
                              ADCS_TYPE_FTMA2,    \
                              ADCS_TYPE_FTMA3,    \
                              ADCS_TYPE_FTMA4     }
+
+#define W1_PULSE_1_IO               4
+#define W1_PULSE_2_IO               5
+
+
+#define DS18B20_INSTANCES   {                                          \
+    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+        0 },                                                           \
+}
 
 #define     post_init()

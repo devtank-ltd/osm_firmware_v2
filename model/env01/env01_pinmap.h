@@ -43,6 +43,15 @@
 #define W1_PULSE_2_PORT_N_PINS      { GPIOA, GPIO12 }
 
 
+#define DS18B20_INSTANCES   {                                          \
+    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+        0 },                                                           \
+}
+
+
+#define W1_IOS                  { {.pnp=W1_PULSE_1_PORT_N_PINS, .io=W1_PULSE_1_IO } }
+
+
 #define IOS_PORT_N_PINS            \
 {                                  \
     {GPIOC, GPIO6 },   /* IO 0  */ \
@@ -90,3 +99,6 @@ GPIO16 D2                   IO 11
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
 }
+
+#define W1_PULSE_1_IO               4
+#define W1_PULSE_2_IO               5

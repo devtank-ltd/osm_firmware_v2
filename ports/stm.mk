@@ -99,7 +99,7 @@ $(1)_flash: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin
 	openocd -f interface/stlink-v2-1.cfg \
 	        -f target/stm32l4x.cfg \
 	        -c "init" -c "halt" \
-	        -c "program $$(BUILD_DIR)/$(1)/bootloader.bin 0x08000000 verify reset exit" \
+	        -c "program $$(BUILD_DIR)/$(1)/bootloader.bin 0x08000000 verify reset" \
 	        -c "program $$(BUILD_DIR)/$(1)/firmware.bin 0x08002000 verify reset exit" \
 	        -c "reset" \
 	        -c "shutdown"

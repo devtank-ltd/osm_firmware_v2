@@ -16,4 +16,5 @@ extern bool     env01_measurements_get_inf(measurements_def_t * def, measurement
 extern void     env01_debug_mode_enable_all(void);
 extern void     env01_measurements_repopulate(void);
 extern void     env01_cmds_add_all(struct cmd_link_t* tail);
+extern void     env01_w1_enable_pupd(unsigned io, bool enabled);
 extern unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr);

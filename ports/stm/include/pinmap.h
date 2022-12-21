@@ -83,11 +83,6 @@
 
 #define W1_PULSE_ISR                exti15_10_isr
 
-#define W1_PULSE_1_PULLUP_EN_PORT   GPIOC
-#define W1_PULSE_1_PULLUP_EN_PIN    GPIO7
-#define W1_PULSE_2_PULLUP_EN_PORT   GPIOC
-#define W1_PULSE_2_PULLUP_EN_PIN    GPIO6
-
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
 #define RE_485_PIN  { GPIOC, GPIO12 }
@@ -150,5 +145,3 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),}
 
 #define IOS_COUNT 10
-#define W1_PULSE_1_IO               4
-#define W1_PULSE_2_IO               5

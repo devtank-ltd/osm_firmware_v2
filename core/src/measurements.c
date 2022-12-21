@@ -1273,6 +1273,7 @@ typedef struct
     measurements_info_t        base;
     measurements_reading_t*    reading;
     measurements_value_type_t* type;
+    bool                       func_success;
 } _measurements_get_reading_packet_t;
 
 
@@ -1280,7 +1281,7 @@ static bool _measurements_get_reading_iteration(void* userdata)
 {
     _measurements_get_reading_packet_t* info = (_measurements_get_reading_packet_t*)userdata;
     if (!info->base.inf->iteration_cb)
-        return true;
+        return false;
     return (info->base.inf->iteration_cb(info->base.def->name) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
 }
 
@@ -1295,17 +1296,21 @@ static bool _measurements_get_reading_collection(void* userdata)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             *(info->type) = info->base.data->value_type;
+            info->func_success = true;
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("Collect function returned an error.");
             *(info->type) = MEASUREMENTS_VALUE_TYPE_INVALID;
+            info->func_success = false;
             return true;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             break;
         default:
             measurements_debug("Unknown response from collect function.");
+            info->func_success = false;
             return true;
     }
+    info->func_success = true;
     return false;
 }
 
@@ -1343,12 +1348,14 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         measurements_debug("Could not begin the measurement.");
         goto bad_exit;
     }
+    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
 
     data->is_collecting = 1;
     uint32_t init_time = get_since_boot_ms();
 
-    _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type};
-    if (!main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
+    _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type, false};
+    bool iterate_success = main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info);
+    if (inf.iteration_cb && !iterate_success)
     {
         measurements_debug("Failed on iterate.");
         goto bad_exit;
@@ -1357,14 +1364,17 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     uint32_t time_taken = since_boot_delta(get_since_boot_ms(), init_time);
     uint32_t time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
 
+    measurements_debug("Time taken: %"PRIu32, time_taken);
+
     measurements_debug("Waiting for collection.");
+    info.func_success = false;
     if (!main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info))
     {
         measurements_debug("Failed on collect.");
         goto bad_exit;
     }
 
-    return true;
+    return info.func_success;
 bad_exit:
     data->is_collecting = 0;
     return false;

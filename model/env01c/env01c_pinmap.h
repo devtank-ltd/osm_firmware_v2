@@ -43,21 +43,37 @@
 #define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */
 
 
-#define W1_PULSE_1_PORT_N_PINS      { GPIOB, GPIO5 }
-#define W1_PULSE_2_PORT_N_PINS      { GPIOC, GPIO11 }
+#define W1_PULSE_1_PORT_N_PINS              { GPIOC, GPIO11 }
+#define W1_PULSE_1_PULLUP_EN_PORT_N_PINS    { GPIOC, GPIO6  }
+#define W1_PULSE_1_IO                       2
+
+
+#define W1_PULSE_2_PORT_N_PINS              { GPIOB, GPIO5  }
+#define W1_PULSE_2_PULLUP_EN_PORT_N_PINS    { GPIOC, GPIO7  }
+#define W1_PULSE_2_IO                       3
+
+
+#define DS18B20_INSTANCES   {                                          \
+    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+        0 },                                                           \
+    { { MEASUREMENTS_W1_PROBE_NAME_2, W1_PULSE_2_IO} ,                 \
+        1 },                                                           \
+}
+
+
+#define W1_IOS                  { {.pnp=W1_PULSE_1_PORT_N_PINS, .io=W1_PULSE_1_IO }, {.pnp=W1_PULSE_2_PORT_N_PINS, .io=W1_PULSE_2_IO } }
 
 
 #define IOS_PORT_N_PINS            \
 {                                  \
-    {GPIOC, GPIO6 },   /* IO 0  */ \
-    {GPIOB, GPIO2 },   /* IO 1 */ \
-    {GPIOC, GPIO9 },   /* IO 2  */ \
-    {GPIOA, GPIO11 },  /* IO 4  */ \
-    {GPIOA, GPIO12 },  /* IO 5  */ \
-    {GPIOC, GPIO7 },   /* IO 6  */ \
-    {GPIOB, GPIO4 },   /* IO 7  */ \
-    {GPIOB, GPIO5 },   /* IO 8  */ \
-    {GPIOD, GPIO2 },   /* IO 9 */ \
+    {GPIOB, GPIO2 },   /* IO 0 */  \
+    {GPIOC, GPIO9 },   /* IO 1  */ \
+    {GPIOC, GPIO11 },  /* IO 2  */ \
+    {GPIOB, GPIO5 },   /* IO 3  */ \
+    {GPIOC, GPIO7 },   /* IO 4  */ \
+    {GPIOB, GPIO4 },   /* IO 5  */ \
+    {GPIOB, GPIO5 },   /* IO 6  */ \
+    {GPIOD, GPIO2 },   /* IO 7 */  \
 }
 
 
@@ -65,11 +81,10 @@
 {                                                                      \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 4   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 5   */ \
+    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 2   */ \
+    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 3   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 4   */ \
+    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 5   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
 }

@@ -178,6 +178,11 @@ void sens01_cmds_add_all(struct cmd_link_t* tail)
     tail = comms_add_commands(tail);
 }
 
+
+void sens01_w1_enable_pupd(unsigned io, bool enabled)
+{
+}
+
 #endif
 
 
