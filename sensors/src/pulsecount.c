@@ -11,6 +11,7 @@
 #include "common.h"
 #include "io.h"
 #include "pulsecount.h"
+#include "platform_model.h"
 
 
 #define PULSECOUNT_COLLECTION_TIME_MS       1000;
@@ -145,8 +146,9 @@ static void _pulsecount_shutdown(void)
 }
 
 
-void pulsecount_enable(bool enable)
+void pulsecount_enable(unsigned io, bool enable, bool hw_pup)
 {
+    model_w1_pulse_enable_pupd(io, enable && hw_pup);
     if (enable)
         pulsecount_init();
     else

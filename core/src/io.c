@@ -69,9 +69,6 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
 
-    if (ios_state[io] && IO_ONEWIRE)
-        w1_enable(io, true);
-
     io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
@@ -98,7 +95,16 @@ void     ios_init(void)
         uint16_t io_state = ios_state[n];
 
         if (io_state & IO_TYPE_ON_MASK)
+        {
+            if (io_state & IO_ONEWIRE)
+                w1_enable(n, true);
+            if (io_state & IO_PULSE)
+            {
+                bool hw_pup = io_state & IO_PUPD_UP;
+                pulsecount_enable(n, true, hw_pup);
+            }
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
+        }
         else
             _ios_setup_gpio(n, io_state);
     }
@@ -161,7 +167,8 @@ bool io_enable_pulsecount(unsigned io, io_pupd_t pupd)
     ios_state[io] |= (io_pull(pupd) & IO_PULL_MASK);
 
     ios_state[io] |= IO_PULSE;
-    pulsecount_enable(true);
+    bool hw_pup = ios_state[io] & IO_PUPD_UP;
+    pulsecount_enable(io, true, hw_pup);
     io_debug("%02u : USED PLSCNT", io);
     return true;
 }
@@ -183,7 +190,7 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
             return;
         }
         ios_state[io] &= ~IO_PULSE;
-        pulsecount_enable(false);
+        pulsecount_enable(io, false, false);
         io_debug("%02u : PLSCNT NO LONGER", io);
         return;
     }

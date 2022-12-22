@@ -223,5 +223,5 @@ void w1_init(uint8_t index)
 
 void w1_enable(unsigned io, bool enabled)
 {
-    model_w1_enable_pupd(io, enabled);
+    model_w1_pulse_enable_pupd(io, enabled);
 }

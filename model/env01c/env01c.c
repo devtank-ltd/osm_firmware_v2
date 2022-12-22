@@ -194,7 +194,7 @@ void env01c_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
-void env01c_w1_enable_pupd(unsigned io, bool enabled)
+void env01c_w1_pulse_enable_pupd(unsigned io, bool enabled)
 {
     port_n_pins_t w1_pupd_en_pnp;
     switch (io)

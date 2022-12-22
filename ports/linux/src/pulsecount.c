@@ -11,7 +11,7 @@ void pulsecount_init(void)
 }
 
 
-void pulsecount_enable(bool enable)
+void pulsecount_enable(unsigned io, bool enable, bool hw_pup)
 {
     if (enable)
         pulsecount_init();

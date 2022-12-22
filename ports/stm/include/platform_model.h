@@ -11,7 +11,7 @@
 #define model_debug_mode_enable_all        CONCAT(fw_name,_debug_mode_enable_all)
 #define model_measurements_repopulate      CONCAT(fw_name,_measurements_repopulate)
 #define model_cmds_add_all                 CONCAT(fw_name,_cmds_add_all)
-#define model_w1_enable_pupd               CONCAT(fw_name,_w1_enable_pupd)
+#define model_w1_pulse_enable_pupd         CONCAT(fw_name,_w1_pulse_enable_pupd)
 #define model_measurements_add_defaults    CONCAT(fw_name,_measurements_add_defaults)
 
 #define MODEL_NAME STR(MODEL)

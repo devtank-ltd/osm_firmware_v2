@@ -16,5 +16,5 @@ extern bool     sens01_measurements_get_inf(measurements_def_t * def, measuremen
 extern void     sens01_debug_mode_enable_all(void);
 extern void     sens01_measurements_repopulate(void);
 extern void     sens01_cmds_add_all(struct cmd_link_t* tail);
-extern void     sens01_w1_enable_pupd(unsigned io, bool enabled);
+extern void     sens01_w1_pulse_enable_pupd(unsigned io, bool enabled);
 extern unsigned sens01_measurements_add_defaults(measurements_def_t * measurements_arr);
