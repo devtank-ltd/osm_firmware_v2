@@ -1,11 +1,7 @@
 #include "json_x_img.h"
 
 
-json_x_img_mem_t osm_mem =
-{
-    .config={   .version = PERSIST_VERSION,
-                .log_debug_mask = DEBUG_SYS}
-};
+json_x_img_mem_t osm_mem;
 
 
 void log_debug(uint32_t flag, char *fmt, ...)
@@ -36,12 +32,6 @@ void log_error(char *fmt, ...)
     vfprintf(stderr, fmt, ap);
     fprintf(stderr,"\n");
     va_end(ap);
-}
-
-
-modbus_bus_t* persist_get_modbus_bus(void)
-{
-    return &osm_mem.config.modbus_bus;
 }
 
 

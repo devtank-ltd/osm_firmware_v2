@@ -1,9 +1,16 @@
+#include <string.h>
+
 #include "comms.h"
 
 #include "lw.h"
 #include "rak4270.h"
 #include "rak3172.h"
 #include "version.h"
+#include "base_types.h"
+#include "log.h"
+#include "uart_rings.h"
+#include "pinmap.h"
+#include "common.h"
 
 
 uint16_t comms_get_mtu(void)
@@ -183,4 +190,47 @@ bool comms_get_id(char* str, uint8_t len)
         default:
             return false;
     }
+}
+
+
+void comms_send_cb(char * args)
+{
+    char * pos = skip_space(args);
+    comms_send_str(pos);
+}
+
+
+void comms_config_cb(char * args)
+{
+    comms_config_setup_str(skip_space(args));
+}
+
+
+static void comms_conn_cb(char* args)
+{
+    if (comms_get_connected())
+    {
+        log_out("1 | Connected");
+    }
+    else
+    {
+        log_out("0 | Disconnected");
+    }
+}
+
+
+static void comms_dbg_cb(char* args)
+{
+    uart_ring_out(COMMS_UART, args, strlen(args));
+    uart_ring_out(COMMS_UART, "\r\n", 2);
+}
+
+
+struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "comms_send",   "Send comms message",       comms_send_cb                 , false , NULL },
+                                       { "comms_config", "Set comms config",         comms_config_cb               , false , NULL },
+                                       { "comms_conn",   "LoRa connected",           comms_conn_cb                 , false , NULL },
+                                       { "comms_dbg",    "Comms Chip Debug",         comms_dbg_cb                  , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

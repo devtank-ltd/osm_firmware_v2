@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import math
 import time
 import errno
 import subprocess
@@ -11,13 +12,15 @@ import multiprocessing
 
 from binding import modbus_reg_t, dev_t, set_debug_print
 
-sys.path.append("../linux/peripherals/")
+sys.path.append("../ports/linux/peripherals/")
 
-import i2c_server as i2c
 import modbus_server as modbus
-import w1_server as w1
-import hpm_virtual as hpm
+import comms_connection as comms
 import basetypes
+
+sys.path.append("../config_gui/release/")
+
+import modbus_db
 
 
 class test_framework_t(object):
@@ -25,12 +28,23 @@ class test_framework_t(object):
     DEFAULT_OSM_BASE        = "/tmp/osm/"
     DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
-    DEFAULT_RS485_PTY_PATH  = DEFAULT_OSM_BASE + "UART_RS485_slave"
-    DEFAULT_HPM_PTY_PATH    = DEFAULT_OSM_BASE + "UART_HPM_slave"
-    DEFAULT_I2C_SCK_PATH    = DEFAULT_OSM_BASE + "i2c_socket"
-    DEFAULT_W1_SCK_PATH     = DEFAULT_OSM_BASE + "w1_socket"
+    DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_LW_slave"
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
+    DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
+
+    DEFAULT_COMMS_MATCH_DICT = {'TEMP'    : 21.59,
+                                'TEMP_min': 21.59,
+                                'TEMP_max': 21.59,
+                                'HUMI'    : 65.284,
+                                'HUMI_min': 65.284,
+                                'HUMI_max': 65.284,
+                                'BAT'     : 131.071,
+                                'BAT_min' : 131.071,
+                                'BAT_max' : 131.071,
+                                'LGHT'    : 1023,
+                                'LGHT_min': 1023,
+                                'LGHT_max': 1023}
 
     def __init__(self, osm_path, log_file=None):
         self._logger = basetypes.get_logger(log_file)
@@ -44,12 +58,10 @@ class test_framework_t(object):
 
         self._vosm_proc         = None
         self._vosm_conn         = None
-        self._i2c_process       = None
-        self._modbus_process    = None
-        self._w1_process        = None
-        self._hpm_process       = None
 
         self._done              = False
+
+        self._db                = modbus_db.modb_database_t(modbus_db.find_path() + "/../config_gui/release")
 
     def __enter__(self):
         return self
@@ -59,11 +71,7 @@ class test_framework_t(object):
 
     def exit(self):
         self._disconnect_osm()
-        self._close_modbus()
-        self._close_hpm()
         self._close_virtual_osm()
-        self._close_i2c()
-        self._close_w1()
 
     def _wait_for_file(self, path, timeout):
         start_time = time.monotonic()
@@ -73,8 +81,13 @@ class test_framework_t(object):
                 return False
         return True
 
-    def _threshold_check(self, desc, value, ref, tolerance):
-        if isinstance(value, float) or isinstance(value, int):
+    def _threshold_check(self, name, desc, value, ref, tolerance):
+        if isinstance(value, str):
+            assert name == "FW"
+            ref = '"%s"' % os.popen('git log -n 1 --format="%h"').read().strip()
+            passed = value == ref
+            tolerance = 0
+        elif isinstance(value, float) or isinstance(value, int):
             passed = abs(float(value) - float(ref)) <= float(tolerance)
         else:
             self._logger.debug(f'Invalid test argument {value} for "{desc}"')
@@ -103,22 +116,37 @@ class test_framework_t(object):
 
 
     def _start_osm_env(self):
-        self._spawn_i2c()
-        if not self._wait_for_file(self.DEFAULT_I2C_SCK_PATH, 3):
-            return False
-        self._spawn_w1()
-        if not self._wait_for_file(self.DEFAULT_W1_SCK_PATH, 3):
-            return False
         if not self._spawn_virtual_osm(self._vosm_path):
-            self.error("Failed to spawn virtual OSM.")
+            self._logger.error("Failed to spawn virtual OSM.")
             return False
+        return True
 
-        if not self._spawn_modbus(self.DEFAULT_RS485_PTY_PATH):
-            return False
+    def _get_active_measurements(self) -> list:
+        actives = []
+        for measurement in self._vosm_conn.measurements():
+            if len(measurement) != 3:
+                continue
+            name, interval_txt, sample_count_txt = measurement
+            interval = int(interval_txt.split("x")[0])
+            sample_count = int(sample_count_txt)
+            if interval and sample_count:
+                actives.append(name)
+        return actives
 
-        if not self._spawn_hpm(self.DEFAULT_HPM_PTY_PATH):
-            return False
-
+    def _get_measurement_info(self, measurement_handle):
+        self._logger.debug(f"DB RETRIEVE MEASUREMENT '{measurement_handle}'...")
+        measurement_obj = getattr(self._vosm_conn, measurement_handle)
+        resp = self._db.get_measurement_info(measurement_handle)
+        if resp is None:
+            self._logger.debug(f"DB '{measurement_handle}' IS NOT REGULAR, CHECK MODBUS...")
+            resp = self._db.get_modbus_measurement_info(measurement_handle)
+            if resp is None:
+                self._logger.debug(f"DB NO DATA FOR '{measurement_handle}'")
+                return (measurement_handle, measurement_obj, 0, 0)
+        description, ref, threshold = resp
+        data = (description, measurement_obj, ref, threshold)
+        self._logger.debug(f"DB GOT MEASUREMENT '{measurement_handle}: '{data}'")
+        return data
 
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
@@ -126,33 +154,37 @@ class test_framework_t(object):
         if os.path.exists(self.DEFAULT_DEBUG_PTY_PATH):
             os.unlink(self.DEFAULT_DEBUG_PTY_PATH)
 
-        self._start_osm_env()
+        os.environ["AUTO_MEAS"] = "0"
+        os.environ["MEAS_INTERVAL"] = "1"
+
+        if not self._start_osm_env():
+            return False
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
+        self._vosm_conn.measurements_enable(False)
+        self._vosm_conn.PM10.interval = 1
+        self._vosm_conn.PM25.interval = 1
+        self._vosm_conn.TMP2.interval = 1
+        self._vosm_conn.CC1.interval = 1
+        self._vosm_conn.CC2.interval = 1
+        self._vosm_conn.CC3.interval = 1
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
-            modbus_reg_t(self._vosm_conn, "Power Factor"    , 0xc56e, 3, "U32", "PF"  ),
-            modbus_reg_t(self._vosm_conn, "Phase 1 volts"   , 0xc552, 3, "U32", "cVP1" )
+            modbus_reg_t(self._vosm_conn, "PF"     , 0xc56e, 3, "U32"),
+            modbus_reg_t(self._vosm_conn, "cVP1"   , 0xc552, 3, "U32")
             ])
         self._vosm_conn.setup_modbus_dev(1, "RIF", True, False, [
-            modbus_reg_t(self._vosm_conn, "CurrentP1" , 0x10, 4, "F", "AP1" ),
-            modbus_reg_t(self._vosm_conn, "CurrentP2" , 0x12, 4, "F", "AP2" )
+            modbus_reg_t(self._vosm_conn, "AP1" , 0x10, 4, "F" ),
+            modbus_reg_t(self._vosm_conn, "AP2" , 0x12, 4, "F" )
             ])
-        self._vosm_conn.hpm.enabled = True
         passed = True
-        passed &= self._threshold_check("Temperature",        self._vosm_conn.temp.value, 20,  5)
-        passed &= self._threshold_check("Humidity",           self._vosm_conn.humi.value, 50, 10)
-        passed &= self._threshold_check("Light",              self._vosm_conn.light.value, 10, 10)
-        passed &= self._threshold_check("Power Factor",       self._vosm_conn.PF.value, 1000, 10)
-        passed &= self._threshold_check("Voltage Phase 1",    self._vosm_conn.cVP1.value, 24001, 0)
-        passed &= self._threshold_check("CurrentP1",          self._vosm_conn.AP1.value, 30100, 0)
-        passed &= self._threshold_check("CurrentP2",          self._vosm_conn.AP2.value, 30200, 0)
-        passed &= self._threshold_check("One Wire Probe",     self._vosm_conn.w1.value, 25.0625, 0.01)
-        hpm_r = self._vosm_conn.hpm.value
-        pm25, pm10 = hpm_r if isinstance(hpm_r, tuple) else (None, None)
-        passed &= self._threshold_check("PM2.5",              pm25, 15, 0)
-        passed &= self._threshold_check("PM10",               pm10, 25, 0)
+
+        for active in self._get_active_measurements():
+            if active == "SND":
+                continue
+            description, measurement_obj, ref, threshold = self._get_measurement_info(active)
+            passed &= self._threshold_check(active, description, getattr(measurement_obj, "value"), ref,  threshold)
 
         io = self._vosm_conn.ios[0]
         passed &= self._bool_check("IO off", io.value, False)
@@ -162,6 +194,30 @@ class test_framework_t(object):
         io.value = True
         passed &= self._bool_check("IO on", io.value, True)
 
+        # If the CCs are left on, measurement loop fails. TODO: Fix that
+        self._vosm_conn.CC1.interval = 0
+        self._vosm_conn.CC2.interval = 0
+        self._vosm_conn.CC3.interval = 0
+
+        self._logger.info("Running measurement loop...")
+        self._vosm_conn.interval_mins = 1
+        for sample in self.DEFAULT_COMMS_MATCH_DICT.keys():
+            if not sample.endswith("_min") and not sample.endswith("_max"):
+                self._vosm_conn.change_interval(sample, 1)
+        self._vosm_conn.measurements_enable(True)
+
+        match_cb = lambda x : self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, x)
+        comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH, self.DEFAULT_PROTOCOL_PATH, match_cb=match_cb, logger=self._logger, log_file=self._log_file)
+        comms_conn.run_forever()
+        passed &= comms_conn.passed
+
+        return passed
+
+    def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
+        passed = True
+        for key, value in ref.items():
+            comp = dict_.get(key, None)
+            passed &= self._threshold_check(key, key, comp, value, 0.1)
         return passed
 
     def run(self):
@@ -169,6 +225,7 @@ class test_framework_t(object):
 
         self._start_osm_env()
 
+        self._logger.info("Waiting for Keyboard interrupt...")
         try:
             while not self._done:
                 time.sleep(0.5)
@@ -179,6 +236,8 @@ class test_framework_t(object):
         start = time.monotonic()
         while start + timeout >= time.monotonic():
             line = stream.readline().decode().replace("\n", "").replace("\r", "")
+            if not len(line):
+                continue
             self._logger.debug(line)
             match = pattern.search(line)
             if match:
@@ -215,10 +274,10 @@ class test_framework_t(object):
         debug_log = open(self.DEFAULT_OSM_BASE + "debug.log", "w")
         if os.path.exists(self.DEFAULT_OSM_CONFIG):
             os.unlink(self.DEFAULT_OSM_CONFIG)
-        self._vosm_proc = subprocess.Popen(command, stdout=debug_log, stderr=subprocess.PIPE)
+        self._vosm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=debug_log)
         self._logger.debug("Opened virtual OSM.")
-        pattern_str = "^==[0-9]+== Command: .*build/firmware.elf$"
-        return bool(self._wait_for_line(self._vosm_proc.stderr, re.compile(pattern_str)))
+        pattern_str = "^----start----$"
+        return bool(self._wait_for_line(self._vosm_proc.stdout, re.compile(pattern_str)))
 
     def _connect_osm(self, path, timeout=3):
         self._logger.info("Connecting to the virtual OSM.")
@@ -240,7 +299,6 @@ class test_framework_t(object):
         self._vosm_conn = dev_t(path)
         if "DEBUG" in os.environ:
             set_debug_print(self._logger.debug)
-        self._vosm_conn.measurements_enable(False)
         self._logger.debug("Connected to the virtual OSM.")
 
     def _disconnect_osm(self):
@@ -252,105 +310,11 @@ class test_framework_t(object):
         self._logger.debug("Disconnected from the virtual OSM.")
         self._vosm_conn = None
 
-    def _i2c_run(self):
-        htu_dev = i2c.i2c_device_htu21d_t()
-        veml_dev = i2c.i2c_device_veml7700_t(lux=10)
-        devs = {veml_dev.addr : veml_dev,
-                htu_dev.addr  : htu_dev}
-        i2c_sock = i2c.i2c_server_t("/tmp/osm/i2c_socket", devs, logger=self._logger)
-        i2c_sock.run_forever()
-
-    def _spawn_i2c(self):
-        if os.path.exists(self.DEFAULT_I2C_SCK_PATH):
-            os.unlink(self.DEFAULT_I2C_SCK_PATH)
-        self._logger.info("Spawning virtual I2C.")
-        self._i2c_process = multiprocessing.Process(target=self._i2c_run, name="i2c_server", args=())
-        self._i2c_process.start()
-        self._logger.debug("Spawned virtual I2C.")
-
-    def _close_i2c(self):
-        self._logger.info("Closing virtual I2C.")
-        if self._i2c_process is None:
-            self._logger.debug("Virtual I2C process isn't running, skip closing.")
-            return
-        self._i2c_process.kill()
-        self._logger.debug("Closed virtual I2C.")
-        self._i2c_process = None
-
-    def _modbus_run(self, path):
-        modbus_server = modbus.modbus_server_t(path)
-        modbus_server.run_forever()
-
-    def _spawn_modbus(self, path, timeout=3):
-        if not self._wait_for_file(path, timeout):
-            return False
-
-        self._logger.info("Spawning virtual MODBUS.")
-        self._modbus_process = multiprocessing.Process(target=self._modbus_run, name="modbus_server", args=(path,))
-        self._modbus_process.start()
-        self._logger.debug("Spawned virtual MODBUS.")
-        return True
-
-    def _close_modbus(self):
-        self._logger.info("Closing virtual MODBUS.")
-        if self._modbus_process is None:
-            self._logger.debug("Virtual MODBUS process isn't running, skip closing.")
-            return
-        self._modbus_process.kill()
-        self._logger.debug("Closed virtual MODBUS.")
-        self._modbus_process = None
-
-    def _w1_run(self):
-        ds18b20 = w1.ds18b20_t(logger=self._logger)
-        devs    = [ds18b20]
-        w1_sock = w1.w1_server_t("/tmp/osm/w1_socket", devs, logger=self._logger)
-        w1_sock.run_forever()
-
-    def _spawn_w1(self):
-        if os.path.exists(self.DEFAULT_W1_SCK_PATH):
-            os.unlink(self.DEFAULT_W1_SCK_PATH)
-        self._logger.info("Spawning virtual W1.")
-        self._w1_process = multiprocessing.Process(target=self._w1_run, name="w1_server", args=())
-        self._w1_process.start()
-        self._logger.debug("Spawned virtual W1.")
-
-    def _close_w1(self):
-        self._logger.info("Closing virtual W1.")
-        if self._w1_process is None:
-            self._logger.debug("Virtual W1 process isn't running, skip closing.")
-            return
-        self._w1_process.kill()
-        self._logger.debug("Closed virtual W1.")
-        self._w1_process = None
-
-    def _hpm_run(self, path):
-        hpm_dev = hpm.hpm_dev_t(path, logger=self._logger, log_file=self._log_file, pm2_5=15, pm10=25)
-        hpm_dev.run_forever()
-
-    def _spawn_hpm(self, path, timeout=3):
-        if not self._wait_for_file(path, timeout):
-            return False
-
-        self._logger.info("Spawning virtual HPM.")
-        self._hpm_process = multiprocessing.Process(target=self._hpm_run, name="hpm_device", args=(path,))
-        self._hpm_process.start()
-        self._logger.debug("Spawned virtual HPM.")
-        return True
-
-    def _close_hpm(self):
-        self._logger.info("Closing virtual HPM.")
-        if self._hpm_process is None:
-            self._logger.debug("Virtual HPM process isn't running, skip closing.")
-            return
-        self._hpm_process.kill()
-        self._logger.debug("Closed virtual HPM.")
-        self._hpm_process = None
-
 
 def main():
     import argparse
 
-    DEFAULT_FAKE_OSM_PATH = "%s/../linux/build/firmware.elf"% os.path.dirname(__file__)
+    DEFAULT_FAKE_OSM_PATH = "%s/../build/penguin/firmware.elf"% os.path.dirname(__file__)
 
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )

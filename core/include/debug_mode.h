@@ -9,4 +9,7 @@
 
 extern void debug_mode(void);
 
-extern void debug_mode_enable(bool enabled);
+extern void model_debug_mode_enable(bool enabled);
+
+extern struct cmd_link_t* debug_mode_add_commands(struct cmd_link_t* tail);
+extern void debug_mode_enable_all(void) __attribute__((weak));

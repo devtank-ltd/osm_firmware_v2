@@ -154,24 +154,7 @@ void pulsecount_enable(bool enable)
 }
 
 
-void _pulsecount_log_instance(pulsecount_instance_t* instance)
-{
-    if (!io_is_pulsecount_now(instance->info.io))
-        return;
-    log_out("%s : %"PRIu32, instance->info.name, instance->count);
-}
-
-
-void pulsecount_log()
-{
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
-    {
-        _pulsecount_log_instance(&_pulsecount_instances[i]);
-    }
-}
-
-
-measurements_sensor_state_t pulsecount_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _pulsecount_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -204,7 +187,7 @@ static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* nam
 }
 
 
-measurements_sensor_state_t pulsecount_begin(char* name)
+static measurements_sensor_state_t _pulsecount_begin(char* name, bool in_isolation)
 {
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))
@@ -216,7 +199,7 @@ measurements_sensor_state_t pulsecount_begin(char* name)
 }
 
 
-measurements_sensor_state_t pulsecount_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _pulsecount_get(char* name, measurements_reading_t* value)
 {
     if (!value)
     {
@@ -242,7 +225,7 @@ measurements_sensor_state_t pulsecount_get(char* name, measurements_reading_t* v
 }
 
 
-void pulsecount_ack(char* name)
+static void _pulsecount_ack(char* name)
 {
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))
@@ -250,4 +233,20 @@ void pulsecount_ack(char* name)
     pulsecount_debug("%s ack'ed", instance->info.name);
     __sync_sub_and_fetch(&instance->count, instance->send_count);
     instance->send_count = 0;
+}
+
+
+static measurements_value_type_t _pulsecount_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void     pulsecount_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _pulsecount_collection_time;
+    inf->init_cb            = _pulsecount_begin;
+    inf->get_cb             = _pulsecount_get;
+    inf->acked_cb           = _pulsecount_ack;
+    inf->value_type_cb      = _pulsecount_value_type;
 }

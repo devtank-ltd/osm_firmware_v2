@@ -3,49 +3,27 @@
 #include <string.h>
 
 
+#include "pinmap.h"
 #include "uart_rings.h"
 #include "ring.h"
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
 #include "comms.h"
-#include "hpm.h"
-#include "modbus.h"
 #include "platform.h"
+#include "platform_model.h"
 
 #include "common.h"
 
 
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 
-char uart_0_in_buf[UART_0_IN_BUF_SIZE];
-char uart_0_out_buf[UART_0_OUT_BUF_SIZE];
+UART_BUFFERS_INIT
 
-char uart_1_in_buf[UART_1_IN_BUF_SIZE];
-char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
+static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT]=UART_IN_RINGS;
+static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT]=UART_OUT_RINGS;
 
-char uart_2_in_buf[UART_2_IN_BUF_SIZE];
-char uart_2_out_buf[UART_2_OUT_BUF_SIZE];
-
-char uart_3_in_buf[UART_3_IN_BUF_SIZE];
-char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
-
-
-static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),
-    RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),
-    RING_BUF_INIT(uart_2_in_buf, sizeof(uart_2_in_buf)),
-    RING_BUF_INIT(uart_3_in_buf, sizeof(uart_3_in_buf)),
-    };
-
-static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT] = {
-    RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),
-    RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),
-    RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf)),
-    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),
-    };
-
-static char command[CMD_LINELEN];
+char line_buffer[CMD_LINELEN];
 
 static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
@@ -143,39 +121,32 @@ void uart_ring_in_drain(unsigned uart)
 
     ring_buf_t * ring = &ring_in_bufs[uart];
 
-    if (uart == RS485_UART)
-    {
-        modbus_ring_process(ring);
-        return;
-    }
-
     unsigned len = ring_buf_get_pending(ring);
+
+    if (uart && len)
+        log_debug(DEBUG_UART(uart), "UART %u IN %u", uart, len);
+
+    if (model_uart_ring_done_in_process(uart, ring))
+        return;
 
     if (!len)
         return;
 
-    if (uart)
-        log_debug(DEBUG_UART(uart), "UART %u IN %u", uart, len);
-
     if (uart == CMD_UART)
     {
-        len = ring_buf_readline(ring, command, CMD_LINELEN);
+        len = ring_buf_readline(ring, line_buffer, CMD_LINELEN);
 
         if (len)
-            cmds_process(command, len);
+            cmds_process(line_buffer, len);
     }
     else if (uart == COMMS_UART)
     {
-        len = ring_buf_readline(ring, command, CMD_LINELEN);
+        len = ring_buf_readline(ring, line_buffer, CMD_LINELEN);
         if (len)
         {
-            comms_debug(" >> %s", command);
-            comms_process(command);
+            comms_debug(" >> %s", line_buffer);
+            comms_process(line_buffer);
         }
-    }
-    else if (uart == HPM_UART)
-    {
-        hpm_ring_process(ring, command, CMD_LINELEN);
     }
 }
 
@@ -197,54 +168,12 @@ static void uart_ring_out_drain(unsigned uart)
 
     ring_buf_t * ring = &ring_out_bufs[uart];
 
+    if(!model_uart_ring_do_out_drain(uart, ring))
+        return;
+
     unsigned len = ring_buf_get_pending(ring);
 
-    if (uart == RS485_UART)
-    {
-        static bool rs485_transmitting = false;
-        static uint32_t rs485_start_transmitting = 0;
-
-        if (!len)
-        {
-            if (rs485_transmitting && uart_is_tx_empty(RS485_UART))
-            {
-                static bool rs485_transmit_stopping = false;
-                static uint32_t rs485_stop_transmitting = 0;
-                if (!rs485_transmit_stopping)
-                {
-                    modbus_debug("Sending complete, delay %"PRIu32"ms", modbus_stop_delay());
-                    rs485_stop_transmitting = get_since_boot_ms();
-                    rs485_transmit_stopping = true;
-                    return;
-                }
-                else if (since_boot_delta(get_since_boot_ms(), rs485_stop_transmitting) > modbus_stop_delay())
-                {
-                    rs485_transmitting = false;
-                    rs485_transmit_stopping = false;
-                    platform_set_rs485_mode(false);
-                    return;
-                }
-            }
-            return;
-        }
-
-        if (!rs485_transmitting)
-        {
-            rs485_transmitting = true;
-            platform_set_rs485_mode(true);
-            rs485_start_transmitting = get_since_boot_ms();
-            modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
-            return;
-        }
-        else
-        {
-            if (since_boot_delta(get_since_boot_ms(), rs485_start_transmitting) < modbus_start_delay())
-                return;
-        }
-
-        modbus_debug("Sending %u", len);
-    }
-    else if (!len)
+    if (!len)
         return;
 
     if (uart_is_tx_empty(uart))

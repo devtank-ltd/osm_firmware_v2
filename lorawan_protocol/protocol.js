@@ -175,7 +175,7 @@ function Decode(fPort, bytes, variables)
 
     var protocol_version = bytes[pos++];
 
-    if (protocol_version != 1)
+    if (protocol_version != 1 && protocol_version != 2)
     {
         return obj;
     }
@@ -294,7 +294,5 @@ function Encode(fPort, obj, variables)
 
     return bytes;
 }
-//0x01, 0x50,  4d 31 30 020104020400020600504d323502010302030002050000
-console.log(Decode(0, [1, 70, 87, 0, 0, 1, 32, 102, 97, 55, 101, 54, 54, 54, 0, 80, 77, 49, 48, 2, 21, 136, 19, 0, 0, 1, 4, 1, 6, 80, 77, 50, 53, 2, 21, 160, 15, 0, 0, 1, 3, 1, 5, 67, 67, 49, 0, 2, 21, 0, 0, 0, 0, 1, 0, 1, 0, 67, 67, 50, 0, 2, 21, 0, 0, 0, 0, 1, 0, 1, 0, 67, 67, 51, 0, 2, 21, 0, 0, 0, 0, 1, 0, 1, 0, 84, 69, 77, 80, 2, 21, 8, 122, 35, 0, 2, 21, 9, 2, 21, 9, 72, 85, 77, 73, 2, 21, 32, 242, 56, 0, 2, 146, 14, 2, 150, 14, 66], 0));
-console.log(Encode(0, {"CMD" : "How are you?"}, 0));
-console.log(Encode(0, {"FW-" : 0xFF01}, 0));
+
+module.exports = { Decode, Encode }

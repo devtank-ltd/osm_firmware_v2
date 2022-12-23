@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "log.h"
 #include "modbus.h"
@@ -6,6 +7,7 @@
 #include "persist_config_header.h"
 #include "update.h"
 #include "platform.h"
+#include "common.h"
 
 static uint8_t _fw_page[FLASH_PAGE_SIZE] __attribute__ ( (aligned (16)));
 
@@ -119,4 +121,51 @@ bool fw_ota_complete(uint16_t crc)
     _fw_ota_pos = -1;
     fw_debug("New FW ready.");
     return true;
+}
+
+
+static void fw_add(char *args)
+{
+    args = skip_space(args);
+    unsigned len = strlen(args);
+    if (len%2)
+    {
+        log_error("Invalid fw chunk.");
+        return;
+    }
+    char * end = args + len;
+    while(args < end)
+    {
+        char * next = args + 2;
+        char t = *next;
+        *next=0;
+        uint8_t d = strtoul(args, NULL, 16);
+        *next=t;
+        args=next;
+        if (!fw_ota_add_chunk(&d, 1))
+        {
+            log_error("Invalid fw.");
+            return;
+        }
+    }
+    log_out("FW %u chunk added", len/2);
+}
+
+
+static void fw_fin(char *args)
+{
+    args = skip_space(args);
+    uint16_t crc = strtoul(args, NULL, 16);
+    if (fw_ota_complete(crc))
+        log_out("FW added");
+    else
+        log_error("FW adding failed.");
+}
+
+
+struct cmd_link_t* update_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     fw_add                        , false , NULL },
+                                       { "fw@",          "Finishing crc of new fw.", fw_fin                        , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

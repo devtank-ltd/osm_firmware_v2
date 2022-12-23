@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include <math.h>
+#include <stddef.h>
 
 #include "adcs.h"
 
@@ -29,6 +30,26 @@ static uint32_t             _adcs_start_time    = 0;
 static volatile uint32_t    _adcs_end_time      = 0;
 
 static adc_setup_config_t _adcs_config = {.mem_addr = (uintptr_t)_adcs_buffer};
+
+
+bool adcs_to_mV(uint32_t value, uint32_t* mV)
+{
+    // Linear scale without calibration.
+    // ADC of    0 -> 0V
+    //        4096 -> 3.3V
+
+    const uint16_t max_value = ADC_MAX_VAL;
+    const uint16_t min_value = 0;
+    const uint16_t max_mV = ADC_MAX_MV;
+    const uint16_t min_mV = 0;
+    uint64_t inter_val;
+
+    inter_val = (uint64_t)value * (max_mV - min_mV);
+    inter_val /= (max_value - min_value);
+
+    *mV = (uint32_t)inter_val;
+    return true;
+}
 
 
 /* As the ADC RMS function calculates the RMS of potentially multiple ADCs in a single 
@@ -213,6 +234,32 @@ adcs_resp_t adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned num_
 }
 
 
+adcs_resp_t adcs_collect_avg(uint32_t* avg, unsigned num_channels, unsigned num_samples, unsigned index, adcs_keys_t key, uint32_t* time_taken)
+{
+    if (!avg)
+    {
+        adc_debug("Handed NULL pointer.");
+        return ADCS_RESP_FAIL;
+    }
+    if (_adcs_in_use)
+    {
+        return ADCS_RESP_WAIT;
+    }
+    if (_adcs_active_key != key)
+        return ADCS_RESP_WAIT;
+
+    if (!_adcs_get_avg(_adcs_buffer, num_samples, avg, index, num_channels))
+    {
+        adc_debug("Could not get AVG value for pos %u", index);
+        return ADCS_RESP_FAIL;
+    }
+
+    if (time_taken)
+        *time_taken = since_boot_delta(_adcs_end_time, _adcs_start_time);
+    return ADCS_RESP_OK;
+}
+
+
 adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avgs)
@@ -235,7 +282,7 @@ adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned nu
         }
         if (!_adcs_get_avg(_adcs_buffer, num_samples, avgs++, i, num_channels))
         {
-            adc_debug("Could not get RMS value for pos %u", i);
+            adc_debug("Could not get AVG value for pos %u", i);
             return ADCS_RESP_FAIL;
         }
     }
@@ -245,17 +292,17 @@ adcs_resp_t adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned nu
 }
 
 
+static bool _adcs_wait_loop_iteration(void* userdata)
+{
+    return !_adcs_in_use;
+}
+
+
 adcs_resp_t adcs_wait_done(uint32_t timeout, adcs_keys_t key)
 {
-    uint32_t start = get_since_boot_ms();
     if (_adcs_active_key != key)
         return ADCS_RESP_FAIL;
-    while (_adcs_in_use)
-    {
-        if (since_boot_delta(get_since_boot_ms(), start) > timeout)
-            return ADCS_RESP_FAIL;
-    }
-    return ADCS_RESP_OK;
+    return main_loop_iterate_for(timeout, _adcs_wait_loop_iteration, NULL) ? ADCS_RESP_OK : ADCS_RESP_FAIL;
 }
 
 

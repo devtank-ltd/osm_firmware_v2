@@ -3,6 +3,8 @@
 #include <stddef.h>
 
 #include "platform.h"
+#include "platform_model.h"
+
 #include "common.h"
 #include "log.h"
 #include "uart_rings.h"
@@ -16,18 +18,6 @@
 #include "comms.h"
 #include "measurements.h"
 #include "debug_mode.h"
-
-#include "pulsecount.h"
-#include "sai.h"
-#include "hpm.h"
-#include "modbus.h"
-#include "timers.h"
-#include "htu21d.h"
-#include "veml7700.h"
-#include "cc.h"
-#include "can_impl.h"
-#include "ds18b20.h"
-#include "version.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -49,38 +39,30 @@ int main(void)
     log_sys_debug("Version : %s", GIT_VERSION);
 
     persistent_init();
-    timers_init();
     log_init();
     cmds_init();
-    ios_init();
-    sai_init();
-    adcs_init();
-    cc_init();
-    htu21d_init();
-    veml7700_init();
-    ds18b20_temp_init();
-    sai_init();
-    pulsecount_init();
-    modbus_init();
-    can_impl_init();
+
+    model_sensors_init();
+
     comms_init();
 
     platform_watchdog_init(IWDG_NORMAL_TIME_MS);
 
     measurements_init();
 
-    bool boot_debug_mode = DEBUG_MODE & persist_get_log_debug_mask();
+    model_post_init();
+
+    bool boot_debug_mode = DEBUG_MODE & persist_data.log_debug_mask;
 
     if (boot_debug_mode)
     {
         log_async_log = true;
         log_sys_debug("Booted in debug_mode");
-        hpm_enable(true);
         debug_mode();
-        hpm_enable(false);
         log_sys_debug("Left debug_mode");
     }
 
+    platform_start();
     log_async_log = true;
 
     uint32_t prev_now = 0;

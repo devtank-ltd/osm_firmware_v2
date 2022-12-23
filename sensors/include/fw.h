@@ -3,4 +3,4 @@
 #include "measurements.h"
 
 
-measurements_sensor_state_t fw_version_get(char* name, measurements_reading_t* value);
+void fw_version_inf_init(measurements_inf_t* inf);

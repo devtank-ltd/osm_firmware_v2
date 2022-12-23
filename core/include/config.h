@@ -1,6 +1,5 @@
 #pragma once
 
-#define CMD_LINELEN 128
 #define LOG_LINELEN 64
 
 #define MEASURE_NAME_LEN            4
@@ -8,6 +7,7 @@
 
 #define MODBUS_NAME_LEN             MEASURE_NAME_LEN
 
+#define MODBUS_MEMORY_SIZE 1024
 
 /* On some versions of gcc this header isn't defining it. Quick fix. */
 #ifndef PRIu64
@@ -24,7 +24,11 @@
 #define ADC_MAX_VAL       4095
 #define ADC_MAX_MV        3300
 #define ADCS_NUM_SAMPLES  1500
-#define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2)
+#define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2 - 1)
+#define CC_DEFAULT_EXT_MAX_MA               (100 * 1000)
+#define CC_DEFAULT_INT_MAX_MV               50
+
+#define FTMA_NUM_COEFFS      4
 
 #define SAI_NUM_CAL_COEFFS   5
 
@@ -43,11 +47,15 @@
 #define CMD_VUART 0
 #define UART_ERR_NU 0
 
+#define CONCAT2(a, b) a##b
+#define CONCAT(a, b) CONCAT2(a, b)
+
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
-#define MODBUS_BLOB_VERSION 1
-#define MODBUS_MAX_DEV 4
-#define MODBUS_DEV_REGS 16
+#define MODBUS_BLOB_VERSION 2
 
 #define ALIGN_TO(_x, _y) ((_x + _y -1 ) & ~(_y - 1)) ///< Align one number to another, for instance 16 for optimial addressing.
 #define ALIGN_16(_x) ALIGN_TO(_x, 16)                ///< Align given number to 16.
@@ -67,20 +75,8 @@
     CMD_UART   0
     LW_UART    1
     HPM_UART   2
-    RS485_UART 3
+    EXT_UART 3
 */
-
-#define UART_0_IN_BUF_SIZE  CMD_LINELEN
-#define UART_0_OUT_BUF_SIZE 2048
-
-#define UART_1_IN_BUF_SIZE  256
-#define UART_1_OUT_BUF_SIZE 512
-
-#define UART_2_IN_BUF_SIZE  64
-#define UART_2_OUT_BUF_SIZE 64
-
-#define UART_3_IN_BUF_SIZE  128
-#define UART_3_OUT_BUF_SIZE 128
 
 /* Uart Index on STM Uart */
 
@@ -130,6 +126,8 @@
 #define DEBUG_SLEEP        0x20000
 #define DEBUG_CAN          0x40000
 #define DEBUG_MODE         0x80000
+#define DEBUG_CUSTOM_0    0x100000
+#define DEBUG_CUSTOM_1    0x200000
 
 #define __ADC_RMS_FULL__
 

@@ -12,6 +12,7 @@ extern uint32_t rcc_apb1_frequency;
 extern uint32_t rcc_apb2_frequency;
 
 void platform_init(void);
+void platform_start(void);
 void platform_watchdog_init(uint32_t ms);
 void platform_watchdog_reset(void);
 void platform_blink_led_init(void);
@@ -42,3 +43,4 @@ void platform_gpio_init(const port_n_pins_t * gpio_pin);
 void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull);
 void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on);
 bool platform_gpio_get(const port_n_pins_t * gpio_pin);
+

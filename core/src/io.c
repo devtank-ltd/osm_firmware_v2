@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "config.h"
 #include "pinmap.h"
@@ -7,8 +8,9 @@
 #include "pulsecount.h"
 #include "uarts.h"
 #include "platform.h"
-#include "ds18b20.h"
+#include "w1.h"
 #include "persist_config.h"
+#include "common.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t * ios_state;
@@ -77,7 +79,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
 void     ios_init(void)
 {
-    ios_state = persist_get_ios_state();
+    ios_state = persist_data.model_config.ios_state;
 
     if (ios_state[0] == 0 || ios_state[0] == 0xFFFF)
     {
@@ -119,7 +121,7 @@ bool io_enable_w1(unsigned io)
     ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] |= IO_ONEWIRE;
-    ds18b20_enable(true);
+    w1_enable(true, io);
     io_debug("%02u : USED W1", io);
     return true;
 }
@@ -191,7 +193,7 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
             return;
         }
         ios_state[io] &= ~IO_ONEWIRE;
-        ds18b20_enable(false);
+        w1_enable(io, false);
         io_debug("%02u : W1 NO LONGER", io);
         return;
     }
@@ -335,4 +337,150 @@ void     ios_log()
 {
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
         io_log(n);
+}
+
+
+void io_cb(char *args)
+{
+    char * pos = NULL;
+    unsigned io = strtoul(args, &pos, 10);
+    pos = skip_space(pos);
+    bool do_read = false;
+
+    if (*pos == ':')
+    {
+        do_read = true;
+        bool as_input;
+        pos = skip_space(pos + 1);
+        if (strncmp(pos, "IN", 2) == 0 || *pos == 'I')
+        {
+            pos = skip_to_space(pos);
+            as_input = true;
+        }
+        else if (strncmp(pos, "OUT", 3) == 0 || *pos == 'O')
+        {
+            pos = skip_to_space(pos);
+            as_input = false;
+        }
+        else
+        {
+            log_error("Malformed gpio type command");
+            return;
+        }
+
+        io_pupd_t pull = IO_PUPD_NONE;
+
+        pos = skip_space(pos);
+
+        if (*pos && *pos != '=')
+        {
+            if ((strncmp(pos, "UP", 2) == 0) || (pos[0] == 'U'))
+            {
+                pos = skip_to_space(pos);
+                pull = IO_PUPD_UP;
+            }
+            else if (strncmp(pos, "DOWN", 4) == 0 || pos[0] == 'D')
+            {
+                pos = skip_to_space(pos);
+                pull = IO_PUPD_DOWN;
+            }
+            else if (strncmp(pos, "NONE", 4) == 0 || pos[0] == 'N')
+            {
+                pos = skip_to_space(pos);
+            }
+            else
+            {
+                log_error("Malformed gpio pull command");
+                return;
+            }
+            pos = skip_space(pos);
+        }
+
+        io_configure(io, as_input, pull);
+    }
+
+    if (*pos == '=')
+    {
+        pos = skip_space(pos + 1);
+        if (strncmp(pos, "ON", 2) == 0 || *pos == '1')
+        {
+            pos = skip_to_space(pos);
+            if (!io_is_input(io))
+            {
+                io_on(io, true);
+                if (!do_read)
+                    log_out("IO %02u = ON", io);
+            }
+            else log_error("IO %02u is input but output command.", io);
+        }
+        else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
+        {
+            pos = skip_to_space(pos);
+            if (!io_is_input(io))
+            {
+                io_on(io, false);
+                if (!do_read)
+                    log_out("IO %02u = OFF", io);
+            }
+            else log_error("IO %02u is input but output command.", io);
+        }
+        else
+        {
+            log_error("Malformed gpio on/off command");
+            return;
+        }
+    }
+    else do_read = true;
+
+    if (do_read)
+        io_log(io);
+}
+
+
+void cmd_enable_pulsecount_cb(char * args)
+{
+    char * pos = NULL;
+    unsigned io = strtoul(args, &pos, 10);
+    if (args == pos)
+        goto bad_exit;
+    pos = skip_space(pos);
+    uint8_t pupd;
+    if (pos[0] == 'U')
+        pupd = IO_PUPD_UP;
+    else if (pos[0] == 'D')
+        pupd = IO_PUPD_DOWN;
+    else if (pos[0] == 'N')
+        pupd = IO_PUPD_NONE;
+    else
+        goto bad_exit;
+
+    if (io_enable_pulsecount(io, pupd))
+        log_out("IO %02u pulsecount enabled", io);
+    else
+        log_out("IO %02u has no pulsecount", io);
+    return;
+bad_exit:
+    log_out("<io> <U/D/N>");
+}
+
+
+void cmd_enable_onewire_cb(char * args)
+{
+    char * pos = NULL;
+    unsigned io = strtoul(args, &pos, 10);
+
+    if (io_enable_w1(io))
+        log_out("IO %02u onewire enabled", io);
+    else
+        log_out("IO %02u has no onewire", io);
+}
+
+
+struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           ios_log                       , false , NULL },
+                                       { "io",           "Get/set IO set.",          io_cb                         , false , NULL },
+                                       { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb      , false , NULL },
+                                       { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb         , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

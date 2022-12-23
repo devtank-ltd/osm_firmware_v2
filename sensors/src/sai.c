@@ -18,6 +18,7 @@ Documents used:
 #include <math.h>
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "common.h"
 #include "config.h"
@@ -318,7 +319,7 @@ static void _sai_dma_init(void)
 
 static bool _sai_load_coeffs(void)
 {
-    _sai_calibration_coeffs = persist_get_sai_cal_coeffs();
+    _sai_calibration_coeffs = persist_data.model_config.sai_cal_coeffs;
     for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
     {
         if (_sai_calibration_coeffs[i] != 0)
@@ -566,7 +567,7 @@ void dma2_channel1_isr(void)
 }
 
 
-measurements_sensor_state_t sai_iteration_callback(char* name)
+static measurements_sensor_state_t _sai_iteration_callback(char* name)
 {
     if (_sai_sample.finished)
     {
@@ -582,14 +583,14 @@ measurements_sensor_state_t sai_iteration_callback(char* name)
 }
 
 
-measurements_sensor_state_t sai_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _sai_collection_time(char* name, uint32_t* collection_time)
 {
     *collection_time = SAI_DEFAULT_COLLECTION_TIME;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-measurements_sensor_state_t sai_measurements_init(char* name)
+static measurements_sensor_state_t _sai_measurements_init(char* name, bool in_isolation)
 {
     _sai_dma_init();
     _sai_dma_on();
@@ -597,7 +598,7 @@ measurements_sensor_state_t sai_measurements_init(char* name)
 }
 
 
-measurements_sensor_state_t sai_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _sai_measurements_get(char* name, measurements_reading_t* value)
 {
     _sai_dma_off();
     if (_sai_sample.num_rms == 0)
@@ -613,7 +614,7 @@ measurements_sensor_state_t sai_measurements_get(char* name, measurements_readin
 
     sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
     sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
-    value->v_i64 = (int64_t)dB;
+    value->v_f32 = to_f32_from_float((float)dB / 10.f);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -627,22 +628,49 @@ void sai_print_coeffs(void)
 }
 
 
-bool sai_get_sound(uint32_t* dB)
-{
-    uint32_t rms;
-    if (!_sai_rms_adaptive(&rms, _sai_array, SAI_ARRAY_SIZE))
-    {
-        return false;
-    }
-    *dB = _sai_conv_dB(rms);
-    return true;
-}
-
-
 bool sai_set_coeff(uint8_t index, float coeff)
 {
     if (index > SAI_NUM_CAL_COEFFS)
         return false;
     _sai_calibration_coeffs[index] = coeff;
     return true;
+}
+
+
+static measurements_value_type_t _sai_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+}
+
+
+void  sai_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _sai_collection_time;
+    inf->init_cb            = _sai_measurements_init;
+    inf->get_cb             = _sai_measurements_get;
+    inf->iteration_cb       = _sai_iteration_callback;
+    inf->value_type_cb      = _sai_value_type;
+}
+
+
+static void sound_cal_cb(char* args)
+{
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    if (index < 1 || index > SAI_NUM_CAL_COEFFS)
+    {
+        log_out("Index out of range.");
+        return;
+    }
+    p = skip_space(p);
+    float coeff = strtof(p, NULL);
+    if (!sai_set_coeff(index-1, coeff))
+        log_out("Could not set the coefficient.");
+}
+
+
+struct cmd_link_t* sai_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

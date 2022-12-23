@@ -4,7 +4,7 @@
 
 #define MEASUREMENTS_MAX_NUMBER                   256
 
-#define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x01
+#define MEASUREMENTS_PAYLOAD_VERSION       (uint8_t)0x02
 #define MEASUREMENTS_DATATYPE_SINGLE       (uint8_t)0x01
 #define MEASUREMENTS_DATATYPE_AVERAGED     (uint8_t)0x02
 
@@ -22,11 +22,14 @@
 #define MEASUREMENTS_PULSE_COUNT_NAME_2     "CNT2"
 #define MEASUREMENTS_LIGHT_NAME             "LGHT"
 #define MEASUREMENTS_SOUND_NAME             "SND"
+#define MEASUREMENTS_FTMA_1_NAME            "FTA1"
+#define MEASUREMENTS_FTMA_2_NAME            "FTA2"
+#define MEASUREMENTS_FTMA_3_NAME            "FTA3"
+#define MEASUREMENTS_FTMA_4_NAME            "FTA4"
 
 #define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 
-
-extern unsigned measurements_add_defaults(measurements_def_t * measurements_arr);
 extern void measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
+extern void measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
 
 extern measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name);

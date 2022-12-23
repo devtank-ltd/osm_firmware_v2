@@ -1,5 +1,4 @@
 from imp import reload
-import threading
 import serial
 import select
 import datetime
@@ -53,61 +52,12 @@ def get_debug_print():
     return _debug_fnc
 
 
-def parse_temp(r_str: str):
+def parse_float(r_str: str):
     if "ERROR" in r_str:
         return False
     r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
     if r:
         return float(r[-1])
-    return False
-
-
-def parse_humidity(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_light(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_one_wire(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_current_clamp(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return float(r[-1])
-    return False
-
-
-def parse_particles(r_str: str):
-    if "ERROR" in r_str:
-        return False
-    if "No HPM data." in r_str:
-        return False
-    if "HPM disabled" in r_str:
-        return False
-    r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-    if r:
-        return (int(r[-3]), int(r[-1]))
     return False
 
 
@@ -128,9 +78,9 @@ class dev_child_t(object):
     @property
     def parent(self):
         return self._parent()
-    
 
-class measurement_t(dev_child_t):
+
+class property_t(dev_child_t):
     def __init__(self, parent, name: str, type_: type, cmd: str, parse_func, is_writable: bool = False, timeout: float = 1.0):
         super().__init__(parent)
         self.timeout = timeout
@@ -170,38 +120,42 @@ class measurement_t(dev_child_t):
         self._update(v)
 
 
-class hpm_t(measurement_t):
-    def __init__(self, parent):
-        super().__init__(parent, "Particles (2.5|10)", str, "hpm 1", parse_particles)
-        self._enabled = False
+
+class measurement_t(property_t):
+    def __init__(self, parent, name: str, interval:int, samples:int, is_writable: bool = False, timeout: float = 2.0):
+        super().__init__(parent, name, None, f"get_meas {name}", self._parse, is_writable, timeout)
+        self._interval = interval
+        self._samples = samples
+
+    def _parse(self, r_str:str):
+        if "ERROR" in r_str:
+            return False
+        r = re.search(f"{self.name}: ", r_str)
+        if r is None:
+            return False
+        r_str = r_str[r.end():]
+        if r_str[0] == '"':
+            return r_str
+        if re.match("^[0-9.+-]+$", r_str):
+            return float(r_str)
+        return r_str
 
     @property
-    def enabled(self):
-        return self._enabled
+    def interval(self):
+        return self._interval
 
-    @enabled.setter
-    def enabled(self, enabled:bool):
-        v = 1 if enabled else 0
-        self.parent.do_cmd(f"hpm {v}")
-        self._enabled = enabled
+    @interval.setter
+    def interval(self, v):
+        self.parent.change_interval(self.name, v)
+        self._interval = v
 
 
 class modbus_reg_t(measurement_t):
-    def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, handle: str):
-        super().__init__(parent, name, float, f"mb_get_reg {handle}", self._parse_func, False, 2.0)
+    def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, interval: int = 1, samples: int = 1, timeout: float = 2.0):
+        super().__init__(parent, name, interval, samples, is_writable = False, timeout = timeout)
         self.address = address
         self.func = func
         self.mb_type_ = mb_type_
-        self.handle = handle
-
-    def _parse_func(self, r_str):
-        if "ERROR" in r_str:
-            return False
-        r = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", r_str)
-        # r = re.findall(r'0x[0-9A-F]+', r_str)
-        if r:
-            return float(r[-1])
-        return False
 
     def __str__(self):
         return f'{str(self.name)}, {str(self.address)}, {str(self.mb_type_)}, {str(self.func)}'
@@ -386,17 +340,11 @@ class dev_t(dev_base_t):
         self._io_count = int(line.split()[-1])
         self._children = {
             "ios"       : ios_t(self, self._io_count),
-            "w1"        : measurement_t(self, "One Wire"           , float , "w1 TMP2"   , parse_one_wire       ),
-            "cc"        : measurement_t(self, "Current Clamp"      , int   , "cc"        , parse_current_clamp  ),
-            "hpm"       : hpm_t(self),
-            "comms_conn": measurement_t(self, "LoRa Comms"         , bool  , "comms_conn" , parse_lora_comms     ),
-            "temp"      : measurement_t(self, "Temperature"        , float , "temp"      , parse_temp           ),
-            "humi"      : measurement_t(self, "Humidity"           , float , "humi"      , parse_humidity       ),
-            "light"     : measurement_t(self, "Light"              , float , "light"     , parse_light          , False, 10),
-            "version"   : measurement_t(self, "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
-            "serial_num": measurement_t(self, "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
+            "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
+            "version"   : property_t(self,    "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
+            "serial_num": property_t(self,    "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
-        self.update_modbus_registers()
+        self.update_measurements()
 
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
@@ -511,6 +459,23 @@ class dev_t(dev_base_t):
             meas_list = [line.replace("\t\t", "\t").split("\t") for line in r]
         return meas_list
 
+    def update_measurements(self):
+        new_chldren = {}
+        for key, child in self._children.items():
+            if not isinstance(child, measurement_t):
+                new_chldren[key] = child
+        self._children = new_chldren
+        r = self.do_cmd_multi('measurements')
+        assert r
+        r = r[2:]
+        for line in r:
+            name, interval, sample_count = line.split()
+            interval=int(interval.split('x')[0])
+            sample_count=int(sample_count)
+            self._children[name] = measurement_t(self, name, interval, sample_count)
+
+
+
     def measurements_enable(self, value):
         self.do_cmd("meas_enable %s" % ("1" if value else "0"))
 
@@ -536,23 +501,12 @@ class dev_t(dev_base_t):
                     reg = line.split()[3:]
                     name = reg[2].strip('"')
                     reg = modbus_reg_t(self, name=name, address=int(
-                        reg[0][2:], 16), mb_type_=reg[-1], func=int(reg[1][3:4]), handle=name)
+                        reg[0][2:], 16), mb_type_=reg[-1], func=int(reg[1][3:4]))
                     dev["regs"] += [reg]
         else:
             pass
 
         return mb_bus_t(config=bus_config, devices=[mb_dev_t(**dev) for dev in devs])
-
-    def update_modbus_registers(self):
-        new_chldren = {}
-        for key, child in self._children.items():
-            if not isinstance(child, modbus_reg_t):
-                new_chldren[key] = child
-        self._children = new_chldren
-        mb_root = self.get_modbus()
-        for device in mb_root.devices:
-            for reg in device.regs:
-                self._children[reg.handle] = reg
 
     def get_io(self, index: int) -> bool:
         line = self.do_cmd("io %u" % index)
@@ -583,8 +537,8 @@ class dev_t(dev_base_t):
             self._log("Registers should be an object of register")
             return False
         r = self.do_cmd(
-            f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.handle}")
-        self._children[reg.handle] = reg
+            f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.name}")
+        self._children[reg.name] = reg
         return "Added modbus reg" in r
 
     def setup_modbus(self, is_bin=False, baudrate=9600, bits=8, parity='N', stopbits=1):
@@ -597,7 +551,7 @@ class dev_t(dev_base_t):
             return False
         for reg in regs:
             self.modbus_reg_add(slave_id, reg)
-            self._children[reg.handle] = reg
+            self._children[reg.name] = reg
         return True
 
     def modbus_dev_del(self, device: str):

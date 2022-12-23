@@ -519,26 +519,22 @@ static bool _veml7700_iteration_off(void)
 }
 
 
-measurements_sensor_state_t veml7700_iteration(char* name)
+static measurements_sensor_state_t _veml7700_iteration(char* name)
 {
-    bool (* iteration_function)(void) = NULL;
     switch (_veml7700_state_machine.state)
     {
         case VEML7700_STATE_DONE:
-            iteration_function = _veml7700_iteration_done;
-            break;
+            return _veml7700_iteration_done()    ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_READING:
-            iteration_function = _veml7700_iteration_reading;
-            break;
+            return _veml7700_iteration_reading() ? MEASUREMENTS_SENSOR_STATE_BUSY    : MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_OFF:
-            iteration_function = _veml7700_iteration_off;
-            break;
+            return _veml7700_iteration_off()     ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return ((iteration_function && iteration_function()) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
+    return MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-measurements_sensor_state_t veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
@@ -549,7 +545,7 @@ measurements_sensor_state_t veml7700_measurements_collection_time(char* name, ui
 }
 
 
-measurements_sensor_state_t veml7700_light_measurements_init(char* name)
+static measurements_sensor_state_t _veml7700_light_measurements_init(char* name, bool in_isolation)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -575,7 +571,7 @@ measurements_sensor_state_t veml7700_light_measurements_init(char* name)
 }
 
 
-measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _veml7700_light_measurements_get(char* name, measurements_reading_t* value)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -600,61 +596,22 @@ measurements_sensor_state_t veml7700_light_measurements_get(char* name, measurem
 }
 
 
-bool veml7700_get_lux(uint32_t* lux)
+void veml7700_init(void)
 {
-    if (!lux)
-    {
-        light_debug("Handed in null pointer.");
-        return false;
-    }
-    if (veml7700_light_measurements_init(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        light_debug("Failed to init light collection.");
-        return false;
-    }
-    uint32_t wait_time;
-    if (veml7700_measurements_collection_time(MEASUREMENTS_LIGHT_NAME, &wait_time) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-    {
-        light_debug("Failed to collect the wait time.");
-        return false;
-    }
-    uint32_t start_time = get_since_boot_ms();
-    while (since_boot_delta(get_since_boot_ms(), start_time) < wait_time)
-    {
-        /* Watchdog? */
-        if (veml7700_iteration(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        {
-            light_debug("Iteration failed.");
-            return false;
-        }
-    }
-    measurements_reading_t v;
-    start_time = get_since_boot_ms();
-    while (since_boot_delta(get_since_boot_ms(), start_time) < VEML7700_TIMEOUT_TIME_MS)
-    {
-        measurements_sensor_state_t resp = veml7700_light_measurements_get(MEASUREMENTS_SENSOR_STATE_SUCCESS, &v);
-        switch (resp)
-        {
-            case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-                *lux = v.v_i64;
-                return true;
-            case MEASUREMENTS_SENSOR_STATE_BUSY:
-                break;
-            case MEASUREMENTS_SENSOR_STATE_ERROR:
-                light_debug("Failed to collect the light.");
-                return false;
-        }
-        if (veml7700_iteration(MEASUREMENTS_LIGHT_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        {
-            light_debug("Overtime iteration failed.");
-            return false;
-        }
-    }
-    light_debug("Timed out collecting light.");
-    return false;
 }
 
 
-void veml7700_init(void)
+static measurements_value_type_t _veml7700_value_type(char* name)
 {
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void veml7700_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _veml7700_measurements_collection_time;
+    inf->init_cb            = _veml7700_light_measurements_init;
+    inf->get_cb             = _veml7700_light_measurements_get;
+    inf->iteration_cb       = _veml7700_iteration;
+    inf->value_type_cb      = _veml7700_value_type;
 }

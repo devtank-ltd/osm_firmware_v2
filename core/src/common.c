@@ -4,9 +4,13 @@
 #include <math.h>
 
 
+#include "common.h"
+
 #include "uart_rings.h"
 #include "measurements.h"
 #include "platform.h"
+#include "config.h"
+#include "log.h"
 
 
 bool msg_is(const char* ref, char* message)
@@ -106,4 +110,89 @@ bool u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_
     }
     *result = arg_1 + arg_2;
     return true;
+}
+
+
+bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
+{
+    uint32_t start_time = get_since_boot_ms();
+    uint32_t watch_dog_kick = 9000;
+    
+    if (timeout > watch_dog_kick)
+        log_debug(DEBUG_SYS, "Warning, timeout required watchdog kicking.");
+
+    if (should_exit_db(userdata))
+        return true;
+
+    while(since_boot_delta(get_since_boot_ms(), start_time) < timeout)
+    {
+        for(unsigned uart = 0; uart < UART_CHANNELS_COUNT; uart++)
+        {
+            if (uart != CMD_UART)
+                uart_ring_in_drain(uart);
+        }
+
+        uart_rings_out_drain();
+        platform_tight_loop();
+        if (should_exit_db(userdata))
+            return true;
+
+        if (since_boot_delta(get_since_boot_ms(), start_time) > watch_dog_kick)
+        {
+            platform_watchdog_reset();
+            watch_dog_kick += 10000;
+        }
+    }
+    return false;
+}
+
+
+int32_t to_f32_from_float(float in)
+{
+    return (int32_t)(in * 1000);
+}
+
+
+int32_t to_f32_from_double(double in)
+{
+    return (int32_t)(in * 1000);
+}
+
+
+struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds)
+{
+    if (!tail | !cmds)
+    {
+        log_error("Tail or command list is NULL");
+        return tail;
+    }
+    for (unsigned i = 0; i < num_cmds; i++)
+    {
+        tail->next = &cmds[i];
+        tail = tail->next;
+    }
+    return tail;
+}
+
+
+uint16_t modbus_crc(uint8_t * buf, unsigned length)
+{
+    uint16_t crc = 0xFFFF;
+
+    for (unsigned pos = 0; pos < length; pos++)
+    {
+        crc ^= (uint16_t)buf[pos];        // XOR byte into least sig. byte of crc
+
+        for (int i = 8; i != 0; i--)      // Loop over each bit
+        {
+            if ((crc & 0x0001) != 0)      // If the LSB is set
+            {
+                crc >>= 1;                // Shift right and XOR 0xA001
+                crc ^= 0xA001;
+            }
+            else                          // Else LSB is not set
+                crc >>= 1;                // Just shift right
+        }
+    }
+    return crc;
 }

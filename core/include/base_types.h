@@ -5,6 +5,7 @@
 
 #include "platform_base_types.h"
 #include "config.h"
+#include "pinmap.h"
 
 /*subset of usb_cdc_line_coding_bParityType*/
 typedef enum
@@ -32,6 +33,7 @@ extern bool decompose_uart_str(char             * str,
                                uart_stop_bits_t * stop);
 
 extern char * skip_space(char * pos);
+extern char * skip_to_space(char * pos);
 
 #define IO_PULL_MASK    0x0003
 #define IO_TYPE_MASK    0xF000
@@ -72,6 +74,9 @@ typedef enum
     LIGHT         = 10,
     SOUND         = 11,
     FW_VERSION    = 12,
+    FTMA          = 13,
+    CUSTOM_0      = 14,
+    CUSTOM_1      = 15,
 } measurements_def_type_t;
 
 
@@ -82,6 +87,9 @@ typedef struct
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type;                                      // measurement_def_type_t
 } measurements_def_t;
+
+#define MODBUS_BLOCK_SIZE 16
+#define MODBUS_BLOCKS  ((MODBUS_MEMORY_SIZE / MODBUS_BLOCK_SIZE) - 1) /* We have 1k and the first block is the bus description.*/
 
 #define MODBUS_READ_HOLDING_FUNC 3
 #define MODBUS_READ_INPUT_FUNC 4
@@ -98,55 +106,79 @@ typedef enum
 
 typedef enum
 {
-    MODBUS_BYTE_ORDER_MSB,
-    MODBUS_BYTE_ORDER_LSB,
+    MODBUS_BYTE_ORDER_MSB = 0,
+    MODBUS_BYTE_ORDER_LSB = 1,
 } modbus_byte_orders_t;
 
 
 typedef enum
 {
-    MODBUS_WORD_ORDER_MSW,
-    MODBUS_WORD_ORDER_LSW,
+    MODBUS_WORD_ORDER_MSW = 0,
+    MODBUS_WORD_ORDER_LSW = 1,
 } modbus_word_orders_t;
+
+
+typedef enum
+{
+    MB_REG_INVALID = 0,
+    MB_REG_WAITING = 1,
+    MB_REG_READY   = 2
+} modbus_reg_state_t; 
 
 
 typedef struct
 {
     char              name[MODBUS_NAME_LEN];
-    uint32_t          class_data_a; /* what ever child class wants */
+    uint32_t          value_data;
     uint8_t           type; /*modbus_reg_type_t*/
-    uint8_t           func;
+    uint8_t           func:4;
+    uint8_t           value_state:4; /*modbus_reg_state_t*/
     uint16_t          reg_addr;
-    uint32_t          class_data_b; /* what ever child class wants */
+    uint16_t          unit_id;
+    uint16_t          next_reg_offset;
 } __attribute__((__packed__)) modbus_reg_t;
 
 
 typedef struct
 {
     char           name[MODBUS_NAME_LEN];
-    uint8_t        slave_id;
     uint8_t        byte_order; /* modbus_byte_orders_t */
     uint8_t        word_order; /* modbus_word_orders_t */
-    uint8_t        _; /* pad.*/
-    modbus_reg_t   regs[MODBUS_DEV_REGS];
+    uint8_t        reg_count;
+    uint8_t        _;
+    uint16_t       unit_id;
+    uint16_t       first_reg_offset;
+    uint16_t       next_dev_offset;
+    uint16_t       __;
 } __attribute__((__packed__)) modbus_dev_t;
-
 
 typedef struct
 {
-    uint8_t version;
-    uint8_t max_dev_num;
-    uint8_t max_reg_num;
-    uint8_t _;
+    uint64_t _;
     uint32_t __;
+    uint32_t next_free_offset;
+} __attribute__((__packed__)) modbus_free_t;
+
+typedef struct
+{
+    uint8_t  version;
+    uint8_t  binary_protocol; /* BIN or RTU */ /* This is to support pymodbus.framer.binary_framer and http://jamod.sourceforge.net/. */
+    uint8_t  databits:4;        /* 8? */
+    uint8_t  stopbits:2;        /* uart_stop_bits_t */
+    uint8_t  parity:2;          /* uart_parity_t */
+    uint8_t  dev_count;
     uint32_t baudrate;
-    uint8_t  binary_protocol; /* BIN or RTU */
-    uint8_t  databits;        /* 8? */
-    uint8_t  stopbits;        /* uart_stop_bits_t */
-    uint8_t  parity;          /* uart_parity_t */
-    modbus_dev_t            modbus_devices[MODBUS_MAX_DEV];
+    uint16_t first_dev_offset;
+    uint16_t first_free_offset;
+    uint32_t _;
+    modbus_free_t  blocks[MODBUS_BLOCKS];
 } __attribute__((__packed__)) modbus_bus_t;
 
+_Static_assert(((sizeof(modbus_bus_t) % MODBUS_BLOCK_SIZE) == 0) &&
+               (sizeof(modbus_free_t) == MODBUS_BLOCK_SIZE) &&
+               (sizeof(modbus_dev_t) == MODBUS_BLOCK_SIZE) &&
+               (sizeof(modbus_reg_t) == MODBUS_BLOCK_SIZE),
+               "Modbus blocks broken.");
 
 typedef enum
 {
@@ -154,23 +186,17 @@ typedef enum
     ADCS_TYPE_CC_CLAMP1,
     ADCS_TYPE_CC_CLAMP2,
     ADCS_TYPE_CC_CLAMP3,
+    ADCS_TYPE_FTMA1,
+    ADCS_TYPE_FTMA2,
+    ADCS_TYPE_FTMA3,
+    ADCS_TYPE_FTMA4,
+    ADCS_TYPE_INVALID,
 } adcs_type_t;
-
-
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
-
-typedef struct
-{
-    uint32_t ext_max_mA;
-    uint32_t int_max_mV;
-} cc_config_t;
 
 
 typedef enum
 {
-    COMMS_TYPE_LW,
+    COMMS_TYPE_LW = 1,
 } comms_type_lw_t;
 
 
@@ -195,3 +221,13 @@ typedef union
     int32_t v_f32;
     char*   v_str;
 } measurements_reading_t;
+
+
+struct cmd_link_t
+{
+    const char * key;
+    const char * desc;
+    void (*cb)(char * args);
+    bool hidden;
+    struct cmd_link_t * next;
+};

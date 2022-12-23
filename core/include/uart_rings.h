@@ -1,6 +1,8 @@
 #pragma once
 
 #include <stdbool.h>
+#include "ring.h"
+#include "persist_config_header.h"
 
 extern unsigned uart_ring_in(unsigned uart, const char* s, unsigned len);
 extern unsigned uart_ring_out(unsigned uart, const char* s, unsigned len);
@@ -16,3 +18,4 @@ extern void uart_rings_check();
 
 extern void uart_rings_init(void);
 
+extern char line_buffer[CMD_LINELEN];

@@ -2,6 +2,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 
 #include "cc.h"
 
@@ -27,31 +30,11 @@ typedef struct
 
 
 static adcs_type_t          _cc_adc_clamp_array[ADC_CC_COUNT]   = ADC_TYPES_ALL_CC;
-static uint32_t             _cc_midpoints[ADC_CC_COUNT];
 static cc_active_clamps_t   _cc_adc_active_clamps               = {0};
+static adcs_type_t          _cc_running_isolated                = ADCS_TYPE_INVALID;
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
 static cc_config_t*         _configs;
-
-
-static bool _cc_to_mV(uint32_t value, uint32_t* mV)
-{
-    // Linear scale without calibration.
-    // ADC of    0 -> 0V
-    //        4096 -> 3.3V
-
-    const uint16_t max_value = ADC_MAX_VAL;
-    const uint16_t min_value = 0;
-    const uint16_t max_mV = ADC_MAX_MV;
-    const uint16_t min_mV = 0;
-    uint32_t inter_val;
-
-    inter_val = value * (max_mV - min_mV);
-    inter_val /= (max_value - min_value);
-
-    *mV = inter_val;
-    return true;
-}
 
 
 static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor)
@@ -85,7 +68,7 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
     adc_debug("Difference = %"PRIu32".%03"PRIu32, adc_diff/1000, adc_diff%1000);
 
     // Once the conversion is no longer linearly multiplicative this needs to be changed.
-    if (!_cc_to_mV(adc_diff, &inter_value))
+    if (!adcs_to_mV(adc_diff, &inter_value))
     {
         adc_debug("Cannot get mV value of midpoint.");
         return false;
@@ -253,7 +236,7 @@ static void _cc_release_all(void)
 }
 
 
-measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_time)
+static measurements_sensor_state_t _cc_get_collection_time(char* name, uint32_t* collection_time)
 {
     /**
     Could calculate how long it should take to get the results. For now use 2 seconds.
@@ -267,52 +250,81 @@ measurements_sensor_state_t cc_collection_time(char* name, uint32_t* collection_
 }
 
 
-measurements_sensor_state_t cc_begin(char* name)
+static measurements_sensor_state_t _cc_begin(char* name, bool in_isolation)
 {
-    if (!_cc_adc_active_clamps.len)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-
-    uint8_t index, active_index;
-
-    if (!_cc_get_info(name, &index, &active_index, NULL))
+    uint8_t index;
+    if (!_cc_get_index(&index, name))
     {
-        adc_debug("Cannot get CC info.");
+        adc_debug("Cannot get index.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+    if (index >= ADC_CC_COUNT)
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+    adcs_resp_t resp;
+
+    if (in_isolation)
     {
-        if (i == index)
-            continue;
-        if (_cc_running[i])
+        adcs_type_t lone_cc = ADCS_TYPE_CC_CLAMP1 + index;
+
+        for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         {
-            if (index >= ADC_CC_COUNT)
+            if (i == index)
+                continue;
+            if (_cc_running[i])
+            {
+                adc_debug("Cannot start CC in isolation when running.");
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
-            _cc_running[index] = true;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            }
         }
+
+        _cc_running_isolated = lone_cc;
+
+        resp = adcs_begin(&lone_cc, 1, CC_NUM_SAMPLES, ADCS_KEY_CC);
     }
-    adcs_resp_t resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    else
+    {
+        if (!_cc_adc_active_clamps.len)
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        if (_cc_running_isolated != ADCS_TYPE_INVALID)
+        {
+            adc_debug("Cannot start CC non isolated as isolation running.");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        }
+
+        for (unsigned i = 0; i < ADC_CC_COUNT; i++)
+        {
+            if (i == index)
+                continue;
+            if (_cc_running[i])
+            {
+                _cc_running[index] = true;
+                return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            }
+        }
+        resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    }
+
     switch(resp)
     {
         case ADCS_RESP_FAIL:
             adc_debug("Failed to begin CC ADC.");
+            if (_cc_running_isolated != ADCS_TYPE_INVALID)
+                _cc_running_isolated = ADCS_TYPE_INVALID;
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case ADCS_RESP_OK:
             break;
     }
-
-    if (index >= ADC_CC_COUNT)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
     _cc_running[index] = true;
     adc_debug("Started ADC reading for CC.");
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
+static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* value)
 {
     uint8_t index, active_index;
     if (!_cc_get_info(name, &index, &active_index, NULL))
@@ -331,9 +343,19 @@ measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
     }
 
     uint32_t adcs_rms;
-    uint32_t midpoint = _cc_midpoints[index];
+    uint32_t midpoint = _configs[index].midpoint;
 
-    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+    unsigned cc_len;
+
+    if (_cc_running_isolated != ADCS_TYPE_INVALID)
+        cc_len = 1;
+    else
+        cc_len = _cc_adc_active_clamps.len;
+
+    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+
+    _cc_running_isolated = ADCS_TYPE_INVALID;
+
     switch (resp)
     {
         case ADCS_RESP_FAIL:
@@ -351,6 +373,11 @@ measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
 
     uint32_t cc_mA;
 
+    if (_configs[index].int_max_mV == 0)
+    {
+        adc_debug("Tried to read CC but int_max_mV is 0.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
     uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mV;
     if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
     {
@@ -364,19 +391,15 @@ measurements_sensor_state_t cc_get(char* name, measurements_reading_t* value)
 }
 
 
-bool cc_set_midpoints(uint32_t new_midpoints[ADC_CC_COUNT])
+static bool _cc_set_midpoints(uint32_t new_midpoints[ADC_CC_COUNT])
 {
-    memcpy(_cc_midpoints, new_midpoints, ADC_CC_COUNT * sizeof(_cc_midpoints[0]));
-    if (!persist_set_cc_midpoints(new_midpoints))
-    {
-        adc_debug("Could not set the persistent storage for the midpoint.");
-        return false;
-    }
+    for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        _configs[i].midpoint = new_midpoints[i];
     return true;
 }
 
 
-bool cc_set_midpoint(uint32_t midpoint, char* name)
+static bool _cc_set_midpoint(uint32_t midpoint, char* name)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
@@ -385,29 +408,24 @@ bool cc_set_midpoint(uint32_t midpoint, char* name)
     {
         return false;
     }
-    _cc_midpoints[index] = midpoint;
-    if (!persist_set_cc_midpoints(_cc_midpoints))
-    {
-        adc_debug("Could not set the persistent storage for the midpoint.");
-        return false;
-    }
+    _configs[index].midpoint = midpoint;
     return true;
 }
 
 
-bool cc_get_midpoint(uint32_t* midpoint, char* name)
+static bool _cc_get_midpoint(uint32_t* midpoint, char* name)
 {
     uint8_t index;
     if (!_cc_get_index(&index, name))
         return false;
     if (index >= ADC_CC_COUNT)
         return false;
-    *midpoint = _cc_midpoints[index];
+    *midpoint = _configs[index].midpoint;
     return true;
 }
 
 
-bool cc_calibrate(void)
+static bool _cc_calibrate(void)
 {
     adcs_type_t all_cc_clamps[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
     cc_active_clamps_t prev_cc_adc_active_clamps = {0};
@@ -465,7 +483,7 @@ bool cc_calibrate(void)
 
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         adc_debug("MP CC%u: %"PRIu32".%03"PRIu32, i+1, midpoints[i]/1000, midpoints[i]%1000);
-    cc_set_midpoints(midpoints);
+    _cc_set_midpoints(midpoints);
     memcpy(_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
     _cc_adc_active_clamps.len = prev_cc_adc_active_clamps.len;
     return true;
@@ -474,30 +492,15 @@ bool cc_calibrate(void)
 
 bool cc_get_blocking(char* name, measurements_reading_t* value)
 {
-    adcs_type_t clamp;
-    if (!_cc_get_info(name, NULL, NULL, &clamp))
-    {
-        adc_debug("Cannot get info.");
-        return false;
-    }
-    cc_active_clamps_t prev_cc_adc_active_clamps;
-    memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len);
-    prev_cc_adc_active_clamps.len = _cc_adc_active_clamps.len;
-    if (!cc_set_active_clamps(&clamp, 1))
-    {
-        adc_debug("Cannot set active clamp.");
-        return false;
-    }
-    if (cc_begin(name) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
     if (!_cc_wait())
         return false;
-    bool r = (cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
+    bool r = (_cc_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
     _cc_release_all();
-    cc_set_active_clamps(prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
     return r;
 }
 
@@ -515,19 +518,19 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
@@ -536,17 +539,17 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
     if (!_cc_wait())
         return false;
     char name[MEASURE_NAME_NULLED_LEN] = {0};
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         strncpy(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
@@ -561,15 +564,196 @@ bad_exit:
 }
 
 
+static void  _cc_enable(char* name, bool enabled)
+{
+    uint8_t index_local;
+    if (!_cc_get_index(&index_local, name))
+    {
+        adc_debug("Cannot get index.");
+        return;
+    }
+
+    adcs_type_t clamps[ADC_CC_COUNT] = {0};
+    unsigned len = 0;
+
+    adcs_type_t target_cc = ADCS_TYPE_CC_CLAMP1 + index_local;
+
+    if (enabled)
+    {
+        for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+            if (_cc_adc_active_clamps.active[i] < target_cc)
+                clamps[len++] = _cc_adc_active_clamps.active[i];
+
+        clamps[len++] = target_cc;
+
+        for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+            if (_cc_adc_active_clamps.active[i] > target_cc)
+                clamps[len++] = _cc_adc_active_clamps.active[i];
+    }
+    else
+    {
+        for (unsigned i = 0; i < _cc_adc_active_clamps.len; i++)
+            if (_cc_adc_active_clamps.active[i] != target_cc)
+                clamps[len++] = _cc_adc_active_clamps.active[i];
+    }
+
+    cc_set_active_clamps(clamps, len);
+}
+
+
+static measurements_value_type_t _cc_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void cc_inf_init(measurements_inf_t* inf)
+{
+    inf->collection_time_cb = _cc_get_collection_time;
+    inf->init_cb            = _cc_begin;
+    inf->get_cb             = _cc_get;
+    inf->enable_cb          = _cc_enable;
+    inf->value_type_cb      = _cc_value_type;
+}
+
+
+void cc_setup_default_mem(cc_config_t* memory, unsigned size)
+{
+    uint8_t num_cc_configs = ADC_CC_COUNT;
+    if (sizeof(cc_config_t) * ADC_CC_COUNT > size)
+    {
+        log_error("CC config is larger than the size of memory given.");
+        num_cc_configs = size / sizeof(cc_config_t);
+    }
+    for (uint8_t i = 0; i < num_cc_configs; i++)
+    {
+        memory[i].midpoint      = CC_DEFAULT_MIDPOINT;
+        memory[i].ext_max_mA    = CC_DEFAULT_EXT_MAX_MA;
+        memory[i].int_max_mV    = CC_DEFAULT_INT_MAX_MV;
+    }
+}
+
+
 void cc_init(void)
 {
-    // Get the midpoints
-    if (!persist_get_cc_midpoints(_cc_midpoints))
+    _configs = persist_data.model_config.cc_configs;
+    if (!_configs)
     {
-        // Assume it to be the theoretical midpoint
         adc_debug("Failed to load persistent midpoint.");
-        uint32_t midpoints[ADC_CC_COUNT] = {CC_DEFAULT_MIDPOINT, CC_DEFAULT_MIDPOINT, CC_DEFAULT_MIDPOINT};
-        cc_set_midpoints(midpoints);
+        static cc_config_t default_configs[ADC_CC_COUNT];
+        cc_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
+        _configs = default_configs;
     }
-    _configs = persist_get_cc_configs();
+}
+
+
+static void cc_cb(char* args)
+{
+    char* p;
+    uint8_t cc_num = strtoul(args, &p, 10);
+    measurements_reading_t value_1;
+    if (p == args)
+    {
+        measurements_reading_t value_2, value_3;
+        if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
+        {
+            log_out("Could not get CC values.");
+            return;
+        }
+        log_out("CC1 = %"PRIi64".%"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        log_out("CC2 = %"PRIi64".%"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        log_out("CC3 = %"PRIi64".%"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
+        return;
+    }
+    if (cc_num > 3 || cc_num == 0)
+    {
+        log_out("cc [1/2/3]");
+        return;
+    }
+    char name[4];
+    snprintf(name, 4, "CC%"PRIu8, cc_num);
+    if (!cc_get_blocking(name, &value_1))
+    {
+        log_out("Could not get adc value.");
+        return;
+    }
+
+    log_out("CC = %"PRIi64"mA", value_1.v_i64);
+}
+
+
+static void cc_calibrate_cb(char *args)
+{
+    _cc_calibrate();
+}
+
+
+static void cc_mp_cb(char* args)
+{
+    // 2046 CC1
+    char* p;
+    float new_mp = strtof(args, &p);
+    p = skip_space(p);
+    uint32_t new_mp32;
+    if (p == args)
+    {
+        if (_cc_get_midpoint(&new_mp32, p))
+            log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
+        return;
+    }
+    new_mp32 = new_mp * 1000;
+    p = skip_space(p);
+    if (!_cc_set_midpoint(new_mp32, p))
+        log_out("Failed to set the midpoint.");
+}
+
+
+static void cc_gain(char* args)
+{
+    // <index> <ext_A> <int_mV>
+    // 1       100     50
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    p = skip_space(p);
+    if (strlen(p) == 0)
+    {
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000);
+        }
+        return;
+    }
+    if (index == 0 || index > ADC_CC_COUNT + 1 || p == args)
+        goto syntax_exit;
+    index--;
+
+    char* q;
+    float ext_A = strtof(p, &q);
+    if (q == p)
+        goto print_exit;
+    q = skip_space(q);
+    uint32_t int_mA = strtoul(q, &p, 10);
+    if (p == q)
+        goto syntax_exit;
+    _configs[index].ext_max_mA = ext_A * 1000;
+    _configs[index].int_max_mV = int_mA;
+    log_out("Set the CC gain:");
+print_exit:
+    log_out("EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"V", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000);
+    return;
+syntax_exit:
+    log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
+    log_out("e.g cc_gain 3 100 50");
+}
+
+
+struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "cc",           "CC value",                 cc_cb                         , false , NULL },
+                                       { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb               , false , NULL },
+                                       { "cc_mp",        "Set the CC midpoint",      cc_mp_cb                      , false , NULL },
+                                       { "cc_gain",      "Set the max int and ext",  cc_gain                       , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

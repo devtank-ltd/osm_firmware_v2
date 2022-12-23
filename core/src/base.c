@@ -17,6 +17,13 @@ char * skip_space(char * pos)
 }
 
 
+char * skip_to_space(char * pos)
+{
+    while(*pos && *pos != ' ')
+        pos++;
+    return pos;
+}
+
 
 #define IO_PULL_STR_NONE "NONE"
 #define IO_PULL_STR_UP   "UP"
