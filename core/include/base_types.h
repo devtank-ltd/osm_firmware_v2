@@ -7,6 +7,10 @@
 #include "config.h"
 #include "pinmap.h"
 
+#ifdef _PICOLIBC__
+_Static_assert(_PICOLIBC__ >= 1 && _PICOLIBC_MINOR__>= 7, "Picolibc too old.");
+#endif
+
 /*subset of usb_cdc_line_coding_bParityType*/
 typedef enum
 {
