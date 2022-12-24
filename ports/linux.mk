@@ -76,7 +76,7 @@ $(1)_coverage: $$(BUILD_DIR)/$(1)/firmware.elf
 	lcov --capture -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p $$(BUILD_DIR)/$(1)/coverage
 	cd $$(BUILD_DIR)/$(1)/coverage && genhtml ../coverage.info
-	sensible-browser $$(BUILD_DIR)/$(1)/coverage/index.html
+	if [ $$$$NOBROWER != "0" ]; then sensible-browser $$(BUILD_DIR)/$(1)/coverage/index.html; fi
 
 
 $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
