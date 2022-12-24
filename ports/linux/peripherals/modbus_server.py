@@ -72,13 +72,15 @@ class modbus_server_t(object):
                       port=self._port, timeout=1, baudrate=9600)
 
     def _create_block(self, src, byteorder, wordorder):
+        builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=wordorder)
         dst = {}
         for key, value in src.items():
-            builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=wordorder)
             type_func, somevalue = value
             type_func(builder, somevalue)
             data = builder.to_registers()
-            dst[key] = data
+            for n in range(len(data)):
+                dst[key + n] = data[n]
+            builder.reset()
         return ModbusSparseDataBlock(values=dst)
 
 
