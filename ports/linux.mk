@@ -31,6 +31,8 @@ PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse c
 			   selectors signal socket sqlite3 \
 			   string struct subprocess threading time traceback \
 			   weakref webbrowser yaml
+COVERAGE_EXES := lcov genhtml
+
 
 $(BUILD_DIR)/.linux_build_env:
 	mkdir -p "$(@D)"
@@ -39,6 +41,13 @@ $(BUILD_DIR)/.linux_build_env:
 	done
 	for i in $(PY_MODULES) ; do \
 		if ! python3 -c "import $$i"; then echo MISSING PYMODULE: $$i; exit 1; fi; \
+	done
+	touch $@
+
+$(BUILD_DIR)/.linux_coverage:
+	mkdir -p "$(@D)"
+	for i in $(COVERAGE_EXES) ; do \
+		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
 	done
 	touch $@
 
@@ -68,7 +77,7 @@ $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p /tmp/osm/
 	cd $$(OSM_DIR)/python/; ./osm_test.py
 
-$(1)_coverage: $$(BUILD_DIR)/$(1)/firmware.elf
+$(1)_coverage: $$(BUILD_DIR)/.linux_coverage $$(BUILD_DIR)/$(1)/firmware.elf
 	lcov --zerocounters -d $$(BUILD_DIR)/$(1)/
 	lcov --capture --initial -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p /tmp/osm/
@@ -76,7 +85,7 @@ $(1)_coverage: $$(BUILD_DIR)/$(1)/firmware.elf
 	lcov --capture -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p $$(BUILD_DIR)/$(1)/coverage
 	cd $$(BUILD_DIR)/$(1)/coverage && genhtml ../coverage.info
-	if [ $$$$NOBROWER != "0" ]; then sensible-browser $$(BUILD_DIR)/$(1)/coverage/index.html; fi
+	if [ "$$$$NOBROWER" != "0" ]; then sensible-browser $$(BUILD_DIR)/$(1)/coverage/index.html; fi
 
 
 $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
