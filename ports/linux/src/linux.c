@@ -127,9 +127,9 @@ void linux_port_debug(char * fmt, ...)
 
     va_list va;
     va_start(va, fmt);
-    printf("%010u:", (unsigned)get_since_boot_ms());
-    vprintf(fmt, va);
-    printf("\n");
+    fprintf(stderr, "%010u:", (unsigned)get_since_boot_ms());
+    vfprintf(stderr, fmt, va);
+    fprintf(stderr, "\n");
     va_end(va);
 }
 
@@ -138,7 +138,7 @@ static void _linux_sig_handler(int signo)
 {
     if (signo == SIGINT)
     {
-        printf("Caught signal, exiting gracefully.\n");
+        fprintf(stderr, "Caught signal, exiting gracefully.\n");
         _linux_running = false;
         linux_awaken();
     }
@@ -164,6 +164,7 @@ void linux_error(char* fmt, ...)
     va_end(v);
     fprintf(stderr, " (%s)", strerror(errno));
     fprintf(stderr, "\n");
+    model_linux_close_fakes();
     exit(-1);
 }
 
@@ -583,7 +584,7 @@ void _linux_iterate(void)
     int ready = poll(pfds, nfds, 1000);
     if (linux_threads_deinit)
         return;
-    if (ready == -1)
+    if (ready == -1 && _linux_running)
         linux_error("TIMEOUT");
     for (uint32_t i = 0; i < nfds; i++)
     {

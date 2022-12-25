@@ -31,6 +31,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 
 #include "platform.h"
 #include "model.h"
+#include "linux.h"
 
 
 void penguin_persist_config_model_init(persist_penguin_config_v1_t* model_config)
@@ -215,14 +216,14 @@ void penguin_linux_spawn_fakes(void)
 
 void penguin_linux_close_fakes(void)
 {
-    if (_penguin_pids[0])
-        kill(_penguin_pids[0], SIGINT);
-    if (_penguin_pids[1])
-        kill(_penguin_pids[1], SIGINT);
-    if (_penguin_pids[2])
-        kill(_penguin_pids[2], SIGINT);
-    if (_penguin_pids[3])
-        kill(_penguin_pids[3], SIGINT);
+    for(unsigned n=0; n<ARRAY_SIZE(_penguin_pids); n++)
+    {
+        if (_penguin_pids[n])
+        {
+            linux_port_debug("Killing child PID %u", _penguin_pids[n]);
+            kill(_penguin_pids[n], SIGINT);
+        }
+    }
 }
 
 
