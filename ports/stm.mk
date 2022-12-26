@@ -33,6 +33,8 @@ STM_EXES := stm32flash arm-none-eabi-gcc pkg-config git
 STM_PATHS := /usr/lib/picolibc/arm-none-eabi/picolibc.specs /usr/local/lib/picolibc/arm-none-eabi/picolibc.spec /usr/lib/gcc/arm-none-eabi/`arm-none-eabi-gcc  -dumpversion`/picolibc.specs /usr/local/lib/gcc/arm-none-eabi/`arm-none-eabi-gcc  -dumpversion`/picolibc.specs
 STM_PKGS := json-c
 
+STM_DBG_EXES := openocd gdb-multiarch
+
 LIBOPENCM3 := $(OSM_DIR)/libs/libopencm3/lib/libopencm3_stm32l4.a
 
 $(LIBOPENCM3) : $(BUILD_DIR)/.stm_build_env
@@ -51,6 +53,11 @@ $(BUILD_DIR)/.stm_build_env:
 		if ! pkg-config --cflags $$p; then echo MISSING PKF-CONFIG: $$p; exit 1; fi; \
 	done
 	touch $@
+
+$(BUILD)/.stm_dbg:
+	for i in $(STM_DBG_EXES) ; do \
+		if ! which $$i; then echo MISSING EXECUTABLE: $$i; exit 1; fi; \
+	done
 
 define STM_FIRMWARE
 $(call PORT_BASE_RULES,$(1),STM)
@@ -97,10 +104,10 @@ $(1)_flash: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin
 	        -c "shutdown"
 
 
-$(1)_debug_mon: $$(BUILD_DIR)/$(1)/complete.bin
+$(1)_debug_mon: $(BUILD)/.stm_dbg $$(BUILD_DIR)/$(1)/complete.bin
 	openocd -f board/st_nucleo_l4.cfg -f interface/stlink-v2-1.cfg -c "init" -c "reset init"
 
-$(1)_debug_gdb: $$(BUILD_DIR)/$(1)/complete.bin
+$(1)_debug_gdb: $(BUILD)/.stm_dbg $$(BUILD_DIR)/$(1)/complete.bin
 	gdb-multiarch -ex "target remote localhost:3333" -ex load $$(BUILD_DIR)/$(1)/firmware.elf  -ex "monitor reset init"
 
 $(1)_size: $$(BUILD_DIR)/$(1)/complete.bin
