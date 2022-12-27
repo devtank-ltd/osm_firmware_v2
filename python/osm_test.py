@@ -14,7 +14,6 @@ from binding import modbus_reg_t, dev_t, set_debug_print
 
 sys.path.append("../ports/linux/peripherals/")
 
-import modbus_server as modbus
 import comms_connection as comms
 import basetypes
 
