@@ -31,7 +31,7 @@ PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse c
 			   selectors signal socket sqlite3 \
 			   string struct subprocess threading time traceback \
 			   weakref webbrowser yaml
-COVERAGE_EXES := lcov genhtml
+COVERAGE_EXES := lcov genhtml python3-coverage
 
 
 $(BUILD_DIR)/.linux_build_env:
@@ -78,14 +78,19 @@ $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
 	cd $$(OSM_DIR)/python/; ./osm_test.py
 
 $(1)_coverage: $$(BUILD_DIR)/.linux_coverage $$(BUILD_DIR)/$(1)/firmware.elf
+	python3-coverage erase
 	lcov --zerocounters -d $$(BUILD_DIR)/$(1)/
 	lcov --capture --initial -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p /tmp/osm/
-	cd $$(OSM_DIR)/python; ./osm_test.py
+	cd $$(OSM_DIR)/python;\
+	python3-coverage run -a ./osm_test.py;\
+	python3-coverage combine;\
+	python3-coverage html
 	lcov --capture -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p $$(BUILD_DIR)/$(1)/coverage
 	cd $$(BUILD_DIR)/$(1)/coverage && genhtml ../coverage.info
 	if [ "$$$$NOBROWSER" != "1" ]; then sensible-browser $$(BUILD_DIR)/$(1)/coverage/index.html; fi
+	if [ "$$$$NOBROWSER" != "1" ]; then sensible-browser python/htmlcov/index.html; fi
 
 
 $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
