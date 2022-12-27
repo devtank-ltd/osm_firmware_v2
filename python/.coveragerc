@@ -1,6 +1,9 @@
 [run]
 branch = True
 concurrency = multiprocessing
+
+[report]
 omit =
+    */dist-packages/*
     */site-packages/*
     */distutils/*
