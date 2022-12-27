@@ -1,0 +1,6 @@
+[run]
+branch = True
+concurrency = multiprocessing
+omit =
+    */site-packages/*
+    */distutils/*
