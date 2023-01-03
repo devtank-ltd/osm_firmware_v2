@@ -113,14 +113,14 @@ FONT_XL = ('Arial', 20, 'bold')
 GET_TMP_N = MB_DB.GET_TMP_N
 GET_TEMP_ID = MB_DB.GET_TEMP_ID
 GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
-ICONS_T = PATH + "/osm_pictures/logos/icons-together.png"
-DVT_IMG = PATH + "/osm_pictures/logos/OSM+Powered.png"
-OSM_1 =   PATH + "/osm_pictures/logos/lora-osm.png"
-R_LOGO =  PATH + "/osm_pictures/logos/shuffle.png"
-GRPH_BG = PATH + "/osm_pictures/logos/graph.png"
-PARAMS =  PATH + "/osm_pictures/logos/parameters.png"
-OPEN_S =  PATH + "/osm_pictures/logos/opensource-nb.png"
-LEAF =    PATH + "/osm_pictures/logos/leaf2.png"
+ICONS_T   =    PATH + "/osm_pictures/logos/icons-together.png"
+DVT_IMG   =    PATH + "/osm_pictures/logos/OSM+Powered.png"
+OSM_1     =    PATH + "/osm_pictures/logos/lora-osm.png"
+R_LOGO    =    PATH + "/osm_pictures/logos/shuffle.png"
+GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
+PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
+OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
+LEAF      =    PATH + "/osm_pictures/logos/leaf2.png"
 
 
 def log_func(msg):
@@ -1527,17 +1527,18 @@ class config_gui_window_t(Tk):
         self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
         self._load_headers(self._modb_fr, "mb", True)
-
+        canv.bind('<Configure>', lambda e : self._resize_image(e))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
         self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], weight=1)
         
-    # def _resize_image(self, e, canv, img):
-    #     new_width  = canv.winfo_reqwidth()
-    #     new_height = canv.winfo_reqheight()
-    #     image = img.resize((new_width, new_height))
-    #     new_image = ImageTk.PhotoImage(image)
-    #     canv.create_image(0, 0, image=new_image, anchor="nw")
-    #     self._modb_fr.img_list.append(new_image)
+    def _resize_image(self, e):
+        new_width  = self.os_lab.winfo_reqwidth()
+        new_height = self.os_lab.winfo_reqheight()
+        image = self.img_os.resize((new_width-2, new_height-2))
+        new_image = ImageTk.PhotoImage(image)
+        # canv.create_image(0, 0, image=new_image, anchor="nw")
+        self.os_lab.configure(image=new_image)
+        self._modb_fr.img_list.append(new_image)
     
     def _close_save(self, window):
         if self._changes == True:
