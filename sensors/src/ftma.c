@@ -30,6 +30,11 @@
                                                               { MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \
                                                               { MEASUREMENTS_FTMA_4_NAME , FTMA_DEFAULT_COEFFS }   }
 
+#define FTMA_LOWER_THRESHOLD                                2.f // mA
+
+#define FTMA_UPPER_THRESHOLD                                22.f // mA
+
+
 
 static ftma_config_t*   _ftma_config                            = NULL;
 static uint32_t         _ftma_collection_time                   = FTMA_DEFAULT_COLLECTION_TIME;
@@ -197,6 +202,16 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
     }
     adc_debug("FTMA: %"PRIu32".%03"PRIu32"mV", mV/1000, mV%1000);
     float fin_val = _ftma_conv(mV, index);
+    if (fin_val < FTMA_LOWER_THRESHOLD)
+    {
+        adc_debug("%s: %f < %f (short circuit?)", name, fin_val, FTMA_LOWER_THRESHOLD);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    if (fin_val > FTMA_UPPER_THRESHOLD)
+    {
+        adc_debug("%s: %f > %f", name, fin_val, FTMA_UPPER_THRESHOLD);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
     value->v_f32 = to_f32_from_float(fin_val);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
