@@ -167,6 +167,10 @@ class test_framework_t(object):
         self._vosm_conn.CC1.interval = 1
         self._vosm_conn.CC2.interval = 1
         self._vosm_conn.CC3.interval = 1
+        self._vosm_conn.FTA1.interval = 1
+        self._vosm_conn.FTA2.interval = 1
+        self._vosm_conn.FTA3.interval = 1
+        self._vosm_conn.FTA4.interval = 1
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
