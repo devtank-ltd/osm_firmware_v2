@@ -28,10 +28,9 @@ bool persistent_init(void)
         memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
-        if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
-            memcpy(&persist_data.model_name[0], MODEL_NAME, MODEL_NAME_LEN);
-        else
-            snprintf(persist_data.model_name, MODEL_NAME_LEN, MODEL_NAME);
+        uint8_t len = strnlen(MODEL_NAME, MODEL_NAME_LEN-1);
+        memcpy(persist_data.model_name, MODEL_NAME, len);
+        persist_data.model_name[len] = 0;
         model_persist_config_model_init(&persist_data.model_config);
         return false;
     }

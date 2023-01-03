@@ -17,22 +17,23 @@
 #define FTMA_NUM_SAMPLES                                    ADCS_NUM_SAMPLES
 #define FTMA_TIMEOUT_MS                                     3000
 
+#define FTMA_RESISTOR_S_OHM                                 30
+#define FTMA_RESISTOR_0_OHM                                 50000
+#define FTMA_RESISTOR_G_OHM                                 12400
+#define FTMA_HARDWARD_GAIN                                  (1.f / ((float)FTMA_RESISTOR_S_OHM * (((float)FTMA_RESISTOR_0_OHM / (float)FTMA_RESISTOR_G_OHM) + 1.f)))
+
 #define FTMA_MIN_MA                                         4.f
 #define FTMA_MAX_MA                                         20.f
-
-#define FTMA_DEFAULT_COEFF_A                                FTMA_MIN_MA
-#define FTMA_DEFAULT_COEFF_B                                ((FTMA_MAX_MA - FTMA_DEFAULT_COEFF_A) / ADC_MAX_MV)
-#define FTMA_DEFAULT_COEFF_C                                0.f
-#define FTMA_DEFAULT_COEFF_D                                0.f
-#define FTMA_DEFAULT_COEFFS                                 { FTMA_DEFAULT_COEFF_A , \
-                                                              FTMA_DEFAULT_COEFF_B , \
-                                                              FTMA_DEFAULT_COEFF_C , \
-                                                              FTMA_DEFAULT_COEFF_D   }
 
 #define FTMA_DEFAULT_CONFIG                                 { { MEASUREMENTS_FTMA_1_NAME , FTMA_DEFAULT_COEFFS } , \
                                                               { MEASUREMENTS_FTMA_2_NAME , FTMA_DEFAULT_COEFFS } , \
                                                               { MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \
                                                               { MEASUREMENTS_FTMA_4_NAME , FTMA_DEFAULT_COEFFS }   }
+
+#define FTMA_LOWER_THRESHOLD                                2.f // mA
+
+#define FTMA_UPPER_THRESHOLD                                22.f // mA
+
 
 
 static ftma_config_t*   _ftma_config                            = NULL;
@@ -87,21 +88,21 @@ static bool _ftma_get_index_by_name(char* name, uint8_t* index)
 }
 
 
-static float _ftma_conv(uint32_t mV, uint8_t index)
+static float _ftma_conv(uint32_t uV, uint8_t index)
 {
     /* Coeffs: A + Bx + Cx^2 + Dx^3 + ... */
     float result = 0;
     float* coeffs = _ftma_config[index].coeffs;
     for (uint8_t i = 0; i < FTMA_NUM_COEFFS; i++)
     {
-        float midval = 1;
+        float midval = 1.f;
         for (uint8_t j = 0; j < i; j++)
         {
-            midval *= (float)mV / 1000.f;
+            midval *= (float)uV / 1000000.f;
         }
         result += midval * coeffs[i];
     }
-    return result;
+    return result * 1000.f;
 }
 
 
@@ -199,8 +200,18 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
         adc_debug("Unable to convert to mV.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    adc_debug("FTMA: %"PRIu32" mV", mV);
+    adc_debug("FTMA: %"PRIu32".%03"PRIu32"mV", mV/1000, mV%1000);
     float fin_val = _ftma_conv(mV, index);
+    if (fin_val < FTMA_LOWER_THRESHOLD)
+    {
+        adc_debug("%s: %f < %f (short circuit?)", name, fin_val, FTMA_LOWER_THRESHOLD);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    if (fin_val > FTMA_UPPER_THRESHOLD)
+    {
+        adc_debug("%s: %f > %f", name, fin_val, FTMA_UPPER_THRESHOLD);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
     value->v_f32 = to_f32_from_float(fin_val);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
