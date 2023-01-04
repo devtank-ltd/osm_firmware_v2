@@ -28,7 +28,15 @@ void count_cb(char * args)
 
 void version_cb(char * args)
 {
-    log_out("Version : %s", GIT_VERSION);
+    char model_name[MODEL_NAME_LEN+1];
+    strncpy(model_name, STR(FW_NAME), MODEL_NAME_LEN);
+    unsigned len = strnlen(model_name, MODEL_NAME_LEN);
+    model_name[len] = 0;
+
+    for (unsigned i = 0; i < len; i++)
+        model_name[i] = toupper(model_name[i]);
+
+    log_out("Version : %s-%s", model_name, GIT_VERSION);
     version_arch_t arch = version_get_arch();
     char name[VERSION_NAME_LEN];
     memset(name, 0, VERSION_NAME_LEN);

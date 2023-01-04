@@ -2,10 +2,8 @@ OSM_DIR ?= .
 BUILD_DIR ?= $(OSM_DIR)/build
 MODEL_DIR ?= $(OSM_DIR)/model
 
-VERSION_PREAMBLE ?= "STANDALONE"
-
 GIT_COMMITS := $(shell git rev-list --count HEAD)
-GIT_COMMIT := $(shell git log -n 1 --format="$(VERSION_PREAMBLE)-%h-%f")
+GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell git log -n 1 --format="%h")
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
