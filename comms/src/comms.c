@@ -232,5 +232,17 @@ struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
                                        { "comms_config", "Set comms config",         comms_config_cb               , false , NULL },
                                        { "comms_conn",   "LoRa connected",           comms_conn_cb                 , false , NULL },
                                        { "comms_dbg",    "Comms Chip Debug",         comms_dbg_cb                  , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    tail = add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    switch(version_get_arch())
+    {
+        case VERSION_ARCH_REV_B:
+            tail = rak4270_add_commands(tail);
+            break;
+        case VERSION_ARCH_REV_C:
+            tail = rak3172_add_commands(tail);
+            break;
+        default:
+            break;
+    }
+    return tail;
 }

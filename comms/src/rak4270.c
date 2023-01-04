@@ -1066,3 +1066,9 @@ void rak4270_config_setup_str(char* str)
     if (lw_config_setup_str(str))
         _rak4270_reload_config();
 }
+
+
+struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
+{
+    return tail;
+}

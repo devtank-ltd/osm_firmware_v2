@@ -82,7 +82,7 @@
 
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
-#define UART_3_SPEED 115200
+#define UART_3_SPEED 9600
 #define UART_4_SPEED 9600
 
 #define UART_1_PARITY uart_parity_none

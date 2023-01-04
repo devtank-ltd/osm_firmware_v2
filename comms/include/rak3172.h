@@ -20,3 +20,5 @@ extern void     rak3172_loop_iteration(void);
 extern void     rak3172_config_setup_str(char * str);
 
 extern bool     rak3172_get_id(char* str, uint8_t len);
+
+extern struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail);

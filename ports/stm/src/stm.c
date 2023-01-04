@@ -199,7 +199,11 @@ void platform_set_rs485_mode(bool driver_enable)
 
 void platform_reset_sys(void)
 {
-    scb_reset_system();
+    SCB_VTOR = FW_ADDR & 0xFFFF;
+    /* Initialise master stack pointer. */
+    asm volatile("msr msp, %0"::"g"(*(volatile uint32_t *)FW_ADDR));
+    /* Jump to application. */
+    (*(void (**)())(FW_ADDR + 4))();
 }
 
 
