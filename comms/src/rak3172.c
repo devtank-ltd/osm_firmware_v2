@@ -334,10 +334,19 @@ void rak3172_init(void)
         return;
     }
 
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
-    gpio_mode_setup(_rak3172_ctx.reset_pin.port, false, GPIO_PUPD_NONE, _rak3172_ctx.reset_pin.pins);
-    gpio_mode_setup(_rak3172_ctx.boot_pin.port,  false, GPIO_PUPD_NONE, _rak3172_ctx.boot_pin.pins );
+    gpio_mode_setup(_rak3172_ctx.boot_pin.port,
+                    GPIO_MODE_OUTPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.boot_pin.pins);
+    gpio_clear(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
+
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
+    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                    GPIO_MODE_OUTPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.reset_pin.pins);
+    gpio_clear(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
 
     _rak3172_ctx.state = RAK3172_STATE_OFF;
     _rak3172_chip_on();
@@ -490,7 +499,7 @@ void rak3172_config_setup_str(char* str)
 
 
 static bool _rak3172_boot_enabled   = false;
-static bool _rak3172_reset_enabled  = true;
+static bool _rak3172_reset_enabled  = false;
 
 
 static void _rak3172_print_boot_reset_cb(char* args)
@@ -502,9 +511,6 @@ static void _rak3172_print_boot_reset_cb(char* args)
 
 static void _rak3172_boot_cb(char* args)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
-    gpio_mode_setup(_rak3172_ctx.boot_pin.port,  false, GPIO_PUPD_NONE, _rak3172_ctx.boot_pin.pins );
-
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
         gpio_set(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
@@ -517,9 +523,6 @@ static void _rak3172_boot_cb(char* args)
 
 static void _rak3172_reset_cb(char* args)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
-    gpio_mode_setup(_rak3172_ctx.reset_pin.port, false, GPIO_PUPD_NONE, _rak3172_ctx.reset_pin.pins);
-
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
         gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
