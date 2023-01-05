@@ -124,3 +124,8 @@ GPIO16 D2                   IO 11
 
 #define W1_PULSE_1_IO               4
 #define W1_PULSE_2_IO               5
+
+
+#define REV_B_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
+#define REV_C_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
+#define REV_C_COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }

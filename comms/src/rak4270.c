@@ -204,7 +204,7 @@ typedef struct
 
 
 static rak4270_state_machine_t   _rak4270_state_machine                   = {.state=RAK4270_STATE_OFF, .init_step=0, .last_message_time=0, .resend_count=0, .reset_count=0};
-static port_n_pins_t        _rak4270_reset_gpio                      = { GPIOC, GPIO8 };
+static port_n_pins_t        _rak4270_reset_gpio                      = REV_B_COMMS_RESET_PORT_N_PINS;
 static char                 _rak4270_out_buffer[RAK4270_BUFFER_SIZE]      = {0};
 static uint8_t              _rak4270_port                            = 0;
 static uint32_t             _rak4270_chip_off_time                   = 0;

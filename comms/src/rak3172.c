@@ -18,6 +18,7 @@
 
 
 #define RAK3172_TIMEOUT_MS              15000
+#define RAK3172_ACK_TIMEOUT_MS          20000
 #define RAK3172_JOIN_TIME_S             (uint32_t)((RAK3172_TIMEOUT_MS/1000) - 5)
 
 _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
@@ -36,8 +37,9 @@ _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
 #define RAK3172_MSG_JOIN                "AT+JOIN=1:0:%"PRIu32":0"
 #define RAK3172_MSG_JOINED              "+EVT:JOINED"
 #define RAK3172_MSG_JOIN_FAILED         "+EVT:JOIN FAILED"
-#define RAK3172_MSG_SEND                "AT+SEND="
-#define RAK3172_MSG_ACK                 "IDK"
+#define RAK3172_MSG_USEND_HEADER_FMT    "AT+USEND=%"PRIu8":%"PRIu8":%"PRIu8":"
+#define RAK3172_MSG_USEND_HEADER_LEN    (9 + (1 * 3) + (3 * 3) + 1)          /* strlen("AT+USEND=:") + (strlen(":") * 3) + (strlen("255") * 3) + 1 */
+#define RAK3172_MSG_ACK                 "+EVT:SEND CONFIRMED OK"
 
 
 typedef enum
@@ -52,6 +54,7 @@ typedef enum
     RAK3172_STATE_IDLE,
     RAK3172_STATE_SEND_WAIT_REPLAY,
     RAK3172_STATE_SEND_WAIT_OK,
+    RAK3172_STATE_SEND_WAIT_ACK,
 } rak3172_state_t;
 
 
@@ -62,7 +65,6 @@ struct
 {
     uint8_t             init_count;
     uint8_t             reset_count;
-    uint8_t             port;
     rak3172_state_t     state;
     uint32_t            cmd_last_sent;
     uint32_t            wakeup_time;
@@ -75,18 +77,20 @@ struct
                   .state            = RAK3172_STATE_OFF,
                   .cmd_last_sent    = 0,
                   .wakeup_time      = 0,
-                  .reset_pin        = { GPIOC, GPIO8 },
-                  .boot_pin         = { GPIOB, GPIO2 },
+                  .reset_pin        = REV_C_COMMS_RESET_PORT_N_PINS,
+                  .boot_pin         = REV_C_COMMS_BOOT_PORT_N_PINS,
                   .config_is_valid  = false,
                   .last_sent_msg    = {0}};
 
 
 char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] = {
         "ATE",                  /* Enable line replay */
+        "AT+CFM=1",             /* Set confirmation   */
         "AT+NWM=1",             /* Set LoRaWAN mode   */
         "AT+NJM=1",             /* Set OTAA mode      */
-        "AT+CLASS=A",           /* Set Class A mode   */
+        "AT+CLASS=C",           /* Set Class A mode   */
         "AT+BAND=4",            /* Set to EU868       */
+        "AT+DR=4",              /* Set to DR 4        */
         "DEVEUI goes here",
         "APPEUI goes here",
         "APPKEY goes here"};
@@ -94,10 +98,7 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] = {
 
 static uint8_t _rak3172_get_port(void)
 {
-    _rak3172_ctx.port++;
-    if (_rak3172_ctx.port > 223)
-        _rak3172_ctx.port = 0;
-    return _rak3172_ctx.port;
+    return 1;
 }
 
 
@@ -259,7 +260,18 @@ static void _rak3172_process_state_send_ok(char* msg)
     if (msg_is(RAK3172_MSG_OK, msg))
     {
         comms_debug("READ SEND OKAY");
+        _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_ACK;
+    }
+}
+
+
+static void _rak3172_process_state_send_ack(char* msg)
+{
+    if (msg_is(RAK3172_MSG_ACK, msg))
+    {
+        comms_debug("READ SEND ACK");
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
+        on_comms_sent_ack(true);
     }
 }
 
@@ -334,6 +346,7 @@ void rak3172_init(void)
 
 void rak3172_reset(void)
 {
+    comms_debug("CALLED RESET");
     if (_rak3172_ctx.state == RAK3172_STATE_RESETTING)
         return;
     _rak3172_ctx.state = RAK3172_STATE_RESETTING;
@@ -382,11 +395,17 @@ void rak3172_process(char* msg)
         case RAK3172_STATE_SEND_WAIT_OK:
             _rak3172_process_state_send_ok(msg);
             break;
+        case RAK3172_STATE_SEND_WAIT_ACK:
+            _rak3172_process_state_send_ack(msg);
+            break;
         default:
             comms_debug("Unknown state. (%d)", _rak3172_ctx.state);
             return;
     }
 }
+
+
+#define RAK3172_NB_TRIALS               2
 
 
 void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
@@ -397,19 +416,18 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
         return;
     }
 
-    if (!_rak3172_write(RAK3172_MSG_SEND))
+    char send_header[RAK3172_MSG_USEND_HEADER_LEN];
+
+    bool confirmed_payload = true;
+
+    snprintf(send_header, RAK3172_MAX_CMD_LEN, RAK3172_MSG_USEND_HEADER_FMT, _rak3172_get_port(), (uint8_t)confirmed_payload, RAK3172_NB_TRIALS);
+
+    if (!_rak3172_write(send_header))
     {
         comms_debug("Could not write SEND header.");
         return;
     }
     char hex_str[5];
-    snprintf(hex_str, 4, "%"PRIu8":", _rak3172_get_port());
-    if (!_rak3172_write(hex_str))
-    {
-        comms_debug("Could not write the port number.");
-        return;
-    }
-
     memset(hex_str, 0, 5);
     for (uint16_t i = 0; i < arr_len; i++)
     {
@@ -420,6 +438,7 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     _rak3172_write("\r\n");
     uart_ring_out(CMD_UART, "\r\n", 2);
     _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_OK;
+    _rak3172_ctx.cmd_last_sent = get_since_boot_ms();
 }
 
 
@@ -427,7 +446,8 @@ bool rak3172_get_connected(void)
 {
     return (_rak3172_ctx.state == RAK3172_STATE_IDLE                ||
             _rak3172_ctx.state == RAK3172_STATE_SEND_WAIT_REPLAY    ||
-            _rak3172_ctx.state == RAK3172_STATE_SEND_WAIT_OK        );
+            _rak3172_ctx.state == RAK3172_STATE_SEND_WAIT_OK        ||
+            _rak3172_ctx.state == RAK3172_STATE_SEND_WAIT_ACK       );
 }
 
 
@@ -443,9 +463,20 @@ void rak3172_loop_iteration(void)
             if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.wakeup_time))
                 _rak3172_chip_on();
             break;
+        case RAK3172_STATE_SEND_WAIT_ACK:
+            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_ACK_TIMEOUT_MS)
+            {
+                comms_debug("TIMED OUT WAITING FOR ACK");
+                on_comms_sent_ack(false);
+                rak3172_reset();
+            }
+            break;
         default:
             if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_TIMEOUT_MS)
+            {
+                comms_debug("TIMED OUT");
                 rak3172_reset();
+            }
             break;
     }
 }
@@ -471,6 +502,9 @@ static void _rak3172_print_boot_reset_cb(char* args)
 
 static void _rak3172_boot_cb(char* args)
 {
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
+    gpio_mode_setup(_rak3172_ctx.boot_pin.port,  false, GPIO_PUPD_NONE, _rak3172_ctx.boot_pin.pins );
+
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
         gpio_set(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
@@ -483,6 +517,9 @@ static void _rak3172_boot_cb(char* args)
 
 static void _rak3172_reset_cb(char* args)
 {
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
+    gpio_mode_setup(_rak3172_ctx.reset_pin.port, false, GPIO_PUPD_NONE, _rak3172_ctx.reset_pin.pins);
+
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
         gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);

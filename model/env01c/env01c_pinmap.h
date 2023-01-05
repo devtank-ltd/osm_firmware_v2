@@ -86,3 +86,8 @@
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 5   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
 }
+
+
+#define REV_B_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
+#define REV_C_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
+#define REV_C_COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
