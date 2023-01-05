@@ -54,15 +54,50 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 
 
 // cppcheck-suppress unusedFunction ; System handler
-void W1_PULSE_ISR(void)
+void W1_PULSE_1_ISR(void)
 {
+    port_n_pins_t pulse_1_pnp = W1_PULSE_2_PORT_N_PINS;
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
+        /* Check IO is in pulsecount mode.
+          */
         if (!io_is_pulsecount_now(inst->info.io))
             continue;
+        /* Ensure the EXTI for pulsecount is the one to be triggered
+         */
         uint32_t exti_state = exti_get_flag_status(inst->exti);
         if (!exti_state)
+            continue;
+        /* Is the EXTI triggered on the same GPIO port?
+         */
+        if (inst->pnp.port != pulse_1_pnp.port)
+            continue;
+        exti_reset_request(inst->exti);
+        __sync_add_and_fetch(&inst->count, 1);
+    }
+}
+
+
+// cppcheck-suppress unusedFunction ; System handler
+void W1_PULSE_2_ISR(void)
+{
+    port_n_pins_t pulse_2_pnp = W1_PULSE_2_PORT_N_PINS;
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        pulsecount_instance_t* inst = &_pulsecount_instances[i];
+        /* Check IO is in pulsecount mode.
+          */
+        if (!io_is_pulsecount_now(inst->info.io))
+            continue;
+        /* Ensure the EXTI for pulsecount is the one to be triggered
+         */
+        uint32_t exti_state = exti_get_flag_status(inst->exti);
+        if (!exti_state)
+            continue;
+        /* Is the EXTI triggered on the same GPIO port?
+         */
+        if (inst->pnp.port != pulse_2_pnp.port)
             continue;
         exti_reset_request(inst->exti);
         __sync_add_and_fetch(&inst->count, 1);

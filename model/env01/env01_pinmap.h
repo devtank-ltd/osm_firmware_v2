@@ -39,8 +39,19 @@
 #define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */
 
 
-#define W1_PULSE_1_PORT_N_PINS      { GPIOA, GPIO11 }
-#define W1_PULSE_2_PORT_N_PINS      { GPIOA, GPIO12 }
+#define W1_PULSE_1_PORT_N_PINS              { GPIOA, GPIO11 }
+#define W1_PULSE_1_IO                       4
+#define W1_PULSE_1_EXTI                     EXTI11
+#define W1_PULSE_1_EXTI_IRQ                 NVIC_EXTI15_10_IRQ
+#define W1_PULSE_1_ISR                      exti15_10_isr
+
+#define W1_PULSE_2_PORT_N_PINS              { GPIOA, GPIO12 }
+#define W1_PULSE_2_IO                       5
+#define W1_PULSE_2_EXTI                     EXTI12
+#define W1_PULSE_2_EXTI_IRQ                 NVIC_EXTI15_10_IRQ
+/* UNUSED
+#define W1_PULSE_2_ISR                      exti15_10_isr
+ */
 
 
 #define DS18B20_INSTANCES   {                                          \
@@ -99,9 +110,6 @@ GPIO16 D2                   IO 11
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
 }
-
-#define W1_PULSE_1_IO               4
-#define W1_PULSE_2_IO               5
 
 
 #define REV_B_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }

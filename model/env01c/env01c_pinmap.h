@@ -45,12 +45,18 @@
 
 #define W1_PULSE_1_PORT_N_PINS              { GPIOC, GPIO11 }
 #define W1_PULSE_1_PULLUP_EN_PORT_N_PINS    { GPIOC, GPIO6  }
-#define W1_PULSE_1_IO                       2
+#define W1_PULSE_1_IO                       1
+#define W1_PULSE_1_EXTI                     EXTI11
+#define W1_PULSE_1_EXTI_IRQ                 NVIC_EXTI15_10_IRQ
+#define W1_PULSE_1_ISR                      exti15_10_isr
 
 
 #define W1_PULSE_2_PORT_N_PINS              { GPIOB, GPIO5  }
 #define W1_PULSE_2_PULLUP_EN_PORT_N_PINS    { GPIOC, GPIO7  }
-#define W1_PULSE_2_IO                       3
+#define W1_PULSE_2_IO                       2
+#define W1_PULSE_2_EXTI                     EXTI5
+#define W1_PULSE_2_EXTI_IRQ                 NVIC_EXTI9_5_IRQ
+#define W1_PULSE_2_ISR                      exti9_5_isr
 
 
 #define DS18B20_INSTANCES   {                                          \
