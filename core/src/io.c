@@ -130,6 +130,7 @@ bool io_enable_w1(unsigned io)
     ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] |= IO_ONEWIRE;
+    pulsecount_enable(io, false, false);
     w1_enable(io, true);
     io_debug("%02u : USED W1", io);
     return true;
@@ -168,6 +169,7 @@ bool io_enable_pulsecount(unsigned io, io_pupd_t pupd)
 
     ios_state[io] |= IO_PULSE;
     bool hw_pup = ios_state[io] & IO_PUPD_UP;
+    w1_enable(io, false);
     pulsecount_enable(io, true, hw_pup);
     io_debug("%02u : USED PLSCNT", io);
     return true;

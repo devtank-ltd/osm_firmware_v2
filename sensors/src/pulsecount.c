@@ -53,29 +53,32 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 }
 
 
-// cppcheck-suppress unusedFunction ; System handler
-void W1_PULSE_1_ISR(void)
+static void _pulsecount_isr(uint32_t ref_port)
 {
-    port_n_pins_t pulse_1_pnp = W1_PULSE_2_PORT_N_PINS;
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
-        /* Check IO is in pulsecount mode.
-          */
+        /* Check IO is in pulsecount mode. */
         if (!io_is_pulsecount_now(inst->info.io))
             continue;
-        /* Ensure the EXTI for pulsecount is the one to be triggered
-         */
+        /* Ensure the EXTI for pulsecount is the one to be triggered */
         uint32_t exti_state = exti_get_flag_status(inst->exti);
         if (!exti_state)
             continue;
-        /* Is the EXTI triggered on the same GPIO port?
-         */
-        if (inst->pnp.port != pulse_1_pnp.port)
+        /* Is the EXTI triggered on the same GPIO port? */
+        if (inst->pnp.port != ref_port)
             continue;
         exti_reset_request(inst->exti);
         __sync_add_and_fetch(&inst->count, 1);
     }
+}
+
+
+// cppcheck-suppress unusedFunction ; System handler
+void W1_PULSE_1_ISR(void)
+{
+    port_n_pins_t pulse_1_pnp = W1_PULSE_1_PORT_N_PINS;
+    _pulsecount_isr(pulse_1_pnp.port);
 }
 
 
@@ -83,39 +86,30 @@ void W1_PULSE_1_ISR(void)
 void W1_PULSE_2_ISR(void)
 {
     port_n_pins_t pulse_2_pnp = W1_PULSE_2_PORT_N_PINS;
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
-    {
-        pulsecount_instance_t* inst = &_pulsecount_instances[i];
-        /* Check IO is in pulsecount mode.
-          */
-        if (!io_is_pulsecount_now(inst->info.io))
-            continue;
-        /* Ensure the EXTI for pulsecount is the one to be triggered
-         */
-        uint32_t exti_state = exti_get_flag_status(inst->exti);
-        if (!exti_state)
-            continue;
-        /* Is the EXTI triggered on the same GPIO port?
-         */
-        if (inst->pnp.port != pulse_2_pnp.port)
-            continue;
-        exti_reset_request(inst->exti);
-        __sync_add_and_fetch(&inst->count, 1);
-    }
+    _pulsecount_isr(pulse_2_pnp.port);
 }
 
 
 static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 {
     if (!instance)
+    {
+        pulsecount_debug("Handed NULL instance.");
         return;
+    }
     if (!io_is_pulsecount_now(instance->info.io))
+    {
+        pulsecount_debug("IO is already pulsecount.");
         return;
+    }
 
 
     uint8_t pupd;
     if (!_pulsecount_get_pupd(instance, &pupd))
+    {
+        pulsecount_debug("Could not get pull.");
         return;
+    }
 
     uint8_t trig;
     switch(pupd)
@@ -149,34 +143,49 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 }
 
 
-void pulsecount_init(void)
+static void _pulsecount_init(unsigned io)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
-        _pulsecount_init_instance(&_pulsecount_instances[i]);
+        pulsecount_instance_t* inst = &_pulsecount_instances[i];
+        if (inst->info.io == io)
+            _pulsecount_init_instance(inst);
     }
+}
+
+
+void pulsecount_init(void)
+{
 }
 
 
 static void _pulsecount_shutdown_instance(pulsecount_instance_t* instance)
 {
     if (!instance)
+    {
+        pulsecount_debug("Handed NULL instance.");
         return;
+    }
     if (io_is_pulsecount_now(instance->info.io))
+    {
+        pulsecount_debug("IO is not pulsecount.");
         return;
+    }
     exti_disable_request(instance->exti);
     nvic_disable_irq(instance->exti_irq);
     instance->count = 0;
     instance->send_count = 0;
-    pulsecount_debug("Pulsecount disabled");
+    pulsecount_debug("Pulsecount '%s' disabled", instance->info.name);
 }
 
 
-static void _pulsecount_shutdown(void)
+static void _pulsecount_shutdown(unsigned io)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
-        _pulsecount_shutdown_instance(&_pulsecount_instances[i]);
+        pulsecount_instance_t* inst = &_pulsecount_instances[i];
+        if (inst->info.io == io)
+            _pulsecount_shutdown_instance(inst);
     }
 }
 
@@ -185,9 +194,15 @@ void pulsecount_enable(unsigned io, bool enable, bool hw_pup)
 {
     model_w1_pulse_enable_pupd(io, enable && hw_pup);
     if (enable)
-        pulsecount_init();
+    {
+        pulsecount_debug("Initialising pulsecount");
+        _pulsecount_init(io);
+    }
     else
-        _pulsecount_shutdown();
+    {
+        pulsecount_debug("Shutting-down pulsecount.");
+        _pulsecount_shutdown(io);
+    }
 }
 
 
