@@ -23,6 +23,7 @@
 
 _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
 
+#define RAK3172_NB_TRIALS               2
 #define RAK3172_PAYLOAD_MAX_DEFAULT     242
 
 #define RAK3172_SHORT_RESET_COUNT       5
@@ -58,7 +59,10 @@ typedef enum
 } rak3172_state_t;
 
 
-static uint16_t _rak3172_packet_max_size = RAK3172_PAYLOAD_MAX_DEFAULT;
+static uint16_t _rak3172_packet_max_size    = RAK3172_PAYLOAD_MAX_DEFAULT;
+
+static bool     _rak3172_boot_enabled       = false;
+static bool     _rak3172_reset_enabled      = false;
 
 
 struct
@@ -414,9 +418,6 @@ void rak3172_process(char* msg)
 }
 
 
-#define RAK3172_NB_TRIALS               2
-
-
 void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
@@ -496,10 +497,6 @@ void rak3172_config_setup_str(char* str)
     if (lw_config_setup_str(str))
         _rak3172_reload_config();
 }
-
-
-static bool _rak3172_boot_enabled   = false;
-static bool _rak3172_reset_enabled  = false;
 
 
 static void _rak3172_print_boot_reset_cb(char* args)
