@@ -39,26 +39,38 @@ extern bool decompose_uart_str(char             * str,
 extern char * skip_space(char * pos);
 extern char * skip_to_space(char * pos);
 
-#define IO_PULL_MASK    0x0003
-#define IO_TYPE_MASK    0xF000
-#define IO_STATE_MASK   0x0F00
-#define IO_TYPE_ON_MASK 0x000C
 
-#define IO_AS_INPUT     0x0100
-#define IO_DIR_LOCKED   0x0200
-#define IO_OUT_ON       0x0400
+/** FLAGS */
+/* Flag Masks */
+#define IO_PULL_MASK        0x0003
+#define IO_STATE_MASK       0x0F00
 
-#define IO_PULSE        0x0004
-#define IO_ONEWIRE      0x0008
-
-#define IO_TYPE_PULSECOUNT   0x2000
-#define IO_TYPE_ONEWIRE      0x4000
-
+/* Flags */
 #ifndef STM32L4
 #define GPIO_PUPD_NONE     0
 #define GPIO_PUPD_PULLUP   1
 #define GPIO_PUPD_PULLDOWN 2
 #endif //STM32L4
+
+#define IO_AS_INPUT         0x0100
+#define IO_DIR_LOCKED       0x0200
+#define IO_OUT_ON           0x0400
+
+/** ENUMS */
+/* Enum Masks */
+#define IO_ACTIVE_SPECIAL_MASK      0xF000
+
+/* Enums */
+typedef enum
+{
+    IO_SPECIAL_NONE                     = 0x0000,
+    IO_SPECIAL_PULSECOUNT_FALLING_EDGE  = 0x1000,
+    IO_SPECIAL_PULSECOUNT_RISING_EDGE   = 0x2000,
+    IO_SPECIAL_PULSECOUNT_BOTH_EDGE     = 0x3000,
+    IO_SPECIAL_ONEWIRE                  = 0x4000,
+    IO_SPECIAL_MAX                      = IO_SPECIAL_ONEWIRE,
+} io_special_t;
+
 
 extern char* io_get_pull_str(uint16_t io_state);
 extern bool  io_is_special(uint16_t io_state);

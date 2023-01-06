@@ -103,8 +103,8 @@ GPIO16 D2                   IO 11
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 4   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 5   */ \
+    IO_AS_INPUT,                                        /* GPIO 4   */ \
+    IO_AS_INPUT,                                        /* GPIO 5   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \

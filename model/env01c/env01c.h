@@ -17,4 +17,5 @@ extern void     env01c_debug_mode_enable_all(void);
 extern void     env01c_measurements_repopulate(void);
 extern void     env01c_cmds_add_all(struct cmd_link_t* tail);
 extern void     env01c_w1_pulse_enable_pupd(unsigned io, bool enabled);
+extern bool     env01c_can_io_be_special(unsigned io, io_special_t special);
 extern unsigned env01c_measurements_add_defaults(measurements_def_t * measurements_arr);

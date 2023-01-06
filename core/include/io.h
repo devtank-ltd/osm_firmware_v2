@@ -3,12 +3,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "base_types.h"
+
 
 typedef enum
 {
-    IO_PUPD_NONE,
-    IO_PUPD_UP,
-    IO_PUPD_DOWN,
+    IO_PUPD_NONE    = 0,
+    IO_PUPD_UP      = 1,
+    IO_PUPD_DOWN    = 2,
 } io_pupd_t;
 
 
@@ -20,7 +22,7 @@ extern unsigned ios_get_count(void);
 extern void     io_configure(unsigned io, bool as_input, io_pupd_t pull);
 
 
-extern bool     io_enable_pulsecount(unsigned io, io_pupd_t pupd);
+extern bool     io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge);
 extern bool     io_enable_w1(unsigned io);
 
 extern bool     io_is_pulsecount_now(unsigned io);

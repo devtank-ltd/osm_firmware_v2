@@ -11,31 +11,91 @@
 #include "w1.h"
 #include "persist_config.h"
 #include "common.h"
+#include "platform_model.h"
 
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t * ios_state;
 
+#define IOS_SPECIAL_STR_LEN                         32
+#define IOS_SPECIAL_INDIV_STR_LEN                   10
+
+
+static bool _ios_append_special_str(char special_str[IOS_SPECIAL_STR_LEN+1], const char* new_str)
+{
+    uint16_t space = IOS_SPECIAL_STR_LEN - strnlen(special_str, IOS_SPECIAL_STR_LEN);
+    if (space < strnlen(new_str, IOS_SPECIAL_INDIV_STR_LEN))
+    {
+        io_debug("Out of space for line.");
+        return false;
+    }
+    strncat(special_str, new_str, space);
+    return true;
+}
+
 
 static char* _ios_get_type_active(uint16_t io_state)
 {
-    switch(io_state & IO_TYPE_ON_MASK)
+    switch(io_state & IO_ACTIVE_SPECIAL_MASK)
     {
-        case IO_PULSE: return "PLSCNT";
-        case IO_ONEWIRE:    return "W1";
-        default : return "";
+        case IO_SPECIAL_PULSECOUNT_RISING_EDGE:
+        case IO_SPECIAL_PULSECOUNT_FALLING_EDGE:
+        case IO_SPECIAL_PULSECOUNT_BOTH_EDGE:
+            return "PLSCNT";
+        case IO_SPECIAL_ONEWIRE:
+            return "W1";
+        default:
+            return "";
     }
 }
 
 
-static char* _ios_get_type_possible(uint16_t io_state)
+static char* _ios_get_type_possible(unsigned io)
 {
-    switch(io_state & IO_TYPE_MASK)
+    static char special_str[IOS_SPECIAL_STR_LEN+1];
+    memset(special_str, 0, IOS_SPECIAL_STR_LEN+1);
+    unsigned count = 0;
+    for (unsigned n = 1; n < IO_SPECIAL_MAX; n++)
     {
-        case IO_TYPE_PULSECOUNT: return "PLSCNT";
-        case IO_TYPE_ONEWIRE:    return "W1";
-        case IO_TYPE_ONEWIRE | IO_TYPE_PULSECOUNT: return "PLSCNT | W1";
-        default : return "";
+        if (!model_can_io_be_special(io, n))
+            continue;
+        int16_t space = IOS_SPECIAL_STR_LEN - strnlen(special_str, IOS_SPECIAL_STR_LEN);
+        if (space < 3)
+        {
+            io_debug("Out of space for line.");
+            return special_str;
+        }
+        if (count)
+        {
+            if (!_ios_append_special_str(special_str, " | "))
+                return special_str;
+        }
+        count++;
+        space = IOS_SPECIAL_STR_LEN - strnlen(special_str, IOS_SPECIAL_STR_LEN);
+        switch(n)
+        {
+            case IO_SPECIAL_PULSECOUNT_RISING_EDGE:
+            case IO_SPECIAL_PULSECOUNT_FALLING_EDGE:
+            case IO_SPECIAL_PULSECOUNT_BOTH_EDGE:
+            {
+                if (!_ios_append_special_str(special_str, "PLSCNT"))
+                    return special_str;
+                break;
+            }
+            case IO_SPECIAL_ONEWIRE:
+            {
+                if (!_ios_append_special_str(special_str, "W1"))
+                    return special_str;
+                break;
+            }
+            default:
+            {
+                if (!_ios_append_special_str(special_str, "UNKWN"))
+                    return special_str;
+                break;
+            }
+        }
     }
+    return special_str;
 }
 
 
@@ -61,13 +121,13 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     if (io >= ARRAY_SIZE(ios_pins))
         return;
 
-    char * type = _ios_get_type_possible(io_state);
+    char * type = _ios_get_type_possible(io);
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
     platform_gpio_setup(gpio_pin, io_state & IO_AS_INPUT, io_state & IO_PULL_MASK);
 
-    ios_state[io] = (ios_state[io] & (IO_TYPE_MASK)) | io_state;
+    ios_state[io] = (ios_state[io] & (IO_ACTIVE_SPECIAL_MASK)) | io_state;
 
     io_debug("%02u set to %s %s%s%s%s",
             io,
@@ -94,14 +154,15 @@ void     ios_init(void)
 
         uint16_t io_state = ios_state[n];
 
-        if (io_state & IO_TYPE_ON_MASK)
+        if (io_state & IO_ACTIVE_SPECIAL_MASK)
         {
-            if (io_state & IO_ONEWIRE)
+            if (io_state & IO_SPECIAL_ONEWIRE)
                 w1_enable(n, true);
-            if (io_state & IO_PULSE)
+            if (io_state & IO_SPECIAL_PULSECOUNT_RISING_EDGE    ||
+                io_state & IO_SPECIAL_PULSECOUNT_FALLING_EDGE   ||
+                io_state & IO_SPECIAL_PULSECOUNT_BOTH_EDGE      )
             {
-                bool hw_pup = io_state & IO_PUPD_UP;
-                pulsecount_enable(n, true, hw_pup);
+                pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
             }
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
@@ -122,15 +183,15 @@ bool io_enable_w1(unsigned io)
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    if (!(ios_state[io] & IO_TYPE_ONEWIRE))
+    if (!model_can_io_be_special(io, IO_SPECIAL_ONEWIRE))
         return false;
 
-    ios_state[io] &= ~IO_PULSE;
     ios_state[io] &= ~IO_OUT_ON;
     ios_state[io] &= ~IO_AS_INPUT;
 
-    ios_state[io] |= IO_ONEWIRE;
-    pulsecount_enable(io, false, false);
+    ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
+    ios_state[io] |= IO_SPECIAL_ONEWIRE;
+    pulsecount_enable(io, false, 0, 0);
     w1_enable(io, true);
     io_debug("%02u : USED W1", io);
     return true;
@@ -152,25 +213,26 @@ static unsigned io_pull(io_pupd_t pull)
 }
 
 
-bool io_enable_pulsecount(unsigned io, io_pupd_t pupd)
+bool io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    if (!(ios_state[io] & IO_TYPE_PULSECOUNT))
+    if (!model_can_io_be_special(io, edge))
         return false;
 
-    ios_state[io] &= ~IO_ONEWIRE;
     ios_state[io] &= ~IO_OUT_ON;
     ios_state[io] &= ~IO_AS_INPUT;
 
     ios_state[io] &= ~IO_PULL_MASK;
     ios_state[io] |= (io_pull(pupd) & IO_PULL_MASK);
 
-    ios_state[io] |= IO_PULSE;
-    bool hw_pup = ios_state[io] & IO_PUPD_UP;
+    ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
+    ios_state[io] |= edge;
+
     w1_enable(io, false);
-    pulsecount_enable(io, true, hw_pup);
+    model_w1_pulse_enable_pupd(io, false);
+    pulsecount_enable(io, true, pupd, edge);
     io_debug("%02u : USED PLSCNT", io);
     return true;
 }
@@ -182,31 +244,13 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
         return;
 
     uint16_t io_state = ios_state[io];
-    uint16_t io_type = io_state & IO_TYPE_MASK;
 
-    if (io_state & IO_PULSE)
+    if ((io_state & IO_ACTIVE_SPECIAL_MASK))
     {
-        if (!(io_type & IO_TYPE_PULSECOUNT))
-        {
-            // Error?
-            return;
-        }
-        ios_state[io] &= ~IO_PULSE;
-        pulsecount_enable(io, false, false);
-        io_debug("%02u : PLSCNT NO LONGER", io);
-        return;
-    }
-
-    else if (io_state & IO_ONEWIRE)
-    {
-        if (!(io_type & IO_TYPE_ONEWIRE))
-        {
-            // Error?
-            return;
-        }
-        ios_state[io] &= ~IO_ONEWIRE;
+        ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
         w1_enable(io, false);
-        io_debug("%02u : W1 NO LONGER", io);
+        pulsecount_enable(io, false, 0, 0);
+        io_debug("%02u : NO LONGER SPECIAL", io);
         return;
     }
 
@@ -244,7 +288,7 @@ bool io_is_w1_now(unsigned io)
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    return ios_state[io] & IO_ONEWIRE;
+    return (ios_state[io] & IO_ACTIVE_SPECIAL_MASK) == IO_SPECIAL_ONEWIRE;
 }
 
 
@@ -253,7 +297,10 @@ bool io_is_pulsecount_now(unsigned io)
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    return ios_state[io] & IO_PULSE;
+    uint16_t special = ios_state[io] & IO_ACTIVE_SPECIAL_MASK;
+    return (special == IO_SPECIAL_PULSECOUNT_RISING_EDGE    ||
+            special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE   ||
+            special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE      );
 }
 
 
@@ -299,12 +346,12 @@ void     io_log(unsigned io)
     const port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
 
-    if (!(io_state & IO_TYPE_ON_MASK))
+    if (!(io_state & IO_ACTIVE_SPECIAL_MASK))
     {
         char * pretype = "";
         char * posttype = "";
 
-        char * type = _ios_get_type_possible(io_state);
+        char * type = _ios_get_type_possible(io);
 
         if (type[0])
         {
@@ -466,13 +513,24 @@ void cmd_enable_pulsecount_cb(char * args)
     else
         goto bad_exit;
 
-    if (io_enable_pulsecount(io, pupd))
+    pos = skip_space(pos+1);
+    io_special_t edge;
+    if (pos[0] == 'R')
+        edge = IO_SPECIAL_PULSECOUNT_RISING_EDGE;
+    else if (pos[0] == 'F')
+        edge = IO_SPECIAL_PULSECOUNT_FALLING_EDGE;
+    else if (pos[0] == 'B')
+        edge = IO_SPECIAL_PULSECOUNT_BOTH_EDGE;
+    else
+        goto bad_exit;
+
+    if (io_enable_pulsecount(io, pupd, edge))
         log_out("IO %02u pulsecount enabled", io);
     else
         log_out("IO %02u has no pulsecount", io);
     return;
 bad_exit:
-    log_out("<io> <U/D/N>");
+    log_out("<io> <U/D/N> <R/F/B>");
 }
 
 

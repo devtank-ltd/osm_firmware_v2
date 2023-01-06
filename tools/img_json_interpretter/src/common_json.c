@@ -356,21 +356,11 @@ bool read_ios_json(struct json_object * root, uint16_t* ios_state)
             uint16_t state = ios_state[index];
             uint16_t pull    = get_io_pull(json_object_get_string(json_object_object_get(io_node, "pull")), state & IO_PULL_MASK);
             uint16_t dir     = get_io_dir(json_object_get_string(json_object_object_get(io_node, "direction")), state & IO_AS_INPUT);
-            uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_ONEWIRE:0;
-            uint16_t pcnt_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_pcnt")))?IO_PULSE:0;
-            if (w1_mode && (!(state & IO_TYPE_MASK)))
-            {
-                log_error("IO %s has no w1 mode", io_name);
-                return false;
-            }
+            uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_SPECIAL_ONEWIRE:0;
+            uint16_t pcnt_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_pcnt")))?IO_SPECIAL_PULSECOUNT_RISING_EDGE:0;
 
-            if (pcnt_mode && (!(state & IO_TYPE_MASK)))
-            {
-                log_error("IO %s has no pulse counter mode", io_name);
-                return false;
-            }
-
-            state &= ~(IO_PULL_MASK|IO_AS_INPUT|IO_ONEWIRE|IO_PULSE);
+            state &= ~(IO_PULL_MASK|IO_AS_INPUT);
+            state &= ~IO_ACTIVE_SPECIAL_MASK;
 
             if (!dir)
                 state |= (json_object_get_boolean(json_object_object_get(io_node, "out_high")))?IO_OUT_ON:0;
@@ -660,10 +650,14 @@ void write_ios_json(struct json_object * root, uint16_t* ios_state)
 
         json_object_object_add(io_node, "direction", json_object_new_string(dir));
 
-        if (io_is_special(state) && ((state & IO_TYPE_ON_MASK) == IO_ONEWIRE))
+        uint16_t special_state = state & IO_ACTIVE_SPECIAL_MASK;
+
+        if (io_is_special(state) && (special_state == IO_SPECIAL_ONEWIRE))
             json_object_object_add(io_node, "use_w1", json_object_new_boolean(true));
 
-        if (io_is_special(state) && ((state & IO_TYPE_ON_MASK) == IO_PULSE))
+        if (io_is_special(state) && (special_state == IO_SPECIAL_PULSECOUNT_RISING_EDGE     ||
+                                     special_state == IO_SPECIAL_PULSECOUNT_FALLING_EDGE    ||
+                                     special_state == IO_SPECIAL_PULSECOUNT_BOTH_EDGE       ))
             json_object_object_add(io_node, "use_pcnt", json_object_new_boolean(true));
 
         if (!(state & IO_AS_INPUT) && ((state & IO_STATE_MASK) == IO_OUT_ON))

@@ -190,9 +190,8 @@ static void _pulsecount_shutdown(unsigned io)
 }
 
 
-void pulsecount_enable(unsigned io, bool enable, bool hw_pup)
+void pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge)
 {
-    model_w1_pulse_enable_pupd(io, enable && hw_pup);
     if (enable)
     {
         pulsecount_debug("Initialising pulsecount");

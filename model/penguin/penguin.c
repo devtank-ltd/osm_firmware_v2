@@ -176,6 +176,19 @@ void penguin_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
+void penguin_w1_pulse_enable_pupd(unsigned io, bool enabled)
+{
+}
+
+
+bool penguin_can_io_be_special(unsigned io, io_special_t special)
+{
+    return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
+            ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
+              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   )   );
+}
+
+
 unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
