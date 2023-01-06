@@ -38,9 +38,11 @@ static char* _ios_get_type_active(uint16_t io_state)
     switch(io_state & IO_ACTIVE_SPECIAL_MASK)
     {
         case IO_SPECIAL_PULSECOUNT_RISING_EDGE:
+            return "PLSCNT R";
         case IO_SPECIAL_PULSECOUNT_FALLING_EDGE:
+            return "PLSCNT F";
         case IO_SPECIAL_PULSECOUNT_BOTH_EDGE:
-            return "PLSCNT";
+            return "PLSCNT B";
         case IO_SPECIAL_ONEWIRE:
             return "W1";
         default:
@@ -162,7 +164,7 @@ void     ios_init(void)
                 io_state & IO_SPECIAL_PULSECOUNT_FALLING_EDGE   ||
                 io_state & IO_SPECIAL_PULSECOUNT_BOTH_EDGE      )
             {
-                pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
+                pulsecount_enable(n, true, io_state & IO_ACTIVE_SPECIAL_MASK);
             }
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
@@ -191,7 +193,7 @@ bool io_enable_w1(unsigned io)
 
     ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
     ios_state[io] |= IO_SPECIAL_ONEWIRE;
-    pulsecount_enable(io, false, 0, 0);
+    pulsecount_enable(io, false, IO_SPECIAL_NONE);
     w1_enable(io, true);
     io_debug("%02u : USED W1", io);
     return true;
@@ -232,7 +234,7 @@ bool io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
 
     w1_enable(io, false);
     model_w1_pulse_enable_pupd(io, false);
-    pulsecount_enable(io, true, pupd, edge);
+    pulsecount_enable(io, true, edge);
     io_debug("%02u : USED PLSCNT", io);
     return true;
 }
@@ -249,7 +251,7 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
     {
         ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
         w1_enable(io, false);
-        pulsecount_enable(io, false, 0, 0);
+        pulsecount_enable(io, false, IO_SPECIAL_NONE);
         io_debug("%02u : NO LONGER SPECIAL", io);
         return;
     }
@@ -552,5 +554,6 @@ struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
                                        { "io",           "Get/set IO set.",          io_cb                         , false , NULL },
                                        { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb      , false , NULL },
                                        { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb         , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    tail = add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return pulsecount_add_commands(tail);
 }

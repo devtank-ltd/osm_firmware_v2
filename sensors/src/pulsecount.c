@@ -1,5 +1,7 @@
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stddef.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -20,10 +22,12 @@
     { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
         W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
         W1_PULSE_1_EXTI_IRQ,                                           \
+        IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
         0, 0 },                                                        \
     { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
         W1_PULSE_2_PORT_N_PINS , W1_PULSE_2_EXTI,                      \
         W1_PULSE_2_EXTI_IRQ,                                           \
+        IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
         0, 0 }                                                         \
 }
 
@@ -34,6 +38,7 @@ typedef struct
     port_n_pins_t       pnp;
     uint32_t            exti;
     uint8_t             exti_irq;
+    io_special_t        edge;
     volatile uint32_t   count;
     uint32_t            send_count;
 } pulsecount_instance_t;
@@ -103,28 +108,28 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
         return;
     }
 
-
     uint8_t pupd;
     if (!_pulsecount_get_pupd(instance, &pupd))
     {
         pulsecount_debug("Could not get pull.");
         return;
     }
+    pulsecount_debug("PUPD = %"PRIu8, pupd);
 
     uint8_t trig;
-    switch(pupd)
+    switch(instance->edge)
     {
-        case GPIO_PUPD_PULLDOWN:
+        case IO_SPECIAL_PULSECOUNT_RISING_EDGE:
             trig = EXTI_TRIGGER_RISING;
             break;
-        case GPIO_PUPD_PULLUP:
+        case IO_SPECIAL_PULSECOUNT_FALLING_EDGE:
             trig = EXTI_TRIGGER_FALLING;
             break;
-        case GPIO_PUPD_NONE:
-            trig = EXTI_TRIGGER_FALLING;
+        case IO_SPECIAL_PULSECOUNT_BOTH_EDGE:
+            trig = EXTI_TRIGGER_BOTH;
             break;
         default:
-            pulsecount_debug("Cannot find a trigger for '%"PRIu8"' pull configuration.", pupd);
+            pulsecount_debug("Cannot find a trigger for '%"PRIu8"' pull configuration.", instance->edge);
             return;
     }
 
@@ -143,13 +148,16 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 }
 
 
-static void _pulsecount_init(unsigned io)
+static void _pulsecount_init(unsigned io, io_special_t edge)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         if (inst->info.io == io)
+        {
+            inst->edge = edge;
             _pulsecount_init_instance(inst);
+        }
     }
 }
 
@@ -190,12 +198,12 @@ static void _pulsecount_shutdown(unsigned io)
 }
 
 
-void pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge)
+void pulsecount_enable(unsigned io, bool enable, io_special_t edge)
 {
     if (enable)
     {
         pulsecount_debug("Initialising pulsecount");
-        _pulsecount_init(io);
+        _pulsecount_init(io, edge);
     }
     else
     {
@@ -300,4 +308,40 @@ void     pulsecount_inf_init(measurements_inf_t* inf)
     inf->get_cb             = _pulsecount_get;
     inf->acked_cb           = _pulsecount_ack;
     inf->value_type_cb      = _pulsecount_value_type;
+}
+
+
+static void hw_pupd_cb(char* args)
+{
+    char* p;
+    unsigned io = strtoul(args, &p, 10);
+    if (p == args)
+        goto syntax_exit;
+
+    if (io != W1_PULSE_1_IO &&
+        io != W1_PULSE_2_IO)
+        log_out("Selected IO is not W1 or pulse IO.");
+
+    p = skip_space(p);
+
+    bool enabled;
+    if (*p == 'U')
+        enabled = true;
+    else if (*p == 'D')
+        enabled = false;
+    else
+        goto syntax_exit;
+
+    model_w1_pulse_enable_pupd(io, enabled);
+    log_out("IO %u: %"PRIu8, io, (uint8_t)(enabled?1:0));
+    return;
+syntax_exit:
+    log_out("<io> <U/D>");
+}
+
+
+struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = {{ "hw_pupd",      "Print all IOs.",           hw_pupd_cb                    , false , NULL }};
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

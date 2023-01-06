@@ -11,7 +11,7 @@ void pulsecount_init(void)
 }
 
 
-void pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge)
+void pulsecount_enable(unsigned io, bool enable, io_special_t edge)
 {
     if (enable)
         pulsecount_init();
@@ -64,4 +64,10 @@ void     pulsecount_inf_init(measurements_inf_t* inf)
     inf->get_cb             = _pulsecount_get;
     inf->acked_cb           = _pulsecount_ack;
     inf->value_type_cb      = _pulsecount_value_type;
+}
+
+
+struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail)
+{
+    return tail;
 }
