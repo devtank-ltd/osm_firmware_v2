@@ -34,6 +34,12 @@ MODBUS_REGISTERS_RIF    = {0x36: (BinaryPayloadBuilder.add_32bit_float, 1. ),   
                            0x14: (BinaryPayloadBuilder.add_32bit_float, 30.3),  # AP3  "CurrentP3",      "A"
                            0x60: (BinaryPayloadBuilder.add_32bit_float, 1.)     # Imp  "ImportEnergy",   "watt/hours/1"
                            }
+MODBUS_DEV_ADDRESS_RDL  = 0x2
+MODBUS_REGISTERS_RDL    = {
+                           0x01: (BinaryPayloadBuilder.add_16bit_uint, 2 ),
+                           0x02: (BinaryPayloadBuilder.add_16bit_int,  2 ),
+                           0x03: (BinaryPayloadBuilder.add_16bit_int, -178 ),
+                           }
 
 
 class modbus_server_t(object):
@@ -54,9 +60,12 @@ class modbus_server_t(object):
 
         e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=Endian.Big, wordorder=Endian.Big)
         rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=Endian.Big, wordorder=Endian.Little)
+        rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=Endian.Big, wordorder=Endian.Big)
 
         slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
-                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block, zero_mode=True)}
+                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block, zero_mode=True),
+                  MODBUS_DEV_ADDRESS_RDL : ModbusSlaveContext(ir=rdl_slave_block, zero_mode=True),
+                  }
         self._context = ModbusServerContext(slaves=slaves, single=False)
         self._identity = ModbusDeviceIdentification()
         self._identity.VendorName = 'Pymodbus'

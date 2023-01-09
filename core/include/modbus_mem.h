@@ -36,5 +36,7 @@ extern modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg);
 extern modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg);
 extern modbus_reg_state_t modbus_reg_get_state(modbus_reg_t * reg);
 extern bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value);
+extern bool              modbus_reg_get_i16(modbus_reg_t * reg, int16_t * value);
 extern bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value);
+extern bool              modbus_reg_get_i32(modbus_reg_t * reg, int32_t * value);
 extern bool              modbus_reg_get_float(modbus_reg_t * reg, float * value);

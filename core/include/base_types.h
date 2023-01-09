@@ -102,8 +102,10 @@ typedef enum
 {
     MODBUS_REG_TYPE_INVALID  = 0,
     MODBUS_REG_TYPE_U16      = 1,
-    MODBUS_REG_TYPE_U32      = 2,
-    MODBUS_REG_TYPE_FLOAT    = 3,
+    MODBUS_REG_TYPE_I16      = 2,
+    MODBUS_REG_TYPE_U32      = 3,
+    MODBUS_REG_TYPE_I32      = 4,
+    MODBUS_REG_TYPE_FLOAT    = 5,
     MODBUS_REG_TYPE_MAX = MODBUS_REG_TYPE_FLOAT,
 } modbus_reg_type_t;
 

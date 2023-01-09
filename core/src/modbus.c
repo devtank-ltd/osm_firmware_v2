@@ -244,7 +244,9 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     switch (reg->type)
     {
         case MODBUS_REG_TYPE_U16    : reg_count = 1; break;
+        case MODBUS_REG_TYPE_I16    : reg_count = 1; break;
         case MODBUS_REG_TYPE_U32    : reg_count = 2; break;
+        case MODBUS_REG_TYPE_I32    : reg_count = 2; break;
         case MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
         default: break;
     }
@@ -307,7 +309,11 @@ bool modbus_start_read(modbus_reg_t * reg)
 
     if (!dev ||
         !(reg->func == MODBUS_READ_HOLDING_FUNC || reg->func == MODBUS_READ_INPUT_FUNC) ||
-        !(reg->type == MODBUS_REG_TYPE_U16 || reg->type == MODBUS_REG_TYPE_U32 || reg->type == MODBUS_REG_TYPE_FLOAT))
+        !(reg->type == MODBUS_REG_TYPE_U16  ||
+          reg->type == MODBUS_REG_TYPE_I16  ||
+          reg->type == MODBUS_REG_TYPE_U32  ||
+          reg->type == MODBUS_REG_TYPE_I32  ||
+          reg->type == MODBUS_REG_TYPE_FLOAT))
     {
         log_error("Modbus register \"%."STR(MODBUS_NAME_LEN)"s\" unable to start read.", reg->name);
         return false;
@@ -647,6 +653,17 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
+static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)
+{
+    if (size != 2)
+        return;
+    int16_t v;
+    if (!_modbus_data_to_u16((uint16_t*)&v, data, size, byte_order))
+        return;
+    _modbus_reg_set(reg, v);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
+}
+
 static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     if (size != 4)
@@ -656,6 +673,17 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
         return;
     _modbus_reg_set(reg, v);
     modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
+}
+
+static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+{
+    if (size != 4)
+        return;
+    int32_t v;
+    if (!_modbus_data_to_u32((uint32_t*)&v, data, size, byte_order, word_order))
+        return;
+    _modbus_reg_set(reg, v);
+    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
 }
 
 static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -677,7 +705,9 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, mod
     switch(reg->type)
     {
         case MODBUS_REG_TYPE_U16:    _modbus_reg_u16_cb(reg, data, size, byte_order); break;
+        case MODBUS_REG_TYPE_I16:    _modbus_reg_i16_cb(reg, data, size, byte_order); break;
         case MODBUS_REG_TYPE_U32:    _modbus_reg_u32_cb(reg, data, size, byte_order, word_order); break;
+        case MODBUS_REG_TYPE_I32:    _modbus_reg_i32_cb(reg, data, size, byte_order, word_order); break;
         case MODBUS_REG_TYPE_FLOAT:  _modbus_reg_float_cb(reg, data, size, byte_order, word_order); break;
         default: log_error("Unknown modbus reg type."); break;
     }

@@ -67,11 +67,31 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
             value->v_i64 = (int64_t)v;
             return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
+        case MODBUS_REG_TYPE_I16:
+        {
+            int16_t v;
+
+            if (!modbus_reg_get_i16(reg, &v))
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+            value->v_i64 = (int64_t)v;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+        }
         case MODBUS_REG_TYPE_U32:
         {
             uint32_t v;
 
             if (!modbus_reg_get_u32(reg, &v))
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
+
+            value->v_i64 = (int64_t)v;
+            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+        }
+        case MODBUS_REG_TYPE_I32:
+        {
+            int32_t v;
+
+            if (!modbus_reg_get_i32(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
@@ -103,7 +123,11 @@ static measurements_value_type_t _modbus_measurements_value_type(char* name)
             return MEASUREMENTS_VALUE_TYPE_FLOAT;
         case MODBUS_REG_TYPE_U16:
             return MEASUREMENTS_VALUE_TYPE_I64;
+        case MODBUS_REG_TYPE_I16:
+            return MEASUREMENTS_VALUE_TYPE_I64;
         case MODBUS_REG_TYPE_U32:
+            return MEASUREMENTS_VALUE_TYPE_I64;
+        case MODBUS_REG_TYPE_I32:
             return MEASUREMENTS_VALUE_TYPE_I64;
         default:
             modbus_debug("Unknown modbus register type.");
