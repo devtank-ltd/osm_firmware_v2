@@ -949,7 +949,7 @@ class config_gui_window_t(Tk):
         if idy == "mb":
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY)
-            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
+            self._my_canvas.grid(column=0, row=0, sticky=EW)
             self._main_frame.grid(
                 column=3, row=1, rowspan=6, columnspan=5, 
                 sticky=EW, padx=(50, 0))
@@ -1515,8 +1515,8 @@ class config_gui_window_t(Tk):
         self._modb_fr.img_list = []
         dev_lab = Label(self._modb_fr, image=param_logo, bg=IVORY)
         dev_lab.grid(column=3, row=9, rowspan=5, padx=(20,0), sticky=EW)
+        # self._modb_fr.bind('<Configure>', lambda e : self._resize_image(e, dev_lab, img, self._modb_fr))
         self._modb_fr.img_list.append(param_logo)
-        # self._modb_fr.bind('<Configure>', lambda e : self._resize_frame_img(e, dev_lab, img))
 
         canv = Canvas(self._modb_fr)
         canv.grid(column=0, row=15, columnspan=10)
@@ -1527,18 +1527,18 @@ class config_gui_window_t(Tk):
         self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
         self._load_headers(self._modb_fr, "mb", True)
-        canv.bind('<Configure>', lambda e : self._resize_image(e))
+        canv.bind('<Configure>', lambda e : self._resize_image(e, self.os_lab, self.img_os, self._modb_fr))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
         self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], weight=1)
         
-    def _resize_image(self, e):
-        new_width  = self.os_lab.winfo_reqwidth()
-        new_height = self.os_lab.winfo_reqheight()
-        image = self.img_os.resize((new_width-2, new_height-2))
+    def _resize_image(self, e, label, img, frame):
+        new_width  = label.winfo_reqwidth()
+        new_height = label.winfo_reqheight()
+        image = img.resize((new_width-2, new_height-2))
         new_image = ImageTk.PhotoImage(image)
         # canv.create_image(0, 0, image=new_image, anchor="nw")
-        self.os_lab.configure(image=new_image)
-        self._modb_fr.img_list.append(new_image)
+        label.configure(image=new_image)
+        frame.img_list.append(new_image)
     
     def _close_save(self, window):
         if self._changes == True:
