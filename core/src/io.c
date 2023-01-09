@@ -164,7 +164,7 @@ void     ios_init(void)
                 io_state & IO_SPECIAL_PULSECOUNT_FALLING_EDGE   ||
                 io_state & IO_SPECIAL_PULSECOUNT_BOTH_EDGE      )
             {
-                pulsecount_enable(n, true, io_state & IO_ACTIVE_SPECIAL_MASK);
+                pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
             }
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
@@ -193,7 +193,7 @@ bool io_enable_w1(unsigned io)
 
     ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
     ios_state[io] |= IO_SPECIAL_ONEWIRE;
-    pulsecount_enable(io, false, IO_SPECIAL_NONE);
+    pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
     w1_enable(io, true);
     io_debug("%02u : USED W1", io);
     return true;
@@ -233,8 +233,7 @@ bool io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
     ios_state[io] |= edge;
 
     w1_enable(io, false);
-    model_w1_pulse_enable_pupd(io, false);
-    pulsecount_enable(io, true, edge);
+    pulsecount_enable(io, true, pupd, edge);
     io_debug("%02u : USED PLSCNT", io);
     return true;
 }
@@ -251,7 +250,7 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
     {
         ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
         w1_enable(io, false);
-        pulsecount_enable(io, false, IO_SPECIAL_NONE);
+        pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
         io_debug("%02u : NO LONGER SPECIAL", io);
         return;
     }
@@ -500,22 +499,13 @@ void io_cb(char *args)
 
 void cmd_enable_pulsecount_cb(char * args)
 {
+    /* <io> <R/F/B> <U/D/N>
+     */
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
     if (args == pos)
         goto bad_exit;
     pos = skip_space(pos);
-    uint8_t pupd;
-    if (pos[0] == 'U')
-        pupd = IO_PUPD_UP;
-    else if (pos[0] == 'D')
-        pupd = IO_PUPD_DOWN;
-    else if (pos[0] == 'N')
-        pupd = IO_PUPD_NONE;
-    else
-        goto bad_exit;
-
-    pos = skip_space(pos+1);
     io_special_t edge;
     if (pos[0] == 'R')
         edge = IO_SPECIAL_PULSECOUNT_RISING_EDGE;
@@ -526,13 +516,24 @@ void cmd_enable_pulsecount_cb(char * args)
     else
         goto bad_exit;
 
+    pos = skip_space(pos+1);
+    uint8_t pupd;
+    if (pos[0] == 'U')
+        pupd = IO_PUPD_UP;
+    else if (pos[0] == 'D')
+        pupd = IO_PUPD_DOWN;
+    else if (pos[0] == 'N')
+        pupd = IO_PUPD_NONE;
+    else
+        goto bad_exit;
+
     if (io_enable_pulsecount(io, pupd, edge))
         log_out("IO %02u pulsecount enabled", io);
     else
         log_out("IO %02u has no pulsecount", io);
     return;
 bad_exit:
-    log_out("<io> <U/D/N> <R/F/B>");
+    log_out("<io> <R/F/B> <U/D/N>");
 }
 
 
