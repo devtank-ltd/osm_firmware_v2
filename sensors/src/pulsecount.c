@@ -14,6 +14,7 @@
 #include "io.h"
 #include "pulsecount.h"
 #include "platform_model.h"
+#include "version.h"
 
 
 #define PULSECOUNT_COLLECTION_TIME_MS       1000;
@@ -116,31 +117,34 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     }
     pulsecount_debug("PUPD = %"PRIu8, pupd);
 
-    /* Slightly confusing setup due to hardware:
-     * NONE:
-     *  STM PUPD:   None
-     *  HW PUPD:    Down/None
-     *  Comments:   This will actually be biased down as the chip pulls
-     *              it to ground.
-     * UP:
-     *  STM PUPD:   None
-     *  HW PUPD:    Up
-     *  Comments:   As hardware-pull-up is used for pull up, have no pull
-     *              up on the STM.
-     * DOWN:
-     *  STM PUPD:   Down
-     *  HW PUPD:    Down/None
-     *  Comments:   No comments.
-     */
-    switch (pupd)
+    if (version_is_arch(VERSION_ARCH_REV_C))
     {
-        case IO_PUPD_DOWN:
-            break;
-        case IO_PUPD_UP:
-        case IO_PUPD_NONE:
-        default:
-            pupd = IO_PUPD_NONE;
-            break;
+        /* Slightly confusing setup due to hardware:
+         * NONE:
+         *  STM PUPD:   None
+         *  HW PUPD:    Down/None
+         *  Comments:   This will actually be biased down as the chip pulls
+         *              it to ground.
+         * UP:
+         *  STM PUPD:   None
+         *  HW PUPD:    Up
+         *  Comments:   As hardware-pull-up is used for pull up, have no pull
+         *              up on the STM.
+         * DOWN:
+         *  STM PUPD:   Down
+         *  HW PUPD:    Down/None
+         *  Comments:   No comments.
+         */
+        switch (pupd)
+        {
+            case IO_PUPD_DOWN:
+                break;
+            case IO_PUPD_UP:
+            case IO_PUPD_NONE:
+            default:
+                pupd = IO_PUPD_NONE;
+                break;
+        }
     }
 
     uint8_t trig;
