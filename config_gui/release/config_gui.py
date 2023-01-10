@@ -951,7 +951,7 @@ class config_gui_window_t(Tk):
                 self._main_frame, bg=IVORY)
             self._my_canvas.grid(column=0, row=0, sticky=EW)
             self._main_frame.grid(
-                column=3, row=1, rowspan=6, columnspan=5, 
+                column=3, row=1, rowspan=7, columnspan=5, 
                 sticky=EW, padx=(50, 0))
         else:
             self._my_canvas = Canvas(
@@ -1532,9 +1532,20 @@ class config_gui_window_t(Tk):
         self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], weight=1)
         
     def _resize_image(self, e, label, img, frame):
-        new_width  = label.winfo_reqwidth()
-        new_height = label.winfo_reqheight()
-        image = img.resize((new_width-2, new_height-2))
+        img_height = img.height
+        img_width = img.width
+        new_width  = e.width
+        new_height = e.height
+
+        width_ratio = new_width / img_width
+        height_ratio = new_height / img_height
+
+        if width_ratio < height_ratio:
+            new_height = int(width_ratio * img_height)
+        else:
+            new_width = int(height_ratio * img_width)
+        
+        image = img.resize((new_width, new_height))
         new_image = ImageTk.PhotoImage(image)
         # canv.create_image(0, 0, image=new_image, anchor="nw")
         label.configure(image=new_image)
