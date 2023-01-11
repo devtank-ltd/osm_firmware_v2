@@ -121,6 +121,7 @@ GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
 PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
 OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
 LEAF      =    PATH + "/osm_pictures/logos/leaf2.png"
+OSM_BG    =    PATH + "/osm_pictures/logos/osm_bg.png"
 
 
 def log_func(msg):
@@ -238,13 +239,20 @@ class config_gui_window_t(Tk):
                                 font=FONT_XL, pady=50, bg=IVORY)
         self._welcome_p.pack()
 
+        conn_canv = Canvas(self._conn_fr)
+        conn_canv.pack()
+
         img = Image.open(OSM_1)
         osm1_logo = ImageTk.PhotoImage(img)
         self._conn_fr.img_list = []
         self._conn_fr.img_list.append(osm1_logo)
         self._osm1_lab = Label(
-            self._conn_fr, image=osm1_logo, bg=IVORY)
+            conn_canv, image=osm1_logo, bg=IVORY)
         self._osm1_lab.pack()
+        og_size = img.width, img.height
+        conn_canv.bind('<Configure>', lambda e: self._resize_image(
+                        e, self._osm1_lab, img, self._conn_fr, og_size
+                    ))
         self._hide_connect()
 
     def _hide_connect(self):
@@ -316,46 +324,63 @@ class config_gui_window_t(Tk):
                             self._adv_fr, text='Advanced Config')
                         self._notebook.add(
                             self._modb_fr, text="Modbus Config")
-                        self._notebook.add(self._debug_fr, text="Debug Mode")
-                    self._notebook.select(3)
+                        self._notebook.add(self._debug_fr, 
+                        text="Debug Mode")
+                    self._notebook.select(1)
                     self._sensor_name = Label(self._main_fr, text="",
                                               bg=IVORY)
                     self._sensor_name.grid(
                         column=4, row=0, columnspan=3, sticky='E')
 
                     self._fw_version_body = Label(self._main_fr, text="")
-                    self._fw_version_body.grid(column=5, row=1, columnspan=2,
-                                               pady=(0, 50), sticky='E')
+                    self._fw_version_body.grid(
+                                            column=5, row=1, 
+                                            columnspan=2,
+                                            pady=(0, 50), sticky='E')
 
                     self._load_meas_l = Label(
-                        self._main_fr, text="Current Measurements on OSM",
+                        self._main_fr, 
+                        text="Current Measurements on OSM",
                         font=FONT_L, bg=IVORY)
                     self._load_meas_l.grid(
                         column=1, row=5)
+
+                    logo_canv = Canvas(self._main_fr)
+                    logo_canv.grid(column=6, row=11, rowspan=5)
 
                     self._main_fr.img_list = []
                     img = Image.open(DVT_IMG)
                     dev_logo = ImageTk.PhotoImage(img)
                     self._main_fr.img_list.append(dev_logo)
-                    dev_lab = Label(self._main_fr, image=dev_logo, bg=IVORY)
-                    dev_lab.grid(column=6, row=14, rowspan=5)
+                    dev_lab = Label(logo_canv, image=dev_logo, 
+                        bg=IVORY)
+                    dev_lab.grid(column=0, row=0)
+                    logo_size = img.width, img.height
+                    # logo_canv.bind('<Configure>', lambda e: self._resize_image(
+                    #     e, dev_lab, img, self._main_fr, logo_size
+                    # ))
 
                     web_url = Label(
-                        self._main_fr, text="Click here to visit our website!",
+                        self._main_fr, 
+                        text="Click here to visit our website!",
                         font=FONT_XL, bg=IVORY, fg=OSM_GRN)
-                    web_url.grid(column=6, row=19, columnspan=2, padx=(0, 30))
+                    web_url.grid(column=6, row=15, columnspan=2, 
+                    padx=(0, 30))
                     web_url.bind(
                         "<Button-1>",
                         lambda e: open_url("https://www.devtank.co.uk"))
                     web_url.configure(cursor='hand2')
 
                     banner_fr = Canvas(self._main_fr, bg=IVORY)
-                    banner_fr.grid(column=0, row=20, columnspan=7)
+                    banner_fr.grid(column=0, row=17, columnspan=7)
                     img3 = Image.open(ICONS_T)
                     emc_img = ImageTk.PhotoImage(img3)
                     emc_lab = Label(banner_fr, image=emc_img, bg=IVORY)
                     emc_lab.grid(column=0, row=0, padx=20)
                     self._main_fr.img_list.append(emc_img)
+                    # banner_fr.bind('<Configure>', lambda e: self._resize_image(
+                    #     e, emc_lab, img3, self._main_fr
+                    # ))
 
                     img_gr = Image.open(GRPH_BG)
                     gra_logo = ImageTk.PhotoImage(img_gr)
@@ -363,7 +388,12 @@ class config_gui_window_t(Tk):
                     self._adv_fr.img_list.append(gra_logo)
                     self._gra_lab = Label(
                         self._adv_fr, image=gra_logo, bg=IVORY)
-                    self._gra_lab.place(x=0, y=0)
+                    self._gra_lab.place(x=0, y=0, relheight=1.0, relwidth=1.0)
+                    adv_size = img_gr.width, img_gr.height
+                    self._adv_fr.bind('<Configure>', lambda e: self._resize_image(
+                        e, self._gra_lab, img_gr, self._adv_fr, adv_size
+                    ))
+                    
 
                     self._terminal = Text(
                         self._adv_fr, bg=BLACK, fg=LIME_GRN,
@@ -729,55 +759,62 @@ class config_gui_window_t(Tk):
     def _thread_debug(self):
         self._open_debug_w(self._debug_fr)
         log_func(f"User switched to tab 'Debug Mode'.")
-        T1 = THREAD(
-            target=lambda: self._load_debug_meas(self._debug_fr)
-        )
-        T1.daemon = True
-        T1.start()
-        if T1.is_alive():
-            log_func('_thread_debug : thread 1 running...')
-        else:
-            log_func("_thread_debug : thread 1 complete")
+        # T1 = THREAD(
+        #     target=lambda: self._load_debug_meas(self._debug_fr)
+        # )
+        # T1.daemon = True
+        # T1.start()
+        # if T1.is_alive():
+        #     log_func('_thread_debug : thread 1 running...')
+        # else:
+        #     log_func("_thread_debug : thread 1 complete")
+        self._load_debug_meas(self._debug_fr)
 
     def _open_debug_w(self, frame):
-        l_img = Image.open(LEAF)
-        leaf_logo = ImageTk.PhotoImage(l_img)
-        self._debug_fr.img_list = []
-        self._debug_fr.img_list.append(leaf_logo)
-        self._leaf_lab = Label(
-            self._debug_fr, image=leaf_logo, bg=IVORY)
-        self._leaf_lab.grid(column=0, row=0, columnspan=3)
+        frame.columnconfigure([0,1,2,3,4,5,6], weight=1)
+        frame.rowconfigure([0,1,2,3,4,5,6], weight=1)
+        # # l_img = Image.open(OSM_BG)
+        # # leaf_logo = ImageTk.PhotoImage(l_img)
+        # # self._debug_fr.img_list = []
+        # # self._debug_fr.img_list.append(leaf_logo)
+        # # self._leaf_lab = Label(
+        # #     self._debug_fr, image=leaf_logo, bg=IVORY)
+        # # self._leaf_lab.place(x=0, y=0, relheight=1, relwidth=1)
+        # leaf_size = l_img.width, l_img.height
+        # self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
+        #     e, self._leaf_lab, l_img, self._debug_fr, leaf_size
+        # ))
 
         debug_btn = Button(frame,
                            text="Activate/Disable Debug Mode",
                            command=lambda: self._dev.do_debug("debug_mode"),
                            bg=IVORY, fg=BLACK, font=FONT,
                            activebackground="green", activeforeground=IVORY)
-        debug_btn.grid(column=3, row=1, padx=((200, 50)))
+        debug_btn.grid(column=0, row=1, sticky=S)
 
         self._dbg_terml = Text(frame,
-                               height=30, width=80,
                                bg=BLACK, fg=LIME_GRN,
                                borderwidth=10, relief="sunken")
-        self._dbg_terml.grid(column=2, row=2, columnspan=3,
-                             padx=((200, 50)))
+        self._dbg_terml.grid(column=0, row=2, sticky=N)
         self._dbg_terml.configure(state='disabled')
 
         self._debug_first_fr = Frame(frame, bg="green", borderwidth=8,
                                      relief="ridge")
-        self._debug_first_fr.grid(column=6, row=1,
-                                  rowspan=30)
+        self._debug_first_fr.grid(column=3, row=2, sticky="NEW")
 
         self._dbg_canv = Canvas(
-            self._debug_first_fr)
-        self._dbg_canv.grid(column=0, row=0)
+            self._debug_first_fr, height=425)
+        self._dbg_canv.grid(column=0, row=0, sticky=NSEW)
+
 
     def _load_debug_meas(self, frame):
         hdrs = [('Measurement', 'Value')]
         mmnts = self._dev.measurements()
         meas = []
         self._dbg_sec_fr = Frame(self._dbg_canv)
-        self._dbg_sec_fr.grid(column=0, row=0)
+        self._dbg_sec_fr.pack(expand=True, fill='both')
+        self._debug_first_fr.columnconfigure(0, weight=1)
+
         if mmnts:
             for m in mmnts:
                 fw = [m[0]]
@@ -792,10 +829,11 @@ class config_gui_window_t(Tk):
             for i in range(total_rows):
                 newrow = []
                 for j in range(total_columns):
-                    debug_e = Entry(self._dbg_sec_fr, width=15,
+                    debug_e = Entry(self._dbg_sec_fr,
                                     bg=IVORY, fg=CHARCOAL,
                                     font=('Arial', 14, 'bold'))
-                    debug_e.grid(row=i, column=j)
+                    debug_e.grid(row=i, column=j, sticky=EW)
+                    self._dbg_sec_fr.columnconfigure(j, weight=1)
                     debug_e.insert(END, hdrs[i][j])
                     debug_e.configure(state='disabled',
                                       disabledbackground=IVORY,
@@ -803,7 +841,7 @@ class config_gui_window_t(Tk):
                     newrow.append(debug_e)
                 self._deb_entries.append(newrow)
         self._dbg_canv.create_window(
-            (0, 0), window=self._dbg_sec_fr, anchor="nw")
+            (0, 0), window=self._dbg_sec_fr, anchor="nw", tags="frame")
         self._dbg_canv.bind_all(
             "<MouseWheel>", lambda: self._on_mousewheel(self._dbg_canv))
         debug_sb = Scrollbar(
@@ -811,14 +849,10 @@ class config_gui_window_t(Tk):
         debug_sb.grid(column=0, row=0, sticky="NSE")
 
         self._dbg_canv.configure(yscrollcommand=debug_sb.set)
-        self._dbg_canv.bind('<Configure>', lambda e: self._dbg_canv.configure(
-            scrollregion=self._dbg_canv.bbox("all")))
+        self._dbg_canv.bind('<Configure>', lambda e: self._on_canvas_config(
+            e, self._dbg_canv
+        ))
 
-        h = self._dbg_sec_fr.winfo_height()
-        if h > 600:
-            h = self._dbg_terml.winfo_height()
-        w = self._dbg_sec_fr.winfo_width()
-        self._dbg_canv.configure(height=h, width=w)
         self._reload_debug_lines()
 
     def _reload_debug_lines(self):
@@ -922,7 +956,7 @@ class config_gui_window_t(Tk):
             entry_change_uplink = Entry(
                 window, fg=CHARCOAL, font=FONT_L)
             entry_change_uplink.grid(column=0, columnspan=5, row=15, 
-                sticky=EW, padx=(0,50))
+                sticky="NEW", padx=(0,50))
             entry_change_uplink.insert(
                 0, 'Enter a number and hit return to set uplink.')
             entry_change_uplink.bind(
@@ -935,43 +969,45 @@ class config_gui_window_t(Tk):
                 window.register(self._handle_input), '%P', '%d'))
         self._load_measurements(window, idy, tablist)
     
-    def _on_canvas_config(self, e):
-        self._my_canvas.configure(
-            scrollregion=self._my_canvas.bbox("all"))
-        self._my_canvas.itemconfig('frame', width=self._my_canvas.winfo_width())
-
+    def _on_canvas_config(self, e, canv):
+        canv.configure(
+            scrollregion=canv.bbox("all"))
+        canv.itemconfig('frame', width=canv.winfo_width())
 
     def _load_measurements(self, window, idy, tablist):
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
         window.columnconfigure([0,4,6], weight=1)
-        window.rowconfigure(20, weight=1)
+        window.rowconfigure([9,10,11,12,13,14,15,16,17], weight=1)
         if idy == "mb":
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY)
-            self._my_canvas.grid(column=0, row=0, sticky=EW)
+            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(
                 column=3, row=1, rowspan=7, columnspan=5, 
-                sticky=EW, padx=(50, 0))
+                sticky=NSEW, padx=(50, 0))
         else:
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY)
-            self._my_canvas.grid(column=0, row=0, sticky=EW)
+            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(column=0, columnspan=5,
-                                  row=6, rowspan=9, sticky=EW, padx=(0, 50))
+                        row=6, rowspan=9, sticky=NSEW, padx=(0, 50))
         self._second_frame = Frame(self._my_canvas)
         self._second_frame.pack(expand=True, fill='both')
         self._main_frame.columnconfigure(0, weight=1)
-
+        self._main_frame.rowconfigure(0, weight=1)
         sb = Scrollbar(self._main_frame, orient='vertical',
                        command=self._my_canvas.yview)
         sb.grid(column=0, row=0, sticky="NSE")
         self._my_canvas.configure(yscrollcommand=sb.set)
-        self._my_canvas.bind('<Configure>', self._on_canvas_config)
+        self._my_canvas.bind('<Configure>', lambda e: self._on_canvas_config(
+            e, self._my_canvas
+        ))
         self._my_canvas.create_window(
             (0, 0), window=self._second_frame, anchor="nw", tags="frame")
         self._my_canvas.bind_all(
             "<MouseWheel>", lambda: self._on_mousewheel(self._my_canvas))
+
         if tablist:
             total_rows = len(tablist)
             total_columns = len(tablist[0])
@@ -1101,13 +1137,13 @@ class config_gui_window_t(Tk):
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
                                            command=lambda: self._remove_reg(idy, check))
-                    self._del_reg.grid(column=3, row=8, sticky=E)
+                    self._del_reg.grid(column=3, row=8, sticky=NE)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
                                           activebackground="green", activeforeground=IVORY,
                                           command=lambda: self._remove_reg(idy, check))
-                    self._rm_int.grid(column=2, row=16)
+                    self._rm_int.grid(column=0, row=15, rowspan=2, sticky=W)
 
     def _change_on_hover(self, entry):
         e = entry.get()
@@ -1509,13 +1545,15 @@ class config_gui_window_t(Tk):
                 write_dev_to_yaml = self.db.get_all_info(dev)
                 with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                     yaml.dump(write_dev_to_yaml, f)
+                    
 
         img = Image.open(PARAMS)
         param_logo = ImageTk.PhotoImage(img)
         self._modb_fr.img_list = []
         dev_lab = Label(self._modb_fr, image=param_logo, bg=IVORY)
         dev_lab.grid(column=3, row=9, rowspan=5, padx=(20,0), sticky=EW)
-        # self._modb_fr.bind('<Configure>', lambda e : self._resize_image(e, dev_lab, img, self._modb_fr))
+        #self._modb_fr.bind('<Configure>', 
+        # lambda e : self._resize_image(e, dev_lab, img, self._modb_fr))
         self._modb_fr.img_list.append(param_logo)
 
         canv = Canvas(self._modb_fr)
@@ -1527,16 +1565,24 @@ class config_gui_window_t(Tk):
         self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
         self._load_headers(self._modb_fr, "mb", True)
-        canv.bind('<Configure>', lambda e : self._resize_image(e, self.os_lab, self.img_os, self._modb_fr))
+        os_size = self.img_os.width, self.img_os.height
+        canv.bind('<Configure>', lambda e: self._resize_image(
+            e, self.os_lab, self.img_os, self._modb_fr, os_size))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
-        self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], weight=1)
+        self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], 
+            weight=1)
         
-    def _resize_image(self, e, label, img, frame):
+    def _resize_image(self, e, label, img, frame, og_size):
+        width = og_size[0]
+        height = og_size[1]
         img_height = img.height
         img_width = img.width
         new_width  = e.width
         new_height = e.height
 
+        if new_width > width and new_height > height:
+            return
+    
         width_ratio = new_width / img_width
         height_ratio = new_height / img_height
 
@@ -1550,6 +1596,7 @@ class config_gui_window_t(Tk):
         # canv.create_image(0, 0, image=new_image, anchor="nw")
         label.configure(image=new_image)
         frame.img_list.append(new_image)
+    
     
     def _close_save(self, window):
         if self._changes == True:
