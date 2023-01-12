@@ -230,13 +230,12 @@ class low_level_dev_t(object):
             r = select.select([self], [], [], end_time - now)
             if not r[0]:
                 debug_print("Lines timeout")
-                return []
             # Should be echo of command
             new_msg = self.read()
             if new_msg is None:
                 debug_print("NULL line read.")
-                return []
-            new_msg = new_msg.strip("\n\r")
+            if new_msg:
+                new_msg = new_msg.strip("\n\r")
             if new_msg != end_line:
                 msgs += [new_msg]
             else:
@@ -418,16 +417,8 @@ class dev_t(dev_base_t):
     def save(self):
         self.do_cmd("save")
 
-    def imp_readlines(self, timeout: float = 0.5):
-        new_lines = self._ll.readlines()
-        return "".join([str(line)+"\n" for line in new_lines])
-
     def dbg_readlines(self):
         return self._ll.readlines()
-
-    def do_debug(self, cmd):
-        if cmd is not None:
-            self.do_cmd(cmd)
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
         r = self.do_cmd_multi(cmd, timeout)
@@ -473,8 +464,6 @@ class dev_t(dev_base_t):
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
             self._children[name] = measurement_t(self, name, interval, sample_count)
-
-
 
     def measurements_enable(self, value):
         self.do_cmd("meas_enable %s" % ("1" if value else "0"))
@@ -611,7 +600,7 @@ class dev_debug_t(dev_base_t):
             self._log(f"{name} failed.")
             return (name, False)
         r = re.search(
-            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64]+:[0-9]+", msg)
+            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+", msg)
         if r and r.group(0):
             _, ts, _, name, type_, value = r.group(0).split(":")
             try:

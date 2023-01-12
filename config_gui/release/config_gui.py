@@ -121,7 +121,7 @@ GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
 PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
 OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
 LEAF      =    PATH + "/osm_pictures/logos/leaf2.png"
-OSM_BG    =    PATH + "/osm_pictures/logos/osm_bg.png"
+OSM_BG    =    PATH + "/osm_pictures/logos/leaves1.png"
 
 
 def log_func(msg):
@@ -165,7 +165,7 @@ class config_gui_window_t(Tk):
                         padding=10)
         style.configure("Tab", focuscolor=style.configure(".")["background"])
         self._notebook = Notebook(self, style='lefttab.TNotebook')
-        self._notebook.pack(fill='both', expand=True)
+        self._notebook.pack(expand=True, fill='both')
 
         self._conn_fr = Frame(self._notebook, width=1400, height=1000,
                               bg=IVORY, padx=50, pady=50)
@@ -177,8 +177,7 @@ class config_gui_window_t(Tk):
         self._main_fr.pack(fill='both', expand=True)
         self._main_fr.pack_propagate(0)
 
-        self._adv_fr = Frame(self._notebook, bg=IVORY,
-                             pady=50)
+        self._adv_fr = Frame(self._notebook, bg=IVORY)
         self._adv_fr.pack(fill='both', expand=True)
         self._adv_fr.pack_propagate(0)
 
@@ -388,32 +387,33 @@ class config_gui_window_t(Tk):
                     self._adv_fr.img_list.append(gra_logo)
                     self._gra_lab = Label(
                         self._adv_fr, image=gra_logo, bg=IVORY)
-                    self._gra_lab.place(x=0, y=0, relheight=1.0, relwidth=1.0)
+                    self._gra_lab.place(x=0, y=0, relwidth=1.0, relheight=1.0)
                     adv_size = img_gr.width, img_gr.height
                     self._adv_fr.bind('<Configure>', lambda e: self._resize_image(
                         e, self._gra_lab, img_gr, self._adv_fr, adv_size
                     ))
                     
-
+                    
                     self._terminal = Text(
                         self._adv_fr, bg=BLACK, fg=LIME_GRN,
-                        width=100, height=30, borderwidth=10, relief="sunken")
-                    self._terminal.pack()
+                        borderwidth=10, relief="sunken")
+                    self._terminal.pack(expand=True, fill='both', 
+                        pady=(50,0), padx=200)
                     self._terminal.configure(state='disabled')
 
-                    cmd = Entry(self._adv_fr, width=82, fg=CHARCOAL,
+                    cmd = Entry(self._adv_fr,fg=CHARCOAL,
                                 font=FONT_L)
-                    cmd.pack()
+                    cmd.pack(expand=True, fill='x', padx=200)
                     cmd.insert(0, 'Enter a command and hit return to send.')
                     cmd.bind("<Return>", lambda e: self._enter_cmd(cmd))
                     cmd.bind("<Button-1>",
                              lambda event:  self._clear_box(event, cmd))
 
-                    man_config_btn = Button(self._adv_fr, text="List of Commands",
-                                            command=self._manual_config,
-                                            bg=IVORY, fg=BLACK, font=FONT,
-                                            activebackground="green", activeforeground=IVORY)
-                    man_config_btn.pack()
+                    # man_config_btn = Button(self._adv_fr, text="List of Commands",
+                    #                         command=self._manual_config,
+                    #                         bg=IVORY, fg=BLACK, font=FONT,
+                    #                         activebackground="green", activeforeground=IVORY)
+                    # man_config_btn.pack()
                     self._open_lora_config(self._main_fr)
 
                     self.modbus_opened = False
@@ -550,8 +550,7 @@ class config_gui_window_t(Tk):
 
     def _write_terminal_cmd(self, cmd, terminal):
         terminal.configure(state='normal')
-        terminal.delete('1.0', END)
-        terminal.insert(INSERT, cmd)
+        terminal.insert(INSERT, cmd + "\n")
         terminal.configure(state='disabled')
 
     def _update_meas_tab(self, meas):
@@ -773,21 +772,21 @@ class config_gui_window_t(Tk):
     def _open_debug_w(self, frame):
         frame.columnconfigure([0,1,2,3,4,5,6], weight=1)
         frame.rowconfigure([0,1,2,3,4,5,6], weight=1)
-        # # l_img = Image.open(OSM_BG)
-        # # leaf_logo = ImageTk.PhotoImage(l_img)
-        # # self._debug_fr.img_list = []
-        # # self._debug_fr.img_list.append(leaf_logo)
-        # # self._leaf_lab = Label(
-        # #     self._debug_fr, image=leaf_logo, bg=IVORY)
-        # # self._leaf_lab.place(x=0, y=0, relheight=1, relwidth=1)
-        # leaf_size = l_img.width, l_img.height
-        # self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
-        #     e, self._leaf_lab, l_img, self._debug_fr, leaf_size
-        # ))
+        l_img = Image.open(OSM_BG)
+        leaf_logo = ImageTk.PhotoImage(l_img)
+        self._debug_fr.img_list = []
+        self._debug_fr.img_list.append(leaf_logo)
+        self._leaf_lab = Label(
+            self._debug_fr, image=leaf_logo, bg=IVORY)
+        self._leaf_lab.pack()
+        leaf_size = l_img.width, l_img.height
+        self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
+            e, self._leaf_lab, l_img, self._debug_fr, leaf_size
+        ))
 
         debug_btn = Button(frame,
                            text="Activate/Disable Debug Mode",
-                           command=lambda: self._dev.do_debug("debug_mode"),
+                           command=lambda: self._dev.do_cmd("debug_mode"),
                            bg=IVORY, fg=BLACK, font=FONT,
                            activebackground="green", activeforeground=IVORY)
         debug_btn.grid(column=0, row=1, sticky=S)
@@ -795,15 +794,15 @@ class config_gui_window_t(Tk):
         self._dbg_terml = Text(frame,
                                bg=BLACK, fg=LIME_GRN,
                                borderwidth=10, relief="sunken")
-        self._dbg_terml.grid(column=0, row=2, sticky=N)
+        self._dbg_terml.grid(column=0, row=2, sticky=NS)
         self._dbg_terml.configure(state='disabled')
 
         self._debug_first_fr = Frame(frame, bg="green", borderwidth=8,
                                      relief="ridge")
-        self._debug_first_fr.grid(column=3, row=2, sticky="NEW")
+        self._debug_first_fr.grid(column=3, row=2, sticky="EW")
 
         self._dbg_canv = Canvas(
-            self._debug_first_fr, height=425)
+            self._debug_first_fr)
         self._dbg_canv.grid(column=0, row=0, sticky=NSEW)
 
 
@@ -864,15 +863,16 @@ class config_gui_window_t(Tk):
                     if res:
                         dbg_meas = res[0]
                         dbg_val = res[1]
-                        for i in self._deb_entries:
-                            meas = i[0].get()
-                            if meas == dbg_meas:
-                                val_to_change = i[1]
-                                val_to_change.configure(state='normal')
-                                val_to_change.delete(0, END)
-                                val_to_change.insert(0, int(dbg_val))
-                                val_to_change.configure(
-                                    state='disabled')
+                        if dbg_val != False:
+                            for i in self._deb_entries:
+                                meas = i[0].get()
+                                if meas == dbg_meas:
+                                    val_to_change = i[1]
+                                    val_to_change.configure(state='normal')
+                                    val_to_change.delete(0, END)
+                                    val_to_change.insert(0, int(dbg_val))
+                                    val_to_change.configure(
+                                        state='disabled')
                         self._dbg_terml.configure(state='normal')
                         self._dbg_terml.insert('1.0', d + "\n")
                         self._dbg_terml.configure(state='disabled')
@@ -978,7 +978,7 @@ class config_gui_window_t(Tk):
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
         window.columnconfigure([0,4,6], weight=1)
-        window.rowconfigure([9,10,11,12,13,14,15,16,17], weight=1)
+        window.rowconfigure([11,12,13,14,15,16,17], weight=1)
         if idy == "mb":
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY)
@@ -1311,10 +1311,12 @@ class config_gui_window_t(Tk):
         cmd_label.config(text=list_of_cmds)
 
     def _enter_cmd(self, cmd):
+        self._terminal.configure(state='normal')
+        self._terminal.delete('1.0', END)
         cmd = cmd.get()
-        self._dev.do_debug(cmd)
-        newline = self._dev.imp_readlines()
-        self._write_terminal_cmd(newline, self._terminal)
+        cmd = self._dev.do_cmd_multi(cmd)
+        for cm in cmd:
+            self._write_terminal_cmd(cm, self._terminal)
 
     def _pop_lora_entry(self):
         eui_op = self._dev.dev_eui
