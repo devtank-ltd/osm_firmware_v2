@@ -110,6 +110,7 @@ OSM_GRN = "#7ad03a"
 FONT = ('Arial', 11, 'bold')
 FONT_L = ('Arial', 14, 'bold')
 FONT_XL = ('Arial', 20, 'bold')
+FONT_XXL = ('Karumbi', 35, 'bold')
 GET_TMP_N = MB_DB.GET_TMP_N
 GET_TEMP_ID = MB_DB.GET_TEMP_ID
 GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
@@ -362,9 +363,9 @@ class config_gui_window_t(Tk):
                     web_url = Label(
                         self._main_fr, 
                         text="Click here to visit our website!",
-                        font=FONT_XL, bg=IVORY, fg=OSM_GRN)
+                        font=FONT_XXL, bg=IVORY, fg=OSM_GRN)
                     web_url.grid(column=6, row=15, columnspan=2, 
-                    padx=(0, 30))
+                    sticky=EW, pady=(75,0))
                     web_url.bind(
                         "<Button-1>",
                         lambda e: open_url("https://www.devtank.co.uk"))
