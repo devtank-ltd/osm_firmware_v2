@@ -47,6 +47,18 @@ static uint32_t _uart_get_stop(uart_stop_bits_t stop)
     }
 }
 
+static void usart_set_baudrate2(uint32_t usart, uint32_t baud)
+{
+    if (usart == LPUART1)
+    {
+        uint32_t clock = rcc_get_usart_clk_freq(usart);
+        USART_BRR(usart) = (clock / baud) * 256
+                    + ((clock % baud) * 256 + baud / 2) / baud;
+        return;
+    }
+    usart_set_baudrate(usart, baud);
+}
+
 
 static void uart_up(const uart_channel_t * channel)
 {
@@ -54,7 +66,7 @@ static void uart_up(const uart_channel_t * channel)
 
     uint32_t usart = channel->usart;
 
-    usart_set_baudrate( usart, channel->baud );
+    usart_set_baudrate2( usart, channel->baud );
 
     uint8_t databits = channel->databits;
     if (parity != USART_PARITY_NONE)
@@ -118,7 +130,7 @@ static void uart_setup(uart_channel_t * channel)
     {
         nvic_set_priority(channel->dma_irqn, channel->priority);
         nvic_enable_irq(channel->dma_irqn);
-        dma_set_channel_request(channel->dma_unit, channel->dma_channel, 2); /*They are all 0b0010*/
+        dma_set_channel_request(channel->dma_unit, channel->dma_channel, channel->dma_req); /*They are all 0b0010*/
     }
     channel->enabled = 1;
 }
@@ -280,7 +292,11 @@ void uarts_setup(void)
     if (arch == VERSION_ARCH_REV_B)
         uart_channels = uart_channels_rev_b;
     else if (arch == VERSION_ARCH_REV_C)
+    {
+        uint32_t reg32 = RCC_CCIPR & ~(RCC_CCIPR_LPUART1SEL_MASK << RCC_CCIPR_LPUART1SEL_SHIFT);
+        RCC_CCIPR = reg32 | ((RCC_CCIPR_LPUART1SEL_HSI16 & RCC_CCIPR_LPUART1SEL_MASK) << RCC_CCIPR_LPUART1SEL_SHIFT);
         uart_channels = uart_channels_rev_c;
+    }
     else
     {
         version_arch_error_handler();
