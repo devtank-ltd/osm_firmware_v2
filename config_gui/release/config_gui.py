@@ -13,6 +13,7 @@ import binding
 import yaml
 from idlelib.tooltip import Hovertip
 import subprocess
+from subprocess import Popen, PIPE
 from tkinter.filedialog import askopenfilename
 import threading
 import traceback
@@ -25,14 +26,13 @@ import platform
 import signal
 from stat import *
 
+
 MB_DB = modbus_db
 FW_PROCESS = False
 THREAD = threading.Thread
 GET_REG_DESC = MB_DB.GET_REG_DESC
 
 LINUX_OSM_TTY = "/tmp/osm/UART_DEBUG_slave"
-
-
 
 CMDS = ["ios ------ Print all IOs.",
         "io ------ Get/set IO set.",
@@ -305,7 +305,7 @@ class config_gui_window_t(Tk):
                             self._modb_fr, text="Modbus Config")
                         self._notebook.add(self._debug_fr, 
                         text="Debug Mode")
-                    self._notebook.select(3)
+                    self._notebook.select(1)
                     self._sensor_name = Label(self._main_fr, text="",
                                               bg=IVORY)
                     self._sensor_name.grid(
@@ -890,9 +890,23 @@ class config_gui_window_t(Tk):
                 return False
         return True
 
+
+
     def _load_headers(self, window, idy, get_mins):
         log_func("Getting measurements")
-        self._sens_meas = self._dev.measurements()
+        load_proc = subprocess.Popen(['python','gui_binding_interface.py'],
+                stdout=PIPE,stdin=PIPE)
+        load_proc.stdin.write("REQ_MEAS".encode())
+        # Do stuff while waiting
+        print(load_proc.stdout)
+
+
+        # stdout_data = load_proc.communicate(input="REQ_MEAS")
+        # print(stdout_data)
+        # load_proc = subprocess.run(['python','gui_binding_interface.py'], input='REQ_MEAS', 
+        #     capture_output=True, text=True)
+        # print(load_proc)
+        # self._sens_meas = self._dev.measurements()
         log_func("Got measurements")
         if idy == "mb":
             tablist = [('Device', 'Name', 'Hex Address',
