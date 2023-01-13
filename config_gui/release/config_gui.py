@@ -121,8 +121,7 @@ R_LOGO    =    PATH + "/osm_pictures/logos/shuffle.png"
 GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
 PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
 OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
-LEAF      =    PATH + "/osm_pictures/logos/leaf2.png"
-OSM_BG    =    PATH + "/osm_pictures/logos/leaves1.png"
+OSM_BG    =    PATH + "/osm_pictures/logos/leaves.jpg"
 
 
 def log_func(msg):
@@ -247,38 +246,18 @@ class config_gui_window_t(Tk):
         self._conn_fr.img_list = []
         self._conn_fr.img_list.append(osm1_logo)
         self._osm1_lab = Label(
-            conn_canv, image=osm1_logo, bg=IVORY)
+            conn_canv, image=osm1_logo, bg=IVORY,
+            width=792, height=400)
         self._osm1_lab.pack()
-        og_size = img.width, img.height
         conn_canv.bind('<Configure>', lambda e: self._resize_image(
-                        e, self._osm1_lab, img, self._conn_fr, og_size
+                        e, self._osm1_lab, img, self._conn_fr
                     ))
-        self._hide_connect()
-
-    def _hide_connect(self):
-        mode = None
-        dev_sel = self._dev_dropdown.get()
-        if self._connected == False:
-            if not dev_sel:
-                self._connect_btn.configure(state='disabled')
-                self._downl_fw.configure(state='disabled')
-            else:
-                try:
-                    mode = os.stat(dev_sel).st_mode
-                    if S_ISCHR(mode):
-                        self._connect_btn.configure(state='normal')
-                        self._downl_fw.configure(state='normal')
-                except Exception as e:
-                    log_func(e)
-                    self._connect_btn.configure(state='disabled')
-                    self._downl_fw.configure(state='disabled')
-            self._conn_fr.after(500, self._hide_connect)
 
     def _on_connect(self):
-        self._downl_fw.pack_forget()
         self.dev_sel = self._dev_dropdown.get()
         if self.dev_sel:
             log_func("User attempting to connect to device.. : " + self.dev_sel)
+            self._downl_fw.pack_forget()
             if self._connected == True:
                 self._connected = False
                 self._widg_del = True
@@ -326,7 +305,7 @@ class config_gui_window_t(Tk):
                             self._modb_fr, text="Modbus Config")
                         self._notebook.add(self._debug_fr, 
                         text="Debug Mode")
-                    self._notebook.select(1)
+                    self._notebook.select(3)
                     self._sensor_name = Label(self._main_fr, text="",
                                               bg=IVORY)
                     self._sensor_name.grid(
@@ -346,26 +325,25 @@ class config_gui_window_t(Tk):
                         column=1, row=5)
 
                     logo_canv = Canvas(self._main_fr)
-                    logo_canv.grid(column=6, row=11, rowspan=5)
+                    logo_canv.grid(column=6, row=10, rowspan=5)
 
                     self._main_fr.img_list = []
                     img = Image.open(DVT_IMG)
                     dev_logo = ImageTk.PhotoImage(img)
                     self._main_fr.img_list.append(dev_logo)
                     dev_lab = Label(logo_canv, image=dev_logo, 
-                        bg=IVORY)
-                    dev_lab.grid(column=0, row=0)
-                    logo_size = img.width, img.height
-                    # logo_canv.bind('<Configure>', lambda e: self._resize_image(
-                    #     e, dev_lab, img, self._main_fr, logo_size
-                    # ))
+                        bg=IVORY, width=403, height=176)
+                    dev_lab.grid(column=0, row=0, sticky=NSEW)
+                    logo_canv.bind('<Configure>', lambda e: self._resize_image(
+                        e, dev_lab, img, self._main_fr
+                    ))
 
                     web_url = Label(
                         self._main_fr, 
                         text="Click here to visit our website!",
                         font=FONT_XXL, bg=IVORY, fg=OSM_GRN)
                     web_url.grid(column=6, row=15, columnspan=2, 
-                    sticky=EW, pady=(75,0))
+                    sticky=EW)
                     web_url.bind(
                         "<Button-1>",
                         lambda e: open_url("https://www.devtank.co.uk"))
@@ -375,12 +353,13 @@ class config_gui_window_t(Tk):
                     banner_fr.grid(column=0, row=17, columnspan=7)
                     img3 = Image.open(ICONS_T)
                     emc_img = ImageTk.PhotoImage(img3)
-                    emc_lab = Label(banner_fr, image=emc_img, bg=IVORY)
-                    emc_lab.grid(column=0, row=0, padx=20)
+                    emc_lab = Label(banner_fr, image=emc_img, bg=IVORY,
+                            width=1065, height=111)
+                    emc_lab.grid(column=0, row=0)
                     self._main_fr.img_list.append(emc_img)
-                    # banner_fr.bind('<Configure>', lambda e: self._resize_image(
-                    #     e, emc_lab, img3, self._main_fr
-                    # ))
+                    banner_fr.bind('<Configure>', lambda e: self._resize_image(
+                        e, emc_lab, img3, self._main_fr
+                    ))
 
                     img_gr = Image.open(GRPH_BG)
                     gra_logo = ImageTk.PhotoImage(img_gr)
@@ -389,9 +368,8 @@ class config_gui_window_t(Tk):
                     self._gra_lab = Label(
                         self._adv_fr, image=gra_logo, bg=IVORY)
                     self._gra_lab.place(x=0, y=0, relwidth=1.0, relheight=1.0)
-                    adv_size = img_gr.width, img_gr.height
                     self._adv_fr.bind('<Configure>', lambda e: self._resize_image(
-                        e, self._gra_lab, img_gr, self._adv_fr, adv_size
+                        e, self._gra_lab, img_gr, self._adv_fr
                     ))
                     
                     
@@ -780,9 +758,8 @@ class config_gui_window_t(Tk):
         self._leaf_lab = Label(
             self._debug_fr, image=leaf_logo, bg=IVORY)
         self._leaf_lab.pack()
-        leaf_size = l_img.width, l_img.height
         self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
-            e, self._leaf_lab, l_img, self._debug_fr, leaf_size
+            e, self._leaf_lab, l_img, self._debug_fr
         ))
 
         debug_btn = Button(frame,
@@ -978,16 +955,19 @@ class config_gui_window_t(Tk):
     def _load_measurements(self, window, idy, tablist):
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
-        window.columnconfigure([0,4,6], weight=1)
-        window.rowconfigure([11,12,13,14,15,16,17], weight=1)
+
         if idy == "mb":
+            window.columnconfigure([1,3,4], weight=1)
+            window.rowconfigure([11,12,13,14,15,16,17], weight=1)
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY)
             self._my_canvas.grid(column=0, row=0, sticky=NSEW)
             self._main_frame.grid(
-                column=3, row=1, rowspan=7, columnspan=5, 
+                column=4, row=1, rowspan=7, 
                 sticky=NSEW, padx=(50, 0))
         else:
+            window.columnconfigure([0,1,2,3,4,5,6,7,8], weight=1)
+            window.rowconfigure([11,12,13,14,15,16,17], weight=1)
             self._my_canvas = Canvas(
                 self._main_frame, bg=IVORY)
             self._my_canvas.grid(column=0, row=0, sticky=NSEW)
@@ -1138,7 +1118,7 @@ class config_gui_window_t(Tk):
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
                                            command=lambda: self._remove_reg(idy, check))
-                    self._del_reg.grid(column=3, row=8, sticky=NE)
+                    self._del_reg.grid(column=4, row=8, sticky=NE)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
@@ -1548,15 +1528,18 @@ class config_gui_window_t(Tk):
                 write_dev_to_yaml = self.db.get_all_info(dev)
                 with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                     yaml.dump(write_dev_to_yaml, f)
-                    
+        
+        param_canv = Canvas(self._modb_fr)
+        param_canv.grid(column=4, row=9, rowspan=5)
 
         img = Image.open(PARAMS)
         param_logo = ImageTk.PhotoImage(img)
         self._modb_fr.img_list = []
-        dev_lab = Label(self._modb_fr, image=param_logo, bg=IVORY)
-        dev_lab.grid(column=3, row=9, rowspan=5, padx=(20,0), sticky=EW)
-        #self._modb_fr.bind('<Configure>', 
-        # lambda e : self._resize_image(e, dev_lab, img, self._modb_fr))
+        dev_lab = Label(param_canv, image=param_logo, bg=IVORY,
+                height=235, width=762)
+        dev_lab.grid(column=0,row=0,sticky=EW)
+        param_canv.bind('<Configure>', 
+        lambda e : self._resize_image(e, dev_lab, img, self._modb_fr))
         self._modb_fr.img_list.append(param_logo)
 
         canv = Canvas(self._modb_fr)
@@ -1564,28 +1547,23 @@ class config_gui_window_t(Tk):
 
         self.img_os = Image.open(OPEN_S)
         os_logo = ImageTk.PhotoImage(self.img_os)
-        self.os_lab = Label(canv, image=os_logo, bg=IVORY)
+        self.os_lab = Label(canv, image=os_logo, bg=IVORY,
+                height=111, width=1065)
         self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
         self._load_headers(self._modb_fr, "mb", True)
-        os_size = self.img_os.width, self.img_os.height
         canv.bind('<Configure>', lambda e: self._resize_image(
-            e, self.os_lab, self.img_os, self._modb_fr, os_size))
+            e, self.os_lab, self.img_os, self._modb_fr))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
         self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], 
             weight=1)
         
-    def _resize_image(self, e, label, img, frame, og_size):
-        width = og_size[0]
-        height = og_size[1]
+    def _resize_image(self, e, label, img, frame):
         img_height = img.height
         img_width = img.width
         new_width  = e.width
         new_height = e.height
 
-        if new_width > width and new_height > height:
-            return
-    
         width_ratio = new_width / img_width
         height_ratio = new_height / img_height
 
@@ -1593,12 +1571,12 @@ class config_gui_window_t(Tk):
             new_height = int(width_ratio * img_height)
         else:
             new_width = int(height_ratio * img_width)
-        
-        image = img.resize((new_width, new_height))
-        new_image = ImageTk.PhotoImage(image)
-        # canv.create_image(0, 0, image=new_image, anchor="nw")
-        label.configure(image=new_image)
-        frame.img_list.append(new_image)
+        if new_height > 0 and new_width > 0:
+            image = img.resize((new_width, new_height))
+            new_image = ImageTk.PhotoImage(image)
+            # canv.create_image(0, 0, image=new_image, anchor="nw")
+            label.configure(image=new_image)
+            frame.img_list.append(new_image)
     
     
     def _close_save(self, window):
