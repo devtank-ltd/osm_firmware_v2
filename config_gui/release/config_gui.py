@@ -26,7 +26,6 @@ import platform
 import signal
 from stat import *
 
-
 MB_DB = modbus_db
 FW_PROCESS = False
 THREAD = threading.Thread
@@ -150,6 +149,7 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
+        self.count=0
         with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
             pass
         with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
@@ -285,7 +285,9 @@ class config_gui_window_t(Tk):
                                                stopbits=serial.STOPBITS_ONE,
                                                timeout=0)
                     self._dev = binding.dev_t(serial_obj)
+                    # self.dev = gbi.interface_t(self.dev_sel)
                     self._debug_parse = binding.dev_debug_t(serial_obj)
+                    # self._dev = self.dev.dev
                 except Exception as e:
                     traceback.print_exc()
                     self._dev = None
@@ -293,8 +295,13 @@ class config_gui_window_t(Tk):
                     msg = "Failed to open : " + str(e)
                     log_func(msg)
                     tkinter.messagebox.showerror(msg)
-
                 if self._dev:
+                    self._modbus = self._request_modbus()
+                    self._sens_meas = self._dev.measurements()
+                    self.ser_op = self._dev.serial_num.value
+                    self.fw_version = self._dev.version.value
+                    self.eui_op = self._dev.dev_eui
+                    self.app_op = self._dev.app_key
                     self._connected = True
                     if self._widg_del == False:
                         self._notebook.add(self._conn_fr, text="Connect",)
@@ -388,11 +395,6 @@ class config_gui_window_t(Tk):
                     cmd.bind("<Button-1>",
                              lambda event:  self._clear_box(event, cmd))
 
-                    # man_config_btn = Button(self._adv_fr, text="List of Commands",
-                    #                         command=self._manual_config,
-                    #                         bg=IVORY, fg=BLACK, font=FONT,
-                    #                         activebackground="green", activeforeground=IVORY)
-                    # man_config_btn.pack()
                     self._open_lora_config(self._main_fr)
 
                     self.modbus_opened = False
@@ -401,7 +403,6 @@ class config_gui_window_t(Tk):
                                         lambda e: self._tab_changed(e,
                                                                     self._main_fr,
                                                                     self._notebook))
-                    root.update()
                     get_mins = self._get_interval_mins()
                     if get_mins:
                         self._load_headers(self._main_fr, "rif", True)
@@ -416,16 +417,14 @@ class config_gui_window_t(Tk):
         return self._interval_min
 
     def _pop_sensor_name(self):
-        ser_op = self._dev.serial_num.value
         self._sensor_name.configure(
-            text="Serial Number - " + ser_op,
+            text="Serial Number - " + self.ser_op,
             bg=IVORY, font=FONT)
 
     def _add_ver(self):
-        version = self._dev.version.value
-        version = "-".join(version.split("-")[0:2])
+        self.fw_version = "-".join(self.fw_version.split("-")[0:2])
         self._fw_version_body.configure(
-            text="Current Firmware Version - " + version,
+            text="Current Firmware Version - " + self.fw_version,
             bg=IVORY, font=FONT)
 
     def _tab_changed(self, event, frame, notebook):
@@ -438,11 +437,10 @@ class config_gui_window_t(Tk):
             self._main_modbus_w()
         elif slction == '.!notebook.!frame5' and self._dbg_open == False:
             self._dbg_open = True
-            self._thread_debug()
-        elif slction == '.!notebook.!frame2' and self.modbus_opened == True:
-            self.modbus_opened = False
-            self._fw_label.configure(text="")
-            self._load_headers(frame, "rif", True)
+            if self.count == 0:
+                self._thread_debug()
+            else:
+                self._reload_debug_lines()
         if slction != '.!notebook.!frame5' and self._dbg_open == True:
             self._dbg_open = False
 
@@ -735,17 +733,9 @@ class config_gui_window_t(Tk):
         self._set_ios_label(meas, pin_obj, pin_is)
 
     def _thread_debug(self):
+        self.count = self.count + 1
         self._open_debug_w(self._debug_fr)
         log_func(f"User switched to tab 'Debug Mode'.")
-        # T1 = THREAD(
-        #     target=lambda: self._load_debug_meas(self._debug_fr)
-        # )
-        # T1.daemon = True
-        # T1.start()
-        # if T1.is_alive():
-        #     log_func('_thread_debug : thread 1 running...')
-        # else:
-        #     log_func("_thread_debug : thread 1 complete")
         self._load_debug_meas(self._debug_fr)
 
     def _open_debug_w(self, frame):
@@ -786,14 +776,13 @@ class config_gui_window_t(Tk):
 
     def _load_debug_meas(self, frame):
         hdrs = [('Measurement', 'Value')]
-        mmnts = self._dev.measurements()
         meas = []
         self._dbg_sec_fr = Frame(self._dbg_canv)
         self._dbg_sec_fr.pack(expand=True, fill='both')
         self._debug_first_fr.columnconfigure(0, weight=1)
 
-        if mmnts:
-            for m in mmnts:
+        if self._sens_meas:
+            for m in self._sens_meas:
                 fw = [m[0]]
                 fw.insert(1, 0)
                 meas.append(fw)
@@ -854,7 +843,7 @@ class config_gui_window_t(Tk):
                         self._dbg_terml.configure(state='normal')
                         self._dbg_terml.insert('1.0', d + "\n")
                         self._dbg_terml.configure(state='disabled')
-            self._dbg_terml.after(1500, self._reload_debug_lines)
+            self._dbg_terml.after(3000, self._reload_debug_lines)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")
@@ -889,76 +878,59 @@ class config_gui_window_t(Tk):
             if not in_str.isdigit():
                 return False
         return True
-
-
-
+    
+    def _request_modbus(self):
+        mmnts = []
+        m = self._dev.get_modbus()
+        devs = m.devices
+        if devs:
+            for dev in devs:
+                for reg in dev.regs:
+                    i = (str(reg).split(','))
+                    i.insert(0, str(dev.name))
+                    mmnts.append(i)
+        return mmnts
+    
+    def _refresh_mb(self):
+        # modb_proc = subprocess.run(['python','gui_binding_interface.py'],
+        #     capture_output=True, text=True, input="REQ_MODBUS")
+        # self._modbus = ast.literal_eval(modb_proc.stdout.replace(
+        #     "([<_io.TextIOWrapper name='<stdin>' mode='r' encoding='utf-8'>], [], [])\n", ""))
+        self._modbus = self._request_modbus()
+        return self._modbus
+        
     def _load_headers(self, window, idy, get_mins):
-        log_func("Getting measurements")
-        load_proc = subprocess.Popen(['python','gui_binding_interface.py'],
-                stdout=PIPE,stdin=PIPE)
-        load_proc.stdin.write("REQ_MEAS".encode())
-        # Do stuff while waiting
-        print(load_proc.stdout)
-
-
-        # stdout_data = load_proc.communicate(input="REQ_MEAS")
-        # print(stdout_data)
-        # load_proc = subprocess.run(['python','gui_binding_interface.py'], input='REQ_MEAS', 
-        #     capture_output=True, text=True)
-        # print(load_proc)
-        # self._sens_meas = self._dev.measurements()
-        log_func("Got measurements")
-        if idy == "mb":
-            tablist = [('Device', 'Name', 'Hex Address',
-                        'Data Type', 'Function')]
-            log_func("Getting modbus")
-            mb = self._dev.get_modbus()
-            log_func("Got modbus")
-            devs = mb.devices
-            if devs:
-                mmnts = []
-                for dev in devs:
-                    for reg in dev.regs:
-                        i = (str(reg).split(','))
-                        i.insert(0, str(dev.name))
-                        mmnts.append(i)
-                for i in range(len(mmnts)):
-                    hx = hex(int(mmnts[i][2]))
-                    row = list(mmnts[i])
-                    row[2] = hx
-                    tablist.append(row)
+        if get_mins == False:
+            self._get_interval_mins()
+        tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
+                    'Interval in Mins', 'Sample Count')]
+        if self._sens_meas:
+            self._sens_meas[:] = [tuple(i) for i in self._sens_meas]
+            for i in range(len(self._sens_meas)):
+                row = list(self._sens_meas[i])
+                for n in range(len(row)):
+                    entry = row[n]
+                    pos = entry.find("x")
+                    if pos != -1:
+                        row[n] = entry[0:pos]
+                row.insert(2, (int(self._interval_min) * int(row[1])))
+                tablist.append(row)
         else:
-            if get_mins == False:
-                self._get_interval_mins()
-            tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
-                        'Interval in Mins', 'Sample Count')]
-            if self._sens_meas:
-                self._sens_meas[:] = [tuple(i) for i in self._sens_meas]
-                for i in range(len(self._sens_meas)):
-                    row = list(self._sens_meas[i])
-                    for n in range(len(row)):
-                        entry = row[n]
-                        pos = entry.find("x")
-                        if pos != -1:
-                            row[n] = entry[0:pos]
-                    row.insert(2, (int(self._interval_min) * int(row[1])))
-                    tablist.append(row)
-            else:
-                log_func("No measurements on sensor detected.")
-            entry_change_uplink = Entry(
-                window, fg=CHARCOAL, font=FONT_L)
-            entry_change_uplink.grid(column=0, columnspan=5, row=15, 
-                sticky="NEW", padx=(0,50))
-            entry_change_uplink.insert(
-                0, 'Enter a number and hit return to set uplink.')
-            entry_change_uplink.bind(
-                "<Return>", lambda e: self._change_uplink(window,
-                                                          entry_change_uplink))
-            entry_change_uplink.bind(
-                "<Button-1>", lambda event: self._clear_box(event,
-                                                            entry_change_uplink))
-            entry_change_uplink.configure(validate="key", validatecommand=(
-                window.register(self._handle_input), '%P', '%d'))
+            log_func("No measurements on sensor detected.")
+        entry_change_uplink = Entry(
+            window, fg=CHARCOAL, font=FONT_L)
+        entry_change_uplink.grid(column=0, columnspan=5, row=15, 
+            sticky="NEW", padx=(0,50))
+        entry_change_uplink.insert(
+            0, 'Enter a number and hit return to set uplink.')
+        entry_change_uplink.bind(
+            "<Return>", lambda e: self._change_uplink(window,
+                                                        entry_change_uplink))
+        entry_change_uplink.bind(
+            "<Button-1>", lambda event: self._clear_box(event,
+                                                        entry_change_uplink))
+        entry_change_uplink.configure(validate="key", validatecommand=(
+            window.register(self._handle_input), '%P', '%d'))
         self._load_measurements(window, idy, tablist)
     
     def _on_canvas_config(self, e, canv):
@@ -966,27 +938,84 @@ class config_gui_window_t(Tk):
             scrollregion=canv.bbox("all"))
         canv.itemconfig('frame', width=canv.winfo_width())
 
+    def _load_modbus(self, updated):
+        if updated:
+            modbus = self._refresh_mb()
+        else:
+            modbus = self._modbus
+        tablist = [('Device', 'Name', 'Hex Address',
+                    'Data Type', 'Function')]
+        for i in range(len(modbus)):
+            hx = hex(int(modbus[i][2]))
+            row = list(modbus[i])
+            row[2] = hx
+            tablist.append(row)
+        self._mb_fr = Frame(self._modb_fr, borderwidth=8,
+                                 relief="ridge", bg="green")
+        self._modb_fr.columnconfigure([1,3,4], weight=1)
+        self._modb_fr.rowconfigure([11,12,13,14,15,16,17], weight=1)
+        self._mb_canvas = Canvas(
+            self._mb_fr, bg=IVORY)
+        self._mb_canvas.grid(column=0, row=0, sticky=NSEW)
+        self._mb_fr.grid(
+            column=4, row=1, rowspan=7, 
+            sticky=NSEW, padx=(50, 0))
+        self._second_mb_fr = Frame(self._mb_canvas)
+        self._second_mb_fr.pack(expand=True, fill='both')
+
+        self._mb_fr.columnconfigure(0, weight=1)
+        self._mb_fr.rowconfigure(0, weight=1)
+        sb = Scrollbar(self._mb_fr, orient='vertical',
+                       command=self._mb_canvas.yview)
+        sb.grid(column=0, row=0, sticky="NSE")
+        self._mb_canvas.configure(yscrollcommand=sb.set)
+        self._mb_canvas.bind('<Configure>', lambda e: self._on_canvas_config(
+            e, self._mb_canvas
+        ))
+        self._mb_canvas.create_window(
+            (0, 0), window=self._second_mb_fr, anchor="nw", tags="frame")
+        self._mb_canvas.bind_all(
+            "<MouseWheel>", lambda: self._on_mousewheel(self._mb_canvas))
+        self.mb_entries = []
+        mb_var_list = []
+        self._check_mb = []
+        total_rows = len(tablist)
+        total_columns = len(tablist[0])
+        for i in range(total_rows):
+            newrow = []
+            for j in range(total_columns):
+                self._mbe = Entry(self._second_mb_fr, fg=BLACK, bg=IVORY,
+                                    font=FONT_L)
+                self._mbe.grid(row=i, column=j, sticky=EW)
+                self._second_mb_fr.columnconfigure(j, weight=1)
+                self._mbe.insert(END, tablist[i][j])
+                newrow.append(self._mbe)
+                self._mbe.configure(
+                    state='disabled', disabledbackground="white",
+                    disabledforeground="black")
+                if j == 1 and i != 0:
+                    reg_hover = Hovertip(
+                        self._mbe, self._get_desc(str(self._e.get())))
+            self.mb_entries.append(newrow)
+            if i != 0:
+                self._check_mb.append(IntVar())
+                mb_var_list.append(self._check_mb[i-1])
+                check_m = Checkbutton(self._second_mb_fr, variable=self._check_mb[i-1],
+                                        onvalue=i, offvalue=0,
+                                        command=lambda: self._check_clicked(self._modb_fr, "mb",
+                                                                            mb_var_list))
+                check_m.grid(row=i, column=j+1, padx=(0,15))
+
     def _load_measurements(self, window, idy, tablist):
         self._main_frame = Frame(window, borderwidth=8,
                                  relief="ridge", bg="green")
-
-        if idy == "mb":
-            window.columnconfigure([1,3,4], weight=1)
-            window.rowconfigure([11,12,13,14,15,16,17], weight=1)
-            self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY)
-            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
-            self._main_frame.grid(
-                column=4, row=1, rowspan=7, 
-                sticky=NSEW, padx=(50, 0))
-        else:
-            window.columnconfigure([0,1,2,3,4,5,6,7,8], weight=1)
-            window.rowconfigure([11,12,13,14,15,16,17], weight=1)
-            self._my_canvas = Canvas(
-                self._main_frame, bg=IVORY)
-            self._my_canvas.grid(column=0, row=0, sticky=NSEW)
-            self._main_frame.grid(column=0, columnspan=5,
-                        row=6, rowspan=9, sticky=NSEW, padx=(0, 50))
+        window.columnconfigure([0,1,2,3,4,5,6,7,8], weight=1)
+        window.rowconfigure([11,12,13,14,15,16,17], weight=1)
+        self._my_canvas = Canvas(
+            self._main_frame, bg=IVORY)
+        self._my_canvas.grid(column=0, row=0, sticky=NSEW)
+        self._main_frame.grid(column=0, columnspan=5,
+                    row=6, rowspan=9, sticky=NSEW, padx=(0, 50))
         self._second_frame = Frame(self._my_canvas)
         self._second_frame.pack(expand=True, fill='both')
         self._main_frame.columnconfigure(0, weight=1)
@@ -1013,9 +1042,7 @@ class config_gui_window_t(Tk):
             total_columns = 4
         self._entries = []
         meas_var_list = []
-        mb_var_list = []
         self._check_meas = []
-        self._check_mb = []
 
         for i in range(total_rows):
             newrow = []
@@ -1030,56 +1057,40 @@ class config_gui_window_t(Tk):
                 self._second_frame.columnconfigure(j, weight=1)
                 self._e.insert(END, tablist[i][j])
                 newrow.append(self._e)
-                if total_columns == 5:
+                self._e.configure(validate="key", validatecommand=(
+                    window.register(self._handle_input), '%P', '%d'))
+                if i == 0 or j == 0:
                     self._e.configure(
                         state='disabled', disabledbackground="white",
                         disabledforeground="black")
-                    if j == 1 and i != 0:
+                    if j == 0 and i != 0:
                         reg_hover = Hovertip(
                             self._e, self._get_desc(str(self._e.get())))
                 else:
-                    self._e.configure(validate="key", validatecommand=(
-                        window.register(self._handle_input), '%P', '%d'))
-                    if i == 0 or j == 0:
-                        self._e.configure(
-                            state='disabled', disabledbackground="white",
-                            disabledforeground="black")
-                        if j == 0 and i != 0:
-                            reg_hover = Hovertip(
-                                self._e, self._get_desc(str(self._e.get())))
-                    else:
-                        self._e.bind(
-                            "<FocusOut>", lambda e: self._change_sample_interval(e))
-                    if self._e.get() == 'TMP2' or self._e.get() == 'CNT1' or self._e.get() == 'CNT2':
-                        self._bind_io = self._e.bind(
-                            "<Button-1>", lambda e: self._open_ios_w(e.widget.get()))
-                        self._e.configure(disabledforeground="green")
-                        self._change_on_hover(self._e)
-                    elif self._e.get() == 'CC1' or self._e.get() == 'CC2' or self._e.get() == 'CC3':
-                        self._bind_cc = self._e.bind(
-                            "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
-                        self._e.configure(disabledforeground="green")
-                        self._change_on_hover(self._e)
+                    self._e.bind(
+                        "<FocusOut>", lambda e: self._change_sample_interval(e))
+                if self._e.get() == 'TMP2' or self._e.get() == 'CNT1' or self._e.get() == 'CNT2':
+                    self._bind_io = self._e.bind(
+                        "<Button-1>", lambda e: self._open_ios_w(e.widget.get()))
+                    self._e.configure(disabledforeground="green")
+                    self._change_on_hover(self._e)
+                elif self._e.get() == 'CC1' or self._e.get() == 'CC2' or self._e.get() == 'CC3':
+                    self._bind_cc = self._e.bind(
+                        "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
+                    self._e.configure(disabledforeground="green")
+                    self._change_on_hover(self._e)
             self._entries.append(newrow)
             if i != 0:
-                if idy == 'mb':
-                    self._check_mb.append(IntVar())
-                    mb_var_list.append(self._check_mb[i-1])
-                    check_m = Checkbutton(self._second_frame, variable=self._check_mb[i-1],
-                                          onvalue=i, offvalue=0,
-                                          command=lambda: self._check_clicked(window, idy,
-                                                                              mb_var_list))
-                    check_m.grid(row=i, column=j+1, padx=(0,15))
-                else:
-                    self._check_meas.append(IntVar())
-                    meas_var_list.append(self._check_meas[i-1])
-                    check_meas = Checkbutton(self._second_frame, variable=self._check_meas[i-1],
-                                             onvalue=i, offvalue=0,
-                                             command=lambda: self._check_clicked(window, idy,
-                                                                                 meas_var_list))
-                    check_meas.grid(row=i, column=j+1, padx=(0,15))
+                self._check_meas.append(IntVar())
+                meas_var_list.append(self._check_meas[i-1])
+                check_meas = Checkbutton(self._second_frame, variable=self._check_meas[i-1],
+                                            onvalue=i, offvalue=0,
+                                            command=lambda: self._check_clicked(window, idy,
+                                                                                meas_var_list))
+                check_meas.grid(row=i, column=j+1, padx=(0,15))
+    
 
-    def _remove_reg(self, idy, check):
+    def _remove_mb_reg(self, idy, check):
         ticked = []
         list_of_devs = []
         dev_to_remove = ""
@@ -1090,39 +1101,48 @@ class config_gui_window_t(Tk):
                     row = cb.get()
                     ticked.append(row)
             for tick in ticked:
-                for i in range(len(self._entries)):
+                for i in range(len(self.mb_entries)):
                     if i == tick:
-                        if idy == 'mb':
                             log_func(
                                 "User attempting to remove modbus register..")
-                            device = self._entries[i][0]
+                            device = self.mb_entries[i][0]
                             dev_to_remove = device.get()
-                            mb_reg_to_change = self._entries[i][1]
+                            mb_reg_to_change = self.mb_entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
                             self._dev.modbus_reg_del(mb_reg_to_change)
-                        else:
-                            log_func(
-                                "User attempting to set measurement interval 0..")
-                            meas_chang = self._entries[i][0]
-                            meas_chang = meas_chang.get()
-                            inv_chang = self._entries[i][2]
-                            uplink_chang = self._entries[i][1]
-                            self._dev.change_interval(meas_chang, 0)
-                            inv_chang.delete(0, END)
-                            inv_chang.insert(0, 0)
-                            uplink_chang.delete(0, END)
-                            uplink_chang.insert(0, 0)
-                        for cb in check:
-                            if cb.get() == tick:
-                                cb.set(0)
-            if idy == 'mb' and len(ticked) > 0:
-                self._load_headers(self._modb_fr, "mb", True)
+            self._load_modbus(True)
+            for i in range(len(self._entries)):
+                dev_entry = self._entries[i][0]
+                dev = dev_entry.get()
+                list_of_devs.append(dev)
+            if dev_to_remove not in list_of_devs:
+                self._dev.modbus_dev_del(dev_to_remove)
+
+    def _set_meas_to_zero(self, check):
+        ticked = []
+        row = None
+        if check:
+            for cb in check:
+                if cb.get():
+                    row = cb.get()
+                    ticked.append(row)
+            for tick in ticked:
                 for i in range(len(self._entries)):
-                    dev_entry = self._entries[i][0]
-                    dev = dev_entry.get()
-                    list_of_devs.append(dev)
-                if dev_to_remove not in list_of_devs:
-                    self._dev.modbus_dev_del(dev_to_remove)
+                    if i == tick:
+                        log_func(
+                            "User attempting to set measurement interval 0..")
+                        meas_chang = self._entries[i][0]
+                        meas_chang = meas_chang.get()
+                        inv_chang = self._entries[i][2]
+                        uplink_chang = self._entries[i][1]
+                        self._dev.change_interval(meas_chang, 0)
+                        inv_chang.delete(0, END)
+                        inv_chang.insert(0, 0)
+                        uplink_chang.delete(0, END)
+                        uplink_chang.insert(0, 0)
+                    for cb in check:
+                        if cb.get() == tick:
+                            cb.set(0)
 
     def _check_clicked(self, window, idy, check):
         for cb in check:
@@ -1131,13 +1151,13 @@ class config_gui_window_t(Tk):
                     self._del_reg = Button(window, text='Remove',
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
-                                           command=lambda: self._remove_reg(idy, check))
+                                           command=lambda: self._remove_mb_reg(idy, check))
                     self._del_reg.grid(column=4, row=8, sticky=NE)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
                                           activebackground="green", activeforeground=IVORY,
-                                          command=lambda: self._remove_reg(idy, check))
+                                          command=lambda: self._set_meas_to_zero(check))
                     self._rm_int.grid(column=0, row=15, rowspan=2, sticky=W)
 
     def _change_on_hover(self, entry):
@@ -1310,16 +1330,15 @@ class config_gui_window_t(Tk):
         self._terminal.delete('1.0', END)
         cmd = cmd.get()
         cmd = self._dev.do_cmd_multi(cmd)
-        for cm in cmd:
-            self._write_terminal_cmd(cm, self._terminal)
+        if cmd:
+            for cm in cmd:
+                self._write_terminal_cmd(cm, self._terminal)
 
     def _pop_lora_entry(self):
-        eui_op = self._dev.dev_eui
-        if eui_op:
-            self._eui_entry.insert(0, eui_op)
-        app_op = self._dev.app_key
-        if app_op:
-            self._app_entry.insert(0, app_op)
+        if self.eui_op:
+            self._eui_entry.insert(0, self.eui_op)
+        if self.app_op:
+            self._app_entry.insert(0, self.app_op)
 
     def _get_lora_status(self):
         conn = self._dev.comms_conn.value
@@ -1565,7 +1584,7 @@ class config_gui_window_t(Tk):
                 height=111, width=1065)
         self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
-        self._load_headers(self._modb_fr, "mb", True)
+        self._load_modbus(False)
         canv.bind('<Configure>', lambda e: self._resize_image(
             e, self.os_lab, self.img_os, self._modb_fr))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
@@ -2217,7 +2236,7 @@ class config_gui_window_t(Tk):
                                                                   func_type,
                                                                   data_type,
                                                                   reg_name))
-                    self._load_headers(self._modb_fr, "mb", True)
+                    self._load_modbus(True)
                     tkinter.messagebox.showinfo(
                         "Device Written", "Go to debug mode to monitor data.")
                 else:
