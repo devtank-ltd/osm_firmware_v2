@@ -20,6 +20,21 @@
 #define CAN_COMM_BUFFER_NUM                                         10
 
 
+typedef struct
+{
+    uint32_t        unit;
+    uint32_t        rcc;
+    port_n_pins_t   stdby;
+    port_n_pins_t   rx;
+    uint8_t         rx_af;
+    port_n_pins_t   tx;
+    uint8_t         tx_af;
+} can_comm_config_t;
+
+
+static can_comm_config_t _can_comm_config                       = CAN_CONFIG;
+
+
 static can_comm_data_t  _can_comm_data_arr[CAN_COMM_BUFFER_NUM] = {0};
 ring_buf_t              can_comm_ring_data                      = RING_BUF_INIT((volatile char *)_can_comm_data_arr, sizeof(can_comm_data_t));
 static bool             _can_comm_enabled                       = false;
@@ -46,28 +61,28 @@ static void _can_comm_clk_init(void)
 
 void can_comm_init(void)
 {
-    port_n_pins_t can_stdby = CAN_PORT_N_PINS_STDBY;
-    port_n_pins_t can_rx    = CAN_PORT_N_PINS_RX;
-    port_n_pins_t can_tx    = CAN_PORT_N_PINS_TX;
-    rcc_periph_clock_enable(PORT_TO_RCC(can_rx.port));
-    rcc_periph_clock_enable(PORT_TO_RCC(can_tx.port));
-    rcc_periph_clock_enable(PORT_TO_RCC(can_stdby.port));
-    gpio_mode_setup(can_tx.port, GPIO_MODE_AF, GPIO_PUPD_NONE, can_tx.pins);
-    gpio_mode_setup(can_rx.port, GPIO_MODE_AF, GPIO_PUPD_NONE, can_rx.pins);
-    gpio_mode_setup(can_stdby.port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, can_stdby.pins);
+    port_n_pins_t* can_stdby = &_can_comm_config.stdby;
+    port_n_pins_t* can_rx    = &_can_comm_config.rx;
+    port_n_pins_t* can_tx    = &_can_comm_config.tx;
+    rcc_periph_clock_enable(PORT_TO_RCC(can_stdby->port));
+    rcc_periph_clock_enable(PORT_TO_RCC(can_rx->port));
+    rcc_periph_clock_enable(PORT_TO_RCC(can_tx->port));
+    gpio_mode_setup(can_rx->port, GPIO_MODE_AF, GPIO_PUPD_NONE, can_rx->pins);
+    gpio_mode_setup(can_tx->port, GPIO_MODE_AF, GPIO_PUPD_NONE, can_tx->pins);
+    gpio_mode_setup(can_stdby->port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, can_stdby->pins);
 
     // Enable clock to the CAN peripheral
-    rcc_periph_clock_enable(RCC_CAN1);
+    rcc_periph_clock_enable(_can_comm_config.rcc);
 
-    gpio_set_af(can_rx.port, GPIO_AF10, can_rx.pins);
-    gpio_set_af(can_tx.port, GPIO_AF10, can_tx.pins);
+    gpio_set_af(can_rx->port, _can_comm_config.rx_af, can_rx->pins);
+    gpio_set_af(can_tx->port, _can_comm_config.tx_af, can_tx->pins);
 
     // Reset the can peripheral
-    can_reset(CAN1);
+    can_reset(_can_comm_config.unit);
 
     // Initialize the can peripheral
     can_init(
-            CAN1, // The can ID
+            _can_comm_config.unit, // The can ID
 
             // Time Triggered Communication Mode?
             // http://www.datamicro.ru/download/iCC_07_CANNetwork_with_Time_Trig_Communication.pdf
@@ -126,7 +141,7 @@ void can_comm_init(void)
             // If set, CAN can receive but not transmit
             false);
 
-    gpio_clear(can_stdby.port, can_stdby.pins);
+    gpio_clear(can_stdby->port, can_stdby->pins);
 
     /*
      Must use a timer as STM32L451 does not support CAN interrupts, UGH!
@@ -156,9 +171,9 @@ void tim3_isr(void)
     uint8_t data[CAN_COMM_MAX_DATA_SIZE];
     pkt.data = data;
 
-    can_receive(CAN1, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, pkt.data, NULL);
+    can_receive(_can_comm_config.unit, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, pkt.data, NULL);
 
-    can_fifo_release(CAN1, 0);
+    can_fifo_release(_can_comm_config.unit, 0);
 
     if (pkt.header.length > CAN_COMM_MAX_DATA_SIZE)
         pkt.header.length = CAN_COMM_MAX_DATA_SIZE;
@@ -182,5 +197,5 @@ void can_comm_send(can_comm_packet_t* pkt)
 {
     can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
     log_debug_data(DEBUG_CAN, pkt->data, pkt->header.length);
-    can_transmit(CAN1, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
+    can_transmit(_can_comm_config.unit, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
 }

@@ -43,6 +43,17 @@
 #define CAN_PORT_N_PINS_STDBY {GPIOB, GPIO14} /* GPIO14 */
 
 
+#define CAN_CONFIG {                                                   \
+    CAN1,                                                              \
+    RCC_CAN1,                                                          \
+    CAN_PORT_N_PINS_STDBY,                                             \
+    CAN_PORT_N_PINS_RX,                                                \
+    GPIO_AF9,                                                          \
+    CAN_PORT_N_PINS_TX,                                                \
+    GPIO_AF9,                                                          \
+}
+
+
 #define W1_PULSE_1_PORT_N_PINS              { GPIOC, GPIO11 }
 #define W1_PULSE_1_PULLUP_EN_PORT_N_PINS    { GPIOC, GPIO6  }
 #define W1_PULSE_1_IO                       1
