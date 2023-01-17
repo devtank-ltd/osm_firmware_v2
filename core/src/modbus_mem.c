@@ -120,28 +120,40 @@ modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos)
     if (!type)
         return MODBUS_REG_TYPE_INVALID;
 
-    if (type[0] == 'U')
-    {
-        if (type[1] == '1' && type[2] == '6' && (type[3] == ' '|| type[3] == 0))
-        {
-            if (pos)
-                *pos = type+3;
-            return MODBUS_REG_TYPE_U16;
-        }
-        else if (type[1] == '3' && type[2] == '2' && (type[3] == ' '|| type[3] == 0))
-        {
-            if (pos)
-                *pos = type+3;
-            return MODBUS_REG_TYPE_U32;
-        }
-    }
-    else if (type[0] == 'F' && (type[1] == ' ' || type[1] == 0))
+    bool is_signed;
+
+    if (type[0] == 'F' && (type[1] == ' ' || type[1] == 0))
     {
         if (pos)
             *pos = type+2;
         return MODBUS_REG_TYPE_FLOAT;
     }
 
+    else if (type[0] == 'U')
+        is_signed = false;
+
+    else if (type[0] == 'I')
+        is_signed = true;
+
+    else
+    {
+        log_out("Unknown modbus reg type.");
+        return MODBUS_REG_TYPE_INVALID;
+    }
+
+
+    if (type[1] == '1' && type[2] == '6' && (type[3] == ' '|| type[3] == 0))
+    {
+        if (pos)
+            *pos = type+3;
+        return is_signed ? MODBUS_REG_TYPE_I16 : MODBUS_REG_TYPE_U16;
+    }
+    else if (type[1] == '3' && type[2] == '2' && (type[3] == ' '|| type[3] == 0))
+    {
+        if (pos)
+            *pos = type+3;
+        return is_signed ? MODBUS_REG_TYPE_I32 : MODBUS_REG_TYPE_U32;
+    }
     log_out("Unknown modbus reg type.");
     return MODBUS_REG_TYPE_INVALID;
 }
@@ -152,7 +164,9 @@ char * modbus_reg_type_get_str(modbus_reg_type_t type)
     switch(type)
     {
         case MODBUS_REG_TYPE_U16:    return "U16"; break;
+        case MODBUS_REG_TYPE_I16:    return "I16"; break;
         case MODBUS_REG_TYPE_U32:    return "U32"; break;
+        case MODBUS_REG_TYPE_I32:    return "I32"; break;
         case MODBUS_REG_TYPE_FLOAT:  return "F"; break;
         default:
             break;
@@ -436,6 +450,12 @@ bool              modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value)
 }
 
 
+bool              modbus_reg_get_i16(modbus_reg_t * reg, int16_t * value)
+{
+    return modbus_reg_get_u16(reg, (uint16_t * )value);
+}
+
+
 bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value)
 {
     if (!reg || !value)
@@ -444,6 +464,12 @@ bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value)
         return false;
     *value = _modbus_reg_get(reg);
     return true;
+}
+
+
+bool              modbus_reg_get_i32(modbus_reg_t * reg, int32_t * value)
+{
+    return modbus_reg_get_u32(reg, (uint32_t * )value);
 }
 
 
