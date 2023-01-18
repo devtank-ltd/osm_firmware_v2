@@ -330,6 +330,14 @@ void modbus_reg_del(modbus_reg_t * reg)
         modbus_debug("Failed to find device of register!");
 
     modbus_reg_t * dev_reg = _modbus_get_first_reg(dev);
+
+    if (dev_reg == reg)
+    {
+        dev->first_reg_offset = dev_reg->next_reg_offset;
+        _modbus_free(reg);
+        return;
+    }
+
     while(dev_reg)
     {
         modbus_reg_t * next_reg = _modbus_get_next_reg(dev_reg);
