@@ -297,7 +297,26 @@ void           modbus_dev_del(modbus_dev_t * dev)
         reg = next_reg;
     }
 
-    _modbus_free(dev);
+    modbus_dev_t * mem_dev = _modbus_get_first_dev();
+    if (dev == mem_dev)
+    {
+        modbus_bus->first_dev_offset = dev->next_dev_offset;
+        _modbus_free(dev);
+        return;
+    }
+
+    while (mem_dev->next_dev_offset)
+    {
+        modbus_dev_t* next_dev = _modbus_get_next_dev(mem_dev);
+        if (next_dev == dev)
+        {
+            mem_dev->next_dev_offset = dev->next_dev_offset;
+            _modbus_free(dev);
+            return;
+        }
+        mem_dev = next_dev;
+    }
+    modbus_debug("Failed to find device!");
 }
 
 
@@ -330,6 +349,14 @@ void modbus_reg_del(modbus_reg_t * reg)
         modbus_debug("Failed to find device of register!");
 
     modbus_reg_t * dev_reg = _modbus_get_first_reg(dev);
+
+    if (dev_reg == reg)
+    {
+        dev->first_reg_offset = dev_reg->next_reg_offset;
+        _modbus_free(reg);
+        return;
+    }
+
     while(dev_reg)
     {
         modbus_reg_t * next_reg = _modbus_get_next_reg(dev_reg);
