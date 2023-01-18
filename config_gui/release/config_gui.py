@@ -384,7 +384,14 @@ class config_gui_window_t(Tk):
     def _on_get_modbus_done_cb(self, resp):
         self._modbus = resp[1]
         self._load_modbus()
-    
+        list_of_devs = []
+        for i in range(len(self.mb_entries)):
+            dev_entry = self.mb_entries[i][0]
+            dev = dev_entry.get()
+            list_of_devs.append(dev)
+        if self.dev_to_remove not in list_of_devs:
+            self.binding_interface.modbus_dev_del(self.dev_to_remove)
+
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
         self._load_headers(self._main_fr, "rif", True)
@@ -817,31 +824,38 @@ class config_gui_window_t(Tk):
         self._dbg_canv.bind('<Configure>', lambda e: self._on_canvas_config(
             e, self._dbg_canv
         ))
-        self._reload_debug_lines()
-
-    def _reload_debug_lines(self):
+        self.binding_interface.dbg_readlines(self._on_get_dbg_lines)
+    
+    def _on_get_dbg_lines(self, resp):
+        dbg_list = resp[1]
         if self._dbg_open:
-            dbg_list = self.binding_interface.dbg_readlines()
             for d in dbg_list:
                 if d:
-                    res = self.binding_interface.debug_parse(d)
-                    if res:
-                        dbg_meas = res[0]
-                        dbg_val = res[1]
-                        if dbg_val != False:
-                            for i in self._deb_entries:
-                                meas = i[0].get()
-                                if meas == dbg_meas:
-                                    val_to_change = i[1]
-                                    val_to_change.configure(state='normal')
-                                    val_to_change.delete(0, END)
-                                    val_to_change.insert(0, int(dbg_val))
-                                    val_to_change.configure(
-                                        state='disabled')
-                        self._dbg_terml.configure(state='normal')
-                        self._dbg_terml.insert('1.0', d + "\n")
-                        self._dbg_terml.configure(state='disabled')
-            self._dbg_terml.after(3000, self._reload_debug_lines)
+                    self.binding_interface.debug_parse(d, self._fill_dbg_term)
+                    self._dbg_terml.configure(state='normal')
+                    self._dbg_terml.insert('1.0', d + "\n")
+                    self._dbg_terml.configure(state='disabled')
+            self._dbg_terml.after(10, self.binding_interface.dbg_readlines(self._on_get_dbg_lines))
+    
+    def _fill_dbg_term(self, resp):
+        res = resp[1]
+        if res:
+            dbg_meas = res[0]
+            dbg_val = res[1]
+            if dbg_val != False:
+                for i in self._deb_entries:
+                    meas = i[0].get()
+                    if meas == dbg_meas:
+                        val_to_change = i[1]
+                        val_to_change.configure(state='normal')
+                        val_to_change.delete(0, END)
+                        val_to_change.insert(0, int(dbg_val))
+                        val_to_change.configure(
+                            state='disabled')
+
+
+    def _reload_debug_lines(self):
+        self.binding_interface.dbg_readlines(self._on_get_dbg_lines)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")
@@ -1065,8 +1079,7 @@ class config_gui_window_t(Tk):
 
     def _remove_mb_reg(self, idy, check):
         ticked = []
-        list_of_devs = []
-        dev_to_remove = ""
+        self.dev_to_remove = ""
         row = None
         if check:
             for cb in check:
@@ -1079,17 +1092,11 @@ class config_gui_window_t(Tk):
                             log_func(
                                 "User attempting to remove modbus register..")
                             device = self.mb_entries[i][0]
-                            dev_to_remove = device.get()
+                            self.dev_to_remove = device.get()
                             mb_reg_to_change = self.mb_entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
                             self.binding_interface.modbus_reg_del(mb_reg_to_change)
             self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
-            for i in range(len(self.mb_entries)):
-                dev_entry = self.mb_entries[i][0]
-                dev = dev_entry.get()
-                list_of_devs.append(dev)
-            if dev_to_remove not in list_of_devs:
-                self.binding_interface.modbus_dev_del(dev_to_remove)
 
     def _set_meas_to_zero(self, check):
         ticked = []

@@ -61,7 +61,8 @@ class binding_interface_svr_t:
                           "RAND_APP" : self._req_rand_app,
                           "SET_DBG" : self._req_set_dbg,
                           "ADD_DEV" : self._req_add_dev,
-                          "ADD_REG" : self._req_add_reg}
+                          "ADD_REG" : self._req_add_reg,
+                          "REQ_PARSE" : self._req_parse_msg}
                           
         
         self.dev = None
@@ -104,6 +105,11 @@ class binding_interface_svr_t:
     
     def _request_save(self, args):
         self.dev.save()
+
+    def _req_parse_msg(self, args):
+        msg = args[1]
+        returned = self.debug_parse.parse_msg(msg)
+        return returned
     
     def _request_do_cmd_multi(self, args):
         cmd = args[1]
@@ -145,7 +151,7 @@ class binding_interface_svr_t:
         self.debug_parse.parse_msg(line)
 
     def _request_dbg_mode(self, args):
-        self.dev.dbg_readlines()
+        return self.dev.dbg_readlines()
     
     def _request_do_cmd(self, args):
         cmd = args[1]
@@ -280,11 +286,11 @@ class binding_interface_client_t:
     def send_cmd(self, cmd):
         self._basic_query(("REQ_DO_CMD", cmd), None)
     
-    def dbg_readlines(self):
-        self._basic_query(("REQ_DBG",), None)
+    def dbg_readlines(self, answered_cb):
+        self._basic_query(("REQ_DBG",), answered_cb)
     
-    def debug_parse(self, line):
-        self._basic_query(("REQ_PARSE", line), None)
+    def debug_parse(self, line, answered_cb):
+        self._basic_query(("REQ_PARSE", line), answered_cb)
     
     def set_interval_mins(self, val):
         self._basic_query(("REQ_CHANGE_ALL_INT", val), None)
