@@ -107,7 +107,8 @@ class binding_interface_svr_t:
     
     def _request_do_cmd_multi(self, args):
         cmd = args[1]
-        self.dev.do_cmd_multi(cmd)
+        log(f"in request_do_cmd_multi: {cmd}")
+        return self.dev.do_cmd_multi(cmd)
     
     def _request_set_cc(self, args):
         phase = args[1]
@@ -312,8 +313,9 @@ class binding_interface_client_t:
     def set_outer_inner_cc(self, phase, outer, inner):
         self._basic_query(("SET_CC", phase, outer, inner), None)
     
-    def do_cmd_multi(self, cmd):
-        self._basic_query(("DO_CMD_MULTI", cmd), None)
+    def do_cmd_multi(self, cmd, answered_cb):
+        log(f"in do_cmd_multi interface {cmd}")
+        self._basic_query(("DO_CMD_MULTI", cmd), answered_cb)
     
     def save_config(self):
         self._basic_query(("SAVE",), None)

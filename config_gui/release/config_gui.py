@@ -375,6 +375,12 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
         # self.cc_gain = self.binding_interface.print_cc_gain()
     
+    def _on_get_cmd_multi_done_cb(self, resp):
+        cmd = resp[1]
+        if cmd:
+            for cm in cmd:
+                self._write_terminal_cmd(cm, self._terminal)
+    
     def _on_get_modbus_done_cb(self, resp):
         self._modbus = resp[1]
         self._load_modbus()
@@ -1277,10 +1283,8 @@ class config_gui_window_t(Tk):
         self._terminal.configure(state='normal')
         self._terminal.delete('1.0', END)
         cmd = cmd.get()
-        cmd = self.binding_interface.do_cmd_multi(cmd)
-        if cmd:
-            for cm in cmd:
-                self._write_terminal_cmd(cm, self._terminal)
+        cmd = self.binding_interface.do_cmd_multi(cmd, self._on_get_cmd_multi_done_cb)
+
 
     def _pop_lora_entry(self):
         if self.dev_eui:
