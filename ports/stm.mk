@@ -18,13 +18,14 @@ STM_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packe
 STM_CFLAGS		+= -fstack-usage -Wstack-usage=100
 STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
-STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs
+STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs -flto
+
 STM_INCLUDE_PATHS += -I$(OSM_DIR)/ports/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include
 
 STM_LINK_FLAGS =  -L$(OSM_DIR)/libs/libopencm3/lib --static -nostartfiles
 STM_LINK_FLAGS += -L$(OSM_DIR)/libs/libopencm3/lib/stm32/l4
 STM_LINK_FLAGS += -lopencm3_stm32l4
-STM_LINK_FLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-sections
+STM_LINK_FLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -Wl,--gc-sections -flto
 STM_LINK_FLAGS += $(STM_CPU_DEFINES) --specs=picolibc.specs
 
 #STM Port Dependencies
