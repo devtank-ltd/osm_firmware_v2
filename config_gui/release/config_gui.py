@@ -25,6 +25,7 @@ import platform
 import signal
 from stat import *
 from gui_binding_interface import binding_interface_svr_t, binding_interface_client_t
+import time
 
 MB_DB = modbus_db
 FW_PROCESS = False
@@ -88,7 +89,6 @@ def open_url(url):
 
 def check():
     root.after(500, check)
-
 
 def handle_exit(sig, frame):
     log_func("Ctrl-c detected, exiting..")
@@ -225,7 +225,7 @@ class config_gui_window_t(Tk):
 
     def _check_binding_comms(self):
         self.binding_interface.process_message()
-        self.after(1000, lambda: self._check_binding_comms())
+        self.after(10, lambda: self._check_binding_comms())
 
     def _on_connect(self):
         self.dev_sel = self._dev_dropdown.get()
@@ -373,12 +373,11 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_app_key(self._on_get_app_key_done_cb)
         self.binding_interface.get_comms_conn(self._on_get_comms_conn_done_cb)
         self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
-        self.cc_gain = self.binding_interface.print_cc_gain()
+        # self.cc_gain = self.binding_interface.print_cc_gain()
     
     def _on_get_modbus_done_cb(self, resp):
         self._modbus = resp[1]
-        self.main_modbus_w()
-        return self._modbus
+        self._load_modbus()
     
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
@@ -428,6 +427,7 @@ class config_gui_window_t(Tk):
             with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                 pass
             self.modbus_opened = True
+            self.main_modbus_w()
         elif slction == '.!notebook.!frame5' and self._dbg_open == False:
             self._dbg_open = True
             if self.count == 0:
@@ -907,12 +907,9 @@ class config_gui_window_t(Tk):
         canv.configure(
             scrollregion=canv.bbox("all"))
         canv.itemconfig('frame', width=canv.winfo_width())
-
-    def _load_modbus(self, updated):
-        if updated:
-            modbus = self.binding_interface.get_modbus()
-        else:
-            modbus = self._modbus
+    
+    def _load_modbus(self):
+        modbus = self._modbus
         tablist = [('Device', 'Name', 'Hex Address',
                     'Data Type', 'Function')]
         for i in range(len(modbus)):
@@ -1080,9 +1077,9 @@ class config_gui_window_t(Tk):
                             mb_reg_to_change = self.mb_entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
                             self.binding_interface.modbus_reg_del(mb_reg_to_change)
-            self._load_modbus(True)
-            for i in range(len(self._entries)):
-                dev_entry = self._entries[i][0]
+            self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
+            for i in range(len(self.mb_entries)):
+                dev_entry = self.mb_entries[i][0]
                 dev = dev_entry.get()
                 list_of_devs.append(dev)
             if dev_to_remove not in list_of_devs:
@@ -1117,6 +1114,7 @@ class config_gui_window_t(Tk):
     def _check_clicked(self, window, idy, check):
         for cb in check:
             if cb.get():
+                log_func(f"Checkbutton clicked : {cb.get()}")
                 if idy == 'mb':
                     self._del_reg = Button(window, text='Remove',
                                            bg=IVORY, fg=BLACK, font=FONT,
@@ -1536,7 +1534,6 @@ class config_gui_window_t(Tk):
                 height=111, width=1065)
         self.os_lab.grid(column=0, row=0, sticky=EW)
         self._modb_fr.img_list.append(os_logo)
-        self._load_modbus(False)
         canv.bind('<Configure>', lambda e: self._resize_image(
             e, self.os_lab, self.img_os, self._modb_fr))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
@@ -2141,8 +2138,9 @@ class config_gui_window_t(Tk):
                 chosen_template = temp_list.get(index)
                 curr_devs = []
                 if self._modbus:
-                    for dev in self._modbus.devices:
-                        curr_devs += [ dev.unit ]
+                    for dev in self._modbus:
+                        if dev[0] not in curr_devs:
+                            curr_devs += [ dev[0] ]
                 regs = self.db.get_modbus_template_regs(chosen_template)
                 if regs:
                     curr_regs = []
@@ -2164,9 +2162,7 @@ class config_gui_window_t(Tk):
                                                     int(hex_addr, 16),
                                                     func_type,
                                                     data_type)
-                    self._load_modbus(True)
-                    tkinter.messagebox.showinfo(
-                        "Device Written", "Go to debug mode to monitor data.")
+                    self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
                 else:
                     tkinter.messagebox.showerror(
                         "Error", "Device must be saved.", parent=root)

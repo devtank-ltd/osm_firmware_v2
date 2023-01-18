@@ -1,11 +1,8 @@
-import json
-import select
 import binding
-import string
 import serial
-import sys
 import time
 import queue
+import logging
 
 # Interface between API and binding
 
@@ -23,6 +20,14 @@ import queue
 
 # * Answer Modbus
 # RSP_MODBUS {son}
+
+logging.basicConfig(
+    format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
+    level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+
+def log(msg):
+    logging.info(msg)
+
 
 class binding_interface_svr_t:
     def __init__(self):
@@ -124,7 +129,7 @@ class binding_interface_svr_t:
 
     def _request_del_dev(self, args):
         dev = args[1]
-        self.dev.modbus_reg_dev(dev)
+        self.dev.modbus_dev_del(dev)
 
     def _request_del_reg(self, args):
         reg = args[1]
@@ -181,7 +186,7 @@ class binding_interface_svr_t:
 
     def _open_con_cb(self, args):
         dev = args[1]
-        print("Openning serial:" + dev)
+        log(f"Openning serial:" + dev)
         try:
             serial_obj = serial.Serial(port=dev,
                                             baudrate=115200,
@@ -193,7 +198,7 @@ class binding_interface_svr_t:
             self.debug_parse = binding.dev_debug_t(serial_obj)
             return True
         except Exception as e:
-            print("Openned Failed", e)
+            log(f"Openned Failed {e}")
             # Todo, handle expected or error out
             return False
 
@@ -205,7 +210,7 @@ class binding_interface_svr_t:
             except queue.Empty:
                 data_in = None
             if data_in:
-                print("Got", data_in)
+                log(f"Got {data_in}")
                 action = self._actions.get(data_in[0], None)
                 if action:
                     ret = action(data_in)
@@ -227,11 +232,14 @@ class binding_interface_client_t:
             else:
                 return False
         cb = self._answered_cbs.get()
-        cb(self.out_queue.get())
+        try:
+            cb(self.out_queue.get())
+        except Exception as e:
+            log(f"Exception in process message: {e}")
         return True
 
     def _basic_query(self, cmd, answered_cb):
-        print("Sending", cmd)
+        log(f"Sending {cmd}")
         self.in_queue.put(cmd)
         self._answered_cbs.put(answered_cb)
         
@@ -350,19 +358,19 @@ if __name__ == "__main__":
         assert not resp[0].startswith("ERROR"), "Failed to get firmware"
         firmware_ver = resp[1]
         assert isinstance(firmware_ver, str), "Not expected response"
-        print("Got FW: " + firmware_ver)
+        log(f"Got FW: {firmware_ver}")
 
     def _on_get_serial_cb(resp):
         assert not resp[0].startswith("ERROR"), "Failed to get serial"
         serial_num = resp[1]
         assert isinstance(serial_num, str), "Not expected response"
-        print("Got Serial: " + serial_num)
+        log(f"Got Serial: {serial_num}")
 
     def _on_open_done_cb(resp):
         assert not resp[0].startswith("ERROR"), "Failed to get serial"
         success = resp[1]
         assert success, "Failed to open serial"
-        print("Openned")
+        log(f"Opened")
 
     binding_interface.open("/tmp/osm/UART_DEBUG_slave", _on_open_done_cb)
     binding_interface.get_serial_num(_on_get_serial_cb)
@@ -371,6 +379,6 @@ if __name__ == "__main__":
 
     while binding_interface.process_message() != None:
         time.sleep(0.1)
-    print("Waiting for cleanup")
+    log(f"Waiting for cleanup")
     binding_process.terminate()
     binding_process.join()
