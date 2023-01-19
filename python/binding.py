@@ -625,6 +625,6 @@ class dev_debug_t(dev_base_t):
             for line in new_lines:
                 p = self.parse_msg(line)
                 if p:
-                    p_arr.append(p)
+                    p_arr.append((line, p))
             if p_arr:
                 return p_arr

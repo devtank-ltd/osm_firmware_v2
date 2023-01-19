@@ -109,7 +109,6 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
-        self.count=0
         with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
             pass
         with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
@@ -122,6 +121,7 @@ class config_gui_window_t(Tk):
         self.binding_process = Process(target=_binding_process_cb, args=(self.binding_in, self.binding_out))
         self.binding_process.start()
         self.binding_interface = binding_interface_client_t(self.binding_in, self.binding_out)
+        self.binding_interface.unsolicited_handlers = {"DEBUG" : self._add_debug_line_cb}
 
         style = Style()
         style.configure('lefttab.TNotebook', tabposition='wn',
@@ -443,12 +443,14 @@ class config_gui_window_t(Tk):
             self.main_modbus_w()
         elif slction == '.!notebook.!frame5' and self._dbg_open == False:
             self._dbg_open = True
-            if self.count == 0:
-                self._thread_debug()
-            else:
-                self._reload_debug_lines()
+            self.binding_interface.debug_begin()
+            self._open_debug_w(self._debug_fr)
+            log_func(f"User switched to tab 'Debug Mode'.")
+            self._load_debug_meas(self._debug_fr)
+
         if slction != '.!notebook.!frame5' and self._dbg_open == True:
             self._dbg_open = False
+            self.binding_interface.debug_end()
 
     def _clear_box(self, event, entry):
         entry.delete(0, END)
@@ -738,12 +740,6 @@ class config_gui_window_t(Tk):
         self._ios_label.pack()
         self._set_ios_label(meas, pin_obj, pin_is)
 
-    def _thread_debug(self):
-        self.count = self.count + 1
-        self._open_debug_w(self._debug_fr)
-        log_func(f"User switched to tab 'Debug Mode'.")
-        self._load_debug_meas(self._debug_fr)
-
     def _open_debug_w(self, frame):
         frame.columnconfigure([0,1,2,3,4,5,6], weight=1)
         frame.rowconfigure([0,1,2,3,4,5,6], weight=1)
@@ -778,7 +774,6 @@ class config_gui_window_t(Tk):
         self._dbg_canv = Canvas(
             self._debug_first_fr)
         self._dbg_canv.grid(column=0, row=0, sticky=NSEW)
-
 
     def _load_debug_meas(self, frame):
         hdrs = [('Measurement', 'Value')]
@@ -824,21 +819,14 @@ class config_gui_window_t(Tk):
         self._dbg_canv.bind('<Configure>', lambda e: self._on_canvas_config(
             e, self._dbg_canv
         ))
-        self.binding_interface.dbg_readlines(self._on_get_dbg_lines)
-    
-    def _on_get_dbg_lines(self, resp):
-        dbg_list = resp[1]
-        if self._dbg_open:
-            for d in dbg_list:
-                if d:
-                    self.binding_interface.debug_parse(d, self._fill_dbg_term)
-                    self._dbg_terml.configure(state='normal')
-                    self._dbg_terml.insert('1.0', d + "\n")
-                    self._dbg_terml.configure(state='disabled')
-            self._dbg_terml.after(10, self.binding_interface.dbg_readlines(self._on_get_dbg_lines))
-    
-    def _fill_dbg_term(self, resp):
+
+    self _add_debug_line_cb(self, output):
+        resp = output[2]
+        line = resp[0]
         res = resp[1]
+        self._dbg_terml.configure(state='normal')
+        self._dbg_terml.insert('1.0', line + "\n")
+        self._dbg_terml.configure(state='disabled')
         if res:
             dbg_meas = res[0]
             dbg_val = res[1]
@@ -852,10 +840,6 @@ class config_gui_window_t(Tk):
                         val_to_change.insert(0, int(dbg_val))
                         val_to_change.configure(
                             state='disabled')
-
-
-    def _reload_debug_lines(self):
-        self.binding_interface.dbg_readlines(self._on_get_dbg_lines)
 
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")

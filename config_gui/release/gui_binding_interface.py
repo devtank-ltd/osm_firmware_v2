@@ -44,7 +44,6 @@ class binding_interface_svr_t:
                           "REQ_CHANGE_INT" : self._request_change_int,
                           "REQ_IOS" : self._request_ios,
                           "REQ_DO_CMD" : self._request_do_cmd,
-                          "REQ_DBG" : self._request_dbg_mode,
                           "REQ_CHANGE_ALL_INT" : self._request_change_all_int,
                           "DEL_MB_REG" : self._request_del_reg,
                           "DEL_MB_DEV" : self._request_del_dev,
@@ -59,10 +58,8 @@ class binding_interface_svr_t:
                           "SET_APP" : self._req_save_app,
                           "RAND_EUI" : self._req_rand_eui,
                           "RAND_APP" : self._req_rand_app,
-                          "SET_DBG" : self._req_set_dbg,
                           "ADD_DEV" : self._req_add_dev,
                           "ADD_REG" : self._req_add_reg,
-                          "REQ_PARSE" : self._req_parse_msg,
                           "REQ_DEBUG_BEGIN" : self._req_debug_begin,
                           "REQ_DEBUG_END" : self._req_debug_end}
 
@@ -86,11 +83,7 @@ class binding_interface_svr_t:
         dev = binding.modbus_reg_t(self.dev, reg, hex_add, func_type, data_type)
         self.dev.modbus_reg_add(slave_id,
             dev)
-        
-    def _req_set_dbg(self, args):
-        val = args[1]
-        self.dev._set_debug(val)
-    
+
     def _req_rand_eui(self, args):
         return self.dev.write_eui()
     
@@ -107,11 +100,6 @@ class binding_interface_svr_t:
     
     def _request_save(self, args):
         self.dev.save()
-
-    def _req_parse_msg(self, args):
-        msg = args[1]
-        returned = self.debug_parse.parse_msg(msg)
-        return returned
     
     def _request_do_cmd_multi(self, args):
         cmd = args[1]
@@ -129,8 +117,8 @@ class binding_interface_svr_t:
     
     def _update_midpoint(self, args):
         mp = args[1]
-        widget = args[2]
-        self.dev.update_midpoint(mp, widget)
+        cc = args[2]
+        self.dev.update_midpoint(mp, cc)
 
     def _request_midpoint(self, args):
         cc = args[1]
@@ -148,13 +136,6 @@ class binding_interface_svr_t:
         val = args[1]
         self.dev.interval_mins = val
     
-    def _request_dbg_parse(self, args):
-        line = args[1]
-        self.debug_parse.parse_msg(line)
-
-    def _request_dbg_mode(self, args):
-        return self.dev.dbg_readlines()
-    
     def _request_do_cmd(self, args):
         cmd = args[1]
         self.dev.do_cmd(cmd)
@@ -166,13 +147,13 @@ class binding_interface_svr_t:
     
     def _request_change_int(self, args):
         meas = args[1]
-        widget = args[2]
-        self.dev.change_interval(meas, widget)
+        value = args[2]
+        self.dev.change_interval(meas, value)
     
     def _request_sample(self, args):
         meas = args[1]
-        widget = args[2]
-        self.dev.change_samplec(meas, widget)
+        value = args[2]
+        self.dev.change_samplec(meas, value)
 
     def _request_meas_cb(self, args):
         if not self.dev:
@@ -316,13 +297,7 @@ class binding_interface_client_t:
     
     def send_cmd(self, cmd):
         self._basic_query(("REQ_DO_CMD", cmd), None)
-    
-    def dbg_readlines(self, answered_cb):
-        self._basic_query(("REQ_DBG",), answered_cb)
-    
-    def debug_parse(self, line, answered_cb):
-        self._basic_query(("REQ_PARSE", line), answered_cb)
-    
+
     def set_interval_mins(self, val):
         self._basic_query(("REQ_CHANGE_ALL_INT", val), None)
     
@@ -338,17 +313,17 @@ class binding_interface_client_t:
     def print_cc_gain(self):
         self._basic_query(("REQ_CC_GAIN",), None)
 
-    def get_midpoint(self, widget):
-        self._basic_query(("REQ_MIDP", widget), None)
+    def get_midpoint(self, cc):
+        self._basic_query(("REQ_MIDP", cc), None)
     
-    def update_midpoint(self, mp, widget):
-        self._basic_query(("UPDATE_MIDP", mp, widget), None)
+    def update_midpoint(self, mp, cc):
+        self._basic_query(("UPDATE_MIDP", mp, cc), None)
 
     def current_clamp_calibrate(self):
         self._basic_query(("CC_CAL",), None)
     
-    def set_outer_inner_cc(self, phase, outer, inner):
-        self._basic_query(("SET_CC", phase, outer, inner), None)
+    def set_outer_inner_cc(self, cc, outer, inner):
+        self._basic_query(("SET_CC", cc, outer, inner), None)
     
     def do_cmd_multi(self, cmd, answered_cb):
         log(f"in do_cmd_multi interface {cmd}")
@@ -369,14 +344,18 @@ class binding_interface_client_t:
     def gen_rand_app(self):
         self._basic_query(("RAND_APP",), None)
     
-    def set_debug(self, val):
-        self._basic_query(("SET_DBG", val), None)
-    
     def add_modbus_dev(self, slave_id, device, is_msb, is_msw):
         self._basic_query(("ADD_DEV", slave_id, device, is_msb, is_msw), None)
     
     def add_modbus_reg(self, slave_id, reg, hex_add, func, data_type):
         self._basic_query(("ADD_REG", slave_id, reg, hex_add, func, data_type), None)
+
+    def debug_begin(self):
+        self._basic_query(("REQ_DEBUG_BEGIN",), None)
+
+    def debug_end(self):
+        self._basic_query(("REQ_DEBUG_END",), None)
+
 
 if __name__ == "__main__":
     from multiprocessing import Process, Queue
