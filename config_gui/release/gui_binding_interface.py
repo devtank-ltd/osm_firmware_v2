@@ -62,9 +62,11 @@ class binding_interface_svr_t:
                           "SET_DBG" : self._req_set_dbg,
                           "ADD_DEV" : self._req_add_dev,
                           "ADD_REG" : self._req_add_reg,
-                          "REQ_PARSE" : self._req_parse_msg}
-                          
-        
+                          "REQ_PARSE" : self._req_parse_msg,
+                          "REQ_DEBUG_BEGIN" : self._req_debug_begin,
+                          "REQ_DEBUG_END" : self._req_debug_end}
+
+        self.serial_obj = None
         self.dev = None
         self.debug_parse = None
     
@@ -202,16 +204,31 @@ class binding_interface_svr_t:
                                             stopbits=serial.STOPBITS_ONE,
                                             timeout=0)
             self.dev = binding.dev_t(serial_obj)
-            self.debug_parse = binding.dev_debug_t(serial_obj)
+            self.serial_obj = serial_obj
+            self.debug_parse = None
             return True
         except Exception as e:
             log(f"Openned Failed {e}")
             # Todo, handle expected or error out
             return False
 
+    def _req_debug_begin(self, args):
+        if not self.debug_parse:
+            self.dev._set_debug(1)
+            self.debug_parse = binding.dev_debug_t(self.serial_obj)
+
+    def _req_debug_end(self, args):
+        if self.debug_parse:
+            self.dev._set_debug(0)
+        self.debug_parse = None
+
 
     def run_forever(self, in_queue, out_queue, timeout=1):
         while True:
+            if self.debug_parse and in_queue.empty():
+                debug_lines = self.debug_parse.read_msgs(0.1)
+                for debug_line in debug_lines:
+                    out_queue.put(('*','DEBUG',debug_line))
             try:
                 data_in = in_queue.get(False, timeout)
             except queue.Empty:
@@ -231,6 +248,7 @@ class binding_interface_client_t:
         self.in_queue = in_queue
         self.out_queue = out_queue
         self._answered_cbs = queue.SimpleQueue()
+        self.unsolicited_handlers = {}
 
     def process_message(self):
         if self.out_queue.empty():
@@ -238,9 +256,16 @@ class binding_interface_client_t:
                 return None
             else:
                 return False
+        output = self.out_queue.get()
+        if output[0] == '*':
+            # unsolicited message
+            unsolicited_handler = self.unsolicited_handlers.get(output[1])
+            if unsolicited_handler:
+                unsolicited_handler(output)
+            return True
         cb = self._answered_cbs.get()
         try:
-            cb(self.out_queue.get())
+            cb(output)
         except Exception as e:
             log(f"Exception in process message: {e}")
         return True
