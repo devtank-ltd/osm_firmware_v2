@@ -644,14 +644,58 @@ class config_gui_window_t(Tk):
             return 'One Wire Temperature'
         elif meas.startswith("CNT"):
             return 'Pulsecount'
+    
+    def on_get_ios_val(self, resp):
+        pin_obj = None
+        pin_is = resp[1][0]
+        pull = resp[1][1]
+        if not self.io_meas.startswith('TMP'):
+            io_d_label = Label(
+                self.ios_page,
+                text="Set Pull Up or Pull Down")
+            io_d_label.pack()
+            self._up_d_non = Combobox(self.ios_page)
+            self._up_d_non.pack()
+            self._up_d_non['values'] = ('Up', 'Down', 'None')
+            if self.io_meas == 'CNT1':
+                self._up_d_non.set('Up')
+                self._up_d_non.configure(state='disabled')
+            else:
+                if pull:
+                    if pull[0] == 'u':
+                        self._up_d_non.set('Up')
+                    elif pull[0] == 'd':
+                        self._up_d_non.set('Down')
+                    else:
+                        self._up_d_non.set('None')
+                else:
+                    self._up_d_non.set('None')
+                if pin_is == self.io_meas:
+                    self._up_d_non.configure(state='disabled')
+        if pin_is == self.io_meas:
+            dis_check = Button(self.ios_page,
+                               text="Disable",
+                               command=lambda: self._do_ios_cmd('disable', self.io_meas, pin_obj, pin_is),
+                               bg=IVORY, fg=BLACK, font=FONT,
+                               activebackground="green", activeforeground=IVORY)
+            dis_check.pack()
+        else:
+            en_check = Button(self.ios_page,
+                              text="Enable",
+                              command=lambda: self._do_ios_cmd('enable', self.io_meas, pin_obj, pin_is),
+                              bg=IVORY, fg=BLACK, font=FONT,
+                              activebackground="green", activeforeground=IVORY)
+            en_check.pack()
+        self._ios_label = Label(self.ios_page, text="",
+            bg=IVORY, font=FONT)
+        self._ios_label.pack()
+        self._set_ios_label(self.io_meas, pin_obj, pin_is)
 
     def _get_ios_pin_obj(self, meas):
         if meas == "TMP2" or meas == "CNT1":
-            io = self.binding_interface.get_ios(4)
-            return io
+            self.binding_interface.get_ios(4, self.on_get_ios_val)
         elif meas == "TMP3" or meas == "CNT2":
-            io = self.binding_interface.get_ios(5)
-            return io
+            self.binding_interface.get_ios(5, self.on_get_ios_val)
         return None
 
     def _set_ios_label(self, meas, pin_obj, pin_is):
@@ -694,11 +738,11 @@ class config_gui_window_t(Tk):
         if cmd == 'enable':
             # check if user is trying to overwrite existing io
             if pin_is:
-                pin_obj.disable_io()
-            pin_obj.activate_io(inst, pullup)
+                self.binding_interface.disable_io()
+            self.binding_interface.activate_io(inst, pullup)
         elif cmd == 'disable':
             # disable io
-            pin_obj.disable_io()
+            self.binding_interface.disable_io()
         self.ios_page .destroy()
         self._open_ios_w(meas)
 
@@ -709,52 +753,8 @@ class config_gui_window_t(Tk):
         self.ios_page.geometry("405x500")
         self.ios_page.configure(bg=IVORY)
         log_func("User opened IO window..")
-        pin_obj = self._get_ios_pin_obj(meas)
-        assert pin_obj
-        pin_is = pin_obj.active_as()
-        if not meas.startswith('TMP'):
-            io_d_label = Label(
-                self.ios_page,
-                text="Set Pull Up or Pull Down")
-            io_d_label.pack()
-            self._up_d_non = Combobox(self.ios_page)
-            self._up_d_non.pack()
-            self._up_d_non['values'] = ('Up', 'Down', 'None')
-            if meas == 'CNT1':
-                self._up_d_non.set('Up')
-                self._up_d_non.configure(state='disabled')
-            else:
-                pull = pin_obj.active_pull()
-                if pull:
-                    pull = pull.lower()
-                    if pull[0] == 'u':
-                        self._up_d_non.set('Up')
-                    elif pull[0] == 'd':
-                        self._up_d_non.set('Down')
-                    else:
-                        self._up_d_non.set('None')
-                else:
-                    self._up_d_non.set('None')
-                if pin_is == meas:
-                    self._up_d_non.configure(state='disabled')
-        if pin_is == meas:
-            dis_check = Button(self.ios_page,
-                               text="Disable",
-                               command=lambda: self._do_ios_cmd('disable', meas, pin_obj, pin_is),
-                               bg=IVORY, fg=BLACK, font=FONT,
-                               activebackground="green", activeforeground=IVORY)
-            dis_check.pack()
-        else:
-            en_check = Button(self.ios_page,
-                              text="Enable",
-                              command=lambda: self._do_ios_cmd('enable', meas, pin_obj, pin_is),
-                              bg=IVORY, fg=BLACK, font=FONT,
-                              activebackground="green", activeforeground=IVORY)
-            en_check.pack()
-        self._ios_label = Label(self.ios_page, text="",
-            bg=IVORY, font=FONT)
-        self._ios_label.pack()
-        self._set_ios_label(meas, pin_obj, pin_is)
+        self.io_meas = meas
+        self._get_ios_pin_obj(meas)
 
     def _open_debug_w(self, frame):
         frame.columnconfigure([0,1,2,3,4,5,6], weight=1)

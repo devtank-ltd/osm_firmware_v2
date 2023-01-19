@@ -61,7 +61,9 @@ class binding_interface_svr_t:
                           "ADD_DEV" : self._req_add_dev,
                           "ADD_REG" : self._req_add_reg,
                           "REQ_DEBUG_BEGIN" : self._req_debug_begin,
-                          "REQ_DEBUG_END" : self._req_debug_end}
+                          "REQ_DEBUG_END" : self._req_debug_end,
+                          "REQ_DIS_IO" : self._req_disable_io,
+                          "REQ_ACT_IO" : self._req_activate_io}
 
         self.serial_obj = None
         self.dev = None
@@ -142,8 +144,16 @@ class binding_interface_svr_t:
     
     def _request_ios(self, args):
         io = args[1]
-        io = self.dev.ios[io]
-        return self.dev.ios[io]
+        self.io = self.dev.ios[io]
+        active = self.io.active_as()
+        pull = self.io.active_pull()
+        return active, pull
+
+    def _req_disable_io(self, args):
+        self.io.disable_io()
+    
+    def _req_activate_io(self, args):
+        self.io.activate_io(args[1], args[2])
     
     def _request_change_int(self, args):
         meas = args[1]
@@ -292,8 +302,8 @@ class binding_interface_client_t:
     def change_interval(self, meas, widget):
         self._basic_query(("REQ_CHANGE_INT", meas, widget), None)
 
-    def get_ios(self, num):
-        self._basic_query(("REQ_IOS", num), None)
+    def get_ios(self, num, answered_cb):
+        self._basic_query(("REQ_IOS", num), answered_cb)
     
     def send_cmd(self, cmd):
         self._basic_query(("REQ_DO_CMD", cmd), None)
@@ -355,7 +365,12 @@ class binding_interface_client_t:
 
     def debug_end(self):
         self._basic_query(("REQ_DEBUG_END",), None)
+    
+    def disable_io(self):
+        self._basic_query(("REQ_DIS_IO",), None)
 
+    def activate_io(self, inst, pullup):
+        self._basic_query(("REQ_ACT_IO", inst, pullup), None)
 
 if __name__ == "__main__":
     from multiprocessing import Process, Queue
