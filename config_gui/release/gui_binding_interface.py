@@ -31,39 +31,39 @@ def log(msg):
 
 class binding_interface_svr_t:
     def __init__(self):
-        self._actions = { "REQ_MEAS" : self._request_meas_cb,
-                          "REQ_MODBUS" : self._request_modbus_cb,
-                          "REQ_OPEN" : self._open_con_cb,
-                          "REQ_SERIAL_NUM" : lambda x : self.dev.serial_num.value,
-                          "REQ_FIRMWARE" : lambda x : self.dev.version.value,
-                          "REQ_DEV_EUI" : lambda x : self.dev.dev_eui,
-                          "REQ_APP_KEY" : lambda x : self.dev.app_key,
-                          "REQ_INT_MIN" : lambda x : self.dev.interval_mins,
-                          "REQ_COMMS" : lambda x : self.dev.comms_conn.value,
-                          "REQ_SAMP_COUNT" : self._request_sample,
-                          "REQ_CHANGE_INT" : self._request_change_int,
-                          "REQ_IOS" : self._request_ios,
-                          "REQ_DO_CMD" : self._request_do_cmd,
-                          "REQ_CHANGE_ALL_INT" : self._request_change_all_int,
-                          "DEL_MB_REG" : self._request_del_reg,
-                          "DEL_MB_DEV" : self._request_del_dev,
-                          "REQ_CC_GAIN" : self._request_cc_gain,
-                          "REQ_MIDP" : self._request_midpoint,
-                          "UPDATE_MIDP" : self._update_midpoint,
-                          "CC_CAL" : self._request_cc_cal,
-                          "SET_CC" : self._request_set_cc,
-                          "DO_CMD_MULTI" : self._request_do_cmd_multi,
-                          "SAVE" : self._request_save,
-                          "SET_EUI" : self._req_save_eui,
-                          "SET_APP" : self._req_save_app,
-                          "RAND_EUI" : self._req_rand_eui,
-                          "RAND_APP" : self._req_rand_app,
-                          "ADD_DEV" : self._req_add_dev,
-                          "ADD_REG" : self._req_add_reg,
-                          "REQ_DEBUG_BEGIN" : self._req_debug_begin,
-                          "REQ_DEBUG_END" : self._req_debug_end,
-                          "REQ_DIS_IO" : self._req_disable_io,
-                          "REQ_ACT_IO" : self._req_activate_io}
+        self._actions = { "REQ_MEAS"            : self._request_meas_cb,
+                          "REQ_MODBUS"          : self._request_modbus_cb,
+                          "REQ_OPEN"            : self._open_con_cb,
+                          "REQ_SERIAL_NUM"      : lambda x : self.dev.serial_num.value,
+                          "REQ_FIRMWARE"        : lambda x : self.dev.version.value,
+                          "REQ_DEV_EUI"         : lambda x : self.dev.dev_eui,
+                          "REQ_APP_KEY"         : lambda x : self.dev.app_key,
+                          "REQ_INT_MIN"         : lambda x : self.dev.interval_mins,
+                          "REQ_COMMS"           : lambda x : self.dev.comms_conn.value,
+                          "REQ_SAMP_COUNT"      : self._request_sample,
+                          "REQ_CHANGE_INT"      : self._request_change_int,
+                          "REQ_IOS"             : self._request_ios,
+                          "REQ_DO_CMD"          : self._request_do_cmd,
+                          "REQ_CHANGE_ALL_INT"  : self._request_change_all_int,
+                          "DEL_MB_REG"          : self._request_del_reg,
+                          "DEL_MB_DEV"          : self._request_del_dev,
+                          "REQ_CC_GAIN"         : lambda x : self.dev.print_cc_gain,
+                          "REQ_MIDP"            : self._request_midpoint,
+                          "UPDATE_MIDP"         : self._update_midpoint,
+                          "CC_CAL"              : self._request_cc_cal,
+                          "SET_CC"              : self._request_set_cc,
+                          "DO_CMD_MULTI"        : self._request_do_cmd_multi,
+                          "SAVE"                : self._request_save,
+                          "SET_EUI"             : self._req_save_eui,
+                          "SET_APP"             : self._req_save_app,
+                          "RAND_EUI"            : self._req_rand_eui,
+                          "RAND_APP"            : self._req_rand_app,
+                          "ADD_DEV"             : self._req_add_dev,
+                          "ADD_REG"             : self._req_add_reg,
+                          "REQ_DEBUG_BEGIN"     : self._req_debug_begin,
+                          "REQ_DEBUG_END"       : self._req_debug_end,
+                          "REQ_DIS_IO"          : self._req_disable_io,
+                          "REQ_ACT_IO"          : self._req_activate_io}
 
         self.serial_obj = None
         self.dev = None
@@ -205,7 +205,7 @@ class binding_interface_svr_t:
 
     def _req_debug_begin(self, args):
         if not self.debug_parse:
-            self.dev._set_debug(1)
+            self.dev.do_cmd("debug_mode")
             self.debug_parse = binding.dev_debug_t(self.serial_obj)
 
     def _req_debug_end(self, args):
@@ -218,20 +218,21 @@ class binding_interface_svr_t:
         while True:
             if self.debug_parse:
                 debug_lines = self.debug_parse.read_msgs(0.1)
-                for debug_line in debug_lines:
-                    out_queue.put(('*','DEBUG',debug_line))
-                if not in_queue.empty():
-                    try:
-                        data_in = in_queue.get(False, timeout)
-                    except queue.Empty:
-                        data_in = None
+                if debug_lines:
+                    for debug_line in debug_lines:
+                        log(f'*DEBUG{debug_line}')
+                        out_queue.put(('*','DEBUG',debug_line))
+                    if not in_queue.empty():
+                        try:
+                            data_in = in_queue.get(False, timeout)
+                        except queue.Empty:
+                            data_in = None
             else:
                 try:
                     data_in = in_queue.get(False, timeout)
                 except queue.Empty:
                     data_in = None
             if data_in:
-                log(f"Got {data_in}")
                 action = self._actions.get(data_in[0], None)
                 if action:
                     ret = action(data_in)
@@ -296,11 +297,11 @@ class binding_interface_client_t:
     def get_measurements(self, answered_cb):
         self._basic_query(("REQ_MEAS",), answered_cb)
 
-    def change_sample(self, meas, widget):
-        self._basic_query(("REQ_SAMP_COUNT", meas, widget), None)
+    def change_sample(self, meas, value):
+        self._basic_query(("REQ_SAMP_COUNT", meas, value), None)
     
-    def change_interval(self, meas, widget):
-        self._basic_query(("REQ_CHANGE_INT", meas, widget), None)
+    def change_interval(self, meas, value):
+        self._basic_query(("REQ_CHANGE_INT", meas, value), None)
 
     def get_ios(self, num, answered_cb):
         self._basic_query(("REQ_IOS", num), answered_cb)
@@ -320,14 +321,14 @@ class binding_interface_client_t:
     def modbus_dev_del(self, dev):
         self._basic_query(("DEL_MB_DEV", dev), None)
     
-    def print_cc_gain(self):
-        self._basic_query(("REQ_CC_GAIN",), None)
+    def print_cc_gain(self, answered_cb):
+        self._basic_query(("REQ_CC_GAIN",), answered_cb)
 
-    def get_midpoint(self, cc):
-        self._basic_query(("REQ_MIDP", cc), None)
+    def get_midpoint(self, cc, answered_cb):
+        self._basic_query(("REQ_MIDP", cc), answered_cb)
     
-    def update_midpoint(self, mp, cc):
-        self._basic_query(("UPDATE_MIDP", mp, cc), None)
+    def update_midpoint(self, mp, cc, answered_cb):
+        self._basic_query(("UPDATE_MIDP", mp, cc), answered_cb)
 
     def current_clamp_calibrate(self, answered_cb):
         self._basic_query(("CC_CAL",), answered_cb)
@@ -405,13 +406,23 @@ if __name__ == "__main__":
         assert success, "Failed to open serial"
         log(f"Opened")
 
+    def _on_get_debug_msg(resp):
+        resp = resp
+
     binding_interface.open("/tmp/osm/UART_DEBUG_slave", _on_open_done_cb)
     binding_interface.get_serial_num(_on_get_serial_cb)
     binding_interface.get_fw_version(_on_get_fw_cb)
     binding_interface.change_sample("FW", 2)
+    binding_interface.debug_begin()
 
-    while binding_interface.process_message() != None:
-        time.sleep(0.1)
-    log(f"Waiting for cleanup")
-    binding_process.terminate()
-    binding_process.join()
+    binding_out = Queue()
+    binding_in = Queue()
+
+    binding_svr = binding_interface_svr_t()
+    binding_svr.run_forever(binding_in, binding_out)
+
+    # while binding_interface.process_message() != None:
+    #     time.sleep(0.1)
+    # log(f"Waiting for cleanup")
+    # binding_process.terminate()
+    # binding_process.join()

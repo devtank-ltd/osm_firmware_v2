@@ -264,7 +264,7 @@ class io_t(dev_child_t):
         self.parent.do_cmd(f"en_{meas} {self._index} {pull}")
 
     def disable_io(self):
-        self._parent.do_cmd(f"io {self._index} : I N")
+        self.parent.do_cmd(f"io {self._index} : I N")
 
     def active_as(self):
         line = self.parent.do_cmd(f"io {self._index}")

@@ -409,7 +409,6 @@ class config_gui_window_t(Tk):
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
         self._load_headers(self._main_fr, "rif", True)
-        self._open_debug_w(self._debug_fr)
         self._load_debug_meas(self._debug_fr)
         return self._sens_meas
 
