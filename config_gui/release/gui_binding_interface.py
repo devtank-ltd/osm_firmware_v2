@@ -216,29 +216,28 @@ class binding_interface_svr_t:
 
     def run_forever(self, in_queue, out_queue, timeout=1):
         while True:
+            data_in = None
             if self.debug_parse:
                 debug_lines = self.debug_parse.read_msgs(0.1)
                 if debug_lines:
                     for debug_line in debug_lines:
-                        log(f'*DEBUG{debug_line}')
                         out_queue.put(('*','DEBUG',debug_line))
                     if not in_queue.empty():
-                        try:
-                            data_in = in_queue.get(False, timeout)
-                        except queue.Empty:
-                            data_in = None
+                        data_in = in_queue.get()
             else:
                 try:
-                    data_in = in_queue.get(False, timeout)
+                    data_in = in_queue.get(True, timeout)
                 except queue.Empty:
-                    data_in = None
+                    pass
             if data_in:
                 action = self._actions.get(data_in[0], None)
                 if action:
                     ret = action(data_in)
                 else:
                     ret = "ERROR INAVLID"
-                out_queue.put((data_in[0].replace("REQ","RSP"), ret))
+                answer = (data_in[0].replace("REQ","RSP"), ret)
+                out_queue.put(answer)
+
 
 
 class binding_interface_client_t:
@@ -261,6 +260,7 @@ class binding_interface_client_t:
             if unsolicited_handler:
                 unsolicited_handler(output)
             return True
+        log(f"Answered {output}")
         cb = self._answered_cbs.get()
         try:
             cb(output)
@@ -297,29 +297,29 @@ class binding_interface_client_t:
     def get_measurements(self, answered_cb):
         self._basic_query(("REQ_MEAS",), answered_cb)
 
-    def change_sample(self, meas, value):
-        self._basic_query(("REQ_SAMP_COUNT", meas, value), None)
+    def change_sample(self, meas, value, answered_cb=None):
+        self._basic_query(("REQ_SAMP_COUNT", meas, value), answered_cb)
     
-    def change_interval(self, meas, value):
-        self._basic_query(("REQ_CHANGE_INT", meas, value), None)
+    def change_interval(self, meas, value, answered_cb=None):
+        self._basic_query(("REQ_CHANGE_INT", meas, value), answered_cb)
 
     def get_ios(self, num, answered_cb):
         self._basic_query(("REQ_IOS", num), answered_cb)
     
-    def send_cmd(self, cmd):
-        self._basic_query(("REQ_DO_CMD", cmd), None)
+    def send_cmd(self, cmd, answered_cb=None):
+        self._basic_query(("REQ_DO_CMD", cmd), answered_cb)
 
-    def set_interval_mins(self, val):
-        self._basic_query(("REQ_CHANGE_ALL_INT", val), None)
+    def set_interval_mins(self, val, answered_cb=None):
+        self._basic_query(("REQ_CHANGE_ALL_INT", val), answered_cb)
     
     def get_modbus(self, answered_cb):
         self._basic_query(("REQ_MODBUS",), answered_cb)
     
-    def modbus_reg_del(self, reg):
-        self._basic_query(("DEL_MB_REG", reg), None)
+    def modbus_reg_del(self, reg, answered_cb=None):
+        self._basic_query(("DEL_MB_REG", reg), answered_cb)
 
-    def modbus_dev_del(self, dev):
-        self._basic_query(("DEL_MB_DEV", dev), None)
+    def modbus_dev_del(self, dev, answered_cb=None):
+        self._basic_query(("DEL_MB_DEV", dev), answered_cb)
     
     def print_cc_gain(self, answered_cb):
         self._basic_query(("REQ_CC_GAIN",), answered_cb)
@@ -340,41 +340,45 @@ class binding_interface_client_t:
         log(f"in do_cmd_multi interface {cmd}")
         self._basic_query(("DO_CMD_MULTI", cmd), answered_cb)
     
-    def save_config(self):
+    def save_config(self, answered_cb=None):
         self._basic_query(("SAVE",), None)
     
-    def set_app_key(self, app):
-        self._basic_query(("SET_APP", app), None)
+    def set_app_key(self, app, answered_cb=None):
+        self._basic_query(("SET_APP", app), answered_cb)
     
-    def set_eui_key(self, eui):
-        self._basic_query(("SET_EUI", eui), None)
+    def set_eui_key(self, eui, answered_cb=None):
+        self._basic_query(("SET_EUI", eui), answered_cb)
     
-    def gen_rand_eui(self):
-        self._basic_query(("RAND_EUI",), None)
+    def gen_rand_eui(self, answered_cb=None):
+        self._basic_query(("RAND_EUI",), answered_cb)
 
-    def gen_rand_app(self):
-        self._basic_query(("RAND_APP",), None)
+    def gen_rand_app(self, answered_cb=None):
+        self._basic_query(("RAND_APP",), answered_cb)
     
-    def add_modbus_dev(self, slave_id, device, is_msb, is_msw):
-        self._basic_query(("ADD_DEV", slave_id, device, is_msb, is_msw), None)
+    def add_modbus_dev(self, slave_id, device, is_msb, is_msw, answered_cb=None):
+        self._basic_query(("ADD_DEV", slave_id, device, is_msb, is_msw), answered_cb)
     
-    def add_modbus_reg(self, slave_id, reg, hex_add, func, data_type):
-        self._basic_query(("ADD_REG", slave_id, reg, hex_add, func, data_type), None)
+    def add_modbus_reg(self, slave_id, reg, hex_add, func, data_type, answered_cb=None):
+        self._basic_query(("ADD_REG", slave_id, reg, hex_add, func, data_type), answered_cb)
 
-    def debug_begin(self):
-        self._basic_query(("REQ_DEBUG_BEGIN",), None)
+    def debug_begin(self, answered_cb=None):
+        self._basic_query(("REQ_DEBUG_BEGIN",), answered_cb)
 
-    def debug_end(self):
-        self._basic_query(("REQ_DEBUG_END",), None)
+    def debug_end(self, answered_cb=None):
+        self._basic_query(("REQ_DEBUG_END",), answered_cb)
     
-    def disable_io(self):
-        self._basic_query(("REQ_DIS_IO",), None)
+    def disable_io(self, answered_cb=None):
+        self._basic_query(("REQ_DIS_IO",), answered_cb)
 
-    def activate_io(self, inst, pullup):
-        self._basic_query(("REQ_ACT_IO", inst, pullup), None)
+    def activate_io(self, inst, pullup, answered_cb=None):
+        self._basic_query(("REQ_ACT_IO", inst, pullup), answered_cb)
+
 
 if __name__ == "__main__":
     from multiprocessing import Process, Queue
+    import subprocess
+    import signal
+    import os
 
     def _binding_process_cb(binding_in, binding_out):
         binding_svr = binding_interface_svr_t()
@@ -400,29 +404,80 @@ if __name__ == "__main__":
         assert isinstance(serial_num, str), "Not expected response"
         log(f"Got Serial: {serial_num}")
 
+    openned = False
+
     def _on_open_done_cb(resp):
         assert not resp[0].startswith("ERROR"), "Failed to get serial"
         success = resp[1]
         assert success, "Failed to open serial"
         log(f"Opened")
+        global openned
+        openned = True
+
+    debug_lines = None
+
+    def _on_debug_began(resp):
+        global debug_lines
+        debug_lines = 0
+
+    def _on_debug_end(resp):
+        global debug_lines
+        debug_lines = None
 
     def _on_get_debug_msg(resp):
-        resp = resp
+        global debug_lines
+        log(f"Debug:" + str(resp))
+        debug_lines += 1
+
+    linux_proc = subprocess.Popen(['../../build/penguin/firmware.elf'])
+
+    log("Wait for Linux")
+    while not os.path.exists("/tmp/osm/UART_DEBUG_slave"):
+        time.sleep(0.1)
 
     binding_interface.open("/tmp/osm/UART_DEBUG_slave", _on_open_done_cb)
+
+    log("Wait for open")
+    while not openned:
+        linux_proc.poll()
+        binding_interface.process_message()
+        time.sleep(0.1)
+
     binding_interface.get_serial_num(_on_get_serial_cb)
     binding_interface.get_fw_version(_on_get_fw_cb)
     binding_interface.change_sample("FW", 2)
-    binding_interface.debug_begin()
 
-    binding_out = Queue()
-    binding_in = Queue()
+    while binding_interface.process_message() != None:
+        linux_proc.poll()
+        time.sleep(0.1)
 
-    binding_svr = binding_interface_svr_t()
-    binding_svr.run_forever(binding_in, binding_out)
+    binding_interface.unsolicited_handlers = {"DEBUG": _on_get_debug_msg}
+    binding_interface.debug_begin(_on_debug_began)
 
-    # while binding_interface.process_message() != None:
-    #     time.sleep(0.1)
-    # log(f"Waiting for cleanup")
-    # binding_process.terminate()
-    # binding_process.join()
+    log("Waiting for debugmode")
+    while debug_lines is None:
+        linux_proc.poll()
+        binding_interface.process_message()
+        time.sleep(0.1)
+
+    log("Reading debug")
+    while debug_lines < 10:
+        linux_proc.poll()
+        binding_interface.process_message()
+        time.sleep(0.1)
+
+    binding_interface.debug_end(_on_debug_end)
+
+    log(f"Waiting for debug stop")
+    while debug_lines is not None:
+        linux_proc.poll()
+        binding_interface.process_message()
+        time.sleep(0.1)
+
+    log(f"Waiting for cleanup")
+    binding_process.terminate()
+    binding_process.join()
+
+    linux_proc.send_signal(signal.SIGINT)
+    linux_proc.wait()
+    log("Complete")
