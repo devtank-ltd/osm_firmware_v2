@@ -107,10 +107,10 @@ class binding_interface_svr_t:
         return self.dev.do_cmd_multi(cmd)
     
     def _request_set_cc(self, args):
-        phase = args[1]
+        cc = args[1]
         outer = args[2]
         inner = args[3]
-        self.dev.set_outer_inner_cc(phase, outer, inner)
+        self.dev.set_outer_inner_cc(cc, outer, inner)
     
     def _request_cc_cal(self, args):
         self.dev.current_clamp_calibrate()
@@ -319,11 +319,11 @@ class binding_interface_client_t:
     def update_midpoint(self, mp, cc):
         self._basic_query(("UPDATE_MIDP", mp, cc), None)
 
-    def current_clamp_calibrate(self):
-        self._basic_query(("CC_CAL",), None)
+    def current_clamp_calibrate(self, answered_cb):
+        self._basic_query(("CC_CAL",), answered_cb)
     
-    def set_outer_inner_cc(self, cc, outer, inner):
-        self._basic_query(("SET_CC", cc, outer, inner), None)
+    def set_outer_inner_cc(self, cc, outer, inner, answered_cb):
+        self._basic_query(("SET_CC", cc, outer, inner), answered_cb)
     
     def do_cmd_multi(self, cmd, answered_cb):
         log(f"in do_cmd_multi interface {cmd}")

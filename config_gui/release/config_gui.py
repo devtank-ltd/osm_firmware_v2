@@ -26,6 +26,7 @@ import signal
 from stat import *
 from gui_binding_interface import binding_interface_svr_t, binding_interface_client_t
 import time
+import subprocess
 
 MB_DB = modbus_db
 FW_PROCESS = False
@@ -356,6 +357,11 @@ class config_gui_window_t(Tk):
                                                         self._main_fr,
                                                         self._notebook))
 
+        self.l_img = Image.open(OSM_BG)
+        self.leaf_logo = ImageTk.PhotoImage(self.l_img)
+        self._debug_fr.img_list = []
+        self._debug_fr.img_list.append(self.leaf_logo)
+
         self._modbus        = None
         self._sens_meas     = None
         self.ser_op         = None
@@ -373,7 +379,15 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_app_key(self._on_get_app_key_done_cb)
         self.binding_interface.get_comms_conn(self._on_get_comms_conn_done_cb)
         self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
-        # self.cc_gain = self.binding_interface.print_cc_gain()
+        self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
+
+    def _on_update_cc_gain_cb(self, resp):
+        self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
+
+    def _on_get_cc_gain_cb(self, resp):
+        self.cc_gain = resp[1]
+        self._fill_cc_term()
+        return self.cc_gain
     
     def _on_get_cmd_multi_done_cb(self, resp):
         cmd = resp[1]
@@ -395,6 +409,8 @@ class config_gui_window_t(Tk):
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
         self._load_headers(self._main_fr, "rif", True)
+        self._open_debug_w(self._debug_fr)
+        self._load_debug_meas(self._debug_fr)
         return self._sens_meas
 
     def _on_get_comms_conn_done_cb(self, resp):
@@ -743,15 +759,12 @@ class config_gui_window_t(Tk):
     def _open_debug_w(self, frame):
         frame.columnconfigure([0,1,2,3,4,5,6], weight=1)
         frame.rowconfigure([0,1,2,3,4,5,6], weight=1)
-        l_img = Image.open(OSM_BG)
-        leaf_logo = ImageTk.PhotoImage(l_img)
-        self._debug_fr.img_list = []
-        self._debug_fr.img_list.append(leaf_logo)
+
         self._leaf_lab = Label(
-            self._debug_fr, image=leaf_logo, bg=IVORY)
+            self._debug_fr, image=self.leaf_logo, bg=IVORY)
         self._leaf_lab.pack()
         self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
-            e, self._leaf_lab, l_img, self._debug_fr
+            e, self._leaf_lab, self.l_img, self._debug_fr
         ))
 
         debug_btn = Button(frame,
@@ -820,7 +833,7 @@ class config_gui_window_t(Tk):
             e, self._dbg_canv
         ))
 
-    self _add_debug_line_cb(self, output):
+    def _add_debug_line_cb(self, output):
         resp = output[2]
         line = resp[0]
         res = resp[1]
@@ -1081,6 +1094,7 @@ class config_gui_window_t(Tk):
                             mb_reg_to_change = mb_reg_to_change.get()
                             self.binding_interface.modbus_reg_del(mb_reg_to_change)
             self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
+            self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
 
     def _set_meas_to_zero(self, check):
         ticked = []
@@ -1128,44 +1142,46 @@ class config_gui_window_t(Tk):
     def _change_on_hover(self, entry):
         e = entry.get()
         reg_hover = Hovertip(self._e, self._get_desc(entry.get()))
+    
+    def _on_get_mp_done_cb(self, resp):
+        self.midpoint = resp[1][0].split()[1]
+        self._fill_cc_term()
+        return self.midpoint
 
-    def _cal_cc(self, widget):
+    def _cal_cc(self, cc):
         self._cc_window = Toplevel(self.master)
-        self._cc_window.title(f"Current Clamp Calibration {widget}")
+        self._cc_window.title(f"Current Clamp Calibration {cc}")
         self._cc_window.geometry("650x600")
         self._cc_window.configure(bg=IVORY)
         log_func("User opened window to calibrate current clamp..")
+        self.binding_interface.get_midpoint(cc, self._on_get_mp_done_cb)
+        self.selected_cc = cc
 
-        cc_val_lab = Label(self._cc_window, text="Set Current Clamp Values")
-        cc_val_lab.grid(column=0, row=1, pady=10, columnspan=2)
+        cc_val_lab = Label(self._cc_window, text="Set Current Clamp Values",
+            bg=IVORY, font=FONT)
+        cc_val_lab.grid(column=1, row=1, pady=10, columnspan=2)
         on_hover = Hovertip(
             cc_val_lab, "Use this page to scale the current clamp")
 
-        self._outer_cc = Entry(self._cc_window, bg=IVORY)
+        self._outer_cc = Combobox(self._cc_window)
         self._outer_cc.grid(column=0, row=2)
         on_hover = Hovertip(
-            self._outer_cc, "Set outer current (Default 100A).")
+            self._outer_cc, "Set outer and inner current (Amps/Millivolts).")
+        self._outer_cc['values'] = ('100, 50',
+                                    '200, 33'
+                                    )
 
-        outer_cc_lab = Label(self._cc_window, text="Amps")
+        outer_cc_lab = Label(self._cc_window, text="Amps/Millivolts", 
+            bg=IVORY, font=FONT)
         outer_cc_lab.grid(column=1, row=2)
         on_hover = Hovertip(
-            outer_cc_lab, "Set outer current (Default 100A).")
-
-        self._inner_cc = Entry(self._cc_window, bg=IVORY)
-        self._inner_cc.grid(column=0, row=3)
-        on_hover = Hovertip(
-            self._inner_cc, "Set inner current (Default 50mV).")
-
-        inner_cc_lab = Label(self._cc_window, text="Millivolts")
-        inner_cc_lab.grid(column=1, row=3)
-        on_hover = Hovertip(
-            inner_cc_lab, "Set inner current (Default 50mV).")
+            outer_cc_lab, "Set outer and inner current.")
 
         send_btn = Button(self._cc_window,
-                          text="Send", command=lambda: self._send_cal(widget),
+                          text="Send", command=lambda: self._send_cal(cc),
                           bg=IVORY, fg=BLACK, font=FONT,
                           activebackground="green", activeforeground=IVORY)
-        send_btn.grid(column=2, row=3)
+        send_btn.grid(column=2, row=2)
 
         self._cal_terminal = Text(self._cc_window,
                                   height=20, width=80,
@@ -1175,7 +1191,7 @@ class config_gui_window_t(Tk):
 
         cal_btn = Button(self._cc_window,
                         text="Calibrate ADC", 
-                        command=lambda:self._calibrate(widget),
+                        command=lambda:self._calibrate(cc),
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY)
         cal_btn.grid(column=0, row=5, pady=10)
@@ -1190,11 +1206,10 @@ class config_gui_window_t(Tk):
         mp_btn = Button(self._cc_window, text="Set Midpoint",
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY,
-                        command=lambda: self._set_midpoint(mp_entry, widget))
+                        command=lambda: self._set_midpoint(mp_entry, cc))
         mp_btn.grid(column=4, row=5)
         on_hover = Hovertip(
             mp_btn, "Manually calibrate ADC midpoint. (Default 2048)")
-        self._fill_cc_term(widget)
 
         self._cal_label = Label(self._cc_window, text="",
         bg=IVORY)
@@ -1202,31 +1217,23 @@ class config_gui_window_t(Tk):
 
         help_cc = Label(self._cc_window, text="Help")
         help_cc.grid(column=4, row=7)
-        help_hover = Hovertip(help_cc, '''
+        help_hover = Hovertip(help_cc, '''Midpoint
             Use this page to calibrate each phase of current.\t\n
             Here you can set Exterior and Interior values which are defaulted to 100A and 50mV respectively.\t\n
             You must set the midpoint when first configuring each phase, achieve this by simply selecting calibrate ADC.\t\n
             There is also the option to set the midpoint manually. A typical value is around 2030-2048.\t\n
             ''')
 
-    def _fill_cc_term(self, widget):
+    def _fill_cc_term(self):
         self._cal_terminal.configure(state='normal')
         self._cal_terminal.delete('1.0', END)
         if self.cc_gain:
             for i in self.cc_gain:
-                if widget in i:
-                    self._cal_terminal.insert(INSERT, i + "\n")
-            midpoint = self.binding_interface.get_midpoint(widget)
-            for v in midpoint:
-                self._cal_terminal.insert(INSERT, "\n" + v + "\n")
+                self._cal_terminal.insert(INSERT, i + "\n")
+            self._cal_terminal.insert(INSERT, "\nMidpoint: " + self.midpoint + "\n")
             self._cal_terminal.configure(state='disabled')
-        # else:
-        #     tkinter.messagebox.showerror(
-        #         "Error", "Press OK to reopen window..")
-        #     self._cc_window.destroy()
-        #     self._cal_cc(widget)
 
-    def _set_midpoint(self, entry, widget):
+    def _set_midpoint(self, entry, cc):
         log_func("User attempting to set current clamp midpoint..")
         v = entry.get()
         try:
@@ -1235,37 +1242,32 @@ class config_gui_window_t(Tk):
             self._cal_label['text'] = "You must enter an integer"
         else:
             mp = entry.get()
-            self.binding_interface.update_midpoint(mp, widget)
-            self.binding_interface.print_cc_gain
-            self._fill_cc_term(widget)
+            self.binding_interface.update_midpoint(mp, cc, self._on_update_mp_done_cb)
             self._cal_label['text'] = ""
+    
+    def _on_update_mp_done_cb(self, resp):
+        self.binding_interface.get_midpoint(self.selected_cc, self._on_get_mp_done_cb)
 
-    def _calibrate(self, widget):
+    def _calibrate(self):
         log_func("User attempting to calibrate ADC automatically..")
         dev_off = tkinter.messagebox.askyesno(
             "Calibrate", "Has the current been switched off?", parent=self._cc_window)
         if dev_off:
-            self.binding_interface.current_clamp_calibrate()
-            self._fill_cc_term(widget)
+            self.binding_interface.current_clamp_calibrate(self._on_update_mp_done_cb)
         else:
             tkinter.messagebox.showinfo(
                 "", "Turn off live current.", parent=self._cc_window)
 
-    def _send_cal(self, widget):
+    def _send_cal(self, cc):
         log_func("User attempting to manually calibrate outer and inner cc...")
-        if self._outer_cc.get() and self._inner_cc.get():
-            outer = self._outer_cc.get()
-            inner = self._inner_cc.get()
-            try:
-                int(outer) and int(inner)
-                phase = widget[2]
-                self._cal_terminal.configure(state='normal')
-                self._cal_terminal.delete('1.0', END)
-                gain = self.binding_interface.set_outer_inner_cc(phase, outer, inner)
-                self._fill_cc_term(widget)
-            except:
-                tkinter.messagebox.showerror(
-                    "Error", "Outer and Inner currents must be integers", parent=self._cc_window)
+        if self._outer_cc.get():
+            vals = self._outer_cc.get().split(', ')
+            outer = int(vals[0])
+            inner = int(vals[1])
+            cc = cc[2]
+            self._cal_terminal.configure(state='normal')
+            self._cal_terminal.delete('1.0', END)
+            self.binding_interface.set_outer_inner_cc(cc, outer, inner, self._on_update_cc_gain_cb)
         else:
             tkinter.messagebox.showerror(
                 "Error", "Fill in missing fields.", parent=self._cc_window)
@@ -1363,8 +1365,6 @@ class config_gui_window_t(Tk):
         self._eui_entry.insert(0, dev_eui)
 
     def _on_closing(self):
-        if self._connected == True:
-            self.binding_interface.set_debug(0)
         root.destroy()
         
     def _resize_image(self, e, label, img, frame):
@@ -2139,9 +2139,6 @@ class config_gui_window_t(Tk):
                 regs = self.db.get_modbus_template_regs(chosen_template)
                 if regs:
                     curr_regs = []
-                    # for dev in self._modbus.devices:
-                    #     for reg in dev.regs:
-                    #         curr_regs += [ reg.name ]
                     for reg in regs:
                         unit_id, bytes_fmt, hex_addr, func_type, \
                             data_type, reg_name, dev_name = reg
@@ -2158,6 +2155,7 @@ class config_gui_window_t(Tk):
                                                     func_type,
                                                     data_type)
                     self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
+                    self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
                 else:
                     tkinter.messagebox.showerror(
                         "Error", "Device must be saved.", parent=root)
