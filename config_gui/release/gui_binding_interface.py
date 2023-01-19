@@ -225,14 +225,20 @@ class binding_interface_svr_t:
 
     def run_forever(self, in_queue, out_queue, timeout=1):
         while True:
-            if self.debug_parse and in_queue.empty():
+            if self.debug_parse:
                 debug_lines = self.debug_parse.read_msgs(0.1)
                 for debug_line in debug_lines:
                     out_queue.put(('*','DEBUG',debug_line))
-            try:
-                data_in = in_queue.get(False, timeout)
-            except queue.Empty:
-                data_in = None
+                if not in_queue.empty():
+                    try:
+                        data_in = in_queue.get(False, timeout)
+                    except queue.Empty:
+                        data_in = None
+            else:
+                try:
+                    data_in = in_queue.get(False, timeout)
+                except queue.Empty:
+                    data_in = None
             if data_in:
                 log(f"Got {data_in}")
                 action = self._actions.get(data_in[0], None)
