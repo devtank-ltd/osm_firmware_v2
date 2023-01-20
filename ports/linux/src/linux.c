@@ -876,12 +876,10 @@ uint32_t get_since_boot_ms(void)
 
 void linux_usleep(unsigned usecs)
 {
-    struct timespec ts;
+    int64_t end_time = linux_get_current_us() + usecs;
 
-    clock_gettime(CLOCK_REALTIME, &ts);
-
-    ts.tv_sec += usecs / 1000000;
-    ts.tv_nsec = (usecs % 1000000) * 1000;
+    struct timespec ts = {.tv_sec = end_time / 1000000,
+                          .tv_nsec = (end_time % 1000000) * 1000};
 
     if (!pthread_mutex_lock(&_sleep_mutex))
     {
