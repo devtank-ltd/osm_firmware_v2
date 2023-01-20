@@ -12,7 +12,6 @@ import re
 import binding
 import yaml
 from idlelib.tooltip import Hovertip
-from multiprocessing import Process, Queue
 from tkinter.filedialog import askopenfilename
 import threading
 import traceback
@@ -24,7 +23,7 @@ import logging
 import platform
 import signal
 from stat import *
-from gui_binding_interface import binding_interface_svr_t, binding_interface_client_t
+from gui_binding_interface import binding_interface_client_t
 import time
 import subprocess
 
@@ -96,11 +95,6 @@ def handle_exit(sig, frame):
     exit()
 
 
-def _binding_process_cb(binding_in, binding_out):
-    binding_svr = binding_interface_svr_t()
-    binding_svr.run_forever(binding_in, binding_out)
-
-
 class config_gui_window_t(Tk):
     def __init__(self):
         super().__init__()
@@ -115,13 +109,7 @@ class config_gui_window_t(Tk):
         with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
             pass
 
-        
-        self.binding_out = Queue()
-        self.binding_in = Queue()
-
-        self.binding_process = Process(target=_binding_process_cb, args=(self.binding_in, self.binding_out))
-        self.binding_process.start()
-        self.binding_interface = binding_interface_client_t(self.binding_in, self.binding_out)
+        self.binding_interface = binding_interface_client_t()
         self.binding_interface.unsolicited_handlers = {"DEBUG" : self._add_debug_line_cb}
 
         style = Style()
@@ -222,7 +210,6 @@ class config_gui_window_t(Tk):
                         e, self._osm1_lab, img, self._conn_fr
                     ))
         self._check_binding_comms()
-
 
     def _check_binding_comms(self):
         count = 0
@@ -1372,9 +1359,13 @@ class config_gui_window_t(Tk):
         self._eui_entry.delete(0, END)
         self._eui_entry.insert(0, dev_eui)
 
-    def _on_closing(self):
+    def _close_application(self):
+        self.binding_interface.finish()
         root.destroy()
-        
+
+    def _on_closing(self):
+        self._close_application()
+
     def _resize_image(self, e, label, img, frame):
         img_height = img.height
         img_width = img.width
@@ -1549,11 +1540,11 @@ class config_gui_window_t(Tk):
                                                       "Would you like to save changes?")
             if yesno:
                 self._send_to_save()
-                window.destroy()
+                self._close_application()
             elif yesno == False:
-                window.destroy()
+                self._close_application()
         else:
-            window.destroy()
+            self._close_application()
 
     def _send_to_save(self):
         log_func("User attempting to save a new template")

@@ -1,3 +1,5 @@
+from multiprocessing import Process, Queue
+import traceback
 import binding
 import serial
 import time
@@ -21,6 +23,7 @@ import logging
 # * Answer Modbus
 # RSP_MODBUS {son}
 
+REQ_EXIT            = "REQ_EXIT"
 REQ_MEAS            = "REQ_MEAS"
 REQ_MODBUS          = "REQ_MODBUS"
 REQ_OPEN            = "REQ_OPEN"
@@ -39,17 +42,17 @@ DEL_MB_REG          = "DEL_MB_REG"
 DEL_MB_DEV          = "DEL_MB_DEV"
 REQ_CC_GAIN         = "REQ_CC_GAIN"
 REQ_MIDP            = "REQ_MIDP"
-UPDATE_MIDP         = "UPDATE_MIDP"
-CC_CAL              = "CC_CAL"
-SET_CC              = "SET_CC"
-DO_CMD_MULTI        = "DO_CMD_MULTI"
-SAVE                = "SAVE"
-SET_EUI             = "SET_EUI"
-SET_APP             = "SET_APP"
-RAND_EUI            = "RAND_EUI"
-RAND_APP            = "RAND_APP"
-ADD_DEV             =  "ADD_DEV"
-ADD_REG             = "ADD_REG"
+REQ_UPDATE_MIDP     = "REQ_UPDATE_MIDP"
+REQ_CC_CAL          = "REQ_CC_CAL"
+REQ_SET_CC          = "REQ_SET_CC"
+REQ_DO_CMD_MULTI    = "REQ_DO_CMD_MULTI"
+REQ_SAVE            = "REQ_SAVE"
+REQ_SET_EUI         = "REQ_SET_EUI"
+REQ_SET_APP         = "REQ_SET_APP"
+REQ_RAND_EUI        = "REQ_RAND_EUI"
+REQ_RAND_APP        = "REQ_RAND_APP"
+REQ_ADD_DEV         = "REQ_ADD_DEV"
+REQ_ADD_REG         = "REQ_ADD_REG"
 REQ_DEBUG_BEGIN     = "REQ_DEBUG_BEGIN"
 REQ_DEBUG_END       = "REQ_DEBUG_END"
 REQ_DIS_IO          = "REQ_DIS_IO"
@@ -65,7 +68,8 @@ def log(msg):
 
 class binding_interface_svr_t:
     def __init__(self):
-        self._actions = { REQ_MEAS            : self._request_meas_cb,
+        self._actions = { REQ_EXIT            : self._exit_cb,
+                          REQ_MEAS            : self._request_meas_cb,
                           REQ_MODBUS          : self._request_modbus_cb,
                           REQ_OPEN            : self._open_con_cb,
                           REQ_SERIAL_NUM      : lambda x : self.dev.serial_num.value,
@@ -83,17 +87,17 @@ class binding_interface_svr_t:
                           DEL_MB_DEV          : self._request_del_dev,
                           REQ_CC_GAIN         : lambda x : self.dev.print_cc_gain,
                           REQ_MIDP            : self._request_midpoint,
-                          UPDATE_MIDP         : self._update_midpoint,
-                          CC_CAL              : self._request_cc_cal,
-                          SET_CC              : self._request_set_cc,
-                          DO_CMD_MULTI        : self._request_do_cmd_multi,
-                          SAVE                : self._request_save,
-                          SET_EUI             : self._req_save_eui,
-                          SET_APP             : self._req_save_app,
-                          RAND_EUI            : self._req_rand_eui,
-                          RAND_APP            : self._req_rand_app,
-                          ADD_DEV             : self._req_add_dev,
-                          ADD_REG             : self._req_add_reg,
+                          REQ_UPDATE_MIDP     : self._update_midpoint,
+                          REQ_CC_CAL          : self._request_cc_cal,
+                          REQ_SET_CC          : self._request_set_cc,
+                          REQ_DO_CMD_MULTI    : self._request_do_cmd_multi,
+                          REQ_SAVE            : self._request_save,
+                          REQ_SET_EUI         : self._req_save_eui,
+                          REQ_SET_APP         : self._req_save_app,
+                          REQ_RAND_EUI        : self._req_rand_eui,
+                          REQ_RAND_APP        : self._req_rand_app,
+                          REQ_ADD_DEV         : self._req_add_dev,
+                          REQ_ADD_REG         : self._req_add_reg,
                           REQ_DEBUG_BEGIN     : self._req_debug_begin,
                           REQ_DEBUG_END       : self._req_debug_end,
                           REQ_DIS_IO          : self._req_disable_io,
@@ -102,14 +106,15 @@ class binding_interface_svr_t:
         self.serial_obj = None
         self.dev = None
         self.debug_parse = None
-    
+        self._alive = True
+
     def _req_add_dev(self, args):
         unit_id = args[1]
         dev = args[2]
         is_msb = args[3]
         is_msw = args[4]
         self.dev.modbus_dev_add(unit_id, dev, is_msb, is_msw)
-    
+
     def _req_add_reg(self, args):
         slave_id = args[1]
         reg = args[2]
@@ -122,37 +127,37 @@ class binding_interface_svr_t:
 
     def _req_rand_eui(self, args):
         return self.dev.write_eui()
-    
+
     def _req_rand_app(self, args):
         return self.dev.write_lora()
-    
+
     def _req_save_eui(self, args):
         eui = args[1]
         self.dev.dev_eui = eui
         return self.dev.dev_eui
-    
+
     def _req_save_app(self, args):
         app = args[1]
         self.dev.app_key = app
         return self.dev.app_key
-    
+
     def _request_save(self, args):
         self.dev.save()
-    
+
     def _request_do_cmd_multi(self, args):
         cmd = args[1]
         log(f"in request_do_cmd_multi: {cmd}")
         return self.dev.do_cmd_multi(cmd)
-    
+
     def _request_set_cc(self, args):
         cc = args[1]
         outer = args[2]
         inner = args[3]
         self.dev.set_outer_inner_cc(cc, outer, inner)
-    
+
     def _request_cc_cal(self, args):
         self.dev.current_clamp_calibrate()
-    
+
     def _update_midpoint(self, args):
         mp = args[1]
         cc = args[2]
@@ -169,15 +174,15 @@ class binding_interface_svr_t:
     def _request_del_reg(self, args):
         reg = args[1]
         self.dev.modbus_reg_del(reg)
-    
+
     def _request_change_all_int(self, args):
         val = args[1]
         self.dev.interval_mins = val
-    
+
     def _request_do_cmd(self, args):
         cmd = args[1]
         self.dev.do_cmd(cmd)
-    
+
     def _request_ios(self, args):
         io = args[1]
         self.io = self.dev.ios[io]
@@ -187,15 +192,15 @@ class binding_interface_svr_t:
 
     def _req_disable_io(self, args):
         self.io.disable_io()
-    
+
     def _req_activate_io(self, args):
         self.io.activate_io(args[1], args[2])
-    
+
     def _request_change_int(self, args):
         meas = args[1]
         value = args[2]
         self.dev.change_interval(meas, value)
-    
+
     def _request_sample(self, args):
         meas = args[1]
         value = args[2]
@@ -249,9 +254,11 @@ class binding_interface_svr_t:
             self.dev._set_debug(0)
         self.debug_parse = None
 
+    def _exit_cb(self, args):
+        self._alive = False
 
     def run_forever(self, in_queue, out_queue, timeout=1):
-        while True:
+        while self._alive:
             data_in = None
             if self.debug_parse:
                 debug_lines = self.debug_parse.read_msgs(0.1)
@@ -275,13 +282,27 @@ class binding_interface_svr_t:
                 out_queue.put(answer)
 
 
+def _binding_process_cb(binding_in, binding_out):
+    binding_svr = binding_interface_svr_t()
+    binding_svr.run_forever(binding_in, binding_out)
+    log("Async Subprocess Finished")
+
 
 class binding_interface_client_t:
-    def __init__(self, in_queue, out_queue):
-        self.in_queue = in_queue
-        self.out_queue = out_queue
+    def __init__(self):
+        self.in_queue =  Queue()
+        self.out_queue =  Queue()
         self._answered_cbs = queue.SimpleQueue()
         self.unsolicited_handlers = {}
+        self._binding_process = Process(target=_binding_process_cb, args=(self.in_queue, self.out_queue))
+        self._binding_process.start()
+
+    def finish(self):
+        self._basic_query((REQ_EXIT,))
+        while self.process_message() is None:
+            time.sleep(0.01)
+        log("Collecting aysnc subprocess")
+        self._binding_process.join()
 
     def process_message(self):
         if self.out_queue.empty():
@@ -303,13 +324,14 @@ class binding_interface_client_t:
                 cb(output)
             except Exception as e:
                 log(f"Exception in process message: {e}")
+                traceback.print_exc()
         return True
 
-    def _basic_query(self, cmd, answered_cb):
+    def _basic_query(self, cmd, answered_cb=None):
         log(f"Sending {cmd}")
         self.in_queue.put(cmd)
         self._answered_cbs.put(answered_cb)
-        
+
     def open(self, path, answered_cb):
         self._basic_query((REQ_OPEN, path), answered_cb)
 
@@ -324,94 +346,94 @@ class binding_interface_client_t:
 
     def get_app_key(self, answered_cb):
         self._basic_query((REQ_APP_KEY,), answered_cb)
-    
+
     def get_interval_min(self, answered_cb):
         self._basic_query((REQ_INT_MIN,), answered_cb)
 
     def get_comms_conn(self, answered_cb):
         self._basic_query((REQ_COMMS,), answered_cb)
-    
+
     def get_measurements(self, answered_cb):
         self._basic_query((REQ_MEAS,), answered_cb)
 
     def change_sample(self, meas, value, answered_cb=None):
         self._basic_query((REQ_SAMP_COUNT, meas, value), answered_cb)
-    
+
     def change_interval(self, meas, value, answered_cb=None):
         self._basic_query((REQ_CHANGE_INT, meas, value), answered_cb)
 
     def get_ios(self, num, answered_cb):
         self._basic_query((REQ_IOS, num), answered_cb)
-    
+
     def send_cmd(self, cmd, answered_cb=None):
         self._basic_query((REQ_DO_CMD, cmd), answered_cb)
 
     def set_interval_mins(self, val, answered_cb=None):
         self._basic_query((REQ_CHANGE_ALL_INT, val), answered_cb)
-    
+
     def get_modbus(self, answered_cb):
         self._basic_query((REQ_MODBUS,), answered_cb)
-    
+
     def modbus_reg_del(self, reg, answered_cb=None):
-        self._basic_query((DEL_MB_REG, reg), answered_cb)
+        self._basic_query((REQ_DEL_MB_REG, reg), answered_cb)
 
     def modbus_dev_del(self, dev, answered_cb=None):
-        self._basic_query((DEL_MB_DEV, dev), answered_cb)
-    
+        self._basic_query((REQ_DEL_MB_DEV, dev), answered_cb)
+
     def print_cc_gain(self, answered_cb):
         self._basic_query((REQ_CC_GAIN,), answered_cb)
 
     def get_midpoint(self, cc, answered_cb):
         self._basic_query((REQ_MIDP, cc), answered_cb)
-    
+
     def update_midpoint(self, mp, cc, answered_cb):
-        self._basic_query((UPDATE_MIDP, mp, cc), answered_cb)
+        self._basic_query((REQ_UPDATE_MIDP, mp, cc), answered_cb)
 
     def current_clamp_calibrate(self, answered_cb):
-        self._basic_query((CC_CAL,), answered_cb)
-    
+        self._basic_query((REQ_CC_CAL,), answered_cb)
+
     def set_outer_inner_cc(self, cc, outer, inner, answered_cb):
-        self._basic_query((SET_CC, cc, outer, inner), answered_cb)
-    
+        self._basic_query((REQ_SET_CC, cc, outer, inner), answered_cb)
+
     def do_cmd_multi(self, cmd, answered_cb):
         log(f"in do_cmd_multi interface {cmd}")
-        self._basic_query((DO_CMD_MULTI, cmd), answered_cb)
-    
+        self._basic_query((REQ_DO_CMD_MULTI, cmd), answered_cb)
+
     def save_config(self, answered_cb=None):
-        self._basic_query((SAVE,), None)
-    
-    def set_app_key(self, app, answered_cb):
-        self._basic_query((SET_APP, app), answered_cb)
-    
-    def set_dev_eui(self, eui, answered_cb):
-        self._basic_query((SET_EUI, eui), answered_cb)
-    
+        self._basic_query((REQ_SAVE,), None)
+
+    def set_app_key(self, app, answered_cb=None):
+        self._basic_query((REQ_SET_APP, app), answered_cb)
+
+    def set_dev_eui(self, eui, answered_cb=None):
+        self._basic_query((REQ_SET_EUI, eui), answered_cb)
+
     def gen_rand_eui(self, answered_cb=None):
-        self._basic_query((RAND_EUI,), answered_cb)
+        self._basic_query((REQ_RAND_EUI,), answered_cb)
 
     def gen_rand_app(self, answered_cb=None):
-        self._basic_query((RAND_APP,), answered_cb)
-    
+        self._basic_query((REQ_RAND_APP,), answered_cb)
+
     def add_modbus_dev(self, slave_id, device, is_msb, is_msw, answered_cb=None):
-        self._basic_query((ADD_DEV, slave_id, device, is_msb, is_msw), answered_cb)
-    
+        self._basic_query((REQ_ADD_DEV, slave_id, device, is_msb, is_msw), answered_cb)
+
     def add_modbus_reg(self, slave_id, reg, hex_add, func, data_type, answered_cb=None):
-        self._basic_query((ADD_REG, slave_id, reg, hex_add, func, data_type), answered_cb)
+        self._basic_query((REQ_ADD_REG, slave_id, reg, hex_add, func, data_type), answered_cb)
 
     def debug_begin(self, answered_cb=None):
         self._basic_query((REQ_DEBUG_BEGIN,), answered_cb)
 
     def debug_end(self, answered_cb=None):
         self._basic_query((REQ_DEBUG_END,), answered_cb)
-    
+
     def disable_io(self, answered_cb=None):
         self._basic_query((REQ_DIS_IO,), answered_cb)
 
     def activate_io(self, inst, pullup, answered_cb=None):
         self._basic_query((REQ_ACT_IO, inst, pullup), answered_cb)
-    
+
     def save(self, answered_cb=None):
-        self._basic_query((SAVE,), answered_cb)
+        self._basic_query((REQ_SAVE,), answered_cb)
 
 
 if __name__ == "__main__":
@@ -420,17 +442,7 @@ if __name__ == "__main__":
     import signal
     import os
 
-    def _binding_process_cb(binding_in, binding_out):
-        binding_svr = binding_interface_svr_t()
-        binding_svr.run_forever(binding_in, binding_out)
-
-    binding_out = Queue()
-    binding_in = Queue()
-
-    binding_process = Process(target=_binding_process_cb, args=(binding_in, binding_out))
-    binding_process.start()
-
-    binding_interface = binding_interface_client_t(binding_in, binding_out)
+    binding_interface = binding_interface_client_t()
 
     def _on_get_fw_cb(resp):
         assert not resp[0].startswith("ERROR"), "Failed to get firmware"
@@ -515,8 +527,7 @@ if __name__ == "__main__":
         time.sleep(0.1)
 
     log(f"Waiting for cleanup")
-    binding_process.terminate()
-    binding_process.join()
+    binding_interface.finish()
 
     linux_proc.send_signal(signal.SIGINT)
     linux_proc.wait()
