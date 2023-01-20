@@ -751,6 +751,8 @@ void platform_reset_sys(void)
     pthread_join(_linux_listener_thread_id, NULL);
     fprintf(stdout, "Cleaning up before exit...\n");
     i2c_linux_deinit();
+    w1_linux_deinit();
+    model_linux_close_fakes();
 
     char link_addr[128];
     char proc_ln[64];
