@@ -766,13 +766,6 @@ class config_gui_window_t(Tk):
             e, self._leaf_lab, self.l_img, self._debug_fr
         ))
 
-        debug_btn = Button(frame,
-                           text="Activate/Disable Debug Mode",
-                           command=lambda: self.binding_interface.send_cmd("debug_mode"),
-                           bg=IVORY, fg=BLACK, font=FONT,
-                           activebackground="green", activeforeground=IVORY)
-        debug_btn.grid(column=0, row=1, sticky=S)
-
         self._dbg_terml = Text(frame,
                                bg=BLACK, fg=LIME_GRN,
                                borderwidth=10, relief="sunken")
