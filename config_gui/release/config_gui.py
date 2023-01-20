@@ -225,8 +225,10 @@ class config_gui_window_t(Tk):
 
 
     def _check_binding_comms(self):
-        self.binding_interface.process_message()
-        self.after(10, lambda: self._check_binding_comms())
+        count = 0
+        while self.binding_interface.process_message() != None and count < 10:
+            count+=1
+        self.after(100, lambda: self._check_binding_comms())
 
     def _on_connect(self):
         self.dev_sel = self._dev_dropdown.get()

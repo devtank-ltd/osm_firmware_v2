@@ -21,6 +21,40 @@ import logging
 # * Answer Modbus
 # RSP_MODBUS {son}
 
+REQ_MEAS            = "REQ_MEAS"
+REQ_MODBUS          = "REQ_MODBUS"
+REQ_OPEN            = "REQ_OPEN"
+REQ_SERIAL_NUM      = "REQ_SERIAL_NUM"
+REQ_FIRMWARE        = "REQ_FIRMWARE"
+REQ_DEV_EUI         = "REQ_DEV_EUI"
+REQ_APP_KEY         = "REQ_APP_KEY"
+REQ_INT_MIN         = "REQ_INT_MIN"
+REQ_COMMS           = "REQ_COMMS"
+REQ_SAMP_COUNT      = "REQ_SAMP_COUNT"
+REQ_CHANGE_INT      = "REQ_CHANGE_INT"
+REQ_IOS             = "REQ_IOS"
+REQ_DO_CMD          = "REQ_DO_CMD"
+REQ_CHANGE_ALL_INT  = "REQ_CHANGE_ALL_INT"
+DEL_MB_REG          = "DEL_MB_REG"
+DEL_MB_DEV          = "DEL_MB_DEV"
+REQ_CC_GAIN         = "REQ_CC_GAIN"
+REQ_MIDP            = "REQ_MIDP"
+UPDATE_MIDP         = "UPDATE_MIDP"
+CC_CAL              = "CC_CAL"
+SET_CC              = "SET_CC"
+DO_CMD_MULTI        = "DO_CMD_MULTI"
+SAVE                = "SAVE"
+SET_EUI             = "SET_EUI"
+SET_APP             = "SET_APP"
+RAND_EUI            = "RAND_EUI"
+RAND_APP            = "RAND_APP"
+ADD_DEV             =  "ADD_DEV"
+ADD_REG             = "ADD_REG"
+REQ_DEBUG_BEGIN     = "REQ_DEBUG_BEGIN"
+REQ_DEBUG_END       = "REQ_DEBUG_END"
+REQ_DIS_IO          = "REQ_DIS_IO"
+REQ_ACT_IO          = "REQ_ACT_IO"
+
 logging.basicConfig(
     format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
     level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
@@ -31,39 +65,39 @@ def log(msg):
 
 class binding_interface_svr_t:
     def __init__(self):
-        self._actions = { "REQ_MEAS"            : self._request_meas_cb,
-                          "REQ_MODBUS"          : self._request_modbus_cb,
-                          "REQ_OPEN"            : self._open_con_cb,
-                          "REQ_SERIAL_NUM"      : lambda x : self.dev.serial_num.value,
-                          "REQ_FIRMWARE"        : lambda x : self.dev.version.value,
-                          "REQ_DEV_EUI"         : lambda x : self.dev.dev_eui,
-                          "REQ_APP_KEY"         : lambda x : self.dev.app_key,
-                          "REQ_INT_MIN"         : lambda x : self.dev.interval_mins,
-                          "REQ_COMMS"           : lambda x : self.dev.comms_conn.value,
-                          "REQ_SAMP_COUNT"      : self._request_sample,
-                          "REQ_CHANGE_INT"      : self._request_change_int,
-                          "REQ_IOS"             : self._request_ios,
-                          "REQ_DO_CMD"          : self._request_do_cmd,
-                          "REQ_CHANGE_ALL_INT"  : self._request_change_all_int,
-                          "DEL_MB_REG"          : self._request_del_reg,
-                          "DEL_MB_DEV"          : self._request_del_dev,
-                          "REQ_CC_GAIN"         : lambda x : self.dev.print_cc_gain,
-                          "REQ_MIDP"            : self._request_midpoint,
-                          "UPDATE_MIDP"         : self._update_midpoint,
-                          "CC_CAL"              : self._request_cc_cal,
-                          "SET_CC"              : self._request_set_cc,
-                          "DO_CMD_MULTI"        : self._request_do_cmd_multi,
-                          "SAVE"                : self._request_save,
-                          "SET_EUI"             : self._req_save_eui,
-                          "SET_APP"             : self._req_save_app,
-                          "RAND_EUI"            : self._req_rand_eui,
-                          "RAND_APP"            : self._req_rand_app,
-                          "ADD_DEV"             : self._req_add_dev,
-                          "ADD_REG"             : self._req_add_reg,
-                          "REQ_DEBUG_BEGIN"     : self._req_debug_begin,
-                          "REQ_DEBUG_END"       : self._req_debug_end,
-                          "REQ_DIS_IO"          : self._req_disable_io,
-                          "REQ_ACT_IO"          : self._req_activate_io}
+        self._actions = { REQ_MEAS            : self._request_meas_cb,
+                          REQ_MODBUS          : self._request_modbus_cb,
+                          REQ_OPEN            : self._open_con_cb,
+                          REQ_SERIAL_NUM      : lambda x : self.dev.serial_num.value,
+                          REQ_FIRMWARE        : lambda x : self.dev.version.value,
+                          REQ_DEV_EUI         : lambda x : self.dev.dev_eui,
+                          REQ_APP_KEY         : lambda x : self.dev.app_key,
+                          REQ_INT_MIN         : lambda x : self.dev.interval_mins,
+                          REQ_COMMS           : lambda x : self.dev.comms_conn.value,
+                          REQ_SAMP_COUNT      : self._request_sample,
+                          REQ_CHANGE_INT      : self._request_change_int,
+                          REQ_IOS             : self._request_ios,
+                          REQ_DO_CMD          : self._request_do_cmd,
+                          REQ_CHANGE_ALL_INT  : self._request_change_all_int,
+                          DEL_MB_REG          : self._request_del_reg,
+                          DEL_MB_DEV          : self._request_del_dev,
+                          REQ_CC_GAIN         : lambda x : self.dev.print_cc_gain,
+                          REQ_MIDP            : self._request_midpoint,
+                          UPDATE_MIDP         : self._update_midpoint,
+                          CC_CAL              : self._request_cc_cal,
+                          SET_CC              : self._request_set_cc,
+                          DO_CMD_MULTI        : self._request_do_cmd_multi,
+                          SAVE                : self._request_save,
+                          SET_EUI             : self._req_save_eui,
+                          SET_APP             : self._req_save_app,
+                          RAND_EUI            : self._req_rand_eui,
+                          RAND_APP            : self._req_rand_app,
+                          ADD_DEV             : self._req_add_dev,
+                          ADD_REG             : self._req_add_reg,
+                          REQ_DEBUG_BEGIN     : self._req_debug_begin,
+                          REQ_DEBUG_END       : self._req_debug_end,
+                          REQ_DIS_IO          : self._req_disable_io,
+                          REQ_ACT_IO          : self._req_activate_io}
 
         self.serial_obj = None
         self.dev = None
@@ -250,9 +284,9 @@ class binding_interface_client_t:
     def process_message(self):
         if self.out_queue.empty():
             if self._answered_cbs.empty():
-                return None
+                return None # Nothing to wait for
             else:
-                return False
+                return False # Input send but no response
         output = self.out_queue.get()
         if output[0] == '*':
             # unsolicited message
@@ -274,104 +308,104 @@ class binding_interface_client_t:
         self._answered_cbs.put(answered_cb)
         
     def open(self, path, answered_cb):
-        self._basic_query(("REQ_OPEN", path), answered_cb)
+        self._basic_query((REQ_OPEN, path), answered_cb)
 
     def get_serial_num(self, answered_cb):
-        self._basic_query(("REQ_SERIAL_NUM",), answered_cb)
+        self._basic_query((REQ_SERIAL_NUM,), answered_cb)
 
     def get_fw_version(self, answered_cb):
-        self._basic_query(("REQ_FIRMWARE",), answered_cb)
+        self._basic_query((REQ_FIRMWARE,), answered_cb)
 
     def get_dev_eui(self, answered_cb):
-        self._basic_query(("REQ_DEV_EUI",), answered_cb)
+        self._basic_query((REQ_DEV_EUI,), answered_cb)
 
     def get_app_key(self, answered_cb):
-        self._basic_query(("REQ_APP_KEY",), answered_cb)
+        self._basic_query((REQ_APP_KEY,), answered_cb)
     
     def get_interval_min(self, answered_cb):
-        self._basic_query(("REQ_INT_MIN",), answered_cb)
+        self._basic_query((REQ_INT_MIN,), answered_cb)
 
     def get_comms_conn(self, answered_cb):
-        self._basic_query(("REQ_COMMS",), answered_cb)
+        self._basic_query((REQ_COMMS,), answered_cb)
     
     def get_measurements(self, answered_cb):
-        self._basic_query(("REQ_MEAS",), answered_cb)
+        self._basic_query((REQ_MEAS,), answered_cb)
 
     def change_sample(self, meas, value, answered_cb=None):
-        self._basic_query(("REQ_SAMP_COUNT", meas, value), answered_cb)
+        self._basic_query((REQ_SAMP_COUNT, meas, value), answered_cb)
     
     def change_interval(self, meas, value, answered_cb=None):
-        self._basic_query(("REQ_CHANGE_INT", meas, value), answered_cb)
+        self._basic_query((REQ_CHANGE_INT, meas, value), answered_cb)
 
     def get_ios(self, num, answered_cb):
-        self._basic_query(("REQ_IOS", num), answered_cb)
+        self._basic_query((REQ_IOS, num), answered_cb)
     
     def send_cmd(self, cmd, answered_cb=None):
-        self._basic_query(("REQ_DO_CMD", cmd), answered_cb)
+        self._basic_query((REQ_DO_CMD, cmd), answered_cb)
 
     def set_interval_mins(self, val, answered_cb=None):
-        self._basic_query(("REQ_CHANGE_ALL_INT", val), answered_cb)
+        self._basic_query((REQ_CHANGE_ALL_INT, val), answered_cb)
     
     def get_modbus(self, answered_cb):
-        self._basic_query(("REQ_MODBUS",), answered_cb)
+        self._basic_query((REQ_MODBUS,), answered_cb)
     
     def modbus_reg_del(self, reg, answered_cb=None):
-        self._basic_query(("DEL_MB_REG", reg), answered_cb)
+        self._basic_query((DEL_MB_REG, reg), answered_cb)
 
     def modbus_dev_del(self, dev, answered_cb=None):
-        self._basic_query(("DEL_MB_DEV", dev), answered_cb)
+        self._basic_query((DEL_MB_DEV, dev), answered_cb)
     
     def print_cc_gain(self, answered_cb):
-        self._basic_query(("REQ_CC_GAIN",), answered_cb)
+        self._basic_query((REQ_CC_GAIN,), answered_cb)
 
     def get_midpoint(self, cc, answered_cb):
-        self._basic_query(("REQ_MIDP", cc), answered_cb)
+        self._basic_query((REQ_MIDP, cc), answered_cb)
     
     def update_midpoint(self, mp, cc, answered_cb):
-        self._basic_query(("UPDATE_MIDP", mp, cc), answered_cb)
+        self._basic_query((UPDATE_MIDP, mp, cc), answered_cb)
 
     def current_clamp_calibrate(self, answered_cb):
-        self._basic_query(("CC_CAL",), answered_cb)
+        self._basic_query((CC_CAL,), answered_cb)
     
     def set_outer_inner_cc(self, cc, outer, inner, answered_cb):
-        self._basic_query(("SET_CC", cc, outer, inner), answered_cb)
+        self._basic_query((SET_CC, cc, outer, inner), answered_cb)
     
     def do_cmd_multi(self, cmd, answered_cb):
         log(f"in do_cmd_multi interface {cmd}")
-        self._basic_query(("DO_CMD_MULTI", cmd), answered_cb)
+        self._basic_query((DO_CMD_MULTI, cmd), answered_cb)
     
     def save_config(self, answered_cb=None):
-        self._basic_query(("SAVE",), None)
+        self._basic_query((SAVE,), None)
     
     def set_app_key(self, app, answered_cb=None):
-        self._basic_query(("SET_APP", app), answered_cb)
+        self._basic_query((SET_APP, app), answered_cb)
     
     def set_eui_key(self, eui, answered_cb=None):
-        self._basic_query(("SET_EUI", eui), answered_cb)
+        self._basic_query((SET_EUI, eui), answered_cb)
     
     def gen_rand_eui(self, answered_cb=None):
-        self._basic_query(("RAND_EUI",), answered_cb)
+        self._basic_query((RAND_EUI,), answered_cb)
 
     def gen_rand_app(self, answered_cb=None):
-        self._basic_query(("RAND_APP",), answered_cb)
+        self._basic_query((RAND_APP,), answered_cb)
     
     def add_modbus_dev(self, slave_id, device, is_msb, is_msw, answered_cb=None):
-        self._basic_query(("ADD_DEV", slave_id, device, is_msb, is_msw), answered_cb)
+        self._basic_query((ADD_DEV, slave_id, device, is_msb, is_msw), answered_cb)
     
     def add_modbus_reg(self, slave_id, reg, hex_add, func, data_type, answered_cb=None):
-        self._basic_query(("ADD_REG", slave_id, reg, hex_add, func, data_type), answered_cb)
+        self._basic_query((ADD_REG, slave_id, reg, hex_add, func, data_type), answered_cb)
 
     def debug_begin(self, answered_cb=None):
-        self._basic_query(("REQ_DEBUG_BEGIN",), answered_cb)
+        self._basic_query((REQ_DEBUG_BEGIN,), answered_cb)
 
     def debug_end(self, answered_cb=None):
-        self._basic_query(("REQ_DEBUG_END",), answered_cb)
+        self._basic_query((REQ_DEBUG_END,), answered_cb)
     
     def disable_io(self, answered_cb=None):
-        self._basic_query(("REQ_DIS_IO",), answered_cb)
+        self._basic_query((REQ_DIS_IO,), answered_cb)
 
     def activate_io(self, inst, pullup, answered_cb=None):
-        self._basic_query(("REQ_ACT_IO", inst, pullup), answered_cb)
+        self._basic_query((REQ_ACT_IO, inst, pullup), answered_cb)
 
 
 if __name__ == "__main__":
