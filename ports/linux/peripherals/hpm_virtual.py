@@ -72,7 +72,7 @@ def main():
     try:
         hpm.run_forever()
     except KeyboardInterrupt:
-        print("Caught keyboard interrupt.")
+        print("hpm_dev_t : Caught keyboard interrupt.")
         return -1
 
     return 0

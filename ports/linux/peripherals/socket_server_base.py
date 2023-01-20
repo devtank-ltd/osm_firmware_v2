@@ -107,6 +107,6 @@ class socket_server_t(object):
                     callback = key.data
                     callback(key.fileobj, mask)
         except KeyboardInterrupt:
-            print("Caught keyboard interrupt, exiting")
+            print(self.__class__.__name__ + " : Caught keyboard interrupt, exiting")
         finally:
             self._selector.close()

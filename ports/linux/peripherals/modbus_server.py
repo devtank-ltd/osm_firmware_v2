@@ -99,7 +99,10 @@ def main(args):
     else:
         dev = "/tmp/osm/UART_EXT_slave"
     modbus_server = modbus_server_t(dev)
-    modbus_server.run_forever()
+    try:
+        modbus_server.run_forever()
+    except KeyboardInterrupt:
+            print("modbus_server_t : Caught keyboard interrupt, exiting")
     return 0
 
 
