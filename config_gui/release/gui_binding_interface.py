@@ -129,10 +129,12 @@ class binding_interface_svr_t:
     def _req_save_eui(self, args):
         eui = args[1]
         self.dev.dev_eui = eui
+        return self.dev.dev_eui
     
     def _req_save_app(self, args):
         app = args[1]
         self.dev.app_key = app
+        return self.dev.app_key
     
     def _request_save(self, args):
         self.dev.save()
@@ -296,10 +298,11 @@ class binding_interface_client_t:
             return True
         log(f"Answered {output}")
         cb = self._answered_cbs.get()
-        try:
-            cb(output)
-        except Exception as e:
-            log(f"Exception in process message: {e}")
+        if cb:
+            try:
+                cb(output)
+            except Exception as e:
+                log(f"Exception in process message: {e}")
         return True
 
     def _basic_query(self, cmd, answered_cb):
@@ -377,10 +380,10 @@ class binding_interface_client_t:
     def save_config(self, answered_cb=None):
         self._basic_query((SAVE,), None)
     
-    def set_app_key(self, app, answered_cb=None):
+    def set_app_key(self, app, answered_cb):
         self._basic_query((SET_APP, app), answered_cb)
     
-    def set_eui_key(self, eui, answered_cb=None):
+    def set_dev_eui(self, eui, answered_cb):
         self._basic_query((SET_EUI, eui), answered_cb)
     
     def gen_rand_eui(self, answered_cb=None):
@@ -406,6 +409,9 @@ class binding_interface_client_t:
 
     def activate_io(self, inst, pullup, answered_cb=None):
         self._basic_query((REQ_ACT_IO, inst, pullup), answered_cb)
+    
+    def save(self, answered_cb=None):
+        self._basic_query((SAVE,), answered_cb)
 
 
 if __name__ == "__main__":

@@ -384,9 +384,14 @@ class config_gui_window_t(Tk):
         self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
 
     def _on_update_cc_gain_cb(self, resp):
-        self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
+        self.binding_interface.print_cc_gain(self._on_open_cc_cb)
 
     def _on_get_cc_gain_cb(self, resp):
+        self.cc_gain = resp[1]
+        # self._fill_cc_term()
+        return self.cc_gain
+    
+    def _on_open_cc_cb(self, resp):
         self.cc_gain = resp[1]
         self._fill_cc_term()
         return self.cc_gain
@@ -400,7 +405,11 @@ class config_gui_window_t(Tk):
     def _on_get_modbus_done_cb(self, resp):
         self._modbus = resp[1]
         self._load_modbus()
+    
+    def _on_remove_mb_reg(self, resp):
+        self._modbus = resp[1]
         list_of_devs = []
+        self._load_modbus()
         for i in range(len(self.mb_entries)):
             dev_entry = self.mb_entries[i][0]
             dev = dev_entry.get()
@@ -411,7 +420,6 @@ class config_gui_window_t(Tk):
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
         self._load_headers(self._main_fr, "rif", True)
-        self._load_debug_meas(self._debug_fr)
         return self._sens_meas
 
     def _on_get_comms_conn_done_cb(self, resp):
@@ -440,10 +448,12 @@ class config_gui_window_t(Tk):
 
     def _on_get_dev_eui_done_cb(self, resp):
         self.dev_eui = resp[1]
+        self._eui_entry.delete(0, END)
         self._eui_entry.insert(0, self.dev_eui)
 
     def _on_get_app_key_done_cb(self, resp):
         self.app_key = resp[1]
+        self._app_entry.delete(0, END)
         self._app_entry.insert(0, self.app_key)
 
     def _on_get_interval_min_done_cb(self, resp):
@@ -1087,7 +1097,7 @@ class config_gui_window_t(Tk):
                             mb_reg_to_change = self.mb_entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
                             self.binding_interface.modbus_reg_del(mb_reg_to_change)
-            self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
+            self.binding_interface.get_modbus(self._on_remove_mb_reg)
             self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
 
     def _set_meas_to_zero(self, check):
@@ -1307,7 +1317,7 @@ class config_gui_window_t(Tk):
         self._app_entry.grid(column=6, row=8, sticky="NSEW")
 
         add_app_btn = Button(frame, image=icon,
-                             command=self._insert_lora,
+                             command=self._insert_appkey,
                              bg=IVORY, fg=BLACK, font=FONT,
                              activebackground="green", activeforeground=IVORY)
         add_app_btn.grid(column=7, row=8, sticky="NSEW")
@@ -1318,7 +1328,7 @@ class config_gui_window_t(Tk):
         send_btn.grid(column=7, row=9, sticky="NSEW")
 
         save_btn = Button(frame, text="Save",
-                          command=lambda: self.binding_interface.save(), bg=IVORY, fg=BLACK, font=FONT,
+                          command=self.binding_interface.save, bg=IVORY, fg=BLACK, font=FONT,
                           activebackground="green", activeforeground=IVORY)
         save_btn.grid(column=7, row=10, sticky="NSEW")
 
@@ -1339,22 +1349,26 @@ class config_gui_window_t(Tk):
         dev_eui = self._eui_entry.get()
         app_key = self._app_entry.get()
         if len(dev_eui) == 16 and len(app_key) == 32:
-            self.binding_interface.set_dev_eui(dev_eui)
-            self.binding_interface.set_app_key(app_key)
+            self.binding_interface.set_dev_eui(dev_eui, self._on_get_dev_eui_done_cb)
+            self.binding_interface.set_app_key(app_key, self._on_get_app_key_done_cb)
             self._lora_confirm.configure(text="Configuration sent.")
-            self._on_get_app_key_done_cb
-            self._on_get_dev_eui_done_cb
         else:
             self._lora_confirm.configure(
                 text="Missing fields or bad character limit.")
 
-    def _insert_lora(self):
-        app_key = self.binding_interface.gen_rand_app()
+    def _insert_appkey(self):
+        self.binding_interface.gen_rand_app(self._on_update_app_key)
+    
+    def _on_update_app_key(self, resp):
+        app_key = resp[1]
         self._app_entry.delete(0, END)
         self._app_entry.insert(0, app_key)
 
     def _insert_eui(self):
-        dev_eui = self.binding_interface.gen_rand_eui()
+        self.binding_interface.gen_rand_eui(self._on_update_dev_eui)
+    
+    def _on_update_dev_eui(self, resp):
+        dev_eui = resp[1]
         self._eui_entry.delete(0, END)
         self._eui_entry.insert(0, dev_eui)
 
