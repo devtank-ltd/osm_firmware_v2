@@ -29,7 +29,10 @@ void count_cb(char * args)
 void version_cb(char * args)
 {
     char model_name[MODEL_NAME_LEN+1];
-    strncpy(model_name, STR(FW_NAME), MODEL_NAME_LEN);
+    if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
+        memcpy(model_name, MODEL_NAME, MODEL_NAME_LEN);
+    else
+        snprintf(model_name, MODEL_NAME_LEN, MODEL_NAME);
     unsigned len = strnlen(model_name, MODEL_NAME_LEN);
     model_name[len] = 0;
 
