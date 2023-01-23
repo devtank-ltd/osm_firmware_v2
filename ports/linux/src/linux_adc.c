@@ -11,6 +11,7 @@
 #include "log.h"
 #include "adcs.h"
 #include "linux.h"
+#include "persist_config_header_model.h"
 
 
 #define ADCS_CONFIG_FILE                        LINUX_FILE_LOC"adcs_config.json"

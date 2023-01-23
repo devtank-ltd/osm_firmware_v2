@@ -11,6 +11,7 @@
 #include "platform.h"
 #include "config.h"
 #include "log.h"
+#include "pinmap.h"
 
 
 bool msg_is(const char* ref, char* message)
@@ -117,7 +118,7 @@ bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userda
 {
     uint32_t start_time = get_since_boot_ms();
     uint32_t watch_dog_kick = 9000;
-    
+
     if (timeout > watch_dog_kick)
         log_debug(DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 

@@ -4,7 +4,6 @@
 
 #include "measurements.h"
 #include "config.h"
-#include "pinmap.h"
 #include "cc.h"
 
 #define __MODEL_CONFIG__
@@ -44,6 +43,10 @@
 
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
+
+#define IOS_COUNT           10
+
+#define ADC_CC_COUNT        3
 
 
 typedef struct

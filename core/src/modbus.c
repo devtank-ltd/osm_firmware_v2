@@ -14,6 +14,7 @@
 #include "cmd.h"
 #include "persist_config.h"
 #include "platform.h"
+#include "pinmap.h"
 
 #define MODBUS_RESP_TIMEOUT_MS 2000
 #define MODBUS_SENT_TIMEOUT_MS 2000

@@ -28,7 +28,6 @@
 #define ENV01C_ADC_DMA_CHANNELS_COUNT  1
 
 #define ENV01C_ADC_COUNT       7
-#define ADC_CC_COUNT    3
 
 #define CORE_3V3_EN_PORT_N_PINS     {GPIOB, GPIO3}
 

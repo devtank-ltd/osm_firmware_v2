@@ -13,6 +13,7 @@
 #include "adcs.h"
 #include "persist_config.h"
 #include "uart_rings.h"
+#include "pinmap.h"
 
 
 #define CC_DEFAULT_COLLECTION_TIME          1000

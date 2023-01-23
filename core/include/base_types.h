@@ -5,7 +5,6 @@
 
 #include "platform_base_types.h"
 #include "config.h"
-#include "pinmap.h"
 
 #ifdef _PICOLIBC__
 _Static_assert(_PICOLIBC__ >= 1 && _PICOLIBC_MINOR__>= 7, "Picolibc too old.");
@@ -141,7 +140,7 @@ typedef enum
     MB_REG_INVALID = 0,
     MB_REG_WAITING = 1,
     MB_REG_READY   = 2
-} modbus_reg_state_t; 
+} modbus_reg_state_t;
 
 
 typedef struct

@@ -1,11 +1,13 @@
 #include "json_x_img.h"
 
+#include "persist_config.h"
 #include "pinmap.h"
 #include "modbus_mem.h"
 #include "cc.h"
 #include "ftma.h"
 
 
+#define MAX_IO_COUNT                        20
 #define WORD_BYTE_ORDER_TXT_SIZE            3
 
 
@@ -330,7 +332,7 @@ bool read_measurements_json(struct json_object * root)
 }
 
 
-bool read_ios_json(struct json_object * root, uint16_t* ios_state)
+bool read_ios_json(struct json_object * root, uint16_t* ios_state, uint8_t io_count)
 {
     if (!root || !ios_state)
     {
@@ -338,8 +340,8 @@ bool read_ios_json(struct json_object * root, uint16_t* ios_state)
         return false;
     }
     {
-        uint16_t ios_init_state[IOS_COUNT] = IOS_STATE;
-        memcpy(ios_state, ios_init_state, sizeof(ios_init_state));
+        uint16_t ios_init_state[MAX_IO_COUNT] = IOS_STATE;
+        memcpy(ios_state, ios_init_state, sizeof(ios_state[0]) * io_count);
     }
 
     struct json_object * ios_node = json_object_object_get(root, "ios");
@@ -348,7 +350,7 @@ bool read_ios_json(struct json_object * root, uint16_t* ios_state)
         json_object_object_foreach(ios_node, io_name, io_node)
         {
             unsigned index = strtoul(io_name, NULL, 10);
-            if (index >= IOS_COUNT)
+            if (index >= io_count)
             {
                 log_error("Too many IOs");
                 return false;
@@ -629,12 +631,12 @@ void write_measurements_json(struct json_object * root)
 }
 
 
-void write_ios_json(struct json_object * root, uint16_t* ios_state)
+void write_ios_json(struct json_object * root, uint16_t* ios_state, uint8_t io_count)
 {
     struct json_object * ios_node = json_object_new_object();
     json_object_object_add(root, "ios", ios_node);
 
-    for(unsigned n = 0; n < IOS_COUNT; n++)
+    for(unsigned n = 0; n < io_count; n++)
     {
         uint16_t state = ios_state[n];
         struct json_object * io_node = json_object_new_object();

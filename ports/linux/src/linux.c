@@ -29,6 +29,7 @@
 #include "log.h"
 #include "measurements.h"
 #include "platform_model.h"
+#include "pinmap.h"
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_PTY_NAME_SIZE     16

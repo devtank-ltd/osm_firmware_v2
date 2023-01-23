@@ -45,6 +45,10 @@
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
 
+#define IOS_COUNT           7
+
+#define ADC_CC_COUNT        3
+
 
 typedef struct
 {

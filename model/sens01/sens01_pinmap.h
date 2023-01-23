@@ -48,7 +48,6 @@
 #define SENS01_ADC_DMA_CHANNELS_COUNT  1
 
 #define SENS01_ADC_COUNT       7
-#define ADC_FTMA_COUNT  4
 
 
 #define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \

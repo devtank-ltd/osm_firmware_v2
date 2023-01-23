@@ -13,6 +13,7 @@
 #include "adcs.h"
 #include "platform.h"
 #include "linux.h"
+#include "pinmap.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32

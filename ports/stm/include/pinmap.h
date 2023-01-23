@@ -135,5 +135,3 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
     RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf)),\
     RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),}
-
-#define IOS_COUNT 10

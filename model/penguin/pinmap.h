@@ -8,8 +8,6 @@
 
 #define UART_CHANNELS_COUNT 4
 
-#define IOS_COUNT 10
-#define ADC_CC_COUNT    3
 #define ADC_COUNT 10
 
 #define ADC_INDEX_BAT_MON         0
@@ -37,8 +35,6 @@
                             ADC1_CHANNEL_FTMA_2,  \
                             ADC1_CHANNEL_FTMA_3,  \
                             ADC1_CHANNEL_FTMA_4   }
-
-#define ADC_FTMA_COUNT  4
 
 
 #define UART_BUFFERS_INIT                \
