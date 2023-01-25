@@ -1072,3 +1072,9 @@ struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
     return tail;
 }
+
+
+void rak4270_power_down(void)
+{
+    _rak4270_chip_off();
+}
