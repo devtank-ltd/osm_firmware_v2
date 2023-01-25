@@ -25,3 +25,5 @@ extern bool     comms_get_id(char* str, uint8_t len);
 extern void     on_comms_sent_ack(bool acked) __attribute__((weak));
 
 extern struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail);
+
+extern void     comms_power_down(void);

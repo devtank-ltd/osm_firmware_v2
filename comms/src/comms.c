@@ -246,3 +246,19 @@ struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
     }
     return tail;
 }
+
+
+void comms_power_down(void)
+{
+    switch(version_get_arch())
+    {
+        case VERSION_ARCH_REV_B:
+            rak4270_power_down();
+            break;
+        case VERSION_ARCH_REV_C:
+            rak3172_power_down();
+            break;
+        default:
+            break;
+    }
+}

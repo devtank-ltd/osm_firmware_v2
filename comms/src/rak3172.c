@@ -15,6 +15,7 @@
 #include "base_types.h"
 #include "uart_rings.h"
 #include "pinmap.h"
+#include "sleep.h"
 
 
 #define RAK3172_TIMEOUT_MS              15000
@@ -41,11 +42,12 @@ _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
 #define RAK3172_MSG_USEND_HEADER_FMT    "AT+USEND=%"PRIu8":%"PRIu8":%"PRIu8":"
 #define RAK3172_MSG_USEND_HEADER_LEN    (9 + (1 * 3) + (3 * 3) + 1)          /* strlen("AT+USEND=:") + (strlen(":") * 3) + (strlen("255") * 3) + 1 */
 #define RAK3172_MSG_ACK                 "+EVT:SEND CONFIRMED OK"
+#define RAK3172_MSG_NACK                "+EVT:SEND CONFIRMED FAILED"
 
 
 typedef enum
 {
-    RAK3172_STATE_OFF,
+    RAK3172_STATE_OFF = 0,
     RAK3172_STATE_INIT_WAIT_OK,
     RAK3172_STATE_INIT_WAIT_REPLAY,
     RAK3172_STATE_JOIN_WAIT_OK,
@@ -68,36 +70,41 @@ static bool     _rak3172_reset_enabled      = false;
 struct
 {
     uint8_t             init_count;
-    uint8_t             reset_count;
+    uint32_t            reset_count;
     rak3172_state_t     state;
     uint32_t            cmd_last_sent;
-    uint32_t            wakeup_time;
+    uint32_t            sleep_from_time;
     port_n_pins_t       reset_pin;
     port_n_pins_t       boot_pin;
     bool                config_is_valid;
     char                last_sent_msg[RAK3172_MAX_CMD_LEN+1];
-} _rak3172_ctx = {.init_count       = 0,
-                  .reset_count      = 0,
-                  .state            = RAK3172_STATE_OFF,
-                  .cmd_last_sent    = 0,
-                  .wakeup_time      = 0,
-                  .reset_pin        = REV_C_COMMS_RESET_PORT_N_PINS,
-                  .boot_pin         = REV_C_COMMS_BOOT_PORT_N_PINS,
-                  .config_is_valid  = false,
-                  .last_sent_msg    = {0}};
+} _rak3172_ctx =
+{
+    .init_count       = 0,
+    .reset_count      = 0,
+    .state            = RAK3172_STATE_OFF,
+    .cmd_last_sent    = 0,
+    .sleep_from_time  = 0,
+    .reset_pin        = REV_C_COMMS_RESET_PORT_N_PINS,
+    .boot_pin         = REV_C_COMMS_BOOT_PORT_N_PINS,
+    .config_is_valid  = false,
+    .last_sent_msg    = {0},
+};
 
 
-char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] = {
-        "ATE",                  /* Enable line replay */
-        "AT+CFM=1",             /* Set confirmation   */
-        "AT+NWM=1",             /* Set LoRaWAN mode   */
-        "AT+NJM=1",             /* Set OTAA mode      */
-        "AT+CLASS=C",           /* Set Class A mode   */
-        "AT+BAND=4",            /* Set to EU868       */
-        "AT+DR=4",              /* Set to DR 4        */
-        "DEVEUI goes here",
-        "APPEUI goes here",
-        "APPKEY goes here"};
+char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
+{
+    "ATE",                  /* Enable line replay */
+    "AT+CFM=1",             /* Set confirmation   */
+    "AT+NWM=1",             /* Set LoRaWAN mode   */
+    "AT+NJM=1",             /* Set OTAA mode      */
+    "AT+CLASS=C",           /* Set Class A mode   */
+    "AT+BAND=4",            /* Set to EU868       */
+    "AT+DR=4",              /* Set to DR 4        */
+    "DEVEUI goes here",
+    "APPEUI goes here",
+    "APPKEY goes here"
+};
 
 
 static uint8_t _rak3172_get_port(void)
@@ -237,8 +244,7 @@ static void _rak3172_process_state_join_wait_join(char* msg)
     else if (msg_is(RAK3172_MSG_JOIN_FAILED, msg))
     {
         comms_debug("READ JOIN FAILED");
-        _rak3172_ctx.state = RAK3172_STATE_JOIN_WAIT_REPLAY;
-        _rak3172_send_join();
+        rak3172_reset();
     }
 }
 
@@ -274,8 +280,16 @@ static void _rak3172_process_state_send_ack(char* msg)
     if (msg_is(RAK3172_MSG_ACK, msg))
     {
         comms_debug("READ SEND ACK");
+        _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
         on_comms_sent_ack(true);
+        return;
+    }
+    if (msg_is(RAK3172_MSG_NACK, msg))
+    {
+        comms_debug("READ NO SEND ACK");
+        rak3172_reset();
+        return;
     }
 }
 
@@ -323,9 +337,24 @@ static bool _rak3172_load_config(void)
     if (!config)
         return false;
 
-    snprintf(_rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-3], RAK3172_INIT_MSG_LEN, "AT+DEVEUI=%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
-    snprintf(_rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-2], RAK3172_INIT_MSG_LEN, "AT+APPEUI=%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
-    snprintf(_rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-1], RAK3172_INIT_MSG_LEN, "AT+APPKEY=%."STR(LW_APP_KEY_LEN)"s", config->app_key);
+    snprintf(
+        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-3],
+        RAK3172_INIT_MSG_LEN,
+        "AT+DEVEUI=%."STR(LW_DEV_EUI_LEN)"s",
+        config->dev_eui);
+
+    snprintf(
+        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-2],
+        RAK3172_INIT_MSG_LEN,
+        "AT+APPEUI=%."STR(LW_DEV_EUI_LEN)"s",
+        config->dev_eui);
+
+    snprintf(
+        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-1],
+        RAK3172_INIT_MSG_LEN,
+        "AT+APPKEY=%."STR(LW_APP_KEY_LEN)"s",
+        config->app_key);
+
     return true;
 }
 
@@ -363,15 +392,11 @@ void rak3172_reset(void)
     if (_rak3172_ctx.state == RAK3172_STATE_RESETTING)
         return;
     _rak3172_ctx.state = RAK3172_STATE_RESETTING;
-    uint32_t wakeup_time = get_since_boot_ms();
-    if (_rak3172_ctx.reset_count <= RAK3172_SHORT_RESET_COUNT)
-    {
-        wakeup_time += RAK3172_SHORT_RESET_TIME_MS;
+
+    if (_rak3172_ctx.reset_count < RAK3172_SHORT_RESET_COUNT)
         _rak3172_ctx.reset_count++;
-    }
-    else
-        wakeup_time += RAK3172_LONG_RESET_TIME_MS;
-    _rak3172_ctx.wakeup_time = wakeup_time;
+
+    _rak3172_ctx.sleep_from_time = get_since_boot_ms();
     _rak3172_chip_off();
 }
 
@@ -422,7 +447,8 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
     {
-        comms_debug("Incorrect state to send : %u", (unsigned)_rak3172_ctx.state);
+        comms_debug("Incorrect state to send : %u",
+            (unsigned)_rak3172_ctx.state);
         return;
     }
 
@@ -430,7 +456,13 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
 
     bool confirmed_payload = true;
 
-    snprintf(send_header, RAK3172_MAX_CMD_LEN, RAK3172_MSG_USEND_HEADER_FMT, _rak3172_get_port(), (uint8_t)confirmed_payload, RAK3172_NB_TRIALS);
+    snprintf(
+        send_header,
+        RAK3172_MAX_CMD_LEN,
+        RAK3172_MSG_USEND_HEADER_FMT,
+        _rak3172_get_port(),
+        (uint8_t)confirmed_payload,
+        RAK3172_NB_TRIALS);
 
     if (!_rak3172_write(send_header))
     {
@@ -470,9 +502,15 @@ void rak3172_loop_iteration(void)
         case RAK3172_STATE_IDLE:
             break;
         case RAK3172_STATE_RESETTING:
-            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.wakeup_time))
+        {
+            uint32_t sleep_delay = _rak3172_ctx.reset_count >= RAK3172_SHORT_RESET_COUNT ? RAK3172_LONG_RESET_TIME_MS : RAK3172_SHORT_RESET_TIME_MS;
+            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.sleep_from_time) > sleep_delay)
+            {
+                _rak3172_ctx.state = RAK3172_STATE_OFF;
                 _rak3172_chip_on();
+            }
             break;
+        }
         case RAK3172_STATE_SEND_WAIT_ACK:
             if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_ACK_TIMEOUT_MS)
             {
@@ -530,18 +568,97 @@ static void _rak3172_reset_cb(char* args)
 }
 
 
+static const char* _rak3172_state_to_str(rak3172_state_t state)
+{
+    static const char state_strs[11][32] =
+    {
+        {"RAK3172_STATE_OFF"},
+        {"RAK3172_STATE_INIT_WAIT_OK"},
+        {"RAK3172_STATE_INIT_WAIT_REPLAY"},
+        {"RAK3172_STATE_JOIN_WAIT_OK"},
+        {"RAK3172_STATE_JOIN_WAIT_REPLAY"},
+        {"RAK3172_STATE_JOIN_WAIT_JOIN"},
+        {"RAK3172_STATE_RESETTING"},
+        {"RAK3172_STATE_IDLE"},
+        {"RAK3172_STATE_SEND_WAIT_REPLAY"},
+        {"RAK3172_STATE_SEND_WAIT_OK"},
+        {"RAK3172_STATE_SEND_WAIT_ACK"},
+    };
+    static const char none[] = "";
+    if (state >= ARRAY_SIZE(state_strs))
+        return none;
+    return state_strs[state];
+}
+
+
+static const char* _rak3172_init_count_to_str(uint8_t init_count)
+{
+    static const char none[] = "";
+    if (init_count >= ARRAY_SIZE(_rak3172_init_msgs))
+        return none;
+    return _rak3172_init_msgs[init_count];
+}
+
+
 static void _rak3172_state_cb(char* args)
 {
-    log_out("STATE: %d", _rak3172_ctx.state);
-    log_out("COUNT: %"PRIu8, _rak3172_ctx.init_count);
+    log_out("STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
+    switch (_rak3172_ctx.state)
+    {
+        case RAK3172_STATE_INIT_WAIT_OK:
+            /* Fall through */
+        case RAK3172_STATE_INIT_WAIT_REPLAY:
+            log_out("INIT COUNT         : %"PRIu8,  _rak3172_ctx.init_count);
+            log_out("INIT MESSAGE       : %s",      _rak3172_init_count_to_str(_rak3172_ctx.init_count));
+            break;
+        case RAK3172_STATE_RESETTING:
+        {
+            uint32_t now         = get_since_boot_ms();
+            uint32_t sleep_delay = _rak3172_ctx.reset_count >= RAK3172_SHORT_RESET_COUNT ? RAK3172_LONG_RESET_TIME_MS : RAK3172_SHORT_RESET_TIME_MS;
+            log_out("SLEEP DELAY        : %"PRIu32" ms", sleep_delay);
+            log_out("SLEEP FROM         : %"PRIu32" ms", _rak3172_ctx.sleep_from_time);
+            uint32_t sleep_until = _rak3172_ctx.sleep_from_time + sleep_delay;
+            log_out("SLEEP UNTIL        : %"PRIu32" ms", sleep_until);
+            if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
+            {
+                log_out("TIME UNTIL WAKEUP  : IMMINENT");
+                break;
+            }
+            uint32_t wakeup_time = since_boot_delta(sleep_until, now);
+            log_out("TIME UNTIL WAKEUP  : %"PRIu32" ms", wakeup_time);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+
+static void _rak3172_restart_cb(char* args)
+{
+    _rak3172_ctx.state          = RAK3172_STATE_OFF;
+    _rak3172_ctx.reset_count    = 0;
+    _rak3172_chip_off();
+    _rak3172_chip_on();
 }
 
 
 struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
-                                       { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
-                                       { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
-                                       { "comms_state",  "Print comms state",           _rak3172_state_cb             , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
+        { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
+        { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
+        { "comms_state",  "Print comms state",           _rak3172_state_cb             , false , NULL },
+        { "comms_restart","Comms restart",               _rak3172_restart_cb           , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}
+
+
+void rak3172_power_down(void)
+{
+    _rak3172_ctx.state = RAK3172_STATE_OFF;
+    _rak3172_chip_off();
 }
