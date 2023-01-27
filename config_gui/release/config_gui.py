@@ -548,6 +548,8 @@ class config_gui_window_t(Tk):
                 self._start_fw_cmd(selected, frame)
 
     def _write_terminal_cmd(self, cmd, terminal):
+        if cmd is None:
+            cmd = ""
         terminal.configure(state='normal')
         terminal.insert(INSERT, cmd + "\n")
         terminal.configure(state='disabled')
