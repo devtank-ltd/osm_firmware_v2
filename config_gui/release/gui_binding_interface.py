@@ -240,6 +240,7 @@ class binding_interface_svr_t:
             self.debug_parse = None
             return True
         except Exception as e:
+            traceback.print_exc()
             log(f"Openned Failed {e}")
             # Todo, handle expected or error out
             return False
