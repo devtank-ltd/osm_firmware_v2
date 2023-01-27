@@ -1266,8 +1266,9 @@ class config_gui_window_t(Tk):
     def _enter_cmd(self, cmd):
         self._terminal.configure(state='normal')
         self._terminal.delete('1.0', END)
-        cmd = cmd.get()
-        cmd = self.binding_interface.do_cmd_multi(cmd, self._on_get_cmd_multi_done_cb)
+        cmd_text = cmd.get()
+        self.binding_interface.do_cmd_multi(cmd_text, self._on_get_cmd_multi_done_cb)
+        cmd.delete(0, END)
 
 
     def _pop_lora_entry(self):
