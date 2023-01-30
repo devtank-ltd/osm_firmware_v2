@@ -102,6 +102,10 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define W1_PULSE_1_IO               4
 #define W1_PULSE_2_IO               5
 
+#define HTU21D_I2C                  1
+#define HTU21D_I2C_INDEX            0
+#define VEML7700_I2C                1
+#define VEML7700_I2C_INDEX          0
 
 #define DS18B20_INSTANCES   {                                          \
     { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
