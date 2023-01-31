@@ -5,6 +5,7 @@
 #include "measurements.h"
 #include "config.h"
 #include "cc.h"
+#include "rak4270.h"
 
 #define __MODEL_CONFIG__
 
@@ -47,6 +48,8 @@
 #define IOS_COUNT           10
 
 #define ADC_CC_COUNT        3
+
+#define comms_name              rak4270
 
 
 typedef struct

@@ -11,7 +11,6 @@
 #include "persist_config.h"
 #include "common.h"
 #include "log.h"
-#include "version.h"
 #include "platform_model.h"
 
 

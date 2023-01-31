@@ -18,4 +18,6 @@ extern void     sens01_measurements_repopulate(void);
 extern void     sens01_cmds_add_all(struct cmd_link_t* tail);
 extern void     sens01_w1_pulse_enable_pupd(unsigned io, bool enabled);
 extern bool     sens01_can_io_be_special(unsigned io, io_special_t special);
+extern void     sens01_uarts_setup(void);
+extern void     sens01_setup_pulse_pupd(uint8_t* pupd);
 extern unsigned sens01_measurements_add_defaults(measurements_def_t * measurements_arr);

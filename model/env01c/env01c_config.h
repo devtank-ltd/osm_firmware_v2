@@ -6,6 +6,7 @@
 #include "config.h"
 #include "pinmap.h"
 #include "cc.h"
+#include "rak3172.h"
 
 #define __MODEL_CONFIG__
 
@@ -48,6 +49,8 @@
 #define IOS_COUNT           7
 
 #define ADC_CC_COUNT        3
+
+#define comms_name              rak3172
 
 
 typedef struct

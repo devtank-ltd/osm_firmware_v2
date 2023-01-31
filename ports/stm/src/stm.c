@@ -17,6 +17,8 @@
 #include "pinmap.h"
 #include "log.h"
 #include "platform_model.h"
+#include "comms.h"
+#include "sleep.h"
 
 #include "adcs.h"
 
@@ -199,6 +201,9 @@ void platform_set_rs485_mode(bool driver_enable)
 
 void platform_reset_sys(void)
 {
+    //comms_power_down();
+    //sleep_for_ms(1000);
+
     SCB_VTOR = FW_ADDR & 0xFFFF;
     /* Initialise master stack pointer. */
     asm volatile("msr msp, %0"::"g"(*(volatile uint32_t *)FW_ADDR));

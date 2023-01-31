@@ -6,6 +6,7 @@
 #include "config.h"
 #include "pinmap.h"
 #include "ftma.h"
+#include "rak4270.h"
 
 #define __MODEL_CONFIG__
 
@@ -47,6 +48,8 @@
 
 #define IOS_COUNT           10
 #define ADC_FTMA_COUNT  4
+
+#define comms_name              rak4270
 
 
 typedef struct

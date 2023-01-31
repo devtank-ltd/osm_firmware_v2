@@ -1,9 +1,6 @@
 #pragma once
 
-#include "model_config.h"
-
-#include "rak3172.h"
-#include "rak4270.h"
+#include <stdbool.h>
 
 #define comms_get_mtu                                   CONCAT(comms_name,_get_mtu             )
 #define comms_send_ready                                CONCAT(comms_name,_send_ready          )

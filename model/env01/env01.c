@@ -192,6 +192,16 @@ bool env01_can_io_be_special(unsigned io, io_special_t special)
               special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   )   );
 }
 
+
+void env01_uarts_setup(void)
+{
+}
+
+
+void env01_setup_pulse_pupd(uint8_t* pupd)
+{
+}
+
 #endif
 
 

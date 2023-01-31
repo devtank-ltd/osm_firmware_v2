@@ -234,6 +234,44 @@ bool env01c_can_io_be_special(unsigned io, io_special_t special)
               special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   )   );
 }
 
+
+void env01c_uarts_setup(void)
+{
+    uint32_t reg32 = RCC_CCIPR & ~(RCC_CCIPR_LPUART1SEL_MASK << RCC_CCIPR_LPUART1SEL_SHIFT);
+    RCC_CCIPR = reg32 | ((RCC_CCIPR_LPUART1SEL_HSI16 & RCC_CCIPR_LPUART1SEL_MASK) << RCC_CCIPR_LPUART1SEL_SHIFT);
+}
+
+
+void env01c_setup_pulse_pupd(uint8_t* pupd)
+{
+    /* Slightly confusing setup due to hardware:
+     * NONE:
+     *  STM PUPD:   None
+     *  HW PUPD:    Down/None
+     *  Comments:   This will actually be biased down as the chip pulls
+     *              it to ground.
+     * UP:
+     *  STM PUPD:   None
+     *  HW PUPD:    Up
+     *  Comments:   As hardware-pull-up is used for pull up, have no pull
+     *              up on the STM.
+     * DOWN:
+     *  STM PUPD:   Down
+     *  HW PUPD:    Down/None
+     *  Comments:   No comments.
+     */
+    switch (*pupd)
+    {
+        case IO_PUPD_DOWN:
+            break;
+        case IO_PUPD_UP:
+        case IO_PUPD_NONE:
+        default:
+            *pupd = IO_PUPD_NONE;
+            break;
+    }
+}
+
 #endif
 
 
