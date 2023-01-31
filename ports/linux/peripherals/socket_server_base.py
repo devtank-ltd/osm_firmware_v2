@@ -54,21 +54,20 @@ class socket_server_t(object):
         if client is None:
             self.error(f"Message from client [fd:{fd}] not in connected clients list.")
             return
-        while True:
-            try:
-                data = client.recv(self._recv_size)
-            except OSError:
-                self._close_client(client)
-                return
-            if data is None:
-                self._close_client(client)
-                return
-            if data is False:
-                self.warning(f"Tried to read from client [fd:{fd}] but failed.")
-                return
-            if not len(data):
-                return
-            self._process(client, data)
+        try:
+            data = client.recv(self._recv_size)
+        except OSError:
+            self._close_client(client)
+            return
+        if data is None:
+            self._close_client(client)
+            return
+        if data is False:
+            self.warning(f"Tried to read from client [fd:{fd}] but failed.")
+            return
+        if not len(data):
+            return
+        self._process(client, data)
 
     def _process(self, client, data):
         raise NotImplemented

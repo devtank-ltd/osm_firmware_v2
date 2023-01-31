@@ -14,7 +14,7 @@
 
 #define I2C_SERVER_LOC                          "/tmp/osm/i2c_socket"
 
-#define I2C_BUF_SIZ                     32
+#define I2C_BUF_SIZ                     128
 
 
 static bool _i2c_connected = false;

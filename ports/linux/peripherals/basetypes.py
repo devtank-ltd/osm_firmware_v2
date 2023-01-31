@@ -59,10 +59,11 @@ def get_logger(log_file=None):
 
 
 class i2c_device_t(object):
-    def __init__(self, addr, cmds):
+    def __init__(self, addr, cmds, cmd_size=1):
         self.addr  = addr
         self._cmds = cmds
         self._last_cmd_code = None
+        self._cmd_size = cmd_size
 
     def _read(self, cmd_code):
         data_arr = []
@@ -93,6 +94,14 @@ class i2c_device_t(object):
         self._cmds[cmd_code] = data
         return None
 
+    def _data_to_cmd_code(self, data):
+        cmd_code = 0
+        for i in range (0, self._cmd_size):
+            cmd_code <<= 8
+            index = self._cmd_size - i - 1
+            cmd_code += data[index]
+        return cmd_code
+
     def transfer(self, data):
         wn = data["wn"]
         w  = None
@@ -101,9 +110,9 @@ class i2c_device_t(object):
         cmd_code = None
         if wn:
             assert wn == len(data["w"]), f"WN is not equal to length of W. ({wn} != {len(data['w'])})"
-            self._last_cmd_code = cmd_code = data["w"][0]
-            if wn > 1:
-                w = self._write(cmd_code, data["w"][1:])
+            self._last_cmd_code = cmd_code = self._data_to_cmd_code(data["w"])
+            if wn > self._cmd_size:
+                w = self._write(cmd_code, data["w"][self._cmd_size:])
         if rn:
             r_raw = self._read(cmd_code)
             r_raw_len = len(r_raw)
