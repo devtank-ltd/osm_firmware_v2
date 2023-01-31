@@ -1068,6 +1068,12 @@ void rak4270_config_setup_str(char* str)
 }
 
 
+bool rak4270_get_id(char* str, uint8_t len)
+{
+    return lw_get_id(str, len);
+}
+
+
 struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
     return tail;

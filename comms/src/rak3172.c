@@ -537,6 +537,12 @@ void rak3172_config_setup_str(char* str)
 }
 
 
+bool rak3172_get_id(char* str, uint8_t len)
+{
+    return lw_get_id(str, len);
+}
+
+
 static void _rak3172_print_boot_reset_cb(char* args)
 {
     log_out("BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);

@@ -17,7 +17,6 @@ env01_SOURCES := \
            $(OSM_DIR)/core/src/common.c \
            $(OSM_DIR)/core/src/platform_common.c \
            $(OSM_DIR)/core/src/debug_mode.c \
-           $(OSM_DIR)/comms/src/comms.c \
            $(OSM_DIR)/comms/src/lw.c \
            $(OSM_DIR)/comms/src/rak4270.c \
            $(OSM_DIR)/comms/src/rak3172.c \
