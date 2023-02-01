@@ -115,3 +115,15 @@
     { USART1,  RCC_USART1,  UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6|GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL5_IRQ, DMA_CHANNEL5, UART1_PRIORITY,   true , 2 }, \
     { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10|GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, UART4_PRIORITY, true , 4 }, \
 }
+
+
+#define usart2_isr                      uart0_in_isr
+#define usart3_isr                      uart1_in_isr
+#define usart1_isr                      uart2_in_isr
+#define lpuart1_isr                     uart3_in_isr
+
+
+#define dma1_channel7_isr               uart0_dma_out_isr
+#define dma1_channel2_isr               uart1_dma_out_isr
+#define dma1_channel5_isr               uart2_dma_out_isr
+#define dma2_channel6_isr               uart3_dma_out_isr

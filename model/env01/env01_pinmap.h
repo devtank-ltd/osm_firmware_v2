@@ -132,3 +132,15 @@ GPIO16 D2                   IO 11
     { USART1, RCC_USART1, UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6|GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL5_IRQ, DMA_CHANNEL5, UART1_PRIORITY, true , 2 }, /* UART 2 HPM */ \
     { UART4,  RCC_UART4,  UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOC, GPIO10|GPIO11, GPIO_AF8, NVIC_UART4_IRQ,  (uint32_t)&UART4_TDR,  DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL3_IRQ, DMA_CHANNEL3, UART4_PRIORITY, true , 2 }, /* UART 3 485 */ \
 }
+
+
+#define usart2_isr                       uart0_in_isr
+#define usart3_isr                       uart1_in_isr
+#define usart1_isr                       uart2_in_isr
+#define uart4_isr                        uart3_in_isr
+
+
+#define dma1_channel7_isr                uart0_dma_out_isr
+#define dma1_channel2_isr                uart1_dma_out_isr
+#define dma1_channel5_isr                uart2_dma_out_isr
+#define dma2_channel3_isr                uart3_dma_out_isr
