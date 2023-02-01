@@ -1184,7 +1184,7 @@ class config_gui_window_t(Tk):
 
         cal_btn = Button(self._cc_window,
                         text="Calibrate ADC", 
-                        command=lambda:self._calibrate(cc),
+                        command=lambda:self._calibrate(),
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY)
         cal_btn.grid(column=0, row=5, pady=10)
