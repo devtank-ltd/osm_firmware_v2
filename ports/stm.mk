@@ -116,7 +116,7 @@ $(1)_size: $$(BUILD_DIR)/$(1)/complete.bin
 	$$(STM_NM) -S --size-sort $$(shell find $$(BUILD_DIR)/$(1) -name "*.o")
 
 $(1)_release_bundle : $$(BUILD_DIR)/$(1)/complete.bin
-	@if [ -n "$$( echo \'"$$(GIT_TAG)"\' | sed -n '/release/p')" ]; then \
+	@if [ -n \"$$( echo \'"$$(GIT_TAG)"\' | sed -n '/release/p')\" ]; then \
 	  mkdir -p $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME); \
 	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(JSON_CONV) $$(OSM_DIR)/tools/config_scripts $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME)/; \
 	  cd $$(RELEASE_DIR)/$(1); \
