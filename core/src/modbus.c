@@ -326,7 +326,7 @@ bool modbus_start_read(modbus_reg_t * reg)
             uint32_t delta = since_boot_delta(get_since_boot_ms(), modbus_cur_send_time);
             if (delta < MODBUS_RESP_TIMEOUT_MS)
             {
-                modbus_debug("No slot free.. sending to fast??");
+                modbus_debug("No slot free.. sending to fast?? (%u/%u)", ring_buf_get_pending(&_message_queue)/sizeof(modbus_reg_t*), _message_queue.size/sizeof(modbus_reg_t*) );
                 return false;
             }
         }
