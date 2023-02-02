@@ -16,6 +16,9 @@
 #include "common.h"
 
 
+#define UART_RATE_LIMIT_MS              250
+
+
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 
 UART_BUFFERS_INIT
@@ -99,10 +102,14 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
     if (uart) // Add debug messages to debug ring buffer is a loop.
         log_debug(DEBUG_UART(uart), "UART %u out < %u", uart, len);
 
+    static uint32_t last_sent[UART_CHANNELS_COUNT] = {0};
+
     for (unsigned n = 0; n < len; n++)
     {
-        if (!ring_buf_add(ring, s[n]))
+        if (!ring_buf_add(ring, s[n]) &&
+            since_boot_delta(get_since_boot_ms(), last_sent[uart]) > UART_RATE_LIMIT_MS)
         {
+            last_sent[uart] = get_since_boot_ms();
             if (uart)
                 log_error("UART-out %u full", uart);
             else
