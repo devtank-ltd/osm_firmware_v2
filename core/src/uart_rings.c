@@ -16,6 +16,9 @@
 #include "common.h"
 
 
+#define UART_RATE_LIMIT_MS              250
+
+
 typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
 
 UART_BUFFERS_INIT
@@ -104,7 +107,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
     for (unsigned n = 0; n < len; n++)
     {
         if (!ring_buf_add(ring, s[n]) &&
-            since_boot_delta(get_since_boot_ms(), last_sent[uart]) > 1000)
+            since_boot_delta(get_since_boot_ms(), last_sent[uart]) > UART_RATE_LIMIT_MS)
         {
             last_sent[uart] = get_since_boot_ms();
             if (uart)
