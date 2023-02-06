@@ -191,6 +191,17 @@ bool sens01_can_io_be_special(unsigned io, io_special_t special)
               special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   )   );
 }
 
+
+void sens01_uarts_setup(void)
+{
+}
+
+
+
+void sens01_setup_pulse_pupd(uint8_t* pupd)
+{
+}
+
 #endif
 
 

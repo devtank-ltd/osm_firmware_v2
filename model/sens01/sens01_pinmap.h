@@ -144,6 +144,25 @@ GPIO16 D2                   IO 11
 }
 
 
-#define REV_B_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
-#define REV_C_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
-#define REV_C_COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
+#define SENS01_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
+
+
+#define SENS01_UART_CHANNELS                                                                                            \
+{                                                                                                                       \
+    { USART2,  RCC_USART2,  UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2|GPIO3,   GPIO_AF7, NVIC_USART2_IRQ, (uint32_t)&USART2_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, UART2_PRIORITY,   true , 2 }, /* UART 0 Debug */ \
+    { USART3,  RCC_USART3,  UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4|GPIO5,   GPIO_AF7, NVIC_USART3_IRQ, (uint32_t)&USART3_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, UART3_PRIORITY,   true , 2 }, \
+    { USART1,  RCC_USART1,  UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6|GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL5_IRQ, DMA_CHANNEL5, UART1_PRIORITY,   true , 2 }, \
+    { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10|GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, UART4_PRIORITY, true , 4 }, \
+}
+
+
+#define usart2_isr                       uart0_in_isr
+#define usart3_isr                       uart1_in_isr
+#define usart1_isr                       uart2_in_isr
+#define uart4_isr                        uart3_in_isr
+
+
+#define dma1_channel7_isr                uart0_dma_out_isr
+#define dma1_channel2_isr                uart1_dma_out_isr
+#define dma1_channel5_isr                uart2_dma_out_isr
+#define dma2_channel3_isr                uart3_dma_out_isr

@@ -17,12 +17,10 @@
 #include "uart_rings.h"
 #include "uarts.h"
 #include "sleep.h"
-#include "version.h"
+#include "platform_model.h"
 
 
-static uart_channel_t uart_channels_rev_b[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_B;
-static uart_channel_t uart_channels_rev_c[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_C;
-static uart_channel_t* uart_channels = NULL;
+static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
@@ -288,20 +286,7 @@ static void process_serial(unsigned uart)
 
 void uarts_setup(void)
 {
-    version_arch_t arch = version_get_arch();
-    if (arch == VERSION_ARCH_REV_B)
-        uart_channels = uart_channels_rev_b;
-    else if (arch == VERSION_ARCH_REV_C)
-    {
-        uint32_t reg32 = RCC_CCIPR & ~(RCC_CCIPR_LPUART1SEL_MASK << RCC_CCIPR_LPUART1SEL_SHIFT);
-        RCC_CCIPR = reg32 | ((RCC_CCIPR_LPUART1SEL_HSI16 & RCC_CCIPR_LPUART1SEL_MASK) << RCC_CCIPR_LPUART1SEL_SHIFT);
-        uart_channels = uart_channels_rev_c;
-    }
-    else
-    {
-        version_arch_error_handler();
-        return;
-    }
+    model_uarts_setup();
 
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
@@ -408,81 +393,49 @@ static void process_complete_dma(unsigned index)
 
 
 // cppcheck-suppress unusedFunction ; System handler
-void usart2_isr(void)
+void uart0_in_isr(void)
 {
     process_serial(0);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void usart3_isr(void)
+void uart1_in_isr(void)
 {
     process_serial(1);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void usart1_isr(void)
+void uart2_in_isr(void)
 {
     process_serial(2);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void uart4_isr(void)
+void uart3_in_isr(void)
 {
-    if (version_is_arch(VERSION_ARCH_REV_B))
-    {
-        process_serial(3);
-        return;
-    }
-    hard_fault_handler();
+    process_serial(3);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void lpuart1_isr(void)
-{
-    if (version_is_arch(VERSION_ARCH_REV_C))
-    {
-        process_serial(3);
-        return;
-    }
-    hard_fault_handler();
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma1_channel7_isr(void)
+void uart0_dma_out_isr(void)
 {
     process_complete_dma(0);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void dma1_channel2_isr(void)
+void uart1_dma_out_isr(void)
 {
     process_complete_dma(1);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void dma1_channel5_isr(void)
+void uart2_dma_out_isr(void)
 {
     process_complete_dma(2);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void dma2_channel3_isr(void)
+void uart3_dma_out_isr(void)
 {
-    if (version_is_arch(VERSION_ARCH_REV_B))
-    {
-        process_complete_dma(3);
-        return;
-    }
-    hard_fault_handler();
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma2_channel6_isr(void)
-{
-    if (version_is_arch(VERSION_ARCH_REV_C))
-    {
-        process_complete_dma(3);
-        return;
-    }
-    hard_fault_handler();
+    process_complete_dma(3);
 }

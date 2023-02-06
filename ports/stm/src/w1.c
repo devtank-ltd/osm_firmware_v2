@@ -10,7 +10,6 @@
 #include "log.h"
 #include "base_types.h"
 #include "io.h"
-#include "version.h"
 #include "platform_model.h"
 
 
@@ -119,7 +118,7 @@ static uint8_t _w1_read_bit(uint8_t index)
     if (!_w1_check_index(index))
         return 0;
 
-    _w1_start_interrupt(); 
+    _w1_start_interrupt();
     _w1_set_direction(index, W1_DIRECTION_OUTPUT);
     _w1_set_level(index, W1_LEVEL_LOW);
     _w1_delay_us(W1_DELAY_READ_START);
@@ -150,7 +149,7 @@ static void _w1_send_bit(uint8_t index, int bit)
         _w1_set_level(index, W1_LEVEL_LOW);
         _w1_delay_us(W1_DELAY_WRITE_0_START);
         _w1_set_level(index, W1_LEVEL_HIGH);
-        _w1_delay_us(W1_DELAY_WRITE_0_END); 
+        _w1_delay_us(W1_DELAY_WRITE_0_END);
     }
     _w1_stop_interrupt();
 }

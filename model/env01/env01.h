@@ -18,4 +18,6 @@ extern void     env01_measurements_repopulate(void);
 extern void     env01_cmds_add_all(struct cmd_link_t* tail);
 extern void     env01_w1_pulse_enable_pupd(unsigned io, bool enabled);
 extern bool     env01_can_io_be_special(unsigned io, io_special_t special);
+extern void     env01_uarts_setup(void);
+extern void     env01_setup_pulse_pupd(uint8_t* pupd);
 extern unsigned env01_measurements_add_defaults(measurements_def_t * measurements_arr);

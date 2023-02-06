@@ -11,7 +11,6 @@
 #include "persist_config.h"
 #include "common.h"
 #include "log.h"
-#include "version.h"
 #include "platform_model.h"
 
 
@@ -40,22 +39,6 @@ void version_cb(char * args)
         model_name[i] = toupper(model_name[i]);
 
     log_out("Version : %s-%s", model_name, GIT_VERSION);
-    version_arch_t arch = version_get_arch();
-    char name[VERSION_NAME_LEN];
-    memset(name, 0, VERSION_NAME_LEN);
-    switch(arch)
-    {
-        case VERSION_ARCH_REV_B:
-            strncpy(name, "Rev B", VERSION_NAME_LEN);
-            break;
-        case VERSION_ARCH_REV_C:
-            strncpy(name, "Rev C", VERSION_NAME_LEN);
-            break;
-        default:
-            log_out("Unknown architecture.");
-            break;
-    }
-    log_out("Architecture is %s", name);
 }
 
 

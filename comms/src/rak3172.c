@@ -85,8 +85,8 @@ struct
     .state            = RAK3172_STATE_OFF,
     .cmd_last_sent    = 0,
     .sleep_from_time  = 0,
-    .reset_pin        = REV_C_COMMS_RESET_PORT_N_PINS,
-    .boot_pin         = REV_C_COMMS_BOOT_PORT_N_PINS,
+    .reset_pin        = COMMS_RESET_PORT_N_PINS,
+    .boot_pin         = COMMS_BOOT_PORT_N_PINS,
     .config_is_valid  = false,
     .last_sent_msg    = {0},
 };
@@ -534,6 +534,12 @@ void rak3172_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
         _rak3172_reload_config();
+}
+
+
+bool rak3172_get_id(char* str, uint8_t len)
+{
+    return lw_get_id(str, len);
 }
 
 
