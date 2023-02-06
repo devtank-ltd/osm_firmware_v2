@@ -62,7 +62,7 @@ $$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BU
 	mkdir -p "$$(@D)"
 	cp $$< $$@
 
-$(1)_MODEL_PERIPHERALS_SRC:=$$(shell if [ -e "$$(MODEL_DIR)/$(1)/peripherals " ]; then find $$(MODEL_DIR)/$(1)/peripherals -name "*.py"; fi)
+$(1)_MODEL_PERIPHERALS_SRC:=$$(shell if [ -e "$$(MODEL_DIR)/$(1)/peripherals" ]; then find $$(MODEL_DIR)/$(1)/peripherals -name "*.py"; fi)
 
 $(1)_MODEL_PERIPHERALS_DST:=$$($(1)_MODEL_PERIPHERALS_SRC:$$(MODEL_DIR)/$(1)/%=$$(BUILD_DIR)/$(1)/%)
 

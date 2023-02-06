@@ -5,6 +5,7 @@
 #include <libopencm3/stm32/dma.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/i2c.h>
 #endif
 
 #include <stdint.h>
@@ -19,9 +20,6 @@
 #define HTU21D_I2C_INDEX    0
 #define VEML7700_I2C        I2C1
 #define VEML7700_I2C_INDEX  0
-
-#define I2C_HTU21D_ADDR     0x40
-#define I2C_VEML7700_ADDR   0x10
 
 #define LED_PORT   GPIOA
 #define LED_PIN    GPIO0

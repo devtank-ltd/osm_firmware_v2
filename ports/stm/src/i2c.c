@@ -53,23 +53,8 @@ static void i2c_init(unsigned i2c_index)
 }
 
 
-bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
+bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
-    uint32_t i2c;
-    uint8_t addr;
-    switch (type)
-    {
-        case I2C_TYPE_HTU21D:
-            i2c = HTU21D_I2C;
-            addr = I2C_HTU21D_ADDR;
-            break;
-        case I2C_TYPE_VEML7700:
-            i2c = VEML7700_I2C;
-            addr = I2C_VEML7700_ADDR;
-            break;
-        default:
-            return false;
-    }
     /* i2c_transfer7 but with ms timeout. */
     uint32_t start_ms = get_since_boot_ms();
 
