@@ -314,7 +314,7 @@ void     pulsecount_inf_init(measurements_inf_t* inf)
 }
 
 
-static void hw_pupd_cb(char* args)
+static command_response_t _hw_pupd_cb(char* args)
 {
     char* p;
     unsigned io = strtoul(args, &p, 10);
@@ -337,14 +337,15 @@ static void hw_pupd_cb(char* args)
 
     model_w1_pulse_enable_pupd(io, enabled);
     log_out("IO %u: %"PRIu8, io, (uint8_t)(enabled?1:0));
-    return;
+    return COMMAND_RESP_OK;
 syntax_exit:
     log_out("<io> <U/D>");
+    return COMMAND_RESP_ERR;
 }
 
 
 struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "hw_pupd",      "Print all IOs.",           hw_pupd_cb                    , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "hw_pupd",      "Print all IOs.",           _hw_pupd_cb                   , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

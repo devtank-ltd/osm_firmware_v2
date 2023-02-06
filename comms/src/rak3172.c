@@ -530,10 +530,14 @@ void rak3172_loop_iteration(void)
 }
 
 
-void rak3172_config_setup_str(char* str)
+static command_response_t _rak3172_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
+    {
         _rak3172_reload_config();
+        return COMMAND_RESP_OK;
+    }
+    return COMMAND_RESP_ERR;
 }
 
 
@@ -543,14 +547,15 @@ bool rak3172_get_id(char* str, uint8_t len)
 }
 
 
-static void _rak3172_print_boot_reset_cb(char* args)
+static command_response_t _rak3172_print_boot_reset_cb(char* args)
 {
     log_out("BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
     log_out("RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
+    return COMMAND_RESP_OK;
 }
 
 
-static void _rak3172_boot_cb(char* args)
+static command_response_t _rak3172_boot_cb(char* args)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -558,11 +563,11 @@ static void _rak3172_boot_cb(char* args)
     else
         gpio_clear(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
     _rak3172_boot_enabled = enabled;
-    _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("");
 }
 
 
-static void _rak3172_reset_cb(char* args)
+static command_response_t _rak3172_reset_cb(char* args)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -570,7 +575,7 @@ static void _rak3172_reset_cb(char* args)
     else
         gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
     _rak3172_reset_enabled = enabled;
-    _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("");
 }
 
 
@@ -606,7 +611,7 @@ static const char* _rak3172_init_count_to_str(uint8_t init_count)
 }
 
 
-static void _rak3172_state_cb(char* args)
+static command_response_t _rak3172_state_cb(char* args)
 {
     log_out("STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
     switch (_rak3172_ctx.state)
@@ -637,15 +642,17 @@ static void _rak3172_state_cb(char* args)
         default:
             break;
     }
+    return COMMAND_RESP_OK;
 }
 
 
-static void _rak3172_restart_cb(char* args)
+static command_response_t _rak3172_restart_cb(char* args)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
     _rak3172_chip_off();
     _rak3172_chip_on();
+    return COMMAND_RESP_OK;
 }
 
 
@@ -653,7 +660,7 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "comms_config", "Set the comms config",        rak3172_config_setup_str      , false , NULL },
+        { "comms_config", "Set the comms config",        _rak3172_config_setup_str     , false , NULL },
         { "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
         { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
         { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },

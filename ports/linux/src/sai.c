@@ -61,24 +61,28 @@ void  sai_inf_init(measurements_inf_t* inf)
 }
 
 
-static void sound_cal_cb(char* args)
+static command_response_t _sound_cal_cb(char* args)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
     if (index < 1 || index > SAI_NUM_CAL_COEFFS)
     {
         log_out("Index out of range.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     p = skip_space(p);
     float coeff = strtof(p, NULL);
     if (!sai_set_coeff(index-1, coeff))
+    {
         log_out("Could not set the coefficient.");
+        return COMMAND_RESP_ERR;
+    }
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* sai_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      sound_cal_cb                  , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

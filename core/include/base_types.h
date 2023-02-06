@@ -240,11 +240,18 @@ typedef union
 } measurements_reading_t;
 
 
+typedef enum
+{
+    COMMAND_RESP_OK     = 0x1,
+    COMMAND_RESP_ERR    = 0x2,
+} command_response_t;
+
+
 struct cmd_link_t
 {
     const char * key;
     const char * desc;
-    void (*cb)(char * args);
+    command_response_t (*cb)(char * args);
     bool hidden;
     struct cmd_link_t * next;
 };

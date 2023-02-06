@@ -13,17 +13,20 @@
 #include "log.h"
 #include "platform_model.h"
 
+#define SERIAL_NUM_COMM_LEN         17
+
 
 static struct cmd_link_t* _cmds;
 
 
-void count_cb(char * args)
+static command_response_t _cmd_count_cb(char * args)
 {
     log_out("IOs     : %u", ios_get_count());
+    return COMMAND_RESP_OK;
 }
 
 
-void version_cb(char * args)
+static command_response_t _cmd_version_cb(char * args)
 {
     char model_name[MODEL_NAME_LEN+1];
     if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
@@ -37,10 +40,11 @@ void version_cb(char * args)
         model_name[i] = toupper(model_name[i]);
 
     log_out("Version : %s-%s", model_name, GIT_VERSION);
+    return COMMAND_RESP_OK;
 }
 
 
-static void debug_cb(char * args)
+static command_response_t _cmd_debug_cb(char * args)
 {
     char * pos = skip_space(args);
 
@@ -59,22 +63,22 @@ static void debug_cb(char * args)
         persist_set_log_debug_mask(mask);
         log_out("Setting debug mask to 0x%x", mask);
     }
+    return COMMAND_RESP_OK;
 }
 
 
-static void timer_cb(char* args)
+static command_response_t _cmd_timer_cb(char* args)
 {
     char* pos = skip_space(args);
     uint32_t delay_ms = strtoul(pos, NULL, 10);
     uint32_t start_time = get_since_boot_ms();
     timer_delay_us_64(delay_ms * 1000);
     log_out("Time elapsed: %"PRIu32, since_boot_delta(get_since_boot_ms(), start_time));
+    return COMMAND_RESP_OK;
 }
 
 
-#define SERIAL_NUM_COMM_LEN         17
-
-static void serial_num_cb(char* args)
+static command_response_t _cmd_serial_num_cb(char* args)
 {
     char* serial_num = persist_get_serial_number();
     char* p = skip_space(args);
@@ -89,10 +93,10 @@ print_exit:
     if (!comms_get_id(comm_id, SERIAL_NUM_COMM_LEN))
     {
         log_out("%s", persist_get_serial_number());
-        return;
+        return COMMAND_RESP_OK;
     }
     log_out("Serial Number: %s-%s", serial_num, comm_id);
-    return;
+    return COMMAND_RESP_OK;
 }
 
 
@@ -144,11 +148,11 @@ void cmds_process(char * command, unsigned len)
 void cmds_init(void)
 {
     static struct cmd_link_t cmds[] = {
-        { "count",        "Counts of controls.",      count_cb                      , false , NULL},
-        { "version",      "Print version.",           version_cb                    , false , NULL},
-        { "debug",        "Set hex debug mask",       debug_cb                      , false , NULL},
-        { "timer",        "Test usecs timer",         timer_cb                      , false , NULL},
-        { "serial_num",   "Set/get serial number",    serial_num_cb                 , true  , NULL},
+        { "count",        "Counts of controls.",      _cmd_count_cb                  , false , NULL},
+        { "version",      "Print version.",           _cmd_version_cb                , false , NULL},
+        { "debug",        "Set hex debug mask",       _cmd_debug_cb                  , false , NULL},
+        { "timer",        "Test usecs timer",         _cmd_timer_cb                  , false , NULL},
+        { "serial_num",   "Set/get serial number",    _cmd_serial_num_cb             , true  , NULL},
     };
 
     struct cmd_link_t* tail = &cmds[ARRAY_SIZE(cmds)-1];

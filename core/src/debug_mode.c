@@ -188,23 +188,27 @@ void debug_mode(void)
 }
 
 
-static void debug_mode_cb(char* args)
+static command_response_t _debug_mode_cb(char* args)
 {
     uint32_t mask = persist_get_log_debug_mask();
     if (mask & DEBUG_MODE)
     {
         debug_mode(); /* Toggle it off.*/
         persist_set_log_debug_mask(mask & ~DEBUG_MODE);
-        return;
+        return COMMAND_RESP_OK;
     }
     persist_set_log_debug_mask(mask | DEBUG_MODE);
     platform_raw_msg("Rebooting in debug_mode.");
     platform_reset_sys();
+    /* Will never actually get to return anything, but GCC must be
+     * satisfied.
+     */
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* debug_mode_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "debug_mode",   "Set/unset debug mode",     debug_mode_cb                 , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "debug_mode",   "Set/unset debug mode",    _debug_mode_cb                 , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

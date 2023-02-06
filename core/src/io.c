@@ -400,7 +400,14 @@ void     ios_log()
 }
 
 
-void io_cb(char *args)
+static command_response_t _io_log_cb(char* args)
+{
+    ios_log();
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _io_cb(char *args)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
@@ -425,7 +432,7 @@ void io_cb(char *args)
         else
         {
             log_error("Malformed gpio type command");
-            return;
+            return COMMAND_RESP_ERR;
         }
 
         io_pupd_t pull = IO_PUPD_NONE;
@@ -451,7 +458,7 @@ void io_cb(char *args)
             else
             {
                 log_error("Malformed gpio pull command");
-                return;
+                return COMMAND_RESP_ERR;
             }
             pos = skip_space(pos);
         }
@@ -487,17 +494,18 @@ void io_cb(char *args)
         else
         {
             log_error("Malformed gpio on/off command");
-            return;
+            return COMMAND_RESP_ERR;
         }
     }
     else do_read = true;
 
     if (do_read)
         io_log(io);
+    return COMMAND_RESP_OK;
 }
 
 
-void cmd_enable_pulsecount_cb(char * args)
+static command_response_t _io_cmd_enable_pulsecount_cb(char * args)
 {
     /* <io> <R/F/B> <U/D/N>
      */
@@ -531,30 +539,35 @@ void cmd_enable_pulsecount_cb(char * args)
         log_out("IO %02u pulsecount enabled", io);
     else
         log_out("IO %02u has no pulsecount", io);
-    return;
+    return COMMAND_RESP_OK;
 bad_exit:
     log_out("<io> <R/F/B> <U/D/N>");
+    return COMMAND_RESP_ERR;
 }
 
 
-void cmd_enable_onewire_cb(char * args)
+static command_response_t _io_cmd_enable_onewire_cb(char * args)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
 
     if (io_enable_w1(io))
+    {
         log_out("IO %02u onewire enabled", io);
-    else
-        log_out("IO %02u has no onewire", io);
+        return COMMAND_RESP_OK;
+    }
+
+    log_out("IO %02u has no onewire", io);
+    return COMMAND_RESP_ERR;
 }
 
 
 struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           ios_log                       , false , NULL },
-                                       { "io",           "Get/set IO set.",          io_cb                         , false , NULL },
-                                       { "en_pulse",     "Enable Pulsecount IO.",    cmd_enable_pulsecount_cb      , false , NULL },
-                                       { "en_w1",        "Enable OneWire IO.",       cmd_enable_onewire_cb         , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           _io_log_cb                        , false , NULL },
+                                       { "io",           "Get/set IO set.",          _io_cb                            , false , NULL },
+                                       { "en_pulse",     "Enable Pulsecount IO.",    _io_cmd_enable_pulsecount_cb      , false , NULL },
+                                       { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL }};
     tail = add_commands(tail, cmds, ARRAY_SIZE(cmds));
     return pulsecount_add_commands(tail);
 }

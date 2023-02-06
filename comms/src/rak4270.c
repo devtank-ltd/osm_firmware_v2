@@ -1061,10 +1061,14 @@ void rak4270_loop_iteration(void)
 }
 
 
-void rak4270_config_setup_str(char* str)
+static command_response_t _rak4270_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
+    {
         _rak4270_reload_config();
+        return COMMAND_RESP_OK;
+    }
+    return COMMAND_RESP_ERR;
 }
 
 
@@ -1078,7 +1082,7 @@ struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "comms_config", "Set the comms config",        rak4270_config_setup_str      , false , NULL },
+        { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
