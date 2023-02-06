@@ -99,20 +99,21 @@ bool linux_comms_get_id(char* str, uint8_t len)
 }
 
 
-void linux_comms_send_cb(char * args)
+static command_response_t _linux_comms_send_cb(char * args)
 {
     char * pos = skip_space(args);
-    linux_comms_send_str(pos);
+    return linux_comms_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-void linux_comms_config_cb(char * args)
+static command_response_t _linux_comms_config_cb(char * args)
 {
     linux_comms_config_setup_str(skip_space(args));
+    return COMMAND_RESP_OK;
 }
 
 
-static void linux_comms_conn_cb(char* args)
+static command_response_t _linux_comms_conn_cb(char* args)
 {
     if (linux_comms_get_connected())
     {
@@ -122,21 +123,23 @@ static void linux_comms_conn_cb(char* args)
     {
         log_out("0 | Disconnected");
     }
+    return COMMAND_RESP_OK;
 }
 
 
-static void linux_comms_dbg_cb(char* args)
+static command_response_t _linux_comms_dbg_cb(char* args)
 {
     uart_ring_out(COMMS_UART, args, strlen(args));
     uart_ring_out(COMMS_UART, "\r\n", 2);
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* linux_comms_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "comms_send",   "Send linux_comms message",       linux_comms_send_cb                 , false , NULL },
-                                       { "comms_config", "Set linux_comms config",         linux_comms_config_cb               , false , NULL },
-                                       { "comms_conn",   "LoRa connected",           linux_comms_conn_cb                 , false , NULL },
-                                       { "comms_dbg",    "Comms Chip Debug",         linux_comms_dbg_cb                  , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "comms_send",   "Send linux_comms message",        _linux_comms_send_cb        , false , NULL },
+                                       { "comms_config", "Set linux_comms config",          _linux_comms_config_cb      , false , NULL },
+                                       { "comms_conn",   "LoRa connected",                  _linux_comms_conn_cb        , false , NULL },
+                                       { "comms_dbg",    "Comms Chip Debug",                _linux_comms_dbg_cb         , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

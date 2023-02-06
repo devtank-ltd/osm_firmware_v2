@@ -649,7 +649,7 @@ void cc_init(void)
 }
 
 
-static void cc_cb(char* args)
+static command_response_t _cc_cb(char* args)
 {
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
@@ -660,37 +660,38 @@ static void cc_cb(char* args)
         if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             log_out("Could not get CC values.");
-            return;
+            return COMMAND_RESP_ERR;
         }
         log_out("CC1 = %"PRIi64".%"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
         log_out("CC2 = %"PRIi64".%"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
         log_out("CC3 = %"PRIi64".%"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
-        return;
+        return COMMAND_RESP_OK;
     }
     if (cc_num > 3 || cc_num == 0)
     {
         log_out("cc [1/2/3]");
-        return;
+        return COMMAND_RESP_ERR;
     }
     char name[4];
     snprintf(name, 4, "CC%"PRIu8, cc_num);
     if (!cc_get_blocking(name, &value_1))
     {
         log_out("Could not get adc value.");
-        return;
+        return COMMAND_RESP_ERR;
     }
 
     log_out("CC = %"PRIi64"mA", value_1.v_i64);
+    return COMMAND_RESP_OK;
 }
 
 
-static void cc_calibrate_cb(char *args)
+static command_response_t _cc_calibrate_cb(char *args)
 {
-    _cc_calibrate();
+    return _cc_calibrate() ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-static void cc_mp_cb(char* args)
+static command_response_t _cc_mp_cb(char* args)
 {
     // 2046 CC1
     char* p;
@@ -701,16 +702,17 @@ static void cc_mp_cb(char* args)
     {
         if (_cc_get_midpoint(&new_mp32, p))
             log_out("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
-        return;
+        return COMMAND_RESP_ERR;
     }
     new_mp32 = new_mp * 1000;
     p = skip_space(p);
     if (!_cc_set_midpoint(new_mp32, p))
         log_out("Failed to set the midpoint.");
+    return COMMAND_RESP_OK;
 }
 
 
-static void cc_gain(char* args)
+static command_response_t _cc_gain(char* args)
 {
     // <index> <ext_A> <int_mV>
     // 1       100     50
@@ -724,7 +726,7 @@ static void cc_gain(char* args)
             log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
             log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000);
         }
-        return;
+        return COMMAND_RESP_ERR;
     }
     if (index == 0 || index > ADC_CC_COUNT + 1 || p == args)
         goto syntax_exit;
@@ -744,18 +746,19 @@ static void cc_gain(char* args)
 print_exit:
     log_out("EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
     log_out("INT max: %"PRIu32".%03"PRIu32"V", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000);
-    return;
+    return COMMAND_RESP_OK;
 syntax_exit:
     log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
     log_out("e.g cc_gain 3 100 50");
+    return COMMAND_RESP_ERR;
 }
 
 
 struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cc",           "CC value",                 cc_cb                         , false , NULL },
-                                       { "cc_cal",       "Calibrate the cc",         cc_calibrate_cb               , false , NULL },
-                                       { "cc_mp",        "Set the CC midpoint",      cc_mp_cb                      , false , NULL },
-                                       { "cc_gain",      "Set the max int and ext",  cc_gain                       , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "cc",           "CC value",                 _cc_cb                         , false , NULL },
+                                       { "cc_cal",       "Calibrate the cc",         _cc_calibrate_cb               , false , NULL },
+                                       { "cc_mp",        "Set the CC midpoint",      _cc_mp_cb                      , false , NULL },
+                                       { "cc_gain",      "Set the max int and ext",  _cc_gain                       , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

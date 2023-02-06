@@ -543,14 +543,15 @@ bool rak3172_get_id(char* str, uint8_t len)
 }
 
 
-static void _rak3172_print_boot_reset_cb(char* args)
+static command_response_t _rak3172_print_boot_reset_cb(char* args)
 {
     log_out("BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
     log_out("RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
+    return COMMAND_RESP_OK;
 }
 
 
-static void _rak3172_boot_cb(char* args)
+static command_response_t _rak3172_boot_cb(char* args)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -558,11 +559,11 @@ static void _rak3172_boot_cb(char* args)
     else
         gpio_clear(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
     _rak3172_boot_enabled = enabled;
-    _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("");
 }
 
 
-static void _rak3172_reset_cb(char* args)
+static command_response_t _rak3172_reset_cb(char* args)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -570,7 +571,7 @@ static void _rak3172_reset_cb(char* args)
     else
         gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
     _rak3172_reset_enabled = enabled;
-    _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("");
 }
 
 
@@ -606,7 +607,7 @@ static const char* _rak3172_init_count_to_str(uint8_t init_count)
 }
 
 
-static void _rak3172_state_cb(char* args)
+static command_response_t _rak3172_state_cb(char* args)
 {
     log_out("STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
     switch (_rak3172_ctx.state)
@@ -637,15 +638,17 @@ static void _rak3172_state_cb(char* args)
         default:
             break;
     }
+    return COMMAND_RESP_OK;
 }
 
 
-static void _rak3172_restart_cb(char* args)
+static command_response_t _rak3172_restart_cb(char* args)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
     _rak3172_chip_off();
     _rak3172_chip_on();
+    return COMMAND_RESP_OK;
 }
 
 

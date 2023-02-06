@@ -301,21 +301,22 @@ void                         bat_inf_init(measurements_inf_t* inf)
 }
 
 
-static void bat_cb(char* args)
+static command_response_t _bat_cb(char* args)
 {
     measurements_reading_t value;
     if (!bat_get_blocking(NULL, &value))
     {
         log_out("Could not get bat value.");
-        return;
+        return COMMAND_RESP_ERR;
     }
 
     log_out("Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* bat_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = { { "bat",          "Get battery level.",       bat_cb                        , false , NULL } };
+    static struct cmd_link_t cmds[] = { { "bat",          "Get battery level.",      _bat_cb                        , false , NULL } };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

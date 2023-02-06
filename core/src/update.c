@@ -124,14 +124,14 @@ bool fw_ota_complete(uint16_t crc)
 }
 
 
-static void fw_add(char *args)
+static command_response_t _fw_add(char *args)
 {
     args = skip_space(args);
     unsigned len = strlen(args);
     if (len%2)
     {
         log_error("Invalid fw chunk.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     char * end = args + len;
     while(args < end)
@@ -145,27 +145,31 @@ static void fw_add(char *args)
         if (!fw_ota_add_chunk(&d, 1))
         {
             log_error("Invalid fw.");
-            return;
+            return COMMAND_RESP_ERR;
         }
     }
     log_out("FW %u chunk added", len/2);
+    return COMMAND_RESP_OK;
 }
 
 
-static void fw_fin(char *args)
+static command_response_t _fw_fin(char *args)
 {
     args = skip_space(args);
     uint16_t crc = strtoul(args, NULL, 16);
     if (fw_ota_complete(crc))
+    {
         log_out("FW added");
-    else
-        log_error("FW adding failed.");
+        return COMMAND_RESP_OK;
+    }
+    log_error("FW adding failed.");
+    return COMMAND_RESP_ERR;
 }
 
 
 struct cmd_link_t* update_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     fw_add                        , false , NULL },
-                                       { "fw@",          "Finishing crc of new fw.", fw_fin                        , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     _fw_add                       , false , NULL },
+                                       { "fw@",          "Finishing crc of new fw.", _fw_fin                       , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

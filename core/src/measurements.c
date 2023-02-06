@@ -1269,7 +1269,7 @@ void measurements_power_mode(measurements_power_mode_t mode)
 }
 
 typedef struct
-{ 
+{
     measurements_info_t        base;
     measurements_reading_t*    reading;
     measurements_value_type_t* type;
@@ -1433,22 +1433,24 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
 }
 
 
-static void measurements_cb(char *args)
+static command_response_t _measurements_cb(char *args)
 {
     measurements_print();
+    return COMMAND_RESP_OK;
 }
 
 
-static void measurements_enable_cb(char *args)
+static command_response_t _measurements_enable_cb(char *args)
 {
     if (args[0])
         measurements_enabled = (args[0] == '1');
 
     log_out("measurements_enabled : %c", (measurements_enabled)?'1':'0');
+    return COMMAND_RESP_OK;
 }
 
 
-static void measurement_get_cb(char* args)
+static command_response_t _measurements_get_cb(char* args)
 {
     char * p = skip_space(args);
     measurements_reading_t reading;
@@ -1456,26 +1458,28 @@ static void measurement_get_cb(char* args)
     if (!measurements_get_reading(p, &reading, &type))
     {
         log_out("Failed to get measurement reading.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     char text[16];
     if (!measurements_reading_to_str(&reading, type, text, 16))
     {
         log_out("Could not convert the reading to a string.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     log_out("%s: %s", p, text);
+    return COMMAND_RESP_OK;
 }
 
 
-static void no_comms_cb(char* args)
+static command_response_t _measurements_no_comms_cb(char* args)
 {
     bool enable = strtoul(args, NULL, 10);
     measurements_set_debug_mode(enable);
+    return COMMAND_RESP_OK;
 }
 
 
-static void interval_cb(char * args)
+static command_response_t _measurements_interval_cb(char * args)
 {
     char* name = args;
     char* p = skip_space(args);
@@ -1492,8 +1496,13 @@ static void interval_cb(char * args)
         if (measurements_set_interval(name, new_interval))
         {
             log_out("Changed %s interval to %"PRIu8, name, new_interval);
+            return COMMAND_RESP_OK;
         }
-        else log_out("Unknown measuremnt");
+        else
+        {
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
+        }
     }
     else
     {
@@ -1501,16 +1510,18 @@ static void interval_cb(char * args)
         if (measurements_get_interval(name, &interval))
         {
             log_out("Interval of %s = %"PRIu8, name, interval);
+            return COMMAND_RESP_OK;
         }
         else
         {
-            log_out("Unknown measuremnt");
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
         }
     }
 }
 
 
-static void samplecount_cb(char * args)
+static command_response_t _measurements_samplecount_cb(char * args)
 {
     char* name = args;
     char* p = skip_space(args);
@@ -1527,8 +1538,13 @@ static void samplecount_cb(char * args)
         if (measurements_set_samplecount(name, new_samplecount))
         {
             log_out("Changed %s samplecount to %"PRIu8, name, new_samplecount);
+            return COMMAND_RESP_OK;
         }
-        else log_out("Unknown measuremnt");
+        else
+        {
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
+        }
     }
     else
     {
@@ -1536,23 +1552,26 @@ static void samplecount_cb(char * args)
         if (measurements_get_samplecount(name, &samplecount))
         {
             log_out("Samplecount of %s = %"PRIu8, name, samplecount);
+            return COMMAND_RESP_OK;
         }
         else
         {
-            log_out("Unknown measuremnt");
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
         }
     }
 }
 
 
-static void repop_cb(char* args)
+static command_response_t _measurements_repop_cb(char* args)
 {
     model_measurements_repopulate();
     log_out("Repopulated measurements.");
+    return COMMAND_RESP_OK;
 }
 
 
-static void interval_mins_cb(char* args)
+static command_response_t _measurements_interval_mins_cb(char* args)
 {
     if (args[0])
     {
@@ -1576,18 +1595,19 @@ static void interval_mins_cb(char* args)
         else
             log_out("Current interval minutes is %"PRIu32, transmit_interval/1000);
     }
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "measurements", "Print measurements",       measurements_cb               , false , NULL },
-                                       { "meas_enable",  "Enable measuremnts.",      measurements_enable_cb        , false , NULL },
-                                       { "get_meas",     "Get a measurement",        measurement_get_cb            , false , NULL },
-                                       { "no_comms",     "Dont need comms for measurements", no_comms_cb           , false , NULL },
-                                       { "interval",     "Set the interval",         interval_cb                   , false , NULL },
-                                       { "samplecount",  "Set the samplecount",      samplecount_cb                , false , NULL },
-                                       { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false , NULL },
-                                       { "repop",        "Repopulate measurements.", repop_cb                      , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "measurements", "Print measurements",                  _measurements_cb                , false , NULL },
+                                       { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },
+                                       { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
+                                       { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
+                                       { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
+                                       { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },
+                                       { "interval_mins","Get/Set interval minutes",            _measurements_interval_mins_cb  , false , NULL },
+                                       { "repop",        "Repopulate measurements.",            _measurements_repop_cb          , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

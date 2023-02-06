@@ -166,13 +166,14 @@ bool modbus_measurement_add(modbus_reg_t * reg)
 }
 
 
-void modbus_measurement_del_reg(char * name)
+bool modbus_measurement_del_reg(char * name)
 {
     modbus_reg_t * reg = modbus_get_reg(name);
     if (!reg)
-        return;
-    measurements_del(name);
+        return false;
+    bool r = measurements_del(name);
     modbus_reg_del(reg);
+    return r;
 }
 
 
@@ -185,13 +186,14 @@ static bool _modbus_measurement_del_dev_reg(modbus_reg_t * reg, void * userdata)
 }
 
 
-void modbus_measurement_del_dev(char * dev_name)
+bool modbus_measurement_del_dev(char * dev_name)
 {
     modbus_dev_t * dev = modbus_get_device_by_name(dev_name);
     if (!dev)
-        return;
+        return false;
 
-    modbus_dev_for_each_reg(dev, _modbus_measurement_del_dev_reg, NULL);
+    bool r = modbus_dev_for_each_reg(dev, _modbus_measurement_del_dev_reg, NULL);
 
     modbus_dev_del(dev);
+    return r;
 }
