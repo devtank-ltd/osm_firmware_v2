@@ -115,6 +115,9 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
 };
 
 
+static void _rak3172_send2(int8_t* hex_arr, uint16_t arr_len, bool confirmed_payload);
+
+
 static uint8_t _rak3172_get_port(void)
 {
     return 1;
@@ -286,21 +289,13 @@ static void _rak3172_process_state_send_ok(char* msg)
 static void _rak3172_send_err_code(uint8_t err_code)
 {
     int8_t arr[15] = {0};
-    measurements_def_t  def     = {0};
-    measurements_data_t data    = {0};
-    char name[MEASURE_NAME_NULLED_LEN] = LW_ID_ERR_CODE;
-    memcpy(def.name, name, MEASURE_NAME_NULLED_LEN);
-    def.samplecount = 1;
-    data.value.value_64.sum = err_code;
-    data.value_type = MEASUREMENTS_VALUE_TYPE_I64;
-    data.num_samples = 1;
     if (!protocol_init(arr, ARRAY_SIZE(arr)))
     {
         comms_debug("Could not init memory protocol.");
         return;
     }
-    protocol_append_measurement(&def, &data);
-    rak3172_send(arr, protocol_get_length());
+    protocol_append_error_code(err_code);
+    _rak3172_send2(arr, protocol_get_length(), false);
 }
 
 
@@ -620,7 +615,7 @@ void rak3172_process(char* msg)
 }
 
 
-void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
+static void _rak3172_send2(int8_t* hex_arr, uint16_t arr_len, bool confirmed_payload)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
     {
@@ -630,8 +625,6 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     }
 
     char send_header[RAK3172_MSG_USEND_HEADER_LEN];
-
-    bool confirmed_payload = true;
 
     snprintf(
         send_header,
@@ -658,6 +651,12 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     uart_ring_out(CMD_UART, "\r\n", 2);
     _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_OK;
     _rak3172_ctx.cmd_last_sent = get_since_boot_ms();
+}
+
+
+void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
+{
+    _rak3172_send2(hex_arr, arr_len, true);
 }
 
 

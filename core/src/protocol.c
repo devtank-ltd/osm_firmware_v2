@@ -9,6 +9,7 @@
 
 #define MEASUREMENTS_SEND_STR_LEN               8
 #define MEASUREMENTS_SEND_IS_SIGNED             0x10
+#define PROTOCOL_ERR_CODE_NAME                  "ERR"
 
 
 typedef enum
@@ -238,6 +239,18 @@ bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* d
             r = true;
             break;
     }
+    return !r;
+}
+
+
+bool protocol_append_error_code(uint8_t err_code)
+{
+    bool r = false;
+    char name[MEASURE_NAME_NULLED_LEN] = PROTOCOL_ERR_CODE_NAME;
+    r |= !_protocol_append_i32(*(int32_t*)name);
+    r |= !_protocol_append_i8(MEASUREMENTS_DATATYPE_SINGLE);
+    int64_t err_code64 = err_code;
+    r |= !_protocol_append_data_type_i64(&err_code64);
     return !r;
 }
 
