@@ -1,5 +1,6 @@
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include "lw.h"
 
@@ -132,4 +133,17 @@ bool lw_config_setup_str(char * str)
 syntax_exit:
     log_out("lora_config dev-eui/app-key [EUI/KEY]");
     return false;
+}
+
+
+uint64_t lw_consume(char *p, unsigned len)
+{
+    if (len > 16 || (len % 1))
+        return 0;
+
+    char tmp = p[len];
+    p[len] = 0;
+    uint64_t r = strtoul(p, NULL, 16);
+    p[len] = tmp;
+    return r;
 }

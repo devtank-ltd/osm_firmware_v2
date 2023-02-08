@@ -100,21 +100,22 @@ print_exit:
 }
 
 
-void cmds_process(char * command, unsigned len)
+command_response_t cmds_process(char * command, unsigned len)
 {
     if (!_cmds)
     {
         log_out("Commands not filled.");
-        return;
+        return COMMAND_RESP_ERR;
     }
 
     if (!len)
-        return;
+        return COMMAND_RESP_ERR;
 
     log_sys_debug("Command \"%s\"", command);
 
     bool found = false;
     log_out(LOG_START_SPACER);
+    command_response_t resp = COMMAND_RESP_ERR;
     char * args;
     for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
     {
@@ -142,6 +143,7 @@ void cmds_process(char * command, unsigned len)
         }
     }
     log_out(LOG_END_SPACER);
+    return resp;
 }
 
 
