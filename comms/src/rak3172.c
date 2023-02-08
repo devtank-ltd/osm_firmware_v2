@@ -19,6 +19,7 @@
 #include "sleep.h"
 #include "cmd.h"
 #include "update.h"
+#include "protocol.h"
 
 
 #define RAK3172_TIMEOUT_MS              15000
@@ -284,11 +285,22 @@ static void _rak3172_process_state_send_ok(char* msg)
 
 static void _rak3172_send_err_code(uint8_t err_code)
 {
-    int8_t arr[LW_ID_CMD_LEN + 1] = {0};
-    uint32_t header = LW_ID_ERR_CODE;
-    memcpy(arr, &header, LW_ID_CMD_LEN);
-    arr[LW_ID_CMD_LEN] = *((int8_t*)&err_code);
-    rak3172_send(arr, LW_ID_CMD_LEN + 1);
+    int8_t arr[15] = {0};
+    measurements_def_t  def     = {0};
+    measurements_data_t data    = {0};
+    char name[MEASURE_NAME_NULLED_LEN] = LW_ID_ERR_CODE;
+    memcpy(def.name, name, MEASURE_NAME_NULLED_LEN);
+    def.samplecount = 1;
+    data.value.value_64.sum = err_code;
+    data.value_type = MEASUREMENTS_VALUE_TYPE_I64;
+    data.num_samples = 1;
+    if (!protocol_init(arr, ARRAY_SIZE(arr)))
+    {
+        comms_debug("Could not init memory protocol.");
+        return;
+    }
+    protocol_append_measurement(&def, &data);
+    rak3172_send(arr, protocol_get_length());
 }
 
 

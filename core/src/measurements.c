@@ -16,28 +16,10 @@
 #include "bat.h"
 #include "platform.h"
 #include "platform_model.h"
+#include "protocol.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
-#define MEASUREMENTS_SEND_STR_LEN               8
-
-
-#define MEASUREMENTS_SEND_IS_SIGNED    0x10
-
-typedef enum
-{
-    MEASUREMENTS_SEND_TYPE_UNSET   = 0,
-    MEASUREMENTS_SEND_TYPE_UINT8   = 1,
-    MEASUREMENTS_SEND_TYPE_UINT16  = 2,
-    MEASUREMENTS_SEND_TYPE_UINT32  = 3,
-    MEASUREMENTS_SEND_TYPE_UINT64  = 4,
-    MEASUREMENTS_SEND_TYPE_INT8    = 1 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT16   = 2 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT32   = 3 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT64   = 4 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_FLOAT   = 5 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_STR     = 0x20,
-} measurements_send_type_t;
 
 
 typedef struct
@@ -67,7 +49,6 @@ static bool                         _pending_send                               
 static measurements_check_time_t    _check_time                                          = {0, 0};
 static uint32_t                     _interval_count                                      =  0;
 static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
-static uint16_t                     _measurements_hex_arr_pos                            =  0;
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
@@ -107,211 +88,13 @@ bool _measurements_get_measurements_def(char* name, measurements_def_t ** measur
 }
 
 
-static bool _measurements_arr_append_i8(int8_t val)
-{
-    if (_measurements_hex_arr_pos >= MEASUREMENTS_HEX_ARRAY_SIZE)
-    {
-        log_error("Measurement array is full.");
-        return false;
-    }
-    _measurements_hex_arr[_measurements_hex_arr_pos++] = val;
-    return true;
-}
-
-
-static bool _measurements_arr_append_i16(int16_t val)
-{
-    return _measurements_arr_append_i8(val & 0xFF) &&
-           _measurements_arr_append_i8((val >> 8) & 0xFF);
-}
-
-
-static bool _measurements_arr_append_i32(int32_t val)
-{
-    return _measurements_arr_append_i16(val & 0xFFFF) &&
-           _measurements_arr_append_i16((val >> 16) & 0xFFFF);
-}
-
-
-static bool _measurements_arr_append_i64(int64_t val)
-{
-    return _measurements_arr_append_i32(val & 0xFFFFFFFF) &&
-           _measurements_arr_append_i32((val >> 32) & 0xFFFFFFFF);
-}
-
-
-static bool _measurements_arr_append_float(int32_t val)
-{
-    return _measurements_arr_append_i32(val);
-}
-
-
-static bool _measurements_arr_append_str(char* val, unsigned len)
-{
-    if (len > MEASUREMENTS_SEND_STR_LEN)
-        len = MEASUREMENTS_SEND_STR_LEN;
-    for (unsigned i = 0; i < len; i++)
-    {
-        if (!_measurements_arr_append_i8((int8_t)(val[i])))
-        {
-            return false;
-        }
-    }
-    for (unsigned i = len; i < MEASUREMENTS_SEND_STR_LEN; i++)
-    {
-        if (!_measurements_arr_append_i8((int8_t)0))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-
-static bool _measurements_append_i64(int64_t* value)
-{
-    measurements_send_type_t compressed_type;
-    if (*value > 0)
-    {
-        if (*value > UINT32_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT64;
-        else if (*value > UINT16_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT32;
-        else if (*value > UINT8_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT16;
-        else
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT8;
-    }
-
-    else if (*value > INT32_MAX || *value < INT32_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT64;
-    else if (*value > INT16_MAX || *value < INT16_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT32;
-    else if (*value > INT8_MAX  || *value < INT8_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT16;
-    else
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT8;
-
-    if (!_measurements_arr_append_i8(compressed_type))
-        return false;
-    union
-    {
-        uint8_t  u8;
-        uint16_t u16;
-        uint32_t u32;
-        uint64_t u64;
-    } v;
-    switch(compressed_type)
-    {
-        case MEASUREMENTS_SEND_TYPE_UINT8:
-            v.u8    = *value;
-            return _measurements_arr_append_i8(*(int8_t*)&v.u8);
-        case MEASUREMENTS_SEND_TYPE_INT8:
-            return _measurements_arr_append_i8((int8_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT16:
-            v.u16   = *value;
-            return _measurements_arr_append_i16(*(int16_t*)&v.u16);
-        case MEASUREMENTS_SEND_TYPE_INT16:
-            return _measurements_arr_append_i16((int16_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT32:
-            v.u32   = *value;
-            return _measurements_arr_append_i32(*(int32_t*)&v.u32);
-        case MEASUREMENTS_SEND_TYPE_INT32:
-            return _measurements_arr_append_i32((int32_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT64:
-            v.u64   = *value;
-            return _measurements_arr_append_i64(*(int64_t*)&v.u64);
-        case MEASUREMENTS_SEND_TYPE_INT64:
-            return _measurements_arr_append_i64((int64_t)*value);
-        default: break;
-    }
-    return false;
-}
-
-
-static bool _measurements_append_str(char* value)
-{
-    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_STR))
-        return false;
-    uint8_t len = strnlen(value, MEASUREMENTS_VALUE_STR_LEN);
-    return _measurements_arr_append_str(value, len);
-}
-
-
-static bool _measurements_append_float(int32_t* value)
-{
-    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_FLOAT))
-        return false;
-    return _measurements_arr_append_float(*value);
-}
-
-
-static bool _measurements_to_arr_i64(measurements_data_t* data, bool single)
-{
-    if (single)
-        return _measurements_append_i64(&data->value.value_64.sum);
-    bool r = false;
-    int64_t mean = data->value.value_64.sum / data->num_samples;
-    r |= !_measurements_append_i64(&mean);
-    r |= !_measurements_append_i64(&data->value.value_64.min);
-    r |= !_measurements_append_i64(&data->value.value_64.max);
-    return !r;
-}
-
-
-static bool _measurements_to_arr_str(measurements_data_t* data)
-{
-    return _measurements_append_str(data->value.value_s.str);
-}
-
-
-static bool _measurements_to_arr_float(measurements_data_t* data, bool single)
-{
-    if (single)
-        return _measurements_append_float(&data->value.value_f.sum);
-    bool r = false;
-    int32_t mean = data->value.value_f.sum / data->num_samples;
-    r |= !_measurements_append_float(&mean);
-    r |= !_measurements_append_float(&data->value.value_f.min);
-    r |= !_measurements_append_float(&data->value.value_f.max);
-    return !r;
-}
-
-
-static bool _measurements_to_arr(measurements_def_t* def, measurements_data_t* data)
-{
-    bool single = def->samplecount == 1;
-
-    bool r = 0;
-    r |= !_measurements_arr_append_i32(*(int32_t*)def->name);
-    uint8_t datatype = single ? MEASUREMENTS_DATATYPE_SINGLE : MEASUREMENTS_DATATYPE_AVERAGED;
-    r |= !_measurements_arr_append_i8(datatype);
-
-    switch(data->value_type)
-    {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            r |= !_measurements_to_arr_i64(data, single);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            r |= !_measurements_to_arr_str(data);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r |= !_measurements_to_arr_float(data, single);
-            break;
-        default:
-            measurements_debug("Unknown type '%"PRIu8"'.", data->value_type);
-            return false;
-    }
-    return !r;
-}
-
-
 static bool _measurements_send_start(void)
 {
+    unsigned mtu_size = (comms_get_mtu() / 2);
+    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
+    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
     memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    _measurements_hex_arr_pos = 0;
-
-    if (!_measurements_arr_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    if (!protocol_init(_measurements_hex_arr, size))
     {
         log_error("Failed to add even version to measurements hex array.");
         _pending_send = false;
@@ -346,28 +129,20 @@ bool measurements_send_test(char * name)
         return false;
     }
 
-    bool r = true;
-
-    switch(v_type)
+    measurements_def_t* def;
+    measurements_data_t* data;
+    if (!_measurements_get_measurements_def(name, &def, &data))
     {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            r |= !_measurements_append_i64(&v.v_i64);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            r |= !_measurements_append_str(v.v_str);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r |= !_measurements_append_float(&v.v_f32);
-            break;
-        default:
-            measurements_debug("Unknown type '%"PRIu8"'.", v_type);
-            return false;
+        measurements_debug("Unable to get measurements definition.");
+        return false;
     }
+
+    bool r = protocol_append_measurement(def, data);
 
     if (r)
     {
         measurements_debug("Sending test array.");
-        comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+        comms_send(_measurements_hex_arr, protocol_get_length());
     }
     else measurements_debug("Failed to add to array.");
 
@@ -448,11 +223,8 @@ static void _measurements_send(void)
                 log_error("Measurement \"%s\" requested but value not set.", def->name);
                 continue;
             }
-            uint16_t prev_measurements_hex_arr_pos = _measurements_hex_arr_pos;
-            if (_measurements_hex_arr_pos >= (comms_get_mtu() / 2) ||
-                !_measurements_to_arr(def, data))
+            if (!protocol_append_measurement(def, data))
             {
-                _measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
                 measurements_debug("Failed to queue send of  \"%s\".", def->name);
                 _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
                 _measurements_chunk_start_pos = i;
@@ -483,11 +255,11 @@ static void _measurements_send(void)
         _pending_send = !is_max;
         if (_measurements_debug_mode)
         {
-            for (unsigned j = 0; j < _measurements_hex_arr_pos; j++)
+            for (unsigned j = 0; j < protocol_get_length(); j++)
                 measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
         }
         else
-            comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+            comms_send(_measurements_hex_arr, protocol_get_length());
         if (is_max)
             measurements_debug("Complete send");
         else
@@ -530,7 +302,6 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 
 void on_comms_sent_ack(bool ack)
 {
-    measurements_debug("pending send = %d", _pending_send);
     if (!ack)
     {
         _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos = 0;

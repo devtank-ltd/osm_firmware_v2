@@ -8,7 +8,7 @@
 #define LW_ID_CMD_LEN                       4
 #define LW_ID_CMD                           0x434d4400 /* CMD  */
 #define LW_ID_CCMD                          0x43434d44 /* CCMD */
-#define LW_ID_ERR_CODE                      0x45525200 /* ERR  */
+#define LW_ID_ERR_CODE                      "ERR"      /* ERR  */
 #define LW_ID_FW_START                      0x46572d00 /* FW-  */
 #define LW_ID_FW_CHUNK                      0x46572b00 /* FW+  */
 #define LW_ID_FW_COMPLETE                   0x46574000 /* FW@  */
