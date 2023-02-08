@@ -300,8 +300,6 @@ static void _rak3172_process_state_send_ack(char* msg)
         _rak3172_ctx.reset_count = 0;
         on_comms_sent_ack(true);
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
-        if (_rak3172_ctx.err_code)
-            _rak3172_send_err_code(_rak3172_ctx.err_code);
 
         return;
     }
@@ -458,18 +456,22 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
     {
         case LW_ID_CMD:
         {
+            comms_debug("Message is command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
             cmds_process(_rak3172_ascii_cmd, ascii_len);
             break;
         }
         case LW_ID_CCMD:
         {
+            comms_debug("Message is confirmed command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
             _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len);
+            comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
             break;
         }
         case LW_ID_FW_START:
         {
+            comms_debug("Message is fw start.");
             uint16_t count = (uint16_t)lw_consume(p, 4);
             comms_debug("FW of %"PRIu16" chunks", count);
             _rak3172_next_fw_chunk_id = 0;
@@ -500,6 +502,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
         }
         case LW_ID_FW_COMPLETE:
         {
+            comms_debug("Message is fw complete.");
             if (len < 12 || !_rak3172_next_fw_chunk_id)
             {
                 log_error("RAK4270 FW Finish invalid");
@@ -525,23 +528,38 @@ static void _rak3172_process_unsol(char* msg)
     const char evt[] = "+EVT:";
     unsigned evt_len = strlen(evt);
     if (len < evt_len)
+    {
+        comms_debug("Too short for unsol.");
         return;
-    if (strncmp(msg, evt, len) != 0)
+    }
+    if (strncmp(msg, evt, evt_len) != 0)
+    {
+        comms_debug("Does not match event.");
         return;
+    }
     char * p, * np;
-    p = msg;
+    p = msg + evt_len;
     uint8_t fport = strtoul(p, &np, 10);
     if (p == np)
+    {
+        comms_debug("No port given.");
         return;
+    }
     p = np;
     if (*p != ':')
+    {
+        comms_debug("Incorrect syntax.");
         return;
+    }
     p++;
     unsigned len_left = p - msg;
     for (unsigned i = 0; i < len_left; i++)
     {
         if (!isxdigit(p[i]))
+        {
+            comms_debug("Data is not ascii.");
             return;
+        }
     }
     _rak3172_process_unsol2(fport, p);
 }
@@ -549,6 +567,7 @@ static void _rak3172_process_unsol(char* msg)
 
 void rak3172_process(char* msg)
 {
+    _rak3172_process_unsol(msg);
     switch (_rak3172_ctx.state)
     {
         case RAK3172_STATE_OFF:
@@ -572,7 +591,6 @@ void rak3172_process(char* msg)
         case RAK3172_STATE_RESETTING:
             break;
         case RAK3172_STATE_IDLE:
-            _rak3172_process_unsol(msg);
             break;
         case RAK3172_STATE_SEND_WAIT_REPLAY:
             _rak3172_process_state_send_replay(msg);
@@ -647,6 +665,11 @@ void rak3172_loop_iteration(void)
         case RAK3172_STATE_OFF:
             break;
         case RAK3172_STATE_IDLE:
+            if (_rak3172_ctx.err_code)
+            {
+                _rak3172_send_err_code(_rak3172_ctx.err_code);
+                _rak3172_ctx.err_code = 0;
+            }
             break;
         case RAK3172_STATE_RESETTING:
         {
