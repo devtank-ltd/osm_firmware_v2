@@ -117,13 +117,13 @@
 }
 
 
-#define usart2_isr                      uart0_in_isr
-#define usart3_isr                      uart1_in_isr
-#define usart1_isr                      uart2_in_isr
-#define lpuart1_isr                     uart3_in_isr
+#define uart0_in_isr                    usart2_isr
+#define uart1_in_isr                    usart3_isr
+#define uart2_in_isr                    usart1_isr
+#define uart3_in_isr                    lpuart1_isr
 
 
-#define dma1_channel7_isr               uart0_dma_out_isr
-#define dma1_channel2_isr               uart1_dma_out_isr
-#define dma1_channel5_isr               uart2_dma_out_isr
-#define dma2_channel6_isr               uart3_dma_out_isr
+#define uart0_dma_out_isr               dma1_channel7_isr
+#define uart1_dma_out_isr               dma1_channel2_isr
+#define uart2_dma_out_isr               dma1_channel5_isr
+#define uart3_dma_out_isr               dma2_channel6_isr
