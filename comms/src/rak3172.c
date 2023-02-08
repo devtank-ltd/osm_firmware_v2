@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -16,6 +17,8 @@
 #include "uart_rings.h"
 #include "pinmap.h"
 #include "sleep.h"
+#include "cmd.h"
+#include "update.h"
 
 
 #define RAK3172_TIMEOUT_MS              15000
@@ -61,10 +64,12 @@ typedef enum
 } rak3172_state_t;
 
 
-static uint16_t _rak3172_packet_max_size    = RAK3172_PAYLOAD_MAX_DEFAULT;
+static uint16_t _rak3172_packet_max_size        = RAK3172_PAYLOAD_MAX_DEFAULT;
 
-static bool     _rak3172_boot_enabled       = false;
-static bool     _rak3172_reset_enabled      = false;
+static bool     _rak3172_boot_enabled           = false;
+static bool     _rak3172_reset_enabled          = false;
+static uint16_t _rak3172_next_fw_chunk_id       = 0;
+static char     _rak3172_ascii_cmd[CMD_LINELEN] = {0};
 
 
 struct
@@ -78,6 +83,7 @@ struct
     port_n_pins_t       boot_pin;
     bool                config_is_valid;
     char                last_sent_msg[RAK3172_MAX_CMD_LEN+1];
+    uint8_t             err_code;
 } _rak3172_ctx =
 {
     .init_count       = 0,
@@ -89,6 +95,7 @@ struct
     .boot_pin         = COMMS_BOOT_PORT_N_PINS,
     .config_is_valid  = false,
     .last_sent_msg    = {0},
+    .err_code         = 0,
 };
 
 
@@ -275,14 +282,27 @@ static void _rak3172_process_state_send_ok(char* msg)
 }
 
 
+static void _rak3172_send_err_code(uint8_t err_code)
+{
+    int8_t arr[LW_ID_CMD_LEN + 1] = {0};
+    uint32_t header = LW_ID_ERR_CODE;
+    memcpy(arr, &header, LW_ID_CMD_LEN);
+    arr[LW_ID_CMD_LEN] = *((int8_t*)&err_code);
+    rak3172_send(arr, LW_ID_CMD_LEN + 1);
+}
+
+
 static void _rak3172_process_state_send_ack(char* msg)
 {
     if (msg_is(RAK3172_MSG_ACK, msg))
     {
         comms_debug("READ SEND ACK");
         _rak3172_ctx.reset_count = 0;
-        _rak3172_ctx.state = RAK3172_STATE_IDLE;
         on_comms_sent_ack(true);
+        _rak3172_ctx.state = RAK3172_STATE_IDLE;
+        if (_rak3172_ctx.err_code)
+            _rak3172_send_err_code(_rak3172_ctx.err_code);
+
         return;
     }
     if (msg_is(RAK3172_MSG_NACK, msg))
@@ -401,6 +421,132 @@ void rak3172_reset(void)
 }
 
 
+static unsigned _rak3172_cmd_to_ascii(char* data, char* ascii)
+{
+    unsigned len = strnlen(data, 2*CMD_LINELEN);
+    if (len % 2)
+    {
+        comms_debug("Data misaligned to convert to ascii.");
+        return 0;
+    }
+    char* p = ascii;
+    for (unsigned i = 0; i < len; i+=2)
+    {
+        char letter = (char)lw_consume(&data[i], 2);
+        if (!isascii(letter))
+        {
+            comms_debug("Non-ascii character '0x%"PRIx8"'", letter);
+            return 0;
+        }
+        *p = letter;
+        p++;
+    }
+    return len / 2;
+}
+
+
+static void _rak3172_process_unsol2(uint8_t fport, char* data)
+{
+    char* p = data;
+    unsigned len = strlen(p);
+    if (lw_consume(p, 2) != LW_UNSOL_VERSION)
+        return;
+    p += 2;
+    uint32_t pl_id = (uint32_t)lw_consume(p, 8);
+    p += 8;
+    switch (pl_id)
+    {
+        case LW_ID_CMD:
+        {
+            unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
+            cmds_process(_rak3172_ascii_cmd, ascii_len);
+            break;
+        }
+        case LW_ID_CCMD:
+        {
+            unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
+            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len);
+            break;
+        }
+        case LW_ID_FW_START:
+        {
+            uint16_t count = (uint16_t)lw_consume(p, 4);
+            comms_debug("FW of %"PRIu16" chunks", count);
+            _rak3172_next_fw_chunk_id = 0;
+            fw_ota_reset();
+            break;
+        }
+        case LW_ID_FW_CHUNK:
+        {
+            uint16_t chunk_id = (uint16_t)lw_consume(p, 4);
+            p += 4;
+            unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)data);
+            comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
+            if (_rak3172_next_fw_chunk_id != chunk_id)
+            {
+                log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _rak3172_next_fw_chunk_id);
+                return;
+            }
+            _rak3172_next_fw_chunk_id = chunk_id + 1;
+            char * p_end = p + chunk_len;
+            while(p < p_end)
+            {
+                uint8_t b = (uint8_t)lw_consume(p, 2);
+                p += 2;
+                if (!fw_ota_add_chunk(&b, 1))
+                    break;
+            }
+            break;
+        }
+        case LW_ID_FW_COMPLETE:
+        {
+            if (len < 12 || !_rak3172_next_fw_chunk_id)
+            {
+                log_error("RAK4270 FW Finish invalid");
+                return;
+            }
+            uint16_t crc = (uint16_t)lw_consume(p, 4);
+            fw_ota_complete(crc);
+            _rak3172_next_fw_chunk_id = 0;
+            break;
+        }
+        default:
+        {
+            comms_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
+            break;
+        }
+    }
+}
+
+
+static void _rak3172_process_unsol(char* msg)
+{
+    unsigned len = strlen(msg);
+    const char evt[] = "+EVT:";
+    unsigned evt_len = strlen(evt);
+    if (len < evt_len)
+        return;
+    if (strncmp(msg, evt, len) != 0)
+        return;
+    char * p, * np;
+    p = msg;
+    uint8_t fport = strtoul(p, &np, 10);
+    if (p == np)
+        return;
+    p = np;
+    if (*p != ':')
+        return;
+    p++;
+    unsigned len_left = p - msg;
+    for (unsigned i = 0; i < len_left; i++)
+    {
+        if (!isxdigit(p[i]))
+            return;
+    }
+    _rak3172_process_unsol2(fport, p);
+}
+
+
 void rak3172_process(char* msg)
 {
     switch (_rak3172_ctx.state)
@@ -426,6 +572,7 @@ void rak3172_process(char* msg)
         case RAK3172_STATE_RESETTING:
             break;
         case RAK3172_STATE_IDLE:
+            _rak3172_process_unsol(msg);
             break;
         case RAK3172_STATE_SEND_WAIT_REPLAY:
             _rak3172_process_state_send_replay(msg);

@@ -242,8 +242,9 @@ typedef union
 
 typedef enum
 {
-    COMMAND_RESP_OK     = 0x1,
-    COMMAND_RESP_ERR    = 0x2,
+    COMMAND_RESP_NONE   = 0x00,
+    COMMAND_RESP_OK     = 0x01,
+    COMMAND_RESP_ERR    = 0x02,
 } command_response_t;
 
 
