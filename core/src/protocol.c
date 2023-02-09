@@ -7,25 +7,25 @@
 #include "measurements.h"
 
 
-#define MEASUREMENTS_SEND_STR_LEN               8
-#define MEASUREMENTS_SEND_IS_SIGNED             0x10
+#define PROTOCOL_SEND_STR_LEN               8
 #define PROTOCOL_ERR_CODE_NAME                  "ERR"
 
 
+#define PROTOCOL_SEND_IS_SIGNED             0x10
 typedef enum
 {
-    MEASUREMENTS_SEND_TYPE_UNSET   = 0,
-    MEASUREMENTS_SEND_TYPE_UINT8   = 1,
-    MEASUREMENTS_SEND_TYPE_UINT16  = 2,
-    MEASUREMENTS_SEND_TYPE_UINT32  = 3,
-    MEASUREMENTS_SEND_TYPE_UINT64  = 4,
-    MEASUREMENTS_SEND_TYPE_INT8    = 1 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT16   = 2 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT32   = 3 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT64   = 4 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_FLOAT   = 5 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_STR     = 0x20,
-} measurements_send_type_t;
+    PROTOCOL_SEND_TYPE_UNSET   = 0,
+    PROTOCOL_SEND_TYPE_UINT8   = 1,
+    PROTOCOL_SEND_TYPE_UINT16  = 2,
+    PROTOCOL_SEND_TYPE_UINT32  = 3,
+    PROTOCOL_SEND_TYPE_UINT64  = 4,
+    PROTOCOL_SEND_TYPE_INT8    = 1 | PROTOCOL_SEND_IS_SIGNED,
+    PROTOCOL_SEND_TYPE_INT16   = 2 | PROTOCOL_SEND_IS_SIGNED,
+    PROTOCOL_SEND_TYPE_INT32   = 3 | PROTOCOL_SEND_IS_SIGNED,
+    PROTOCOL_SEND_TYPE_INT64   = 4 | PROTOCOL_SEND_IS_SIGNED,
+    PROTOCOL_SEND_TYPE_FLOAT   = 5 | PROTOCOL_SEND_IS_SIGNED,
+    PROTOCOL_SEND_TYPE_STR     = 0x20,
+} protocol_send_type_t;
 
 
 struct
@@ -88,14 +88,14 @@ static bool _protocol_append_float(int32_t val)
 
 static bool _protocol_append_str(char* val, unsigned len)
 {
-    if (len > MEASUREMENTS_SEND_STR_LEN)
-        len = MEASUREMENTS_SEND_STR_LEN;
+    if (len > PROTOCOL_SEND_STR_LEN)
+        len = PROTOCOL_SEND_STR_LEN;
     for (unsigned i = 0; i < len; i++)
     {
         if (!_protocol_append_i8((int8_t)(val[i])))
             return false;
     }
-    for (unsigned i = len; i < MEASUREMENTS_SEND_STR_LEN; i++)
+    for (unsigned i = len; i < PROTOCOL_SEND_STR_LEN; i++)
     {
         if (!_protocol_append_i8((int8_t)0))
             return false;
@@ -106,27 +106,27 @@ static bool _protocol_append_str(char* val, unsigned len)
 
 static bool _protocol_append_data_type_i64(int64_t* value)
 {
-    measurements_send_type_t compressed_type;
+    protocol_send_type_t compressed_type;
     if (*value > 0)
     {
         if (*value > UINT32_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT64;
+            compressed_type = PROTOCOL_SEND_TYPE_UINT64;
         else if (*value > UINT16_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT32;
+            compressed_type = PROTOCOL_SEND_TYPE_UINT32;
         else if (*value > UINT8_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT16;
+            compressed_type = PROTOCOL_SEND_TYPE_UINT16;
         else
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT8;
+            compressed_type = PROTOCOL_SEND_TYPE_UINT8;
     }
 
     else if (*value > INT32_MAX || *value < INT32_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT64;
+        compressed_type = PROTOCOL_SEND_TYPE_INT64;
     else if (*value > INT16_MAX || *value < INT16_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT32;
+        compressed_type = PROTOCOL_SEND_TYPE_INT32;
     else if (*value > INT8_MAX  || *value < INT8_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT16;
+        compressed_type = PROTOCOL_SEND_TYPE_INT16;
     else
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT8;
+        compressed_type = PROTOCOL_SEND_TYPE_INT8;
 
     if (!_protocol_append_i8(compressed_type))
         return false;
@@ -139,25 +139,25 @@ static bool _protocol_append_data_type_i64(int64_t* value)
     } v;
     switch(compressed_type)
     {
-        case MEASUREMENTS_SEND_TYPE_UINT8:
+        case PROTOCOL_SEND_TYPE_UINT8:
             v.u8    = *value;
             return _protocol_append_i8(*(int8_t*)&v.u8);
-        case MEASUREMENTS_SEND_TYPE_INT8:
+        case PROTOCOL_SEND_TYPE_INT8:
             return _protocol_append_i8((int8_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT16:
+        case PROTOCOL_SEND_TYPE_UINT16:
             v.u16   = *value;
             return _protocol_append_i16(*(int16_t*)&v.u16);
-        case MEASUREMENTS_SEND_TYPE_INT16:
+        case PROTOCOL_SEND_TYPE_INT16:
             return _protocol_append_i16((int16_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT32:
+        case PROTOCOL_SEND_TYPE_UINT32:
             v.u32   = *value;
             return _protocol_append_i32(*(int32_t*)&v.u32);
-        case MEASUREMENTS_SEND_TYPE_INT32:
+        case PROTOCOL_SEND_TYPE_INT32:
             return _protocol_append_i32((int32_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT64:
+        case PROTOCOL_SEND_TYPE_UINT64:
             v.u64   = *value;
             return _protocol_append_i64(*(int64_t*)&v.u64);
-        case MEASUREMENTS_SEND_TYPE_INT64:
+        case PROTOCOL_SEND_TYPE_INT64:
             return _protocol_append_i64((int64_t)*value);
         default: break;
     }
@@ -167,7 +167,7 @@ static bool _protocol_append_data_type_i64(int64_t* value)
 
 static bool _protocol_append_data_type_str(char* value)
 {
-    if (!_protocol_append_i8(MEASUREMENTS_SEND_TYPE_STR))
+    if (!_protocol_append_i8(PROTOCOL_SEND_TYPE_STR))
         return false;
     uint8_t len = strnlen(value, MEASUREMENTS_VALUE_STR_LEN);
     return _protocol_append_str(value, len);
@@ -176,7 +176,7 @@ static bool _protocol_append_data_type_str(char* value)
 
 static bool _protocol_append_data_type_float(int32_t* value)
 {
-    if (!_protocol_append_i8(MEASUREMENTS_SEND_TYPE_FLOAT))
+    if (!_protocol_append_i8(PROTOCOL_SEND_TYPE_FLOAT))
         return false;
     return _protocol_append_float(*value);
 }
