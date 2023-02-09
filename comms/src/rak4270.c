@@ -1054,7 +1054,11 @@ bool rak4270_get_id(char* str, uint8_t len)
 
 struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
-    return tail;
+    static struct cmd_link_t cmds[] =
+    {
+        { "comms_config", "Set the comms config",        rak4270_config_setup_str      , false , NULL },
+    };
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
 
 

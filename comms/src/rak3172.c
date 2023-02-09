@@ -837,6 +837,7 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
+        { "comms_config", "Set the comms config",        rak3172_config_setup_str      , false , NULL },
         { "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
         { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
         { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
