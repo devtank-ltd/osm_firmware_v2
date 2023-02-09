@@ -722,7 +722,10 @@ bool measurements_add(measurements_def_t* measurements_def)
         {
             measurements_inf_t inf;
             if (!model_measurements_get_inf(def, data, &inf))
+            {
+                log_error("Could not get measurement interface.");
                 return false;
+            }
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
             if (inf.enable_cb)
                 inf.enable_cb(def->name, def->interval > 0);
@@ -994,6 +997,7 @@ void measurements_init(void)
     {
         log_error("No persistent loaded, load defaults.");
         model_measurements_add_defaults(_measurements_arr.def);
+        ios_measurements_init();
     }
     else measurements_debug("Loading measurements.");
 

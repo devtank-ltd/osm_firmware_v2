@@ -92,6 +92,7 @@ typedef enum
     FTMA          = 13,
     CUSTOM_0      = 14,
     CUSTOM_1      = 15,
+    IO_READING    = 16,
 } measurements_def_type_t;
 
 
