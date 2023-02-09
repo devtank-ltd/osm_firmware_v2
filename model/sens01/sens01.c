@@ -130,6 +130,7 @@ bool sens01_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
         case LIGHT:         veml7700_inf_init(inf);    break;
         case SOUND:         sai_inf_init(inf);         break;
         case FTMA:          ftma_inf_init(inf);        break;
+        case IO_READING:    ios_inf_init(inf);         break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;

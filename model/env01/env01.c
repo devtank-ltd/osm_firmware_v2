@@ -125,6 +125,7 @@ bool env01_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case PULSE_COUNT:   pulsecount_inf_init(inf);  break;
         case LIGHT:         veml7700_inf_init(inf);    break;
         case SOUND:         sai_inf_init(inf);         break;
+        case IO_READING:    ios_inf_init(inf);         break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;

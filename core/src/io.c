@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "config.h"
 #include "pinmap.h"
@@ -18,6 +19,8 @@ static uint16_t * ios_state;
 
 #define IOS_SPECIAL_STR_LEN                         32
 #define IOS_SPECIAL_INDIV_STR_LEN                   10
+
+#define IOS_MEASUREMENT_NAME_PRE            "IO"
 
 
 static bool _ios_append_special_str(char special_str[IOS_SPECIAL_STR_LEN+1], const char* new_str)
@@ -409,6 +412,10 @@ static command_response_t _io_log_cb(char* args)
 
 static command_response_t _io_cb(char *args)
 {
+    /* io 0 : OUT = NONE
+     * io 1 : IN = DOWN
+     * io 2 = ON
+     */
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
     pos = skip_space(pos);
@@ -570,4 +577,75 @@ struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
                                        { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL }};
     tail = add_commands(tail, cmds, ARRAY_SIZE(cmds));
     return pulsecount_add_commands(tail);
+}
+
+
+void ios_measurements_init(void)
+{
+    measurements_def_t def;
+    def.interval    = 0;
+    def.samplecount = 0;
+    def.type        = IO_READING;
+
+    for (unsigned i = 0; i < IOS_COUNT; i++)
+    {
+        snprintf(def.name, MEASURE_NAME_NULLED_LEN, IOS_MEASUREMENT_NAME_PRE"%02u", i);
+        io_debug("Adding '%s' measurement...", def.name);
+        if (!measurements_add(&def))
+        {
+            io_debug("Failed to add IO measurement '%s'", def.name);
+            return;
+        }
+        io_debug("Added '%s' measurement.", def.name);
+    }
+}
+
+
+static bool _ios_name_to_index(char* name, unsigned* io)
+{
+    if (!name)
+        return false;
+    if (name[0] != 'I' || name[1] != 'O')
+        return false;
+    char* p, * np;
+    p = &name[2];
+    unsigned iol = strtoul(p, &np, 10);
+    if (p == np)
+        return false;
+    if (iol >= IOS_COUNT)
+        return false;
+    *io = iol;
+    return true;
+}
+
+
+static measurements_sensor_state_t _ios_collect(char* name, measurements_reading_t* value)
+{
+    unsigned index;
+    if (!_ios_name_to_index(name, &index))
+    {
+        io_debug("Unable to get index from name.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    uint16_t state = ios_state[index];
+    if (!(state && IO_AS_INPUT))
+    {
+        io_debug("IO is not input.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    value->v_i64 = platform_gpio_get(&ios_pins[index]) ? 1 : 0;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+static measurements_value_type_t _ios_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void ios_inf_init(measurements_inf_t* inf)
+{
+    inf->get_cb             = _ios_collect;
+    inf->value_type_cb      = _ios_value_type;
 }

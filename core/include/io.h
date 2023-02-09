@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "base_types.h"
+#include "measurements.h"
 
 
 typedef enum
@@ -35,3 +36,6 @@ extern void     io_log(unsigned io);
 extern void     ios_log();
 
 extern struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail);
+
+extern void     ios_inf_init(measurements_inf_t* inf);
+extern void     ios_measurements_init(void);

@@ -10,6 +10,7 @@
 #include "platform.h"
 #include "platform_model.h"
 #include "common.h"
+#include "io.h"
 
 
 persist_storage_t               persist_data __attribute__((aligned (16)));
