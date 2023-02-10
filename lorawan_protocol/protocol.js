@@ -61,7 +61,6 @@ function Decode_i32(bytes, pos)
     pos, val = Decode_u32(bytes, pos);
     if (val > UINT32_MAX / 2)
     {
-        
         val -= (UINT32_MAX + 1);
     }
     return (pos, val);
@@ -192,6 +191,8 @@ function Decode(fPort, bytes, variables)
             }
             pos++;
         }
+        name = name.trim();
+        name = name.replace(" ", "_");
         var data_type = bytes[pos++];
         var value_type, func;
         var mean, min, max;
