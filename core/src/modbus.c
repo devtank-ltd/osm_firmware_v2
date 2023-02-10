@@ -204,7 +204,11 @@ bool modbus_add_dev_from_str(char* str)
         goto bad_exit;
     pos += 3;
 
-    char * name = skip_space(pos);
+    pos = skip_space(pos);
+
+    unsigned len = strnlen(pos, MEASURE_NAME_LEN);
+    char name[MEASURE_NAME_NULLED_LEN];
+    strncpy(name, pos, len+1);
 
     if (modbus_add_device(unit_id, name, byte_order, word_order))
         log_out("Added modbus device");

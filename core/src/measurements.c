@@ -950,10 +950,26 @@ bool measurements_add(measurements_def_t* measurements_def)
         {
             measurements_inf_t inf;
             if (!model_measurements_get_inf(def, data, &inf))
+            {
+                memset(def, 0, sizeof(measurements_def_t));
+                memset(data, 0, sizeof(measurements_data_t));
                 return false;
+            }
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
             if (inf.enable_cb)
                 inf.enable_cb(def->name, def->interval > 0);
+        }
+        unsigned name_len = strnlen(def->name, MEASURE_NAME_LEN);
+        unsigned i;
+        for (i = 0; i < name_len; i++)
+        {
+            if (def->name[i] == ' ')
+                def->name[i] = '_';
+        }
+        for (i = name_len; i < MEASURE_NAME_LEN; i++)
+        {
+            if (def->name[i] == ' ')
+                def->name[i] = '\0';
         }
         return true;
     }
@@ -1269,7 +1285,7 @@ void measurements_power_mode(measurements_power_mode_t mode)
 }
 
 typedef struct
-{ 
+{
     measurements_info_t        base;
     measurements_reading_t*    reading;
     measurements_value_type_t* type;
