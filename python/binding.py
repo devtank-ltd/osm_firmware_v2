@@ -149,6 +149,15 @@ class measurement_t(property_t):
         self.parent.change_interval(self.name, v)
         self._interval = v
 
+    @property
+    def samplecount(self):
+        return self._samples
+
+    @samplecount.setter
+    def samplecount(self, v):
+        self.parent.change_samplec(self.name, v)
+        self._samples = v
+
 
 class modbus_reg_t(measurement_t):
     def __init__(self, parent, name: str, address: int, func: int, mb_type_: str, interval: int = 1, samples: int = 1, timeout: float = 2.0):
@@ -387,33 +396,33 @@ class dev_t(dev_base_t):
     @dev_eui.setter
     def dev_eui(self, eui):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
-    
+
     def change_samplec(self, meas, val):
         self.do_cmd(f"samplecount {meas} {val}")
-    
+
     def change_interval(self, meas, val):
         self.do_cmd(f"interval {meas} {val}")
-    
+
     def activate_io(self, meas, pin, pull):
         #Enabling one wire or pulsecount e.g. "en_w1 4 U"
         self.do_cmd(f"{meas} {pin} {pull}")
-    
+
     def disable_io(self, pin):
         self.do_cmd(f"io {pin} : I N")
-    
+
     @property
     def print_cc_gain(self):
         return self.do_cmd_multi("cc_gain")
-    
+
     def get_midpoint(self, phase):
         return self.do_cmd_multi(f"cc_mp {phase}")
-    
+
     def update_midpoint(self, value, phase):
         return self.do_cmd_multi(f"cc_mp {value} {phase}")
-    
+
     def set_outer_inner_cc(self, phase, outer, inner):
         self.do_cmd(f"cc_gain {phase} {outer} {inner}")
-    
+
     def save(self):
         self.do_cmd("save")
 
@@ -463,7 +472,10 @@ class dev_t(dev_base_t):
             name, interval, sample_count = line.split()
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
-            self._children[name] = measurement_t(self, name, interval, sample_count)
+            new_measurement = measurement_t(self, name, interval, sample_count)
+            if name == "PM10" or name == "PM25":
+                new_measurement.timeout = 15
+            self._children[name] = new_measurement
 
     def measurements_enable(self, value):
         self.do_cmd("meas_enable %s" % ("1" if value else "0"))
@@ -545,7 +557,7 @@ class dev_t(dev_base_t):
 
     def modbus_dev_del(self, device: str):
         self.do_cmd(f"mb_dev_del {device}")
-    
+
     def modbus_reg_del(self, reg: str):
         self.do_cmd(f"mb_reg_del {reg}")
 

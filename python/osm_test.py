@@ -32,18 +32,24 @@ class test_framework_t(object):
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
 
-    DEFAULT_COMMS_MATCH_DICT = {'TEMP'    : 21.59,
-                                'TEMP_min': 21.59,
-                                'TEMP_max': 21.59,
-                                'HUMI'    : 65.284,
-                                'HUMI_min': 65.284,
-                                'HUMI_max': 65.284,
-                                'BAT'     : 131.071,
-                                'BAT_min' : 131.071,
-                                'BAT_max' : 131.071,
-                                'LGHT'    : 1023,
-                                'LGHT_min': 1023,
-                                'LGHT_max': 1023}
+    DEFAULT_COMMS_MATCH_DICT = {
+          "PM10"    : 30,
+          "PM10_min": 30,
+          "PM10_max": 30,
+          "PM25"    : 20,
+          "PM25_min": 20,
+          "PM25_max": 20,
+          "TMP2"    : 25.087,
+          "TMP2_min": 25.087,
+          "TMP2_max": 25.087,
+          "TEMP"    : 21.59,
+          "TEMP_min": 21.59,
+          "TEMP_max": 21.59,
+          "HUMI"    : 65.284,
+          "HUMI_min": 65.284,
+          "HUMI_max": 65.284,
+          "PF"      : 1023,
+        }
 
     def __init__(self, osm_path, log_file=None):
         self._logger = basetypes.get_logger(log_file)
@@ -164,13 +170,20 @@ class test_framework_t(object):
         self._vosm_conn.PM10.interval = 1
         self._vosm_conn.PM25.interval = 1
         self._vosm_conn.TMP2.interval = 1
-        self._vosm_conn.CC1.interval = 1
-        self._vosm_conn.CC2.interval = 1
-        self._vosm_conn.CC3.interval = 1
+        self._vosm_conn.CC1.interval =  1
+        self._vosm_conn.CC2.interval =  1
+        self._vosm_conn.CC3.interval =  1
         self._vosm_conn.FTA1.interval = 1
         self._vosm_conn.FTA2.interval = 1
         self._vosm_conn.FTA3.interval = 1
         self._vosm_conn.FTA4.interval = 1
+        self._vosm_conn.CC1.samplecount =  5
+        self._vosm_conn.CC2.samplecount =  5
+        self._vosm_conn.CC3.samplecount =  5
+        self._vosm_conn.FTA1.samplecount = 5
+        self._vosm_conn.FTA2.samplecount = 5
+        self._vosm_conn.FTA3.samplecount = 5
+        self._vosm_conn.FTA4.samplecount = 5
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
