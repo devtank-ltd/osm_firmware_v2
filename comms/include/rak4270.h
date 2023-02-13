@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "base_types.h"
 
 
 extern uint16_t rak4270_get_mtu(void);
@@ -17,7 +18,7 @@ extern void     rak4270_process(char* message);
 extern bool     rak4270_get_connected(void);
 extern void     rak4270_loop_iteration(void);
 
-extern void     rak4270_config_setup_str(char * str);
+extern command_response_t rak4270_config_setup_str(char * str);
 
 extern bool     rak4270_get_id(char* str, uint8_t len);
 

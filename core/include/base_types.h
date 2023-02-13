@@ -67,7 +67,8 @@ typedef enum
     IO_SPECIAL_PULSECOUNT_RISING_EDGE   = 0x2000,
     IO_SPECIAL_PULSECOUNT_BOTH_EDGE     = 0x3000,
     IO_SPECIAL_ONEWIRE                  = 0x4000,
-    IO_SPECIAL_MAX                      = IO_SPECIAL_ONEWIRE,
+    IO_SPECIAL_WATCH                    = 0x5000,
+    IO_SPECIAL_MAX                      = IO_SPECIAL_WATCH,
 } io_special_t;
 
 

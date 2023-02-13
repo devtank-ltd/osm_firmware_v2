@@ -65,7 +65,7 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60)
 
 
-bool _measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
+bool measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
 {
     if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
         return false;
@@ -131,7 +131,7 @@ bool measurements_send_test(char * name)
 
     measurements_def_t* def;
     measurements_data_t* data;
-    if (!_measurements_get_measurements_def(name, &def, &data))
+    if (!measurements_get_measurements_def(name, &def, &data))
     {
         measurements_debug("Unable to get measurements definition.");
         return false;
@@ -763,7 +763,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 {
     measurements_def_t* def = NULL;
     measurements_data_t* data;
-    if (!_measurements_get_measurements_def(name, &def, &data))
+    if (!measurements_get_measurements_def(name, &def, &data))
     {
         return false;
     }
@@ -783,7 +783,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 bool measurements_get_interval(char* name, uint8_t * interval)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!interval || !_measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!interval || !measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -800,7 +800,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurements_def_t* measurements_def = NULL;
-    if (!_measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -812,7 +812,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!samplecount || !_measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!samplecount || !measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -886,6 +886,64 @@ static void _measurements_sleep_iteration(void)
 }
 
 
+static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, measurements_value_type_t* type);
+
+
+void _measurements_check_instant_send(void)
+{
+    bool to_instant_send = false;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        if (_measurements_arr.data[i].instant_send)
+            to_instant_send = true;
+    }
+
+    if (!to_instant_send)
+        return;
+
+    unsigned mtu_size = (comms_get_mtu() / 2);
+    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
+    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
+    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
+    if (!protocol_init(_measurements_hex_arr, size))
+    {
+        measurements_debug("Could not initialise the hex array for the protocol.");
+        return;
+    }
+
+    unsigned count = 0;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        measurements_def_t* def = &_measurements_arr.def[i];
+        measurements_data_t* data = &_measurements_arr.data[i];
+        if (data->instant_send)
+        {
+            data->instant_send = 0;
+            /* TODO: Add a check to ensure last sent wasn't 0 seconds ago */
+            measurements_reading_t reading;
+            measurements_value_type_t type;
+            if (!_measurements_get_reading2(def, data, &reading, &type))
+            {
+                measurements_debug("Could not get measurement '%s' for instant send.", def->name);
+                continue;
+            }
+            if (!protocol_append_instant_measurement(def, &reading, type))
+            {
+                measurements_debug("Could not add measurement '%s' to array.", def->name);
+                break;
+            }
+            count++;
+        }
+    }
+    if (!count)
+    {
+        measurements_debug("No measurements were added, not sending.");
+        return;
+    }
+    comms_send(_measurements_hex_arr, protocol_get_length());
+}
+
+
 void measurements_loop_iteration(void)
 {
     if (!measurements_enabled)
@@ -914,6 +972,8 @@ void measurements_loop_iteration(void)
         has_printed_no_con = false;
         return;
     }
+
+    _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
     {
@@ -1091,18 +1151,11 @@ static bool _measurements_get_reading_collection(void* userdata)
 }
 
 
-bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
+static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, measurements_value_type_t* type)
 {
-    if (!measurement_name || !reading)
+    if (!def|| !data || !reading)
     {
         measurements_debug("Handed NULL pointer.");
-        return false;
-    }
-    measurements_def_t* def;
-    measurements_data_t* data;
-    if (!_measurements_get_measurements_def(measurement_name, &def, &data))
-    {
-        measurements_debug("Could not get measurement definition and data.");
         return false;
     }
 
@@ -1157,6 +1210,24 @@ bad_exit:
 }
 
 
+bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
+{
+    if (!measurement_name || !reading)
+    {
+        measurements_debug("Handed NULL pointer.");
+        return false;
+    }
+    measurements_def_t* def;
+    measurements_data_t* data;
+    if (!measurements_get_measurements_def(measurement_name, &def, &data))
+    {
+        measurements_debug("Could not get measurement definition and data.");
+        return false;
+    }
+    return _measurements_get_reading2(def, data, reading, type);
+}
+
+
 bool measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len)
 {
     if (!reading || !text)
@@ -1193,13 +1264,13 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
     }
     char new_name[MEASURE_NAME_NULLED_LEN] = {0};
     strncpy(new_name, new_name_raw, MEASURE_NAME_LEN);
-    if (_measurements_get_measurements_def(new_name, NULL, NULL))
+    if (measurements_get_measurements_def(new_name, NULL, NULL))
     {
         measurements_debug("Measurement with new name already exists.");
         return false;
     }
     measurements_def_t* def;
-    if (!_measurements_get_measurements_def(orig_name, &def, NULL))
+    if (!measurements_get_measurements_def(orig_name, &def, NULL))
     {
         measurements_debug("Can not get the measurements def.");
         return false;

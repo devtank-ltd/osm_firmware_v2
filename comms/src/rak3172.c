@@ -711,10 +711,12 @@ void rak3172_loop_iteration(void)
 }
 
 
-void rak3172_config_setup_str(char* str)
+command_response_t rak3172_config_setup_str(char* str)
 {
-    if (lw_config_setup_str(str))
+    bool r = lw_config_setup_str(str);
+    if (r)
         _rak3172_reload_config();
+    return r ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 

@@ -14,13 +14,21 @@
 #include "common.h"
 #include "platform_model.h"
 
+#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
+#define IOS_WATCH_COUNT                     2
+
 static const port_n_pins_t ios_pins[]           = IOS_PORT_N_PINS;
 static uint16_t * ios_state;
 
-#define IOS_SPECIAL_STR_LEN                         32
+static unsigned _ios_watch_ios[IOS_WATCH_COUNT]     = IOS_WATCH_IOS;
+static measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
+static measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
+
+#define IOS_SPECIAL_STR_LEN                         64
 #define IOS_SPECIAL_INDIV_STR_LEN                   10
 
 #define IOS_MEASUREMENT_NAME_PRE            "IO"
+
 
 
 static bool _ios_append_special_str(char special_str[IOS_SPECIAL_STR_LEN+1], const char* new_str)
@@ -48,6 +56,8 @@ static char* _ios_get_type_active(uint16_t io_state)
             return "PLSCNT B";
         case IO_SPECIAL_ONEWIRE:
             return "W1";
+        case IO_SPECIAL_WATCH:
+            return "WATCH";
         default:
             return "";
     }
@@ -92,6 +102,10 @@ static char* _ios_get_type_possible(unsigned io)
                     return special_str;
                 break;
             }
+            case IO_SPECIAL_WATCH:
+                if (!_ios_append_special_str(special_str, "WATCH"))
+                    return special_str;
+                break;
             default:
             {
                 if (!_ios_append_special_str(special_str, "UNKWN"))
@@ -142,6 +156,9 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 }
 
 
+static bool _ios_enable_watch(unsigned io);
+
+
 void     ios_init(void)
 {
     ios_state = persist_data.model_config.ios_state;
@@ -169,10 +186,31 @@ void     ios_init(void)
             {
                 pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
             }
+            if (io_state & IO_SPECIAL_WATCH)
+                _ios_enable_watch(n);
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
         else
             _ios_setup_gpio(n, io_state);
+    }
+}
+
+
+void ios_post_init(void)
+{
+    char name[MEASURE_NAME_NULLED_LEN] = IOS_MEASUREMENT_NAME_PRE;
+    unsigned len = strnlen(name, MEASURE_NAME_LEN);
+    char* p = name + len;
+    for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
+    {
+        unsigned io = _ios_watch_ios[i];
+        snprintf(p, MEASURE_NAME_NULLED_LEN - len, "%02u", io);
+        if (!measurements_get_measurements_def(name, &_ios_watch_measurements_def[i], &_ios_watch_measurements_data[i]))
+        {
+            _ios_watch_measurements_def[i] = NULL;
+            _ios_watch_measurements_data[i] = NULL;
+            io_debug("Could not find measurements data for '%s'", name);
+        }
     }
 }
 
@@ -305,6 +343,14 @@ bool io_is_pulsecount_now(unsigned io)
     return (special == IO_SPECIAL_PULSECOUNT_RISING_EDGE    ||
             special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE   ||
             special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE      );
+}
+
+
+bool io_is_watch_now(unsigned io)
+{
+    if (io >= ARRAY_SIZE(ios_pins))
+        return false;
+    return (ios_state[io] & IO_ACTIVE_SPECIAL_MASK) == IO_SPECIAL_WATCH;
 }
 
 
@@ -569,12 +615,29 @@ static command_response_t _io_cmd_enable_onewire_cb(char * args)
 }
 
 
+static command_response_t _io_cmd_enable_watch_cb(char* args)
+{
+    char * pos = NULL;
+    unsigned io = strtoul(args, &pos, 10);
+
+    if (_ios_enable_watch(io))
+    {
+        log_out("IO %02u watch enabled", io);
+        return COMMAND_RESP_OK;
+    }
+
+    log_out("IO %02u can not be watched", io);
+    return COMMAND_RESP_ERR;
+}
+
+
 struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           _io_log_cb                        , false , NULL },
                                        { "io",           "Get/set IO set.",          _io_cb                            , false , NULL },
                                        { "en_pulse",     "Enable Pulsecount IO.",    _io_cmd_enable_pulsecount_cb      , false , NULL },
-                                       { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL }};
+                                       { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL },
+                                       { "en_watch",     "Enable Watch IO.",         _io_cmd_enable_watch_cb           , false , NULL }};
     tail = add_commands(tail, cmds, ARRAY_SIZE(cmds));
     return pulsecount_add_commands(tail);
 }
@@ -587,9 +650,10 @@ void ios_measurements_init(void)
     def.samplecount = 0;
     def.type        = IO_READING;
 
-    for (unsigned i = 0; i < IOS_COUNT; i++)
+    for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
-        snprintf(def.name, MEASURE_NAME_NULLED_LEN, IOS_MEASUREMENT_NAME_PRE"%02u", i);
+        unsigned io = _ios_watch_ios[i];
+        snprintf(def.name, MEASURE_NAME_NULLED_LEN, IOS_MEASUREMENT_NAME_PRE"%02u", io);
         io_debug("Adding '%s' measurement...", def.name);
         if (!measurements_add(&def))
         {
@@ -648,4 +712,79 @@ void ios_inf_init(measurements_inf_t* inf)
 {
     inf->get_cb             = _ios_collect;
     inf->value_type_cb      = _ios_value_type;
+}
+
+
+static void _ios_enable_watch_handle_interrupt(unsigned io)
+{
+    if (io >= IOS_COUNT)
+        return;
+    measurements_def_t* def = _ios_watch_measurements_def[io];
+    measurements_data_t* data = _ios_watch_measurements_data[io];
+    if (!def || !data)
+        return;
+
+    if (!def->interval || !def->samplecount)
+        return;
+
+    data->instant_send = 1;
+}
+
+
+// cppcheck-suppress unusedFunction ; System handler
+void W1_PULSE_1_ISR(void)
+{
+    if (io_is_pulsecount_now(W1_PULSE_1_IO))
+    {
+        pulsecount_handle_interrupt_1();
+        return;
+    }
+    _ios_enable_watch_handle_interrupt(W1_PULSE_1_IO);
+}
+
+
+// cppcheck-suppress unusedFunction ; System handler
+void W1_PULSE_2_ISR(void)
+{
+    if (io_is_pulsecount_now(W1_PULSE_2_IO))
+    {
+        pulsecount_handle_interrupt_2();
+        return;
+    }
+    _ios_enable_watch_handle_interrupt(W1_PULSE_2_IO);
+}
+
+
+static bool _ios_enable_watch(unsigned io)
+{
+    if (io >= IOS_COUNT)
+    {
+        io_debug("IO %u is out of range.", io);
+        return false;
+    }
+    if (io_is_pulsecount_now(io))
+    {
+        io_debug("IO %u is already pulsecount.", io);
+        return false;
+    }
+
+    bool found = false;
+    for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
+    {
+        if (io == _ios_watch_ios[i])
+        {
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+    {
+        io_debug("IO %u is not supported for instant send.", io);
+        return false;
+    }
+
+    /* Setup pins and interrupt to both? */
+
+    io_debug("Set up IO %u to instant send.", io);
+    return true;
 }

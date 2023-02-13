@@ -1039,10 +1039,12 @@ void rak4270_loop_iteration(void)
 }
 
 
-void rak4270_config_setup_str(char* str)
+command_response_t rak4270_config_setup_str(char* str)
 {
-    if (lw_config_setup_str(str))
+    bool r = lw_config_setup_str(str);
+    if (r)
         _rak4270_reload_config();
+    return r ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
