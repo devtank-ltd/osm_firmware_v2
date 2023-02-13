@@ -1490,7 +1490,7 @@ class config_gui_window_t(Tk):
                                    command=lambda:
                                    self._shift_down(self.template_regs_box,
                                                     self.template_list,
-                                                    None, 'temp_reg_box'),
+                                                    None, 'temp_reg_box'), 
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    activebackground="green", activeforeground=IVORY)
         shift_down_button.grid(column=2, row=11, sticky=EW)
@@ -1587,10 +1587,10 @@ class config_gui_window_t(Tk):
                 doc = yaml.full_load(f)
                 if doc:
                     for i, item in enumerate(doc):
-                        doc_temp_name = doc[i]['templates'][0]['template_name']
+                        doc_temp_name = doc[i]['templates'][0]['name']
                         if doc_temp_name == edited_template:
                             templ = doc[i]['templates'][0]
-                            template_name = templ['template_name']
+                            template_name = templ['name']
                             description = templ['description']
                             if copy == " (copy)":
                                 self.name_entry.insert(0, template_name + copy)
@@ -1599,7 +1599,7 @@ class config_gui_window_t(Tk):
                             self.desc_entry.insert(0, description)
                             device = doc[i]['devices'][0]
                             register = doc[i]['registers'][0]
-                            device_name = device['device_name']
+                            device_name = device['name']
                             unit_id = device['unit_id']
                             bytes = device['byte_order']
                             baudrate = device['baudrate']
@@ -1700,7 +1700,7 @@ class config_gui_window_t(Tk):
             with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
-                    if doc[v]['templates'][0]['template_name'] == temp:
+                    if doc[v]['templates'][0]['name'] == temp:
                         for i, d in enumerate(doc[v]['registers'][0]['reg_name']):
                             if d == data[3]:
                                 register = doc[v]['registers'][0]
@@ -1756,7 +1756,7 @@ class config_gui_window_t(Tk):
             with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
-                    if doc[v]['templates'][0]['template_name'] == template:
+                    if doc[v]['templates'][0]['name'] == template:
                         for i, d in enumerate(doc[v]['registers'][0]['reg_name']):
                             if d == data[3]:
                                 register = doc[v]['registers'][0]
@@ -1843,14 +1843,14 @@ class config_gui_window_t(Tk):
                         doc = yaml.full_load(f)
                         if doc:
                             for y, item in enumerate(doc):
-                                if item['templates'][0]['template_name'] == str(self.name_entry.get()):
+                                if item['templates'][0]['name'] == str(self.name_entry.get()):
                                     del doc[y]
                                     if len(doc) == 0:
                                         del doc
                                     with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                                         if f:
                                             yaml.dump(doc, f)
-                if len(exists) == 0 or exists[0][1] == str(self.dev_entry.get()):
+                if copy == 'edit' or len(exists) == 0 or exists[0][1] == str(self.dev_entry.get()):
                     self._send_to_yaml(window)
                 else:
                     tkinter.messagebox.showerror(

@@ -214,7 +214,7 @@ class modbus_funcs_t(config_gui.config_gui_window_t):
                             self.desc_entry.insert(0, description)
                             device = doc[i]['devices'][0]
                             register = doc[i]['registers'][0]
-                            device_name = device['device_name']
+                            device_name = device['name']
                             unit_id = device['unit_id']
                             bytes = device['byte_order']
                             baudrate = device['baudrate']

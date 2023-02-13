@@ -4,7 +4,8 @@ from modbus_db import modb_database_t, find_path
 
 GET_TEMP_ID = modbus_db.GET_TEMP_ID
 DEL_TEMP_ID = modbus_db.DEL_TEMP_ID
-DEL_TEMP_REG = modbus_db.DEL_TEMP_REG
+DEL_REGS = modbus_db.DEL_REGS
+DEL_DEV = modbus_db.DEL_DEV
 INS_TEMP = modbus_db.INS_TEMP
 MAX_TMP_ID = modbus_db.MAX_TMP_ID
 INS_INTO_DEV = modbus_db.INS_INTO_DEV
@@ -13,6 +14,10 @@ INS_INTO_REGS = modbus_db.INS_INTO_REGS
 INS_TMP_REG = modbus_db.INS_TMP_REG
 GET_UNIT_IDS = modbus_db.GET_UNIT_IDS
 GET_TMP_N = modbus_db.GET_TMP_N
+UPDATE_DEV = modbus_db.UPDATE_DEV
+UPDATE_REGS = modbus_db.UPDATE_REGS
+GET_DEV_N = modbus_db.GET_DEV_NAME
+
 PATH = find_path()
 
 class modbus_funcs_t():
@@ -34,7 +39,7 @@ class modbus_funcs_t():
             with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
-                    if doc[v]['templates'][0]['template_name'] == temp:
+                    if doc[v]['templates'][0]['name'] == temp:
                         for i, d in enumerate(doc[v]['registers'][0]['reg_name']):
                             if d == reg[3]:
                                 register = doc[v]['registers'][0]
@@ -57,7 +62,7 @@ class modbus_funcs_t():
                     {
                         'unit_id':          uid,
                         'byte_order':         byts,
-                        'device_name':        dev_n,
+                        'name':        dev_n,
                         'baudrate':         baud,
                         'bits':      ch_bits,
                         'parity':          par,
@@ -76,7 +81,7 @@ class modbus_funcs_t():
                 ],
                 'templates': [
                     {
-                        'template_name':   tmp_n,
+                        'name':   tmp_n,
                         'description': dsc_val
                     }
                 ]
@@ -101,7 +106,7 @@ class modbus_funcs_t():
                 data_type_list = doc_reg['data_type']
                 reg_name_list = doc_reg['reg_name']
                 reg_desc_list = doc_reg['reg_desc']
-                yaml_template_name = doc['templates'][0]['template_name']
+                yaml_template_name = doc['templates'][0]['name']
             yaml_list = []
             for i in range(len(hex_addr_list)):
                 new_list = []
@@ -133,7 +138,7 @@ class modbus_funcs_t():
         with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
             doc = yaml.full_load(f)
             for y, item in enumerate(doc):
-                if item['templates'][0]['template_name'] == chosen_template:
+                if item['templates'][0]['name'] == chosen_template:
                     del doc[y]
                     if len(doc) == 0:
                         del doc
@@ -146,7 +151,7 @@ class modbus_funcs_t():
             with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for i, v in enumerate(doc):
-                    if doc[i]['templates'][0]['template_name'] == edited_template:
+                    if doc[i]['templates'][0]['name'] == edited_template:
                         del doc[i]
                         if len(doc) == 0:
                             del doc
@@ -180,7 +185,8 @@ class modbus_funcs_t():
                     chosen_template = doc
                     if doc:
                         self.db.cur.execute(DEL_TEMP_ID(chosen_template))
-                        self.db.cur.execute(DEL_TEMP_REG(chosen_template))
+                        # self.db.cur.execute(DEL_TEMP_REG(chosen_template))
+                        self.db.cur.execute(DEL_REGS(chosen_template))
         with open(PATH + '/yaml_files/modbus_data.yaml') as f:
             document = yaml.full_load(f)
             if document:
@@ -194,7 +200,7 @@ class modbus_funcs_t():
                         data_type_list = register['data_type']
                         reg_name_list = register['reg_name']
                         reg_desc_list = register['reg_desc']
-                        temp_name = tmpl['template_name']
+                        temp_name = tmpl['name']
                         exist_tmp = None
                         temp_exists = self.db.cur.execute(
                             GET_TEMP_ID(temp_name))
@@ -217,35 +223,63 @@ class modbus_funcs_t():
                         yaml_parity = device['parity']
                         yaml_stop_bits = device['stop_bits']
                         yaml_binary = device['binary']
-                        yaml_dev_name = device['device_name']
-                        yaml_template_name = tmpl['template_name']
+                        yaml_dev_name = device['name']
+                        yaml_template_name = tmpl['name']
                         yaml_description = tmpl['description']
-                        self.db.cur.execute(
-                            INS_TEMP(yaml_template_name, yaml_description))
+                        dev_n = self.db.cur.execute(GET_DEV_N(int(yaml_unit_id)))
+                        dev_n = dev_n.fetchone()
 
-                        if exist_tmp != None:
-                            self.db.cur.execute(DEL_TEMP_REG(exist_tmp))
-                        else:
+                        if exist_tmp == None:
+                            self.db.cur.execute(
+                                INS_TEMP(yaml_template_name, yaml_description))
+
+                            # if dev_n:
+                            #     del_dev = dev_n[0]
+                            #     self.db.cur.execute(DEL_DEV(del_dev))
+                            self.db.cur.execute(INS_INTO_DEV(yaml_unit_id, yaml_bytes,
+                                                            yaml_dev_name, yaml_baudrate,
+                                                            yaml_bits, yaml_parity,
+                                                            yaml_stop_bits, yaml_binary))
+                            dev_id = self.db.cur.execute(GET_DEV_ID(yaml_dev_name))
+                            dev_id_t = dev_id.fetchone()[0]
                             d = self.db.cur.execute(MAX_TMP_ID)
-                            exist_tmp = d.fetchone()[0]
-
-                        self.db.cur.execute(INS_INTO_DEV(yaml_unit_id, yaml_bytes,
-                                                         yaml_dev_name, yaml_baudrate,
-                                                         yaml_bits, yaml_parity,
-                                                         yaml_stop_bits, yaml_binary))
-                        dev_id = self.db.cur.execute(GET_DEV_ID(yaml_dev_name))
-                        dev_id_t = dev_id.fetchone()[0]
-                        tmp_id = exist_tmp
-                        for i in reg_list:
-                            yaml_hex = i[0]
-                            yaml_func = int(i[1])
-                            yaml_data_t = i[2]
-                            yaml_reg_name = i[3]
-                            yaml_reg_desc = i[4]
-                            self.db.cur.execute(INS_INTO_REGS(yaml_hex, yaml_func, yaml_data_t,
-                                                              yaml_reg_name, yaml_reg_desc, dev_id_t))
-                            reg_id = self.db.get_reg_ids(yaml_hex)
-                            self.db.cur.execute(INS_TMP_REG(tmp_id, reg_id[0]))
+                            tmp_id = d.fetchone()[0]
+                            for i in reg_list:
+                                yaml_hex = i[0]
+                                yaml_func = int(i[1])
+                                yaml_data_t = i[2]
+                                yaml_reg_name = i[3]
+                                yaml_reg_desc = i[4]
+                                self.db.cur.execute(INS_INTO_REGS(yaml_hex, yaml_func, yaml_data_t,
+                                                                yaml_reg_name, yaml_reg_desc, dev_id_t, tmp_id))
+                                # reg_id = self.db.get_reg_ids(yaml_hex, yaml_reg_name)
+                                # self.db.cur.execute(INS_TMP_REG(tmp_id, reg_id[0]))
+                        else:
+                            # self.db.cur.execute(DEL_REGS(exist_tmp))
+                            # if dev_n:
+                            #     del_dev = dev_n[0]
+                            #     self.db.cur.execute(DEL_DEV(del_dev))
+                            self.db.cur.execute(INS_INTO_DEV(yaml_unit_id, yaml_bytes,
+                                                            yaml_dev_name, yaml_baudrate,
+                                                            yaml_bits, yaml_parity,
+                                                            yaml_stop_bits, yaml_binary))
+                            dev_id = self.db.cur.execute(GET_DEV_ID(yaml_dev_name))
+                            dev_id_t = dev_id.fetchone()[0]
+                            self.db.cur.execute(DEL_TEMP_ID(exist_tmp))
+                            self.db.cur.execute(
+                                INS_TEMP(yaml_template_name, yaml_description))
+                            d = self.db.cur.execute(GET_TEMP_ID(yaml_template_name))
+                            tmp_id = d.fetchone()[0]
+                            for i in reg_list:
+                                yaml_hex = i[0]
+                                yaml_func = int(i[1])
+                                yaml_data_t = i[2]
+                                yaml_reg_name = i[3]
+                                yaml_reg_desc = i[4]
+                                self.db.cur.execute(INS_INTO_REGS(yaml_hex, yaml_func, yaml_data_t,
+                                                                yaml_reg_name, yaml_reg_desc, dev_id_t, tmp_id))
+                                # reg_id = self.db.get_reg_ids(yaml_hex, yaml_reg_name)
+                                # self.db.cur.execute(INS_TMP_REG(tmp_id, reg_id[0]))
             with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                 pass
             self.db.conn.commit()
