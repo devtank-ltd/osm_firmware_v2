@@ -79,16 +79,14 @@ static void _pulsecount_isr(uint32_t ref_port)
 }
 
 
-// cppcheck-suppress unusedFunction ; System handler
-void W1_PULSE_1_ISR(void)
+void pulsecount_handle_interrupt_1(void)
 {
     port_n_pins_t pulse_1_pnp = W1_PULSE_1_PORT_N_PINS;
     _pulsecount_isr(pulse_1_pnp.port);
 }
 
 
-// cppcheck-suppress unusedFunction ; System handler
-void W1_PULSE_2_ISR(void)
+void pulsecount_handle_interrupt_2(void)
 {
     port_n_pins_t pulse_2_pnp = W1_PULSE_2_PORT_N_PINS;
     _pulsecount_isr(pulse_2_pnp.port);
