@@ -167,14 +167,23 @@ good_exit:
 static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t* value)
 {
     if (!name || !value)
+    {
+        adc_debug("Handed NULL pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     uint8_t index;
     if (!_ftma_get_index_by_name(name, &index))
+    {
+        adc_debug("Could not get index of '%s'.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     if (!_ftma_channel_inited[index])
+    {
+        adc_debug("This channel is already init-ed.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     uint32_t avg;
     adcs_resp_t resp = adcs_collect_avg(&avg, _ftma_num_channels, FTMA_NUM_SAMPLES, index, ADCS_KEY_FTMA, &_ftma_collection_time);
@@ -184,6 +193,7 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
             _ftma_is_running = false;
             _ftma_channel_inited[index] = false;
             _ftma_auto_release();
+            adc_debug("FTMA ADC failed on collecting AVG.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;

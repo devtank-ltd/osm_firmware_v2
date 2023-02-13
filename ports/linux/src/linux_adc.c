@@ -251,6 +251,7 @@ void linux_adc_generate(void)
     if (_adcs_load_from_file())
         _adcs_remove_file();
     _adcs_fill_buffer();
+    linux_usleep(900000); // FIXME: Set this to something closer to real use.
     adcs_dma_complete();
 }
 

@@ -1269,7 +1269,7 @@ void measurements_power_mode(measurements_power_mode_t mode)
 }
 
 typedef struct
-{ 
+{
     measurements_info_t        base;
     measurements_reading_t*    reading;
     measurements_value_type_t* type;
@@ -1292,6 +1292,7 @@ static bool _measurements_get_reading_collection(void* userdata)
 
     measurements_sensor_state_t resp = info->base.inf->get_cb(info->base.def->name, info->reading);
     info->base.data->is_collecting = 0;
+    info->func_success = false;
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
@@ -1301,16 +1302,13 @@ static bool _measurements_get_reading_collection(void* userdata)
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("Collect function returned an error.");
             *(info->type) = MEASUREMENTS_VALUE_TYPE_INVALID;
-            info->func_success = false;
             return true;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             break;
         default:
             measurements_debug("Unknown response from collect function.");
-            info->func_success = false;
             return true;
     }
-    info->func_success = true;
     return false;
 }
 
@@ -1362,17 +1360,28 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     }
 
     uint32_t time_taken = since_boot_delta(get_since_boot_ms(), init_time);
-    uint32_t time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
+    uint32_t time_remaining = (time_taken > data->collection_time_cache)? 0 :(data->collection_time_cache - time_taken);
 
     measurements_debug("Time taken: %"PRIu32, time_taken);
 
     measurements_debug("Waiting for collection.");
     info.func_success = false;
-    if (!main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info))
+    init_time = get_since_boot_ms();
+    bool collect_success = main_loop_iterate_for(data->collection_time_cache/2 + time_remaining, _measurements_get_reading_collection, &info);
+
+    time_taken = since_boot_delta(get_since_boot_ms(), init_time);
+    time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
+
+    measurements_debug("Time taken: %"PRIu32, time_taken);
+
+    if (!collect_success)
     {
         measurements_debug("Failed on collect.");
         goto bad_exit;
     }
+
+    if (!info.func_success)
+        measurements_debug("Collect is timed out...");
 
     return info.func_success;
 bad_exit:

@@ -8,7 +8,7 @@
  * Max 4 devices with max 16 registers
  * 300 * 16 * 4 = 19200
  */
-#define MODBUS_COLLECTION_MS 20000
+#define MODBUS_COLLECTION_MS 2000
 
 
 static measurements_sensor_state_t _modbus_measurements_collection_time(char* name, uint32_t* collection_time)

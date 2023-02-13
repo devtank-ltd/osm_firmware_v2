@@ -10,7 +10,7 @@
 #include "uart_rings.h"
 
 
-#define BAT_MON_DEFAULT_COLLECTION_TIME     40
+#define BAT_MON_DEFAULT_COLLECTION_TIME     1000
 #define BAT_TIMEOUT_MS                      1000
 #define BAT_NUM_SAMPLES                     ADCS_NUM_SAMPLES
 #define BAT_IS_VALID_FOR_MS                 120 * 1000
