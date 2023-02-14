@@ -202,10 +202,7 @@ static void _measurements_send(void)
         return;
 
     if (_measurements_chunk_start_pos == MEASUREMENTS_MAX_NUMBER)
-    {
-        measurements_debug("Measurements chunk start pos is %d", MEASUREMENTS_MAX_NUMBER);
         _measurements_chunk_start_pos = 0;
-    }
 
     unsigned i = _measurements_chunk_start_pos;
 
@@ -619,14 +616,26 @@ static void _measurements_sample(void)
         sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
         time_since_interval = since_boot_delta(now, _last_sent_ms) + (_interval_count % def->interval) * INTERVAL_TRANSMIT_MS;
 
-        time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
+        /* is_immediate is only valid if samplecount is 1 */
+        bool is_immediate = def->is_immediate && def->samplecount == 1;
+
+        if (is_immediate)
+            /* Collect 10 ms before needing to send. */
+            time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval - 10;
+        else
+            time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
+
         if (time_init_boundary < data->collection_time_cache)
         {
             // Assert that no negative rollover could happen for long collection times. Just do it immediately.
             data->collection_time_cache = time_init_boundary;
         }
-        time_init       = time_init_boundary - data->collection_time_cache;
-        time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
+
+        time_init   = time_init_boundary - data->collection_time_cache;
+        if (is_immediate)
+            time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval - 10;
+        else
+            time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
         if (time_since_interval >= time_init)
         {
             if (data->num_samples_collected < data->num_samples_init)
@@ -1493,16 +1502,57 @@ static command_response_t _measurements_interval_mins_cb(char* args)
 }
 
 
+static command_response_t _measurements_is_immediate_cb(char* args)
+{
+    char name[MEASURE_NAME_NULLED_LEN];
+    char* p = strchr(args, ' ');
+    unsigned len;
+    if (!p)
+        len = strnlen(args, MEASURE_NAME_LEN);
+    else
+        len = p - args;
+    strncpy(name, args, len);
+    name[len] = 0;
+    measurements_def_t* def;
+    if (!measurements_get_measurements_def(name, &def, NULL))
+    {
+        log_out("Could not get measurement '%s'", name);
+        return COMMAND_RESP_ERR;
+    }
+    if (!p)
+        goto print_out;
+
+    char* np;
+    p = skip_space(p);
+    uint8_t enabled = strtoul(p, &np, 10) ? 1 : 0;
+    if (p == np)
+        goto print_out;
+
+    def->is_immediate = enabled;
+
+print_out:
+    if (def->is_immediate)
+        log_out("%s is immediate", def->name);
+    else
+        log_out("%s is not immediate", def->name);
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "measurements", "Print measurements",                  _measurements_cb                , false , NULL },
-                                       { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },
-                                       { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
-                                       { "get_meas_to",  "Get timeout of measurement",          _measurements_get_to_cb         , false , NULL },
-                                       { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
-                                       { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
-                                       { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },
-                                       { "interval_mins","Get/Set interval minutes",            _measurements_interval_mins_cb  , false , NULL },
-                                       { "repop",        "Repopulate measurements.",            _measurements_repop_cb          , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "measurements", "Print measurements",                  _measurements_cb                , false , NULL },
+        { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },
+        { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
+        { "get_meas_to",  "Get timeout of measurement",          _measurements_get_to_cb         , false , NULL },
+        { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
+        { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
+        { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },
+        { "interval_mins","Get/Set interval minutes",            _measurements_interval_mins_cb  , false , NULL },
+        { "repop",        "Repopulate measurements.",            _measurements_repop_cb          , false , NULL },
+        { "is_immediate", "Set/unset immediate measurements.",   _measurements_is_immediate_cb   , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

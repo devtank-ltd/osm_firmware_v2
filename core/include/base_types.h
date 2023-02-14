@@ -103,7 +103,8 @@ typedef struct
     char     name[MEASURE_NAME_NULLED_LEN];             // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
-    uint8_t  type;                                      // measurement_def_type_t
+    uint8_t  type:7;                                    // measurement_def_type_t
+    uint8_t  is_immediate:1;                            // Should collect as soon to sending as possible.
 } measurements_def_t;
 
 #define MODBUS_BLOCK_SIZE 16

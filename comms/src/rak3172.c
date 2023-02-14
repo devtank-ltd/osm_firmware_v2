@@ -411,9 +411,13 @@ void rak3172_init(void)
 }
 
 
+static const char* _rak3172_state_to_str(rak3172_state_t state);
+
+
 void rak3172_reset(void)
 {
     comms_debug("CALLED RESET");
+    comms_debug("STATE = %s", _rak3172_state_to_str(_rak3172_ctx.state));
     if (_rak3172_ctx.state == RAK3172_STATE_RESETTING)
         return;
     _rak3172_ctx.state = RAK3172_STATE_RESETTING;
@@ -613,9 +617,6 @@ void rak3172_process(char* msg)
             return;
     }
 }
-
-
-static const char* _rak3172_state_to_str(rak3172_state_t state);
 
 
 static void _rak3172_send2(int8_t* hex_arr, uint16_t arr_len, bool confirmed_payload)
