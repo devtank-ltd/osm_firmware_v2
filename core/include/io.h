@@ -36,6 +36,7 @@ extern bool     io_enable_w1(unsigned io);
 
 extern bool     io_is_pulsecount_now(unsigned io);
 extern bool     io_is_w1_now(unsigned io);
+extern bool     io_is_watch_now(unsigned io);
 
 extern bool     io_is_input(unsigned io);
 extern unsigned io_get_bias(unsigned io);
