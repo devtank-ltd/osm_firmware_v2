@@ -403,6 +403,17 @@ class dev_t(dev_base_t):
     def change_interval(self, meas, val):
         self.do_cmd(f"interval {meas} {val}")
 
+    def get_meas_timeout(self, meas):
+        line = self.do_cmd(f"get_meas_to {meas}")
+        if line.startswith(meas):
+            parts = line.split(":")
+            if len(parts) == 2:
+                to = int(parts[1]) / 1000
+                r = max(1.5, to)
+                debug_print(f"Measurement {meas} has timeout {r}")
+                return r
+        return None
+
     def activate_io(self, meas, pin, pull):
         #Enabling one wire or pulsecount e.g. "en_w1 4 U"
         self.do_cmd(f"{meas} {pin} {pull}")
