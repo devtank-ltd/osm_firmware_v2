@@ -28,6 +28,7 @@
 #include "modbus.h"
 #include "ftma.h"
 #include "model.h"
+#include "io_watch.h"
 
 
 uint8_t sens01_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -73,6 +74,7 @@ void sens01_sensors_init(void)
 
 void sens01_post_init(void)
 {
+    io_watch_init();
 }
 
 
@@ -189,7 +191,8 @@ bool sens01_can_io_be_special(unsigned io, io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
             ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
-              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   )   );
+              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
+              special == IO_SPECIAL_WATCH                   ));
 }
 
 

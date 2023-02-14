@@ -30,6 +30,7 @@ env01c_SOURCES := \
            $(OSM_DIR)/sensors/src/bat.c \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c \
+           $(OSM_DIR)/sensors/src/io_watch.c \
            $(MODEL_DIR)/env01c/env01c.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \

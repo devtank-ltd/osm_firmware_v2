@@ -62,6 +62,7 @@ extern char * skip_to_space(char * pos);
 /* Enums */
 typedef enum
 {
+    IO_SPECIAL_START                    = 0x1000,
     IO_SPECIAL_NONE                     = 0x0000,
     IO_SPECIAL_PULSECOUNT_FALLING_EDGE  = 0x1000,
     IO_SPECIAL_PULSECOUNT_RISING_EDGE   = 0x2000,
