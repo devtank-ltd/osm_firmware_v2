@@ -38,6 +38,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
+    $(OSM_DIR)/sensors/src/io_watch.c \
     $(MODEL_DIR)/penguin/penguin.c \
     $(OSM_DIR)/comms/src/linux_comms.c
 

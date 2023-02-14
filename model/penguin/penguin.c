@@ -26,6 +26,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "sleep.h"
 #include "update.h"
 #include "modbus.h"
+#include "io_watch.h"
 
 #include "peripherals.h"
 
@@ -63,7 +64,7 @@ void penguin_sensors_init(void)
 
 void penguin_post_init(void)
 {
-    ios_post_init();
+    io_watch_init();
 }
 
 
@@ -187,7 +188,8 @@ bool penguin_can_io_be_special(unsigned io, io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
             ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
-              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   )   );
+              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
+              special == IO_SPECIAL_WATCH                   ));
 }
 
 
