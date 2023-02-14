@@ -14,8 +14,6 @@
 #include "platform_model.h"
 
 
-static char   * rx_buffer;
-static unsigned rx_buffer_len = 0;
 static struct cmd_link_t* _cmds;
 
 
@@ -111,28 +109,27 @@ void cmds_process(char * command, unsigned len)
 
     log_sys_debug("Command \"%s\"", command);
 
-    rx_buffer = command;
-    rx_buffer_len = len;
-
     bool found = false;
     log_out(LOG_START_SPACER);
     char * args;
     for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
     {
         unsigned keylen = strlen(cmd->key);
-        if(rx_buffer_len >= keylen &&
-           !strncmp(cmd->key, rx_buffer, keylen) &&
-           (rx_buffer[keylen] == '\0' || rx_buffer[keylen] == ' '))
+        if(len >= keylen &&
+           !strncmp(cmd->key, command, keylen) &&
+           (command[keylen] == '\0' || command[keylen] == ' '))
         {
             found = true;
-            args = skip_space(rx_buffer + keylen);
+            args = skip_space(command + keylen);
+            while(command[len-1] == ' ')
+                command[--len] = 0;
             cmd->cb(args);
             break;
         }
     }
     if (!found)
     {
-        log_out("Unknown command \"%s\"", rx_buffer);
+        log_out("Unknown command \"%s\"", command);
         log_out(LOG_SPACER);
         for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
         {
