@@ -445,6 +445,8 @@ class config_gui_window_t(Tk):
 
     def _on_get_interval_min_done_cb(self, resp):
         self._interval_min = resp[1]
+        self._load_headers(self._main_fr, "rif", False)
+
         return self._interval_min
 
     def _tab_changed(self, event, frame, notebook):
@@ -865,15 +867,17 @@ class config_gui_window_t(Tk):
         if int(widg.get()):
             uplink = int(widg.get())
             if uplink > 255:
-                self.binding_interface.set_interval_mins(255)
+                self.binding_interface.set_interval_mins(255, self._on_change_uplink)
             elif uplink < 3:
-                self.binding_interface.set_interval_mins(3)
+                self.binding_interface.set_interval_mins(3, self._on_change_uplink)
             else:
-                self.binding_interface.set_interval_mins(uplink)
-            self._load_headers(frame, "rif", False)
+                self.binding_interface.set_interval_mins(uplink, self._on_change_uplink)
         else:
             tkinter.messagebox.showerror(
                 "Error", "Uplink interval must be an integer")
+    
+    def _on_change_uplink(self, args):
+        self.binding_interface.get_interval_min(self._on_get_interval_min_done_cb)
 
     def _handle_input(self, in_str, acttyp):
         if acttyp == '1':
