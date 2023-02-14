@@ -11,6 +11,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/ports/linux/src/pulsecount.c \
     $(OSM_DIR)/ports/linux/src/sai.c \
     $(OSM_DIR)/ports/linux/src/peripherals.c \
+    $(OSM_DIR)/ports/linux/src/io_watch.c \
     $(OSM_DIR)/core/src/main.c \
     $(OSM_DIR)/core/src/base.c \
     $(OSM_DIR)/core/src/log.c \
@@ -38,7 +39,6 @@ penguin_SOURCES := \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
-    $(OSM_DIR)/sensors/src/io_watch.c \
     $(MODEL_DIR)/penguin/penguin.c \
     $(OSM_DIR)/comms/src/linux_comms.c
 

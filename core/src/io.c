@@ -177,8 +177,6 @@ void     ios_init(void)
             {
                 pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
             }
-            if (io_state & IO_SPECIAL_WATCH)
-                io_watch_enable(n, true, io_state & IO_PULL_MASK);
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
         else
