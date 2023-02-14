@@ -64,6 +64,8 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60)
 
+#define MEASUREMENTS_MIN_TRANSMIT_MS                INTERVAL_TRANSMIT_MS / 5
+
 
 bool measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
 {
@@ -898,11 +900,13 @@ void _measurements_check_instant_send(void)
     if (!to_instant_send)
         return;
 
+    static int8_t hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE];
+
     unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
+    unsigned buf_size = ARRAY_SIZE(hex_arr);
     unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    if (!protocol_init(_measurements_hex_arr, size))
+    memset(hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
+    if (!protocol_init(hex_arr, size))
     {
         measurements_debug("Could not initialise the hex array for the protocol.");
         return;
@@ -937,7 +941,24 @@ void _measurements_check_instant_send(void)
         measurements_debug("No measurements were added, not sending.");
         return;
     }
-    comms_send(_measurements_hex_arr, protocol_get_length());
+    if (_measurements_chunk_start_pos != MEASUREMENTS_MAX_NUMBER && _measurements_chunk_start_pos != 0)
+    {
+        measurements_debug("Cannot instant send, there is a measurement send underway.");
+        return;
+    }
+    uint32_t now = get_since_boot_ms();
+    if (since_boot_delta(now, _last_sent_ms) <= MEASUREMENTS_MIN_TRANSMIT_MS)
+    {
+        measurements_debug("Cannot send instant send, as only recently sent uplink.");
+        return;
+    }
+    /* Add +10 as this is called before measurements_send and to ensure no negative overflow. */
+    if (since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS + 10, now) <= MEASUREMENTS_MIN_TRANSMIT_MS + 10)
+    {
+        measurements_debug("Cannot send instant send, will be scheduled uplink soon.");
+        return;
+    }
+    comms_send(hex_arr, protocol_get_length());
 }
 
 

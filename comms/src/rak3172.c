@@ -615,12 +615,15 @@ void rak3172_process(char* msg)
 }
 
 
+static const char* _rak3172_state_to_str(rak3172_state_t state);
+
+
 static void _rak3172_send2(int8_t* hex_arr, uint16_t arr_len, bool confirmed_payload)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
     {
-        comms_debug("Incorrect state to send : %u",
-            (unsigned)_rak3172_ctx.state);
+        comms_debug("Incorrect state to send : %s",
+            _rak3172_state_to_str((unsigned)_rak3172_ctx.state));
         return;
     }
 
