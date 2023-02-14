@@ -274,6 +274,7 @@ class modbus_funcs_t(config_gui.config_gui_window_t):
             self.template_list.insert(0, dev)
             with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                 yaml.dump(write_dev_to_yaml, f)
+                
 
     def _callback(self, event):
         selection = event.widget.curselection()

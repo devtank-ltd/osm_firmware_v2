@@ -1809,9 +1809,11 @@ class config_gui_window_t(Tk):
     def _save_edit(self, copy, window):
         log_func("User attempting to save template..")
         uid_list = []
+        dev_list = []
         uids = self.db.cur.execute(GET_UNIT_IDS)
         for uid in uids:
             uid_list.append(uid)
+            dev_list.append(uid[1])
         self._changes = True
         if self.name_entry.get() and self.desc_entry.get() and self.byteorder_drop.get() and self.unit_spinbox.get() and self.register_list.get(0, END) and self.baudrate_entry.get() and self.bits_entry.get() and self.parity_entry.get() and self.rtu_bin_entry.get() and self.dev_entry.get() and self.sb_e.get():
             dev_name_limit = len(str(self.dev_entry.get()))
@@ -1850,8 +1852,11 @@ class config_gui_window_t(Tk):
                                     with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                                         if f:
                                             yaml.dump(doc, f)
-                if copy == 'edit' or len(exists) == 0 or exists[0][1] == str(self.dev_entry.get()):
+                if copy == 'edit' or len(exists) == 0:
                     self._send_to_yaml(window)
+                elif str(self.dev_entry.get()) in dev_list:
+                    tkinter.messagebox.showerror(
+                        "Error", "That device name is already taken.", parent=window)
                 else:
                     tkinter.messagebox.showerror(
                         "Error", "That unit ID is already taken.", parent=window)

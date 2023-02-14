@@ -23,22 +23,6 @@ import sys
 # self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x60', 4, 'F', 'Imp', 'Import Energy', 2)")
 # self.cur.execute("INSERT OR IGNORE INTO templates (template_name, description) VALUES ('Countis E53', 'Countis E53 Modbus')")
 # self.cur.execute("INSERT OR IGNORE INTO templates (template_name, description) VALUES ('Rayleigh RI F200', 'Rayleigh RI F Modbus')")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 1)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 2)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 3)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 4)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 5)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 6)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 7)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 8)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 9)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 10)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 11)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 12)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 13)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 14)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 15)")
-# self.cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 16)")
 # self.cur.commit()
 
 
@@ -50,7 +34,7 @@ CREATE_DEV_TABLE = '''CREATE TABLE IF NOT EXISTS devices
                                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                                 unit_id INTEGER NOT NULL,
                                 byte_order VARCHAR(255) NOT NULL,
-                                name VARCHAR(255) NOT NULL,
+                                name VARCHAR(255) NOT NULL UNIQUE,
                                 baudrate INTEGER NOT NULL,
                                 bits INTEGER NOT NULL,
                                 parity VARCHAR(255) NOT NULL,
@@ -80,14 +64,6 @@ CREATE_TEMP_TABLE = '''CREATE TABLE IF NOT EXISTS templates
                                 description VARCHAR(255) NOT NULL
                             )'''
 
-CREATE_TEMP_REG_TABLE = ''' CREATE TABLE IF NOT EXISTS templateRegister
-                            (
-                                id INTEGER PRIMARY KEY,
-                                template_id INTEGER,
-                                register_id INTEGER,
-                                FOREIGN KEY (template_id) REFERENCES templates (template_id),
-                                FOREIGN KEY (register_id) REFERENCES registers (register_id)
-                            )'''
 
 CREATE_MEASUREMENT_TABLE = ''' CREATE TABLE IF NOT EXISTS measurements
                             (
@@ -99,20 +75,11 @@ CREATE_MEASUREMENT_TABLE = ''' CREATE TABLE IF NOT EXISTS measurements
                             )'''
 
 
-INS_TMP_REG = lambda tmp_id, reg_id : '''INSERT INTO templateRegister (template_id, register_id)
-                                            VALUES (%u, %u)''' % (tmp_id, reg_id)
-
-
 INS_INTO_REGS = lambda hex, func, data_t, reg_n, reg_d, dev_id, tmp_id : '''
     INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id)
     VALUES ('%s', %u, '%s', '%s', '%s', %u, %u)''' % (hex, func, data_t, reg_n, reg_d, dev_id, tmp_id)
 
-# UPDATE_REGS = lambda hex, func, data_t, reg_n, reg_d, dev_id : f'''
-#     UPDATE registers
-#     SET hex_address = '{hex}', function_id = {func}, data_type = '{data_t}',
-#     reg_name = '{reg_n}', reg_desc = '{reg_d}', device_id = {dev_id}
-#     WHERE registers.reg_name = '{reg_n}' AND registers.device_id = {dev_id}
-#     '''
+
 UPDATE_REGS = lambda hex, func, data_t, reg_n, reg_d, dev_id, tmp_id : '''
     REPLACE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id)
     VALUES ('%s', %u, '%s', '%s', '%s', %u, %u)''' % (hex, func, data_t, reg_n, reg_d, dev_id, tmp_id)
@@ -122,15 +89,10 @@ GET_DEV_ID = lambda dev: "SELECT id FROM devices WHERE name = '%s'" % dev
 GET_DEV_NAME = lambda dev_uid: "SELECT name FROM devices WHERE unit_id = %u" % dev_uid
 
 
-INS_INTO_DEV = lambda uid, bytes, dev, baud, bits, pari, stop_b, bin: '''INSERT OR IGNORE INTO
+INS_INTO_DEV = lambda uid, bytes, dev, baud, bits, pari, stop_b, bin: '''INSERT OR REPLACE INTO
             devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary)
             VALUES ('%s','%s','%s','%s','%s','%s','%s','%s')''' % (uid, bytes, dev, baud, bits, pari, stop_b, bin)
 
-# UPDATE_DEV = lambda uid, bytes, dev, baud, bits, pari, stop_b, bin: f'''UPDATE devices
-#             SET unit_id = '{uid}', byte_order = '{bytes}', name = '{dev}', baudrate = '{baud}',
-#             bits = '{bits}', parity = '{pari}', stop_bits = '{stop_b}', binary = '{bin}'
-#             WHERE devices.name = '{dev}'
-#             '''
 
 UPDATE_DEV = lambda uid, bytes, dev, baud, bits, pari, stop_b, bin: '''REPLACE INTO
             devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary)
@@ -150,11 +112,7 @@ DEL_REGS = lambda tmp_id: "DELETE FROM registers WHERE template_id = %u" % tmp_i
 
 DEL_DEV = lambda dev: "DELETE FROM devices WHERE name='%s'" % dev
 
-DEL_TEMP_REG = lambda temp_id: "DELETE FROM templateRegister WHERE template_id = %u" % temp_id
-
-
 GET_TEMP_ID = lambda temp: "SELECT id FROM templates WHERE name = '%s'" % temp
-
 
 GET_DEVS_REGS = lambda temp_id: '''SELECT devices.unit_id,
                                     devices.byte_order,
@@ -217,7 +175,7 @@ def find_path():
 class modb_database_t(object):
     def __init__(self, path):
         self.path = path
-        self.conn = sqlite3.connect(path + '/config_database/modbus_templates_two.db', check_same_thread=False)
+        self.conn = sqlite3.connect(path + '/config_database/modbus_templates.db', check_same_thread=False)
         self.cur = self.conn.cursor()
 
     def get_reg_ids(self, hex_addr, reg_name):
@@ -343,12 +301,11 @@ class modb_database_t(object):
         return data.fetchone()
 
 if __name__ == "__main__":
-    conn = sqlite3.connect('./config_database/modbus_templates_two.db')
+    conn = sqlite3.connect('./config_database/modbus_templates.db')
     cur =  conn.cursor()
     cur.execute(CREATE_DEV_TABLE)
     cur.execute(CREATE_REG_TABLE)
     cur.execute(CREATE_TEMP_TABLE)
-    # cur.execute(CREATE_TEMP_REG_TABLE)
     cur.execute(CREATE_MEASUREMENT_TABLE)
     cur.execute("INSERT OR IGNORE INTO templates (name, description) VALUES ('Countis E53', 'Countis E53 Modbus')")
     cur.execute("INSERT OR IGNORE INTO templates (name, description) VALUES ('Rayleigh RI F200', 'Rayleigh RI F Modbus')")
@@ -370,23 +327,6 @@ if __name__ == "__main__":
     cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x12', 4, 'F', 'AP2', 'Amps P2', 2, 2)")
     cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x14', 4, 'F', 'AP3', 'Amps P3', 2, 2)")
     cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x60', 4, 'F', 'Imp', 'Import Energy', 2, 2)")
-
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 1)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 2)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 3)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 4)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 5)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 6)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 7)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (1, 8)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 9)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 10)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 11)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 12)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 13)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 14)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 15)")
-    # cur.execute("INSERT OR IGNORE INTO templateRegister (template_id, register_id) VALUES (2, 16)")
     cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('TEMP', 'Temperature', 20.0, 2.5)")
     cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('HUMI', 'Humidity', 50.0, 2.5)")
     cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('LGHT', 'Light', 1000.0, 100.0)")
@@ -403,5 +343,4 @@ if __name__ == "__main__":
     cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA2', '4-20 mA', 8.0, 0.2)")
     cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA3', '4-20 mA', 16.0, 2.0)")
     cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA4', '4-20 mA', 20.0, 0.2)")
-
     conn.commit()
