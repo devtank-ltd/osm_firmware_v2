@@ -1477,6 +1477,23 @@ static void measurement_get_cb(char* args)
 }
 
 
+static void measurement_get_to_cb(char* args)
+{
+    char * p = skip_space(args);
+
+    measurements_def_t* def;
+    measurements_inf_t inf;
+    if (!_measurements_get_measurements_def(p, &def, NULL) ||
+        !model_measurements_get_inf(def, NULL, &inf))
+    {
+        log_out("Failed to get measurement details of \"%s\"", p);
+        return;
+    }
+
+    log_out("%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
+}
+
+
 static void no_comms_cb(char* args)
 {
     bool enable = strtoul(args, NULL, 10);
@@ -1593,6 +1610,7 @@ struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] = {{ "measurements", "Print measurements",       measurements_cb               , false , NULL },
                                        { "meas_enable",  "Enable measuremnts.",      measurements_enable_cb        , false , NULL },
                                        { "get_meas",     "Get a measurement",        measurement_get_cb            , false , NULL },
+                                       { "get_meas_to",  "Get timeout of measurement", measurement_get_to_cb        , false , NULL },
                                        { "no_comms",     "Dont need comms for measurements", no_comms_cb           , false , NULL },
                                        { "interval",     "Set the interval",         interval_cb                   , false , NULL },
                                        { "samplecount",  "Set the samplecount",      samplecount_cb                , false , NULL },
