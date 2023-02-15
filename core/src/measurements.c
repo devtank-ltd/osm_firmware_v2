@@ -1569,7 +1569,7 @@ static void interval_mins_cb(char* args)
         uint32_t new_interval_mins = (new_interval_mins_f * 1000.);
 
         if (new_interval_mins % 1000)
-            log_out("Setting interval minutes to %"PRIu32".03%"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
+            log_out("Setting interval minutes to %"PRIu32".%03"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
         else
             log_out("Setting interval minutes to %"PRIu32, new_interval_mins/1000);
         persist_data.model_config.mins_interval = new_interval_mins;
@@ -1578,7 +1578,7 @@ static void interval_mins_cb(char* args)
     else
     {
         if (transmit_interval % 1000)
-            log_out("Current interval minutes is %"PRIu32".03%"PRIu32, transmit_interval/1000, transmit_interval%1000);
+            log_out("Current interval minutes is %"PRIu32".%03"PRIu32, transmit_interval/1000, transmit_interval%1000);
         else
             log_out("Current interval minutes is %"PRIu32, transmit_interval/1000);
     }
