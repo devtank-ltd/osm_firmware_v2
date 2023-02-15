@@ -62,20 +62,6 @@ static io_watch_instance_t* _io_watch_get_inst(unsigned io)
 }
 
 
-static bool _io_watch_get_index(unsigned io, unsigned* index)
-{
-    for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
-    {
-        if (_io_watch_instances[i].io == io)
-        {
-            *index = i;
-            return true;
-        }
-    }
-    return false;
-}
-
-
 static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t pupd)
 {
     if (enabled)
@@ -132,34 +118,33 @@ bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
 }
 
 
-void io_watch_handle_interrupt(unsigned io)
+void io_watch_isr(uint32_t exti_group)
 {
-    if (io >= IOS_COUNT)
-        return;
-    io_watch_instance_t* inst =_io_watch_get_inst(io);
-    if (!inst)
-        return;
+    for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
+    {
+        io_watch_instance_t* inst = &_io_watch_instances[i];
+        if (!inst)
+            continue;
 
-    if (!io_is_watch_now(io))
-        return;
+        if (!io_is_watch_now(inst->io))
+            continue;
 
-    if(!exti_get_flag_status(inst->exti))
-        return;
+        uint32_t exti_state = exti_get_flag_status(inst->exti);
+        if(!exti_state)
+            continue;
 
-    unsigned index;
-    if (!_io_watch_get_index(io, &index))
-        return;
+        exti_reset_request(inst->exti);
 
-    measurements_def_t* def = _ios_watch_measurements_def[index];
-    measurements_data_t* data = _ios_watch_measurements_data[index];
-    if (!def || !data)
-        return;
+        measurements_def_t* def = _ios_watch_measurements_def[i];
+        measurements_data_t* data = _ios_watch_measurements_data[i];
+        if (!def || !data)
+            continue;
 
-    if (!def->interval || !def->samplecount)
-        return;
+        if (!def->interval || !def->samplecount)
+            continue;
 
-    data->instant_send = 1;
-    exti_reset_request(inst->exti);
+        data->instant_send = 1;
+    }
 }
 
 

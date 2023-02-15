@@ -731,10 +731,14 @@ void W1_PULSE_1_ISR(void)
 {
     if (io_is_pulsecount_now(W1_PULSE_1_IO))
     {
-        pulsecount_handle_interrupt_1();
+        pulsecount_isr(1);
         return;
     }
-    io_watch_handle_interrupt(W1_PULSE_1_IO);
+    if (io_is_watch_now(W1_PULSE_1_IO))
+    {
+        io_watch_isr(1);
+        return;
+    }
 }
 
 
@@ -743,8 +747,12 @@ void W1_PULSE_2_ISR(void)
 {
     if (io_is_pulsecount_now(W1_PULSE_2_IO))
     {
-        pulsecount_handle_interrupt_2();
+        pulsecount_isr(2);
         return;
     }
-    io_watch_handle_interrupt(W1_PULSE_2_IO);
+    if (io_is_watch_now(W1_PULSE_2_IO))
+    {
+        io_watch_isr(2);
+        return;
+    }
 }

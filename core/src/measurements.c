@@ -64,7 +64,7 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60)
 
-#define MEASUREMENTS_MIN_TRANSMIT_MS                INTERVAL_TRANSMIT_MS / 5
+#define MEASUREMENTS_MIN_TRANSMIT_MS                (15 * 1000)
 
 
 bool measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)

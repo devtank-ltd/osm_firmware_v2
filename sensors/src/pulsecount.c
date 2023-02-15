@@ -58,7 +58,7 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 }
 
 
-static void _pulsecount_isr(uint32_t ref_port)
+void pulsecount_isr(uint32_t exti_group)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
@@ -70,26 +70,9 @@ static void _pulsecount_isr(uint32_t ref_port)
         uint32_t exti_state = exti_get_flag_status(inst->exti);
         if (!exti_state)
             continue;
-        /* Is the EXTI triggered on the same GPIO port? */
-        if (inst->pnp.port != ref_port)
-            continue;
         exti_reset_request(inst->exti);
         __sync_add_and_fetch(&inst->count, 1);
     }
-}
-
-
-void pulsecount_handle_interrupt_1(void)
-{
-    port_n_pins_t pulse_1_pnp = W1_PULSE_1_PORT_N_PINS;
-    _pulsecount_isr(pulse_1_pnp.port);
-}
-
-
-void pulsecount_handle_interrupt_2(void)
-{
-    port_n_pins_t pulse_2_pnp = W1_PULSE_2_PORT_N_PINS;
-    _pulsecount_isr(pulse_2_pnp.port);
 }
 
 

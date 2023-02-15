@@ -31,19 +31,21 @@ bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
 }
 
 
-void io_watch_handle_interrupt(unsigned io)
+void io_watch_isr(uint32_t exti_group)
 {
-    if (io >= IOS_COUNT)
-        return;
-    measurements_def_t* def = _ios_watch_measurements_def[io];
-    measurements_data_t* data = _ios_watch_measurements_data[io];
-    if (!def || !data)
-        return;
+    for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
+    {
 
-    if (!def->interval || !def->samplecount)
-        return;
+        measurements_def_t* def = _ios_watch_measurements_def[i];
+        measurements_data_t* data = _ios_watch_measurements_data[i];
+        if (!def || !data)
+            return;
 
-    data->instant_send = 1;
+        if (!def->interval || !def->samplecount)
+            return;
+
+        data->instant_send = 1;
+    }
 }
 
 
