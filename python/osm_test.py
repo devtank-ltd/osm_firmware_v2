@@ -224,9 +224,10 @@ class test_framework_t(object):
             if not sample.endswith("_min") and not sample.endswith("_max"):
                 self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
-        self._check_cmd_serial_comms(passed)
+        passed &= self._check_cmd_serial_comms()
+        return passed
 
-    def _check_cmd_serial_comms(self, passed):
+    def _check_cmd_serial_comms(self):
         comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH,
                                        self.DEFAULT_PROTOCOL_PATH,
                                        logger=self._logger,
@@ -235,7 +236,6 @@ class test_framework_t(object):
         now = time.time()
         start_time = now
         end_time = start_time + 61
-        comms_check_passed = False
         while now < end_time:
             r = select.select(fds, [], [], end_time-now)
             if len(r[0]):
@@ -243,11 +243,9 @@ class test_framework_t(object):
                     self._vosm_conn._ll.read()
                 if comms_conn in r[0]:
                     resp_dict = comms_conn.read_dict()
-                    comms_check_passed = self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, resp_dict)
-                    break
+                    return self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, resp_dict)
             now = time.time()
-        passed &= comms_check_passed
-        return passed
+        return False
 
     def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
         passed = True
