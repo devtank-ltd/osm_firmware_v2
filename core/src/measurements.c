@@ -909,13 +909,11 @@ void _measurements_check_instant_send(void)
     if (!to_instant_send)
         return;
 
-    static int8_t hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE];
-
     unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(hex_arr);
+    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
     unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-    memset(hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    if (!protocol_init(hex_arr, size))
+    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
+    if (!protocol_init(_measurements_hex_arr, size))
     {
         measurements_debug("Could not initialise the hex array for the protocol.");
         return;
@@ -956,18 +954,13 @@ void _measurements_check_instant_send(void)
         return;
     }
     uint32_t now = get_since_boot_ms();
-    if (since_boot_delta(now, _last_sent_ms) <= MEASUREMENTS_MIN_TRANSMIT_MS)
-    {
-        measurements_debug("Cannot send instant send, as only recently sent uplink.");
-        return;
-    }
     /* Add +10 as this is called before measurements_send and to ensure no negative overflow. */
     if (since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS + 10, now) <= MEASUREMENTS_MIN_TRANSMIT_MS + 10)
     {
-        measurements_debug("Cannot send instant send, will be scheduled uplink soon.");
+        measurements_debug("Cannot send instant send, scheduled uplink soon.");
         return;
     }
-    comms_send(hex_arr, protocol_get_length());
+    comms_send(_measurements_hex_arr, protocol_get_length());
 }
 
 
@@ -1000,7 +993,8 @@ void measurements_loop_iteration(void)
         return;
     }
 
-    _measurements_check_instant_send();
+    if (comms_send_ready())
+        _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
     {
