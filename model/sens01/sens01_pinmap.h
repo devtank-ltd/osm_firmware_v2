@@ -156,6 +156,8 @@ GPIO16 D2                   IO 11
 }
 
 
+#ifndef __CONFIGTOOL__
+
 #define uart0_in_isr                    usart2_isr
 #define uart1_in_isr                    usart3_isr
 #define uart2_in_isr                    usart1_isr
@@ -166,3 +168,5 @@ GPIO16 D2                   IO 11
 #define uart1_dma_out_isr               dma1_channel2_isr
 #define uart2_dma_out_isr               dma1_channel5_isr
 #define uart3_dma_out_isr               dma2_channel6_isr
+
+#endif // __CONFIGTOOL__
