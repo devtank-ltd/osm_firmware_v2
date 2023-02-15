@@ -14,5 +14,4 @@ extern void     pulsecount_inf_init(measurements_inf_t* inf);
 
 struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail);
 
-extern void     pulsecount_handle_interrupt_1(void);
-extern void     pulsecount_handle_interrupt_2(void);
+extern void     pulsecount_isr(uint32_t exti_group);

@@ -6,6 +6,7 @@
 #include "modbus.h"
 #include "log.h"
 #include "persist_config.h"
+#include "pinmap.h"
 
 
 modbus_bus_t * modbus_bus = NULL;
