@@ -288,9 +288,9 @@ static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd,
     return;
 
 bad_exit:
-    if (!close(*master_fd))
+    if (master_fd && !close(*master_fd))
         linux_error("Fail to close master fd when couldnt open PTY %s", name);
-    if (!close(*slave_fd))
+    if (slave_fd && !close(*slave_fd))
         linux_error("Fail to close slave fd when couldnt open PTY %s", name);
     linux_error("Fail to setup PTY.");
 }
