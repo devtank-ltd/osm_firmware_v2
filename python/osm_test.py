@@ -9,12 +9,15 @@ import errno
 import subprocess
 import signal
 import multiprocessing
-
+import serial
+import select
+import yaml
 from binding import modbus_reg_t, dev_t, set_debug_print
 
 sys.path.append("../ports/linux/peripherals/")
 
 import comms_connection as comms
+
 import basetypes
 
 sys.path.append("../config_gui/release/")
@@ -221,12 +224,29 @@ class test_framework_t(object):
             if not sample.endswith("_min") and not sample.endswith("_max"):
                 self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
+        self._check_cmd_serial_comms(passed)
 
-        match_cb = lambda x : self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, x)
-        comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH, self.DEFAULT_PROTOCOL_PATH, match_cb=match_cb, logger=self._logger, log_file=self._log_file)
-        comms_conn.run_forever()
-        passed &= comms_conn.passed
-
+    def _check_cmd_serial_comms(self, passed):
+        comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH,
+                                       self.DEFAULT_PROTOCOL_PATH,
+                                       logger=self._logger,
+                                       log_file=self._log_file)
+        fds = [comms_conn, self._vosm_conn]
+        now = time.time()
+        start_time = now
+        end_time = start_time + 61
+        comms_check_passed = False
+        while now < end_time:
+            r = select.select(fds, [], [], end_time-now)
+            if len(r[0]):
+                if self._vosm_conn in r[0]:
+                    self._vosm_conn._ll.read()
+                if comms_conn in r[0]:
+                    resp_dict = comms_conn.read_dict()
+                    comms_check_passed = self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, resp_dict)
+                    break
+            now = time.time()
+        passed &= comms_check_passed
         return passed
 
     def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
