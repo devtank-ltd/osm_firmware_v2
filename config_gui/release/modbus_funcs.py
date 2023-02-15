@@ -1,6 +1,7 @@
 import yaml
 import modbus_db
 from modbus_db import modb_database_t, find_path
+from tkinter import messagebox
 
 GET_TEMP_ID = modbus_db.GET_TEMP_ID
 DEL_TEMP_ID = modbus_db.DEL_TEMP_ID
@@ -16,6 +17,7 @@ GET_TMP_N = modbus_db.GET_TMP_N
 UPDATE_DEV = modbus_db.UPDATE_DEV
 UPDATE_REGS = modbus_db.UPDATE_REGS
 GET_DEV_N = modbus_db.GET_DEV_NAME
+GET_ALL_DEVS = modbus_db.GET_ALL_DEVS
 
 PATH = find_path()
 
@@ -184,7 +186,6 @@ class modbus_funcs_t():
                     chosen_template = doc
                     if doc:
                         self.db.cur.execute(DEL_TEMP_ID(chosen_template))
-                        # self.db.cur.execute(DEL_TEMP_REG(chosen_template))
                         self.db.cur.execute(DEL_REGS(chosen_template))
         with open(PATH + '/yaml_files/modbus_data.yaml') as f:
             document = yaml.full_load(f)
@@ -226,9 +227,16 @@ class modbus_funcs_t():
                         yaml_template_name = tmpl['name']
                         yaml_description = tmpl['description']
                         dev_n = self.db.cur.execute(GET_DEV_N(int(yaml_unit_id)))
+                        all_devs = self.db.cur.execute(GET_ALL_DEVS)
+                        devs = []
+                        for d in all_devs:
+                            devs.append(d[0])
                         dev_n = dev_n.fetchone()
 
                         if exist_tmp == None:
+                            if yaml_dev_name in devs:
+                                messagebox.showerror("Error", "Duplicate of device name found.")
+                                return False
                             self.db.cur.execute(
                                 INS_TEMP(yaml_template_name, yaml_description))
 
@@ -278,3 +286,4 @@ class modbus_funcs_t():
             with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                 pass
             self.db.conn.commit()
+            return True

@@ -367,7 +367,7 @@ class dev_t(dev_base_t):
     @property
     def interval_mins(self):
         r = self.do_cmd_multi("interval_mins")
-        return int(r[0].split()[-1])
+        return float(r[0].split()[-1])
 
     @interval_mins.setter
     def interval_mins(self, value):

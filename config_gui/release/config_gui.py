@@ -1555,8 +1555,8 @@ class config_gui_window_t(Tk):
 
     def _send_to_save(self):
         log_func("User attempting to save a new template")
-        self._modb_funcs.save_template()
-        self._reset_listb()
+        if self._modb_funcs.save_template():
+            self._reset_listb()
         self._changes = False
         return self._changes
 

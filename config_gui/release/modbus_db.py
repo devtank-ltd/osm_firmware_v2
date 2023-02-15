@@ -88,6 +88,7 @@ GET_DEV_ID = lambda dev: "SELECT id FROM devices WHERE name = '%s'" % dev
 
 GET_DEV_NAME = lambda dev_uid: "SELECT name FROM devices WHERE unit_id = %u" % dev_uid
 
+GET_ALL_DEVS = "SELECT name FROM devices"
 
 INS_INTO_DEV = lambda uid, bytes, dev, baud, bits, pari, stop_b, bin: '''INSERT OR REPLACE INTO
             devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary)
