@@ -42,8 +42,7 @@
 #define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
 #define LINUX_REBOOT_FILE_LOC   LINUX_FILE_LOC"reboot.dat"
 
-
-extern int errno;
+bool linux_has_reset = false;
 
 
 typedef enum
@@ -357,6 +356,7 @@ static void _linux_load_fd_file(void)
         }
     }
     fclose(osm_reboot_file);
+    linux_has_reset = true;
 }
 
 

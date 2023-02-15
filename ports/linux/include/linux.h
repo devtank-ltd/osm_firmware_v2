@@ -9,6 +9,7 @@
 
 extern volatile bool linux_threads_deinit;
 
+extern bool linux_has_reset;
 
 bool linux_write_pty(unsigned uart, const char *data, unsigned size);
 
