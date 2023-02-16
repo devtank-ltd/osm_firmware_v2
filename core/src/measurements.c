@@ -993,7 +993,7 @@ void measurements_loop_iteration(void)
         return;
     }
 
-    if (comms_send_ready())
+    if (comms_send_ready() || _measurements_debug_mode)
         _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
