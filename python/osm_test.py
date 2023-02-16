@@ -235,16 +235,21 @@ class test_framework_t(object):
         fds = [comms_conn, self._vosm_conn]
         now = time.time()
         start_time = now
-        end_time = start_time + 61
-        while now < end_time:
+        end_time = start_time + 90
+        count = 0
+        final_dict = {}
+        while now < end_time and count < 2:
             r = select.select(fds, [], [], end_time-now)
             if len(r[0]):
                 if self._vosm_conn in r[0]:
                     self._vosm_conn._ll.read()
                 if comms_conn in r[0]:
+                    count += 1
                     resp_dict = comms_conn.read_dict()
-                    return self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, resp_dict)
+                    final_dict.update(resp_dict)
             now = time.time()
+        if count:
+            return self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict)
         return False
 
     def _comms_match_cb(self, ref:dict, dict_:dict)->bool:

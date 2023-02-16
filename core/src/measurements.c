@@ -424,8 +424,10 @@ static void _measurements_send(void)
     if (!_measurements_send_start())
         return;
 
-    if (_measurements_chunk_start_pos == MEASUREMENTS_MAX_NUMBER)
+    if (_measurements_chunk_start_pos == MEASUREMENTS_MAX_NUMBER) {
+        measurements_debug("Measurements chunk start pos is %d", MEASUREMENTS_MAX_NUMBER);
         _measurements_chunk_start_pos = 0;
+    }
 
     unsigned i = _measurements_chunk_start_pos;
 
@@ -462,8 +464,8 @@ static void _measurements_send(void)
             data->num_samples_collected = 0;
         }
     }
-
-    if (i == MEASUREMENTS_MAX_NUMBER)
+    bool is_max = i == MEASUREMENTS_MAX_NUMBER;
+    if (is_max)
     {
         if (_measurements_chunk_start_pos)
             /* Last of fragments */
@@ -477,6 +479,7 @@ static void _measurements_send(void)
         _last_sent_ms = get_since_boot_ms();
     if (num_qd > 0)
     {
+        _pending_send = !is_max;
         if (_measurements_debug_mode)
         {
             for (unsigned j = 0; j < _measurements_hex_arr_pos; j++)
@@ -484,16 +487,10 @@ static void _measurements_send(void)
         }
         else
             comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
-        if (i == MEASUREMENTS_MAX_NUMBER)
-        {
-            _pending_send = false;
+        if (is_max)
             measurements_debug("Complete send");
-        }
         else
-        {
-            _pending_send = true;
             measurements_debug("Fragment send, wait to send more.");
-        }
     }
 }
 
@@ -532,6 +529,7 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 
 void on_comms_sent_ack(bool ack)
 {
+    measurements_debug("pending send = %d", _pending_send);
     if (!ack)
     {
         _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos = 0;
@@ -551,7 +549,6 @@ void on_comms_sent_ack(bool ack)
         if (inf.acked_cb)
             inf.acked_cb(def->name);
     }
-
     if (_pending_send)
         _measurements_send();
     else
@@ -1450,9 +1447,11 @@ static void measurements_cb(char *args)
 
 static void measurements_enable_cb(char *args)
 {
+    bool was_enabled = measurements_enabled;
     if (args[0])
         measurements_enabled = (args[0] == '1');
-
+    if (!was_enabled && measurements_enabled)
+        _last_sent_ms = get_since_boot_ms();
     log_out("measurements_enabled : %c", (measurements_enabled)?'1':'0');
 }
 

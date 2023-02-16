@@ -484,8 +484,7 @@ class dev_t(dev_base_t):
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
             new_measurement = measurement_t(self, name, interval, sample_count)
-            if name == "PM10" or name == "PM25":
-                new_measurement.timeout = 15
+            new_measurement.timeout = self.get_meas_timeout(name)
             self._children[name] = new_measurement
 
     def measurements_enable(self, value):
@@ -514,6 +513,7 @@ class dev_t(dev_base_t):
                     name = reg[2].strip('"')
                     reg = modbus_reg_t(self, name=name, address=int(
                         reg[0][2:], 16), mb_type_=reg[-1], func=int(reg[1][3:4]))
+                    reg.timeout = self.get_meas_timeout(name)
                     dev["regs"] += [reg]
         else:
             pass
@@ -550,6 +550,8 @@ class dev_t(dev_base_t):
             return False
         r = self.do_cmd(
             f"mb_reg_add {slave_id} {hex(reg.address)} {reg.func} {reg.mb_type_} {reg.name}")
+        if r:
+            reg.timeout = self.get_meas_timeout(reg.name)
         self._children[reg.name] = reg
         return "Added modbus reg" in r
 
@@ -599,12 +601,17 @@ class dev_t(dev_base_t):
         r = self.do_cmd("fw@ %04x" % crc)
         assert "FW added" in r
 
-    def reset(self):
+    def reset(self, timeout=5):
         self._ll.write('reset')
-        while True:
-            line = self._ll.read()
-            if '----start----' in line:
-                return
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            r = select.select([self],[],[], 1)
+            if len(r[0]):
+                line = self._ll.read()
+                if '----start----' in line:
+                    debug_print("OSM reset'ed")
+                    return True
+        return False
 
 
 class dev_debug_t(dev_base_t):
