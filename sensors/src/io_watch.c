@@ -15,6 +15,7 @@
 #include "platform.h"
 #include "log.h"
 #include "platform_model.h"
+#include "sleep.h"
 
 
 #define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
@@ -144,6 +145,7 @@ void io_watch_isr(uint32_t exti_group)
             continue;
 
         data->instant_send = 1;
+        sleep_exit_sleep_mode();
     }
 }
 
