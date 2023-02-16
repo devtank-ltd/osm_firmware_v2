@@ -169,6 +169,15 @@ class test_framework_t(object):
             return False
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
+        for p in range(1,4):
+            self._vosm_conn.update_midpoint(2048, f"CC{p}")
+            self._vosm_conn.set_outer_inner_cc(p, 100, 50)
+        self._vosm_conn.interval_mins
+        self._vosm_conn.app_key
+        self._vosm_conn.dev_eui
+        self._vosm_conn.print_cc_gain
+        for p in range(1,4):
+            self._vosm_conn.get_midpoint(f"CC{p}")
         self._vosm_conn.measurements_enable(False)
         self._vosm_conn.PM10.interval = 1
         self._vosm_conn.PM25.interval = 1
@@ -197,6 +206,7 @@ class test_framework_t(object):
             modbus_reg_t(self._vosm_conn, "AP1" , 0x10, 4, "F" ),
             modbus_reg_t(self._vosm_conn, "AP2" , 0x12, 4, "F" )
             ])
+        self._vosm_conn.get_modbus()
         passed = True
 
         for active in self._get_active_measurements():
