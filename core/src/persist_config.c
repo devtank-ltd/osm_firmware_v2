@@ -10,6 +10,7 @@
 #include "platform.h"
 #include "platform_model.h"
 #include "common.h"
+#include "io.h"
 
 
 persist_storage_t               persist_data __attribute__((aligned (16)));
@@ -83,22 +84,31 @@ char* persist_get_serial_number(void)
 }
 
 
-static void reset_cb(char *args)
+static command_response_t _persist_commit_cb(char* args)
 {
-    platform_reset_sys();
+    persist_commit();
+    return COMMAND_RESP_OK;
 }
 
 
-static void wipe_cb(char* args)
+static command_response_t _reset_cb(char *args)
+{
+    platform_reset_sys();
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _wipe_cb(char* args)
 {
     persistent_wipe();
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* persist_config_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "save",         "Save config",              persist_commit                , false , NULL },
-                                       { "reset",        "Reset device.",            reset_cb                      , false , NULL },
-                                       { "wipe",         "Factory Reset",            wipe_cb                       , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "save",         "Save config",             _persist_commit_cb             , false , NULL },
+                                       { "reset",        "Reset device.",           _reset_cb                      , false , NULL },
+                                       { "wipe",         "Factory Reset",           _wipe_cb                       , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

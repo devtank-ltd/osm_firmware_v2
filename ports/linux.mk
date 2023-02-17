@@ -62,9 +62,17 @@ $$($(1)_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(BU
 	mkdir -p "$$(@D)"
 	cp $$< $$@
 
+$(1)_MODEL_PERIPHERALS_SRC:=$$(shell if [ -e "$$(MODEL_DIR)/$(1)/peripherals" ]; then find $$(MODEL_DIR)/$(1)/peripherals -name "*.py"; fi)
+
+$(1)_MODEL_PERIPHERALS_DST:=$$($(1)_MODEL_PERIPHERALS_SRC:$$(MODEL_DIR)/$(1)/%=$$(BUILD_DIR)/$(1)/%)
+
+$$($(1)_MODEL_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(MODEL_DIR)/$(1)/% $$(BUILD_DIR)/.linux_build_env
+	mkdir -p "$$(@D)"
+	cp $$< $$@
+
 $$($(1)_OBJS) : $$(BUILD_DIR)/.linux_build_env
 
-$$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_PERIPHERALS_DST)
+$$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_PERIPHERALS_DST) $$($(1)_MODEL_PERIPHERALS_DST)
 	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o $$@
 
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/firmware.elf

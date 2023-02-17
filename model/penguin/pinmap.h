@@ -8,8 +8,6 @@
 
 #define UART_CHANNELS_COUNT 4
 
-#define IOS_COUNT 10
-#define ADC_CC_COUNT    3
 #define ADC_COUNT 10
 
 #define ADC_INDEX_BAT_MON         0
@@ -37,10 +35,6 @@
                             ADC1_CHANNEL_FTMA_2,  \
                             ADC1_CHANNEL_FTMA_3,  \
                             ADC1_CHANNEL_FTMA_4   }
-
-#define ADC_FTMA_COUNT  4
-
-#define W1_PULSE_1_IO               4
 
 
 #define UART_BUFFERS_INIT                \
@@ -88,8 +82,8 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 4   */ \
-    IO_AS_INPUT | IO_TYPE_PULSECOUNT | IO_TYPE_ONEWIRE, /* GPIO 5   */ \
+    IO_AS_INPUT,                                        /* GPIO 4   */ \
+    IO_AS_INPUT,                                        /* GPIO 5   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
     IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
@@ -105,4 +99,26 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
                              ADCS_TYPE_FTMA3,    \
                              ADCS_TYPE_FTMA4     }
 
+#define W1_PULSE_1_IO               4
+#define W1_PULSE_2_IO               5
+
+#define HTU21D_I2C                  1
+#define HTU21D_I2C_INDEX            0
+#define VEML7700_I2C                1
+#define VEML7700_I2C_INDEX          0
+
+#define DS18B20_INSTANCES   {                                          \
+    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+        0 },                                                           \
+}
+
 #define     post_init()
+
+
+#ifndef __CONFIGTOOL__
+
+#define UART_1_SPEED 9600
+#define UART_2_SPEED 115200
+#define UART_3_SPEED 9600
+
+#endif // __CONFIGTOOL__

@@ -167,14 +167,23 @@ good_exit:
 static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t* value)
 {
     if (!name || !value)
+    {
+        adc_debug("Handed NULL pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     uint8_t index;
     if (!_ftma_get_index_by_name(name, &index))
+    {
+        adc_debug("Could not get index of '%s'.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     if (!_ftma_channel_inited[index])
+    {
+        adc_debug("This channel is already init-ed.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     uint32_t avg;
     adcs_resp_t resp = adcs_collect_avg(&avg, _ftma_num_channels, FTMA_NUM_SAMPLES, index, ADCS_KEY_FTMA, &_ftma_collection_time);
@@ -184,6 +193,7 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
             _ftma_is_running = false;
             _ftma_channel_inited[index] = false;
             _ftma_auto_release();
+            adc_debug("FTMA ADC failed on collecting AVG.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
@@ -269,7 +279,7 @@ void ftma_init(void)
 }
 
 
-static void _ftma_name_cb(char* args)
+static command_response_t _ftma_name_cb(char* args)
 {
     /* <original_name> <new_name>
      *      FTA1          TMP9
@@ -278,7 +288,7 @@ static void _ftma_name_cb(char* args)
     if (!new_name)
     {
         log_out("No new name given.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     *new_name = '\0';
     new_name = skip_space(++new_name);
@@ -288,43 +298,44 @@ static void _ftma_name_cb(char* args)
     if (!_ftma_get_index_by_name(orig_name, &index))
     {
         log_out("Failed to get FTMA with name '%s'.", orig_name);
-        return;
+        return COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
         log_out("Index is out of range.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     unsigned new_len = strlen(new_name);
     if (new_len > MEASURE_NAME_LEN)
     {
         log_out("Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
-        return;
+        return COMMAND_RESP_ERR;
     }
     if (new_len == 0)
     {
         log_out("No new name given.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     for (char* c = new_name; *c; c++)
     {
         if (!isascii(*c))
         {
             log_out("New name '%s' contains none ascii characters.", new_name);
-            return;
+            return COMMAND_RESP_ERR;
         }
     }
     if (!measurements_rename(orig_name, new_name))
     {
         log_out("Failed to rename the measurement.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     strncpy(_ftma_config[index].name, new_name, MEASURE_NAME_LEN);
     log_out("Measurement '%s' is now called '%s'.", orig_name, new_name);
+    return COMMAND_RESP_OK;
 }
 
 
-static void _ftma_coeff_cb(char* args)
+static command_response_t _ftma_coeff_cb(char* args)
 {
     /* <name>  <A>  <B>    <C>      <D>
      *  FTA3  -2.1  13.2  -0.01  -0.00001
@@ -346,12 +357,12 @@ static void _ftma_coeff_cb(char* args)
     if (!_ftma_get_index_by_name(args, &index))
     {
         log_out("Failed to get FTMA with name '%s'.", args);
-        return;
+        return COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
         log_out("Index is out of range.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     ftma_config_t* ftma = &_ftma_config[index];
 
@@ -376,6 +387,7 @@ static void _ftma_coeff_cb(char* args)
     {
         log_out("%c: %.06f", 'A'+i, ftma->coeffs[i]);
     }
+    return COMMAND_RESP_OK;
 }
 
 

@@ -14,7 +14,7 @@
 
 #define I2C_SERVER_LOC                          "/tmp/osm/i2c_socket"
 
-#define I2C_BUF_SIZ                     32
+#define I2C_BUF_SIZ                     128
 
 
 static bool _i2c_connected = false;
@@ -38,7 +38,7 @@ void i2c_linux_deinit(void)
 }
 
 
-bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
+bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
     if ((!w && wn) || (!r && rn))
     {
@@ -49,20 +49,6 @@ bool i2c_transfer_timeout(i2c_type_t type, const uint8_t *w, unsigned wn, uint8_
     {
         log_error("Fake I2C is not connected.");
         return false;
-    }
-
-    uint8_t addr;
-    switch (type)
-    {
-        case I2C_TYPE_HTU21D:
-            addr = 0x40;
-            break;
-        case I2C_TYPE_VEML7700:
-            addr = 0x10;
-            break;
-        default:
-            log_error("Unknown type %d", type);
-            return false;
     }
 
     char buf[I2C_BUF_SIZ];

@@ -5,7 +5,6 @@
 
 #include "platform_base_types.h"
 #include "config.h"
-#include "pinmap.h"
 
 #ifdef _PICOLIBC__
 _Static_assert(_PICOLIBC__ >= 1 && _PICOLIBC_MINOR__>= 7, "Picolibc too old.");
@@ -39,26 +38,40 @@ extern bool decompose_uart_str(char             * str,
 extern char * skip_space(char * pos);
 extern char * skip_to_space(char * pos);
 
-#define IO_PULL_MASK    0x0003
-#define IO_TYPE_MASK    0xF000
-#define IO_STATE_MASK   0x0F00
-#define IO_TYPE_ON_MASK 0x000C
 
-#define IO_AS_INPUT     0x0100
-#define IO_DIR_LOCKED   0x0200
-#define IO_OUT_ON       0x0400
+/** FLAGS */
+/* Flag Masks */
+#define IO_PULL_MASK        0x0003
+#define IO_STATE_MASK       0x0F00
 
-#define IO_PULSE        0x0004
-#define IO_ONEWIRE      0x0008
-
-#define IO_TYPE_PULSECOUNT   0x2000
-#define IO_TYPE_ONEWIRE      0x4000
-
+/* Flags */
 #ifndef STM32L4
 #define GPIO_PUPD_NONE     0
 #define GPIO_PUPD_PULLUP   1
 #define GPIO_PUPD_PULLDOWN 2
 #endif //STM32L4
+
+#define IO_AS_INPUT         0x0100
+#define IO_DIR_LOCKED       0x0200
+#define IO_OUT_ON           0x0400
+
+/** ENUMS */
+/* Enum Masks */
+#define IO_ACTIVE_SPECIAL_MASK      0xF000
+
+/* Enums */
+typedef enum
+{
+    IO_SPECIAL_START                    = 0x1000,
+    IO_SPECIAL_NONE                     = 0x0000,
+    IO_SPECIAL_PULSECOUNT_FALLING_EDGE  = 0x1000,
+    IO_SPECIAL_PULSECOUNT_RISING_EDGE   = 0x2000,
+    IO_SPECIAL_PULSECOUNT_BOTH_EDGE     = 0x3000,
+    IO_SPECIAL_ONEWIRE                  = 0x4000,
+    IO_SPECIAL_WATCH                    = 0x5000,
+    IO_SPECIAL_MAX                      = IO_SPECIAL_WATCH,
+} io_special_t;
+
 
 extern char* io_get_pull_str(uint16_t io_state);
 extern bool  io_is_special(uint16_t io_state);
@@ -81,6 +94,7 @@ typedef enum
     FTMA          = 13,
     CUSTOM_0      = 14,
     CUSTOM_1      = 15,
+    IO_READING    = 16,
 } measurements_def_type_t;
 
 
@@ -89,7 +103,8 @@ typedef struct
     char     name[MEASURE_NAME_NULLED_LEN];             // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
-    uint8_t  type;                                      // measurement_def_type_t
+    uint8_t  type:7;                                    // measurement_def_type_t
+    uint8_t  is_immediate:1;                            // Should collect as soon to sending as possible.
 } measurements_def_t;
 
 #define MODBUS_BLOCK_SIZE 16
@@ -129,7 +144,7 @@ typedef enum
     MB_REG_INVALID = 0,
     MB_REG_WAITING = 1,
     MB_REG_READY   = 2
-} modbus_reg_state_t; 
+} modbus_reg_state_t;
 
 
 typedef struct
@@ -229,11 +244,19 @@ typedef union
 } measurements_reading_t;
 
 
+typedef enum
+{
+    COMMAND_RESP_NONE   = 0x00,
+    COMMAND_RESP_OK     = 0x01,
+    COMMAND_RESP_ERR    = 0x02,
+} command_response_t;
+
+
 struct cmd_link_t
 {
     const char * key;
     const char * desc;
-    void (*cb)(char * args);
+    command_response_t (*cb)(char * args);
     bool hidden;
     struct cmd_link_t * next;
 };

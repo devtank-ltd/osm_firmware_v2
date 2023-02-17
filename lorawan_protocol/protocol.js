@@ -167,6 +167,24 @@ function Value_sizes(value_type)
 }
 
 
+function Error_lookup(err)
+{
+    switch (err)
+    {
+        case 0x00:
+            return "No response"
+        case 0x01:
+            return "Success";
+        case 0x02:
+            return "Error"
+        default:
+            break;
+    }
+    var resp = 'Unknown error: ' + err;
+    return resp;
+}
+
+
 function Decode(fPort, bytes, variables)
 {
     var pos = 0;
@@ -203,6 +221,8 @@ function Decode(fPort, bytes, variables)
                 value_type = bytes[pos++];
                 mean = Decode_value(value_type, bytes, pos);
                 pos += Value_sizes(value_type);
+                if (name == "ERR")
+                    mean = Error_lookup(mean);
                 obj[name] = mean;
                 break;
             // Multiple measurement

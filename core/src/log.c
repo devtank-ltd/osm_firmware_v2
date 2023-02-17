@@ -124,7 +124,7 @@ void log_debug_data(uint32_t flag, void * data, unsigned size)
         size -= len;
         src += len;
 
-        _dispatch_line(UART_ERR_NU, false, NULL, 43);
+        _dispatch_line(UART_ERR_NU, false, NULL, pos - log_buffer);
 
         uart_rings_out_drain();
     }

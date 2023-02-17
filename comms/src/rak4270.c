@@ -69,13 +69,6 @@ _Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "
 #define RAK4270_CONFIG_DR                    STR(RAK4270_SETTING_DR_4)
 #define RAK4270_CONFIG_DUTY_CYCLE            STR(RAK4270_SETTING_DUTY_CYCLE_DISABLED)
 
-#define RAK4270_UNSOL_VERSION                0x01
-
-#define RAK4270_ID_CMD                       0x434d4400 /* CMD */
-#define RAK4270_ID_FW_START                  0x46572d00 /* FW- */
-#define RAK4270_ID_FW_CHUNK                  0x46572b00 /* FW+ */
-#define RAK4270_ID_FW_COMPLETE               0x46574000 /* FW@ */
-
 typedef enum
 {
     RAK4270_STATE_OFF,
@@ -139,12 +132,6 @@ typedef enum
 
 typedef enum
 {
-    RAK4270_CMD_ERROR_NO_ERROR       = 0,
-} rak4270_cmd_error_codes_t;
-
-
-typedef enum
-{
     RAK4270_BKUP_MSG_BLANK,
     RAK4270_BKUP_MSG_STR,
     RAK4270_BKUP_MSG_HEX,
@@ -198,13 +185,13 @@ typedef struct
 
 typedef struct
 {
-    rak4270_cmd_error_codes_t    code;
+    uint8_t                 code;
     bool                    valid;
 } error_code_t;
 
 
 static rak4270_state_machine_t   _rak4270_state_machine                   = {.state=RAK4270_STATE_OFF, .init_step=0, .last_message_time=0, .resend_count=0, .reset_count=0};
-static port_n_pins_t        _rak4270_reset_gpio                      = { GPIOC, GPIO8 };
+static port_n_pins_t        _rak4270_reset_gpio                      = COMMS_RESET_PORT_N_PINS;
 static char                 _rak4270_out_buffer[RAK4270_BUFFER_SIZE]      = {0};
 static uint8_t              _rak4270_port                            = 0;
 static uint32_t             _rak4270_chip_off_time                   = 0;
@@ -451,18 +438,6 @@ void rak4270_init(void)
     _rak4270_chip_init();
 }
 
-static uint64_t _rak4270_handle_unsol_consume(char *p, unsigned len)
-{
-    if (len > 16 || (len % 1))
-        return 0;
-
-    char tmp = p[len];
-    p[len] = 0;
-    uint64_t r = strtoull(p, NULL, 16);
-    p[len] = tmp;
-    return r;
-}
-
 
 static unsigned _rak4270_handle_unsol_2_rak4270_cmd_ascii(char *p)
 {
@@ -471,7 +446,7 @@ static unsigned _rak4270_handle_unsol_2_rak4270_cmd_ascii(char *p)
 
     while(*p && rak4270_p < rak4270_p_last)
     {
-        uint8_t val = _rak4270_handle_unsol_consume(p, 2);
+        uint8_t val = lw_consume(p, 2);
         p+=2;
         if (val != 0)
             *rak4270_p++ = (char)val;
@@ -502,38 +477,41 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
         return;
     }
 
-    if (_rak4270_handle_unsol_consume(p, 2) != RAK4270_UNSOL_VERSION)
+    if (lw_consume(p, 2) != LW_UNSOL_VERSION)
     {
         log_error("Couldn't parse RAK4270 unsol msg");
         return;
     }
     p += 2;
-    uint32_t pl_id = (uint32_t)_rak4270_handle_unsol_consume(p, 8);
+    uint32_t pl_id = (uint32_t)lw_consume(p, 8);
     p += 8;
 
     switch (pl_id)
     {
-        case RAK4270_ID_CMD:
+        case LW_ID_CMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
             cmds_process(_rak4270_cmd_ascii, cmd_len);
-            /* FIXME: Give cmds an exit code.
-            _rak4270_error_code.code = cmds_process(_rak4270_cmd_ascii, strlen(_rak4270_cmd_ascii));
-            _rak4270_error_code.valid = true;
-            */
             break;
         }
-        case RAK4270_ID_FW_START:
+        case LW_ID_CCMD:
         {
-            uint16_t count = (uint16_t)_rak4270_handle_unsol_consume(p, 4);
+            unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
+            _rak4270_error_code.code = cmds_process(_rak4270_cmd_ascii, cmd_len); /* command_resp_t */
+            _rak4270_error_code.valid = true;
+            break;
+        }
+        case LW_ID_FW_START:
+        {
+            uint16_t count = (uint16_t)lw_consume(p, 4);
             comms_debug("FW of %"PRIu16" chunks", count);
             _next_fw_chunk_id = 0;
             fw_ota_reset();
             break;
         }
-        case RAK4270_ID_FW_CHUNK:
+        case LW_ID_FW_CHUNK:
         {
-            uint16_t chunk_id = (uint16_t)_rak4270_handle_unsol_consume(p, 4);
+            uint16_t chunk_id = (uint16_t)lw_consume(p, 4);
             p += 4;
             unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)incoming_pl->data);
             comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
@@ -546,21 +524,21 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
             char * p_end = p + chunk_len;
             while(p < p_end)
             {
-                uint8_t b = (uint8_t)_rak4270_handle_unsol_consume(p, 2);
+                uint8_t b = (uint8_t)lw_consume(p, 2);
                 p += 2;
                 if (!fw_ota_add_chunk(&b, 1))
                     break;
             }
             break;
         }
-        case RAK4270_ID_FW_COMPLETE:
+        case LW_ID_FW_COMPLETE:
         {
             if (len < 12 || !_next_fw_chunk_id)
             {
                 log_error("RAK4270 FW Finish invalid");
                 return;
             }
-            uint16_t crc = (uint16_t)_rak4270_handle_unsol_consume(p, 4);
+            uint16_t crc = (uint16_t)lw_consume(p, 4);
             fw_ota_complete(crc);
             _next_fw_chunk_id = 0;
             break;
@@ -1061,8 +1039,34 @@ void rak4270_loop_iteration(void)
 }
 
 
-void rak4270_config_setup_str(char* str)
+static command_response_t _rak4270_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
+    {
         _rak4270_reload_config();
+        return COMMAND_RESP_OK;
+    }
+    return COMMAND_RESP_ERR;
+}
+
+
+bool rak4270_get_id(char* str, uint8_t len)
+{
+    return lw_get_id(str, len);
+}
+
+
+struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] =
+    {
+        { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
+    };
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}
+
+
+void rak4270_power_down(void)
+{
+    _rak4270_chip_off();
 }

@@ -71,17 +71,21 @@ typedef struct
 typedef struct
 {
     measurements_value_t    value;
-    uint8_t                 value_type:7;                                 /* measurements_value_type_t */
+    uint8_t                 value_type:6;                                 /* measurements_value_type_t */
+    uint8_t                 instant_send:1;
     uint8_t                 is_collecting:1;
     uint8_t                 num_samples;
     uint8_t                 num_samples_init;
     uint8_t                 num_samples_collected;
     uint32_t                collection_time_cache;
+
 } measurements_data_t;
 
 
 typedef bool (*measurements_for_each_cb_t)(measurements_def_t* def, void * data);
 
+
+extern bool     measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
 extern bool     measurements_for_each(measurements_for_each_cb_t cb, void * data);
 
 extern void     measurements_print(void);

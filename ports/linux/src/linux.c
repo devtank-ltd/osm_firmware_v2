@@ -29,6 +29,7 @@
 #include "log.h"
 #include "measurements.h"
 #include "platform_model.h"
+#include "pinmap.h"
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_PTY_NAME_SIZE     16
@@ -41,8 +42,7 @@
 #define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
 #define LINUX_REBOOT_FILE_LOC   LINUX_FILE_LOC"reboot.dat"
 
-
-extern int errno;
+bool linux_has_reset = false;
 
 
 typedef enum
@@ -356,6 +356,7 @@ static void _linux_load_fd_file(void)
         }
     }
     fclose(osm_reboot_file);
+    linux_has_reset = true;
 }
 
 
@@ -386,6 +387,7 @@ static void _linux_kick_event(int fd)
 {
     uint64_t v = 0xC0FFEE;
     write(fd, &v, sizeof(uint64_t));
+    linux_port_debug("Requested ADCs.");
 }
 
 
@@ -628,6 +630,7 @@ void _linux_iterate(void)
                 {
                     uint64_t v;
                     read(fd_handler->event.fd, &v, sizeof(uint64_t));
+                    linux_port_debug("Received request ADCs.");
                     if (fd_handler->cb)
                         fd_handler->cb(fd_handler->event.fd);
                     break;
@@ -694,7 +697,7 @@ void platform_start(void)
     {
         unsigned mins = strtoul(meas_interval, NULL, 10);
         linux_port_debug("New Measurement Interval: %u", mins);
-        persist_data.model_config.mins_interval = mins;
+        persist_data.model_config.mins_interval = mins * 1000;
         transmit_interval = mins;
     }
     char * auto_meas = getenv("AUTO_MEAS");

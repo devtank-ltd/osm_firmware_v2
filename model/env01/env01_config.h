@@ -4,8 +4,8 @@
 
 #include "measurements.h"
 #include "config.h"
-#include "pinmap.h"
 #include "cc.h"
+#include "rak4270.h"
 
 #define __MODEL_CONFIG__
 
@@ -45,6 +45,12 @@
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
 
+#define IOS_COUNT           10
+
+#define ADC_CC_COUNT        3
+
+#define comms_name              rak4270
+
 
 typedef struct
 {
@@ -64,5 +70,8 @@ typedef struct
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
     uint8_t                 ____[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
-    /* 6 x 16 bytes          */
+    uint32_t                sai_no_buf;
+    uint8_t                 _____[16-(sizeof(uint32_t)%16)];
+    /* 16 byte boundary ---- */
+    /* 7 x 16 bytes          */
 } persist_env01_config_v1_t;

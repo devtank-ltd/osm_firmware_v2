@@ -144,7 +144,12 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
     }
     else if (uart == CMD_UART)
     {
-        if (fwrite((char*)data, 1, size, stdout) != (size_t)size)
+        if (linux_has_reset)
+        {
+            if (!linux_write_pty(uart, data, size))
+                linux_port_debug("Write failed.");
+        }
+        else if (fwrite((char*)data, 1, size, stdout) != (size_t)size)
             exit(-1);
     }
 }

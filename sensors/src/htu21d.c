@@ -18,7 +18,10 @@ Documents used:
 #include "log.h"
 #include "htu21d.h"
 #include "measurements.h"
+#include "pinmap.h"
 
+
+#define I2C_HTU21D_ADDR     0x40
 #define MEASUREMENT_COLLECTION_MS   150
 #define HTU21D_PAUSE_TIME           50
 
@@ -121,7 +124,7 @@ static void _htu21d_send(htu21d_reg_t reg)
 {
     uint8_t reg8 = reg;
     htu21d_debug("Send command 0x%"PRIx8, reg8);
-    if (!i2c_transfer_timeout(I2C_TYPE_HTU21D, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
+    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
         htu21d_init();
 }
 
@@ -130,7 +133,7 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
 {
     htu21d_debug("Try read");
     uint8_t d[3] = {0};
-    if (!i2c_transfer_timeout(I2C_TYPE_HTU21D, NULL, 0, d, 3, timeout))
+    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, NULL, 0, d, 3, timeout))
     {
         htu21d_debug("Read timeout.");
         htu21d_init();

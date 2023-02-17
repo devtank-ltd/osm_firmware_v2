@@ -27,6 +27,7 @@ typedef struct
     uint8_t               dma_channel;
     uint8_t               priority;
     uint8_t               enabled;
+    uint8_t               dma_req;
 } uart_channel_t;
 
 

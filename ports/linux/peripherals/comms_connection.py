@@ -7,11 +7,9 @@ import subprocess
 
 
 class comms_dev_t(basetypes.pty_dev_t):
-    def __init__(self, pty, protocol, match_cb=None, logger=None, log_file=None):
+    def __init__(self, pty, protocol,logger=None, log_file=None):
         super().__init__(pty, byte_parts=False, logger=logger, log_file=logger)
         self._protocol = protocol
-        self._match_cb = match_cb
-        self.passed   = False
 
     def _parse_line(self, line):
         msg = line.replace(b"\r", b"").replace(b"\n", b"")
@@ -21,14 +19,15 @@ class comms_dev_t(basetypes.pty_dev_t):
             resp = proc.stdout.read()
         resp_dict = yaml.safe_load(resp)
         self._logger.debug(resp_dict)
-        if self._match_cb:
-            self._done = True
-            self.passed = self._match_cb(resp_dict)
+        return resp_dict
 
-    def _read_pending(self):
+    def read_dict(self):
         line = self._readline()
         if line:
-            self._parse_line(line)
+            return self._parse_line(line)
+
+    def _read_pending(self):
+        self.read_dict()
 
 
 def main():

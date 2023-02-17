@@ -15,6 +15,8 @@ extern bool     penguin_measurements_get_inf(measurements_def_t * def, measureme
 extern void     penguin_debug_mode_enable_all(void);
 extern void     penguin_measurements_repopulate(void);
 extern void     penguin_cmds_add_all(struct cmd_link_t* tail);
+extern void     penguin_w1_pulse_enable_pupd(unsigned io, bool enabled);
+extern bool     penguin_can_io_be_special(unsigned io, io_special_t special);
 extern unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr);
 extern void     penguin_linux_spawn_fakes(void);
 extern void     penguin_linux_close_fakes(void);

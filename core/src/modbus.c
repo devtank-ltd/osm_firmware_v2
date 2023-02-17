@@ -14,6 +14,7 @@
 #include "cmd.h"
 #include "persist_config.h"
 #include "platform.h"
+#include "pinmap.h"
 
 #define MODBUS_RESP_TIMEOUT_MS 2000
 #define MODBUS_SENT_TIMEOUT_MS 2000
@@ -778,16 +779,16 @@ void modbus_init(void)
 }
 
 
-static void modbus_setup_cb(char *args)
+static command_response_t _modbus_setup_cb(char *args)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
      */
-    modbus_setup_from_str(args);
+    return modbus_setup_from_str(args) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-static void modbus_add_dev_cb(char * args)
+static command_response_t _modbus_add_dev_cb(char * args)
 {
     /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
      * (name can only be 4 char long)
@@ -797,11 +798,13 @@ static void modbus_add_dev_cb(char * args)
     if (!modbus_add_dev_from_str(args))
     {
         log_out("<unit_id> <LSB/MSB> <LSW/MSW> <name>");
+        return COMMAND_RESP_ERR;
     }
+    return COMMAND_RESP_OK;
 }
 
 
-static void modbus_add_reg_cb(char * args)
+static command_response_t _modbus_add_reg_cb(char * args)
 {
     /*<unit_id> <reg_addr> <modbus_func> <type> <name>
      * (name can only be 4 char long)
@@ -833,7 +836,7 @@ static void modbus_add_reg_cb(char * args)
 
     modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
     if (type == MODBUS_REG_TYPE_INVALID)
-        return;
+        return COMMAND_RESP_ERR;
 
     pos = skip_space(pos);
 
@@ -843,26 +846,50 @@ static void modbus_add_reg_cb(char * args)
     if (!dev)
     {
         log_out("Unknown modbus device.");
-        return;
+        return COMMAND_RESP_ERR;
     }
 
     if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
     {
         log_out("Added modbus reg %s", name);
         if (!modbus_measurement_add(modbus_dev_get_reg_by_name(dev, name)))
+        {
             log_out("Failed to add modbus reg to measurements!");
+            return COMMAND_RESP_ERR;
+        }
+        return COMMAND_RESP_OK;
     }
-    else log_out("Failed to add modbus reg.");
+    log_out("Failed to add modbus reg.");
+    return COMMAND_RESP_ERR;
+}
+
+
+static command_response_t _modbus_log_cb(char* args)
+{
+    modbus_log();
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _modbus_measurement_del_reg_cb(char* args)
+{
+    return modbus_measurement_del_reg(args) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
+static command_response_t _modbus_measurement_del_dev_cb(char* args)
+{
+    return modbus_measurement_del_dev(args) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
 struct cmd_link_t* modbus_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "mb_setup",     "Change Modbus comms",      modbus_setup_cb               , false , NULL },
-                                       { "mb_dev_add",   "Add modbus dev",           modbus_add_dev_cb             , false , NULL },
-                                       { "mb_reg_add",   "Add modbus reg",           modbus_add_reg_cb             , false , NULL },
-                                       { "mb_reg_del",   "Delete modbus reg",        modbus_measurement_del_reg    , false , NULL },
-                                       { "mb_dev_del",   "Delete modbus dev",        modbus_measurement_del_dev    , false , NULL },
-                                       { "mb_log",       "Show modbus setup",        modbus_log                    , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "mb_setup",     "Change Modbus comms",      _modbus_setup_cb               , false , NULL },
+                                       { "mb_dev_add",   "Add modbus dev",           _modbus_add_dev_cb             , false , NULL },
+                                       { "mb_reg_add",   "Add modbus reg",           _modbus_add_reg_cb             , false , NULL },
+                                       { "mb_reg_del",   "Delete modbus reg",        _modbus_measurement_del_reg_cb , false , NULL },
+                                       { "mb_dev_del",   "Delete modbus dev",        _modbus_measurement_del_dev_cb , false , NULL },
+                                       { "mb_log",       "Show modbus setup",        _modbus_log_cb                 , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

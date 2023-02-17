@@ -38,8 +38,8 @@ REQ_CHANGE_INT      = "REQ_CHANGE_INT"
 REQ_IOS             = "REQ_IOS"
 REQ_DO_CMD          = "REQ_DO_CMD"
 REQ_CHANGE_ALL_INT  = "REQ_CHANGE_ALL_INT"
-DEL_MB_REG          = "DEL_MB_REG"
-DEL_MB_DEV          = "DEL_MB_DEV"
+REQ_DEL_MB_REG      = "REQ_DEL_MB_REG"
+REQ_DEL_MB_DEV      = "REQ_DEL_MB_DEV"
 REQ_CC_GAIN         = "REQ_CC_GAIN"
 REQ_MIDP            = "REQ_MIDP"
 REQ_UPDATE_MIDP     = "REQ_UPDATE_MIDP"
@@ -83,8 +83,8 @@ class binding_interface_svr_t:
                           REQ_IOS             : self._request_ios,
                           REQ_DO_CMD          : self._request_do_cmd,
                           REQ_CHANGE_ALL_INT  : self._request_change_all_int,
-                          DEL_MB_REG          : self._request_del_reg,
-                          DEL_MB_DEV          : self._request_del_dev,
+                          REQ_DEL_MB_REG      : self._request_del_reg,
+                          REQ_DEL_MB_DEV      : self._request_del_dev,
                           REQ_CC_GAIN         : lambda x : self.dev.print_cc_gain,
                           REQ_MIDP            : self._request_midpoint,
                           REQ_UPDATE_MIDP     : self._update_midpoint,
@@ -240,6 +240,7 @@ class binding_interface_svr_t:
             self.debug_parse = None
             return True
         except Exception as e:
+            traceback.print_exc()
             log(f"Openned Failed {e}")
             # Todo, handle expected or error out
             return False

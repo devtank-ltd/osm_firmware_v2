@@ -8,11 +8,10 @@ penguin_SOURCES := \
     $(OSM_DIR)/ports/linux/src/timers.c \
     $(OSM_DIR)/ports/linux/src/i2c.c \
     $(OSM_DIR)/ports/linux/src/w1.c \
-    $(OSM_DIR)/ports/linux/src/version.c \
     $(OSM_DIR)/ports/linux/src/pulsecount.c \
     $(OSM_DIR)/ports/linux/src/sai.c \
-    $(OSM_DIR)/ports/linux/src/comms.c \
     $(OSM_DIR)/ports/linux/src/peripherals.c \
+    $(OSM_DIR)/ports/linux/src/io_watch.c \
     $(OSM_DIR)/core/src/main.c \
     $(OSM_DIR)/core/src/base.c \
     $(OSM_DIR)/core/src/log.c \
@@ -30,6 +29,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/core/src/adcs.c \
     $(OSM_DIR)/core/src/common.c \
     $(OSM_DIR)/core/src/debug_mode.c \
+    $(OSM_DIR)/core/src/protocol.c \
     $(OSM_DIR)/sensors/src/hpm.c \
     $(OSM_DIR)/sensors/src/htu21d.c \
     $(OSM_DIR)/sensors/src/ds18b20.c \
@@ -40,5 +40,6 @@ penguin_SOURCES := \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
     $(MODEL_DIR)/penguin/penguin.c \
+    $(OSM_DIR)/comms/src/linux_comms.c
 
 $(eval $(call LINUX_FIRMWARE,penguin))

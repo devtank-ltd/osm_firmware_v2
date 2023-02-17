@@ -10,7 +10,7 @@
 #include "log.h"
 #include "base_types.h"
 #include "io.h"
-#include "version.h"
+#include "platform_model.h"
 
 
 #define W1_DELAY_READ_START    2
@@ -34,11 +34,9 @@ typedef struct
 {
     port_n_pins_t   pnp;
     unsigned        io;
-    port_n_pins_t   pupd_pnp;
 } w1_ios_t;
 
-
-static w1_ios_t _w1_ios[] = { {.pnp={ W1_PULSE_PORT, W1_PULSE_1_PIN }, .io=W1_PULSE_1_IO, .pupd_pnp={W1_PULSE_1_PULLUP_EN_PORT, W1_PULSE_1_PULLUP_EN_PIN}} };
+static w1_ios_t _w1_ios[] = W1_IOS;
 
 static void _w1_start_interrupt(void) {}
 
@@ -120,7 +118,7 @@ static uint8_t _w1_read_bit(uint8_t index)
     if (!_w1_check_index(index))
         return 0;
 
-    _w1_start_interrupt(); 
+    _w1_start_interrupt();
     _w1_set_direction(index, W1_DIRECTION_OUTPUT);
     _w1_set_level(index, W1_LEVEL_LOW);
     _w1_delay_us(W1_DELAY_READ_START);
@@ -151,7 +149,7 @@ static void _w1_send_bit(uint8_t index, int bit)
         _w1_set_level(index, W1_LEVEL_LOW);
         _w1_delay_us(W1_DELAY_WRITE_0_START);
         _w1_set_level(index, W1_LEVEL_HIGH);
-        _w1_delay_us(W1_DELAY_WRITE_0_END); 
+        _w1_delay_us(W1_DELAY_WRITE_0_END);
     }
     _w1_stop_interrupt();
 }
@@ -219,41 +217,10 @@ void w1_init(uint8_t index)
         return;
     }
     rcc_periph_clock_enable(PORT_TO_RCC(_w1_ios[index].pnp.port));
-
-    if (version_is_arch(VERSION_ARCH_REV_C))
-    {
-        _w1_ios[0].pupd_pnp.pins = W1_PULSE_1_PULLUP_EN_PIN;
-        _w1_ios[0].pupd_pnp.port = W1_PULSE_1_PULLUP_EN_PIN;
-    }
-}
-
-
-static void _w1_enable_pupd(uint8_t index, bool enabled)
-{
-    if (index > ARRAY_SIZE(_w1_ios))
-        return;
-
-    w1_ios_t* w1_io = &_w1_ios[index];
-    if (version_is_arch(VERSION_ARCH_REV_C))
-    {
-        rcc_periph_clock_enable(w1_io->pupd_pnp.port);
-        gpio_mode_setup(w1_io->pupd_pnp.port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, w1_io->pupd_pnp.pins);
-        if (enabled)
-            gpio_set(w1_io->pupd_pnp.port, w1_io->pupd_pnp.pins);
-        else
-            gpio_clear(w1_io->pupd_pnp.port, w1_io->pupd_pnp.pins);
-    }
 }
 
 
 void w1_enable(unsigned io, bool enabled)
 {
-    for (unsigned index = 0; index < ARRAY_SIZE(_w1_ios); index++)
-    {
-        if (_w1_ios[index].io == io)
-        {
-            _w1_enable_pupd(index, enabled);
-            return ;
-        }
-    }
+    model_w1_pulse_enable_pupd(io, enabled);
 }

@@ -16,28 +16,10 @@
 #include "bat.h"
 #include "platform.h"
 #include "platform_model.h"
+#include "protocol.h"
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
-#define MEASUREMENTS_SEND_STR_LEN               8
-
-
-#define MEASUREMENTS_SEND_IS_SIGNED    0x10
-
-typedef enum
-{
-    MEASUREMENTS_SEND_TYPE_UNSET   = 0,
-    MEASUREMENTS_SEND_TYPE_UINT8   = 1,
-    MEASUREMENTS_SEND_TYPE_UINT16  = 2,
-    MEASUREMENTS_SEND_TYPE_UINT32  = 3,
-    MEASUREMENTS_SEND_TYPE_UINT64  = 4,
-    MEASUREMENTS_SEND_TYPE_INT8    = 1 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT16   = 2 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT32   = 3 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_INT64   = 4 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_FLOAT   = 5 | MEASUREMENTS_SEND_IS_SIGNED,
-    MEASUREMENTS_SEND_TYPE_STR     = 0x20,
-} measurements_send_type_t;
 
 
 typedef struct
@@ -67,7 +49,6 @@ static bool                         _pending_send                               
 static measurements_check_time_t    _check_time                                          = {0, 0};
 static uint32_t                     _interval_count                                      =  0;
 static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
-static uint16_t                     _measurements_hex_arr_pos                            =  0;
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
@@ -83,8 +64,10 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60)
 
+#define MEASUREMENTS_MIN_TRANSMIT_MS                (15 * 1000)
 
-bool _measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
+
+bool measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
 {
     if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
         return false;
@@ -107,211 +90,13 @@ bool _measurements_get_measurements_def(char* name, measurements_def_t ** measur
 }
 
 
-static bool _measurements_arr_append_i8(int8_t val)
-{
-    if (_measurements_hex_arr_pos >= MEASUREMENTS_HEX_ARRAY_SIZE)
-    {
-        log_error("Measurement array is full.");
-        return false;
-    }
-    _measurements_hex_arr[_measurements_hex_arr_pos++] = val;
-    return true;
-}
-
-
-static bool _measurements_arr_append_i16(int16_t val)
-{
-    return _measurements_arr_append_i8(val & 0xFF) &&
-           _measurements_arr_append_i8((val >> 8) & 0xFF);
-}
-
-
-static bool _measurements_arr_append_i32(int32_t val)
-{
-    return _measurements_arr_append_i16(val & 0xFFFF) &&
-           _measurements_arr_append_i16((val >> 16) & 0xFFFF);
-}
-
-
-static bool _measurements_arr_append_i64(int64_t val)
-{
-    return _measurements_arr_append_i32(val & 0xFFFFFFFF) &&
-           _measurements_arr_append_i32((val >> 32) & 0xFFFFFFFF);
-}
-
-
-static bool _measurements_arr_append_float(int32_t val)
-{
-    return _measurements_arr_append_i32(val);
-}
-
-
-static bool _measurements_arr_append_str(char* val, unsigned len)
-{
-    if (len > MEASUREMENTS_SEND_STR_LEN)
-        len = MEASUREMENTS_SEND_STR_LEN;
-    for (unsigned i = 0; i < len; i++)
-    {
-        if (!_measurements_arr_append_i8((int8_t)(val[i])))
-        {
-            return false;
-        }
-    }
-    for (unsigned i = len; i < MEASUREMENTS_SEND_STR_LEN; i++)
-    {
-        if (!_measurements_arr_append_i8((int8_t)0))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-
-static bool _measurements_append_i64(int64_t* value)
-{
-    measurements_send_type_t compressed_type;
-    if (*value > 0)
-    {
-        if (*value > UINT32_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT64;
-        else if (*value > UINT16_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT32;
-        else if (*value > UINT8_MAX)
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT16;
-        else
-            compressed_type = MEASUREMENTS_SEND_TYPE_UINT8;
-    }
-
-    else if (*value > INT32_MAX || *value < INT32_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT64;
-    else if (*value > INT16_MAX || *value < INT16_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT32;
-    else if (*value > INT8_MAX  || *value < INT8_MIN)
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT16;
-    else
-        compressed_type = MEASUREMENTS_SEND_TYPE_INT8;
-
-    if (!_measurements_arr_append_i8(compressed_type))
-        return false;
-    union
-    {
-        uint8_t  u8;
-        uint16_t u16;
-        uint32_t u32;
-        uint64_t u64;
-    } v;
-    switch(compressed_type)
-    {
-        case MEASUREMENTS_SEND_TYPE_UINT8:
-            v.u8    = *value;
-            return _measurements_arr_append_i8(*(int8_t*)&v.u8);
-        case MEASUREMENTS_SEND_TYPE_INT8:
-            return _measurements_arr_append_i8((int8_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT16:
-            v.u16   = *value;
-            return _measurements_arr_append_i16(*(int16_t*)&v.u16);
-        case MEASUREMENTS_SEND_TYPE_INT16:
-            return _measurements_arr_append_i16((int16_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT32:
-            v.u32   = *value;
-            return _measurements_arr_append_i32(*(int32_t*)&v.u32);
-        case MEASUREMENTS_SEND_TYPE_INT32:
-            return _measurements_arr_append_i32((int32_t)*value);
-        case MEASUREMENTS_SEND_TYPE_UINT64:
-            v.u64   = *value;
-            return _measurements_arr_append_i64(*(int64_t*)&v.u64);
-        case MEASUREMENTS_SEND_TYPE_INT64:
-            return _measurements_arr_append_i64((int64_t)*value);
-        default: break;
-    }
-    return false;
-}
-
-
-static bool _measurements_append_str(char* value)
-{
-    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_STR))
-        return false;
-    uint8_t len = strnlen(value, MEASUREMENTS_VALUE_STR_LEN);
-    return _measurements_arr_append_str(value, len);
-}
-
-
-static bool _measurements_append_float(int32_t* value)
-{
-    if (!_measurements_arr_append_i8(MEASUREMENTS_SEND_TYPE_FLOAT))
-        return false;
-    return _measurements_arr_append_float(*value);
-}
-
-
-static bool _measurements_to_arr_i64(measurements_data_t* data, bool single)
-{
-    if (single)
-        return _measurements_append_i64(&data->value.value_64.sum);
-    bool r = false;
-    int64_t mean = data->value.value_64.sum / data->num_samples;
-    r |= !_measurements_append_i64(&mean);
-    r |= !_measurements_append_i64(&data->value.value_64.min);
-    r |= !_measurements_append_i64(&data->value.value_64.max);
-    return !r;
-}
-
-
-static bool _measurements_to_arr_str(measurements_data_t* data)
-{
-    return _measurements_append_str(data->value.value_s.str);
-}
-
-
-static bool _measurements_to_arr_float(measurements_data_t* data, bool single)
-{
-    if (single)
-        return _measurements_append_float(&data->value.value_f.sum);
-    bool r = false;
-    int32_t mean = data->value.value_f.sum / data->num_samples;
-    r |= !_measurements_append_float(&mean);
-    r |= !_measurements_append_float(&data->value.value_f.min);
-    r |= !_measurements_append_float(&data->value.value_f.max);
-    return !r;
-}
-
-
-static bool _measurements_to_arr(measurements_def_t* def, measurements_data_t* data)
-{
-    bool single = def->samplecount == 1;
-
-    bool r = 0;
-    r |= !_measurements_arr_append_i32(*(int32_t*)def->name);
-    uint8_t datatype = single ? MEASUREMENTS_DATATYPE_SINGLE : MEASUREMENTS_DATATYPE_AVERAGED;
-    r |= !_measurements_arr_append_i8(datatype);
-
-    switch(data->value_type)
-    {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            r |= !_measurements_to_arr_i64(data, single);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            r |= !_measurements_to_arr_str(data);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r |= !_measurements_to_arr_float(data, single);
-            break;
-        default:
-            measurements_debug("Unknown type '%"PRIu8"'.", data->value_type);
-            return false;
-    }
-    return !r;
-}
-
-
 static bool _measurements_send_start(void)
 {
+    unsigned mtu_size = (comms_get_mtu() / 2);
+    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
+    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
     memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    _measurements_hex_arr_pos = 0;
-
-    if (!_measurements_arr_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    if (!protocol_init(_measurements_hex_arr, size))
     {
         log_error("Failed to add even version to measurements hex array.");
         _pending_send = false;
@@ -346,28 +131,20 @@ bool measurements_send_test(char * name)
         return false;
     }
 
-    bool r = true;
-
-    switch(v_type)
+    measurements_def_t* def;
+    measurements_data_t* data;
+    if (!measurements_get_measurements_def(name, &def, &data))
     {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            r |= !_measurements_append_i64(&v.v_i64);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            r |= !_measurements_append_str(v.v_str);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r |= !_measurements_append_float(&v.v_f32);
-            break;
-        default:
-            measurements_debug("Unknown type '%"PRIu8"'.", v_type);
-            return false;
+        measurements_debug("Unable to get measurements definition.");
+        return false;
     }
+
+    bool r = protocol_append_measurement(def, data);
 
     if (r)
     {
         measurements_debug("Sending test array.");
-        comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
+        comms_send(_measurements_hex_arr, protocol_get_length());
     }
     else measurements_debug("Failed to add to array.");
 
@@ -445,11 +222,8 @@ static void _measurements_send(void)
                 log_error("Measurement \"%s\" requested but value not set.", def->name);
                 continue;
             }
-            uint16_t prev_measurements_hex_arr_pos = _measurements_hex_arr_pos;
-            if (_measurements_hex_arr_pos >= (comms_get_mtu() / 2) ||
-                !_measurements_to_arr(def, data))
+            if (!protocol_append_measurement(def, data))
             {
-                _measurements_hex_arr_pos = prev_measurements_hex_arr_pos;
                 measurements_debug("Failed to queue send of  \"%s\".", def->name);
                 _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
                 _measurements_chunk_start_pos = i;
@@ -462,8 +236,8 @@ static void _measurements_send(void)
             data->num_samples_collected = 0;
         }
     }
-
-    if (i == MEASUREMENTS_MAX_NUMBER)
+    bool is_max = i == MEASUREMENTS_MAX_NUMBER;
+    if (is_max)
     {
         if (_measurements_chunk_start_pos)
             /* Last of fragments */
@@ -477,23 +251,18 @@ static void _measurements_send(void)
         _last_sent_ms = get_since_boot_ms();
     if (num_qd > 0)
     {
+        _pending_send = !is_max;
         if (_measurements_debug_mode)
         {
-            for (unsigned j = 0; j < _measurements_hex_arr_pos; j++)
+            for (unsigned j = 0; j < protocol_get_length(); j++)
                 measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
         }
         else
-            comms_send(_measurements_hex_arr, _measurements_hex_arr_pos+1);
-        if (i == MEASUREMENTS_MAX_NUMBER)
-        {
-            _pending_send = false;
+            comms_send(_measurements_hex_arr, protocol_get_length());
+        if (is_max)
             measurements_debug("Complete send");
-        }
         else
-        {
-            _pending_send = true;
             measurements_debug("Fragment send, wait to send more.");
-        }
     }
 }
 
@@ -551,7 +320,6 @@ void on_comms_sent_ack(bool ack)
         if (inf.acked_cb)
             inf.acked_cb(def->name);
     }
-
     if (_pending_send)
         _measurements_send();
     else
@@ -848,14 +616,26 @@ static void _measurements_sample(void)
         sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
         time_since_interval = since_boot_delta(now, _last_sent_ms) + (_interval_count % def->interval) * INTERVAL_TRANSMIT_MS;
 
-        time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
+        /* is_immediate is only valid if samplecount is 1 */
+        bool is_immediate = def->is_immediate && def->samplecount == 1;
+
+        if (is_immediate)
+            /* Collect 10 ms before needing to send. */
+            time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval - 10;
+        else
+            time_init_boundary = (data->num_samples_init * sample_interval) + sample_interval/2;
+
         if (time_init_boundary < data->collection_time_cache)
         {
             // Assert that no negative rollover could happen for long collection times. Just do it immediately.
             data->collection_time_cache = time_init_boundary;
         }
-        time_init       = time_init_boundary - data->collection_time_cache;
-        time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
+
+        time_init   = time_init_boundary - data->collection_time_cache;
+        if (is_immediate)
+            time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval - 10;
+        else
+            time_collect    = (data->num_samples_collected  * sample_interval) + sample_interval/2;
         if (time_since_interval >= time_init)
         {
             if (data->num_samples_collected < data->num_samples_init)
@@ -951,6 +731,7 @@ bool measurements_add(measurements_def_t* measurements_def)
             measurements_inf_t inf;
             if (!model_measurements_get_inf(def, data, &inf))
             {
+                log_error("Could not get measurement interface.");
                 memset(def, 0, sizeof(measurements_def_t));
                 memset(data, 0, sizeof(measurements_data_t));
                 return false;
@@ -1004,7 +785,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 {
     measurements_def_t* def = NULL;
     measurements_data_t* data;
-    if (!_measurements_get_measurements_def(name, &def, &data))
+    if (!measurements_get_measurements_def(name, &def, &data))
     {
         return false;
     }
@@ -1024,7 +805,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 bool measurements_get_interval(char* name, uint8_t * interval)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!interval || !_measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!interval || !measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1041,7 +822,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         return false;
     }
     measurements_def_t* measurements_def = NULL;
-    if (!_measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1053,7 +834,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!samplecount || !_measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!samplecount || !measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -1127,6 +908,76 @@ static void _measurements_sleep_iteration(void)
 }
 
 
+static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, measurements_value_type_t* type);
+
+
+void _measurements_check_instant_send(void)
+{
+    bool to_instant_send = false;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        if (_measurements_arr.data[i].instant_send)
+            to_instant_send = true;
+    }
+
+    if (!to_instant_send)
+        return;
+
+    unsigned mtu_size = (comms_get_mtu() / 2);
+    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
+    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
+    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
+    if (!protocol_init(_measurements_hex_arr, size))
+    {
+        measurements_debug("Could not initialise the hex array for the protocol.");
+        return;
+    }
+
+    unsigned count = 0;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    {
+        measurements_def_t* def = &_measurements_arr.def[i];
+        measurements_data_t* data = &_measurements_arr.data[i];
+        if (data->instant_send)
+        {
+            data->instant_send = 0;
+            /* TODO: Add a check to ensure last sent wasn't 0 seconds ago */
+            measurements_reading_t reading;
+            measurements_value_type_t type;
+            if (!_measurements_get_reading2(def, data, &reading, &type))
+            {
+                measurements_debug("Could not get measurement '%s' for instant send.", def->name);
+                continue;
+            }
+            if (!protocol_append_instant_measurement(def, &reading, type))
+            {
+                measurements_debug("Could not add measurement '%s' to array.", def->name);
+                break;
+            }
+            count++;
+        }
+    }
+    if (!count)
+    {
+        measurements_debug("No measurements were added, not sending.");
+        return;
+    }
+    if (_measurements_chunk_start_pos != MEASUREMENTS_MAX_NUMBER && _measurements_chunk_start_pos != 0)
+    {
+        measurements_debug("Cannot instant send, there is a measurement send underway.");
+        return;
+    }
+    uint32_t now = get_since_boot_ms();
+    /* Add +10 as this is called before measurements_send and to ensure no negative overflow. */
+    if (since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS + 10, now) <= MEASUREMENTS_MIN_TRANSMIT_MS + 10)
+    {
+        measurements_debug("Cannot send instant send, scheduled uplink soon.");
+        return;
+    }
+    comms_send(_measurements_hex_arr, protocol_get_length());
+}
+
+
 void measurements_loop_iteration(void)
 {
     if (!measurements_enabled)
@@ -1155,6 +1006,9 @@ void measurements_loop_iteration(void)
         has_printed_no_con = false;
         return;
     }
+
+    if (comms_send_ready() || _measurements_debug_mode)
+        _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
     {
@@ -1238,6 +1092,7 @@ void measurements_init(void)
     {
         log_error("No persistent loaded, load defaults.");
         model_measurements_add_defaults(_measurements_arr.def);
+        ios_measurements_init();
     }
     else measurements_debug("Loading measurements.");
 
@@ -1289,6 +1144,7 @@ typedef struct
     measurements_info_t        base;
     measurements_reading_t*    reading;
     measurements_value_type_t* type;
+    bool                       func_success;
 } _measurements_get_reading_packet_t;
 
 
@@ -1296,7 +1152,7 @@ static bool _measurements_get_reading_iteration(void* userdata)
 {
     _measurements_get_reading_packet_t* info = (_measurements_get_reading_packet_t*)userdata;
     if (!info->base.inf->iteration_cb)
-        return true;
+        return false;
     return (info->base.inf->iteration_cb(info->base.def->name) == MEASUREMENTS_SENSOR_STATE_SUCCESS);
 }
 
@@ -1307,10 +1163,12 @@ static bool _measurements_get_reading_collection(void* userdata)
 
     measurements_sensor_state_t resp = info->base.inf->get_cb(info->base.def->name, info->reading);
     info->base.data->is_collecting = 0;
+    info->func_success = false;
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             *(info->type) = info->base.data->value_type;
+            info->func_success = true;
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("Collect function returned an error.");
@@ -1326,18 +1184,11 @@ static bool _measurements_get_reading_collection(void* userdata)
 }
 
 
-bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
+static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, measurements_value_type_t* type)
 {
-    if (!measurement_name || !reading)
+    if (!def|| !data || !reading)
     {
         measurements_debug("Handed NULL pointer.");
-        return false;
-    }
-    measurements_def_t* def;
-    measurements_data_t* data;
-    if (!_measurements_get_measurements_def(measurement_name, &def, &data))
-    {
-        measurements_debug("Could not get measurement definition and data.");
         return false;
     }
 
@@ -1359,31 +1210,65 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
         measurements_debug("Could not begin the measurement.");
         goto bad_exit;
     }
+    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
 
     data->is_collecting = 1;
     uint32_t init_time = get_since_boot_ms();
 
-    _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type};
-    if (!main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info))
+    _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type, false};
+    bool iterate_success = main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info);
+    if (inf.iteration_cb && !iterate_success)
     {
         measurements_debug("Failed on iterate.");
         goto bad_exit;
     }
 
     uint32_t time_taken = since_boot_delta(get_since_boot_ms(), init_time);
-    uint32_t time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
+    uint32_t time_remaining = (time_taken > data->collection_time_cache)? 0 :(data->collection_time_cache - time_taken);
+
+    measurements_debug("Time taken: %"PRIu32, time_taken);
 
     measurements_debug("Waiting for collection.");
-    if (!main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info))
+    info.func_success = false;
+    init_time = get_since_boot_ms();
+    bool collect_success = main_loop_iterate_for(data->collection_time_cache/2 + time_remaining, _measurements_get_reading_collection, &info);
+
+    time_taken = since_boot_delta(get_since_boot_ms(), init_time);
+    time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
+
+    measurements_debug("Time taken: %"PRIu32, time_taken);
+
+    if (!collect_success)
     {
         measurements_debug("Failed on collect.");
         goto bad_exit;
     }
 
-    return true;
+    if (!info.func_success)
+        measurements_debug("Collect is timed out...");
+
+    return info.func_success;
 bad_exit:
     data->is_collecting = 0;
     return false;
+}
+
+
+bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
+{
+    if (!measurement_name || !reading)
+    {
+        measurements_debug("Handed NULL pointer.");
+        return false;
+    }
+    measurements_def_t* def;
+    measurements_data_t* data;
+    if (!measurements_get_measurements_def(measurement_name, &def, &data))
+    {
+        measurements_debug("Could not get measurement definition and data.");
+        return false;
+    }
+    return _measurements_get_reading2(def, data, reading, type);
 }
 
 
@@ -1423,13 +1308,13 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
     }
     char new_name[MEASURE_NAME_NULLED_LEN] = {0};
     strncpy(new_name, new_name_raw, MEASURE_NAME_LEN);
-    if (_measurements_get_measurements_def(new_name, NULL, NULL))
+    if (measurements_get_measurements_def(new_name, NULL, NULL))
     {
         measurements_debug("Measurement with new name already exists.");
         return false;
     }
     measurements_def_t* def;
-    if (!_measurements_get_measurements_def(orig_name, &def, NULL))
+    if (!measurements_get_measurements_def(orig_name, &def, NULL))
     {
         measurements_debug("Can not get the measurements def.");
         return false;
@@ -1439,22 +1324,26 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
 }
 
 
-static void measurements_cb(char *args)
+static command_response_t _measurements_cb(char *args)
 {
     measurements_print();
+    return COMMAND_RESP_OK;
 }
 
 
-static void measurements_enable_cb(char *args)
+static command_response_t _measurements_enable_cb(char *args)
 {
+    bool was_enabled = measurements_enabled;
     if (args[0])
         measurements_enabled = (args[0] == '1');
-
+    if (!was_enabled && measurements_enabled)
+        _last_sent_ms = get_since_boot_ms();
     log_out("measurements_enabled : %c", (measurements_enabled)?'1':'0');
+    return COMMAND_RESP_OK;
 }
 
 
-static void measurement_get_cb(char* args)
+static command_response_t _measurements_get_cb(char* args)
 {
     char * p = skip_space(args);
     measurements_reading_t reading;
@@ -1462,26 +1351,46 @@ static void measurement_get_cb(char* args)
     if (!measurements_get_reading(p, &reading, &type))
     {
         log_out("Failed to get measurement reading.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     char text[16];
     if (!measurements_reading_to_str(&reading, type, text, 16))
     {
         log_out("Could not convert the reading to a string.");
-        return;
+        return COMMAND_RESP_ERR;
     }
     log_out("%s: %s", p, text);
+    return COMMAND_RESP_OK;
 }
 
 
-static void no_comms_cb(char* args)
+static command_response_t _measurements_get_to_cb(char* args)
+{
+    char * p = skip_space(args);
+
+    measurements_def_t* def;
+    measurements_inf_t inf;
+    if (!measurements_get_measurements_def(p, &def, NULL) ||
+        !model_measurements_get_inf(def, NULL, &inf))
+    {
+        log_out("Failed to get measurement details of \"%s\"", p);
+        return COMMAND_RESP_ERR;
+    }
+
+    log_out("%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _measurements_no_comms_cb(char* args)
 {
     bool enable = strtoul(args, NULL, 10);
     measurements_set_debug_mode(enable);
+    return COMMAND_RESP_OK;
 }
 
 
-static void interval_cb(char * args)
+static command_response_t _measurements_interval_cb(char * args)
 {
     char* name = args;
     char* p = skip_space(args);
@@ -1498,8 +1407,13 @@ static void interval_cb(char * args)
         if (measurements_set_interval(name, new_interval))
         {
             log_out("Changed %s interval to %"PRIu8, name, new_interval);
+            return COMMAND_RESP_OK;
         }
-        else log_out("Unknown measuremnt");
+        else
+        {
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
+        }
     }
     else
     {
@@ -1507,16 +1421,18 @@ static void interval_cb(char * args)
         if (measurements_get_interval(name, &interval))
         {
             log_out("Interval of %s = %"PRIu8, name, interval);
+            return COMMAND_RESP_OK;
         }
         else
         {
-            log_out("Unknown measuremnt");
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
         }
     }
 }
 
 
-static void samplecount_cb(char * args)
+static command_response_t _measurements_samplecount_cb(char * args)
 {
     char* name = args;
     char* p = skip_space(args);
@@ -1533,8 +1449,13 @@ static void samplecount_cb(char * args)
         if (measurements_set_samplecount(name, new_samplecount))
         {
             log_out("Changed %s samplecount to %"PRIu8, name, new_samplecount);
+            return COMMAND_RESP_OK;
         }
-        else log_out("Unknown measuremnt");
+        else
+        {
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
+        }
     }
     else
     {
@@ -1542,23 +1463,26 @@ static void samplecount_cb(char * args)
         if (measurements_get_samplecount(name, &samplecount))
         {
             log_out("Samplecount of %s = %"PRIu8, name, samplecount);
+            return COMMAND_RESP_OK;
         }
         else
         {
-            log_out("Unknown measuremnt");
+            log_out("Unknown measurement");
+            return COMMAND_RESP_ERR;
         }
     }
 }
 
 
-static void repop_cb(char* args)
+static command_response_t _measurements_repop_cb(char* args)
 {
     model_measurements_repopulate();
     log_out("Repopulated measurements.");
+    return COMMAND_RESP_OK;
 }
 
 
-static void interval_mins_cb(char* args)
+static command_response_t _measurements_interval_mins_cb(char* args)
 {
     if (args[0])
     {
@@ -1582,18 +1506,61 @@ static void interval_mins_cb(char* args)
         else
             log_out("Current interval minutes is %"PRIu32, transmit_interval/1000);
     }
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _measurements_is_immediate_cb(char* args)
+{
+    char name[MEASURE_NAME_NULLED_LEN];
+    char* p = strchr(args, ' ');
+    unsigned len;
+    if (!p)
+        len = strnlen(args, MEASURE_NAME_LEN);
+    else
+        len = p - args;
+    strncpy(name, args, len);
+    name[len] = 0;
+    measurements_def_t* def;
+    if (!measurements_get_measurements_def(name, &def, NULL))
+    {
+        log_out("Could not get measurement '%s'", name);
+        return COMMAND_RESP_ERR;
+    }
+    if (!p)
+        goto print_out;
+
+    char* np;
+    p = skip_space(p);
+    uint8_t enabled = strtoul(p, &np, 10) ? 1 : 0;
+    if (p == np)
+        goto print_out;
+
+    def->is_immediate = enabled;
+
+print_out:
+    if (def->is_immediate)
+        log_out("%s is immediate", def->name);
+    else
+        log_out("%s is not immediate", def->name);
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "measurements", "Print measurements",       measurements_cb               , false , NULL },
-                                       { "meas_enable",  "Enable measuremnts.",      measurements_enable_cb        , false , NULL },
-                                       { "get_meas",     "Get a measurement",        measurement_get_cb            , false , NULL },
-                                       { "no_comms",     "Dont need comms for measurements", no_comms_cb           , false , NULL },
-                                       { "interval",     "Set the interval",         interval_cb                   , false , NULL },
-                                       { "samplecount",  "Set the samplecount",      samplecount_cb                , false , NULL },
-                                       { "interval_mins","Get/Set interval minutes", interval_mins_cb              , false , NULL },
-                                       { "repop",        "Repopulate measurements.", repop_cb                      , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "measurements", "Print measurements",                  _measurements_cb                , false , NULL },
+        { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },
+        { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
+        { "get_meas_to",  "Get timeout of measurement",          _measurements_get_to_cb         , false , NULL },
+        { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
+        { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
+        { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },
+        { "interval_mins","Get/Set interval minutes",            _measurements_interval_mins_cb  , false , NULL },
+        { "repop",        "Repopulate measurements.",            _measurements_repop_cb          , false , NULL },
+        { "is_immediate", "Set/unset immediate measurements.",   _measurements_is_immediate_cb   , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

@@ -21,7 +21,7 @@ static bool _write_json_from_img_env01(struct json_object * root, void * model_c
 
     write_measurements_json(root);
 
-    write_ios_json(root, model_config->ios_state);
+    write_ios_json(root, model_config->ios_state, IOS_COUNT);
     return true;
 }
 
@@ -54,7 +54,7 @@ static bool _read_json_to_img_env01(struct json_object * root, void * model_conf
     if (!read_measurements_json(root))
         return false;
 
-    if (!read_ios_json(root, model_config->ios_state))
+    if (!read_ios_json(root, model_config->ios_state, IOS_COUNT))
         return false;
 
     if (!read_cc_configs_json(root, model_config->cc_configs))

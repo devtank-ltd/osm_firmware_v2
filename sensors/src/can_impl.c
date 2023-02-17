@@ -54,14 +54,15 @@ void can_drain_array(void)
 }
 
 
-static void can_impl_cb(char* args)
+static command_response_t _can_impl_cb(char* args)
 {
     can_impl_send_example();
+    return COMMAND_RESP_OK;
 }
 
 
 struct cmd_link_t* can_impl_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "can_impl",     "Send example CAN message", can_impl_cb                   , false , NULL }};
+    static struct cmd_link_t cmds[] = {{ "can_impl",     "Send example CAN message", _can_impl_cb                  , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

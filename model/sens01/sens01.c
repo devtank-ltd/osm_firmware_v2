@@ -28,6 +28,7 @@
 #include "modbus.h"
 #include "ftma.h"
 #include "model.h"
+#include "io_watch.h"
 
 
 uint8_t sens01_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -50,6 +51,7 @@ void sens01_persist_config_model_init(persist_model_config_t* model_config)
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     ftma_setup_default_mem(model_config->ftma_configs, sizeof(ftma_config_t));
     model_config->comms_config.type = COMMS_TYPE_LW;
+    model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }
 
 
@@ -72,6 +74,7 @@ void sens01_sensors_init(void)
 
 void sens01_post_init(void)
 {
+    io_watch_init();
 }
 
 
@@ -129,6 +132,7 @@ bool sens01_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
         case LIGHT:         veml7700_inf_init(inf);    break;
         case SOUND:         sai_inf_init(inf);         break;
         case FTMA:          ftma_inf_init(inf);        break;
+        case IO_READING:    ios_inf_init(inf);         break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -175,6 +179,31 @@ void sens01_cmds_add_all(struct cmd_link_t* tail)
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
+}
+
+
+void sens01_w1_pulse_enable_pupd(unsigned io, bool enabled)
+{
+}
+
+
+bool sens01_can_io_be_special(unsigned io, io_special_t special)
+{
+    return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
+            ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
+              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
+              special == IO_SPECIAL_WATCH                   ));
+}
+
+
+void sens01_uarts_setup(void)
+{
+}
+
+
+
+void sens01_setup_pulse_pupd(uint8_t* pupd)
+{
 }
 
 #endif

@@ -4,9 +4,9 @@
 
 #include "measurements.h"
 #include "config.h"
-#include "pinmap.h"
 #include "cc.h"
 #include "ftma.h"
+#include "linux_comms.h"
 
 #define PERSIST_VERSION  1
 #define FLASH_PAGE_SIZE 2048
@@ -27,6 +27,12 @@
 
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
+
+#define IOS_COUNT           10
+#define ADC_CC_COUNT        3
+#define ADC_FTMA_COUNT      4
+
+#define comms_name      linux_comms
 
 typedef struct
 {
@@ -49,7 +55,10 @@ typedef struct
     ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
     uint8_t                 _____[16-((ADC_FTMA_COUNT * sizeof(ftma_config_t))%16)];
     /* 16 byte boundary ---- */
-    /* 7 x 16 bytes          */
+    uint32_t                sai_no_buf;
+    uint8_t                 ______[16-(sizeof(uint32_t)%16)];
+    /* 16 byte boundary ---- */
+    /* 8 x 16 bytes          */
 } persist_penguin_config_v1_t;
 
 #define persist_model_config_t        persist_penguin_config_v1_t

@@ -1,11 +1,13 @@
 #include "json_x_img.h"
 
+#include "persist_config.h"
 #include "pinmap.h"
 #include "modbus_mem.h"
 #include "cc.h"
 #include "ftma.h"
 
 
+#define MAX_IO_COUNT                        20
 #define WORD_BYTE_ORDER_TXT_SIZE            3
 
 
@@ -330,7 +332,7 @@ bool read_measurements_json(struct json_object * root)
 }
 
 
-bool read_ios_json(struct json_object * root, uint16_t* ios_state)
+bool read_ios_json(struct json_object * root, uint16_t* ios_state, uint8_t io_count)
 {
     if (!root || !ios_state)
     {
@@ -338,8 +340,8 @@ bool read_ios_json(struct json_object * root, uint16_t* ios_state)
         return false;
     }
     {
-        uint16_t ios_init_state[IOS_COUNT] = IOS_STATE;
-        memcpy(ios_state, ios_init_state, sizeof(ios_init_state));
+        uint16_t ios_init_state[MAX_IO_COUNT] = IOS_STATE;
+        memcpy(ios_state, ios_init_state, sizeof(ios_state[0]) * io_count);
     }
 
     struct json_object * ios_node = json_object_object_get(root, "ios");
@@ -348,7 +350,7 @@ bool read_ios_json(struct json_object * root, uint16_t* ios_state)
         json_object_object_foreach(ios_node, io_name, io_node)
         {
             unsigned index = strtoul(io_name, NULL, 10);
-            if (index >= IOS_COUNT)
+            if (index >= io_count)
             {
                 log_error("Too many IOs");
                 return false;
@@ -356,21 +358,11 @@ bool read_ios_json(struct json_object * root, uint16_t* ios_state)
             uint16_t state = ios_state[index];
             uint16_t pull    = get_io_pull(json_object_get_string(json_object_object_get(io_node, "pull")), state & IO_PULL_MASK);
             uint16_t dir     = get_io_dir(json_object_get_string(json_object_object_get(io_node, "direction")), state & IO_AS_INPUT);
-            uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_ONEWIRE:0;
-            uint16_t pcnt_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_pcnt")))?IO_PULSE:0;
-            if (w1_mode && (!(state & IO_TYPE_MASK)))
-            {
-                log_error("IO %s has no w1 mode", io_name);
-                return false;
-            }
+            uint16_t w1_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_w1")))?IO_SPECIAL_ONEWIRE:0;
+            uint16_t pcnt_mode = (json_object_get_boolean(json_object_object_get(io_node, "use_pcnt")))?IO_SPECIAL_PULSECOUNT_RISING_EDGE:0;
 
-            if (pcnt_mode && (!(state & IO_TYPE_MASK)))
-            {
-                log_error("IO %s has no pulse counter mode", io_name);
-                return false;
-            }
-
-            state &= ~(IO_PULL_MASK|IO_AS_INPUT|IO_ONEWIRE|IO_PULSE);
+            state &= ~(IO_PULL_MASK|IO_AS_INPUT);
+            state &= ~IO_ACTIVE_SPECIAL_MASK;
 
             if (!dir)
                 state |= (json_object_get_boolean(json_object_object_get(io_node, "out_high")))?IO_OUT_ON:0;
@@ -639,12 +631,12 @@ void write_measurements_json(struct json_object * root)
 }
 
 
-void write_ios_json(struct json_object * root, uint16_t* ios_state)
+void write_ios_json(struct json_object * root, uint16_t* ios_state, uint8_t io_count)
 {
     struct json_object * ios_node = json_object_new_object();
     json_object_object_add(root, "ios", ios_node);
 
-    for(unsigned n = 0; n < IOS_COUNT; n++)
+    for(unsigned n = 0; n < io_count; n++)
     {
         uint16_t state = ios_state[n];
         struct json_object * io_node = json_object_new_object();
@@ -660,10 +652,14 @@ void write_ios_json(struct json_object * root, uint16_t* ios_state)
 
         json_object_object_add(io_node, "direction", json_object_new_string(dir));
 
-        if (io_is_special(state) && ((state & IO_TYPE_ON_MASK) == IO_ONEWIRE))
+        uint16_t special_state = state & IO_ACTIVE_SPECIAL_MASK;
+
+        if (io_is_special(state) && (special_state == IO_SPECIAL_ONEWIRE))
             json_object_object_add(io_node, "use_w1", json_object_new_boolean(true));
 
-        if (io_is_special(state) && ((state & IO_TYPE_ON_MASK) == IO_PULSE))
+        if (io_is_special(state) && (special_state == IO_SPECIAL_PULSECOUNT_RISING_EDGE     ||
+                                     special_state == IO_SPECIAL_PULSECOUNT_FALLING_EDGE    ||
+                                     special_state == IO_SPECIAL_PULSECOUNT_BOTH_EDGE       ))
             json_object_object_add(io_node, "use_pcnt", json_object_new_boolean(true));
 
         if (!(state & IO_AS_INPUT) && ((state & IO_STATE_MASK) == IO_OUT_ON))

@@ -17,12 +17,10 @@
 #include "uart_rings.h"
 #include "uarts.h"
 #include "sleep.h"
-#include "version.h"
+#include "platform_model.h"
 
 
-static uart_channel_t uart_channels_rev_b[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_B;
-static uart_channel_t uart_channels_rev_c[UART_CHANNELS_COUNT] = UART_CHANNELS_REV_C;
-static uart_channel_t* uart_channels = NULL;
+static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
@@ -47,6 +45,18 @@ static uint32_t _uart_get_stop(uart_stop_bits_t stop)
     }
 }
 
+static void usart_set_baudrate2(uint32_t usart, uint32_t baud)
+{
+    if (usart == LPUART1)
+    {
+        uint32_t clock = rcc_get_usart_clk_freq(usart);
+        USART_BRR(usart) = (clock / baud) * 256
+                    + ((clock % baud) * 256 + baud / 2) / baud;
+        return;
+    }
+    usart_set_baudrate(usart, baud);
+}
+
 
 static void uart_up(const uart_channel_t * channel)
 {
@@ -54,7 +64,7 @@ static void uart_up(const uart_channel_t * channel)
 
     uint32_t usart = channel->usart;
 
-    usart_set_baudrate( usart, channel->baud );
+    usart_set_baudrate2( usart, channel->baud );
 
     uint8_t databits = channel->databits;
     if (parity != USART_PARITY_NONE)
@@ -118,7 +128,7 @@ static void uart_setup(uart_channel_t * channel)
     {
         nvic_set_priority(channel->dma_irqn, channel->priority);
         nvic_enable_irq(channel->dma_irqn);
-        dma_set_channel_request(channel->dma_unit, channel->dma_channel, 2); /*They are all 0b0010*/
+        dma_set_channel_request(channel->dma_unit, channel->dma_channel, channel->dma_req); /*They are all 0b0010*/
     }
     channel->enabled = 1;
 }
@@ -276,16 +286,7 @@ static void process_serial(unsigned uart)
 
 void uarts_setup(void)
 {
-    version_arch_t arch = version_get_arch();
-    if (arch == VERSION_ARCH_REV_B)
-        uart_channels = uart_channels_rev_b;
-    else if (arch == VERSION_ARCH_REV_C)
-        uart_channels = uart_channels_rev_c;
-    else
-    {
-        version_arch_error_handler();
-        return;
-    }
+    model_uarts_setup();
 
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
@@ -392,81 +393,49 @@ static void process_complete_dma(unsigned index)
 
 
 // cppcheck-suppress unusedFunction ; System handler
-void usart2_isr(void)
+void uart0_in_isr(void)
 {
     process_serial(0);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void usart3_isr(void)
+void uart1_in_isr(void)
 {
     process_serial(1);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void usart1_isr(void)
+void uart2_in_isr(void)
 {
     process_serial(2);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void uart4_isr(void)
+void uart3_in_isr(void)
 {
-    if (version_is_arch(VERSION_ARCH_REV_B))
-    {
-        process_serial(3);
-        return;
-    }
-    hard_fault_handler();
+    process_serial(3);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void lpuart1_isr(void)
-{
-    if (version_is_arch(VERSION_ARCH_REV_C))
-    {
-        process_serial(3);
-        return;
-    }
-    hard_fault_handler();
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma1_channel7_isr(void)
+void uart0_dma_out_isr(void)
 {
     process_complete_dma(0);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void dma1_channel2_isr(void)
+void uart1_dma_out_isr(void)
 {
     process_complete_dma(1);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void dma1_channel5_isr(void)
+void uart2_dma_out_isr(void)
 {
     process_complete_dma(2);
 }
 
 // cppcheck-suppress unusedFunction ; System handler
-void dma2_channel3_isr(void)
+void uart3_dma_out_isr(void)
 {
-    if (version_is_arch(VERSION_ARCH_REV_B))
-    {
-        process_complete_dma(3);
-        return;
-    }
-    hard_fault_handler();
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void dma2_channel6_isr(void)
-{
-    if (version_is_arch(VERSION_ARCH_REV_C))
-    {
-        process_complete_dma(3);
-        return;
-    }
-    hard_fault_handler();
+    process_complete_dma(3);
 }

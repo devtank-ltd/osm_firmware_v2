@@ -9,12 +9,15 @@ import errno
 import subprocess
 import signal
 import multiprocessing
-
+import serial
+import select
+import yaml
 from binding import modbus_reg_t, dev_t, set_debug_print
 
 sys.path.append("../ports/linux/peripherals/")
 
 import comms_connection as comms
+
 import basetypes
 
 sys.path.append("../config_gui/release/")
@@ -32,18 +35,24 @@ class test_framework_t(object):
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
 
-    DEFAULT_COMMS_MATCH_DICT = {'TEMP'    : 21.59,
-                                'TEMP_min': 21.59,
-                                'TEMP_max': 21.59,
-                                'HUMI'    : 65.284,
-                                'HUMI_min': 65.284,
-                                'HUMI_max': 65.284,
-                                'BAT'     : 131.071,
-                                'BAT_min' : 131.071,
-                                'BAT_max' : 131.071,
-                                'LGHT'    : 1023,
-                                'LGHT_min': 1023,
-                                'LGHT_max': 1023}
+    DEFAULT_COMMS_MATCH_DICT = {
+          "PM10"    : 30,
+          "PM10_min": 30,
+          "PM10_max": 30,
+          "PM25"    : 20,
+          "PM25_min": 20,
+          "PM25_max": 20,
+          "TMP2"    : 25.087,
+          "TMP2_min": 25.087,
+          "TMP2_max": 25.087,
+          "TEMP"    : 21.59,
+          "TEMP_min": 21.59,
+          "TEMP_max": 21.59,
+          "HUMI"    : 65.284,
+          "HUMI_min": 65.284,
+          "HUMI_max": 65.284,
+          "PF"      : 1023,
+        }
 
     def __init__(self, osm_path, log_file=None):
         self._logger = basetypes.get_logger(log_file)
@@ -164,13 +173,20 @@ class test_framework_t(object):
         self._vosm_conn.PM10.interval = 1
         self._vosm_conn.PM25.interval = 1
         self._vosm_conn.TMP2.interval = 1
-        self._vosm_conn.CC1.interval = 1
-        self._vosm_conn.CC2.interval = 1
-        self._vosm_conn.CC3.interval = 1
+        self._vosm_conn.CC1.interval =  1
+        self._vosm_conn.CC2.interval =  1
+        self._vosm_conn.CC3.interval =  1
         self._vosm_conn.FTA1.interval = 1
         self._vosm_conn.FTA2.interval = 1
         self._vosm_conn.FTA3.interval = 1
         self._vosm_conn.FTA4.interval = 1
+        self._vosm_conn.CC1.samplecount =  5
+        self._vosm_conn.CC2.samplecount =  5
+        self._vosm_conn.CC3.samplecount =  5
+        self._vosm_conn.FTA1.samplecount = 5
+        self._vosm_conn.FTA2.samplecount = 5
+        self._vosm_conn.FTA3.samplecount = 5
+        self._vosm_conn.FTA4.samplecount = 5
 
         self._vosm_conn.setup_modbus(is_bin=True)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
@@ -208,13 +224,33 @@ class test_framework_t(object):
             if not sample.endswith("_min") and not sample.endswith("_max"):
                 self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
-
-        match_cb = lambda x : self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, x)
-        comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH, self.DEFAULT_PROTOCOL_PATH, match_cb=match_cb, logger=self._logger, log_file=self._log_file)
-        comms_conn.run_forever()
-        passed &= comms_conn.passed
-
+        passed &= self._check_cmd_serial_comms()
         return passed
+
+    def _check_cmd_serial_comms(self):
+        comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH,
+                                       self.DEFAULT_PROTOCOL_PATH,
+                                       logger=self._logger,
+                                       log_file=self._log_file)
+        fds = [comms_conn, self._vosm_conn]
+        now = time.time()
+        start_time = now
+        end_time = start_time + 90
+        count = 0
+        final_dict = {}
+        while now < end_time and count < 2:
+            r = select.select(fds, [], [], end_time-now)
+            if len(r[0]):
+                if self._vosm_conn in r[0]:
+                    self._vosm_conn._ll.read()
+                if comms_conn in r[0]:
+                    count += 1
+                    resp_dict = comms_conn.read_dict()
+                    final_dict.update(resp_dict)
+            now = time.time()
+        if count:
+            return self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict)
+        return False
 
     def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
         passed = True

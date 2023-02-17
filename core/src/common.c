@@ -11,6 +11,7 @@
 #include "platform.h"
 #include "config.h"
 #include "log.h"
+#include "pinmap.h"
 
 
 bool msg_is(const char* ref, char* message)
@@ -116,9 +117,10 @@ bool u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_
 bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
 {
     uint32_t start_time = get_since_boot_ms();
-    uint32_t watch_dog_kick = 9000;
-    
-    if (timeout > watch_dog_kick)
+    uint32_t watch_dog_kick = IWDG_NORMAL_TIME_MS/2;
+
+    platform_watchdog_reset();
+    if (timeout > IWDG_NORMAL_TIME_MS)
         log_debug(DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 
     if (should_exit_db(userdata))
@@ -139,8 +141,9 @@ bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userda
 
         if (since_boot_delta(get_since_boot_ms(), start_time) > watch_dog_kick)
         {
+            log_debug(DEBUG_SYS, "Kicking watchdog.");
             platform_watchdog_reset();
-            watch_dog_kick += 10000;
+            watch_dog_kick += (IWDG_NORMAL_TIME_MS/2);
         }
     }
     return false;

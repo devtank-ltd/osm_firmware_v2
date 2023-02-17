@@ -11,6 +11,7 @@
 #include "log.h"
 #include "adcs.h"
 #include "linux.h"
+#include "persist_config_header_model.h"
 
 
 #define ADCS_CONFIG_FILE                        LINUX_FILE_LOC"adcs_config.json"
@@ -250,6 +251,7 @@ void linux_adc_generate(void)
     if (_adcs_load_from_file())
         _adcs_remove_file();
     _adcs_fill_buffer();
+    linux_usleep(900000); // FIXME: Set this to something closer to real use.
     adcs_dma_complete();
 }
 

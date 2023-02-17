@@ -17,6 +17,8 @@ extern void     rak4270_process(char* message);
 extern bool     rak4270_get_connected(void);
 extern void     rak4270_loop_iteration(void);
 
-extern void     rak4270_config_setup_str(char * str);
-
 extern bool     rak4270_get_id(char* str, uint8_t len);
+
+extern struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail);
+
+extern void     rak4270_power_down(void);
