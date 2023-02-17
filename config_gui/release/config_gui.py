@@ -1939,9 +1939,11 @@ class config_gui_window_t(Tk):
                                     with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                                         if f:
                                             yaml.dump(doc, f)
-                if copy == 'edit' or len(exists) == 0:
+                if copy == 'edit' and len(exists) == 0:
                     self._send_to_yaml(window)
-                elif str(self.dev_entry.get()) in dev_list:
+                elif copy == 'edit' and str(self.dev_entry.get()) == exists[0][1]:
+                    self._send_to_yaml(window)
+                elif str(self.dev_entry.get()) in dev_list and copy != 'edit':
                     tkinter.messagebox.showerror(
                         "Error", "That device name is already taken.", parent=window)
                 else:

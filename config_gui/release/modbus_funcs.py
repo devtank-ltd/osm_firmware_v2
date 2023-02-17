@@ -18,6 +18,9 @@ UPDATE_DEV = modbus_db.UPDATE_DEV
 UPDATE_REGS = modbus_db.UPDATE_REGS
 GET_DEV_N = modbus_db.GET_DEV_NAME
 GET_ALL_DEVS = modbus_db.GET_ALL_DEVS
+GET_ALL_DEV_IDS = modbus_db.GET_ALL_DEV_IDS
+GET_DEV_ID_REGS = modbus_db.GET_DEV_ID_REGS
+DEL_DEV_ID = modbus_db.DEL_DEV_ID
 
 PATH = find_path()
 
@@ -159,24 +162,21 @@ class modbus_funcs_t():
                         with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                             if f:
                                 yaml.dump(doc, f)
-            with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
-                loaded_del = yaml.full_load(del_file)
-                if loaded_del is None:
-                    devices_dict[0]['templates_to_del']['template'].append(
-                        edited_temp)
-                    with open(PATH + '/yaml_files/del_file.yaml', 'a') as del_file:
-                        yaml.dump(devices_dict, del_file)
-                else:
-                    with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
-                        del_f = yaml.full_load(del_file)
-                        for i in del_f[0]['templates_to_del']['template']:
-                            if i == edited_temp:
-                                pass
-                            else:
-                                del_f[0]['templates_to_del']['template'].append(
-                                    edited_temp)
-                                with open(PATH + '/yaml_files/del_file.yaml', 'w') as del_file:
-                                    yaml.dump(del_f, del_file)
+
+    def del_redundant_devs(self):
+        devs = self.db.cur.execute(GET_DEV_ID_REGS)
+        devs_in_use = []
+        devs_not_used = []
+        for d in devs:
+            if d[0] not in devs_in_use:
+                devs_in_use.append(d[0])
+        devices = self.db.cur.execute(GET_ALL_DEV_IDS)
+        for i in devices:
+            if i[0] not in devs_in_use:
+                devs_not_used.append(i[0])
+        if len(devs_not_used):
+            for v in devs_not_used:
+                self.db.cur.execute(DEL_DEV_ID(v))
 
     def save_template(self):
         with open(PATH + '/yaml_files/del_file.yaml', 'r') as del_file:
@@ -232,7 +232,6 @@ class modbus_funcs_t():
                         for d in all_devs:
                             devs.append(d[0])
                         dev_n = dev_n.fetchone()
-
                         if exist_tmp == None:
                             if yaml_dev_name in devs:
                                 messagebox.showerror("Error", "Duplicate of device name found.")
@@ -283,6 +282,7 @@ class modbus_funcs_t():
                                 yaml_reg_desc = i[4]
                                 self.db.cur.execute(INS_INTO_REGS(yaml_hex, yaml_func, yaml_data_t,
                                                                 yaml_reg_name, yaml_reg_desc, dev_id_t, tmp_id))
+            self.del_redundant_devs()
             with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                 pass
             self.db.conn.commit()
