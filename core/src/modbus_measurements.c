@@ -161,6 +161,7 @@ bool modbus_measurement_add(modbus_reg_t * reg)
     meas_def.samplecount = 1;
     meas_def.interval    = 1;
     meas_def.type        = MODBUS;
+    meas_def.is_immediate = 0;
 
     return measurements_add(&meas_def);
 }

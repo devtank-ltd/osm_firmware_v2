@@ -286,6 +286,7 @@ bool read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
                         def->samplecount = 1;
                         def->interval    = 1;
                         def->type        = MODBUS;
+                        def->is_immediate = 0;
                     }
                 }
             }

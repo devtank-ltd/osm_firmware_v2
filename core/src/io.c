@@ -660,6 +660,7 @@ void ios_measurements_init(void)
     def.interval    = 0;
     def.samplecount = 0;
     def.type        = IO_READING;
+    def.is_immediate = 1;
 
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {

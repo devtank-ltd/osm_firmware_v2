@@ -10,6 +10,7 @@ void measurements_setup_default(measurements_def_t* def, char* name, uint8_t int
     def->interval    = interval;
     def->samplecount = samplecount;
     def->type        = type;
+    def->is_immediate = 0;
 }
 
 
