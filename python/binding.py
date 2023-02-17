@@ -490,6 +490,9 @@ class dev_t(dev_base_t):
     def measurements_enable(self, value):
         self.do_cmd("meas_enable %s" % ("1" if value else "0"))
 
+    def set_ftma_coeffs(self, a, b, c, d, meas):
+        self.do_cmd(f"ftma_coeff {meas} {a} {b} {c} {d}")
+
     def get_modbus(self):
         lines = self.do_cmd_multi("mb_log")
         bus_config = None
@@ -630,7 +633,7 @@ class dev_debug_t(dev_base_t):
             self._log(f"{name} failed.")
             return (name, False)
         r = re.search(
-            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+", msg)
+            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+\.[0-9]+", msg)
         if r and r.group(0):
             _, ts, _, name, type_, value = r.group(0).split(":")
             try:

@@ -840,12 +840,12 @@ class config_gui_window_t(Tk):
             dbg_val = res[1]
             if dbg_val != False:
                 for i in self._deb_entries:
-                    meas = i[0].get()
+                    meas = i[0].get()  
                     if meas == dbg_meas:
                         val_to_change = i[1]
                         val_to_change.configure(state='normal')
                         val_to_change.delete(0, END)
-                        val_to_change.insert(0, int(dbg_val))
+                        val_to_change.insert(0, float(dbg_val))
                         val_to_change.configure(
                             state='disabled')
 
@@ -854,7 +854,8 @@ class config_gui_window_t(Tk):
 
     def _get_desc(self, reg):
         desc = STD_MEASUREMENTS_DESCS.get(reg, None)
-        spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2']
+        spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2',
+                  'FTA1', 'FTA2', 'FTA3', 'FTA4']
         if reg in spec_m:
             self._e.configure(cursor='hand2')
         elif desc is None:
@@ -1060,6 +1061,12 @@ class config_gui_window_t(Tk):
                         "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
+                elif self._e.get() == 'FTA1' or self._e.get() == 'FTA2' or self._e.get() == 'FTA3' or self._e.get() == 'FTA4':
+                    self._bind_cc = self._e.bind(
+                        "<Button-1>", lambda e: self._cal_ftma(e.widget.get()))
+                    self._e.configure(disabledforeground="green")
+                    self._change_on_hover(self._e)
+                
             self._entries.append(newrow)
             if i != 0:
                 self._check_meas.append(IntVar())
@@ -1276,7 +1283,83 @@ class config_gui_window_t(Tk):
         self.binding_interface.do_cmd_multi(cmd_text, self._on_get_cmd_multi_done_cb)
         cmd.delete(0, END)
 
+    def _cal_ftma(self, meas):
+        self._ftma_window = Toplevel(self.master)
+        self._ftma_window.title(f"4-20mA Calibration ({meas})")
+        self._ftma_window.geometry("450x600")
+        self._ftma_window.configure(bg=IVORY)
+        
+        ftma_lab = Label(self._ftma_window, text="Set Coefficients",
+            bg=IVORY, font=FONT)
+        ftma_lab.grid(column=0, row=0, columnspan=2)
 
+        a_lab = Label(self._ftma_window, text="A (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        a_lab.grid(column=0, row=1)
+
+        b_lab = Label(self._ftma_window, text="B (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        b_lab.grid(column=0, row=2)
+
+        c_lab = Label(self._ftma_window, text="C (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        c_lab.grid(column=0, row=3)
+
+        d_lab = Label(self._ftma_window, text="D (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        d_lab.grid(column=0, row=4)
+
+        a_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        a_entry.grid(column=1, row=1)
+
+        b_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        b_entry.grid(column=1, row=2)
+
+        c_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        c_entry.grid(column=1, row=3)
+
+        d_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        d_entry.grid(column=1, row=4)
+
+        ftma_btn = Button(self._ftma_window, text="Send",
+                                   command=lambda : self._send_coeffs(
+                                   [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()], meas),
+                                   bg=IVORY, fg=BLACK, font=FONT,
+                                   width=20, activebackground="green",
+                                   activeforeground=IVORY)
+        ftma_btn.grid(column=0, row=5, columnspan=2)
+
+    def _send_coeffs(self, args, meas):
+        print(args, meas)
+        if len(args[0]):
+            a_val = args[0]
+        else:
+            a_val = 0
+        if len(args[1]):
+            b_val = args[1]
+        else:
+            b_val = 0
+        if len(args[2]):
+            c_val = args[2]
+        else:
+            c_val = 0
+        if len(args[3]):
+            d_val = args[3]
+        else:
+            d_val = 0
+        self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
+
+    def on_update_coeffs_cb(self, args):
+        self._ftma_window.destroy()
+        
     def _pop_lora_entry(self):
         if self.dev_eui:
             self._eui_entry.insert(0, self.dev_eui)
