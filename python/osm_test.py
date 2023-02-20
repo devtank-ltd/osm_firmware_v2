@@ -122,6 +122,19 @@ class test_framework_t(object):
         self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref})' + poxtfix)
         return passed
 
+    def _str_check(self, desc, value, ref:str):
+        if not isinstance(value, str):
+            self._logger.debug(f'Invalid test argument {value} for "{desc}"')
+            passed = False
+        else:
+            passed = value == ref
+        op = "=" if passed else "!="
+        prefix = poxtfix = ""
+        if self._log_file is None:
+            prefix = basetypes.test_logging_formatter_t.GREEN if passed else basetypes.test_logging_formatter_t.RED
+            poxtfix = basetypes.test_logging_formatter_t.RESET
+        self._logger.info(prefix + f'{desc} = {"PASSED" if passed else "FAILED"} ({value} {op} {ref})' + poxtfix)
+        return passed
 
     def _start_osm_env(self):
         if not self._spawn_virtual_osm(self._vosm_path):
@@ -158,39 +171,25 @@ class test_framework_t(object):
 
     def _check_interval_mins_val(self):
         im = self._vosm_conn.interval_mins
-        if float(im):
-            self._logger.info("Interval minutes is a valid float")
-        else:
-            self._logger.error("Interval minutes is not valid.")
+        return self._bool_check("Interval minutes is a valid float", float(im) > 0, True)
 
     def _check_lora_config_val(self):
         appk = self._vosm_conn.app_key
-        if len(appk):
-            self._logger.info("Application key is atleast not zero length.")
-        else:
-            self._logger.error("Application key is invalid.")
         deveui = self._vosm_conn.dev_eui
-        if len(deveui):
-            self._logger.info("Device EUI is atleast not zero length.")
-        else:
-            self._logger.error("Device EUI is invalid.")
+        return  (self._bool_check("Application key is atleast not zero length", isinstance(appk, str) and len(appk)> 0, True) and
+                 self._bool_check("Device EUI is atleast not zero length", isinstance(deveui, str) and len(deveui)> 0, True))
 
     def _check_cc_val(self):
+        passed = True
         cc_g = self._vosm_conn.print_cc_gain
-        if cc_g[0] == "CC1 EXT max: 100.000A":
-            self._logger.info("Valid CC1 Exterior value.")
-        else:
-            self._logger.error("Invalid CC1 Exterior value.")
-        if cc_g[1] == "CC1 INT max: 0.050V":
-            self._logger.info("Valid CC1 Interior value.")
-        else:
-            self._logger.error("Invalid CC1 Interior value.")
-        for p in range(1,4):
-            mp = self._vosm_conn.get_midpoint(f"CC{p}")
-            if mp[0] == "MP: 2048.000":
-                self._logger.info("Midpoint value is valid.")
-            else:
-                self._logger.error("Midpoint value is invalid.")
+
+        for p in range(3):
+            cc_name = "CC%u" % (p+1)
+            passed &= self._str_check(f"Valid {cc_name} Exterior value", cc_g[p*2], f"{cc_name} EXT max: 100.000A")
+            passed &= self._str_check(f"Valid {cc_name} Interior value", cc_g[p*2+1], f"{cc_name} INT max: 0.050V")
+            mp = self._vosm_conn.get_midpoint(cc_name)
+            passed &= self._str_check(f"{cc_name} Midpoint value is valid", mp[0], "MP: 2048.000")
+        return passed
 
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
@@ -205,12 +204,13 @@ class test_framework_t(object):
             return False
         if not self._connect_osm(self.DEFAULT_DEBUG_PTY_PATH):
             return False
+        passed = True
         for p in range(1,4):
             self._vosm_conn.update_midpoint(2048, f"CC{p}")
             self._vosm_conn.set_outer_inner_cc(p, 100, 50)
-        self._check_interval_mins_val()
-        self._check_lora_config_val()
-        self._check_cc_val()
+        passed &= self._check_interval_mins_val()
+        passed &= self._check_lora_config_val()
+        passed &= self._check_cc_val()
         self._vosm_conn.measurements_enable(False)
         self._vosm_conn.PM10.interval = 1
         self._vosm_conn.PM25.interval = 1
@@ -240,7 +240,6 @@ class test_framework_t(object):
             modbus_reg_t(self._vosm_conn, "AP2" , 0x12, 4, "F" )
             ])
         self._vosm_conn.get_modbus()
-        passed = True
 
         for active in self._get_active_measurements():
             if active == "SND":
