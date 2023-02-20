@@ -142,6 +142,21 @@ class test_framework_t(object):
         return actives
 
     def _get_measurement_info(self, measurement_handle):
+        DEFAULT_MODBUS_MATCH_DICT = {
+          "PF"      : 1023,
+          "VP1"     : 240,
+          "VP2"     : 240,
+          "VP3"     : 240,
+          "AP1"     : 30,
+          "AP2"     : 30,
+          "AP3"     : 30,
+          "cVP1"    : 24000,
+          "cVP2"    : 24000,
+          "cVP3"    : 24000,
+          "mAP1"    : 3000,
+          "mAP2"    : 3000,
+          "mAP3"    : 3000
+        }
         self._logger.debug(f"DB RETRIEVE MEASUREMENT '{measurement_handle}'...")
         measurement_obj = getattr(self._vosm_conn, measurement_handle)
         resp = self._db.get_measurement_info(measurement_handle)
@@ -151,7 +166,13 @@ class test_framework_t(object):
             if resp is None:
                 self._logger.debug(f"DB NO DATA FOR '{measurement_handle}'")
                 return (measurement_handle, measurement_obj, 0, 0)
-        description, ref, threshold = resp
+            else:
+                description = resp
+                ref = DEFAULT_MODBUS_MATCH_DICT[measurement_handle]
+                #Get threshold by calculating 5% of reference
+                threshold = ref*5 / 100
+        else:
+            description, ref, threshold = resp
         data = (description, measurement_obj, ref, threshold)
         self._logger.debug(f"DB GOT MEASUREMENT '{measurement_handle}: '{data}'")
         return data

@@ -172,7 +172,7 @@ GET_REG_DESC = lambda reg: "SELECT reg_desc FROM registers WHERE reg_name = '%s'
 
 GET_MEASUREMENT_INFO = "SELECT description, reference, threshold FROM measurements WHERE handle = ?"
 
-GET_MODBUS_MEASUREMENT_INFO = "SELECT reg_desc, reference, threshold FROM registers WHERE reg_name = ?"
+GET_MODBUS_MEASUREMENT_INFO = "SELECT reg_desc FROM registers WHERE reg_name = ?"
 
 
 def find_path():
