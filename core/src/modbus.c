@@ -40,7 +40,7 @@
 */
 
 #define MAX_MODBUS_PACKET_SIZE    127
-#define MODBUS_PACKET_BUF_SIZ     10
+#define MODBUS_PACKET_BUF_SIZ     20
 
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
@@ -312,7 +312,10 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
 static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_byte_orders_t byte_order)
 {
     if (len <= 2)
+    {
+        modbus_debug("Ran out of space in array for appending u16.");
         return false;
+    }
     /* TODO: Figure out which order is which */
     if (byte_order == MODBUS_BYTE_ORDER_LSB)
     {
@@ -322,7 +325,10 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
     else if (byte_order == MODBUS_BYTE_ORDER_MSB)
         memcpy(arr, &v, 2);
     else
+    {
+        modbus_debug("Unknown byte order.");
         return false;
+    }
     return true;
 }
 
@@ -330,7 +336,10 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
 static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     if (len <= 4)
+    {
+        modbus_debug("Ran out of space in array for appending u32.");
         return false;
+    }
     /* TODO: Figure out which order is which */
     if (word_order == MODBUS_WORD_ORDER_LSW)
     {
@@ -347,7 +356,10 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
             return false;
     }
     else
+    {
+        modbus_debug("Unknown word order.");
         return false;
+    }
     return true;
 }
 
@@ -396,7 +408,9 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
         case MODBUS_REG_TYPE_U32    : reg_count = 2; break;
         case MODBUS_REG_TYPE_I32    : reg_count = 2; break;
         case MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
-        default: return false;
+        default:
+            modbus_debug("Unknown type.");
+            return false;
     }
 
     unsigned body_size = 4;
@@ -422,18 +436,18 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
     /* If larger sizes than type u32 and i32 are required, this will
      * need to be changed. Mainly do this so floats can be set */
     uint32_t value32;
-    if (func == MODBUS_REG_TYPE_I16 ||
-        func == MODBUS_REG_TYPE_I32 )
+    if (type == MODBUS_REG_TYPE_I16 ||
+        type == MODBUS_REG_TYPE_I32 )
     {
         int32_t valuei32 = value;
         value32 = *((uint32_t*)&valuei32);
     }
-    else if (func == MODBUS_REG_TYPE_U16 ||
-             func == MODBUS_REG_TYPE_U32 )
+    else if (type == MODBUS_REG_TYPE_U16 ||
+             type == MODBUS_REG_TYPE_U32 )
     {
         value32 = value;
     }
-    else if (func == MODBUS_REG_TYPE_FLOAT)
+    else if (type == MODBUS_REG_TYPE_FLOAT)
     {
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wstrict-aliasing"
@@ -441,10 +455,16 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
         #pragma GCC diagnostic pop
     }
     else
+    {
+        modbus_debug("Unknown type for converting value. (%d)", type);
         return false;
+    }
 
     if (!_modbus_append_value(tx_modbuspacket, MODBUS_PACKET_BUF_SIZ - body_size, type, byte_order, word_order, &value32))
+    {
+        modbus_debug("Failed to append modbus value.");
         return false;
+    }
 
 
     uint16_t crc = modbus_crc(tx_modbuspacket, body_size);
@@ -1065,6 +1085,7 @@ static command_response_t _modbus_set_reg_cb(char* args)
         return COMMAND_RESP_ERR;
 
     pos = skip_space(pos);
+    char* type_str = pos;
     if (pos[1] != 'S' && pos[2] != 'B')
         return COMMAND_RESP_ERR;
 
@@ -1093,6 +1114,10 @@ static command_response_t _modbus_set_reg_cb(char* args)
     float value = strtof(pos, NULL);
 
     bool r = _modbus_set_reg(unit_id, reg_addr, func, type, byte_order, word_order, value);
+    if (r)
+        log_out("Set 0x%"PRIX16":0x%"PRIX8" f:%"PRIu8" = %.*s:%f", unit_id, reg_addr, func, 3, type_str, value);
+    else
+        log_out("Failed to set modbus register.");
 
     return r ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
