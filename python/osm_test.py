@@ -156,6 +156,42 @@ class test_framework_t(object):
         self._logger.debug(f"DB GOT MEASUREMENT '{measurement_handle}: '{data}'")
         return data
 
+    def _check_interval_mins_val(self):
+        im = self._vosm_conn.interval_mins
+        if float(im):
+            self._logger.info("Interval minutes is a valid float")
+        else:
+            self._logger.error("Interval minutes is not valid.")
+
+    def _check_lora_config_val(self):
+        appk = self._vosm_conn.app_key
+        if len(appk):
+            self._logger.info("Application key is atleast not zero length.")
+        else:
+            self._logger.error("Application key is invalid.")
+        deveui = self._vosm_conn.dev_eui
+        if len(deveui):
+            self._logger.info("Device EUI is atleast not zero length.")
+        else:
+            self._logger.error("Device EUI is invalid.")
+
+    def _check_cc_val(self):
+        cc_g = self._vosm_conn.print_cc_gain
+        if cc_g[0] == "CC1 EXT max: 100.000A":
+            self._logger.info("Valid CC1 Exterior value.")
+        else:
+            self._logger.error("Invalid CC1 Exterior value.")
+        if cc_g[1] == "CC1 INT max: 0.050V":
+            self._logger.info("Valid CC1 Interior value.")
+        else:
+            self._logger.error("Invalid CC1 Interior value.")
+        for p in range(1,4):
+            mp = self._vosm_conn.get_midpoint(f"CC{p}")
+            if mp[0] == "MP: 2048.000":
+                self._logger.info("Midpoint value is valid.")
+            else:
+                self._logger.error("Midpoint value is invalid.")
+
     def test(self):
         self._logger.info("Starting Virtual OSM Test...")
 
@@ -172,12 +208,9 @@ class test_framework_t(object):
         for p in range(1,4):
             self._vosm_conn.update_midpoint(2048, f"CC{p}")
             self._vosm_conn.set_outer_inner_cc(p, 100, 50)
-        self._vosm_conn.interval_mins
-        self._vosm_conn.app_key
-        self._vosm_conn.dev_eui
-        self._vosm_conn.print_cc_gain
-        for p in range(1,4):
-            self._vosm_conn.get_midpoint(f"CC{p}")
+        self._check_interval_mins_val()
+        self._check_lora_config_val()
+        self._check_cc_val()
         self._vosm_conn.measurements_enable(False)
         self._vosm_conn.PM10.interval = 1
         self._vosm_conn.PM25.interval = 1
