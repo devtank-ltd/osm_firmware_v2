@@ -40,10 +40,11 @@
 */
 
 #define MAX_MODBUS_PACKET_SIZE    127
+#define MODBUS_PACKET_BUF_SIZ     10
 
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
-static uint8_t tx_modbuspacket[10];
+static uint8_t tx_modbuspacket[MODBUS_PACKET_BUF_SIZ];
 
 static unsigned modbuspacket_len = 0;
 
@@ -305,6 +306,159 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
     else uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
 
     reg->value_state = MB_REG_WAITING;
+}
+
+
+static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_byte_orders_t byte_order)
+{
+    if (len <= 2)
+        return false;
+    /* TODO: Figure out which order is which */
+    if (byte_order == MODBUS_BYTE_ORDER_LSB)
+    {
+        arr[0] = v >> 8;
+        arr[1] = v && 0xFF;
+    }
+    else if (byte_order == MODBUS_BYTE_ORDER_MSB)
+        memcpy(arr, &v, 2);
+    else
+        return false;
+    return true;
+}
+
+
+static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+{
+    if (len <= 4)
+        return false;
+    /* TODO: Figure out which order is which */
+    if (word_order == MODBUS_WORD_ORDER_LSW)
+    {
+        if (!_modbus_append_u16(&arr[0], len, v >> 16, byte_order))
+            return false;
+        if (!_modbus_append_u16(&arr[2], len - 2, v && 0xFFFF, byte_order))
+            return false;
+    }
+    else if (word_order == MODBUS_WORD_ORDER_MSW)
+    {
+        if (!_modbus_append_u16(&arr[0], len, v && 0xFFFF, byte_order))
+            return false;
+        if (!_modbus_append_u16(&arr[2], len - 2, v >> 16, byte_order))
+            return false;
+    }
+    else
+        return false;
+    return true;
+}
+
+
+static bool _modbus_append_value(uint8_t* arr, unsigned len, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, uint32_t* value)
+{
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16:
+        {
+            return _modbus_append_u16(arr, len, *value, byte_order);
+        }
+        case MODBUS_REG_TYPE_I16:
+        {
+            int16_t vi16 = *value;
+            uint16_t vu16 = *((uint16_t*)&vi16);
+            return _modbus_append_u16(arr, len, vu16, byte_order);
+        }
+        case MODBUS_REG_TYPE_U32:
+        {
+            return _modbus_append_u32(arr, len, *value, byte_order, word_order);
+        }
+        case MODBUS_REG_TYPE_FLOAT:
+        /* Fall through */
+        case MODBUS_REG_TYPE_I32:
+        {
+            int32_t vi32 = *value;
+            uint32_t vu32 = *((uint32_t*)&vi32);
+            return _modbus_append_u32(arr, len, vu32, byte_order, word_order);
+        }
+        default:
+            return false;
+    }
+    return true;
+}
+
+
+static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, float value)
+{
+    unsigned reg_count = 1;
+
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16    : reg_count = 1; break;
+        case MODBUS_REG_TYPE_I16    : reg_count = 1; break;
+        case MODBUS_REG_TYPE_U32    : reg_count = 2; break;
+        case MODBUS_REG_TYPE_I32    : reg_count = 2; break;
+        case MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
+        default: return false;
+    }
+
+    unsigned body_size = 4;
+
+    if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
+    {
+        tx_modbuspacket[0] = unit_id;
+        tx_modbuspacket[1] = MODBUS_WRITE_SINGLE_HOLDING_FUNC;
+        tx_modbuspacket[2] = reg_addr >> 8;
+        tx_modbuspacket[3] = reg_addr & 0xFF;
+        body_size = 4;
+    }
+    else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+    {
+        tx_modbuspacket[0] = unit_id;
+        tx_modbuspacket[1] = MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
+        tx_modbuspacket[2] = reg_addr >> 8;
+        tx_modbuspacket[3] = reg_addr & 0xFF;
+        tx_modbuspacket[4] = reg_count >> 8;
+        tx_modbuspacket[5] = reg_count & 0xFF;
+        body_size = 6;
+    }
+    /* If larger sizes than type u32 and i32 are required, this will
+     * need to be changed. Mainly do this so floats can be set */
+    uint32_t value32;
+    if (func == MODBUS_REG_TYPE_I16 ||
+        func == MODBUS_REG_TYPE_I32 )
+    {
+        int32_t valuei32 = value;
+        value32 = *((uint32_t*)&valuei32);
+    }
+    else if (func == MODBUS_REG_TYPE_U16 ||
+             func == MODBUS_REG_TYPE_U32 )
+    {
+        value32 = value;
+    }
+    else if (func == MODBUS_REG_TYPE_FLOAT)
+    {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+        value32 = *((uint32_t*)&value);
+        #pragma GCC diagnostic pop
+    }
+    else
+        return false;
+
+    if (!_modbus_append_value(tx_modbuspacket, MODBUS_PACKET_BUF_SIZ - body_size, type, byte_order, word_order, &value32))
+        return false;
+
+
+    uint16_t crc = modbus_crc(tx_modbuspacket, body_size);
+    tx_modbuspacket[body_size] = crc & 0xFF;
+    tx_modbuspacket[body_size+1] = crc >> 8;
+
+    if (modbus_bus->binary_protocol)
+    {
+        uart_ring_out(EXT_UART, (char[]){MODBUS_BIN_START}, 1);
+        tx_modbuspacket[body_size+2] = MODBUS_BIN_STOP;
+        uart_ring_out(EXT_UART, (char*)tx_modbuspacket, body_size+3);
+    }
+    else uart_ring_out(EXT_UART, (char*)tx_modbuspacket, body_size+2); /* Frame is done with silence */
+    return true;
 }
 
 
@@ -883,13 +1037,78 @@ static command_response_t _modbus_measurement_del_dev_cb(char* args)
 }
 
 
+static command_response_t _modbus_set_reg_cb(char* args)
+{
+    /* mb_reg_set <unit_id> <reg_addr> <modbus_func> <type> <LSB/MSB> <LSW/MSW> <value> */
+    char * pos = skip_space(args);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t unit_id = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t reg_addr = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    uint8_t func = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
+
+    modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
+    if (type == MODBUS_REG_TYPE_INVALID)
+        return COMMAND_RESP_ERR;
+
+    pos = skip_space(pos);
+    if (pos[1] != 'S' && pos[2] != 'B')
+        return COMMAND_RESP_ERR;
+
+    modbus_byte_orders_t byte_order;
+    if (pos[0] == 'L')
+        byte_order = MODBUS_BYTE_ORDER_LSB;
+    else if (pos[0] == 'M')
+        byte_order = MODBUS_BYTE_ORDER_MSB;
+    else
+        return COMMAND_RESP_ERR;
+    pos += 3;
+
+    pos = skip_space(pos);
+    if (pos[1] != 'S' && pos[2] != 'W')
+        return COMMAND_RESP_ERR;
+
+    modbus_word_orders_t word_order;
+    if (pos[0] == 'L')
+        word_order = MODBUS_WORD_ORDER_LSW;
+    else if (pos[0] == 'M')
+        word_order = MODBUS_WORD_ORDER_MSW;
+    else
+        return COMMAND_RESP_ERR;
+    pos += 3;
+
+    float value = strtof(pos, NULL);
+
+    bool r = _modbus_set_reg(unit_id, reg_addr, func, type, byte_order, word_order, value);
+
+    return r ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
 struct cmd_link_t* modbus_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "mb_setup",     "Change Modbus comms",      _modbus_setup_cb               , false , NULL },
-                                       { "mb_dev_add",   "Add modbus dev",           _modbus_add_dev_cb             , false , NULL },
-                                       { "mb_reg_add",   "Add modbus reg",           _modbus_add_reg_cb             , false , NULL },
-                                       { "mb_reg_del",   "Delete modbus reg",        _modbus_measurement_del_reg_cb , false , NULL },
-                                       { "mb_dev_del",   "Delete modbus dev",        _modbus_measurement_del_dev_cb , false , NULL },
-                                       { "mb_log",       "Show modbus setup",        _modbus_log_cb                 , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "mb_setup",     "Change Modbus comms",      _modbus_setup_cb               , false , NULL },
+        { "mb_dev_add",   "Add modbus dev",           _modbus_add_dev_cb             , false , NULL },
+        { "mb_reg_add",   "Add modbus reg",           _modbus_add_reg_cb             , false , NULL },
+        { "mb_reg_del",   "Delete modbus reg",        _modbus_measurement_del_reg_cb , false , NULL },
+        { "mb_dev_del",   "Delete modbus dev",        _modbus_measurement_del_dev_cb , false , NULL },
+        { "mb_log",       "Show modbus setup",        _modbus_log_cb                 , false , NULL },
+        { "mb_reg_set",   "Set modbus reg",           _modbus_set_reg_cb             , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
