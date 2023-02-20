@@ -214,7 +214,7 @@ class modbus_funcs_t(config_gui.config_gui_window_t):
                             self.desc_entry.insert(0, description)
                             device = doc[i]['devices'][0]
                             register = doc[i]['registers'][0]
-                            device_name = device['device_name']
+                            device_name = device['name']
                             unit_id = device['unit_id']
                             bytes = device['byte_order']
                             baudrate = device['baudrate']
@@ -274,6 +274,7 @@ class modbus_funcs_t(config_gui.config_gui_window_t):
             self.template_list.insert(0, dev)
             with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                 yaml.dump(write_dev_to_yaml, f)
+                
 
     def _callback(self, event):
         selection = event.widget.curselection()

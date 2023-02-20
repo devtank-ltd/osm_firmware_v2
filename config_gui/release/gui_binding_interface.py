@@ -57,6 +57,7 @@ REQ_DEBUG_BEGIN     = "REQ_DEBUG_BEGIN"
 REQ_DEBUG_END       = "REQ_DEBUG_END"
 REQ_DIS_IO          = "REQ_DIS_IO"
 REQ_ACT_IO          = "REQ_ACT_IO"
+REQ_SET_COEFFS      = "REQ_SET_COEFFS"
 
 logging.basicConfig(
     format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
@@ -101,12 +102,21 @@ class binding_interface_svr_t:
                           REQ_DEBUG_BEGIN     : self._req_debug_begin,
                           REQ_DEBUG_END       : self._req_debug_end,
                           REQ_DIS_IO          : self._req_disable_io,
-                          REQ_ACT_IO          : self._req_activate_io}
+                          REQ_ACT_IO          : self._req_activate_io,
+                          REQ_SET_COEFFS      : self._req_set_coeffs}
 
         self.serial_obj = None
         self.dev = None
         self.debug_parse = None
         self._alive = True
+
+    def _req_set_coeffs(self, args):
+        a = args[1]
+        b = args[2]
+        c = args[3]
+        d = args[4]
+        meas = args[5]
+        return self.dev.set_ftma_coeffs(a, b, c, d, meas)
 
     def _req_add_dev(self, args):
         unit_id = args[1]
@@ -371,6 +381,9 @@ class binding_interface_client_t:
 
     def set_interval_mins(self, val, answered_cb=None):
         self._basic_query((REQ_CHANGE_ALL_INT, val), answered_cb)
+
+    def set_coeffs(self, a, b, c, d, meas, answered_cb=None):
+        self._basic_query((REQ_SET_COEFFS, a, b, c, d, meas), answered_cb)
 
     def get_modbus(self, answered_cb):
         self._basic_query((REQ_MODBUS,), answered_cb)

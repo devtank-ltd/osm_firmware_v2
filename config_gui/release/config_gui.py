@@ -445,6 +445,8 @@ class config_gui_window_t(Tk):
 
     def _on_get_interval_min_done_cb(self, resp):
         self._interval_min = resp[1]
+        self._load_headers(self._main_fr, "rif", False)
+
         return self._interval_min
 
     def _tab_changed(self, event, frame, notebook):
@@ -838,12 +840,12 @@ class config_gui_window_t(Tk):
             dbg_val = res[1]
             if dbg_val != False:
                 for i in self._deb_entries:
-                    meas = i[0].get()
+                    meas = i[0].get()  
                     if meas == dbg_meas:
                         val_to_change = i[1]
                         val_to_change.configure(state='normal')
                         val_to_change.delete(0, END)
-                        val_to_change.insert(0, int(dbg_val))
+                        val_to_change.insert(0, float(dbg_val))
                         val_to_change.configure(
                             state='disabled')
 
@@ -852,7 +854,8 @@ class config_gui_window_t(Tk):
 
     def _get_desc(self, reg):
         desc = STD_MEASUREMENTS_DESCS.get(reg, None)
-        spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2']
+        spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2',
+                  'FTA1', 'FTA2', 'FTA3', 'FTA4']
         if reg in spec_m:
             self._e.configure(cursor='hand2')
         elif desc is None:
@@ -865,15 +868,17 @@ class config_gui_window_t(Tk):
         if int(widg.get()):
             uplink = int(widg.get())
             if uplink > 255:
-                self.binding_interface.set_interval_mins(255)
+                self.binding_interface.set_interval_mins(255, self._on_change_uplink)
             elif uplink < 3:
-                self.binding_interface.set_interval_mins(3)
+                self.binding_interface.set_interval_mins(3, self._on_change_uplink)
             else:
-                self.binding_interface.set_interval_mins(uplink)
-            self._load_headers(frame, "rif", False)
+                self.binding_interface.set_interval_mins(uplink, self._on_change_uplink)
         else:
             tkinter.messagebox.showerror(
                 "Error", "Uplink interval must be an integer")
+    
+    def _on_change_uplink(self, args):
+        self.binding_interface.get_interval_min(self._on_get_interval_min_done_cb)
 
     def _handle_input(self, in_str, acttyp):
         if acttyp == '1':
@@ -1056,6 +1061,12 @@ class config_gui_window_t(Tk):
                         "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
+                elif self._e.get() == 'FTA1' or self._e.get() == 'FTA2' or self._e.get() == 'FTA3' or self._e.get() == 'FTA4':
+                    self._bind_cc = self._e.bind(
+                        "<Button-1>", lambda e: self._cal_ftma(e.widget.get()))
+                    self._e.configure(disabledforeground="green")
+                    self._change_on_hover(self._e)
+                
             self._entries.append(newrow)
             if i != 0:
                 self._check_meas.append(IntVar())
@@ -1184,7 +1195,7 @@ class config_gui_window_t(Tk):
 
         cal_btn = Button(self._cc_window,
                         text="Calibrate ADC", 
-                        command=lambda:self._calibrate(cc),
+                        command=lambda:self._calibrate(),
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY)
         cal_btn.grid(column=0, row=5, pady=10)
@@ -1272,7 +1283,83 @@ class config_gui_window_t(Tk):
         self.binding_interface.do_cmd_multi(cmd_text, self._on_get_cmd_multi_done_cb)
         cmd.delete(0, END)
 
+    def _cal_ftma(self, meas):
+        self._ftma_window = Toplevel(self.master)
+        self._ftma_window.title(f"4-20mA Calibration ({meas})")
+        self._ftma_window.geometry("450x600")
+        self._ftma_window.configure(bg=IVORY)
+        
+        ftma_lab = Label(self._ftma_window, text="Set Coefficients",
+            bg=IVORY, font=FONT)
+        ftma_lab.grid(column=0, row=0, columnspan=2)
 
+        a_lab = Label(self._ftma_window, text="A (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        a_lab.grid(column=0, row=1)
+
+        b_lab = Label(self._ftma_window, text="B (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        b_lab.grid(column=0, row=2)
+
+        c_lab = Label(self._ftma_window, text="C (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        c_lab.grid(column=0, row=3)
+
+        d_lab = Label(self._ftma_window, text="D (Defaults to 0 if left empty):",
+            bg=IVORY, font=FONT)
+        d_lab.grid(column=0, row=4)
+
+        a_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        a_entry.grid(column=1, row=1)
+
+        b_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        b_entry.grid(column=1, row=2)
+
+        c_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        c_entry.grid(column=1, row=3)
+
+        d_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        d_entry.grid(column=1, row=4)
+
+        ftma_btn = Button(self._ftma_window, text="Send",
+                                   command=lambda : self._send_coeffs(
+                                   [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()], meas),
+                                   bg=IVORY, fg=BLACK, font=FONT,
+                                   width=20, activebackground="green",
+                                   activeforeground=IVORY)
+        ftma_btn.grid(column=0, row=5, columnspan=2)
+
+    def _send_coeffs(self, args, meas):
+        print(args, meas)
+        if len(args[0]):
+            a_val = args[0]
+        else:
+            a_val = 0
+        if len(args[1]):
+            b_val = args[1]
+        else:
+            b_val = 0
+        if len(args[2]):
+            c_val = args[2]
+        else:
+            c_val = 0
+        if len(args[3]):
+            d_val = args[3]
+        else:
+            d_val = 0
+        self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
+
+    def on_update_coeffs_cb(self, args):
+        self._ftma_window.destroy()
+        
     def _pop_lora_entry(self):
         if self.dev_eui:
             self._eui_entry.insert(0, self.dev_eui)
@@ -1490,7 +1577,7 @@ class config_gui_window_t(Tk):
                                    command=lambda:
                                    self._shift_down(self.template_regs_box,
                                                     self.template_list,
-                                                    None, 'temp_reg_box'),
+                                                    None, 'temp_reg_box'), 
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    activebackground="green", activeforeground=IVORY)
         shift_down_button.grid(column=2, row=11, sticky=EW)
@@ -1551,8 +1638,8 @@ class config_gui_window_t(Tk):
 
     def _send_to_save(self):
         log_func("User attempting to save a new template")
-        self._modb_funcs.save_template()
-        self._reset_listb()
+        if self._modb_funcs.save_template():
+            self._reset_listb()
         self._changes = False
         return self._changes
 
@@ -1587,10 +1674,10 @@ class config_gui_window_t(Tk):
                 doc = yaml.full_load(f)
                 if doc:
                     for i, item in enumerate(doc):
-                        doc_temp_name = doc[i]['templates'][0]['template_name']
+                        doc_temp_name = doc[i]['templates'][0]['name']
                         if doc_temp_name == edited_template:
                             templ = doc[i]['templates'][0]
-                            template_name = templ['template_name']
+                            template_name = templ['name']
                             description = templ['description']
                             if copy == " (copy)":
                                 self.name_entry.insert(0, template_name + copy)
@@ -1599,7 +1686,7 @@ class config_gui_window_t(Tk):
                             self.desc_entry.insert(0, description)
                             device = doc[i]['devices'][0]
                             register = doc[i]['registers'][0]
-                            device_name = device['device_name']
+                            device_name = device['name']
                             unit_id = device['unit_id']
                             bytes = device['byte_order']
                             baudrate = device['baudrate']
@@ -1700,7 +1787,7 @@ class config_gui_window_t(Tk):
             with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
-                    if doc[v]['templates'][0]['template_name'] == temp:
+                    if doc[v]['templates'][0]['name'] == temp:
                         for i, d in enumerate(doc[v]['registers'][0]['reg_name']):
                             if d == data[3]:
                                 register = doc[v]['registers'][0]
@@ -1756,7 +1843,7 @@ class config_gui_window_t(Tk):
             with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
                 doc = yaml.full_load(f)
                 for v, item in enumerate(doc):
-                    if doc[v]['templates'][0]['template_name'] == template:
+                    if doc[v]['templates'][0]['name'] == template:
                         for i, d in enumerate(doc[v]['registers'][0]['reg_name']):
                             if d == data[3]:
                                 register = doc[v]['registers'][0]
@@ -1809,9 +1896,11 @@ class config_gui_window_t(Tk):
     def _save_edit(self, copy, window):
         log_func("User attempting to save template..")
         uid_list = []
+        dev_list = []
         uids = self.db.cur.execute(GET_UNIT_IDS)
         for uid in uids:
             uid_list.append(uid)
+            dev_list.append(uid[1])
         self._changes = True
         if self.name_entry.get() and self.desc_entry.get() and self.byteorder_drop.get() and self.unit_spinbox.get() and self.register_list.get(0, END) and self.baudrate_entry.get() and self.bits_entry.get() and self.parity_entry.get() and self.rtu_bin_entry.get() and self.dev_entry.get() and self.sb_e.get():
             dev_name_limit = len(str(self.dev_entry.get()))
@@ -1843,15 +1932,20 @@ class config_gui_window_t(Tk):
                         doc = yaml.full_load(f)
                         if doc:
                             for y, item in enumerate(doc):
-                                if item['templates'][0]['template_name'] == str(self.name_entry.get()):
+                                if item['templates'][0]['name'] == str(self.name_entry.get()):
                                     del doc[y]
                                     if len(doc) == 0:
                                         del doc
                                     with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
                                         if f:
                                             yaml.dump(doc, f)
-                if len(exists) == 0 or exists[0][1] == str(self.dev_entry.get()):
+                if copy == 'edit' and len(exists) == 0:
                     self._send_to_yaml(window)
+                elif copy == 'edit' and str(self.dev_entry.get()) == exists[0][1]:
+                    self._send_to_yaml(window)
+                elif str(self.dev_entry.get()) in dev_list and copy != 'edit':
+                    tkinter.messagebox.showerror(
+                        "Error", "That device name is already taken.", parent=window)
                 else:
                     tkinter.messagebox.showerror(
                         "Error", "That unit ID is already taken.", parent=window)
