@@ -341,6 +341,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
+        data->is_collecting = 0;
         return;
     }
     if (data->is_collecting)
@@ -387,6 +388,7 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
+        data->is_collecting = 0;
         return false;
     }
     if (!inf.iteration_cb)
@@ -403,6 +405,7 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
             measurements_debug("%s errored on iterate, will not collect.", def->name);
             data->num_samples_init++;
             data->num_samples_collected++;
+            data->is_collecting = 0;
             return false;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             return true;
