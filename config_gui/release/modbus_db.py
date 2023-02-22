@@ -3,29 +3,6 @@ import yaml
 import os
 import sys
 
-# self.cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary) VALUES (5, 'MSB MSW', 'E53', 9600, 8, 'N', 1, 'RTU')")
-# self.cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary) VALUES (1, 'MSB LSW', 'RIF', 9600, 8, 'N', 1, 'RTU')")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc56e', 3, 'U32', 'PF', 'Power Factor', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc552', 3, 'U32', 'cVP1', 'Voltage Phase 1', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc554', 3, 'U32', 'cVP2', 'Voltage Phase 2', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc556', 3, 'U32', 'cVP3', 'Voltage Phase 3', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc560', 3, 'U32', 'mAP1', 'Milliamps Phase 1', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc562', 3, 'U32', 'mAP2', 'Milliamps Phase 2', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc564', 3, 'U32', 'mAP3', 'Milliamps Phase 3', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0xc652', 3, 'U32', 'ImEn', 'Import Energy', 1)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x36', 4, 'F', 'APF', 'Power Factor', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x00', 4, 'F','VP1', 'Volts P1', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x02', 4, 'F', 'VP2', 'Volts P2', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x04', 4, 'F', 'VP3', 'Volts P3', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x10', 4, 'F', 'AP1', 'Amps P1', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x12', 4, 'F', 'AP2', 'Amps P2', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x14', 4, 'F', 'AP3', 'Amps P3', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id) VALUES ('0x60', 4, 'F', 'Imp', 'Import Energy', 2)")
-# self.cur.execute("INSERT OR IGNORE INTO templates (template_name, description) VALUES ('Countis E53', 'Countis E53 Modbus')")
-# self.cur.execute("INSERT OR IGNORE INTO templates (template_name, description) VALUES ('Rayleigh RI F200', 'Rayleigh RI F Modbus')")
-# self.cur.commit()
-
-
 DROP_TABLE = lambda table_n: "DROP TABLE %s" % table_n
 
 
@@ -174,6 +151,86 @@ GET_MEASUREMENT_INFO = "SELECT description, reference, threshold FROM measuremen
 
 GET_MODBUS_MEASUREMENT_INFO = "SELECT reg_desc FROM registers WHERE reg_name = ?"
 
+CREATE_TEMPS     = lambda name, desc: "INSERT OR IGNORE INTO templates (name, description) VALUES ('%s', '%s')" % (name, desc)
+
+CREATE_DEVICES   = lambda uid, bo, name, baud, bits, parity, stop_b, binary: '''
+                    INSERT OR IGNORE INTO devices 
+                    (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary) 
+                    VALUES (%d, '%s', '%s', %d, %d, '%s', %d, '%s')
+                    ''' % (uid, bo, name, baud, bits, parity, stop_b, binary)
+
+CREATE_REGISTERS = lambda hex, func, dt, reg, reg_desc, devid, tempid: '''
+                    INSERT OR IGNORE INTO registers
+                    (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id)
+                    VALUES ('%s', %d, '%s', '%s', '%s', %d, %d)
+                    ''' % (hex, func, dt, reg, reg_desc, devid, tempid)
+
+CREATE_MEASUREMENTS = lambda handle, desc, ref, thresh: '''
+                    INSERT OR IGNORE INTO measurements
+                    (handle, description, reference, threshold)
+                    VALUES ('%s', '%s', %f, %f)
+                    ''' % (handle, desc, ref, thresh)
+
+
+def generate_db(path_to_db):
+    conn = sqlite3.connect(path_to_db)
+    cur =  conn.cursor()
+    cur.execute(CREATE_DEV_TABLE)
+    cur.execute(CREATE_REG_TABLE)
+    cur.execute(CREATE_TEMP_TABLE)
+    cur.execute(CREATE_MEASUREMENT_TABLE)
+    cur.execute(CREATE_TEMPS('Countis E53', 'Countis E53 Modbus'))
+    cur.execute(CREATE_TEMPS('Rayleigh RI F200', 'Rayleigh RI F Modbus'))
+    cur.execute(CREATE_TEMPS('WT901C', 'WT901C-RS485 Acceleration Meter'))
+    cur.execute(CREATE_DEVICES(5, 'MSB MSW', 'E53', 9600, 8, 'N', 1, 'RTU'))
+    cur.execute(CREATE_DEVICES(1, 'MSB LSW', 'RIF', 9600, 8, 'N', 1, 'RTU'))
+    cur.execute(CREATE_DEVICES(50, 'MSB LSW', 'WT9', 9600, 8, 'N', 1, 'RTU'))
+    cur.execute(CREATE_REGISTERS('0xc56e', 3, 'U32', 'PF', 'Power Factor', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc552', 3, 'U32', 'cVP1', 'Voltage Phase 1', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc554', 3, 'U32', 'cVP2', 'Voltage Phase 2', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc556', 3, 'U32', 'cVP3', 'Voltage Phase 3', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc560', 3, 'U32', 'mAP1', 'Milliamps Phase 1', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc562', 3, 'U32', 'mAP2', 'Milliamps Phase 2', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc564', 3, 'U32', 'mAP3', 'Milliamps Phase 3', 1, 1))
+    cur.execute(CREATE_REGISTERS('0xc652', 3, 'U32', 'ImEn', 'Import Energy', 1, 1))
+    cur.execute(CREATE_REGISTERS('0x36', 4, 'F', 'APF', 'Power Factor', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x00', 4, 'F','VP1', 'Volts P1', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x02', 4, 'F', 'VP2', 'Volts P2', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x04', 4, 'F', 'VP3', 'Volts P3', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x10', 4, 'F', 'AP1', 'Amps P1', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x12', 4, 'F', 'AP2', 'Amps P2', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x14', 4, 'F', 'AP3', 'Amps P3', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x60', 4, 'F', 'Imp', 'Import Energy', 2, 2))
+    cur.execute(CREATE_REGISTERS('0x34', 3, 'I16', 'ax', 'X Axis Acceleration', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x35', 3, 'I16', 'ay', 'Y Axis Acceleration', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x36', 3, 'I16', 'az', 'Z Axis Acceleration', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x37', 3, 'I16', 'gx', 'X Axis Angular Velocity', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x38', 3, 'I16', 'gy', 'Y Axis Angular Velocity', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x39', 3, 'I16', 'gz', 'Z Axis Angular Velocity', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x3a', 3, 'I16', 'hx', 'X Axis Magnetic', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x3b', 3, 'I16', 'hy', 'Y Axis Magnetic', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x3c', 3, 'I16', 'hz', 'Z Axis Magnetic', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x3d', 3, 'I16', 'rol', 'X Axis Angle', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x3e', 3, 'I16', 'pit', 'X Axis Angle', 3, 3))
+    cur.execute(CREATE_REGISTERS('0x3f', 3, 'I16', 'yaw', 'X Axis Angle', 3, 3))
+    cur.execute(CREATE_MEASUREMENTS('TEMP', 'Temperature', 20.0, 2.5))
+    cur.execute(CREATE_MEASUREMENTS('HUMI', 'Humidity', 50.0, 2.5))
+    cur.execute(CREATE_MEASUREMENTS('LGHT', 'Light', 1000.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('TMP2', 'One Wire Probe', 25.0625, 0.01))
+    cur.execute(CREATE_MEASUREMENTS('PM25', 'PM 2.5', 20.0, 0.0))
+    cur.execute(CREATE_MEASUREMENTS('PM10', 'PM 10', 30.0, 0.0))
+    cur.execute(CREATE_MEASUREMENTS('CC1', 'Current Clamp Phase 1', 5000.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('CC2', 'Current Clamp Phase 2', 7500.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('CC3', 'Current Clamp Phase 3', 10000.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('SND', 'Sound', 10.0, 5.0))
+    cur.execute(CREATE_MEASUREMENTS('FW', 'Firmware', 177522043.0, 0.0))
+    cur.execute(CREATE_MEASUREMENTS('BAT', 'Battery', 100.0, 0.0))
+    cur.execute(CREATE_MEASUREMENTS('FTA1', '4-20 mA', 4.0, 0.2))
+    cur.execute(CREATE_MEASUREMENTS('FTA2', '4-20 mA', 8.0, 0.2))
+    cur.execute(CREATE_MEASUREMENTS('FTA3', '4-20 mA', 16.0, 2.0))
+    cur.execute(CREATE_MEASUREMENTS('FTA4', '4-20 mA', 20.0, 0.2))
+    conn.commit()
+
 
 def find_path():
     PATH = os.environ.get("_MEIPASS2",os.path.abspath("."))
@@ -243,8 +300,6 @@ class modb_database_t(object):
             }
         ]
         with self.conn as conn:
-            # correct_temp = conn.execute(GET_TEMP_ID(template))
-            # temp_id = correct_temp.fetchone()[0]
             data = conn.execute(GET_ALL_INFO_DEVS_REGS(template))
             for row in data:
                 register = devices_dict[0]['registers'][0]
@@ -308,62 +363,4 @@ class modb_database_t(object):
         return data.fetchone()
 
 if __name__ == "__main__":
-    conn = sqlite3.connect('./config_database/modbus_templates.db')
-    cur =  conn.cursor()
-    cur.execute(CREATE_DEV_TABLE)
-    cur.execute(CREATE_REG_TABLE)
-    cur.execute(CREATE_TEMP_TABLE)
-    cur.execute(CREATE_MEASUREMENT_TABLE)
-    cur.execute("INSERT OR IGNORE INTO templates (name, description) VALUES ('Countis E53', 'Countis E53 Modbus')")
-    cur.execute("INSERT OR IGNORE INTO templates (name, description) VALUES ('Rayleigh RI F200', 'Rayleigh RI F Modbus')")
-    cur.execute("INSERT OR IGNORE INTO templates (name, description) VALUES ('WT901C', 'WT901C-RS485 Acceleration Meter')")
-    cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary) VALUES (5, 'MSB MSW', 'E53', 9600, 8, 'N', 1, 'RTU')")
-    cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary) VALUES (1, 'MSB LSW', 'RIF', 9600, 8, 'N', 1, 'RTU')")
-    cur.execute("INSERT OR IGNORE INTO devices (unit_id, byte_order, name, baudrate, bits, parity, stop_bits, binary) VALUES (50, 'MSB LSW', 'WT9', 9600, 8, 'N', 1, 'RTU')")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc56e', 3, 'U32', 'PF', 'Power Factor', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc552', 3, 'U32', 'cVP1', 'Voltage Phase 1', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc554', 3, 'U32', 'cVP2', 'Voltage Phase 2', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc556', 3, 'U32', 'cVP3', 'Voltage Phase 3', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc560', 3, 'U32', 'mAP1', 'Milliamps Phase 1', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc562', 3, 'U32', 'mAP2', 'Milliamps Phase 2', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc564', 3, 'U32', 'mAP3', 'Milliamps Phase 3', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0xc652', 3, 'U32', 'ImEn', 'Import Energy', 1, 1)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x36', 4, 'F', 'APF', 'Power Factor', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x00', 4, 'F','VP1', 'Volts P1', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x02', 4, 'F', 'VP2', 'Volts P2', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x04', 4, 'F', 'VP3', 'Volts P3', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x10', 4, 'F', 'AP1', 'Amps P1', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x12', 4, 'F', 'AP2', 'Amps P2', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x14', 4, 'F', 'AP3', 'Amps P3', 2, 2)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x60', 4, 'F', 'Imp', 'Import Energy', 2, 2)")
-
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x34', 3, 'I16', 'ax', 'X Axis Acceleration', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x35', 3, 'I16', 'ay', 'Y Axis Acceleration', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x36', 3, 'I16', 'az', 'Z Axis Acceleration', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x37', 3, 'I16', 'gx', 'X Axis Angular Velocity', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x38', 3, 'I16', 'gy', 'Y Axis Angular Velocity', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x39', 3, 'I16', 'gz', 'Z Axis Angular Velocity', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x3a', 3, 'I16', 'hx', 'X Axis Magnetic', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x3b', 3, 'I16', 'hy', 'Y Axis Magnetic', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x3c', 3, 'I16', 'hz', 'Z Axis Magnetic', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x3d', 3, 'I16', 'rol', 'X Axis Angle', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x3e', 3, 'I16', 'pit', 'X Axis Angle', 3, 3)")
-    cur.execute("INSERT OR IGNORE INTO registers (hex_address, function_id, data_type, reg_name, reg_desc, device_id, template_id) VALUES ('0x3f', 3, 'I16', 'yaw', 'X Axis Angle', 3, 3)")
-
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('TEMP', 'Temperature', 20.0, 2.5)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('HUMI', 'Humidity', 50.0, 2.5)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('LGHT', 'Light', 1000.0, 100.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('TMP2', 'One Wire Probe', 25.0625, 0.01)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('PM25', 'PM 2.5', 20.0, 0.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('PM10', 'PM 10', 30.0, 0.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('CC1', 'Current Clamp Phase 1', 5000.0, 100.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('CC2', 'Current Clamp Phase 2', 7500.0, 100.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('CC3', 'Current Clamp Phase 3', 10000.0, 100.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('SND', 'Sound', 10.0, 5.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FW', 'Firmware', 177522043.0, 0.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('BAT', 'Battery', 100.0, 0.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA1', '4-20 mA', 4.0, 0.2)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA2', '4-20 mA', 8.0, 0.2)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA3', '4-20 mA', 16.0, 2.0)")
-    cur.execute("INSERT OR IGNORE INTO measurements (handle, description, reference, threshold) VALUES ('FTA4', '4-20 mA', 20.0, 0.2)")
-    conn.commit()
+    generate_db('/home/marcus/tester.db')
