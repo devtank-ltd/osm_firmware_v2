@@ -1338,24 +1338,43 @@ class config_gui_window_t(Tk):
         ftma_btn.grid(column=0, row=5, columnspan=2)
 
     def _send_coeffs(self, args, meas):
-        print(args, meas)
         if len(args[0]):
-            a_val = args[0]
+            try:
+                a_val = float(args[0])
+            except:
+                a_val = args[0]
+                log_func("Cannot convert coefficient A to a float.")
         else:
-            a_val = 0
+            a_val = 0.
         if len(args[1]):
-            b_val = args[1]
+            try:
+                b_val = float(args[0])
+            except:
+                b_val = args[0]
+                log_func("Cannot convert coefficient B to a float.")
         else:
-            b_val = 0
+            b_val = 0.
         if len(args[2]):
-            c_val = args[2]
+            try:
+                c_val = float(args[0])
+            except:
+                c_val = args[0]
+                log_func("Cannot convert coefficient C to a float.")
         else:
-            c_val = 0
+            c_val = 0.
         if len(args[3]):
-            d_val = args[3]
+            try:
+                d_val = float(args[0])
+            except:
+                d_val = args[0]
+                log_func("Cannot convert coefficient D to a float.")
         else:
-            d_val = 0
-        self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
+            d_val = 0.
+        if type(a_val) == float and type(b_val) == float and type(c_val) == float and type(d_val) == float:
+            self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
+        else:
+            tkinter.messagebox.showerror(
+                "Error", "Values must be a valid integer.")
 
     def on_update_coeffs_cb(self, args):
         self._ftma_window.destroy()
@@ -2267,7 +2286,7 @@ if __name__ == '__main__':
     tag = os.popen("git describe --tags").read().split('-')[0]
     width, height = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry('%dx%d+0+0' % (width, height))
-    root.title(f"Open Smart Monitor Configuration {tag}")
+    root.title(f"Open Smart Monitor Configuration: {tag}")
     root.resizable(True, True)
     root.configure(bg="lightgrey")
     root.protocol("WM_DELETE_WINDOW", root._on_closing)
