@@ -156,7 +156,7 @@ class test_framework_t(object):
 
     def _get_measurement_info(self, measurement_handle):
         DEFAULT_MODBUS_MATCH_DICT = {
-          "PF"      : 1023,
+          "PF"      : 1000,
           "VP1"     : 240,
           "VP2"     : 240,
           "VP3"     : 240,
@@ -192,13 +192,15 @@ class test_framework_t(object):
 
     def _check_interval_mins_val(self):
         im = self._vosm_conn.interval_mins
-        return self._bool_check("Interval minutes is a valid float", float(im) > 0, True)
+        return self._bool_check("Interval minutes is a valid float and is reading correct value.", float(im) > 0 and float(im) == 1, True)
 
     def _check_lora_config_val(self):
         appk = self._vosm_conn.app_key
         deveui = self._vosm_conn.dev_eui
-        return  (self._bool_check("Application key is atleast not zero length", isinstance(appk, str) and len(appk)> 0, True) and
-                 self._bool_check("Device EUI is atleast not zero length", isinstance(deveui, str) and len(deveui)> 0, True))
+        return  (self._bool_check("Application key is a valid type.",
+                                  isinstance(appk, str) and appk=="LINUX-APP", True) and
+                 self._bool_check("Device EUI is a valid type.",
+                                  isinstance(deveui, str) and deveui=="LINUX-DEV", True))
 
     def _check_cc_val(self):
         passed = True
@@ -229,6 +231,7 @@ class test_framework_t(object):
         for p in range(1,4):
             self._vosm_conn.update_midpoint(2048, f"CC{p}")
             self._vosm_conn.set_outer_inner_cc(p, 100, 50)
+        self._vosm_conn.interval_mins = 1
         passed &= self._check_interval_mins_val()
         passed &= self._check_lora_config_val()
         passed &= self._check_cc_val()
