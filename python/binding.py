@@ -715,7 +715,7 @@ class dev_debug_t(dev_base_t):
             self._log(f"{name} failed.")
             return (name, False)
         r = re.search(
-            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+\.[0-9]+", msg)
+            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+(\.[0-9]+)?", msg)
         if r and r.group(0):
             _, ts, _, name, type_, value = r.group(0).split(":")
             try:
