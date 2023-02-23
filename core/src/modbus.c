@@ -445,7 +445,8 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
         tx_modbuspacket[3] = reg_addr & 0xFF;
         tx_modbuspacket[4] = reg_count >> 8;
         tx_modbuspacket[5] = reg_count & 0xFF;
-        body_size = 6;
+        tx_modbuspacket[6] = reg_count * 2; /* Number of databytes to follow */
+        body_size = 7;
     }
     else
     {
