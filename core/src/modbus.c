@@ -43,6 +43,8 @@
 #define MAX_MODBUS_PACKET_SIZE    127
 #define MODBUS_PACKET_BUF_SIZ     20
 
+#define MODBUS_REG_DESC_BUF_LEN             48
+
 
 static uint8_t modbuspacket[MAX_MODBUS_PACKET_SIZE];
 static uint8_t tx_modbuspacket[MODBUS_PACKET_BUF_SIZ];
@@ -495,6 +497,8 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
     modbus_debug("Modbus packet (%u):", body_size);
     log_debug_data(DEBUG_MODBUS, tx_modbuspacket, body_size);
 
+    modbus_want_rx = true;
+    modbus_cur_send_time = get_since_boot_ms();
     if (modbus_bus->binary_protocol)
     {
         uart_ring_out(EXT_UART, (char[]){MODBUS_BIN_START}, 1);
@@ -670,6 +674,14 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
             }
+            else if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
+            {
+                modbuspacket_len = 5;
+            }
+            else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+            {
+                modbuspacket_len = 5;
+            }
             else if ((func & MODBUS_ERROR_MASK) == MODBUS_ERROR_MASK)
             {
                 modbuspacket_len = 2; /* Exception code is in header, so just crc*/
@@ -727,6 +739,14 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     modbuspacket_len += 3;
 
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
+
+    if (modbuspacket[1] == MODBUS_WRITE_SINGLE_HOLDING_FUNC ||
+        modbuspacket[1] == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+    {
+        modbus_want_rx = false;
+        modbuspacket_len = 0;
+        return;
+    }
 
     // Good or bad, we think we have the whole message for current register, so remove it from queue.
     modbus_reg_t * current_reg = NULL;
@@ -1080,69 +1100,164 @@ static command_response_t _modbus_measurement_del_dev_cb(char* args)
 }
 
 
+static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, modbus_reg_type_t type, float value)
+{
+    uint8_t func;
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16:
+            /* Fall through */
+        case MODBUS_REG_TYPE_I16:
+            func = MODBUS_WRITE_SINGLE_HOLDING_FUNC;
+            break;
+        case MODBUS_REG_TYPE_U32:
+            /* Fall through */
+        case MODBUS_REG_TYPE_I32:
+            /* Fall through */
+        case MODBUS_REG_TYPE_FLOAT:
+            func = MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
+            break;
+        default:
+            modbus_debug("Could not get modbus function from type.");
+            return false;
+    }
+    return _modbus_set_reg(dev->unit_id, reg_addr, func, type, dev->byte_order, dev->word_order, value);
+}
+
+
+static bool _modbus_reg_set_value_is_done(void* userdata)
+{
+    return !modbus_has_pending();
+}
+
+
+static const char* _modbus_get_type_str(modbus_reg_type_t type)
+{
+    static const char u16_str[]      = "U16";
+    static const char i16_str[]      = "I16";
+    static const char u32_str[]      = "U32";
+    static const char i32_str[]      = "I32";
+    static const char float_str[]    = "FLOAT";
+    static const char unknown_str[]  = "UNKNOWN";
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16:
+            return u16_str;
+        case MODBUS_REG_TYPE_I16:
+            return i16_str;
+        case MODBUS_REG_TYPE_U32:
+            return u32_str;
+        case MODBUS_REG_TYPE_I32:
+            return i32_str;
+        case MODBUS_REG_TYPE_FLOAT:
+            return float_str;
+        default:
+            modbus_debug("Could not get type string.");
+            break;
+    }
+    return unknown_str;
+}
+
+
 static command_response_t _modbus_set_reg_cb(char* args)
 {
-    /* mb_reg_set <unit_id> <reg_addr> <modbus_func> <type> <LSB/MSB> <LSW/MSW> <value> */
-    char * pos = skip_space(args);
+    /* mb_reg_set <reg_name> <value> */
+    /* mb_reg_set <device_name> <reg_addr> <type> <value> */
+    char * p = skip_space(args);
+    char * np;
 
-    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
-        pos += 2;
-
-    uint16_t unit_id = strtoul(pos, &pos, 16);
-
-    pos = skip_space(pos);
-
-    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
-        pos += 2;
-
-    uint16_t reg_addr = strtoul(pos, &pos, 16);
-
-    pos = skip_space(pos);
-
-    uint8_t func = strtoul(pos, &pos, 10);
-
-    pos = skip_space(pos);
-
-    char* type_str = pos;
-    modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
-    if (type == MODBUS_REG_TYPE_INVALID)
+    char name[MODBUS_NAME_LEN + 1] = {0};
+    np = strchr(p, ' ');
+    if (!np)
+    {
+        log_out("Bad syntax.");
         return COMMAND_RESP_ERR;
-
-    pos = skip_space(pos);
-    if (pos[1] != 'S' && pos[2] != 'B')
+    }
+    unsigned len = np - p;
+    if (len > MODBUS_NAME_LEN)
+    {
+        log_out("Too long name.");
         return COMMAND_RESP_ERR;
+    }
+    strncpy(name, p, len);
+    p = skip_space(np + 1);
 
-    modbus_byte_orders_t byte_order;
-    if (pos[0] == 'L')
-        byte_order = MODBUS_BYTE_ORDER_LSB;
-    else if (pos[0] == 'M')
-        byte_order = MODBUS_BYTE_ORDER_MSB;
+    uint16_t            reg_addr;
+    modbus_reg_type_t   type;
+    modbus_dev_t*       dev;
+    modbus_reg_t*       reg = modbus_get_reg(name);
+    if (reg)
+    {
+        reg_addr    = reg->reg_addr;
+        type        = reg->type;
+        dev         = modbus_reg_get_dev(reg);
+    }
     else
+    {
+        dev = modbus_get_device_by_name(name);
+        if (!dev)
+        {
+            log_out("No device or register with name '%s'", name);
+            return COMMAND_RESP_ERR;
+        }
+        p = skip_space(p);
+
+        if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
+            p += 2;
+
+        reg_addr = strtoul(p, &np, 16);
+        if (p == np)
+        {
+            log_out("Not given a register address.");
+            return COMMAND_RESP_ERR;
+        }
+        p = skip_space(np);
+        modbus_reg_type_t type = modbus_reg_type_from_str(p, (const char**)&p);
+        if (type == MODBUS_REG_TYPE_INVALID)
+        {
+            log_out("Given invalid register type.");
+            return COMMAND_RESP_ERR;
+        }
+    }
+
+    float value = strtof(p, &np);
+    if (p == np)
+    {
+        log_out("Not given a value.");
         return COMMAND_RESP_ERR;
-    pos += 3;
+    }
 
-    pos = skip_space(pos);
-    if (pos[1] != 'S' && pos[2] != 'W')
-        return COMMAND_RESP_ERR;
+    if (modbus_has_pending())
+    {
+        modbus_log("Currently undergoing transaction.");
+        return false;
+    }
 
-    modbus_word_orders_t word_order;
-    if (pos[0] == 'L')
-        word_order = MODBUS_WORD_ORDER_LSW;
-    else if (pos[0] == 'M')
-        word_order = MODBUS_WORD_ORDER_MSW;
-    else
-        return COMMAND_RESP_ERR;
-    pos += 3;
-
-    float value = strtof(pos, NULL);
-
-    bool r = _modbus_set_reg(unit_id, reg_addr, func, type, byte_order, word_order, value);
-    if (r)
-        log_out("Set 0x%"PRIX16":0x%"PRIX8" f:%"PRIu8" = %.*s:%f", unit_id, reg_addr, func, 3, type_str, value);
-    else
+    if (!_modbus_reg_set_value(dev, reg_addr, type, value))
+    {
         log_out("Failed to set modbus register.");
+        return COMMAND_RESP_ERR;
+    }
 
-    return r ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    const char* type_str = _modbus_get_type_str(type);
+    char reg_desc[MODBUS_REG_DESC_BUF_LEN];
+    if (reg)
+        snprintf(reg_desc, MODBUS_REG_DESC_BUF_LEN, "%s:%s(0x%"PRIX8") = %.*s:%f", dev->name, reg->name, reg_addr, 3, type_str, value);
+    else
+        snprintf(reg_desc, MODBUS_REG_DESC_BUF_LEN, "%s:0x%"PRIX8" = %.*s:%f", dev->name, reg_addr, 3, type_str, value);
+    unsigned reg_desc_len = strnlen(reg_desc, MODBUS_REG_DESC_BUF_LEN-1);
+    reg_desc[reg_desc_len] = 0;
+
+    log_out("Queued setting %s", reg_desc);
+
+    if (!main_loop_iterate_for(MODBUS_RESP_TIMEOUT_MS, _modbus_reg_set_value_is_done, NULL))
+    {
+        log_out("Timed out waiting for acknowledgement.");
+        return COMMAND_RESP_ERR;
+    }
+    log_out("Successfully set %s", reg_desc);
+
+    return COMMAND_RESP_OK;
 }
 
 
