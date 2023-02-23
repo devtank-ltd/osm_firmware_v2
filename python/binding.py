@@ -364,6 +364,9 @@ class dev_t(dev_base_t):
     def _log(self, msg):
         self._log_obj.emit(msg)
 
+    def set_serial_num(self, serial_num):
+        self.do_cmd("serial_num %s" % serial_num)
+
     @property
     def interval_mins(self):
         r = self.do_cmd_multi("interval_mins")
