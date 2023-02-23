@@ -67,6 +67,25 @@ static uint32_t modbus_send_stop_delay = 0;
 static uint32_t modbus_retransmit_count = 0;
 
 
+static struct
+{
+    union
+    {
+        uint8_t  unit_id;
+        uint8_t  not_done;
+    };
+    union
+    {
+        uint16_t reg_addr;
+        uint16_t passfail;
+    };
+    union
+    {
+        uint16_t value;         /* For MODBUS_WRITE_SINGLE_HOLDING_FUNC   */
+        uint16_t num_written;   /* For MODBUS_WRITE_MULTIPLE_HOLDING_FUNC */
+    };
+} _modbus_reg_set_expected = {0};
+
 
 static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
 {
@@ -411,18 +430,6 @@ static bool _modbus_append_value(uint8_t* arr, unsigned len, modbus_reg_type_t t
     }
     return true;
 }
-
-
-static struct
-{
-    uint8_t  unit_id;
-    uint16_t reg_addr;
-    union
-    {
-        uint16_t value;         /* For MODBUS_WRITE_SINGLE_HOLDING_FUNC   */
-        uint16_t num_written;   /* For MODBUS_WRITE_MULTIPLE_HOLDING_FUNC */
-    };
-} _modbus_reg_set_expected = {0};
 
 
 static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, float value)
@@ -779,54 +786,70 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
         return;
     }
 
+    modbus_debug("Good CRC");
+    modbuspacket_len = 0;
+    modbus_want_rx = false;
+
     uint8_t unit_id = modbuspacket[0];
     uint8_t func    = modbuspacket[1];
     if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
     {
         if (unit_id != _modbus_reg_set_expected.unit_id)
         {
+            _modbus_reg_set_expected.not_done = false;
+            _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
             return;
         }
         uint16_t reg_addr = (modbuspacket[2] << 8) | modbuspacket[3];
         if (reg_addr != _modbus_reg_set_expected.reg_addr)
         {
+            _modbus_reg_set_expected.not_done = false;
+            _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
             return;
         }
         uint16_t value = (modbuspacket[4] << 8) | modbuspacket[5];
         if (value != _modbus_reg_set_expected.value)
         {
+            _modbus_reg_set_expected.not_done = false;
+            _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected value (0x%04"PRIX16" != 04%"PRIX16").", value, _modbus_reg_set_expected.value);
             return;
         }
         modbus_debug("Received acknowledgement.");
-        modbus_want_rx = false;
-        modbuspacket_len = 0;
+        _modbus_reg_set_expected.not_done = false;
+        _modbus_reg_set_expected.passfail = true;
         return;
     }
-    else if (modbuspacket[1] == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+    else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
     {
         if (unit_id != _modbus_reg_set_expected.unit_id)
         {
+            _modbus_reg_set_expected.not_done = false;
+            _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
             return;
         }
         uint16_t reg_addr = (modbuspacket[2] << 8) | modbuspacket[3];
         if (reg_addr != _modbus_reg_set_expected.reg_addr)
         {
+            _modbus_reg_set_expected.not_done = false;
+            _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
             return;
         }
         uint16_t num_written = (modbuspacket[4] << 8) | modbuspacket[5];
         if (num_written != _modbus_reg_set_expected.num_written)
         {
+            _modbus_reg_set_expected.not_done = false;
+            _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected num_written (0x%04"PRIX16" != 04%"PRIX16").", num_written, _modbus_reg_set_expected.num_written);
             return;
         }
         modbus_debug("Received acknowledgement.");
-        modbus_want_rx = false;
-        modbuspacket_len = 0;
+        _modbus_reg_set_expected.not_done = false;
+        _modbus_reg_set_expected.passfail = true;
         return;
     }
 
@@ -836,8 +859,6 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
     {
         log_error("Modbus comms issues!");
-        modbuspacket_len = 0;
-        modbus_want_rx = false;
         return;
     }
 
@@ -846,10 +867,7 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
 
     current_reg->value_state = MB_REG_INVALID;
 
-    modbus_debug("Good CRC");
-    modbuspacket_len = 0;
     modbus_read_last_good = get_since_boot_ms();
-    modbus_want_rx = false;
 
     modbus_retransmit_count = 0;
 
@@ -1200,7 +1218,7 @@ static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, modbus_r
 
 static bool _modbus_reg_set_value_is_done(void* userdata)
 {
-    return !modbus_has_pending();
+    return !modbus_has_pending() && _modbus_reg_set_expected.not_done;
 }
 
 
@@ -1328,7 +1346,11 @@ static command_response_t _modbus_set_reg_cb(char* args)
         log_out("Timed out waiting for acknowledgement.");
         return COMMAND_RESP_ERR;
     }
-    log_out("Successfully set %s", reg_desc);
+
+    if (!_modbus_reg_set_expected.not_done && _modbus_reg_set_expected.passfail)
+        log_out("Successfully set %s", reg_desc);
+    else
+        log_out("Failed to set %s", reg_desc);
 
     return COMMAND_RESP_OK;
 }
