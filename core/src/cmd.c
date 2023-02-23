@@ -82,7 +82,6 @@ static command_response_t _cmd_serial_num_cb(char* args)
 {
     char* serial_num = persist_get_serial_number();
     char* p = skip_space(args);
-    char comm_id[SERIAL_NUM_COMM_LEN];
     uint8_t len = strnlen(p, SERIAL_NUM_LEN);
     if (len == 0)
         goto print_exit;
@@ -90,12 +89,7 @@ static command_response_t _cmd_serial_num_cb(char* args)
     strncpy(serial_num, p, len);
     serial_num[len] = 0;
 print_exit:
-    if (!comms_get_id(comm_id, SERIAL_NUM_COMM_LEN))
-    {
-        log_out("%s", persist_get_serial_number());
-        return COMMAND_RESP_OK;
-    }
-    log_out("Serial Number: %s-%s", serial_num, comm_id);
+    log_out("Serial Number: %s", serial_num);
     return COMMAND_RESP_OK;
 }
 
