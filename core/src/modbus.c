@@ -738,7 +738,7 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     // Now include the header too.
     modbuspacket_len += 3;
 
-    uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len);
+    uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len - 2);
 
     if (modbuspacket[1] == MODBUS_WRITE_SINGLE_HOLDING_FUNC ||
         modbuspacket[1] == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
@@ -764,8 +764,8 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
 
     current_reg->value_state = MB_REG_INVALID;
 
-    if ( (modbuspacket[modbuspacket_len-1] == (crc >> 8)) &&
-         (modbuspacket[modbuspacket_len-2] == (crc & 0xFF)) )
+    if ( (modbuspacket[modbuspacket_len-1] != (crc >> 8)) ||
+         (modbuspacket[modbuspacket_len-2] != (crc & 0xFF)) )
     {
         modbus_debug("Bad CRC");
         modbuspacket_len = 0;
