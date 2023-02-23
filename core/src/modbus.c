@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "log.h"
 #include "modbus.h"
@@ -317,12 +318,12 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
         return false;
     }
     /* TODO: Figure out which order is which */
-    if (byte_order == MODBUS_BYTE_ORDER_LSB)
+    if (byte_order == MODBUS_BYTE_ORDER_MSB)
     {
         arr[0] = v >> 8;
-        arr[1] = v && 0xFF;
+        arr[1] = v & 0xFF;
     }
-    else if (byte_order == MODBUS_BYTE_ORDER_MSB)
+    else if (byte_order == MODBUS_BYTE_ORDER_LSB)
         memcpy(arr, &v, 2);
     else
     {
@@ -333,6 +334,16 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
 }
 
 
+/* For STM32 and x86-64 are both little-endian, meaning 0x0A0B0C0D is
+ * stored:
+ * a     : 0x0D
+ * a + 1 : 0x0C
+ * a + 2 : 0x0B
+ * a + 3 : 0x0A
+ * => This is LSB
+ */
+
+
 static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
 {
     if (len <= 4)
@@ -340,17 +351,16 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
         modbus_debug("Ran out of space in array for appending u32.");
         return false;
     }
-    /* TODO: Figure out which order is which */
-    if (word_order == MODBUS_WORD_ORDER_LSW)
+    if (word_order == MODBUS_WORD_ORDER_MSW)
     {
         if (!_modbus_append_u16(&arr[0], len, v >> 16, byte_order))
             return false;
-        if (!_modbus_append_u16(&arr[2], len - 2, v && 0xFFFF, byte_order))
+        if (!_modbus_append_u16(&arr[2], len - 2, v & 0xFFFF, byte_order))
             return false;
     }
-    else if (word_order == MODBUS_WORD_ORDER_MSW)
+    else if (word_order == MODBUS_WORD_ORDER_LSW)
     {
-        if (!_modbus_append_u16(&arr[0], len, v && 0xFFFF, byte_order))
+        if (!_modbus_append_u16(&arr[0], len, v & 0xFFFF, byte_order))
             return false;
         if (!_modbus_append_u16(&arr[2], len - 2, v >> 16, byte_order))
             return false;
@@ -364,28 +374,32 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
 }
 
 
-static bool _modbus_append_value(uint8_t* arr, unsigned len, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, uint32_t* value)
+static bool _modbus_append_value(uint8_t* arr, unsigned len, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, uint32_t* value, unsigned* body_size)
 {
     switch (type)
     {
         case MODBUS_REG_TYPE_U16:
         {
+            *body_size = *body_size + 2;
             return _modbus_append_u16(arr, len, *value, byte_order);
         }
         case MODBUS_REG_TYPE_I16:
         {
+            *body_size = *body_size + 2;
             int16_t vi16 = *value;
             uint16_t vu16 = *((uint16_t*)&vi16);
             return _modbus_append_u16(arr, len, vu16, byte_order);
         }
         case MODBUS_REG_TYPE_U32:
         {
+            *body_size = *body_size + 4;
             return _modbus_append_u32(arr, len, *value, byte_order, word_order);
         }
         case MODBUS_REG_TYPE_FLOAT:
         /* Fall through */
         case MODBUS_REG_TYPE_I32:
         {
+            *body_size = *body_size + 4;
             int32_t vi32 = *value;
             uint32_t vu32 = *((uint32_t*)&vi32);
             return _modbus_append_u32(arr, len, vu32, byte_order, word_order);
@@ -433,6 +447,12 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
         tx_modbuspacket[5] = reg_count & 0xFF;
         body_size = 6;
     }
+    else
+    {
+        modbus_debug("Unknown function.");
+        return false;
+    }
+
     /* If larger sizes than type u32 and i32 are required, this will
      * need to be changed. Mainly do this so floats can be set */
     uint32_t value32;
@@ -460,7 +480,7 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
         return false;
     }
 
-    if (!_modbus_append_value(tx_modbuspacket, MODBUS_PACKET_BUF_SIZ - body_size, type, byte_order, word_order, &value32))
+    if (!_modbus_append_value(&tx_modbuspacket[body_size], MODBUS_PACKET_BUF_SIZ - body_size, type, byte_order, word_order, &value32, &body_size))
     {
         modbus_debug("Failed to append modbus value.");
         return false;
@@ -468,16 +488,18 @@ static bool _modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, m
 
 
     uint16_t crc = modbus_crc(tx_modbuspacket, body_size);
-    tx_modbuspacket[body_size] = crc & 0xFF;
-    tx_modbuspacket[body_size+1] = crc >> 8;
+    tx_modbuspacket[body_size++] = crc & 0xFF;
+    tx_modbuspacket[body_size++] = crc >> 8;
+
+    modbus_debug("Modbus packet (%u):", body_size);
+    log_debug_data(DEBUG_MODBUS, tx_modbuspacket, body_size);
 
     if (modbus_bus->binary_protocol)
     {
         uart_ring_out(EXT_UART, (char[]){MODBUS_BIN_START}, 1);
-        tx_modbuspacket[body_size+2] = MODBUS_BIN_STOP;
-        uart_ring_out(EXT_UART, (char*)tx_modbuspacket, body_size+3);
+        tx_modbuspacket[body_size++] = MODBUS_BIN_STOP;
     }
-    else uart_ring_out(EXT_UART, (char*)tx_modbuspacket, body_size+2); /* Frame is done with silence */
+    uart_ring_out(EXT_UART, (char*)tx_modbuspacket, body_size);
     return true;
 }
 
@@ -1080,12 +1102,12 @@ static command_response_t _modbus_set_reg_cb(char* args)
 
     pos = skip_space(pos);
 
+    char* type_str = pos;
     modbus_reg_type_t type = modbus_reg_type_from_str(pos, (const char**)&pos);
     if (type == MODBUS_REG_TYPE_INVALID)
         return COMMAND_RESP_ERR;
 
     pos = skip_space(pos);
-    char* type_str = pos;
     if (pos[1] != 'S' && pos[2] != 'B')
         return COMMAND_RESP_ERR;
 
