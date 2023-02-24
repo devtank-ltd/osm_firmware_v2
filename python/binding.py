@@ -14,6 +14,9 @@ import random
 import json
 
 
+MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_addr>0x[0-9A-Fa-f]+) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
+MODBUS_REG_SET_NAME_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_name>.{1,4})\((?P<reg_addr>0x[0-9A-Fa-f]+)\) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
+
 _RESPONSE_BEGIN = "============{"
 _RESPONSE_END = "}============"
 
@@ -576,6 +579,50 @@ class dev_t(dev_base_t):
 
     def modbus_reg_del(self, reg: str):
         self.do_cmd(f"mb_reg_del {reg}")
+
+    def modbus_reg_set(self, **kwargs):
+        """
+        mb_reg_set <reg_name> <value>
+        mb_reg_set <device_name> <reg_addr> <type> <value>
+        """
+        reg     = kwargs.get("reg",     None)
+        dev     = kwargs.get("dev",     None)
+        value   = kwargs.get("value",   0.  )
+        timeout = kwargs.get("timeout", 2.  )
+        if dev:
+            reg_addr = kwargs["reg_addr"]
+            type_    = kwargs["type"]
+        if dev is None == reg is None:
+            raise Error("Only dev or reg must be given to set the register.")
+        if dev:
+            cmd = f"mb_reg_set {dev} {hex(reg_addr)} {type_} {value}"
+        else:
+            cmd = f"mb_reg_set {reg} {value}"
+        resp = self.do_cmd(cmd, timeout=timeout)
+        if dev:
+            match_ = re.search(MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN, resp)
+        else:
+            match_ = re.search(MODBUS_REG_SET_NAME_SUCCESSFUL_PATTERN, resp)
+        if not match_:
+            return False
+        resp_data = match_.groupdict()
+        if dev:
+            if resp_data["dev_name"] != dev:
+                debug_print("Device name does not match.")
+                return False
+            if int(resp_data["reg_addr"], 16) != int(reg_addr):
+                debug_print("Register address does not match.")
+                return False
+        else:
+            if resp_data["reg_name"] != reg:
+                debug_print("Register name is different to set.")
+                return False
+        # Maybe a better way of comparing floats.
+        if float(resp_data["value"]) - value > 0.01:
+            debug_print("Not set to same value.")
+            return False
+        # Could also compare stored values i.e. unit ID
+        return True
 
     def current_clamp_calibrate(self):
         self.do_cmd("cc_cal")
