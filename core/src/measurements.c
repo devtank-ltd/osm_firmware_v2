@@ -1208,6 +1208,10 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
         return false;
     }
 
+    bool was_not_enabled = inf.is_enabled_cb && inf.enable_cb && !inf.is_enabled_cb(def->name);
+    if (was_not_enabled)
+        inf.enable_cb(def->name, true);
+
     if (inf.init_cb && inf.init_cb(def->name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         measurements_debug("Could not begin the measurement.");
@@ -1250,8 +1254,13 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     if (!info.func_success)
         measurements_debug("Collect is timed out...");
 
+    if (was_not_enabled)
+        inf.enable_cb(def->name, false);
+
     return info.func_success;
 bad_exit:
+    if (was_not_enabled)
+        inf.enable_cb(def->name, false);
     data->is_collecting = 0;
     return false;
 }
