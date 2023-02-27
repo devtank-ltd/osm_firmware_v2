@@ -37,7 +37,7 @@
     For reading a holding, PDU is 16bit register address and 16bit register count.
     https://en.wikipedia.org/wiki/Modbus#Modbus_RTU_frame_format_(primarily_used_on_asynchronous_serial_data_lines_like_RS-485/EIA-485)
 
-    Also good source : http://www.simplymodbus.ca
+    Also good source : https://www.simplymodbus.ca
 */
 
 #define MAX_MODBUS_PACKET_SIZE    127
@@ -1218,7 +1218,7 @@ static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, modbus_r
 
 static bool _modbus_reg_set_value_is_done(void* userdata)
 {
-    return !modbus_has_pending() && _modbus_reg_set_expected.not_done;
+    return !modbus_has_pending() && !_modbus_reg_set_expected.not_done;
 }
 
 
@@ -1333,9 +1333,39 @@ static command_response_t _modbus_set_reg_cb(char* args)
     const char* type_str = _modbus_get_type_str(type);
     char reg_desc[MODBUS_REG_DESC_BUF_LEN];
     if (reg)
-        snprintf(reg_desc, MODBUS_REG_DESC_BUF_LEN, "%s(0x%"PRIX8"):%s(0x%"PRIX8") = %.*s:%f", dev->name, dev->unit_id, reg->name, reg_addr, 3, type_str, value);
+    {
+        snprintf
+        (
+            reg_desc,
+            MODBUS_REG_DESC_BUF_LEN,
+            "%.*s(0x%"PRIX8"):%.*s(0x%"PRIX8") = %.*s:%f",
+            MODBUS_NAME_LEN,
+            dev->name,
+            dev->unit_id,
+            MODBUS_NAME_LEN,
+            reg->name,
+            reg_addr,
+            3,
+            type_str,
+            value
+        );
+    }
     else
-        snprintf(reg_desc, MODBUS_REG_DESC_BUF_LEN, "%s(0x%"PRIX8"):0x%"PRIX8" = %.*s:%f", dev->name, dev->unit_id, reg_addr, 3, type_str, value);
+    {
+        snprintf
+        (
+            reg_desc,
+            MODBUS_REG_DESC_BUF_LEN,
+            "%.*s(0x%"PRIX8"):0x%"PRIX8" = %.*s:%f",
+            MODBUS_NAME_LEN,
+            dev->name,
+            dev->unit_id,
+            reg_addr,
+            3,
+            type_str,
+            value
+        );
+    }
     unsigned reg_desc_len = strnlen(reg_desc, MODBUS_REG_DESC_BUF_LEN-1);
     reg_desc[reg_desc_len] = 0;
 
