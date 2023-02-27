@@ -585,7 +585,7 @@ class dev_t(dev_base_t):
         reg     = kwargs.get("reg",     None)
         dev     = kwargs.get("dev",     None)
         value   = kwargs.get("value",   0.  )
-        timeout = kwargs.get("timeout", 2.  )
+        timeout = kwargs.get("timeout", 3.  )
         if dev:
             reg_addr = kwargs["reg_addr"]
             type_    = kwargs["type"]

@@ -235,7 +235,8 @@ class test_framework_t(object):
             return False
         for mb_dev in mb_data.devices:
             for reg in mb_dev.regs:
-                if reg.mb_type_ == "F":
+                # As setting registers only work for holding registers, dont bother for input registers.
+                if reg.func != 3:
                     continue
                 original_value = getattr(self._vosm_conn, reg.name).value
                 new_set_value = original_value + 1
@@ -249,7 +250,7 @@ class test_framework_t(object):
                 self._logger.debug(f"Successfully set {reg.name} from {original_value} to {new_set_value}")
                 new_set_value2 = new_set_value + 1
                 if not self._vosm_conn.modbus_reg_set(dev=mb_dev.name, reg_addr=reg.address, type=reg.mb_type_, value=new_set_value2):
-                    self._logger.error(f"Failed to set the register for {reg.address} = {new_set_value2}")
+                    self._logger.error(f"Failed to set the register for {hex(reg.address)} = {new_set_value2}")
                     return False
                 new_value2 = getattr(self._vosm_conn, reg.name).value
                 if new_set_value2 != new_value2:
