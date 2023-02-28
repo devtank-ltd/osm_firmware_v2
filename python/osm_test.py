@@ -180,7 +180,7 @@ class test_framework_t(object):
                 self._logger.debug(f"DB NO DATA FOR '{measurement_handle}'")
                 return (measurement_handle, measurement_obj, 0, 0)
             else:
-                description = resp
+                description = resp[0]
                 ref = DEFAULT_MODBUS_MATCH_DICT[measurement_handle]
                 #Get threshold by calculating 5% of reference
                 threshold = ref*5 / 100
