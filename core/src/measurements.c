@@ -1394,6 +1394,99 @@ static command_response_t _measurements_get_to_cb(char* args)
 }
 
 
+static const char* measurements_type_to_str(measurements_def_type_t type)
+{
+    static const char modbus_name[]         = MEASUREMENTS_DEF_NAME_MODBUS;
+    static const char pm10_name[]           = MEASUREMENTS_DEF_NAME_PM10;
+    static const char pm25_name[]           = MEASUREMENTS_DEF_NAME_PM25;
+    static const char current_clamp_name[]  = MEASUREMENTS_DEF_NAME_CURRENT_CLAMP;
+    static const char w1_probe_name[]       = MEASUREMENTS_DEF_NAME_W1_PROBE;
+    static const char htu21d_hum_name[]     = MEASUREMENTS_DEF_NAME_HTU21D_HUM;
+    static const char htu21d_tmp_name[]     = MEASUREMENTS_DEF_NAME_HTU21D_TMP;
+    static const char bat_mon_name[]        = MEASUREMENTS_DEF_NAME_BAT_MON;
+    static const char pulse_count_name[]    = MEASUREMENTS_DEF_NAME_PULSE_COUNT;
+    static const char light_name[]          = MEASUREMENTS_DEF_NAME_LIGHT;
+    static const char sound_name[]          = MEASUREMENTS_DEF_NAME_SOUND;
+    static const char fw_version_name[]     = MEASUREMENTS_DEF_NAME_FW_VERSION;
+    static const char ftma_name[]           = MEASUREMENTS_DEF_NAME_FTMA;
+    static const char custom_0_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_0;
+    static const char custom_1_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_1;
+    static const char io_reading_name[]     = MEASUREMENTS_DEF_NAME_IO_READING;
+
+    switch (type)
+    {
+        case MODBUS:
+            return modbus_name;
+        case PM10:
+            return pm10_name;
+        case PM25:
+            return pm25_name;
+        case CURRENT_CLAMP:
+            return current_clamp_name;
+        case W1_PROBE:
+            return w1_probe_name;
+        case HTU21D_HUM:
+            return htu21d_hum_name;
+        case HTU21D_TMP:
+            return htu21d_tmp_name;
+        case BAT_MON:
+            return bat_mon_name;
+        case PULSE_COUNT:
+            return pulse_count_name;
+        case LIGHT:
+            return light_name;
+        case SOUND:
+            return sound_name;
+        case FW_VERSION:
+            return fw_version_name;
+        case FTMA:
+            return ftma_name;
+        case CUSTOM_0:
+            return custom_0_name;
+        case CUSTOM_1:
+            return custom_1_name;
+        case IO_READING:
+            return io_reading_name;
+        default:
+            break;
+    }
+    return NULL;
+}
+
+
+static command_response_t _measurements_get_type_cb(char* args)
+{
+    char* p = skip_space(args);
+    char name[MEASURE_NAME_NULLED_LEN];
+    char* np = strchr(p, ' ');
+    unsigned len;
+    if (!np)
+    {
+        len = strnlen(p, MEASURE_NAME_LEN);
+    }
+    else
+    {
+        len = np - p;
+    }
+    strncpy(name, p, len+1);
+
+    measurements_def_t* def;
+    if (!measurements_get_measurements_def(name, &def, NULL))
+    {
+        log_out("Failed to get measurement details of \"%s\"", p);
+        return COMMAND_RESP_ERR;
+    }
+    const char* type_str = measurements_type_to_str(def->type);
+    if (!type_str)
+    {
+        log_out("Unknown measurement type for '%s' (%"PRIu8")", name, def->type);
+        return COMMAND_RESP_ERR;
+    }
+    log_out("%s: %s", name, type_str);
+    return COMMAND_RESP_OK;
+}
+
+
 static command_response_t _measurements_no_comms_cb(char* args)
 {
     bool enable = strtoul(args, NULL, 10);
@@ -1567,6 +1660,7 @@ struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
         { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },
         { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
         { "get_meas_to",  "Get timeout of measurement",          _measurements_get_to_cb         , false , NULL },
+        { "get_meas_type","Get the type of measurement",         _measurements_get_type_cb       , false , NULL },
         { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
         { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
         { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },
