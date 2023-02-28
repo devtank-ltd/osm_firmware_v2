@@ -296,6 +296,7 @@ class test_framework_t(object):
         if not len(mb_data.devices):
             self._logger.error("No MODBUS devices")
             return False
+        self._logger.info("Running modbus set test...")
         for mb_dev in mb_data.devices:
             for reg in mb_dev.regs:
                 # As setting registers only work for holding registers, dont bother for input registers.
@@ -320,6 +321,7 @@ class test_framework_t(object):
                     self._logger.debug(f"Failed to set {mb_dev.name}:{hex(reg.address)} {reg.mb_type_}. ({new_set_value2} != {new_value2})")
                     return False
                 self._logger.debug(f"Successfully set {mb_dev.name}:{hex(reg.address)} {reg.mb_type_} from {new_set_value} to {new_value2}")
+                self._bool_check(f"Modbus register {reg.name} set test", True, True)
 
         return True
 
@@ -345,8 +347,11 @@ class test_framework_t(object):
                     final_dict.update(resp_dict)
             now = time.time()
         if count:
-            return self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict)
-        return False
+            r = self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict)
+        else:
+            r = False
+        self._logger.info("Measurement loop test comlete.")
+        return r
 
     def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
         passed = True
