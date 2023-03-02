@@ -369,6 +369,11 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_comms_conn(self._on_get_comms_conn_done_cb)
         self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
         self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
+    
+    def _on_get_ftma_specs(self, resp):
+       self.ftma_specs = resp[1]
+       self._load_headers(self._main_fr, "rif", True)
+       return self.ftma_specs
 
     def _on_update_cc_gain_cb(self, resp):
         self.binding_interface.print_cc_gain(self._on_open_cc_cb)
@@ -406,7 +411,10 @@ class config_gui_window_t(Tk):
 
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
-        self._load_headers(self._main_fr, "rif", True)
+        self.meas_headers = []
+        for i in self._sens_meas:
+            self.meas_headers.append(i[0])
+        self.binding_interface.get_ftma_specs(self.meas_headers, self._on_get_ftma_specs)
         return self._sens_meas
 
     def _on_get_comms_conn_done_cb(self, resp):
@@ -445,8 +453,7 @@ class config_gui_window_t(Tk):
 
     def _on_get_interval_min_done_cb(self, resp):
         self._interval_min = resp[1]
-        self._load_headers(self._main_fr, "rif", False)
-
+        # self._load_headers(self._main_fr, "rif", False)
         return self._interval_min
 
     def _tab_changed(self, event, frame, notebook):
@@ -856,7 +863,7 @@ class config_gui_window_t(Tk):
         desc = STD_MEASUREMENTS_DESCS.get(reg, None)
         spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2',
                   'FTA1', 'FTA2', 'FTA3', 'FTA4']
-        if reg in spec_m:
+        if reg in spec_m or reg in self.ftma_specs:
             self._e.configure(cursor='hand2')
         elif desc is None:
             description = self.db.conn.execute(GET_REG_DESC(reg))
@@ -1061,7 +1068,7 @@ class config_gui_window_t(Tk):
                         "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
-                elif self._e.get() == 'FTA1' or self._e.get() == 'FTA2' or self._e.get() == 'FTA3' or self._e.get() == 'FTA4':
+                elif self._e.get() in self.ftma_specs:
                     self._bind_cc = self._e.bind(
                         "<Button-1>", lambda e: self._cal_ftma(e.widget.get()))
                     self._e.configure(disabledforeground="green")
@@ -1297,7 +1304,7 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
         a_lab.grid(column=0, row=1)
 
-        b_lab = Label(self._ftma_window, text="B (Defaults to 0 if left empty):",
+        b_lab = Label(self._ftma_window, text="B (Defaults to 1 if left empty):",
             bg=IVORY, font=FONT)
         b_lab.grid(column=0, row=2)
 
@@ -1353,7 +1360,7 @@ class config_gui_window_t(Tk):
                 b_val = args[0]
                 log_func("Cannot convert coefficient B to a float.")
         else:
-            b_val = 0.
+            b_val = 1.
         if len(args[2]):
             try:
                 c_val = float(args[0])

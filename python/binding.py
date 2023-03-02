@@ -71,8 +71,10 @@ def parse_lora_comms(r_str: str):
 def parse_word(index: int, r_str: str):
     if index >= len(r_str):
         return ""
-    return r_str.split()[index]
-
+    try:
+        return r_str.split()[index]
+    except IndexError:
+        return ""
 
 class dev_child_t(object):
     def __init__(self, parent):
@@ -443,6 +445,19 @@ class dev_t(dev_base_t):
 
     def change_interval(self, meas, val):
         self.do_cmd(f"interval {meas} {val}")
+
+    def get_measurement_handles(self):
+        meas = self.measurements()
+        print(meas)
+
+    def get_ftma_types(self, headers):
+        list_of_ftma = []
+        for head in headers[1]:
+            ftma = self.do_cmd(f"get_meas_type {head}")
+            s = ftma.split(': ')
+            if s[1] == "FTMA":
+                list_of_ftma.append(s[0])
+        return list_of_ftma
 
     def get_meas_timeout(self, meas):
         line = self.do_cmd(f"get_meas_to {meas}")

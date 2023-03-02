@@ -58,6 +58,7 @@ REQ_DEBUG_END       = "REQ_DEBUG_END"
 REQ_DIS_IO          = "REQ_DIS_IO"
 REQ_ACT_IO          = "REQ_ACT_IO"
 REQ_SET_COEFFS      = "REQ_SET_COEFFS"
+REQ_FTMA            = "REQ_FTMA"
 
 logging.basicConfig(
     format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
@@ -103,12 +104,17 @@ class binding_interface_svr_t:
                           REQ_DEBUG_END       : self._req_debug_end,
                           REQ_DIS_IO          : self._req_disable_io,
                           REQ_ACT_IO          : self._req_activate_io,
-                          REQ_SET_COEFFS      : self._req_set_coeffs}
+                          REQ_SET_COEFFS      : self._req_set_coeffs,
+                          REQ_FTMA            : self._req_ftma_specs}
 
         self.serial_obj = None
         self.dev = None
         self.debug_parse = None
         self._alive = True
+    
+    def _req_ftma_specs(self, args):
+        headers = args
+        return self.dev.get_ftma_types(headers)
 
     def _req_set_coeffs(self, args):
         a = args[1]
@@ -384,6 +390,9 @@ class binding_interface_client_t:
 
     def set_coeffs(self, a, b, c, d, meas, answered_cb=None):
         self._basic_query((REQ_SET_COEFFS, a, b, c, d, meas), answered_cb)
+    
+    def get_ftma_specs(self, headers, answered_cb):
+        self._basic_query((REQ_FTMA, headers), answered_cb)
 
     def get_modbus(self, answered_cb):
         self._basic_query((REQ_MODBUS,), answered_cb)
