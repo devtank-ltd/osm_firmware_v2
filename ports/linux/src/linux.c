@@ -844,6 +844,15 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 }
 
 
+static int _linux_get_fd_peek(int fd)
+{
+    int peek = 0;
+    if (ioctl(fd, FIONREAD, &peek) < 0)
+        return -1;
+    return peek;
+}
+
+
 void _linux_iterate(void)
 {
     int ready = poll(pfds, nfds, 1000);
@@ -859,32 +868,64 @@ void _linux_iterate(void)
         if (pfds[i].revents & POLLIN)
         {
             pfds[i].revents &= ~POLLIN;
-            char c;
 
             fd_t* fd_handler = _linux_get_fd_handler(pfds[i].fd);
             if (!fd_handler)
                 linux_error("PTY is NULL pointer");
-            int r;
             switch(fd_handler->type)
             {
                 case LINUX_FD_TYPE_PTY:
-                    r = read(pfds[i].fd, &c, 1);
-                    if (r <= 0)
+                {
+                    int len = _linux_get_fd_peek(pfds[i].fd);
+                    if (len > 1023)
+                        len = 1023;
+                    if (len <= 0)
                         break;
-                    if (r == 1)
+                    if (len == 1)
                     {
-                        unsigned uart = fd_handler->pty.uart;
-                        if (uart != CMD_UART)
-                        {
-                            if (isgraph(c))
-                                linux_port_debug("%s(%u) << '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
-                            else
-                                linux_port_debug("%s(%u) << [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
-                        }
+                        char c;
+                        int r = read(pfds[i].fd, &c, len);
+                        if (r != len)
+                            linux_port_debug("Peak does not equal len");
+                        if (r <= 0)
+                            break;
+                        if (isgraph(c))
+                            linux_port_debug("%s << '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
+                        else
+                            linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
                         if (fd_handler->cb)
-                            fd_handler->cb(uart, &c, 1);
+                            fd_handler->cb(fd_handler->pty.uart, &c, 1);
+                    }
+                    else
+                    {
+                        char buf[1024];
+                        int r = read(pfds[i].fd, buf, len);
+                        if (r != len)
+                            linux_port_debug("Peak does not equal len");
+                        if (r <= 0)
+                            break;
+                        if (fd_handler->cb)
+                            fd_handler->cb(fd_handler->pty.uart, buf, r);
+                        char out_buf[1024];
+                        char* pos = out_buf;
+                        for (int i = 0; i < r; i++)
+                        {
+                            if ((isgraph(buf[i]) || buf[i] == ' ') && buf[i] != 0)
+                            {
+                                *pos = buf[i];
+                                pos++;
+                            }
+                            else
+                            {
+                                snprintf(pos, 1023 + out_buf - pos, "[0x%02"PRIu8"]", buf[i]);
+                                pos += 6;
+                            }
+                        }
+                        *pos = 0;
+                        linux_port_debug("%s << '%s'", fd_handler->name, out_buf);
                     }
                     break;
+                }
                 case LINUX_FD_TYPE_TIMER:
                 {
                     char buf[64];
