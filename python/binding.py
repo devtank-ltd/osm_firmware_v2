@@ -220,6 +220,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
+        time.sleep(0.05)
 
     def read(self):
         try:
@@ -517,6 +518,11 @@ class dev_t(dev_base_t):
             return r[start_pos:]
         debug_print("No response start found.")
         return None
+
+    def read_ftma_coeffs(self, meas):
+        coeffs = self.do_cmd(f"ftma_coeff {meas}")
+        print(coeffs)
+        return coeffs
 
     def measurements(self):
         r = self.do_cmd_multi("measurements")

@@ -26,6 +26,14 @@ from stat import *
 from gui_binding_interface import binding_interface_client_t
 import time
 import subprocess
+import matplotlib
+matplotlib.use('TkAgg')
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg,
+    NavigationToolbar2Tk
+)
 
 MB_DB = modbus_db
 FW_PROCESS = False
@@ -1049,8 +1057,8 @@ class config_gui_window_t(Tk):
                     self._change_on_hover(self._e)
                     self._e.configure(cursor='hand2')
                 elif self._e.get() in self.ftma_specs:
-                    self._bind_cc = self._e.bind(
-                        "<Button-1>", lambda e: self._cal_ftma(e.widget.get()))
+                    self._bind_ft = self._e.bind(
+                        "<Button-1>", lambda e: self.open_ftma(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._e.configure(cursor='hand2')
                     self._change_on_hover(self._e)
@@ -1271,6 +1279,18 @@ class config_gui_window_t(Tk):
         self.binding_interface.do_cmd_multi(cmd_text, self._on_get_cmd_multi_done_cb)
         cmd.delete(0, END)
 
+    def open_ftma(self, meas):
+        self.binding_interface.get_spec_ftma_coeffs(str(meas), self._on_get_ftma_coeffs)
+
+    def _on_get_ftma_coeffs(self, resp):
+        self.coeffs = []
+        d = resp[1].split(': ')
+        meas = d[0].split("'")[1]
+        for i in d[1:]:
+            v = re.findall(r'(\d+\.\d+)', i)
+            self.coeffs.append(v[0])
+        self._cal_ftma(meas)
+
     def _cal_ftma(self, meas):
         self._ftma_window = Toplevel(self.master)
         self._ftma_window.title(f"4-20mA Calibration ({meas})")
@@ -1336,20 +1356,46 @@ class config_gui_window_t(Tk):
                                    activeforeground=IVORY)
         ftma_btn.grid(column=0, row=7, columnspan=2)
 
+        graph_canv = Canvas(self._ftma_window)
+        graph_canv.grid(column=0, row=8, columnspan=2,
+                        padx=(20, 0))
+
+        data = {
+            'A': float(self.coeffs[0]),
+            'B': float(self.coeffs[1]),
+            'C': float(self.coeffs[2]),
+            'D': float(self.coeffs[3])
+        }
+
+        values = data.keys()
+        coeffs = data.values()
+        figure = Figure(figsize=(4, 4), dpi=100)
+        figure_canvas = FigureCanvasTkAgg(figure, graph_canv)
+        axes = figure.add_subplot()
+        axes.bar(values, coeffs)
+        axes.set_title(f'{meas} Coefficients')
+        axes.set_ylabel('mA')
+
+        figure_canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+
     def _send_coeffs(self, name, args, meas):
+        find_name = re.findall("[a-zA-z0-9]+", name)
+        if find_name:
+            find_name = find_name[0]
         if len(name) > 4:
             tkinter.messagebox.showerror(
                 "Error", "Maximum length of name is 4.",
                 parent=self._ftma_window)
             return
-        elif name.isalpha() == False and len(name):
+        elif not find_name:
             tkinter.messagebox.showerror(
                 "Error", "Invalid characters in name",
                 parent=self._ftma_window
                 )
             return
-        elif len(name):
-            self.binding_interface.set_ftma_name(meas, name, self.on_update_ftma_name_cb)
+        elif len(find_name):
+            self.binding_interface.set_ftma_name(meas, find_name, self.on_update_ftma_name_cb)
+            meas = find_name
         if len(args[0]):
             try:
                 a_val = float(args[0])
@@ -1360,7 +1406,7 @@ class config_gui_window_t(Tk):
             a_val = 0.
         if len(args[1]):
             try:
-                b_val = float(args[0])
+                b_val = float(args[1])
             except ValueError:
                 b_val = args[0]
                 log_func("Cannot convert coefficient B to a float.")
@@ -1368,7 +1414,7 @@ class config_gui_window_t(Tk):
             b_val = 1.
         if len(args[2]):
             try:
-                c_val = float(args[0])
+                c_val = float(args[2])
             except ValueError:
                 c_val = args[0]
                 log_func("Cannot convert coefficient C to a float.")
@@ -1376,7 +1422,7 @@ class config_gui_window_t(Tk):
             c_val = 0.
         if len(args[3]):
             try:
-                d_val = float(args[0])
+                d_val = float(args[3])
             except ValueError:
                 d_val = args[0]
                 log_func("Cannot convert coefficient D to a float.")
