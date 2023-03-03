@@ -145,7 +145,9 @@ GET_HEX_REG = lambda hex, reg: '''SELECT id FROM registers
 
 GET_TMP_N = "SELECT name FROM templates"
 
-GET_REG_DESC = lambda reg: "SELECT reg_desc FROM registers WHERE reg_name = '%s'" % reg
+GET_REG_DESC = "SELECT reg_desc FROM registers WHERE reg_name = ?"
+
+GET_MEAS_DESC = "SELECT description FROM measurements WHERE handle = ?"
 
 GET_MEASUREMENT_INFO = "SELECT description, reference, threshold FROM measurements WHERE handle = ?"
 
@@ -170,7 +172,6 @@ CREATE_MEASUREMENTS = lambda handle, desc, ref, thresh: '''
                     (handle, description, reference, threshold)
                     VALUES ('%s', '%s', %f, %f)
                     ''' % (handle, desc, ref, thresh)
-
 
 def generate_db(path_to_db):
     conn = sqlite3.connect(path_to_db)
@@ -216,12 +217,12 @@ def generate_db(path_to_db):
     cur.execute(CREATE_MEASUREMENTS('TEMP', 'Temperature', 20.0, 2.5))
     cur.execute(CREATE_MEASUREMENTS('HUMI', 'Humidity', 50.0, 2.5))
     cur.execute(CREATE_MEASUREMENTS('LGHT', 'Light', 1000.0, 100.0))
-    cur.execute(CREATE_MEASUREMENTS('TMP2', 'One Wire Probe', 25.0625, 0.01))
+    cur.execute(CREATE_MEASUREMENTS('TMP2', 'One wire probe', 25.0625, 0.01))
     cur.execute(CREATE_MEASUREMENTS('PM25', 'PM 2.5', 20.0, 0.0))
     cur.execute(CREATE_MEASUREMENTS('PM10', 'PM 10', 30.0, 0.0))
-    cur.execute(CREATE_MEASUREMENTS('CC1', 'Current Clamp Phase 1', 5000.0, 100.0))
-    cur.execute(CREATE_MEASUREMENTS('CC2', 'Current Clamp Phase 2', 7500.0, 100.0))
-    cur.execute(CREATE_MEASUREMENTS('CC3', 'Current Clamp Phase 3', 10000.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('CC1', 'Current clamp phase 1', 5000.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('CC2', 'Current clamp phase 2', 7500.0, 100.0))
+    cur.execute(CREATE_MEASUREMENTS('CC3', 'Current clamp phase 3', 10000.0, 100.0))
     cur.execute(CREATE_MEASUREMENTS('SND', 'Sound', 10.0, 5.0))
     cur.execute(CREATE_MEASUREMENTS('FW', 'Firmware', 177522043.0, 0.0))
     cur.execute(CREATE_MEASUREMENTS('BAT', 'Battery', 100.0, 0.0))
@@ -229,6 +230,11 @@ def generate_db(path_to_db):
     cur.execute(CREATE_MEASUREMENTS('FTA2', '4-20 mA', 8.0, 0.2))
     cur.execute(CREATE_MEASUREMENTS('FTA3', '4-20 mA', 16.0, 2.0))
     cur.execute(CREATE_MEASUREMENTS('FTA4', '4-20 mA', 20.0, 0.2))
+    cur.execute(CREATE_MEASUREMENTS('FTA4', '4-20 mA', 20.0, 0.2))
+    cur.execute(CREATE_MEASUREMENTS('CNT1', 'Pulsecount 1', 0, 0))
+    cur.execute(CREATE_MEASUREMENTS('CNT2', 'Pulsecount 2', 0, 0))
+    cur.execute(CREATE_MEASUREMENTS('IO04', 'IO pin', 0, 0))
+    cur.execute(CREATE_MEASUREMENTS('IO05', 'IO pin', 0, 0))
     conn.commit()
 
 
@@ -267,6 +273,16 @@ class modb_database_t(object):
                     self.results.append(row)
         return self.results
 
+    def get_meas_description(self, handle):
+        with self.conn as conn:
+            data = conn.execute(GET_MEAS_DESC, (str(handle),))
+        return data.fetchone()
+
+    def get_modbus_reg_desc(self, handle):
+        with self.conn as conn:
+            data = conn.execute(GET_REG_DESC, (str(handle),))
+        return data.fetchone()
+    
     def get_all_info(self, template):
         devices_dict = [
             {
@@ -363,4 +379,4 @@ class modb_database_t(object):
         return data.fetchone()
 
 if __name__ == "__main__":
-    generate_db('/home/marcus/tester.db')
+    generate_db('./config_database/modbus_templates.db')

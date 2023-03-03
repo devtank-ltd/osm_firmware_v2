@@ -31,26 +31,9 @@ MB_DB = modbus_db
 FW_PROCESS = False
 THREAD = threading.Thread
 GET_REG_DESC = MB_DB.GET_REG_DESC
+STD_MEASUREMENTS_DESCS = MB_DB.GET_MEAS_DESC
 
 LINUX_OSM_TTY = "/tmp/osm/UART_DEBUG_slave"
-
-STD_MEASUREMENTS_DESCS = {
-    'FW': 'Firmware Version',
-    'PM10': 'Air Quality (Particles)',
-    'PM25': 'Air Quality (Particles)',
-    'CC1': 'Current Clamp Phase 1',
-    'CC2': 'Current Clamp Phase 2',
-    'CC3': 'Current Clamp Phase 3',
-    'TMP2': 'One Wire Temperature',
-    'TMP3': 'n/a',
-    'TEMP': 'Temperature',
-    'HUMI': 'Humidity',
-    'BAT': 'Battery',
-    'CNT1': 'Pulsecount',
-    'CNT2': 'Pulsecount',
-    'LGHT': 'Light',
-    'SND': 'Sound'
-}
 
 PATH = find_path()
 NAVY = "#292924"
@@ -411,9 +394,7 @@ class config_gui_window_t(Tk):
 
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
-        self.meas_headers = []
-        for i in self._sens_meas:
-            self.meas_headers.append(i[0])
+        self.meas_headers = [i[0] for i in self._sens_meas]
         self.binding_interface.get_ftma_specs(self.meas_headers, self._on_get_ftma_specs)
         return self._sens_meas
 
@@ -860,16 +841,12 @@ class config_gui_window_t(Tk):
         canvas.yview_scroll(-1*(event.delta/120), "units")
 
     def _get_desc(self, reg):
-        desc = STD_MEASUREMENTS_DESCS.get(reg, None)
-        spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2',
-                  'FTA1', 'FTA2', 'FTA3', 'FTA4']
-        if reg in spec_m or reg in self.ftma_specs:
-            self._e.configure(cursor='hand2')
-        elif desc is None:
-            description = self.db.conn.execute(GET_REG_DESC(reg))
-            if desc:
-                desc = description.fetchone()[0]
-        return desc
+        d = self.db.get_meas_description(reg)
+        if d is None:
+            d = self.db.get_modbus_reg_desc(reg)
+        if len(d[0]) > 1:
+            return d[0]
+        return d
 
     def _change_uplink(self, frame, widg):
         if int(widg.get()):
@@ -897,12 +874,13 @@ class config_gui_window_t(Tk):
         tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
                     'Interval in Mins', 'Sample Count')]
         if self._sens_meas:
-            self._sens_meas[:] = [tuple(i) for i in self._sens_meas]
+            pos = None
             for i in range(len(self._sens_meas)):
-                row = list(self._sens_meas[i])
+                row = self._sens_meas[i]
                 for n in range(len(row)):
                     entry = row[n]
-                    pos = entry.find("x")
+                    if n != 0:
+                        pos = entry.find("x")
                     if pos != -1:
                         row[n] = entry[0:pos]
                 row.insert(2, (int(self._interval_min) * int(row[1])))
@@ -984,7 +962,7 @@ class config_gui_window_t(Tk):
                     disabledforeground="black")
                 if j == 1 and i != 0:
                     reg_hover = Hovertip(
-                        self._mbe, self._get_desc(str(self._e.get())))
+                        self._mbe, self._get_desc(str(self._mbe.get())))
             self.mb_entries.append(newrow)
             if i != 0:
                 self._check_mb.append(IntVar())
@@ -1063,15 +1041,18 @@ class config_gui_window_t(Tk):
                         "<Button-1>", lambda e: self._open_ios_w(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
+                    self._e.configure(cursor='hand2')
                 elif self._e.get() == 'CC1' or self._e.get() == 'CC2' or self._e.get() == 'CC3':
                     self._bind_cc = self._e.bind(
                         "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
+                    self._e.configure(cursor='hand2')
                 elif self._e.get() in self.ftma_specs:
                     self._bind_cc = self._e.bind(
                         "<Button-1>", lambda e: self._cal_ftma(e.widget.get()))
                     self._e.configure(disabledforeground="green")
+                    self._e.configure(cursor='hand2')
                     self._change_on_hover(self._e)
 
             self._entries.append(newrow)

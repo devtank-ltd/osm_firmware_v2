@@ -531,8 +531,10 @@ class dev_t(dev_base_t):
         self._children = new_chldren
         r = self.do_cmd_multi('measurements')
         assert r
+        print(r)
         r = r[2:]
         for line in r:
+            print(line.split())
             name, interval, sample_count = line.split()
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
