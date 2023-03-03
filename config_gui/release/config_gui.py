@@ -233,9 +233,9 @@ class config_gui_window_t(Tk):
             self._notebook.add(self._conn_fr, text="Connect",)
             self._notebook.add(self._main_fr, text="Home Page")
             self._notebook.add(
-                self._adv_fr, text='Advanced Config')
+                self._adv_fr, text='Advanced config')
             self._notebook.add(
-                self._modb_fr, text="Modbus Config")
+                self._modb_fr, text="Modbus config")
             self._notebook.add(self._debug_fr,
             text="Debug Mode")
         self._notebook.select(1)
@@ -251,7 +251,7 @@ class config_gui_window_t(Tk):
                                 pady=(0, 50), sticky='E')
         self._load_meas_l = Label(
             self._main_fr,
-            text="Current Measurements on OSM",
+            text="Current measurements on OSM",
             font=FONT_L, bg=IVORY)
         self._load_meas_l.grid(
             column=1, row=5)
@@ -411,7 +411,7 @@ class config_gui_window_t(Tk):
     def _on_get_serial_num_done_cb(self, resp):
         self.ser_op = resp[1]
         self._sensor_name.configure(
-            text="Serial Number - " + self.ser_op,
+            text="Serial number - " + self.ser_op,
             bg=IVORY, font=FONT)
         pass
 
@@ -419,7 +419,7 @@ class config_gui_window_t(Tk):
         fw_version = resp[1]
         self.fw_version = "-".join(fw_version.split("-")[0:2])
         self._fw_version_body.configure(
-            text="Current Firmware Version - " + self.fw_version,
+            text="Current firmware version - " + self.fw_version,
             bg=IVORY, font=FONT)
 
     def _on_get_dev_eui_done_cb(self, resp):
@@ -844,7 +844,7 @@ class config_gui_window_t(Tk):
         d = self.db.get_meas_description(reg)
         if d is None:
             d = self.db.get_modbus_reg_desc(reg)
-        if len(d[0]) > 1:
+        if d != None and len(d[0]) > 1:
             return d[0]
         return d
 
@@ -1149,7 +1149,7 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_midpoint(cc, self._on_get_mp_done_cb)
         self.selected_cc = cc
 
-        cc_val_lab = Label(self._cc_window, text="Set Current Clamp Values",
+        cc_val_lab = Label(self._cc_window, text="Set current clamp values",
             bg=IVORY, font=FONT)
         cc_val_lab.grid(column=1, row=1, pady=10, columnspan=2)
         on_hover = Hovertip(
@@ -1158,12 +1158,12 @@ class config_gui_window_t(Tk):
         self._outer_cc = Combobox(self._cc_window)
         self._outer_cc.grid(column=0, row=2)
         on_hover = Hovertip(
-            self._outer_cc, "Set outer and inner current (Amps/Millivolts).")
+            self._outer_cc, "Set outer and inner current (Amps/millivolts).")
         self._outer_cc['values'] = ('100, 50',
                                     '200, 33'
                                     )
 
-        outer_cc_lab = Label(self._cc_window, text="Amps/Millivolts",
+        outer_cc_lab = Label(self._cc_window, text="Amps/millivolts",
             bg=IVORY, font=FONT)
         outer_cc_lab.grid(column=1, row=2)
         on_hover = Hovertip(
@@ -1195,7 +1195,7 @@ class config_gui_window_t(Tk):
         on_hover = Hovertip(
             mp_entry, "Manually calibrate ADC midpoint. (Default 2048)")
 
-        mp_btn = Button(self._cc_window, text="Set Midpoint",
+        mp_btn = Button(self._cc_window, text="Set midpoint",
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY,
                         command=lambda: self._set_midpoint(mp_entry, cc))
@@ -1277,55 +1277,79 @@ class config_gui_window_t(Tk):
         self._ftma_window.geometry("450x600")
         self._ftma_window.configure(bg=IVORY)
 
-        ftma_lab = Label(self._ftma_window, text="Set Coefficients",
+        name_title = Label(self._ftma_window, text="Change measurement name",
             bg=IVORY, font=FONT)
-        ftma_lab.grid(column=0, row=0, columnspan=2)
+        name_title.grid(column=0, row=0, columnspan=2)
+
+        ftma_lab = Label(self._ftma_window, text="Set coefficients",
+            bg=IVORY, font=FONT)
+        ftma_lab.grid(column=0, row=2, columnspan=2)
 
         a_lab = Label(self._ftma_window, text="A (Defaults to 0 if left empty):",
             bg=IVORY, font=FONT)
-        a_lab.grid(column=0, row=1)
+        a_lab.grid(column=0, row=3)
 
         b_lab = Label(self._ftma_window, text="B (Defaults to 1 if left empty):",
             bg=IVORY, font=FONT)
-        b_lab.grid(column=0, row=2)
+        b_lab.grid(column=0, row=4)
 
         c_lab = Label(self._ftma_window, text="C (Defaults to 0 if left empty):",
             bg=IVORY, font=FONT)
-        c_lab.grid(column=0, row=3)
+        c_lab.grid(column=0, row=5)
 
         d_lab = Label(self._ftma_window, text="D (Defaults to 0 if left empty):",
             bg=IVORY, font=FONT)
-        d_lab.grid(column=0, row=4)
+        d_lab.grid(column=0, row=6)
+
+        name_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        name_entry.grid(column=0, row=1, columnspan=2)
 
         a_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        a_entry.grid(column=1, row=1)
+        a_entry.grid(column=1, row=3)
 
         b_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        b_entry.grid(column=1, row=2)
+        b_entry.grid(column=1, row=4)
 
         c_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        c_entry.grid(column=1, row=3)
+        c_entry.grid(column=1, row=5)
 
         d_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        d_entry.grid(column=1, row=4)
+        d_entry.grid(column=1, row=6)
 
         ftma_btn = Button(self._ftma_window, text="Send",
                                    command=lambda : self._send_coeffs(
-                                   [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()], meas),
+                                    str(name_entry.get()),
+                                    [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()],
+                                    meas),
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    width=20, activebackground="green",
                                    activeforeground=IVORY)
-        ftma_btn.grid(column=0, row=5, columnspan=2)
+        ftma_btn.grid(column=0, row=7, columnspan=2)
 
-    def _send_coeffs(self, args, meas):
+    def _send_coeffs(self, name, args, meas):
+        if len(name) > 4:
+            tkinter.messagebox.showerror(
+                "Error", "Maximum length of name is 4.",
+                parent=self._ftma_window)
+            return
+        elif name.isalpha() == False and len(name):
+            tkinter.messagebox.showerror(
+                "Error", "Invalid characters in name",
+                parent=self._ftma_window
+                )
+            return
+        elif len(name):
+            self.binding_interface.set_ftma_name(meas, name, self.on_update_ftma_name_cb)
         if len(args[0]):
             try:
                 a_val = float(args[0])
@@ -1362,10 +1386,15 @@ class config_gui_window_t(Tk):
             self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
         else:
             tkinter.messagebox.showerror(
-                "Error", "Values must be a valid integer.")
+                "Error", "Values must be a valid integer.",
+                parent=self._ftma_window,
+                )
 
     def on_update_coeffs_cb(self, args):
         self._ftma_window.destroy()
+    
+    def on_update_ftma_name_cb(self, resp):
+        self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
 
     def _pop_lora_entry(self):
         if self.dev_eui:
@@ -1377,7 +1406,7 @@ class config_gui_window_t(Tk):
         img = Image.open(R_LOGO)
         icon = ImageTk.PhotoImage(img)
         self._conn_fr.img_list.append(icon)
-        lora_c_label = Label(frame, text="LoRaWAN Configuration",
+        lora_c_label = Label(frame, text="LoRaWAN configuration",
                              bg=IVORY, font=FONT_L)
         lora_c_label.grid(column=5, row=6, sticky="E", columnspan=2)
 
@@ -1484,7 +1513,7 @@ class config_gui_window_t(Tk):
             frame.img_list.append(new_image)
 
     def main_modbus_w(self):
-        name = Label(self._modb_fr, text="Modbus Device Templates",
+        name = Label(self._modb_fr, text="Modbus device templates",
                      font=FONT, bg=IVORY)
         name.grid(column=1, row=0)
 
@@ -1552,7 +1581,7 @@ class config_gui_window_t(Tk):
         save_template_button.grid(column=2, row=7, sticky=EW)
         tt_save_btn = Hovertip(save_template_button, 'Save all changes.')
 
-        unit_id = Label(self._modb_fr, text="Modbus Registers on Template",
+        unit_id = Label(self._modb_fr, text="Modbus registers on Template",
                         font=FONT, bg=IVORY)
         unit_id.grid(column=1, row=8)
 
@@ -1591,7 +1620,7 @@ class config_gui_window_t(Tk):
         tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down')
 
         self._current_mb = Label(
-            self._modb_fr, text="Current Modbus Settings on OSM", font=FONT, bg=IVORY)
+            self._modb_fr, text="Current modbus settings on OSM", font=FONT, bg=IVORY)
         self._current_mb.grid(column=3, row=0, columnspan=3, sticky=NSEW)
         self.template_list.curselection()
         with self.db.conn:

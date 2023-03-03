@@ -459,6 +459,9 @@ class dev_t(dev_base_t):
                 list_of_ftma.append(s[0])
         return list_of_ftma
 
+    def set_ftma_name(self, name, meas):
+        return self.do_cmd(f"ftma_name {name} {meas}")
+
     def get_meas_timeout(self, meas):
         line = self.do_cmd(f"get_meas_to {meas}")
         if line.startswith(meas):

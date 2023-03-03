@@ -153,6 +153,10 @@ GET_MEASUREMENT_INFO = "SELECT description, reference, threshold FROM measuremen
 
 GET_MODBUS_MEASUREMENT_INFO = "SELECT reg_desc FROM registers WHERE reg_name = ?"
 
+GET_MEAS_ID = "SELECT id FROM measurements WHERE handle = ?"
+
+UPDATE_FTMA_NAME = "UPDATE measurements SET handle = ? WHERE id = ?"
+
 CREATE_TEMPS     = lambda name, desc: "INSERT OR IGNORE INTO templates (name, description) VALUES ('%s', '%s')" % (name, desc)
 
 CREATE_DEVICES   = lambda uid, bo, name, baud, bits, parity, stop_b, binary: '''
@@ -247,6 +251,13 @@ class modb_database_t(object):
         self.path = path
         self.conn = sqlite3.connect(path + '/config_database/modbus_templates.db', check_same_thread=False)
         self.cur = self.conn.cursor()
+    
+    def update_ftma(self, new_handle, old_handle):
+        with self.conn as conn:
+            data = conn.execute(GET_MEAS_ID, (str(old_handle),))
+            id_ = data.fetchone()[0]
+            conn.execute(UPDATE_FTMA_NAME, (str(new_handle), id_))
+            conn.commit()
 
     def get_reg_ids(self, hex_addr, reg_name):
         reg_ids = []
