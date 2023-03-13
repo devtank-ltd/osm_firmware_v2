@@ -123,14 +123,17 @@ class i2c_device_t(object):
                 "w"      : w,
                 "rn"     : rn,
                 "r"      : r}
-"""
+    """
             if self._byte_parts:
                 m = self._read()
                 self._parse_in(m)
             else:
                 line = self._readline()
                 self._parse_line(line)
-"""
+    """
+
+    def return_obj(self):
+        raise NotImplementedError
 
 class pty_dev_t(object):
     def __init__(self, pty, byte_parts=False, logger=None, log_file=None):

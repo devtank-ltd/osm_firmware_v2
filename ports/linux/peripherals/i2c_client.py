@@ -4,6 +4,37 @@
 import socket
 
 
+class i2c_client_t(object):
+    def __init__(self, port):
+        self._port = port
+        self._conn = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self._conn.connect(port)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def transfer(self, addr:int, w:list, r:list):
+        wn = len(w)
+        rn = len(r)
+
+        w_str = ""
+        r_str = ""
+
+        if wn:
+            w_str = "[" + ",".join([f"{wp:02x}" for wp in w]) + "]"
+        if rn:
+            r_str = "[" + ",".join([f"{rp:02x}" for rp in r]) + "]"
+        msg = f"{addr:02x}:{wn:d}{w_str}:{rn}{r_str}".encode()
+        print(msg)
+        self._conn.send(msg)
+
+    def close(self):
+        self._conn.close()
+
+
 def main():
     sock_loc = "/tmp/osm/i2c_socket"
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)

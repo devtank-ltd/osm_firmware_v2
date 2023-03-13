@@ -40,9 +40,10 @@ class socket_server_t(object):
 
     def _new_client_callback(self, sock, __mask):
         conn, addr = sock.accept()
-        self.debug("New client connection FD:%u" % conn.fileno())
+        fd = conn.fileno()
+        self.debug("New client connection FD:%u" % fd)
 
-        self._clients[conn.fileno()] = conn
+        self._clients[fd] = conn
 
         self._selector.register(conn,
                                 selectors.EVENT_READ,
@@ -79,7 +80,10 @@ class socket_server_t(object):
         except KeyError:
             return
         self.info(f"Disconnecting client [fd:{fd}]")
-        self._selector.unregister(client)
+        try:
+            self._selector.unregister(client)
+        except KeyError:
+            self.info(f"Could not properly disconnect client [fd:{fd}].")
         client.close()
 
     def _send_to_client(self, client, msg):

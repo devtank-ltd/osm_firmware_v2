@@ -12,6 +12,8 @@ from basetypes import i2c_device_t
 from i2c_htu21d import i2c_device_htu21d_t
 from i2c_veml7700 import i2c_device_veml7700_t
 
+import command_server
+
 
 """
 This program uses sockets to provide a server for the I2C communication
@@ -48,6 +50,15 @@ class i2c_server_t(socket_server.socket_server_t):
         self._devices = dict(devs)
 
         self.info(f"I2C SERVER INITIALISED WITH {len(self._devices)} DEVICES")
+
+        dev_list = {}
+        for dev in devs.values():
+            dev_list.update(dev.return_obj().format())
+
+        self._command_resp = command_server.fake_devs_command_client_t("I2C", dev_list)
+        self._selector.register(self._command_resp,
+                                selectors.EVENT_READ,
+                                self._command_resp.process)
 
     def _process(self, client, data):
         data = data.decode()

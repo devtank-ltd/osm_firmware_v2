@@ -2,6 +2,7 @@
 
 
 from basetypes import i2c_device_t
+import command_server
 
 
 class i2c_device_htu21d_t(i2c_device_t):
@@ -84,6 +85,22 @@ class i2c_device_htu21d_t(i2c_device_t):
         new_Sh = self._H_2_Sh(uncomp)
         self._cmds[self.HTU21D_HOLD_TRIG_HUMI_MEAS] = (new_Sh << 8) | self._crc(new_Sh)
 
+    def get_temp(self):
+        return self.temperature
+
+    def set_temp(self, new_temp):
+        self.temperature = new_temp
+
+    def get_humi(self):
+        return self.humidity
+
+    def set_humi(self, new_humi):
+        self.humidity = new_humi
+
+    def return_obj(self):
+        params = [command_server.fake_param_t("TEMP", getf=self.get_temp, setf=self.set_temp),
+                  command_server.fake_param_t("HUMI", getf=self.get_humi, setf=self.set_humi)]
+        return command_server.fake_dev_t("HTU21D", params)
 
 
 
