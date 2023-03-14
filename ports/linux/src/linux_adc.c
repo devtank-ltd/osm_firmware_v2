@@ -14,7 +14,7 @@
 #include "persist_config_header_model.h"
 
 
-#define ADCS_CONFIG_FILE                        LINUX_FILE_LOC"adcs_config.json"
+#define ADCS_CONFIG_FILE                        "adcs_config.json"
 
 #define ADCS_WAVE_TYPE_AC_STRING                "AC"
 #define ADCS_WAVE_TYPE_DC_STRING                "DC"
@@ -168,7 +168,9 @@ static bool _adcs_float_from_json(struct json_object * root, const char* name, f
 
 static bool _adcs_load_from_file(void)
 {
-    FILE* adcs_config_file = fopen(ADCS_CONFIG_FILE, "r");
+    char osm_adc_loc[LOCATION_LEN];
+    concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    FILE* adcs_config_file = fopen(osm_adc_loc, "r");
     if (!adcs_config_file)
         return false;
     struct json_object * root = json_object_from_fd(fileno(adcs_config_file));
@@ -242,7 +244,9 @@ static bool _adcs_load_from_file(void)
 
 static void _adcs_remove_file(void)
 {
-    remove(ADCS_CONFIG_FILE);
+    char osm_adc_loc[LOCATION_LEN];
+    concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    remove(osm_adc_loc);
 }
 
 
