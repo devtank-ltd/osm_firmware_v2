@@ -257,6 +257,12 @@ static void _linux_pty_symlink(int32_t fd, char* new_tty_name)
         linux_error("FAIL PTY FIND TTY");
     }
 
+    if (access(new_tty_name, F_OK) == 0)
+    {
+        close(fd);
+        linux_error("FAIL SYMLINK ALREADY EXISTS");
+    }
+
     if (!access(new_tty_name, F_OK) && remove(new_tty_name))
     {
         close(fd);
