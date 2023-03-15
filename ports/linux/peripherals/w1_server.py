@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-
+import os
 import socket_server_base as socket_server
 
 
@@ -111,7 +111,10 @@ def main():
 
     ds18b20 = ds18b20_t(args.temperature)
     devs    = [ds18b20]
-    w1_sock = w1_server_t("/tmp/osm/w1_socket", devs)
+    w1_loc = os.getenv("LOC")
+    if not w1_loc:
+        w1_loc = "/tmp/osm/"
+    w1_sock = w1_server_t(f"{w1_loc}w1_socket", devs)
     w1_sock.run_forever()
     return 0
 

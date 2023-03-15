@@ -150,7 +150,10 @@ def main():
             htu_dev.addr  : htu_dev}
     if not os.path.exists("/tmp/osm"):
         os.mkdir("/tmp/osm")
-    i2c_sock = i2c_server_t("/tmp/osm/i2c_socket", devs)
+    i2c_loc = os.getenv("LOC")
+    if not i2c_loc:
+        i2c_loc = "/tmp/osm/"
+    i2c_sock = i2c_server_t(f"{i2c_loc}i2c_socket", devs)
     i2c_sock.run_forever()
     return 0
 

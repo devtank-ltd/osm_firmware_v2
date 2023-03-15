@@ -2,6 +2,8 @@
 
 LINUXDIR := $(OSM_DIR)/ports/linux
 
+OSM_LOC ?= /tmp/osm/
+
 LINUX_CC = gcc
 
 
@@ -82,14 +84,14 @@ $(1): $$(BUILD_DIR)/$(1)/.complete
 
 
 $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
-	mkdir -p /tmp/osm/
+	mkdir -p $(OSM_LOC)
 	cd $$(OSM_DIR)/python/; ./osm_test.py
 
 $(1)_coverage: $$(BUILD_DIR)/.linux_coverage $$(BUILD_DIR)/$(1)/firmware.elf
 	python3-coverage erase
 	lcov --zerocounters -d $$(BUILD_DIR)/$(1)/
 	lcov --capture --initial -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
-	mkdir -p /tmp/osm/
+	mkdir -p $(OSM_LOC)
 	cd $$(OSM_DIR)/python;\
 	python3-coverage run -a ./osm_test.py;\
 	python3-coverage combine;\
@@ -102,7 +104,7 @@ $(1)_coverage: $$(BUILD_DIR)/.linux_coverage $$(BUILD_DIR)/$(1)/firmware.elf
 
 
 $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
-	mkdir -p /tmp/osm/
+	mkdir -p $(OSM_LOC)
 	cd $$(OSM_DIR)/python; loop=0; while [ "$$?" = "0" ]; do loop=$$(($$loop + 1)); ./osm_test.py --run; done; date; echo "Loops:" $$loop
 
 
