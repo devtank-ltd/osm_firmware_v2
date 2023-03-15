@@ -97,7 +97,10 @@ def main(args):
     if len(args) > 1:
         dev = args[1]
     else:
-        dev = "/tmp/osm/UART_EXT_slave"
+        mb_loc = os.getenv("LOC")
+        if not mb_loc:
+            mb_loc = "/tmp/osm/"
+        dev = f"{mb_loc}UART_EXT_slave"
     modbus_server = modbus_server_t(dev)
     try:
         modbus_server.run_forever()
