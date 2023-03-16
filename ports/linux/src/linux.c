@@ -594,7 +594,7 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
             fd->pty.uart = uart;
             fd->cb = linux_uart_proc;
             _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-            linux_port_debug("UART %u is now %s %s", uart, ret_static_file_location(), pty_name);
+            linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
             _linux_setup_poll();
             return true;
         }

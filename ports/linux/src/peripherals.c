@@ -11,10 +11,12 @@
 #define FAKE_W1_SERVER      "peripherals/w1_server.py"
 #define FAKE_HPM_SERVER     "peripherals/hpm_virtual.py"
 #define FAKE_MODBUS_SERVER  "peripherals/modbus_server.py"
+#define FAKE_CMD_SERVER     "peripherals/command_server.py"
 
 
 #define FAKE_HPM_TTY           "UART_HPM"
 #define FAKE_MODBUS_TTY        "UART_EXT"
+#define FAKE_CMD_TTY           "UART_CMD"
 
 #define FAKE_I2C_SOCKET        "i2c_socket"
 #define FAKE_1W_SOCKET         "w1_socket"
@@ -33,6 +35,10 @@ void peripherals_add_hpm(unsigned uart, unsigned* pid)
     *pid = linux_spawn(FAKE_HPM_SERVER);
 }
 
+void peripherals_add_cmd(unsigned* pid)
+{
+    *pid = linux_spawn(FAKE_CMD_SERVER);
+}
 
 void peripherals_add_w1(unsigned timeout_us, unsigned* pid)
 {

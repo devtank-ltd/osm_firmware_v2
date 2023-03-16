@@ -5,6 +5,7 @@ import json
 import socket
 import select
 import logging
+import os
 
 import socket_server_base
 
@@ -120,8 +121,10 @@ From fake device client:
     }
 }
 """
-
-DEFAULT_COMMAND_PORT    = "/tmp/osm/command_socket"
+loc = os.getenv("LOC")
+if not loc:
+    loc = "/tmp/osm/"
+DEFAULT_COMMAND_PORT    = f"{loc}command_socket"
 CLIENT_TYPE_COMMAND     = "COMMAND"
 CLIENT_TYPE_FAKE_DEVICE = "FAKEDEV"
 
@@ -273,6 +276,7 @@ class command_client_t(object):
         if port is None:
             port = DEFAULT_COMMAND_PORT
         self._conn = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        print(f"port: {port}")
         self._conn.connect(port)
         self.fileno = self._conn.fileno
         if logger is None:
