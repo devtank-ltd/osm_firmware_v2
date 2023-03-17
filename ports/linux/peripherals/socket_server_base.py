@@ -4,7 +4,12 @@ import socket
 import datetime
 import selectors
 
-import basetypes
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+
+try:
+    import basetypes
+except ImportError:
+    from . import basetypes
 
 
 class socket_server_t(object):

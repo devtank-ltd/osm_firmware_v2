@@ -7,7 +7,11 @@ import select
 import logging
 import os
 
-import socket_server_base
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+try:
+    from socket_server_base import socket_server_t
+except ImportError:
+    from .socket_server_base import socket_server_t
 
 """
 Control intro message:
@@ -129,7 +133,7 @@ CLIENT_TYPE_COMMAND     = "COMMAND"
 CLIENT_TYPE_FAKE_DEVICE = "FAKEDEV"
 
 
-class command_server_t(socket_server_base.socket_server_t):
+class command_server_t(socket_server_t):
 
 
     def __init__(self, port=DEFAULT_COMMAND_PORT, logger=None):
@@ -276,7 +280,6 @@ class command_client_t(object):
         if port is None:
             port = DEFAULT_COMMAND_PORT
         self._conn = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        print(f"port: {port}")
         self._conn.connect(port)
         self.fileno = self._conn.fileno
         if logger is None:
@@ -319,7 +322,6 @@ class fake_devs_command_client_t(command_client_t):
         for dev,param_list in mapping.items():
             params = list(param_list)
             devices[dev] = params
-
         intro_msg = {"TYPE"     : CLIENT_TYPE_FAKE_DEVICE,
                      "ID"       : id_,
                      "DEVICES"  : devices}

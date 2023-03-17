@@ -354,6 +354,7 @@ class dev_t(dev_base_t):
             "serial_num": property_t(self,    "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
         self.update_measurements()
+        self.port = port
 
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
