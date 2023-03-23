@@ -875,6 +875,18 @@ static command_response_t _rak3172_join(char* str)
 }
 
 
+static command_response_t _rak3172_conn(char* str)
+{
+    if (rak3172_get_connected())
+    {
+        comms_debug("1 | Connected");
+        return COMMAND_RESP_OK;
+    }
+    comms_debug("0 | Disconnected");
+    return COMMAND_RESP_ERR;
+}
+
+
 struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -886,6 +898,7 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
         { "comms_state",  "Print comms state",           _rak3172_state_cb             , false , NULL },
         { "comms_restart","Comms restart",               _rak3172_restart_cb           , false , NULL },
         { "connect",      "Send an alive packet",        _rak3172_join                 , false , NULL },
+        { "comms_conn",   "Get if connected or not",     _rak3172_conn                 , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

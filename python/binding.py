@@ -369,6 +369,23 @@ class dev_t(dev_base_t):
     def set_serial_num(self, serial_num):
         self.do_cmd("serial_num %s" % serial_num)
 
+    def send_alive_packet(self):
+        return self.do_cmd("connect")
+
+    def reconnect_announce(self, timeout_s:float=10.):
+        self.do_cmd("comms_restart")
+        timeout_s = 10
+        end_time = time.monotonic() + timeout_s
+        connected = self.comms_conn.value
+        while not connected:
+            if time.monotonic() > end_time:
+                raise Exception("Timeout reached, could not confirm send.")
+            time_left = end_time - time.monotonic()
+            sleep_time = 0.5 if time_left > 0.5 else time_left
+            time.sleep(sleep_time)
+            connected = self.comms_conn.value
+        self.send_alive_packet()
+
     @property
     def interval_mins(self):
         r = self.do_cmd_multi("interval_mins")

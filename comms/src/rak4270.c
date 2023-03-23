@@ -1037,6 +1037,18 @@ void rak4270_loop_iteration(void)
 }
 
 
+static command_response_t _rak4270_conn(char* str)
+{
+    if (rak4270_get_connected())
+    {
+        comms_debug("1 | Connected");
+        return COMMAND_RESP_OK;
+    }
+    comms_debug("0 | Disconnected");
+    return COMMAND_RESP_ERR;
+}
+
+
 static command_response_t _rak4270_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
@@ -1059,6 +1071,7 @@ struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] =
     {
         { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
+        { "comms_conn",   "Get if connected or not",     _rak4270_conn                  , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
