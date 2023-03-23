@@ -200,7 +200,6 @@ static rak4270_backup_msg_t      _rak4270_backup_message                  = {.ba
 static error_code_t         _rak4270_error_code                      = {0, false};
 static char                 _rak4270_cmd_ascii[CMD_LINELEN]          = "";
 static uint16_t             _next_fw_chunk_id                   = 0;
-static command_response_t   _rak4270_join(char* str);
 
 static uint16_t             _rak4270_packet_max_size                  = RAK4270_PAYLOAD_MAX_DEFAULT;
 
@@ -1060,7 +1059,6 @@ struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] =
     {
         { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
-        { "connect",      "Send an alive packet",        _rak4270_join                  , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
@@ -1069,11 +1067,5 @@ struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 void rak4270_power_down(void)
 {
     _rak4270_chip_off();
-}
-
-static command_response_t _rak4270_join(char* str)
-{
-    _rak4270_send_alive();
-    return COMMAND_RESP_OK;
 }
 
