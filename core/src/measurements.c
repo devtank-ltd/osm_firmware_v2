@@ -1358,9 +1358,15 @@ static command_response_t _measurements_enable_cb(char *args)
 static command_response_t _measurements_get_cb(char* args)
 {
     char * p = skip_space(args);
+    char name[MEASURE_NAME_NULLED_LEN];
+    unsigned len = strnlen(p, MEASURE_NAME_LEN);
+    char* end_first_word = strchr(p, ' ');
+    if (end_first_word)
+        len = end_first_word - p;
+    strncpy(name, p, len);
     measurements_reading_t reading;
     measurements_value_type_t type;
-    if (!measurements_get_reading(p, &reading, &type))
+    if (!measurements_get_reading(name, &reading, &type))
     {
         log_out("Failed to get measurement reading.");
         return COMMAND_RESP_ERR;
@@ -1371,7 +1377,7 @@ static command_response_t _measurements_get_cb(char* args)
         log_out("Could not convert the reading to a string.");
         return COMMAND_RESP_ERR;
     }
-    log_out("%s: %s", p, text);
+    log_out("%s: %s", name, text);
     return COMMAND_RESP_OK;
 }
 
