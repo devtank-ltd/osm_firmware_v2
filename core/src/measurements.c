@@ -1364,6 +1364,7 @@ static command_response_t _measurements_get_cb(char* args)
     if (end_first_word)
         len = end_first_word - p;
     strncpy(name, p, len);
+    name[len] = 0;
     measurements_reading_t reading;
     measurements_value_type_t type;
     if (!measurements_get_reading(name, &reading, &type))
