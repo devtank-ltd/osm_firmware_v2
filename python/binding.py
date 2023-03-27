@@ -354,7 +354,10 @@ class dev_t(dev_base_t):
         super().__init__(port)
         line = self.do_cmd("count")
         debug_print(f"LINE '{line}'")
-        self._io_count = int(line.split()[-1])
+        try:
+            self._io_count = int(line.split()[-1])
+        except IndexError:
+            debug_print("Cannot query OSM, is it turned on?")
         self._children = {
             "ios"       : ios_t(self, self._io_count),
             "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
