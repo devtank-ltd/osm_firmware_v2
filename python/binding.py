@@ -340,6 +340,14 @@ class dev_base_t(object):
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
         self.fileno = self._ll.fileno
 
+    def drain(self):
+        while True:
+            r = select.select([self],[],[],0)
+            if r[0]:
+                self._ll.read()
+            else:
+                break
+
 
 class dev_t(dev_base_t):
     def __init__(self, port):
