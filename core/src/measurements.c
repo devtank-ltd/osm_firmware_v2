@@ -1238,7 +1238,7 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     measurements_debug("Waiting for collection.");
     info.func_success = false;
     init_time = get_since_boot_ms();
-    bool collect_success = main_loop_iterate_for(data->collection_time_cache/2 + time_remaining, _measurements_get_reading_collection, &info);
+    bool collect_success = main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info);
 
     time_taken = since_boot_delta(get_since_boot_ms(), init_time);
     time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
