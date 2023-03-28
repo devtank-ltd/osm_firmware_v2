@@ -380,6 +380,9 @@ class dev_t(dev_base_t):
     def set_serial_num(self, serial_num):
         self.do_cmd("serial_num %s" % serial_num)
 
+    def enable_pulsecount(self, count:int):
+        self.do_cmd(f"en_pulse {count} B U")
+
     def send_alive_packet(self):
         return self.do_cmd("connect")
 
