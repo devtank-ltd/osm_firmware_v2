@@ -1294,7 +1294,7 @@ class config_gui_window_t(Tk):
     def _cal_ftma(self, meas):
         self._ftma_window = Toplevel(self.master)
         self._ftma_window.title(f"4-20mA Calibration ({meas})")
-        self._ftma_window.geometry("450x600")
+        self._ftma_window.geometry("600x650")
         self._ftma_window.configure(bg=IVORY)
 
         name_title = Label(self._ftma_window, text="Change measurement name",
@@ -1305,21 +1305,21 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
         ftma_lab.grid(column=0, row=2, columnspan=2)
 
-        a_lab = Label(self._ftma_window, text="A (Defaults to 0 if left empty):",
+        a_lab = Label(self._ftma_window, text="A (Default 0):",
             bg=IVORY, font=FONT)
-        a_lab.grid(column=0, row=3)
+        a_lab.grid(column=0, row=3, sticky=E)
 
-        b_lab = Label(self._ftma_window, text="B (Defaults to 1 if left empty):",
+        b_lab = Label(self._ftma_window, text="B (Default 1):",
             bg=IVORY, font=FONT)
-        b_lab.grid(column=0, row=4)
+        b_lab.grid(column=0, row=4, sticky=E)
 
-        c_lab = Label(self._ftma_window, text="C (Defaults to 0 if left empty):",
+        c_lab = Label(self._ftma_window, text="C (Default 0):",
             bg=IVORY, font=FONT)
-        c_lab.grid(column=0, row=5)
+        c_lab.grid(column=0, row=5, sticky=E)
 
-        d_lab = Label(self._ftma_window, text="D (Defaults to 0 if left empty):",
+        d_lab = Label(self._ftma_window, text="D (Default 0):",
             bg=IVORY, font=FONT)
-        d_lab.grid(column=0, row=6)
+        d_lab.grid(column=0, row=6, sticky=E)
 
         name_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
@@ -1329,22 +1329,22 @@ class config_gui_window_t(Tk):
         a_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        a_entry.grid(column=1, row=3)
+        a_entry.grid(column=1, row=3, sticky=W)
 
         b_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        b_entry.grid(column=1, row=4)
+        b_entry.grid(column=1, row=4, sticky=W)
 
         c_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        c_entry.grid(column=1, row=5)
+        c_entry.grid(column=1, row=5, sticky=W)
 
         d_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        d_entry.grid(column=1, row=6)
+        d_entry.grid(column=1, row=6, sticky=W)
 
         ftma_btn = Button(self._ftma_window, text="Send",
                                    command=lambda : self._send_coeffs(
@@ -1357,8 +1357,7 @@ class config_gui_window_t(Tk):
         ftma_btn.grid(column=0, row=7, columnspan=2)
 
         graph_canv = Canvas(self._ftma_window)
-        graph_canv.grid(column=0, row=8, columnspan=2,
-                        padx=(20, 0))
+        graph_canv.grid(column=0, row=8, columnspan=2)
 
         data = {
             'A': float(self.coeffs[0]),
@@ -1366,16 +1365,19 @@ class config_gui_window_t(Tk):
             'C': float(self.coeffs[2]),
             'D': float(self.coeffs[3])
         }
+        milliamps = range(4,21)
+        output = []
+        for i in milliamps:
+            y = (i*data['B']) + ((i*data['C']) *  (i*data['C'])) + ((i*data['D']) *  (i*data['D']) *  (i*data['D']))
+            output.append(y)
 
-        values = data.keys()
-        coeffs = data.values()
-        figure = Figure(figsize=(4, 4), dpi=100)
+        figure = Figure(figsize=(6, 4), dpi=100)
         figure_canvas = FigureCanvasTkAgg(figure, graph_canv)
         axes = figure.add_subplot()
-        axes.bar(values, coeffs)
-        axes.set_title(f'{meas} Coefficients')
-        axes.set_ylabel('mA')
-
+        axes.plot(milliamps, output)
+        axes.set_title("y = A + Bx + Cx2 + Dx3")
+        axes.set_ylabel('Output')
+        axes.set_xlabel('mA')
         figure_canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
 
     def _send_coeffs(self, name, args, meas):
@@ -1387,7 +1389,7 @@ class config_gui_window_t(Tk):
                 "Error", "Maximum length of name is 4.",
                 parent=self._ftma_window)
             return
-        elif not find_name:
+        elif not find_name and name:
             tkinter.messagebox.showerror(
                 "Error", "Invalid characters in name",
                 parent=self._ftma_window
@@ -1405,11 +1407,14 @@ class config_gui_window_t(Tk):
         else:
             a_val = 0.
         if len(args[1]):
-            try:
-                b_val = float(args[1])
-            except ValueError:
-                b_val = args[0]
-                log_func("Cannot convert coefficient B to a float.")
+            if args[1] == '0':
+                b_val = 1.
+            else:
+                try:
+                    b_val = float(args[1])
+                except ValueError:
+                    b_val = args[0]
+                    log_func("Cannot convert coefficient B to a float.")
         else:
             b_val = 1.
         if len(args[2]):
