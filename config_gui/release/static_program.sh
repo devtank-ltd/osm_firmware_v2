@@ -21,7 +21,7 @@ users=$(fuser /dev/$dev 2>/dev/null)
 cleanup()
 {
   echo "Failed to write the firmware."
-  #rm ${bootloader} ${firmware}
+  rm ${bootloader} ${firmware}
   exit -1
 }
 

@@ -28,11 +28,9 @@ import time
 import subprocess
 import matplotlib
 matplotlib.use('TkAgg')
-
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg,
-    NavigationToolbar2Tk
+    FigureCanvasTkAgg
 )
 
 MB_DB = modbus_db
@@ -90,7 +88,11 @@ class config_gui_window_t(Tk):
     def __init__(self):
         super().__init__()
         signal.signal(signal.SIGINT, handle_exit)
-        self.db = modb_database_t(modbus_db.find_path())
+        log_func(f"current path: {PATH}")
+        try:
+            self.db = modb_database_t(PATH)
+        except Exception as e:
+            log_func(f"Could not connect to db: {e}")
         self._modb_funcs = modbus_funcs_t(self.db)
         self._connected = False
         self._changes = False
@@ -495,7 +497,7 @@ class config_gui_window_t(Tk):
         self._cmd = None
         try:
             self._cmd = subprocess.Popen(
-                ["sudo", "./" + PATH + "/static_program.sh", selected], shell=False)
+                ["sudo", PATH + "/static_program.sh", selected], shell=False)
         except Exception as e:
             self._stop()
             traceback.print_exc()
