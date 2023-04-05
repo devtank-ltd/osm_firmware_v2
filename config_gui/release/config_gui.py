@@ -789,7 +789,7 @@ class config_gui_window_t(Tk):
         self._debug_first_fr.columnconfigure(0, weight=1)
 
         if self._sens_meas:
-            for m in self._sens_meas:
+            for m in self._sens_meas[1::]:
                 fw = [m[0]]
                 fw.insert(1, 0)
                 meas.append(fw)
