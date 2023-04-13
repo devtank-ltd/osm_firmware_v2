@@ -381,7 +381,7 @@ class dev_t(dev_base_t):
         self.do_cmd("serial_num %s" % serial_num)
 
     def enable_pulsecount(self, count:int):
-        self.do_cmd(f"en_pulse {count} B U")
+        self.do_cmd(f"en_pulse {count} R U")
 
     def send_alive_packet(self):
         return self.do_cmd("connect")
@@ -394,7 +394,8 @@ class dev_t(dev_base_t):
         connected = self.comms_conn.value
         while not connected:
             if time.monotonic() > end_time:
-                raise Exception("Timeout reached, could not confirm send.")
+                self._log("Timeout reached, could not confirm send.")
+                return False
             time_left = end_time - time.monotonic()
             sleep_time = 0.5 if time_left > 0.5 else time_left
             time.sleep(sleep_time)
