@@ -406,7 +406,8 @@ class command_command_client_t(command_client_t):
         resp_json = resp_json.decode()
         resp = json.loads(resp_json)
         get_items = resp.get("GET", {})
-        return list(get_items.values())[0]
+        if get_items:
+            return list(get_items.values())[0]
 
     def set_blocking(self, dev_name:str, val_dict:dict, timeout:float=0.1):
         msg_dict = {"SET": {dev_name: val_dict}}
