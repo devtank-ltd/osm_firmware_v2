@@ -538,13 +538,13 @@ class dev_t(dev_base_t):
             if not isinstance(child, measurement_t):
                 new_chldren[key] = child
         self._children = new_chldren
-        r = self.do_cmd_multi('measurements')
+        r = self.measurements()
         assert r
+        if r[0] == ['Name', 'Interval', 'Sample Count']:
+            r = r[1:]
         print(r)
-        r = r[2:]
         for line in r:
-            print(line.split())
-            name, interval, sample_count = line.split()
+            name, interval, sample_count = line
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
             new_measurement = measurement_t(self, name, interval, sample_count)
