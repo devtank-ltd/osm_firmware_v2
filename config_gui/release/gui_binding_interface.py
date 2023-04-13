@@ -223,7 +223,7 @@ class binding_interface_svr_t:
         self.io.disable_io()
 
     def _req_activate_io(self, args):
-        self.io.activate_io(args[1], args[2])
+        self.io.activate_io(args[1], args[2], args[3])
 
     def _request_change_int(self, args):
         meas = args[1]
@@ -470,8 +470,8 @@ class binding_interface_client_t:
     def disable_io(self, answered_cb=None):
         self._basic_query((REQ_DIS_IO,), answered_cb)
 
-    def activate_io(self, inst, pullup, answered_cb=None):
-        self._basic_query((REQ_ACT_IO, inst, pullup), answered_cb)
+    def activate_io(self, inst, rise, pullup, answered_cb=None):
+        self._basic_query((REQ_ACT_IO, inst, rise, pullup), answered_cb)
 
     def save(self, answered_cb=None):
         self._basic_query((REQ_SAVE,), answered_cb)

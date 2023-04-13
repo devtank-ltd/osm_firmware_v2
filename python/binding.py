@@ -272,9 +272,9 @@ class io_t(dev_child_t):
     def configure(self, is_input: bool, bias: str):
         self.parent.configure_io(self._index, is_input, bias)
 
-    def activate_io(self, meas, pull):
-        #Enabling one wire or pulsecount e.g. "en_w1 4 U"
-        self.parent.do_cmd(f"en_{meas} {self._index} {pull}")
+    def activate_io(self, meas, rise, pull):
+        #Enabling one wire or pulsecount e.g. "en_w1 1 U"
+        self.parent.do_cmd(f"en_{meas} {self._index} {rise} {pull}")
 
     def disable_io(self):
         self.parent.do_cmd(f"io {self._index} : I N")
@@ -286,14 +286,14 @@ class io_t(dev_child_t):
             return None
         pin_is = line[used_pos:].split()[1]
         if pin_is == "PLSCNT":
-            if self._index == 4:
+            if self._index == 1:
                 return "CNT1"
-            elif self._index == 5:
+            elif self._index == 2:
                 return "CNT2"
         elif pin_is == "W1":
-            if self._index == 4:
+            if self._index == 1:
                 return "TMP2"
-            elif self._index == 5:
+            elif self._index == 2:
                 return "TMP3"
 
     def active_pull(self):

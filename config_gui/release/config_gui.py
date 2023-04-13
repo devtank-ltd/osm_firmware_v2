@@ -646,6 +646,10 @@ class config_gui_window_t(Tk):
             return 'Pulsecount'
 
     def on_get_ios_val(self, resp):
+        self._rise_fall = Combobox(self.ios_page)
+        self._rise_fall.pack()
+        self._rise_fall['values'] = ('Rise', 'Fall', 'Both')
+        self._rise_fall.set('Rise')
         pin_obj = None
         pin_is = resp[1][0]
         pull = resp[1][1]
@@ -693,9 +697,9 @@ class config_gui_window_t(Tk):
 
     def _get_ios_pin_obj(self, meas):
         if meas == "TMP2" or meas == "CNT1":
-            self.binding_interface.get_ios(4, self.on_get_ios_val)
+            self.binding_interface.get_ios(1, self.on_get_ios_val)
         elif meas == "TMP3" or meas == "CNT2":
-            self.binding_interface.get_ios(5, self.on_get_ios_val)
+            self.binding_interface.get_ios(2, self.on_get_ios_val)
         return None
 
     def _set_ios_label(self, meas, pin_obj, pin_is):
@@ -717,6 +721,13 @@ class config_gui_window_t(Tk):
         log_func(f"User attempting to {cmd} IO for {meas}")
         inst = self._get_ios_meas_inst(meas)
         desc = self._get_ios_meas_desc(meas)
+        rise = self._rise_fall.get()
+        if rise == 'Rise':
+            rise = 'R'
+        elif rise == 'Fall':
+            rise = 'F'
+        else:
+            rise = 'B'
         if meas.startswith('CNT'):
             if meas == "CNT2":
                 if self._up_d_non.get():
@@ -739,7 +750,7 @@ class config_gui_window_t(Tk):
             # check if user is trying to overwrite existing io
             if pin_is:
                 self.binding_interface.disable_io()
-            self.binding_interface.activate_io(inst, pullup)
+            self.binding_interface.activate_io(inst, rise, pullup)
         elif cmd == 'disable':
             # disable io
             self.binding_interface.disable_io()
