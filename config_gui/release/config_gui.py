@@ -362,7 +362,7 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_comms_conn(self._on_get_comms_conn_done_cb)
         self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
         self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
-    
+
     def _on_get_ftma_specs(self, resp):
        self.ftma_specs = resp[1]
        self._load_headers(self._main_fr, "rif", True)
@@ -373,7 +373,6 @@ class config_gui_window_t(Tk):
 
     def _on_get_cc_gain_cb(self, resp):
         self.cc_gain = resp[1]
-        # self._fill_cc_term()
         return self.cc_gain
 
     def _on_open_cc_cb(self, resp):
@@ -444,7 +443,6 @@ class config_gui_window_t(Tk):
 
     def _on_get_interval_min_done_cb(self, resp):
         self._interval_min = resp[1]
-        # self._load_headers(self._main_fr, "rif", False)
         return self._interval_min
 
     def _tab_changed(self, event, frame, notebook):
@@ -1456,7 +1454,7 @@ class config_gui_window_t(Tk):
 
     def on_update_coeffs_cb(self, args):
         self._ftma_window.destroy()
-    
+
     def on_update_ftma_name_cb(self, resp):
         self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
 
@@ -1572,7 +1570,6 @@ class config_gui_window_t(Tk):
         if new_height > 0 and new_width > 0:
             image = img.resize((new_width, new_height))
             new_image = ImageTk.PhotoImage(image)
-            # canv.create_image(0, 0, image=new_image, anchor="nw")
             label.configure(image=new_image)
             frame.img_list.append(new_image)
 
