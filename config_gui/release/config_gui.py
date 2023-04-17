@@ -34,11 +34,8 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg
 )
 
-MB_DB = modbus_db
 FW_PROCESS = False
 THREAD = threading.Thread
-GET_REG_DESC = MB_DB.GET_REG_DESC
-STD_MEASUREMENTS_DESCS = MB_DB.GET_MEAS_DESC
 
 LINUX_OSM_TTY = "/tmp/osm/UART_DEBUG_slave"
 
@@ -56,9 +53,6 @@ FONT = ('Arial', 11, 'bold')
 FONT_L = ('Arial', 14, 'bold')
 FONT_XL = ('Arial', 20, 'bold')
 FONT_XXL = ('Karumbi', 35, 'bold')
-GET_TMP_N = MB_DB.GET_TMP_N
-GET_TEMP_ID = MB_DB.GET_TEMP_ID
-GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
 ICONS_T   =    PATH + "/osm_pictures/logos/icons-together.png"
 DVT_IMG   =    PATH + "/osm_pictures/logos/OSM+Powered.png"
 OSM_1     =    PATH + "/osm_pictures/logos/lora-osm.png"
@@ -1683,7 +1677,7 @@ class config_gui_window_t(Tk):
         self._current_mb.grid(column=3, row=0, columnspan=3, sticky=NSEW)
         self.template_list.curselection()
         with self.db.conn:
-            data = self.db.cur.execute(GET_TMP_N)
+            data = self.db.cur.execute(*modbus_db.GET_TMP_N)
             for row in data:
                 dev = ''.join(row)
                 self.template_list.insert(0, dev)
@@ -1745,7 +1739,7 @@ class config_gui_window_t(Tk):
         index = selection[0]
         chosen_template = temp_list.get(index)
         chosen_del = None
-        chosen_del_temp = self.db.cur.execute(GET_TEMP_ID(chosen_template))
+        chosen_del_temp = self.db.cur.execute(*modbus_db.GET_TEMP_ID(chosen_template))
         does_exist = chosen_del_temp.fetchone()
         if does_exist:
             chosen_del = does_exist[0]
@@ -1993,7 +1987,7 @@ class config_gui_window_t(Tk):
         log_func("User attempting to save template..")
         uid_list = []
         dev_list = []
-        uids = self.db.cur.execute(GET_UNIT_IDS)
+        uids = self.db.cur.execute(*modbus_db.GET_UNIT_IDS)
         for uid in uids:
             uid_list.append(uid)
             dev_list.append(uid[1])
