@@ -26,6 +26,7 @@ from stat import *
 from gui_binding_interface import binding_interface_client_t
 import time
 import subprocess
+import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.figure import Figure
@@ -1370,23 +1371,17 @@ class config_gui_window_t(Tk):
         graph_canv = Canvas(self._ftma_window)
         graph_canv.grid(column=0, row=8, columnspan=2)
 
-        data = {
-            'A': float(self.coeffs[0]),
-            'B': float(self.coeffs[1]),
-            'C': float(self.coeffs[2]),
-            'D': float(self.coeffs[3])
-        }
-        milliamps = range(4,21)
-        output = []
-        for i in milliamps:
-            y = (i*data['B']) + ((i*data['C']) *  (i*data['C'])) + ((i*data['D']) *  (i*data['D']) *  (i*data['D']))
-            output.append(y)
+        milliamps = np.arange(4,21)
+        output = self.coeffs[0] + \
+                 self.coeffs[1] * milliamps + \
+                 self.coeffs[2] * milliamps ** 2 + \
+                 self.coeffs[3] * milliamps ** 3
 
         figure = Figure(figsize=(6, 4), dpi=100)
         figure_canvas = FigureCanvasTkAgg(figure, graph_canv)
         axes = figure.add_subplot()
         axes.plot(milliamps, output)
-        axes.set_title("y = A + Bx + Cx2 + Dx3")
+        axes.set_title("y = A + Bx + Cx² + Dx³")
         axes.set_ylabel('Output')
         axes.set_xlabel('mA')
         figure_canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
