@@ -542,7 +542,6 @@ class dev_t(dev_base_t):
         assert r
         if r[0] == ['Name', 'Interval', 'Sample Count']:
             r = r[1:]
-        print(r)
         for line in r:
             name, interval, sample_count = line
             interval=int(interval.split('x')[0])
