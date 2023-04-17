@@ -1439,7 +1439,10 @@ class config_gui_window_t(Tk):
                 log_func("Cannot convert coefficient D to a float.")
         else:
             d_val = 0.
-        if type(a_val) == float and type(b_val) == float and type(c_val) == float and type(d_val) == float:
+        if  isinstance(a_val, float) and \
+            isinstance(b_val, float) and \
+            isinstance(c_val, float) and \
+            isinstance(d_val, float):
             self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
         else:
             tkinter.messagebox.showerror(
@@ -2291,7 +2294,9 @@ class config_gui_window_t(Tk):
         regs = []
         row = []
         for child in self._add_regs_window.children.values():
-            if type(child) == Entry and child.get() or type(child) == Combobox and child.get():
+            if isinstance(child, Entry) or isinstance(child, Combobox):
+                if not child.get():
+                    continue
                 val = child.get()
                 row.append(val)
                 if len(row) % 5 == 0:
