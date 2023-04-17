@@ -61,7 +61,7 @@ def main():
     hpm_loc = os.getenv("LOC")
     if not hpm_loc:
         hpm_loc = "/tmp/osm/"
-    DEFAULT_VIRTUAL_HPM_PATH = f"{hpm_loc}UART_HPM_slave"
+    DEFAULT_VIRTUAL_HPM_PATH = os.path.join(hpm_loc, "UART_HPM_slave")
 
     def get_args():
         parser = argparse.ArgumentParser(description='Virtual HPM.' )

@@ -153,7 +153,8 @@ def main():
     i2c_loc = os.getenv("LOC")
     if not i2c_loc:
         i2c_loc = "/tmp/osm/"
-    i2c_sock = i2c_server_t(f"{i2c_loc}i2c_socket", devs)
+    path = os.path.join(i2c_loc, "i2c_socket")
+    i2c_sock = i2c_server_t(path, devs)
     i2c_sock.run_forever()
     return 0
 
