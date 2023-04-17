@@ -692,7 +692,6 @@ void platform_init(void)
         _linux_in_debug = true;
         linux_port_debug("Enabled Linux Debug");
     }
-    ret_static_file_location();
 
     fprintf(stdout, "-------------\n");
     fprintf(stdout, "Process ID: %"PRIi32"\n", getpid());
