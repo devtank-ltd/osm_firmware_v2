@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-
+import os
 import socket_server_base as socket_server
 
 
@@ -14,7 +14,7 @@ DS18B20_DEFAULT_TEMPERATURE     = 25.0625
 
 
 
-class ds18b20_t(object):    
+class ds18b20_t(object):
     def __init__(self, temperature=DS18B20_DEFAULT_TEMPERATURE, logger=None):
         self._temperature = temperature
         self._qd_temperature = None
@@ -111,7 +111,11 @@ def main():
 
     ds18b20 = ds18b20_t(args.temperature)
     devs    = [ds18b20]
-    w1_sock = w1_server_t("/tmp/osm/w1_socket", devs)
+    w1_loc = os.getenv("LOC")
+    if not w1_loc:
+        w1_loc = "/tmp/osm/"
+    path = os.path.join(w1_loc, "w1_socket")
+    w1_sock = w1_server_t(path, devs)
     w1_sock.run_forever()
     return 0
 

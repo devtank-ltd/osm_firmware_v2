@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import basetypes
 
 
@@ -58,8 +58,10 @@ class hpm_dev_t(basetypes.pty_dev_t):
 
 def main():
     import argparse
-
-    DEFAULT_VIRTUAL_HPM_PATH = "/tmp/osm/UART_HPM_slave"
+    hpm_loc = os.getenv("LOC")
+    if not hpm_loc:
+        hpm_loc = "/tmp/osm/"
+    DEFAULT_VIRTUAL_HPM_PATH = os.path.join(hpm_loc, "UART_HPM_slave")
 
     def get_args():
         parser = argparse.ArgumentParser(description='Virtual HPM.' )

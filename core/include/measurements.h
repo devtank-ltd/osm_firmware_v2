@@ -40,6 +40,7 @@ typedef struct
     void                            (* acked_cb)(char* name);                                       // Function to tell subsystem measurement was successfully sent.
     measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
     void                            (* enable_cb)(char* name, bool enabled);                        // Function to inform measurement if active or not.
+    bool                            (* is_enabled_cb)(char* name);                                  // Function to get if it is already enabled.
     measurements_value_type_t       (* value_type_cb)(char* name);                                  // Function to inform measurement of the value type.
 } measurements_inf_t;
 

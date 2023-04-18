@@ -715,6 +715,33 @@ void rak3172_loop_iteration(void)
 }
 
 
+void _rak3172_send_alive(void)
+{
+    if (!rak3172_send_ready())
+    {
+        comms_debug("Attempted to send alive packet, not in idle state");
+        return;
+    }
+
+    char send_packet[RAK3172_MSG_USEND_HEADER_LEN];
+
+    unsigned len = snprintf(
+        send_packet,
+        RAK3172_MSG_USEND_HEADER_LEN-1,
+        RAK3172_MSG_USEND_HEADER_FMT,
+        _rak3172_get_port(),
+        1,
+        RAK3172_NB_TRIALS);
+
+    send_packet[len] = 0;
+
+    comms_debug("Sending an 'is alive' packet.");
+    _rak3172_write(send_packet);
+    _rak3172_write("1234\r\n");
+    return;
+}
+
+
 static command_response_t _rak3172_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
@@ -841,6 +868,25 @@ static command_response_t _rak3172_restart_cb(char* args)
 }
 
 
+static command_response_t _rak3172_join(char* str)
+{
+    _rak3172_send_alive();
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _rak3172_conn(char* str)
+{
+    if (rak3172_get_connected())
+    {
+        comms_debug("1 | Connected");
+        return COMMAND_RESP_OK;
+    }
+    comms_debug("0 | Disconnected");
+    return COMMAND_RESP_ERR;
+}
+
+
 struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -851,10 +897,11 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
         { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
         { "comms_state",  "Print comms state",           _rak3172_state_cb             , false , NULL },
         { "comms_restart","Comms restart",               _rak3172_restart_cb           , false , NULL },
+        { "connect",      "Send an alive packet",        _rak3172_join                 , false , NULL },
+        { "comms_conn",   "Get if connected or not",     _rak3172_conn                 , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
-
 
 void rak3172_power_down(void)
 {

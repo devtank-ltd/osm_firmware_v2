@@ -220,15 +220,16 @@ unsigned penguin_measurements_add_defaults(measurements_def_t * measurements_arr
 }
 
 
-static unsigned _penguin_pids[4] = {0};
+static unsigned _penguin_pids[5] = {0};
 
 
 void penguin_linux_spawn_fakes(void)
 {
-    peripherals_add_modbus(EXT_UART , &_penguin_pids[0]);
-    peripherals_add_hpm(HPM_UART    , &_penguin_pids[1]);
-    peripherals_add_w1(1000000      , &_penguin_pids[2]);
-    peripherals_add_i2c(2000000     , &_penguin_pids[3]);
+    peripherals_add_cmd(&_penguin_pids[0]);
+    peripherals_add_modbus(EXT_UART , &_penguin_pids[1]);
+    peripherals_add_hpm(HPM_UART    , &_penguin_pids[2]);
+    peripherals_add_w1(1000000      , &_penguin_pids[3]);
+    peripherals_add_i2c(2000000     , &_penguin_pids[4]);
 }
 
 

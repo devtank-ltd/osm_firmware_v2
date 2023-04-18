@@ -218,8 +218,6 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
-        self._serial.flush()
-        time.sleep(0.3)
 
     def read(self):
         try:
@@ -342,13 +340,24 @@ class dev_base_t(object):
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
         self.fileno = self._ll.fileno
 
+    def drain(self):
+        while True:
+            r = select.select([self],[],[],0)
+            if r[0]:
+                self._ll.read()
+            else:
+                break
+
 
 class dev_t(dev_base_t):
     def __init__(self, port):
         super().__init__(port)
         line = self.do_cmd("count")
         debug_print(f"LINE '{line}'")
-        self._io_count = int(line.split()[-1])
+        try:
+            self._io_count = int(line.split()[-1])
+        except IndexError:
+            debug_print("Cannot query OSM, is it turned on?")
         self._children = {
             "ios"       : ios_t(self, self._io_count),
             "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
@@ -356,6 +365,7 @@ class dev_t(dev_base_t):
             "serial_num": property_t(self,    "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
         self.update_measurements()
+        self.port = port
 
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
@@ -366,6 +376,34 @@ class dev_t(dev_base_t):
 
     def _log(self, msg):
         self._log_obj.emit(msg)
+
+    def set_serial_num(self, serial_num):
+        self.do_cmd("serial_num %s" % serial_num)
+
+    def enable_pulsecount(self, count:int):
+        self.do_cmd(f"en_pulse {count} R U")
+
+    def send_alive_packet(self):
+        return self.do_cmd("connect")
+
+    def reconnect_announce(self, timeout_s:float=10.):
+        self.do_cmd("debug 4")
+        self.do_cmd("comms_restart")
+        timeout_s = 10
+        end_time = time.monotonic() + timeout_s
+        connected = self.comms_conn.value
+        while not connected:
+            if time.monotonic() > end_time:
+                self._log("Timeout reached, could not confirm send.")
+                return False
+            time_left = end_time - time.monotonic()
+            sleep_time = 0.5 if time_left > 0.5 else time_left
+            time.sleep(sleep_time)
+            connected = self.comms_conn.value
+        self.send_alive_packet()
+
+    def set_dbg(self, mode:int=0):
+        return self.do_cmd(f"debug {mode}")
 
     @property
     def interval_mins(self):

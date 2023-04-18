@@ -1208,6 +1208,10 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
         return false;
     }
 
+    bool was_not_enabled = inf.is_enabled_cb && inf.enable_cb && !inf.is_enabled_cb(def->name);
+    if (was_not_enabled)
+        inf.enable_cb(def->name, true);
+
     if (inf.init_cb && inf.init_cb(def->name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         measurements_debug("Could not begin the measurement.");
@@ -1234,7 +1238,7 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     measurements_debug("Waiting for collection.");
     info.func_success = false;
     init_time = get_since_boot_ms();
-    bool collect_success = main_loop_iterate_for(data->collection_time_cache/2 + time_remaining, _measurements_get_reading_collection, &info);
+    bool collect_success = main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info);
 
     time_taken = since_boot_delta(get_since_boot_ms(), init_time);
     time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
@@ -1250,8 +1254,13 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     if (!info.func_success)
         measurements_debug("Collect is timed out...");
 
+    if (was_not_enabled)
+        inf.enable_cb(def->name, false);
+
     return info.func_success;
 bad_exit:
+    if (was_not_enabled)
+        inf.enable_cb(def->name, false);
     data->is_collecting = 0;
     return false;
 }
@@ -1349,9 +1358,16 @@ static command_response_t _measurements_enable_cb(char *args)
 static command_response_t _measurements_get_cb(char* args)
 {
     char * p = skip_space(args);
+    char name[MEASURE_NAME_NULLED_LEN];
+    unsigned len = strnlen(p, MEASURE_NAME_LEN);
+    char* end_first_word = strchr(p, ' ');
+    if (end_first_word)
+        len = end_first_word - p;
+    strncpy(name, p, len);
+    name[len] = 0;
     measurements_reading_t reading;
     measurements_value_type_t type;
-    if (!measurements_get_reading(p, &reading, &type))
+    if (!measurements_get_reading(name, &reading, &type))
     {
         log_out("Failed to get measurement reading.");
         return COMMAND_RESP_ERR;
@@ -1362,7 +1378,7 @@ static command_response_t _measurements_get_cb(char* args)
         log_out("Could not convert the reading to a string.");
         return COMMAND_RESP_ERR;
     }
-    log_out("%s: %s", p, text);
+    log_out("%s: %s", name, text);
     return COMMAND_RESP_OK;
 }
 
@@ -1381,6 +1397,99 @@ static command_response_t _measurements_get_to_cb(char* args)
     }
 
     log_out("%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
+    return COMMAND_RESP_OK;
+}
+
+
+static const char* measurements_type_to_str(measurements_def_type_t type)
+{
+    static const char modbus_name[]         = MEASUREMENTS_DEF_NAME_MODBUS;
+    static const char pm10_name[]           = MEASUREMENTS_DEF_NAME_PM10;
+    static const char pm25_name[]           = MEASUREMENTS_DEF_NAME_PM25;
+    static const char current_clamp_name[]  = MEASUREMENTS_DEF_NAME_CURRENT_CLAMP;
+    static const char w1_probe_name[]       = MEASUREMENTS_DEF_NAME_W1_PROBE;
+    static const char htu21d_hum_name[]     = MEASUREMENTS_DEF_NAME_HTU21D_HUM;
+    static const char htu21d_tmp_name[]     = MEASUREMENTS_DEF_NAME_HTU21D_TMP;
+    static const char bat_mon_name[]        = MEASUREMENTS_DEF_NAME_BAT_MON;
+    static const char pulse_count_name[]    = MEASUREMENTS_DEF_NAME_PULSE_COUNT;
+    static const char light_name[]          = MEASUREMENTS_DEF_NAME_LIGHT;
+    static const char sound_name[]          = MEASUREMENTS_DEF_NAME_SOUND;
+    static const char fw_version_name[]     = MEASUREMENTS_DEF_NAME_FW_VERSION;
+    static const char ftma_name[]           = MEASUREMENTS_DEF_NAME_FTMA;
+    static const char custom_0_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_0;
+    static const char custom_1_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_1;
+    static const char io_reading_name[]     = MEASUREMENTS_DEF_NAME_IO_READING;
+
+    switch (type)
+    {
+        case MODBUS:
+            return modbus_name;
+        case PM10:
+            return pm10_name;
+        case PM25:
+            return pm25_name;
+        case CURRENT_CLAMP:
+            return current_clamp_name;
+        case W1_PROBE:
+            return w1_probe_name;
+        case HTU21D_HUM:
+            return htu21d_hum_name;
+        case HTU21D_TMP:
+            return htu21d_tmp_name;
+        case BAT_MON:
+            return bat_mon_name;
+        case PULSE_COUNT:
+            return pulse_count_name;
+        case LIGHT:
+            return light_name;
+        case SOUND:
+            return sound_name;
+        case FW_VERSION:
+            return fw_version_name;
+        case FTMA:
+            return ftma_name;
+        case CUSTOM_0:
+            return custom_0_name;
+        case CUSTOM_1:
+            return custom_1_name;
+        case IO_READING:
+            return io_reading_name;
+        default:
+            break;
+    }
+    return NULL;
+}
+
+
+static command_response_t _measurements_get_type_cb(char* args)
+{
+    char* p = skip_space(args);
+    char name[MEASURE_NAME_NULLED_LEN];
+    char* np = strchr(p, ' ');
+    unsigned len;
+    if (!np)
+    {
+        len = strnlen(p, MEASURE_NAME_LEN);
+    }
+    else
+    {
+        len = np - p;
+    }
+    strncpy(name, p, len+1);
+
+    measurements_def_t* def;
+    if (!measurements_get_measurements_def(name, &def, NULL))
+    {
+        log_out("Failed to get measurement details of \"%s\"", p);
+        return COMMAND_RESP_ERR;
+    }
+    const char* type_str = measurements_type_to_str(def->type);
+    if (!type_str)
+    {
+        log_out("Unknown measurement type for '%s' (%"PRIu8")", name, def->type);
+        return COMMAND_RESP_ERR;
+    }
+    log_out("%s: %s", name, type_str);
     return COMMAND_RESP_OK;
 }
 
@@ -1558,6 +1667,7 @@ struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
         { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },
         { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
         { "get_meas_to",  "Get timeout of measurement",          _measurements_get_to_cb         , false , NULL },
+        { "get_meas_type","Get the type of measurement",         _measurements_get_type_cb       , false , NULL },
         { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
         { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
         { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },

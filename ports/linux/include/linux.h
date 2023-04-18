@@ -6,6 +6,7 @@
 #define LINUX_FILE_LOC          "/tmp/osm/"
 
 #define LINUX_PTY_NAME_SIZE     16
+#define LOCATION_LEN 100
 
 extern volatile bool linux_threads_deinit;
 
@@ -38,5 +39,8 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len);
 unsigned linux_spawn(const char * rel_path);
 
 void linux_error(char* fmt, ...);
+
+char* ret_static_file_location(void);
+char concat_osm_location(char* new_loc, int loc_len, char* global);
 
 int64_t linux_get_current_us(void);

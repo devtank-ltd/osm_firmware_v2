@@ -201,9 +201,7 @@ static error_code_t         _rak4270_error_code                      = {0, false
 static char                 _rak4270_cmd_ascii[CMD_LINELEN]          = "";
 static uint16_t             _next_fw_chunk_id                   = 0;
 
-
 static uint16_t             _rak4270_packet_max_size                  = RAK4270_PAYLOAD_MAX_DEFAULT;
-
 
 static rak4270_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
                                      "at+set_config=lora:join_mode:"RAK4270_CONFIG_JOIN_MODE,
@@ -1039,6 +1037,18 @@ void rak4270_loop_iteration(void)
 }
 
 
+static command_response_t _rak4270_conn(char* str)
+{
+    if (rak4270_get_connected())
+    {
+        comms_debug("1 | Connected");
+        return COMMAND_RESP_OK;
+    }
+    comms_debug("0 | Disconnected");
+    return COMMAND_RESP_ERR;
+}
+
+
 static command_response_t _rak4270_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
@@ -1061,6 +1071,7 @@ struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] =
     {
         { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
+        { "comms_conn",   "Get if connected or not",     _rak4270_conn                  , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
@@ -1070,3 +1081,4 @@ void rak4270_power_down(void)
 {
     _rak4270_chip_off();
 }
+

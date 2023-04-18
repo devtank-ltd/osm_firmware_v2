@@ -239,12 +239,19 @@ static measurements_value_type_t _ftma_value_type(char* name)
 }
 
 
+static bool _ftma_is_enabled(char* name)
+{
+    return false;
+}
+
+
 void ftma_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _ftma_get_collection_time;
     inf->init_cb            = _ftma_begin;
     inf->get_cb             = _ftma_get;
     inf->enable_cb          = _ftma_enable;
+    inf->is_enabled_cb      = _ftma_is_enabled;
     inf->value_type_cb      = _ftma_value_type;
 }
 

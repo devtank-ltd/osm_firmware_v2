@@ -39,8 +39,8 @@
 #define LINUX_MASTER_SUFFIX     "_master"
 #define LINUX_SLAVE_SUFFIX      "_slave"
 
-#define LINUX_PERSIST_FILE_LOC  LINUX_FILE_LOC"osm.img"
-#define LINUX_REBOOT_FILE_LOC   LINUX_FILE_LOC"reboot.dat"
+#define LINUX_PERSIST_FILE_LOC  "osm.img"
+#define LINUX_REBOOT_FILE_LOC   "reboot.dat"
 
 bool linux_has_reset = false;
 
@@ -239,7 +239,11 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
 
 static void _linux_remove_symlink(char name[LINUX_PTY_NAME_SIZE])
 {
-    pty_buf_t buf = LINUX_FILE_LOC;
+
+    pty_buf_t buf;
+    char* file_loc = ret_static_file_location();
+    unsigned len = strnlen(file_loc, sizeof(pty_buf_t) -1);
+    strncpy(buf, file_loc, len + 1);
     strncat(buf, name, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     strncat(buf, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     if (remove(buf))
@@ -255,6 +259,12 @@ static void _linux_pty_symlink(int32_t fd, char* new_tty_name)
     {
         close(fd);
         linux_error("FAIL PTY FIND TTY");
+    }
+
+    if (access(new_tty_name, F_OK) == 0)
+    {
+        close(fd);
+        linux_error("FAIL SYMLINK ALREADY EXISTS");
     }
 
     if (!access(new_tty_name, F_OK) && remove(new_tty_name))
@@ -275,13 +285,19 @@ static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd,
 {
     if (openpty(master_fd, slave_fd, NULL, NULL, NULL))
         goto bad_exit;
-    pty_buf_t dir_loc = LINUX_FILE_LOC;
+    pty_buf_t dir_loc;
+    char* file_loc = ret_static_file_location();
+    unsigned len = strnlen(file_loc, sizeof(pty_buf_t) -1);
+    strncpy(dir_loc, file_loc, len + 1);
 
     mode_t mode = S_ISUID | S_ISGID | S_IRWXU | S_IRWXG | S_IRWXO;
     if (mkdir(dir_loc, mode) && errno != EEXIST)
         goto bad_exit;
 
-    pty_buf_t pty_loc = LINUX_FILE_LOC;
+    pty_buf_t pty_loc;
+    unsigned leng = strnlen(file_loc, sizeof(pty_buf_t) -1);
+    strncpy(pty_loc, file_loc, leng + 1);
+
     strncat(pty_loc, name, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
     strncat(pty_loc, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
     _linux_pty_symlink(*slave_fd, pty_loc);
@@ -298,7 +314,9 @@ bad_exit:
 
 static void _linux_save_fd_file(void)
 {
-    FILE* osm_reboot_file = fopen(LINUX_REBOOT_FILE_LOC, "w");
+    char osm_reboot_loc[LOCATION_LEN];
+    concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    FILE* osm_reboot_file = fopen(osm_reboot_loc, "w");
     if (!osm_reboot_file)
         linux_error("Could not make a OSM reboot file.");
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
@@ -322,7 +340,9 @@ static void _linux_save_fd_file(void)
 
 static void _linux_load_fd_file(void)
 {
-    FILE* osm_reboot_file = fopen(LINUX_REBOOT_FILE_LOC, "r");
+    char osm_reboot_loc[LOCATION_LEN];
+    concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    FILE* osm_reboot_file = fopen(osm_reboot_loc, "r");
     if (!osm_reboot_file)
         return;
     char line[LINUX_LINE_BUF_SIZ];
@@ -362,6 +382,8 @@ static void _linux_load_fd_file(void)
 
 static void _linux_rm_fd_file(void)
 {
+    char osm_reboot_loc[LOCATION_LEN];
+    concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     remove(LINUX_REBOOT_FILE_LOC);
 }
 
@@ -572,7 +594,7 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
             fd->pty.uart = uart;
             fd->cb = linux_uart_proc;
             _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-            linux_port_debug("UART %u is now "LINUX_FILE_LOC"%s", uart, pty_name);
+            linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
             _linux_setup_poll();
             return true;
         }
@@ -650,6 +672,13 @@ void* thread_proc(void* vargp)
     return NULL;
 }
 
+char* ret_static_file_location(void)
+{
+    char * loc = getenv("LOC");
+    if (!loc)
+        return "/tmp/osm/";
+    return loc;
+}
 
 void platform_init(void)
 {
@@ -767,10 +796,18 @@ void platform_reset_sys(void)
         linux_error("Could not re-exec firmware");
 }
 
+char concat_osm_location(char* new_loc, int loc_len, char* global)
+{
+    unsigned len = snprintf(new_loc, loc_len - 1, "%s%s", ret_static_file_location(), global);
+    new_loc[len] = '\0';
+    return len;
+}
 
 static persist_mem_t* _linux_get_persist(void)
 {
-    FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "rb");
+    char osm_img_loc[LOCATION_LEN];
+    concat_osm_location(osm_img_loc, LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
+    FILE* mem_file = fopen(osm_img_loc, "rb");
     if (!mem_file)
         return NULL;
     if (fread(&_linux_persist_mem, sizeof(persist_mem_t), 1, mem_file) != 1)
@@ -803,7 +840,9 @@ persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
 
 bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
-    FILE* mem_file = fopen(LINUX_PERSIST_FILE_LOC, "wb");
+    char osm_img_loc[LOCATION_LEN];
+    concat_osm_location(osm_img_loc, LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
+    FILE* mem_file = fopen(osm_img_loc, "wb");
     if (!mem_file)
         return false;
     if (persist_data != &_linux_persist_mem.persist_data)

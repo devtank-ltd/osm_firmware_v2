@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from basetypes import i2c_device_t
-
+import command_server
 
 VEML7700_DEFAULT_LUX = 1000
 
@@ -71,11 +71,19 @@ class i2c_device_veml7700_t(i2c_device_t):
                            _ALS_IT_800_MS :  1}
 
     def __init__(self, lux=VEML7700_DEFAULT_LUX):
+        mapping = {"LUX": {"GET": self.get_lux, "SET": self.set_lux}}
         super().__init__(self.VEML7700_ADDR, self.VEML7700_CMDS)
         self._inv_dt_correction = lambda x: 1
         self._get_inverse_correction()
 
         self.lux = lux
+
+
+    def set_lux(self, lux):
+        self.lux = lux
+
+    def get_lux(self):
+        return self.lux
 
     def transfer(self, data):
         r = super().transfer(data)
@@ -131,6 +139,10 @@ class i2c_device_veml7700_t(i2c_device_t):
         self._lux = new_lux
         counts = self._to_counts(new_lux)
         self._cmds[self.VEML7700_ALS] = self._encode(counts)
+
+    def return_obj(self):
+        params = [command_server.fake_param_t("LUX", getf=self.get_lux, setf=self.set_lux)]
+        return command_server.fake_dev_t("VEML7700", params)
 
 
 def main():

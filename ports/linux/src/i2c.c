@@ -12,7 +12,7 @@
 #include "linux.h"
 
 
-#define I2C_SERVER_LOC                          "/tmp/osm/i2c_socket"
+#define I2C_SERVER_LOC                          "i2c_socket"
 
 #define I2C_BUF_SIZ                     128
 
@@ -23,7 +23,9 @@ static int  _i2c_socketfd;
 
 void i2cs_init(void)
 {
-    _i2c_connected = socket_connect(I2C_SERVER_LOC, &_i2c_socketfd);
+    char osm_i2c_loc[LOCATION_LEN];
+    concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
+    _i2c_connected = socket_connect(osm_i2c_loc, &_i2c_socketfd);
     if (!_i2c_connected)
     {
         log_error("Fake I2C Failed to connect to socket.");

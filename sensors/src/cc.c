@@ -609,12 +609,26 @@ static measurements_value_type_t _cc_value_type(char* name)
 }
 
 
+static bool _cc_is_enabled(char* name)
+{
+    uint8_t index_local;
+    if (!_cc_get_index(&index_local, name))
+    {
+        adc_debug("Cannot get index.");
+        return false;
+    }
+    uint8_t active_index;
+    return _cc_find_active_clamp_index(&active_index, index_local);
+}
+
+
 void cc_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _cc_get_collection_time;
     inf->init_cb            = _cc_begin;
     inf->get_cb             = _cc_get;
     inf->enable_cb          = _cc_enable;
+    inf->is_enabled_cb      = _cc_is_enabled;
     inf->value_type_cb      = _cc_value_type;
 }
 

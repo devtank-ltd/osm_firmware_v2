@@ -392,24 +392,24 @@ void     io_log(unsigned io)
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
+    char * pretype = "";
+    char * posttype = "";
+
+    char * type = _ios_get_type_possible(io);
+
+    if (type[0])
+    {
+        pretype = "[";
+        posttype = "] ";
+    }
+    else
+    {
+        pretype = "";
+        posttype = " ";
+    }
 
     if (!(io_state & IO_ACTIVE_SPECIAL_MASK))
     {
-        char * pretype = "";
-        char * posttype = "";
-
-        char * type = _ios_get_type_possible(io);
-
-        if (type[0])
-        {
-            pretype = "[";
-            posttype = "] ";
-        }
-        else
-        {
-            pretype = "";
-            posttype = " ";
-        }
 
         if (io_state & IO_AS_INPUT)
             log_out("IO %02u : %s%s%sIN %s = %s",
@@ -424,7 +424,7 @@ void     io_log(unsigned io)
     }
     else
     {
-        char * type = _ios_get_type_active(io_state);
+        char * active_type = _ios_get_type_active(io_state);
         char pupd_char;
         if ((io_state & IO_PULL_MASK) == GPIO_PUPD_PULLUP)
             pupd_char = 'U';
@@ -434,7 +434,7 @@ void     io_log(unsigned io)
             pupd_char = 'N';
         else
             pupd_char = ' ';
-        log_out("IO %02u : USED %s %c", io, type, pupd_char);
+        log_out("IO %02u : %s%s%sUSED %s %c", io, pretype, type, posttype, active_type, pupd_char);
     }
 }
 
