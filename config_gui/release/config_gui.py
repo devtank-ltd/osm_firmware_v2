@@ -1983,6 +1983,28 @@ class config_gui_window_t(Tk):
             listbox.delete(first=index, last=index)
             self._modb_funcs.delete_temp_reg(temp, reg, copy)
 
+    def _clear_template_reg_list(self, **kwargs):
+        copy = kwargs["copy"]
+        edited_tmp = kwargs["edited_tmp"]
+        devices_dict = [{'templates_to_del': {'template': []}}]
+        edited_tmp_id = kwargs["edited_tmp_id"]
+        index = kwargs["index"]
+        if copy == 'edit':
+            self._modb_funcs.save_edit_yaml(
+                copy, edited_tmp, devices_dict, edited_tmp_id)
+            self.template_list.delete(index)
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
+            doc = yaml.full_load(f)
+            if doc:
+                for y, item in enumerate(doc):
+                    if item['templates'][0]['name'] == str(self.name_entry.get()):
+                        del doc[y]
+                        if len(doc) == 0:
+                            del doc
+                        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
+                            if f:
+                                yaml.dump(doc, f)
+
     def _save_edit(self, copy, window):
         log_func("User attempting to save template..")
         uid_list = []
@@ -2001,41 +2023,27 @@ class config_gui_window_t(Tk):
                     "Error", "Device Name must be 4 characters or less.", parent=window)
             else:
                 if copy != None:
-                    devices_dict = [{
-                        'templates_to_del': {'template': []}
-                    }]
                     index = self.edited_selection[0]
-                    edited_template = self.template_list.get(index)
-                    edited_temp = None
-                    edited_temp_id = None
-                    doc = None
-                    edited_temp_id = self.db.cur.execute(
-                        GET_TEMP_ID(edited_template))
-                    fetched = edited_temp_id.fetchone()
+                    edited_tmp = self.template_list.get(index)
+                    get_tmp_id = None
+                    edited_tmp_id = None
+                    get_tmp_id = self.db.cur.execute(
+                        *modbus_db.GET_TEMP_ID(edited_tmp))
+                    fetched = get_tmp_id.fetchone()
                     if fetched:
-                        edited_temp = fetched[0]
-                    if copy == 'edit':
-                        self._modb_funcs.save_edit_yaml(
-                            copy, edited_template, devices_dict, edited_temp)
-                        self.template_list.delete(index)
-                    with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
-                        doc = yaml.full_load(f)
-                        if doc:
-                            for y, item in enumerate(doc):
-                                if item['templates'][0]['name'] == str(self.name_entry.get()):
-                                    del doc[y]
-                                    if len(doc) == 0:
-                                        del doc
-                                    with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
-                                        if f:
-                                            yaml.dump(doc, f)
+                        edited_tmp_id = fetched[0]
                 if copy == 'edit' and len(exists) == 0:
+                    self._clear_template_reg_list(copy=copy, edited_tmp=edited_tmp, edited_tmp_id=edited_tmp_id, index=index)
                     self._send_to_yaml(window)
                 elif copy == 'edit' and str(self.dev_entry.get()) == exists[0][1]:
+                    self._clear_template_reg_list(copy=copy, edited_tmp=edited_tmp, edited_tmp_id=edited_tmp_id, index=index)
                     self._send_to_yaml(window)
                 elif str(self.dev_entry.get()) in dev_list and copy != 'edit':
                     tkinter.messagebox.showerror(
                         "Error", "That device name is already taken.", parent=window)
+                elif int(self.unit_spinbox.get()) not in [uid for uid, devn in exists] and copy != 'edit':
+                    self._clear_template_reg_list(copy=copy, edited_tmp=edited_tmp, edited_tmp_id=edited_tmp_id, index=index)
+                    self._send_to_yaml(window)
                 else:
                     tkinter.messagebox.showerror(
                         "Error", "That unit ID is already taken.", parent=window)
