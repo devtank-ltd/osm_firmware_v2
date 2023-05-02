@@ -27,7 +27,7 @@ then
   # There is only one state where reset is low, 01 (-dtr,rts)
   # To program we go from 01 to 11, (dtr,rts)
   # To return to normal 01 to 00 (-dtr,-rts)
-  gpio_str=",,,-dtr&-rts,,,-dtr,rts,,,dtr,rts:-dtr,rts,-rts"
+  gpio_str="-rts&-dtr,dtr,rts,:-dtr,-rts"
 else
   gpiochip=$(ls /sys/class/tty/$dev/device/../gpio/)
 
