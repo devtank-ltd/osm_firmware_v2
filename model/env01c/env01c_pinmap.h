@@ -112,7 +112,7 @@
 
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
-#define UART_3_SPEED 9600
+#define UART_3_SPEED 115200
 
 #define uart0_in_isr                    usart2_isr
 #define uart1_in_isr                    usart3_isr
