@@ -316,8 +316,8 @@ static void _rak3172_process_state_send_ack(char* msg)
     {
         comms_debug("READ SEND ACK");
         _rak3172_ctx.reset_count = 0;
-        on_comms_sent_ack(true);
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
+        on_comms_sent_ack(true);
 
         return;
     }
