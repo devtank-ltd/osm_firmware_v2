@@ -587,41 +587,56 @@ static void _rak3172_process_unsol(char* msg)
 }
 
 
+static char* _rak3172_skip_to_msg(char* msg)
+{
+    unsigned len = strnlen(msg, RAK3172_MAX_CMD_LEN-1);
+    for (unsigned i = 0; i < len; i++)
+    {
+        if (msg[len] == '+')
+        {
+            return msg + len;
+        }
+    }
+    return msg;
+}
+
+
 void rak3172_process(char* msg)
 {
-    _rak3172_process_unsol(msg);
+    char* p = _rak3172_skip_to_msg(msg);
+    _rak3172_process_unsol(p);
     switch (_rak3172_ctx.state)
     {
         case RAK3172_STATE_OFF:
-            _rak3172_process_state_off(msg);
+            _rak3172_process_state_off(p);
             break;
         case RAK3172_STATE_INIT_WAIT_REPLAY:
-            _rak3172_process_state_init_wait_replay(msg);
+            _rak3172_process_state_init_wait_replay(p);
             break;
         case RAK3172_STATE_INIT_WAIT_OK:
-            _rak3172_process_state_init_wait_ok(msg);
+            _rak3172_process_state_init_wait_ok(p);
             break;
         case RAK3172_STATE_JOIN_WAIT_REPLAY:
-            _rak3172_process_state_join_wait_replay(msg);
+            _rak3172_process_state_join_wait_replay(p);
             break;
         case RAK3172_STATE_JOIN_WAIT_OK:
-            _rak3172_process_state_join_wait_ok(msg);
+            _rak3172_process_state_join_wait_ok(p);
             break;
         case RAK3172_STATE_JOIN_WAIT_JOIN:
-            _rak3172_process_state_join_wait_join(msg);
+            _rak3172_process_state_join_wait_join(p);
             break;
         case RAK3172_STATE_RESETTING:
             break;
         case RAK3172_STATE_IDLE:
             break;
         case RAK3172_STATE_SEND_WAIT_REPLAY:
-            _rak3172_process_state_send_replay(msg);
+            _rak3172_process_state_send_replay(p);
             break;
         case RAK3172_STATE_SEND_WAIT_OK:
-            _rak3172_process_state_send_ok(msg);
+            _rak3172_process_state_send_ok(p);
             break;
         case RAK3172_STATE_SEND_WAIT_ACK:
-            _rak3172_process_state_send_ack(msg);
+            _rak3172_process_state_send_ack(p);
             break;
         default:
             comms_debug("Unknown state. (%d)", _rak3172_ctx.state);
