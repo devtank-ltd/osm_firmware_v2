@@ -26,6 +26,8 @@
 #define RAK3172_ACK_TIMEOUT_MS          20000
 #define RAK3172_JOIN_TIME_S             (uint32_t)((RAK3172_TIMEOUT_MS/1000) - 5)
 
+#define RAK3172_SEND_DELAY_MS           2000
+
 _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
 
 #define RAK3172_NB_TRIALS               2
@@ -261,6 +263,7 @@ static void _rak3172_process_state_join_wait_join(char* msg)
     if (msg_is(RAK3172_MSG_JOINED, msg))
     {
         comms_debug("READ JOIN");
+        _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
     }
     else if (msg_is(RAK3172_MSG_JOIN_FAILED, msg))
@@ -645,6 +648,12 @@ void rak3172_process(char* msg)
 }
 
 
+static bool _rak3172_wait_send(void* userdata)
+{
+    return !(since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) < RAK3172_SEND_DELAY_MS);
+}
+
+
 void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
@@ -661,6 +670,8 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
         RAK3172_MSG_SEND_HEADER_LEN,
         RAK3172_MSG_SEND_HEADER_FMT,
         _rak3172_get_port());
+
+    main_loop_iterate_for(RAK3172_SEND_DELAY_MS, _rak3172_wait_send, NULL);
 
     if (!_rak3172_write(send_header))
     {
