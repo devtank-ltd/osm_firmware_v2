@@ -109,6 +109,7 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
     "AT+NJM=1",             /* Set OTAA mode      */
     "AT+CLASS=C",           /* Set Class A mode   */
     "AT+BAND=4",            /* Set to EU868       */
+    "AT+ADR=0",             /* Do not use ADR     */
     "AT+DR=4",              /* Set to DR 4        */
     "DEVEUI goes here",
     "APPEUI goes here",
@@ -586,41 +587,56 @@ static void _rak3172_process_unsol(char* msg)
 }
 
 
+static char* _rak3172_skip_to_msg(char* msg)
+{
+    unsigned len = strnlen(msg, RAK3172_MAX_CMD_LEN-1);
+    for (unsigned i = 0; i < len; i++)
+    {
+        if (msg[len] == '+')
+        {
+            return msg + len;
+        }
+    }
+    return msg;
+}
+
+
 void rak3172_process(char* msg)
 {
-    _rak3172_process_unsol(msg);
+    char* p = _rak3172_skip_to_msg(msg);
+    _rak3172_process_unsol(p);
     switch (_rak3172_ctx.state)
     {
         case RAK3172_STATE_OFF:
-            _rak3172_process_state_off(msg);
+            _rak3172_process_state_off(p);
             break;
         case RAK3172_STATE_INIT_WAIT_REPLAY:
-            _rak3172_process_state_init_wait_replay(msg);
+            _rak3172_process_state_init_wait_replay(p);
             break;
         case RAK3172_STATE_INIT_WAIT_OK:
-            _rak3172_process_state_init_wait_ok(msg);
+            _rak3172_process_state_init_wait_ok(p);
             break;
         case RAK3172_STATE_JOIN_WAIT_REPLAY:
-            _rak3172_process_state_join_wait_replay(msg);
+            _rak3172_process_state_join_wait_replay(p);
             break;
         case RAK3172_STATE_JOIN_WAIT_OK:
-            _rak3172_process_state_join_wait_ok(msg);
+            _rak3172_process_state_join_wait_ok(p);
             break;
         case RAK3172_STATE_JOIN_WAIT_JOIN:
-            _rak3172_process_state_join_wait_join(msg);
+            _rak3172_process_state_join_wait_join(p);
             break;
         case RAK3172_STATE_RESETTING:
             break;
         case RAK3172_STATE_IDLE:
             break;
         case RAK3172_STATE_SEND_WAIT_REPLAY:
-            _rak3172_process_state_send_replay(msg);
+            _rak3172_process_state_send_replay(p);
             break;
         case RAK3172_STATE_SEND_WAIT_OK:
-            _rak3172_process_state_send_ok(msg);
+            _rak3172_process_state_send_ok(p);
             break;
         case RAK3172_STATE_SEND_WAIT_ACK:
-            _rak3172_process_state_send_ack(msg);
+            _rak3172_process_state_send_ack(p);
             break;
         default:
             comms_debug("Unknown state. (%d)", _rak3172_ctx.state);
@@ -863,6 +879,7 @@ static command_response_t _rak3172_restart_cb(char* args)
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
     _rak3172_chip_off();
+    spin_blocking_ms(1);
     _rak3172_chip_on();
     return COMMAND_RESP_OK;
 }
