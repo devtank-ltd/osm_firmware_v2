@@ -863,6 +863,7 @@ static command_response_t _rak3172_restart_cb(char* args)
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
     _rak3172_chip_off();
+    spin_blocking_ms(1);
     _rak3172_chip_on();
     return COMMAND_RESP_OK;
 }
