@@ -109,6 +109,7 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
     "AT+NJM=1",             /* Set OTAA mode      */
     "AT+CLASS=C",           /* Set Class A mode   */
     "AT+BAND=4",            /* Set to EU868       */
+    "AT+ADR=0",             /* Do not use ADR     */
     "AT+DR=4",              /* Set to DR 4        */
     "DEVEUI goes here",
     "APPEUI goes here",
