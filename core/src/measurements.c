@@ -1546,8 +1546,8 @@ static command_response_t _measurements_interval_cb(char * args)
 
 static command_response_t _measurements_samplecount_cb(char * args)
 {
-    char* name = args;
     char* p = skip_space(args);
+    char* name = p;
     p = strchr(p, ' ');
     if (p)
     {
