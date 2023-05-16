@@ -19,14 +19,17 @@ if [[ -n "$REVC" ]]
 then
   # There is an interaction between the dtr and rts, that means there is not a direct mapping to boot and reset.
   # Here is the table:
-  # 11 : dtr High  rts High - reset 1, boot 1
-  # 10 : dtr High  rts Low  - reset 1, boot 1
+  # 00 : dtr Low   rts Low  - reset 1, boot 1
+  # 10 : dtr High  rts Low  - reset 0, boot 0
   # 01 : dtr Low   rts High - reset 0, boot 1
-  # 00 : dtr Low   rts Low  - reset 1, boot 0
+  # 11 : dtr High  rts High - reset 1, boot 0
+  # Represented by:
+  # BOOT = NOT DTR
+  # RESET = NOT (RTS XOR DTR)
   # By default, rts and dtr are low.
-  # There is only one state where reset is low, 01 (-dtr,rts)
-  # To program we go from 01 to 11, (dtr,rts)
-  # To return to normal 01 to 00 (-dtr,-rts)
+  # There is only one state where reset is low and boot is high, 01 (-dtr,rts)
+  # To program we go from 01 to 00, (-dtr,-rts)
+  # To return to normal 10 to 11 (dtr,rts)
   gpio_str="-rts&-dtr,dtr,rts,:-dtr,-rts"
 else
   gpiochip=$(ls /sys/class/tty/$dev/device/../gpio/)
