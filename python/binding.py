@@ -220,7 +220,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
-        time.sleep(0.05)
+        time.sleep(0.2)
 
     def read(self):
         try:
