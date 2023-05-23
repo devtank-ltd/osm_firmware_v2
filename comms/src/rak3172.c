@@ -549,8 +549,9 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
 
 static void _rak3172_process_unsol(char* msg)
 {
+    /* +EVT:RX_C:-38:5:UNICAST:1:01434d44006d6561737572656d */
     unsigned len = strlen(msg);
-    const char evt[] = "+EVT:";
+    const char evt[] = "+EVT:RX_C:";
     unsigned evt_len = strlen(evt);
     if (len < evt_len)
     {
@@ -564,6 +565,40 @@ static void _rak3172_process_unsol(char* msg)
     }
     char * p, * np;
     p = msg + evt_len;
+    strtol(p, &np, 10);
+    if (p == np)
+    {
+        comms_debug("No RSSI given.");
+        return;
+    }
+    p = np;
+    if (*p != ':')
+    {
+        comms_debug("Incorrect syntax");
+        return;
+    }
+    p++;
+    strtol(p, &np, 10);
+    if (p == np)
+    {
+        comms_debug("No SNR given.");
+        return;
+    }
+    p = np;
+    len = p - msg;
+    const char unicast[] = ":UNICAST:";
+    const unsigned unicast_len = strlen(unicast);
+    if (len < unicast_len)
+    {
+        comms_debug("Too short for UNICAST.");
+        return;
+    }
+    if (strncmp(p, unicast, unicast_len) != 0)
+    {
+        comms_debug("Does not match UNICAST.");
+        return;
+    }
+    p += unicast_len;
     uint8_t fport = strtoul(p, &np, 10);
     if (p == np)
     {
