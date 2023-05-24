@@ -103,6 +103,8 @@ bool sleep_for_ms(uint32_t ms)
 {
     if (ms > SLEEP_MAX_TIME_MS)
         ms = SLEEP_MAX_TIME_MS;
+    else if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+        return false;
     uint32_t    before_time = get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (uart_rings_out_busy())
@@ -116,6 +118,7 @@ bool sleep_for_ms(uint32_t ms)
     ms -= time_passed;
     if (ms < SLEEP_MIN_SLEEP_TIME_MS)
         return false;
+    ms -= SLEEP_MIN_SLEEP_TIME_MS;
     /* Must sort out count and prescale depending on size of count */
     uint32_t    div_shift   = 0;
     uint64_t    count       = ms;
