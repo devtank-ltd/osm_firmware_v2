@@ -17,6 +17,7 @@
 #include "measurements.h"
 #include "pinmap.h"
 #include "adcs.h"
+#include "i2c.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32
@@ -28,6 +29,7 @@ static volatile uint16_t _sleep_compare = 0;
 void _sleep_before_sleep(void)
 {
     adcs_off();
+    i2cs_deinit();
     iwdg_set_period_ms(IWDG_MAX_TIME_MS);
 }
 
@@ -35,6 +37,7 @@ void _sleep_before_sleep(void)
 void _sleep_on_wakeup(void)
 {
     adcs_init();
+    i2cs_init();
     iwdg_set_period_ms(IWDG_NORMAL_TIME_MS);
 }
 
@@ -100,6 +103,8 @@ bool sleep_for_ms(uint32_t ms)
 {
     if (ms > SLEEP_MAX_TIME_MS)
         ms = SLEEP_MAX_TIME_MS;
+    else if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+        return false;
     uint32_t    before_time = get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (uart_rings_out_busy())
@@ -113,6 +118,7 @@ bool sleep_for_ms(uint32_t ms)
     ms -= time_passed;
     if (ms < SLEEP_MIN_SLEEP_TIME_MS)
         return false;
+    ms -= SLEEP_MIN_SLEEP_TIME_MS;
     /* Must sort out count and prescale depending on size of count */
     uint32_t    div_shift   = 0;
     uint64_t    count       = ms;

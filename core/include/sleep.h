@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define SLEEP_MIN_SLEEP_TIME_MS                                     3
+#define SLEEP_MIN_SLEEP_TIME_MS                                     33
 
 
 extern bool sleep_for_ms(uint32_t ms);

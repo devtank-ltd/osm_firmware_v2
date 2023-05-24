@@ -139,8 +139,34 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
 }
 
 
+static void i2c_deinit(unsigned i2c_index)
+{
+    if (i2c_index > ARRAY_SIZE(i2c_buses))
+    {
+        log_error("Tried to deinit I2C bus with uninitialised memory.");
+        return;
+    }
+
+    if (!log_async_log && !(i2c_buses_ready & (1 << i2c_index)))
+        return;
+
+    i2c_buses_ready &= ~(1 << i2c_index);
+
+    const i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
+    i2c_peripheral_disable(i2c_bus->i2c);
+    rcc_periph_clock_disable(i2c_bus->rcc);
+}
+
+
 void i2cs_init(void)
 {
     for (uint8_t i = 0; i < ARRAY_SIZE(i2c_buses); i++)
         i2c_init(i);
+}
+
+
+void i2cs_deinit(void)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(i2c_buses); i++)
+        i2c_deinit(i);
 }
