@@ -17,6 +17,7 @@
 #include "measurements.h"
 #include "pinmap.h"
 #include "adcs.h"
+#include "i2c.h"
 
 
 #define SLEEP_LSI_CLK_FREQ_KHZ          32
@@ -28,6 +29,7 @@ static volatile uint16_t _sleep_compare = 0;
 void _sleep_before_sleep(void)
 {
     adcs_off();
+    i2cs_deinit();
     iwdg_set_period_ms(IWDG_MAX_TIME_MS);
 }
 
@@ -35,6 +37,7 @@ void _sleep_before_sleep(void)
 void _sleep_on_wakeup(void)
 {
     adcs_init();
+    i2cs_init();
     iwdg_set_period_ms(IWDG_NORMAL_TIME_MS);
 }
 
