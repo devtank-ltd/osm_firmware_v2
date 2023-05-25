@@ -360,7 +360,7 @@ class config_gui_window_t(Tk):
 
     def _on_get_ftma_specs(self, resp):
        self.ftma_specs = resp[1]
-       self._load_headers(self._main_fr, "rif", True)
+       self._load_headers(self._main_fr, "rif")
        return self.ftma_specs
 
     def _on_update_cc_gain_cb(self, resp):
@@ -439,6 +439,10 @@ class config_gui_window_t(Tk):
     def _on_get_interval_min_done_cb(self, resp):
         self._interval_min = resp[1]
         return self._interval_min
+
+    def _on_get_interval_update_done_cb(self, resp):
+        self._interval_min = resp[1]
+        self._load_headers(self._main_fr, "rif")
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
@@ -876,7 +880,7 @@ class config_gui_window_t(Tk):
                 "Error", "Uplink interval must be an integer")
 
     def _on_change_uplink(self, args):
-        self.binding_interface.get_interval_min(self._on_get_interval_min_done_cb)
+        self.binding_interface.get_interval_min(self._on_get_interval_update_done_cb)
 
     def _handle_input(self, in_str, acttyp):
         if acttyp == '1':
@@ -884,7 +888,7 @@ class config_gui_window_t(Tk):
                 return False
         return True
 
-    def _load_headers(self, window, idy, get_mins):
+    def _load_headers(self, window, idy):
         tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
                     'Interval in Mins', 'Sample Count')]
         if self._sens_meas:
@@ -893,7 +897,7 @@ class config_gui_window_t(Tk):
                 row = self._sens_meas[i]
                 for n in range(len(row)):
                     entry = row[n]
-                    if n != 0:
+                    if n != 0 and type(entry) != int:
                         pos = entry.find("x")
                     if pos != -1:
                         row[n] = entry[0:pos]
