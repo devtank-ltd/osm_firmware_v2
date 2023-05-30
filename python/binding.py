@@ -455,6 +455,12 @@ class dev_t(dev_base_t):
     def dev_eui(self, eui):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
 
+    def set_tx_power(self, val: int):
+        if val >= 0 and val <= 7:
+            self.do_cmd(f"comms_txpower {val}")
+        else:
+            self._log("Value must be an integer between 0 and 7.")
+
     def change_samplec(self, meas, val):
         self.do_cmd(f"samplecount {meas} {val}")
 
