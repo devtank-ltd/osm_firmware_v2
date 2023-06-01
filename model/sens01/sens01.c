@@ -122,6 +122,7 @@ bool sens01_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
     switch(def->type)
     {
         case FW_VERSION:    fw_version_inf_init(inf);  break;
+        case CONFIG_COUNT:  persist_config_inf_init(inf);  break;
         case PM10:          hpm_pm10_inf_init(inf);    break;
         case PM25:          hpm_pm25_inf_init(inf);    break;
         case MODBUS:        modbus_inf_init(inf);      break;

@@ -27,6 +27,7 @@ typedef struct
     /* 16 byte boundary ---- */
     persist_model_config_t  model_config;
     /* 16 byte boundary ---- */
+    uint64_t                config_count;
 } __attribute__((__packed__)) persist_storage_t;
 
 

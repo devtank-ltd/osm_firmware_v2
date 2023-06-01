@@ -29,6 +29,7 @@ bool persistent_init(void)
         memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
+        persist_data.config_count = 0;
         if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
             memcpy(&persist_data.model_name[0], MODEL_NAME, MODEL_NAME_LEN);
         else
@@ -45,7 +46,22 @@ bool persistent_init(void)
 
 void persist_commit()
 {
-    if (platform_persist_commit(&persist_data, &persist_measurements))
+    persist_storage_t* persist_data_raw = platform_get_raw_persist();
+    persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
+    bool state;
+    if (!persist_data_raw           ||
+        !persist_measurements_raw   ||
+        memcmp(&persist_data, persist_data_raw, sizeof(persist_data)) != 0 ||
+        memcmp(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements)) != 0 )
+    {
+        persist_data.config_count += 1;
+        state = platform_persist_commit(&persist_data, &persist_measurements);
+    }
+    else
+    {
+        state = true;
+    }
+    if (state)
         log_sys_debug("Flash successfully written.");
     else
         log_error("Flash write failed");
@@ -60,7 +76,6 @@ void persist_set_fw_ready(uint32_t size)
 void persist_set_log_debug_mask(uint32_t mask)
 {
     persist_data.log_debug_mask = mask | DEBUG_SYS;
-    persist_commit();
 }
 
 
@@ -111,4 +126,29 @@ struct cmd_link_t* persist_config_add_commands(struct cmd_link_t* tail)
                                        { "reset",        "Reset device.",           _reset_cb                      , false , NULL },
                                        { "wipe",         "Factory Reset",           _wipe_cb                       , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}
+
+
+static measurements_sensor_state_t _persist_config_measurements_get(char* name, measurements_reading_t* value)
+{
+    if (!value)
+    {
+        log_error("Handed NULL pointer.");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    value->v_i64 = (int64_t)persist_data.config_count;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
+static measurements_value_type_t _persist_config_value_type(char* name)
+{
+    return MEASUREMENTS_VALUE_TYPE_I64;
+}
+
+
+void persist_config_inf_init(measurements_inf_t* inf)
+{
+    inf->get_cb             = _persist_config_measurements_get;
+    inf->value_type_cb      = _persist_config_value_type;
 }
