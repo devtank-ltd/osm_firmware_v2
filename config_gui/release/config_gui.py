@@ -1370,10 +1370,10 @@ class config_gui_window_t(Tk):
         graph_canv.grid(column=0, row=8, columnspan=2)
 
         milliamps = np.arange(4,21)
-        output = self.coeffs[0] + \
-                 self.coeffs[1] * milliamps + \
-                 self.coeffs[2] * milliamps ** 2 + \
-                 self.coeffs[3] * milliamps ** 3
+        output = float(self.coeffs[0]) + \
+                 float(self.coeffs[1]) * milliamps + \
+                 float(self.coeffs[2]) * milliamps ** 2 + \
+                 float(self.coeffs[3]) * milliamps ** 3
 
         figure = Figure(figsize=(6, 4), dpi=100)
         figure_canvas = FigureCanvasTkAgg(figure, graph_canv)
