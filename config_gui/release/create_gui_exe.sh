@@ -17,13 +17,11 @@ then
   cp ../stm32flash-*/stm32flash stm32flash
 fi
 
-pyinstaller --onefile config_gui.py --hidden-import='PIL._tkinter_finder'
+pyinstaller --onefile config_gui.py --hidden-import='PIL._tkinter_finder' --distpath .
 
-mv dist/config_gui .
+staticx config_gui config_gui
 
-staticx config_gui OSM_Configuration_Gui
-
-tar -czvf /tmp/osm_gui_bundle.tar.gz OSM_Configuration_Gui config_database/ complete.bin stm32flash yaml_files/ osm_pictures/ config_gui_manual.pdf ../README.md
+tar -czvf /tmp/osm_gui_bundle.tar.gz config_gui config_database/ complete.bin stm32flash yaml_files/ osm_pictures/ config_gui_manual.pdf ../README.md
 
 echo "==================================="
 echo "Bundle : /tmp/osm_gui_bundle.tar.gz"

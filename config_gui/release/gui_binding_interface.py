@@ -58,6 +58,9 @@ REQ_DEBUG_END       = "REQ_DEBUG_END"
 REQ_DIS_IO          = "REQ_DIS_IO"
 REQ_ACT_IO          = "REQ_ACT_IO"
 REQ_SET_COEFFS      = "REQ_SET_COEFFS"
+REQ_FTMA            = "REQ_FTMA"
+REQ_SET_FTMA_NAME   = "REQ_SET_FTMA_NAME"
+REQ_GET_FTMA_COEFFS = "REQ_GET_FTMA_COEFFS"
 
 logging.basicConfig(
     format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
@@ -103,12 +106,24 @@ class binding_interface_svr_t:
                           REQ_DEBUG_END       : self._req_debug_end,
                           REQ_DIS_IO          : self._req_disable_io,
                           REQ_ACT_IO          : self._req_activate_io,
-                          REQ_SET_COEFFS      : self._req_set_coeffs}
+                          REQ_SET_COEFFS      : self._req_set_coeffs,
+                          REQ_FTMA            : self._req_ftma_specs,
+                          REQ_SET_FTMA_NAME   : self._req_ftma_name,
+                          REQ_GET_FTMA_COEFFS : self._req_ftma_coeffs}
 
         self.serial_obj = None
         self.dev = None
         self.debug_parse = None
         self._alive = True
+    
+    def _req_ftma_specs(self, args):
+        headers = args
+        return self.dev.get_ftma_types(headers)
+
+    def _req_ftma_name(self, args):
+        name = args[1]
+        meas = args[2]
+        return self.dev.set_ftma_name(name, meas)
 
     def _req_set_coeffs(self, args):
         a = args[1]
@@ -117,6 +132,10 @@ class binding_interface_svr_t:
         d = args[4]
         meas = args[5]
         return self.dev.set_ftma_coeffs(a, b, c, d, meas)
+
+    def _req_ftma_coeffs(self, args):
+        meas = args[1]
+        return self.dev.read_ftma_coeffs(meas)
 
     def _req_add_dev(self, args):
         unit_id = args[1]
@@ -204,7 +223,7 @@ class binding_interface_svr_t:
         self.io.disable_io()
 
     def _req_activate_io(self, args):
-        self.io.activate_io(args[1], args[2])
+        self.io.activate_io(args[1], args[2], args[3])
 
     def _request_change_int(self, args):
         meas = args[1]
@@ -384,6 +403,15 @@ class binding_interface_client_t:
 
     def set_coeffs(self, a, b, c, d, meas, answered_cb=None):
         self._basic_query((REQ_SET_COEFFS, a, b, c, d, meas), answered_cb)
+    
+    def set_ftma_name(self, meas, name, answered_cb):
+        self._basic_query((REQ_SET_FTMA_NAME, meas, name), answered_cb)
+    
+    def get_ftma_specs(self, headers, answered_cb):
+        self._basic_query((REQ_FTMA, headers), answered_cb)
+
+    def get_spec_ftma_coeffs(self, meas, answered_cb):
+        self._basic_query((REQ_GET_FTMA_COEFFS, meas), answered_cb)
 
     def get_modbus(self, answered_cb):
         self._basic_query((REQ_MODBUS,), answered_cb)
@@ -410,7 +438,6 @@ class binding_interface_client_t:
         self._basic_query((REQ_SET_CC, cc, outer, inner), answered_cb)
 
     def do_cmd_multi(self, cmd, answered_cb):
-        log(f"in do_cmd_multi interface {cmd}")
         self._basic_query((REQ_DO_CMD_MULTI, cmd), answered_cb)
 
     def save_config(self, answered_cb=None):
@@ -443,8 +470,8 @@ class binding_interface_client_t:
     def disable_io(self, answered_cb=None):
         self._basic_query((REQ_DIS_IO,), answered_cb)
 
-    def activate_io(self, inst, pullup, answered_cb=None):
-        self._basic_query((REQ_ACT_IO, inst, pullup), answered_cb)
+    def activate_io(self, inst, rise, pullup, answered_cb=None):
+        self._basic_query((REQ_ACT_IO, inst, rise, pullup), answered_cb)
 
     def save(self, answered_cb=None):
         self._basic_query((REQ_SAVE,), answered_cb)

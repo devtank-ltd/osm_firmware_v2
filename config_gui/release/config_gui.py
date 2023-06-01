@@ -26,31 +26,18 @@ from stat import *
 from gui_binding_interface import binding_interface_client_t
 import time
 import subprocess
+import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg
+)
 
-MB_DB = modbus_db
 FW_PROCESS = False
 THREAD = threading.Thread
-GET_REG_DESC = MB_DB.GET_REG_DESC
 
 LINUX_OSM_TTY = "/tmp/osm/UART_DEBUG_slave"
-
-STD_MEASUREMENTS_DESCS = {
-    'FW': 'Firmware Version',
-    'PM10': 'Air Quality (Particles)',
-    'PM25': 'Air Quality (Particles)',
-    'CC1': 'Current Clamp Phase 1',
-    'CC2': 'Current Clamp Phase 2',
-    'CC3': 'Current Clamp Phase 3',
-    'TMP2': 'One Wire Temperature',
-    'TMP3': 'n/a',
-    'TEMP': 'Temperature',
-    'HUMI': 'Humidity',
-    'BAT': 'Battery',
-    'CNT1': 'Pulsecount',
-    'CNT2': 'Pulsecount',
-    'LGHT': 'Light',
-    'SND': 'Sound'
-}
 
 PATH = find_path()
 NAVY = "#292924"
@@ -66,12 +53,9 @@ FONT = ('Arial', 11, 'bold')
 FONT_L = ('Arial', 14, 'bold')
 FONT_XL = ('Arial', 20, 'bold')
 FONT_XXL = ('Karumbi', 35, 'bold')
-GET_TMP_N = MB_DB.GET_TMP_N
-GET_TEMP_ID = MB_DB.GET_TEMP_ID
-GET_UNIT_IDS = MB_DB.GET_UNIT_IDS
 ICONS_T   =    PATH + "/osm_pictures/logos/icons-together.png"
 DVT_IMG   =    PATH + "/osm_pictures/logos/OSM+Powered.png"
-OSM_1     =    PATH + "/osm_pictures/logos/lora-osm.png"
+OSM_1     =    PATH + "/osm_pictures/logos/Lora-Rev-C.png"
 R_LOGO    =    PATH + "/osm_pictures/logos/shuffle.png"
 GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
 PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
@@ -99,7 +83,11 @@ class config_gui_window_t(Tk):
     def __init__(self):
         super().__init__()
         signal.signal(signal.SIGINT, handle_exit)
-        self.db = modb_database_t(modbus_db.find_path())
+        log_func(f"current path: {PATH}")
+        try:
+            self.db = modb_database_t(PATH)
+        except Exception as e:
+            log_func(f"Could not connect to db: {e}")
         self._modb_funcs = modbus_funcs_t(self.db)
         self._connected = False
         self._changes = False
@@ -250,10 +238,10 @@ class config_gui_window_t(Tk):
             self._notebook.add(self._conn_fr, text="Connect",)
             self._notebook.add(self._main_fr, text="Home Page")
             self._notebook.add(
-                self._adv_fr, text='Advanced Config')
+                self._adv_fr, text='Advanced config')
             self._notebook.add(
-                self._modb_fr, text="Modbus Config")
-            self._notebook.add(self._debug_fr, 
+                self._modb_fr, text="Modbus config")
+            self._notebook.add(self._debug_fr,
             text="Debug Mode")
         self._notebook.select(1)
         self._sensor_name = Label(self._main_fr, text="",
@@ -263,12 +251,12 @@ class config_gui_window_t(Tk):
 
         self._fw_version_body = Label(self._main_fr, text="")
         self._fw_version_body.grid(
-                                column=5, row=1, 
+                                column=5, row=1,
                                 columnspan=2,
                                 pady=(0, 50), sticky='E')
         self._load_meas_l = Label(
-            self._main_fr, 
-            text="Current Measurements on OSM",
+            self._main_fr,
+            text="Current measurements on OSM",
             font=FONT_L, bg=IVORY)
         self._load_meas_l.grid(
             column=1, row=5)
@@ -280,7 +268,7 @@ class config_gui_window_t(Tk):
         img = Image.open(DVT_IMG)
         dev_logo = ImageTk.PhotoImage(img)
         self._main_fr.img_list.append(dev_logo)
-        dev_lab = Label(logo_canv, image=dev_logo, 
+        dev_lab = Label(logo_canv, image=dev_logo,
             bg=IVORY, width=403, height=176)
         dev_lab.grid(column=0, row=0, sticky=NSEW)
         logo_canv.bind('<Configure>', lambda e: self._resize_image(
@@ -288,10 +276,10 @@ class config_gui_window_t(Tk):
         ))
 
         web_url = Label(
-            self._main_fr, 
+            self._main_fr,
             text="Click here to visit our website!",
             font=FONT_XXL, bg=IVORY, fg=OSM_GRN)
-        web_url.grid(column=6, row=15, columnspan=2, 
+        web_url.grid(column=6, row=15, columnspan=2,
         sticky=EW)
         web_url.bind(
             "<Button-1>",
@@ -320,12 +308,12 @@ class config_gui_window_t(Tk):
         self._adv_fr.bind('<Configure>', lambda e: self._resize_image(
             e, self._gra_lab, img_gr, self._adv_fr
         ))
-        
-        
+
+
         self._terminal = Text(
             self._adv_fr, bg=BLACK, fg=LIME_GRN,
             borderwidth=10, relief="sunken")
-        self._terminal.pack(expand=True, fill='both', 
+        self._terminal.pack(expand=True, fill='both',
             pady=(50,0), padx=200)
         self._terminal.configure(state='disabled')
 
@@ -370,29 +358,33 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_modbus(self._on_get_modbus_done_cb)
         self.binding_interface.print_cc_gain(self._on_get_cc_gain_cb)
 
+    def _on_get_ftma_specs(self, resp):
+       self.ftma_specs = resp[1]
+       self._load_headers(self._main_fr, "rif")
+       return self.ftma_specs
+
     def _on_update_cc_gain_cb(self, resp):
         self.binding_interface.print_cc_gain(self._on_open_cc_cb)
 
     def _on_get_cc_gain_cb(self, resp):
         self.cc_gain = resp[1]
-        # self._fill_cc_term()
         return self.cc_gain
-    
+
     def _on_open_cc_cb(self, resp):
         self.cc_gain = resp[1]
         self._fill_cc_term()
         return self.cc_gain
-    
+
     def _on_get_cmd_multi_done_cb(self, resp):
         cmd = resp[1]
         if cmd:
             for cm in cmd:
                 self._write_terminal_cmd(cm, self._terminal)
-    
+
     def _on_get_modbus_done_cb(self, resp):
         self._modbus = resp[1]
         self._load_modbus()
-    
+
     def _on_remove_mb_reg(self, resp):
         self._modbus = resp[1]
         list_of_devs = []
@@ -406,7 +398,8 @@ class config_gui_window_t(Tk):
 
     def _on_get_measurements_done_cb(self, resp):
         self._sens_meas = resp[1]
-        self._load_headers(self._main_fr, "rif", True)
+        self.meas_headers = [i[0] for i in self._sens_meas]
+        self.binding_interface.get_ftma_specs(self.meas_headers, self._on_get_ftma_specs)
         return self._sens_meas
 
     def _on_get_comms_conn_done_cb(self, resp):
@@ -422,7 +415,7 @@ class config_gui_window_t(Tk):
     def _on_get_serial_num_done_cb(self, resp):
         self.ser_op = resp[1]
         self._sensor_name.configure(
-            text="Serial Number - " + self.ser_op,
+            text="Serial number - " + self.ser_op,
             bg=IVORY, font=FONT)
         pass
 
@@ -430,7 +423,7 @@ class config_gui_window_t(Tk):
         fw_version = resp[1]
         self.fw_version = "-".join(fw_version.split("-")[0:2])
         self._fw_version_body.configure(
-            text="Current Firmware Version - " + self.fw_version,
+            text="Current firmware version - " + self.fw_version,
             bg=IVORY, font=FONT)
 
     def _on_get_dev_eui_done_cb(self, resp):
@@ -445,9 +438,11 @@ class config_gui_window_t(Tk):
 
     def _on_get_interval_min_done_cb(self, resp):
         self._interval_min = resp[1]
-        self._load_headers(self._main_fr, "rif", False)
-
         return self._interval_min
+
+    def _on_get_interval_update_done_cb(self, resp):
+        self._interval_min = resp[1]
+        self._load_headers(self._main_fr, "rif")
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
@@ -499,7 +494,7 @@ class config_gui_window_t(Tk):
         self._cmd = None
         try:
             self._cmd = subprocess.Popen(
-                ["sudo", "./" + PATH + "/static_program.sh", selected], shell=False)
+                ["sudo", PATH + "/static_program.sh", selected], shell=False)
         except Exception as e:
             self._stop()
             traceback.print_exc()
@@ -646,8 +641,12 @@ class config_gui_window_t(Tk):
             return 'One Wire Temperature'
         elif meas.startswith("CNT"):
             return 'Pulsecount'
-    
+
     def on_get_ios_val(self, resp):
+        self._rise_fall = Combobox(self.ios_page)
+        self._rise_fall.pack()
+        self._rise_fall['values'] = ('Rise', 'Fall', 'Both')
+        self._rise_fall.set('Rise')
         pin_obj = None
         pin_is = resp[1][0]
         pull = resp[1][1]
@@ -695,9 +694,9 @@ class config_gui_window_t(Tk):
 
     def _get_ios_pin_obj(self, meas):
         if meas == "TMP2" or meas == "CNT1":
-            self.binding_interface.get_ios(4, self.on_get_ios_val)
+            self.binding_interface.get_ios(1, self.on_get_ios_val)
         elif meas == "TMP3" or meas == "CNT2":
-            self.binding_interface.get_ios(5, self.on_get_ios_val)
+            self.binding_interface.get_ios(2, self.on_get_ios_val)
         return None
 
     def _set_ios_label(self, meas, pin_obj, pin_is):
@@ -705,11 +704,11 @@ class config_gui_window_t(Tk):
 
         if pin_is == meas:
             self._ios_label.configure(
-                text=f"{desc} enabled.", 
+                text=f"{desc} enabled.",
                 bg=LIME_GRN, fg=BLACK)
         elif pin_is:
             self._ios_label.configure(
-                text=f"That IO is in use as {self._get_ios_meas_desc(pin_is)}.", 
+                text=f"That IO is in use as {self._get_ios_meas_desc(pin_is)}.",
                 bg=RED, fg=IVORY)
         else:
             self._ios_label.configure(
@@ -719,6 +718,13 @@ class config_gui_window_t(Tk):
         log_func(f"User attempting to {cmd} IO for {meas}")
         inst = self._get_ios_meas_inst(meas)
         desc = self._get_ios_meas_desc(meas)
+        rise = self._rise_fall.get()
+        if rise == 'Rise':
+            rise = 'R'
+        elif rise == 'Fall':
+            rise = 'F'
+        else:
+            rise = 'B'
         if meas.startswith('CNT'):
             if meas == "CNT2":
                 if self._up_d_non.get():
@@ -741,7 +747,7 @@ class config_gui_window_t(Tk):
             # check if user is trying to overwrite existing io
             if pin_is:
                 self.binding_interface.disable_io()
-            self.binding_interface.activate_io(inst, pullup)
+            self.binding_interface.activate_io(inst, rise, pullup)
         elif cmd == 'disable':
             # disable io
             self.binding_interface.disable_io()
@@ -791,7 +797,7 @@ class config_gui_window_t(Tk):
         self._debug_first_fr.columnconfigure(0, weight=1)
 
         if self._sens_meas:
-            for m in self._sens_meas:
+            for m in self._sens_meas[1::]:
                 fw = [m[0]]
                 fw.insert(1, 0)
                 meas.append(fw)
@@ -840,7 +846,7 @@ class config_gui_window_t(Tk):
             dbg_val = res[1]
             if dbg_val != False:
                 for i in self._deb_entries:
-                    meas = i[0].get()  
+                    meas = i[0].get()
                     if meas == dbg_meas:
                         val_to_change = i[1]
                         val_to_change.configure(state='normal')
@@ -853,16 +859,12 @@ class config_gui_window_t(Tk):
         canvas.yview_scroll(-1*(event.delta/120), "units")
 
     def _get_desc(self, reg):
-        desc = STD_MEASUREMENTS_DESCS.get(reg, None)
-        spec_m = ['CC1', 'CC2', 'CC3', 'TMP2', 'CNT1', 'CNT2',
-                  'FTA1', 'FTA2', 'FTA3', 'FTA4']
-        if reg in spec_m:
-            self._e.configure(cursor='hand2')
-        elif desc is None:
-            description = self.db.conn.execute(GET_REG_DESC(reg))
-            if desc:
-                desc = description.fetchone()[0]
-        return desc
+        d = self.db.get_meas_description(reg)
+        if d is None:
+            d = self.db.get_modbus_reg_desc(reg)
+        if d != None and len(d[0]) > 1:
+            return d[0]
+        return d
 
     def _change_uplink(self, frame, widg):
         if int(widg.get()):
@@ -876,26 +878,27 @@ class config_gui_window_t(Tk):
         else:
             tkinter.messagebox.showerror(
                 "Error", "Uplink interval must be an integer")
-    
+
     def _on_change_uplink(self, args):
-        self.binding_interface.get_interval_min(self._on_get_interval_min_done_cb)
+        self.binding_interface.get_interval_min(self._on_get_interval_update_done_cb)
 
     def _handle_input(self, in_str, acttyp):
         if acttyp == '1':
             if not in_str.isdigit():
                 return False
         return True
-    
-    def _load_headers(self, window, idy, get_mins):
+
+    def _load_headers(self, window, idy):
         tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
                     'Interval in Mins', 'Sample Count')]
         if self._sens_meas:
-            self._sens_meas[:] = [tuple(i) for i in self._sens_meas]
+            pos = None
             for i in range(len(self._sens_meas)):
-                row = list(self._sens_meas[i])
+                row = self._sens_meas[i]
                 for n in range(len(row)):
                     entry = row[n]
-                    pos = entry.find("x")
+                    if n != 0 and type(entry) != int:
+                        pos = entry.find("x")
                     if pos != -1:
                         row[n] = entry[0:pos]
                 row.insert(2, (int(self._interval_min) * int(row[1])))
@@ -904,7 +907,7 @@ class config_gui_window_t(Tk):
             log_func("No measurements on sensor detected.")
         entry_change_uplink = Entry(
             window, fg=CHARCOAL, font=FONT_L)
-        entry_change_uplink.grid(column=0, columnspan=5, row=15, 
+        entry_change_uplink.grid(column=0, columnspan=5, row=15,
             sticky="NEW", padx=(0,50))
         entry_change_uplink.insert(
             0, 'Enter a number and hit return to set uplink.')
@@ -917,12 +920,12 @@ class config_gui_window_t(Tk):
         entry_change_uplink.configure(validate="key", validatecommand=(
             window.register(self._handle_input), '%P', '%d'))
         self._load_measurements(window, idy, tablist)
-    
+
     def _on_canvas_config(self, e, canv):
         canv.configure(
             scrollregion=canv.bbox("all"))
         canv.itemconfig('frame', width=canv.winfo_width())
-    
+
     def _load_modbus(self):
         modbus = self._modbus
         tablist = [('Device', 'Name', 'Hex Address',
@@ -940,7 +943,7 @@ class config_gui_window_t(Tk):
             self._mb_fr, bg=IVORY)
         self._mb_canvas.grid(column=0, row=0, sticky=NSEW)
         self._mb_fr.grid(
-            column=4, row=1, rowspan=7, 
+            column=4, row=1, rowspan=7,
             sticky=NSEW, padx=(50, 0))
         self._second_mb_fr = Frame(self._mb_canvas)
         self._second_mb_fr.pack(expand=True, fill='both')
@@ -977,7 +980,7 @@ class config_gui_window_t(Tk):
                     disabledforeground="black")
                 if j == 1 and i != 0:
                     reg_hover = Hovertip(
-                        self._mbe, self._get_desc(str(self._e.get())))
+                        self._mbe, self._get_desc(str(self._mbe.get())))
             self.mb_entries.append(newrow)
             if i != 0:
                 self._check_mb.append(IntVar())
@@ -1056,17 +1059,20 @@ class config_gui_window_t(Tk):
                         "<Button-1>", lambda e: self._open_ios_w(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
+                    self._e.configure(cursor='hand2')
                 elif self._e.get() == 'CC1' or self._e.get() == 'CC2' or self._e.get() == 'CC3':
                     self._bind_cc = self._e.bind(
                         "<Button-1>", lambda e: self._cal_cc(e.widget.get()))
                     self._e.configure(disabledforeground="green")
                     self._change_on_hover(self._e)
-                elif self._e.get() == 'FTA1' or self._e.get() == 'FTA2' or self._e.get() == 'FTA3' or self._e.get() == 'FTA4':
-                    self._bind_cc = self._e.bind(
-                        "<Button-1>", lambda e: self._cal_ftma(e.widget.get()))
+                    self._e.configure(cursor='hand2')
+                elif self._e.get() in self.ftma_specs:
+                    self._bind_ft = self._e.bind(
+                        "<Button-1>", lambda e: self.open_ftma(e.widget.get()))
                     self._e.configure(disabledforeground="green")
+                    self._e.configure(cursor='hand2')
                     self._change_on_hover(self._e)
-                
+
             self._entries.append(newrow)
             if i != 0:
                 self._check_meas.append(IntVar())
@@ -1076,7 +1082,7 @@ class config_gui_window_t(Tk):
                                             command=lambda: self._check_clicked(window, idy,
                                                                                 meas_var_list))
                 check_meas.grid(row=i, column=j+1, padx=(0,15))
-    
+
 
     def _remove_mb_reg(self, idy, check):
         ticked = []
@@ -1146,7 +1152,7 @@ class config_gui_window_t(Tk):
     def _change_on_hover(self, entry):
         e = entry.get()
         reg_hover = Hovertip(self._e, self._get_desc(entry.get()))
-    
+
     def _on_get_mp_done_cb(self, resp):
         self.midpoint = resp[1][0].split()[1]
         self._fill_cc_term()
@@ -1161,7 +1167,7 @@ class config_gui_window_t(Tk):
         self.binding_interface.get_midpoint(cc, self._on_get_mp_done_cb)
         self.selected_cc = cc
 
-        cc_val_lab = Label(self._cc_window, text="Set Current Clamp Values",
+        cc_val_lab = Label(self._cc_window, text="Set current clamp values",
             bg=IVORY, font=FONT)
         cc_val_lab.grid(column=1, row=1, pady=10, columnspan=2)
         on_hover = Hovertip(
@@ -1170,12 +1176,12 @@ class config_gui_window_t(Tk):
         self._outer_cc = Combobox(self._cc_window)
         self._outer_cc.grid(column=0, row=2)
         on_hover = Hovertip(
-            self._outer_cc, "Set outer and inner current (Amps/Millivolts).")
+            self._outer_cc, "Set outer and inner current (Amps/millivolts).")
         self._outer_cc['values'] = ('100, 50',
                                     '200, 33'
                                     )
 
-        outer_cc_lab = Label(self._cc_window, text="Amps/Millivolts", 
+        outer_cc_lab = Label(self._cc_window, text="Amps/millivolts",
             bg=IVORY, font=FONT)
         outer_cc_lab.grid(column=1, row=2)
         on_hover = Hovertip(
@@ -1194,7 +1200,7 @@ class config_gui_window_t(Tk):
         self._cal_terminal.configure(state='disabled')
 
         cal_btn = Button(self._cc_window,
-                        text="Calibrate ADC", 
+                        text="Calibrate ADC",
                         command=lambda:self._calibrate(),
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY)
@@ -1207,7 +1213,7 @@ class config_gui_window_t(Tk):
         on_hover = Hovertip(
             mp_entry, "Manually calibrate ADC midpoint. (Default 2048)")
 
-        mp_btn = Button(self._cc_window, text="Set Midpoint",
+        mp_btn = Button(self._cc_window, text="Set midpoint",
                         bg=IVORY, fg=BLACK, font=FONT,
                         activebackground="green", activeforeground=IVORY,
                         command=lambda: self._set_midpoint(mp_entry, cc))
@@ -1248,7 +1254,7 @@ class config_gui_window_t(Tk):
             mp = entry.get()
             self.binding_interface.update_midpoint(mp, cc, self._on_update_mp_done_cb)
             self._cal_label['text'] = ""
-    
+
     def _on_update_mp_done_cb(self, resp):
         self.binding_interface.get_midpoint(self.selected_cc, self._on_get_mp_done_cb)
 
@@ -1283,83 +1289,171 @@ class config_gui_window_t(Tk):
         self.binding_interface.do_cmd_multi(cmd_text, self._on_get_cmd_multi_done_cb)
         cmd.delete(0, END)
 
+    def open_ftma(self, meas):
+        self.binding_interface.get_spec_ftma_coeffs(str(meas), self._on_get_ftma_coeffs)
+
+    def _on_get_ftma_coeffs(self, resp):
+        self.coeffs = []
+        d = resp[1].split(': ')
+        meas = d[0].split("'")[1]
+        for i in d[1:]:
+            v = re.findall(r'(\d+\.\d+)', i)
+            self.coeffs.append(v[0])
+        self._cal_ftma(meas)
+
     def _cal_ftma(self, meas):
         self._ftma_window = Toplevel(self.master)
         self._ftma_window.title(f"4-20mA Calibration ({meas})")
-        self._ftma_window.geometry("450x600")
+        self._ftma_window.geometry("600x650")
         self._ftma_window.configure(bg=IVORY)
-        
-        ftma_lab = Label(self._ftma_window, text="Set Coefficients",
-            bg=IVORY, font=FONT)
-        ftma_lab.grid(column=0, row=0, columnspan=2)
 
-        a_lab = Label(self._ftma_window, text="A (Defaults to 0 if left empty):",
+        name_title = Label(self._ftma_window, text="Change measurement name",
             bg=IVORY, font=FONT)
-        a_lab.grid(column=0, row=1)
+        name_title.grid(column=0, row=0, columnspan=2)
 
-        b_lab = Label(self._ftma_window, text="B (Defaults to 0 if left empty):",
+        ftma_lab = Label(self._ftma_window, text="Set coefficients",
             bg=IVORY, font=FONT)
-        b_lab.grid(column=0, row=2)
+        ftma_lab.grid(column=0, row=2, columnspan=2)
 
-        c_lab = Label(self._ftma_window, text="C (Defaults to 0 if left empty):",
+        a_lab = Label(self._ftma_window, text="A (Default 0):",
             bg=IVORY, font=FONT)
-        c_lab.grid(column=0, row=3)
+        a_lab.grid(column=0, row=3, sticky=E)
 
-        d_lab = Label(self._ftma_window, text="D (Defaults to 0 if left empty):",
+        b_lab = Label(self._ftma_window, text="B (Default 1):",
             bg=IVORY, font=FONT)
-        d_lab.grid(column=0, row=4)
+        b_lab.grid(column=0, row=4, sticky=E)
+
+        c_lab = Label(self._ftma_window, text="C (Default 0):",
+            bg=IVORY, font=FONT)
+        c_lab.grid(column=0, row=5, sticky=E)
+
+        d_lab = Label(self._ftma_window, text="D (Default 0):",
+            bg=IVORY, font=FONT)
+        d_lab.grid(column=0, row=6, sticky=E)
+
+        name_entry = Entry(self._ftma_window,
+                        bg=IVORY, fg=CHARCOAL,
+                        font=('Arial', 14, 'bold'))
+        name_entry.grid(column=0, row=1, columnspan=2)
 
         a_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        a_entry.grid(column=1, row=1)
+        a_entry.grid(column=1, row=3, sticky=W)
 
         b_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        b_entry.grid(column=1, row=2)
+        b_entry.grid(column=1, row=4, sticky=W)
 
         c_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        c_entry.grid(column=1, row=3)
+        c_entry.grid(column=1, row=5, sticky=W)
 
         d_entry = Entry(self._ftma_window,
                         bg=IVORY, fg=CHARCOAL,
                         font=('Arial', 14, 'bold'))
-        d_entry.grid(column=1, row=4)
+        d_entry.grid(column=1, row=6, sticky=W)
 
         ftma_btn = Button(self._ftma_window, text="Send",
                                    command=lambda : self._send_coeffs(
-                                   [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()], meas),
+                                    str(name_entry.get()),
+                                    [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()],
+                                    meas),
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    width=20, activebackground="green",
                                    activeforeground=IVORY)
-        ftma_btn.grid(column=0, row=5, columnspan=2)
+        ftma_btn.grid(column=0, row=7, columnspan=2)
 
-    def _send_coeffs(self, args, meas):
-        print(args, meas)
+        graph_canv = Canvas(self._ftma_window)
+        graph_canv.grid(column=0, row=8, columnspan=2)
+
+        milliamps = np.arange(4,21)
+        output = float(self.coeffs[0]) + \
+                 float(self.coeffs[1]) * milliamps + \
+                 float(self.coeffs[2]) * milliamps ** 2 + \
+                 float(self.coeffs[3]) * milliamps ** 3
+
+        figure = Figure(figsize=(6, 4), dpi=100)
+        figure_canvas = FigureCanvasTkAgg(figure, graph_canv)
+        axes = figure.add_subplot()
+        axes.plot(milliamps, output)
+        axes.set_title("y = A + Bx + Cx² + Dx³")
+        axes.set_ylabel('Output')
+        axes.set_xlabel('mA')
+        figure_canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
+
+    def _send_coeffs(self, name, args, meas):
+        find_name = re.findall("[a-zA-z0-9]+", name)
+        if find_name:
+            find_name = find_name[0]
+        if len(name) > 4:
+            tkinter.messagebox.showerror(
+                "Error", "Maximum length of name is 4.",
+                parent=self._ftma_window)
+            return
+        elif not find_name and name:
+            tkinter.messagebox.showerror(
+                "Error", "Invalid characters in name",
+                parent=self._ftma_window
+                )
+            return
+        elif len(find_name):
+            self.binding_interface.set_ftma_name(meas, find_name, self.on_update_ftma_name_cb)
+            meas = find_name
         if len(args[0]):
-            a_val = args[0]
+            try:
+                a_val = float(args[0])
+            except ValueError:
+                a_val = args[0]
+                log_func("Cannot convert coefficient A to a float.")
         else:
-            a_val = 0
+            a_val = 0.
         if len(args[1]):
-            b_val = args[1]
+            if args[1] == '0':
+                b_val = 1.
+            else:
+                try:
+                    b_val = float(args[1])
+                except ValueError:
+                    b_val = args[0]
+                    log_func("Cannot convert coefficient B to a float.")
         else:
-            b_val = 0
+            b_val = 1.
         if len(args[2]):
-            c_val = args[2]
+            try:
+                c_val = float(args[2])
+            except ValueError:
+                c_val = args[0]
+                log_func("Cannot convert coefficient C to a float.")
         else:
-            c_val = 0
+            c_val = 0.
         if len(args[3]):
-            d_val = args[3]
+            try:
+                d_val = float(args[3])
+            except ValueError:
+                d_val = args[0]
+                log_func("Cannot convert coefficient D to a float.")
         else:
-            d_val = 0
-        self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
+            d_val = 0.
+        if  isinstance(a_val, float) and \
+            isinstance(b_val, float) and \
+            isinstance(c_val, float) and \
+            isinstance(d_val, float):
+            self.binding_interface.set_coeffs(a_val, b_val, c_val, d_val, meas, self.on_update_coeffs_cb)
+        else:
+            tkinter.messagebox.showerror(
+                "Error", "Values must be a valid integer.",
+                parent=self._ftma_window,
+                )
 
     def on_update_coeffs_cb(self, args):
         self._ftma_window.destroy()
-        
+
+    def on_update_ftma_name_cb(self, resp):
+        self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
+
     def _pop_lora_entry(self):
         if self.dev_eui:
             self._eui_entry.insert(0, self.dev_eui)
@@ -1370,7 +1464,7 @@ class config_gui_window_t(Tk):
         img = Image.open(R_LOGO)
         icon = ImageTk.PhotoImage(img)
         self._conn_fr.img_list.append(icon)
-        lora_c_label = Label(frame, text="LoRaWAN Configuration",
+        lora_c_label = Label(frame, text="LoRaWAN configuration",
                              bg=IVORY, font=FONT_L)
         lora_c_label.grid(column=5, row=6, sticky="E", columnspan=2)
 
@@ -1435,7 +1529,7 @@ class config_gui_window_t(Tk):
 
     def _insert_appkey(self):
         self.binding_interface.gen_rand_app(self._on_update_app_key)
-    
+
     def _on_update_app_key(self, resp):
         app_key = resp[1]
         self._app_entry.delete(0, END)
@@ -1443,7 +1537,7 @@ class config_gui_window_t(Tk):
 
     def _insert_eui(self):
         self.binding_interface.gen_rand_eui(self._on_update_dev_eui)
-    
+
     def _on_update_dev_eui(self, resp):
         dev_eui = resp[1]
         self._eui_entry.delete(0, END)
@@ -1472,12 +1566,11 @@ class config_gui_window_t(Tk):
         if new_height > 0 and new_width > 0:
             image = img.resize((new_width, new_height))
             new_image = ImageTk.PhotoImage(image)
-            # canv.create_image(0, 0, image=new_image, anchor="nw")
             label.configure(image=new_image)
             frame.img_list.append(new_image)
 
     def main_modbus_w(self):
-        name = Label(self._modb_fr, text="Modbus Device Templates",
+        name = Label(self._modb_fr, text="Modbus device templates",
                      font=FONT, bg=IVORY)
         name.grid(column=1, row=0)
 
@@ -1545,7 +1638,7 @@ class config_gui_window_t(Tk):
         save_template_button.grid(column=2, row=7, sticky=EW)
         tt_save_btn = Hovertip(save_template_button, 'Save all changes.')
 
-        unit_id = Label(self._modb_fr, text="Modbus Registers on Template",
+        unit_id = Label(self._modb_fr, text="Modbus registers on Template",
                         font=FONT, bg=IVORY)
         unit_id.grid(column=1, row=8)
 
@@ -1577,25 +1670,25 @@ class config_gui_window_t(Tk):
                                    command=lambda:
                                    self._shift_down(self.template_regs_box,
                                                     self.template_list,
-                                                    None, 'temp_reg_box'), 
+                                                    None, 'temp_reg_box'),
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    activebackground="green", activeforeground=IVORY)
         shift_down_button.grid(column=2, row=11, sticky=EW)
         tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down')
 
         self._current_mb = Label(
-            self._modb_fr, text="Current Modbus Settings on OSM", font=FONT, bg=IVORY)
+            self._modb_fr, text="Current modbus settings on OSM", font=FONT, bg=IVORY)
         self._current_mb.grid(column=3, row=0, columnspan=3, sticky=NSEW)
         self.template_list.curselection()
         with self.db.conn:
-            data = self.db.cur.execute(GET_TMP_N)
+            data = self.db.cur.execute(*modbus_db.GET_TMP_N)
             for row in data:
                 dev = ''.join(row)
                 self.template_list.insert(0, dev)
                 write_dev_to_yaml = self.db.get_all_info(dev)
                 with open(PATH + '/yaml_files/modbus_data.yaml', 'a') as f:
                     yaml.dump(write_dev_to_yaml, f)
-        
+
         param_canv = Canvas(self._modb_fr)
         param_canv.grid(column=4, row=9, rowspan=5)
 
@@ -1605,7 +1698,7 @@ class config_gui_window_t(Tk):
         dev_lab = Label(param_canv, image=param_logo, bg=IVORY,
                 height=235, width=762)
         dev_lab.grid(column=0,row=0,sticky=EW)
-        param_canv.bind('<Configure>', 
+        param_canv.bind('<Configure>',
         lambda e : self._resize_image(e, dev_lab, img, self._modb_fr))
         self._modb_fr.img_list.append(param_logo)
 
@@ -1621,9 +1714,9 @@ class config_gui_window_t(Tk):
         canv.bind('<Configure>', lambda e: self._resize_image(
             e, self.os_lab, self.img_os, self._modb_fr))
         self._modb_fr.columnconfigure([1,3,4,9], weight=1)
-        self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], 
+        self._modb_fr.rowconfigure([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],
             weight=1)
-        
+
     def _close_save(self, window):
         if self._changes == True:
             yesno = tkinter.messagebox.askyesnocancel("Quit?",
@@ -1650,7 +1743,7 @@ class config_gui_window_t(Tk):
         index = selection[0]
         chosen_template = temp_list.get(index)
         chosen_del = None
-        chosen_del_temp = self.db.cur.execute(GET_TEMP_ID(chosen_template))
+        chosen_del_temp = self.db.cur.execute(*modbus_db.GET_TEMP_ID(chosen_template))
         does_exist = chosen_del_temp.fetchone()
         if does_exist:
             chosen_del = does_exist[0]
@@ -1761,7 +1854,8 @@ class config_gui_window_t(Tk):
         temp_w.destroy()
         try:
             self._add_regs_window.destroy()
-        except:
+        # This might not catch the right error, but catching all is bad.
+        except AttributeError:
             log_func("Add register window doesn't exist")
 
     def _shift_down(self, listbox, temp_list, name_entry, identity):
@@ -1893,11 +1987,33 @@ class config_gui_window_t(Tk):
             listbox.delete(first=index, last=index)
             self._modb_funcs.delete_temp_reg(temp, reg, copy)
 
+    def _clear_template_reg_list(self, **kwargs):
+        copy = kwargs["copy"]
+        edited_tmp = kwargs["edited_tmp"]
+        devices_dict = [{'templates_to_del': {'template': []}}]
+        edited_tmp_id = kwargs["edited_tmp_id"]
+        index = kwargs["index"]
+        if copy == 'edit':
+            self._modb_funcs.save_edit_yaml(
+                copy, edited_tmp, devices_dict, edited_tmp_id)
+            self.template_list.delete(index)
+        with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
+            doc = yaml.full_load(f)
+            if doc:
+                for y, item in enumerate(doc):
+                    if item['templates'][0]['name'] == str(self.name_entry.get()):
+                        del doc[y]
+                        if len(doc) == 0:
+                            del doc
+                        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
+                            if f:
+                                yaml.dump(doc, f)
+
     def _save_edit(self, copy, window):
         log_func("User attempting to save template..")
         uid_list = []
         dev_list = []
-        uids = self.db.cur.execute(GET_UNIT_IDS)
+        uids = self.db.cur.execute(*modbus_db.GET_UNIT_IDS)
         for uid in uids:
             uid_list.append(uid)
             dev_list.append(uid[1])
@@ -1911,41 +2027,27 @@ class config_gui_window_t(Tk):
                     "Error", "Device Name must be 4 characters or less.", parent=window)
             else:
                 if copy != None:
-                    devices_dict = [{
-                        'templates_to_del': {'template': []}
-                    }]
                     index = self.edited_selection[0]
-                    edited_template = self.template_list.get(index)
-                    edited_temp = None
-                    edited_temp_id = None
-                    doc = None
-                    edited_temp_id = self.db.cur.execute(
-                        GET_TEMP_ID(edited_template))
-                    fetched = edited_temp_id.fetchone()
+                    edited_tmp = self.template_list.get(index)
+                    get_tmp_id = None
+                    edited_tmp_id = None
+                    get_tmp_id = self.db.cur.execute(
+                        *modbus_db.GET_TEMP_ID(edited_tmp))
+                    fetched = get_tmp_id.fetchone()
                     if fetched:
-                        edited_temp = fetched[0]
-                    if copy == 'edit':
-                        self._modb_funcs.save_edit_yaml(
-                            copy, edited_template, devices_dict, edited_temp)
-                        self.template_list.delete(index)
-                    with open(PATH + '/yaml_files/modbus_data.yaml', 'r') as f:
-                        doc = yaml.full_load(f)
-                        if doc:
-                            for y, item in enumerate(doc):
-                                if item['templates'][0]['name'] == str(self.name_entry.get()):
-                                    del doc[y]
-                                    if len(doc) == 0:
-                                        del doc
-                                    with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
-                                        if f:
-                                            yaml.dump(doc, f)
+                        edited_tmp_id = fetched[0]
                 if copy == 'edit' and len(exists) == 0:
+                    self._clear_template_reg_list(copy=copy, edited_tmp=edited_tmp, edited_tmp_id=edited_tmp_id, index=index)
                     self._send_to_yaml(window)
                 elif copy == 'edit' and str(self.dev_entry.get()) == exists[0][1]:
+                    self._clear_template_reg_list(copy=copy, edited_tmp=edited_tmp, edited_tmp_id=edited_tmp_id, index=index)
                     self._send_to_yaml(window)
                 elif str(self.dev_entry.get()) in dev_list and copy != 'edit':
                     tkinter.messagebox.showerror(
                         "Error", "That device name is already taken.", parent=window)
+                elif int(self.unit_spinbox.get()) not in [uid for uid, devn in exists] and copy != 'edit':
+                    self._clear_template_reg_list(copy=copy, edited_tmp=edited_tmp, edited_tmp_id=edited_tmp_id, index=index)
+                    self._send_to_yaml(window)
                 else:
                     tkinter.messagebox.showerror(
                         "Error", "That unit ID is already taken.", parent=window)
@@ -2198,7 +2300,9 @@ class config_gui_window_t(Tk):
         regs = []
         row = []
         for child in self._add_regs_window.children.values():
-            if type(child) == Entry and child.get() or type(child) == Combobox and child.get():
+            if isinstance(child, Entry) or isinstance(child, Combobox):
+                if not child.get():
+                    continue
                 val = child.get()
                 row.append(val)
                 if len(row) % 5 == 0:
@@ -2259,7 +2363,7 @@ class config_gui_window_t(Tk):
             tkinter.messagebox.showerror(
                 "Error", "Select a template to write to device.", parent=root)
 
-    
+
 if __name__ == '__main__':
     own_dir = os.path.dirname(__file__)
     os.chdir(own_dir)
@@ -2267,7 +2371,7 @@ if __name__ == '__main__':
     tag = os.popen("git describe --tags").read().split('-')[0]
     width, height = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry('%dx%d+0+0' % (width, height))
-    root.title(f"Open Smart Monitor Configuration {tag}")
+    root.title(f"Open Smart Monitor Configuration: {tag}")
     root.resizable(True, True)
     root.configure(bg="lightgrey")
     root.protocol("WM_DELETE_WINDOW", root._on_closing)

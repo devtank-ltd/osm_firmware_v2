@@ -71,8 +71,10 @@ def parse_lora_comms(r_str: str):
 def parse_word(index: int, r_str: str):
     if index >= len(r_str):
         return ""
-    return r_str.split()[index]
-
+    try:
+        return r_str.split()[index]
+    except IndexError:
+        return ""
 
 class dev_child_t(object):
     def __init__(self, parent):
@@ -218,6 +220,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
+        time.sleep(0.2)
 
     def read(self):
         try:
@@ -269,9 +272,9 @@ class io_t(dev_child_t):
     def configure(self, is_input: bool, bias: str):
         self.parent.configure_io(self._index, is_input, bias)
 
-    def activate_io(self, meas, pull):
-        #Enabling one wire or pulsecount e.g. "en_w1 4 U"
-        self.parent.do_cmd(f"en_{meas} {self._index} {pull}")
+    def activate_io(self, meas, rise, pull):
+        #Enabling one wire or pulsecount e.g. "en_w1 1 U"
+        self.parent.do_cmd(f"en_{meas} {self._index} {rise} {pull}")
 
     def disable_io(self):
         self.parent.do_cmd(f"io {self._index} : I N")
@@ -283,14 +286,14 @@ class io_t(dev_child_t):
             return None
         pin_is = line[used_pos:].split()[1]
         if pin_is == "PLSCNT":
-            if self._index == 4:
+            if self._index == 1:
                 return "CNT1"
-            elif self._index == 5:
+            elif self._index == 2:
                 return "CNT2"
         elif pin_is == "W1":
-            if self._index == 4:
+            if self._index == 1:
                 return "TMP2"
-            elif self._index == 5:
+            elif self._index == 2:
                 return "TMP3"
 
     def active_pull(self):
@@ -444,6 +447,22 @@ class dev_t(dev_base_t):
     def change_interval(self, meas, val):
         self.do_cmd(f"interval {meas} {val}")
 
+    def get_measurement_handles(self):
+        meas = self.measurements()
+        print(meas)
+
+    def get_ftma_types(self, headers):
+        list_of_ftma = []
+        for head in headers[1]:
+            ftma = self.do_cmd(f"get_meas_type {head}")
+            s = ftma.split(': ')
+            if s[1] == "FTMA":
+                list_of_ftma.append(s[0])
+        return list_of_ftma
+
+    def set_ftma_name(self, name, meas):
+        return self.do_cmd(f"ftma_name {name} {meas}")
+
     def get_meas_timeout(self, meas):
         line = self.do_cmd(f"get_meas_to {meas}")
         if line.startswith(meas):
@@ -500,6 +519,11 @@ class dev_t(dev_base_t):
         debug_print("No response start found.")
         return None
 
+    def read_ftma_coeffs(self, meas):
+        coeffs = self.do_cmd(f"ftma_coeff {meas}")
+        print(coeffs)
+        return coeffs
+
     def measurements(self):
         r = self.do_cmd_multi("measurements")
         meas_list = []
@@ -514,11 +538,12 @@ class dev_t(dev_base_t):
             if not isinstance(child, measurement_t):
                 new_chldren[key] = child
         self._children = new_chldren
-        r = self.do_cmd_multi('measurements')
+        r = self.measurements()
         assert r
-        r = r[2:]
+        if r[0] == ['Name', 'Interval', 'Sample Count']:
+            r = r[1:]
         for line in r:
-            name, interval, sample_count = line.split()
+            name, interval, sample_count = line
             interval=int(interval.split('x')[0])
             sample_count=int(sample_count)
             new_measurement = measurement_t(self, name, interval, sample_count)
@@ -715,7 +740,7 @@ class dev_debug_t(dev_base_t):
             self._log(f"{name} failed.")
             return (name, False)
         r = re.search(
-            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+\.[0-9]+", msg)
+            "DEBUG:[0-9]{10}:DEBUG:[A-Za-z0-9]+:[U8|U16|U32|U64|I8|I16|I32|I64|F|i64|f32|str]+:[0-9]+(\.[0-9]+)?", msg)
         if r and r.group(0):
             _, ts, _, name, type_, value = r.group(0).split(":")
             try:
