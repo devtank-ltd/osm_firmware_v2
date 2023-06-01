@@ -44,6 +44,19 @@ void penguin_persist_config_model_init(persist_penguin_config_v1_t* model_config
 }
 
 
+bool penguin_persist_config_cmp(persist_penguin_config_v1_t* d0, persist_penguin_config_v1_t* d1)
+{
+    return !(
+        d0 && d1 &&
+        d0->mins_interval == d1->mins_interval &&
+        modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
+        memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
+        memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&
+        d0->sai_no_buf == d1->sai_no_buf );
+}
+
+
 void penguin_sensors_init(void)
 {
     timers_init();

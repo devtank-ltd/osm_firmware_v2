@@ -8,6 +8,7 @@
 
 extern void     penguin_sensors_init(void);
 extern void     penguin_persist_config_model_init(persist_penguin_config_v1_t * config);
+extern bool     penguin_persist_config_cmp(persist_penguin_config_v1_t* d0, persist_penguin_config_v1_t* d1);
 extern void     penguin_post_init(void);
 extern bool     penguin_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring);
 extern bool     penguin_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring);

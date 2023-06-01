@@ -559,3 +559,19 @@ void modbus_bus_init(modbus_bus_t * bus)
     }
 }
 
+
+bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
+{
+    bool ret = !(
+        d0->version                 == d1->version              &&
+        d0->binary_protocol         == d1->binary_protocol      &&
+        d0->databits                == d1->databits             &&
+        d0->stopbits                == d1->stopbits             &&
+        d0->parity                  == d1->parity               &&
+        d0->dev_count               == d1->dev_count            &&
+        d0->baudrate                == d1->baudrate             &&
+        d0->first_dev_offset        == d1->first_dev_offset     &&
+        d0->first_free_offset       == d1->first_free_offset    );
+    // TODO: Check blocks are the same
+    return ret;
+}

@@ -994,3 +994,11 @@ void rak3172_power_down(void)
     _rak3172_ctx.state = RAK3172_STATE_OFF;
     _rak3172_chip_off();
 }
+
+
+bool rak3172_persist_config_cmp(void* d0, void* d1)
+{
+    return lw_persist_config_cmp(
+        (lw_config_t*)((comms_config_t*)d0)->setup,
+        (lw_config_t*)((comms_config_t*)d1)->setup);
+}

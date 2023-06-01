@@ -9,6 +9,7 @@
 extern uint8_t  env01_stm_adcs_get_channel(adcs_type_t adcs_type);
 extern void     env01_sensors_init(void);
 extern void     env01_persist_config_model_init(persist_env01_config_v1_t * config);
+extern bool     env01_persist_config_cmp(persist_env01_config_v1_t* d0, persist_env01_config_v1_t* d1);
 extern void     env01_post_init(void);
 extern bool     env01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring);
 extern bool     env01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring);

@@ -1138,3 +1138,10 @@ void rak4270_power_down(void)
     _rak4270_chip_off();
 }
 
+
+bool rak4270_persist_config_cmp(void* d0, void* d1)
+{
+    return lw_persist_config_cmp(
+        (lw_config_t*)((comms_config_t*)d0)->setup,
+        (lw_config_t*)((comms_config_t*)d1)->setup);
+}
