@@ -218,6 +218,8 @@ bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* d
 {
     bool single = def->samplecount == 1;
 
+    unsigned before_pos = _protocol_ctx.pos;
+
     bool r = 0;
     r |= !_protocol_append_i32(*(int32_t*)def->name);
     uint8_t datatype = single ? MEASUREMENTS_DATATYPE_SINGLE : MEASUREMENTS_DATATYPE_AVERAGED;
@@ -239,18 +241,28 @@ bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* d
             r = true;
             break;
     }
+    if (r)
+    {
+        _protocol_ctx.pos = before_pos;
+    }
     return !r;
 }
 
 
 bool protocol_append_error_code(uint8_t err_code)
 {
+    unsigned before_pos = _protocol_ctx.pos;
+
     bool r = false;
     char name[MEASURE_NAME_NULLED_LEN] = PROTOCOL_ERR_CODE_NAME;
     r |= !_protocol_append_i32(*(int32_t*)name);
     r |= !_protocol_append_i8(MEASUREMENTS_DATATYPE_SINGLE);
     int64_t err_code64 = err_code;
     r |= !_protocol_append_data_type_i64(&err_code64);
+    if (r)
+    {
+        _protocol_ctx.pos = before_pos;
+    }
     return !r;
 }
 
