@@ -214,13 +214,19 @@ function Decode(fPort, bytes, variables)
         var data_type = bytes[pos++];
         var value_type, func;
         var mean, min, max;
+        var next_size;
         switch (data_type)
         {
             // Single measurement
             case 1:
                 value_type = bytes[pos++];
+                next_size = Value_sizes(value_type);
+                if (next_size + pos > bytes.length)
+                {
+                    return obj;
+                }
                 mean = Decode_value(value_type, bytes, pos);
-                pos += Value_sizes(value_type);
+                pos += next_size;
                 if (name == "ERR")
                     mean = Error_lookup(mean);
                 obj[name] = mean;
@@ -228,18 +234,33 @@ function Decode(fPort, bytes, variables)
             // Multiple measurement
             case 2:
                 value_type = bytes[pos++];
+                next_size = Value_sizes(value_type);
+                if (next_size + pos > bytes.length)
+                {
+                    return obj;
+                }
                 mean = Decode_value(value_type, bytes, pos);
-                pos += Value_sizes(value_type);
+                pos += next_size;
                 obj[name] = mean;
 
                 value_type = bytes[pos++];
+                next_size = Value_sizes(value_type);
+                if (next_size + pos > bytes.length)
+                {
+                    return obj;
+                }
                 min = Decode_value(value_type, bytes, pos);
-                pos += Value_sizes(value_type);
+                pos += next_size;
                 obj[name+"_min"] = min;
 
                 value_type = bytes[pos++];
+                next_size = Value_sizes(value_type);
+                if (next_size + pos > bytes.length)
+                {
+                    return obj;
+                }
                 max = Decode_value(value_type, bytes, pos);
-                pos += Value_sizes(value_type);
+                pos += next_size;
                 obj[name+"_max"] = max;
                 break;
             default:
