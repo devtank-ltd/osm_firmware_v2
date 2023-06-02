@@ -56,12 +56,15 @@ void sens01_persist_config_model_init(persist_model_config_t* model_config)
 }
 
 
+/* Return true  if different
+ *        false if same      */
 bool sens01_persist_config_cmp(persist_sens01_config_v1_t* d0, persist_sens01_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
         d0->mins_interval == d1->mins_interval &&
-        modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        !modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        !rak4270_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
         memcmp(d0->ftma_configs, d1->ftma_configs, sizeof(ftma_config_t) * ADC_FTMA_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
         memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&
@@ -135,7 +138,7 @@ bool sens01_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
     switch(def->type)
     {
         case FW_VERSION:    fw_version_inf_init(inf);  break;
-        case CONFIG_COUNT:  persist_config_inf_init(inf);  break;
+        case CONFIG_REVISION: persist_config_inf_init(inf);  break;
         case PM10:          hpm_pm10_inf_init(inf);    break;
         case PM25:          hpm_pm25_inf_init(inf);    break;
         case MODBUS:        modbus_inf_init(inf);      break;

@@ -44,6 +44,8 @@ bool persistent_init(void)
 }
 
 
+/* Return true  if different
+ *        false if same      */
 static bool _persist_data_cmp(void)
 {
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
@@ -58,13 +60,15 @@ static bool _persist_data_cmp(void)
         memcmp(persist_data.serial_number,
             persist_data_raw->serial_number,
             sizeof(char) * SERIAL_NUM_LEN_NULLED) == 0                  &&
-        model_persist_config_cmp(
+        !model_persist_config_cmp(
             &persist_data.model_config,
             &persist_data_raw->model_config)                            &&
         persist_data.config_count   == persist_data_raw->config_count   );
 }
 
 
+/* Return true  if different
+ *        false if same      */
 static bool _persist_measurements_cmp(void)
 {
     persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
@@ -79,8 +83,8 @@ static bool _persist_measurements_cmp(void)
 void persist_commit()
 {
     bool state;
-    if (!_persist_data_cmp()            ||
-        !_persist_measurements_cmp()    )
+    if (_persist_data_cmp()            ||
+        _persist_measurements_cmp()    )
     {
         persist_data.config_count += 1;
         state = platform_persist_commit(&persist_data, &persist_measurements);

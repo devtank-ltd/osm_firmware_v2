@@ -60,13 +60,15 @@ void env01c_persist_config_model_init(persist_env01c_config_v1_t* model_config)
 }
 
 
+/* Return true  if different
+ *        false if same      */
 bool env01c_persist_config_cmp(persist_env01c_config_v1_t* d0, persist_env01c_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
         d0->mins_interval == d1->mins_interval &&
-        modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
-        rak3172_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
+        !modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        !rak3172_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
         memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
         memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&
@@ -144,7 +146,7 @@ bool env01c_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
     switch(def->type)
     {
         case FW_VERSION:    fw_version_inf_init(inf);  break;
-        case CONFIG_COUNT:  persist_config_inf_init(inf);  break;
+        case CONFIG_REVISION: persist_config_inf_init(inf);  break;
         case PM10:          hpm_pm10_inf_init(inf);    break;
         case PM25:          hpm_pm25_inf_init(inf);    break;
         case MODBUS:        modbus_inf_init(inf);      break;
@@ -179,7 +181,7 @@ void env01c_debug_mode_enable_all(void)
 void env01c_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    measurements_repop_indiv(MEASUREMENTS_CONFIG_COUNT,         4,  1,  CONFIG_COUNT    );
+    measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
     measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
     measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
@@ -302,7 +304,7 @@ unsigned env01c_measurements_add_defaults(measurements_def_t * measurements_arr)
         return 0;
     unsigned pos = 0;
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_COUNT,         4,  1,  CONFIG_COUNT    );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );

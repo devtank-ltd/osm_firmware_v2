@@ -572,6 +572,8 @@ void modbus_bus_init(modbus_bus_t * bus)
 }
 
 
+/* Return true  if different
+ *        false if same      */
 bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
 {
     /* Is bus different */
@@ -595,6 +597,15 @@ bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
     unsigned recursion_count = 0;
     while (recursion_count < MODBUS_BLOCKS)
     {
+        if (!d0dev && !d1dev)
+        {
+            break;
+        }
+        if ((!d0dev && d1dev) || (d0dev && !d1dev))
+        {
+            return true;
+        }
+        /* Only remaining is both d0dev and d1dev exist */
         if (!(d0dev && d1dev && memcmp(d0dev, d1dev, sizeof(modbus_dev_t)) == 0))
         {
             return true;
@@ -622,6 +633,8 @@ bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
             {
                 return true;
             }
+            d0reg = _modbus_get_next_reg(d0reg);
+            d1reg = _modbus_get_next_reg(d1reg);
             recursion_count++;
         }
         d0dev = _modbus_get_next_dev(d0dev);

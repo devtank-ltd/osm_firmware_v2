@@ -304,6 +304,8 @@ uint64_t lw_consume(char *p, unsigned len)
 }
 
 
+/* Return true  if different
+ *        false if same      */
 bool lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1)
 {
     return !(

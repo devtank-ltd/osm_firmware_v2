@@ -1139,6 +1139,8 @@ void rak4270_power_down(void)
 }
 
 
+/* Return false if different
+ *        true  if same      */
 bool rak4270_persist_config_cmp(void* d0, void* d1)
 {
     return lw_persist_config_cmp(

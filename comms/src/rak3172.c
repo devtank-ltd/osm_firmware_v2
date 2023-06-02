@@ -996,6 +996,8 @@ void rak3172_power_down(void)
 }
 
 
+/* Return false if different
+ *        true  if same      */
 bool rak3172_persist_config_cmp(void* d0, void* d1)
 {
     return lw_persist_config_cmp(
