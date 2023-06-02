@@ -421,6 +421,8 @@ void rak3172_init(void)
     gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
 
     _rak3172_ctx.state = RAK3172_STATE_OFF;
+    _rak3172_chip_off();
+    spin_blocking_ms(1);
     _rak3172_chip_on();
 }
 
