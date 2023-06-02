@@ -53,12 +53,18 @@ static void* _modbus_allocate_block(void)
 }
 
 
-static modbus_dev_t * _modbus_get_first_dev(void)
+static modbus_dev_t * _modbus_get_first_dev2(modbus_bus_t* bus)
 {
-    if (!modbus_bus || !modbus_bus->first_dev_offset)
+    if (!bus || !bus->first_dev_offset)
         return NULL;
 
-    return _modbus_get_from_offset(modbus_bus->first_dev_offset);
+    return _modbus_get_from_offset(bus->first_dev_offset);
+}
+
+
+static modbus_dev_t * _modbus_get_first_dev(void)
+{
+    return _modbus_get_first_dev2(modbus_bus);
 }
 
 
@@ -201,14 +207,14 @@ modbus_dev_t * modbus_get_device_by_id(unsigned unit_id)
 }
 
 
-modbus_dev_t * modbus_get_device_by_name(char * name)
+static modbus_dev_t * _modbus_get_device_by_name(modbus_bus_t* bus, char * name)
 {
     if (!name)
         return NULL;
     unsigned name_len = strlen(name);
     if (name_len > MODBUS_NAME_LEN)
         return NULL;
-    modbus_dev_t * dev = _modbus_get_first_dev();
+    modbus_dev_t * dev = _modbus_get_first_dev2(bus);
     while(dev)
     {
         if (strncmp(name, dev->name, MODBUS_NAME_LEN) == 0)
@@ -216,6 +222,12 @@ modbus_dev_t * modbus_get_device_by_name(char * name)
         dev = _modbus_get_next_dev(dev);
     }
     return NULL;
+}
+
+
+modbus_dev_t * modbus_get_device_by_name(char * name)
+{
+    return _modbus_get_device_by_name(modbus_bus, name);
 }
 
 
@@ -562,16 +574,59 @@ void modbus_bus_init(modbus_bus_t * bus)
 
 bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
 {
-    bool ret = !(
-        d0->version                 == d1->version              &&
-        d0->binary_protocol         == d1->binary_protocol      &&
-        d0->databits                == d1->databits             &&
-        d0->stopbits                == d1->stopbits             &&
-        d0->parity                  == d1->parity               &&
-        d0->dev_count               == d1->dev_count            &&
-        d0->baudrate                == d1->baudrate             &&
-        d0->first_dev_offset        == d1->first_dev_offset     &&
-        d0->first_free_offset       == d1->first_free_offset    );
-    // TODO: Check blocks are the same
-    return ret;
+    /* Is bus different */
+    if (d0->version                 != d1->version              ||
+        d0->binary_protocol         != d1->binary_protocol      ||
+        d0->databits                != d1->databits             ||
+        d0->stopbits                != d1->stopbits             ||
+        d0->parity                  != d1->parity               ||
+        d0->dev_count               != d1->dev_count            ||
+        d0->baudrate                != d1->baudrate             ||
+        d0->first_dev_offset        != d1->first_dev_offset     ||
+        d0->first_free_offset       != d1->first_free_offset    )
+    {
+        return true;
+    }
+
+    modbus_dev_t* d0dev = (modbus_dev_t*)_modbus_get_first_dev2(d0);
+    modbus_dev_t* d1dev = (modbus_dev_t*)_modbus_get_first_dev2(d1);
+    modbus_reg_t* d0reg;
+    modbus_reg_t* d1reg;
+    unsigned recursion_count = 0;
+    while (recursion_count < MODBUS_BLOCKS)
+    {
+        if (!(d0dev && d1dev && memcmp(d0dev, d1dev, sizeof(modbus_dev_t)) == 0))
+        {
+            return true;
+        }
+        d0reg = _modbus_get_first_reg(d0dev);
+        d1reg = _modbus_get_first_reg(d1dev);
+        while(recursion_count < MODBUS_BLOCKS)
+        {
+            if ((!d0reg && d1reg) || (d0reg && !d1reg))
+            {
+                return true;
+            }
+            if (!d0reg && !d1reg)
+            {
+                break;
+            }
+            bool reg_is_same =
+                memcmp(d0reg->name, d1reg->name, sizeof(char) * MODBUS_NAME_LEN) == 0 &&
+                d0reg->type == d1reg->type &&
+                d0reg->func == d1reg->func &&
+                d0reg->reg_addr == d1reg->reg_addr &&
+                d0reg->unit_id == d1reg->unit_id &&
+                d0reg->next_reg_offset == d1reg->next_reg_offset;
+            if (!reg_is_same)
+            {
+                return true;
+            }
+            recursion_count++;
+        }
+        d0dev = _modbus_get_next_dev(d0dev);
+        d1dev = _modbus_get_next_dev(d1dev);
+        recursion_count++;
+    }
+    return recursion_count >= MODBUS_BLOCKS;
 }
