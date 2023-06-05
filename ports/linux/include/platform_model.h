@@ -2,6 +2,7 @@
 #include "model.h"
 
 #define model_persist_config_model_init    CONCAT(fw_name, _persist_config_model_init)
+#define model_persist_config_cmp           CONCAT(fw_name, _persist_config_cmp)
 #define model_sensors_init                 CONCAT(fw_name,_sensors_init)
 #define model_post_init                    CONCAT(fw_name,_post_init)
 #define model_uart_ring_done_in_process    CONCAT(fw_name,_uart_ring_done_in_process)

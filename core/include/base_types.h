@@ -95,6 +95,7 @@ typedef enum
     CUSTOM_0      = 14,
     CUSTOM_1      = 15,
     IO_READING    = 16,
+    CONFIG_REVISION = 17,
 } measurements_def_type_t;
 
 
@@ -110,6 +111,7 @@ typedef enum
 #define MEASUREMENTS_DEF_NAME_LIGHT             "LIGHT"
 #define MEASUREMENTS_DEF_NAME_SOUND             "SOUND"
 #define MEASUREMENTS_DEF_NAME_FW_VERSION        "FW_VERSION"
+#define MEASUREMENTS_DEF_NAME_CONFIG_REVISION   "CONFIG_REVISION"
 #define MEASUREMENTS_DEF_NAME_FTMA              "FTMA"
 
 #ifndef MEASUREMENTS_DEF_NAME_CUSTOM_0

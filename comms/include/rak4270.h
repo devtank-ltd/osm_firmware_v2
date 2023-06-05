@@ -22,3 +22,5 @@ extern bool     rak4270_get_id(char* str, uint8_t len);
 extern struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail);
 
 extern void     rak4270_power_down(void);
+
+extern bool     rak4270_persist_config_cmp(void* d0, void* d1);

@@ -304,6 +304,16 @@ uint64_t lw_consume(char *p, unsigned len)
 }
 
 
+/* Return true  if different
+ *        false if same      */
+bool lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1)
+{
+    return !(
+        d0 && d1 &&
+        memcmp(d0, d1, sizeof(lw_config_t)) == 0);
+}
+
+
 static void _lw_config_init2(lw_config_t* lw_config)
 {
     lw_config->region = LW_REGION_EU868;

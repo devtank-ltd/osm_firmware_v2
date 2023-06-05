@@ -40,3 +40,5 @@ extern bool              modbus_reg_get_i16(modbus_reg_t * reg, int16_t * value)
 extern bool              modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value);
 extern bool              modbus_reg_get_i32(modbus_reg_t * reg, int32_t * value);
 extern bool              modbus_reg_get_float(modbus_reg_t * reg, float * value);
+
+extern bool             modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1);

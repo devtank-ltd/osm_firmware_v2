@@ -1415,6 +1415,7 @@ static const char* measurements_type_to_str(measurements_def_type_t type)
     static const char light_name[]          = MEASUREMENTS_DEF_NAME_LIGHT;
     static const char sound_name[]          = MEASUREMENTS_DEF_NAME_SOUND;
     static const char fw_version_name[]     = MEASUREMENTS_DEF_NAME_FW_VERSION;
+    static const char config_revision_name[] = MEASUREMENTS_DEF_NAME_CONFIG_REVISION;
     static const char ftma_name[]           = MEASUREMENTS_DEF_NAME_FTMA;
     static const char custom_0_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_0;
     static const char custom_1_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_1;
@@ -1446,6 +1447,8 @@ static const char* measurements_type_to_str(measurements_def_type_t type)
             return sound_name;
         case FW_VERSION:
             return fw_version_name;
+        case CONFIG_REVISION:
+            return config_revision_name;
         case FTMA:
             return ftma_name;
         case CUSTOM_0:
