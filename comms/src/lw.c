@@ -302,3 +302,18 @@ uint64_t lw_consume(char *p, unsigned len)
     p[len] = tmp;
     return r;
 }
+
+
+static void _lw_config_init2(lw_config_t* lw_config)
+{
+    lw_config->region = LW_REGION_EU868;
+    memset(lw_config->dev_eui, 0, LW_DEV_EUI_LEN);
+    memset(lw_config->app_key, 0, LW_APP_KEY_LEN);
+}
+
+
+void lw_config_init(comms_config_t* comms_config)
+{
+    comms_config->type = COMMS_TYPE_LW;
+    _lw_config_init2((lw_config_t*)comms_config->setup);
+}

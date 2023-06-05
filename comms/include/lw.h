@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include "base_types.h"
 
 #define LW_UNSOL_VERSION                    0x01
 
@@ -63,3 +64,4 @@ lw_config_t*    lw_get_config(void);
 bool            lw_persist_data_is_valid(void);
 bool            lw_config_setup_str(char * str);
 uint64_t        lw_consume(char *p, unsigned len);
+void            lw_config_init(comms_config_t* config);

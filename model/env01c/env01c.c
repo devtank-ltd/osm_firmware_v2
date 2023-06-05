@@ -55,8 +55,7 @@ void env01c_persist_config_model_init(persist_env01c_config_v1_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
-    model_config->comms_config.type = COMMS_TYPE_LW;
-    ((lw_config_t*)model_config->comms_config.setup)->region = LW_REGION_EU868;
+    lw_config_init(&model_config->comms_config);
     model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }
 
