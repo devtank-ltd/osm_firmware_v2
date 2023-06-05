@@ -63,11 +63,12 @@ _Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "
 
 #define RAK4270_CONFIG_JOIN_MODE             STR(RAK4270_SETTING_JOIN_MODE_OTAA)
 #define RAK4270_CONFIG_CLASS                 STR(RAK4270_SETTING_CLASS_C)
-#define RAK4270_CONFIG_REGION                "EU868"
 #define RAK4270_CONFIG_CONFIRM_TYPE          STR(RAK4270_SETTING_CONFIRM)
 #define RAK4270_CONFIG_ADR                   STR(RAK4270_SETTING_ADR_DISABLED)
 #define RAK4270_CONFIG_DR                    STR(RAK4270_SETTING_DR_4)
 #define RAK4270_CONFIG_DUTY_CYCLE            STR(RAK4270_SETTING_DUTY_CYCLE_DISABLED)
+
+#define RAK4270_REGION_NAME_AS923            "AS923"
 
 typedef enum
 {
@@ -206,11 +207,11 @@ static uint16_t             _rak4270_packet_max_size                  = RAK4270_
 static rak4270_msg_buf_t _init_msgs[] = { "at+set_config=lora:default_parameters",
                                      "at+set_config=lora:join_mode:"RAK4270_CONFIG_JOIN_MODE,
                                      "at+set_config=lora:class:"RAK4270_CONFIG_CLASS,
-                                     "at+set_config=lora:region:"RAK4270_CONFIG_REGION,
                                      "at+set_config=lora:confirm:"RAK4270_CONFIG_CONFIRM_TYPE,
                                      "at+set_config=lora:adr:"RAK4270_CONFIG_ADR,
                                      "at+set_config=lora:dr:"RAK4270_CONFIG_DR,
                                      "at+set_config=lora:dutycycle_enable:"RAK4270_CONFIG_DUTY_CYCLE,
+                                     "REGION goes here",
                                      "Dev EUI goes here",
                                      "App EUI goes here",
                                      "App Key goes here"};
@@ -292,6 +293,54 @@ static void _rak4270_reset_gpio_init(void)
 }
 
 
+static const char* _rak4270_region_name(uint8_t region)
+{
+    const char* name;
+    switch (region)
+    {
+        case LW_REGION_EU433:
+            name = LW_REGION_NAME_EU433;
+            break;
+        case LW_REGION_CN470:
+            name = LW_REGION_NAME_CN470;
+            break;
+        case LW_REGION_IN865:
+            name = LW_REGION_NAME_IN865;
+            break;
+        case LW_REGION_EU868:
+            name = LW_REGION_NAME_EU868;
+            break;
+        case LW_REGION_US915:
+            name = LW_REGION_NAME_US915;
+            break;
+        case LW_REGION_AU915:
+            name = LW_REGION_NAME_AU915;
+            break;
+        case LW_REGION_KR920:
+            name = LW_REGION_NAME_KR920;
+            break;
+        case LW_REGION_AS923_2:
+            /* fall through */
+        case LW_REGION_AS923_3:
+            /* fall through */
+        case LW_REGION_AS923_4:
+            comms_debug("Not capable of set region, defaulting to LW_REGION_AS923_1");
+            /* fall through */
+        case LW_REGION_AS923_1:
+            /* Different from default */
+            name = RAK4270_REGION_NAME_AS923;
+            break;
+        case LW_REGION_RU864:
+            comms_debug("Not capable of set region.");
+            /* fall through */
+        default:
+            name = NULL;
+            break;
+    }
+    return name;
+}
+
+
 static bool _rak4270_load_config(void)
 {
     if (!lw_persist_data_is_valid())
@@ -303,10 +352,17 @@ static bool _rak4270_load_config(void)
     lw_config_t* config = lw_get_config();
     if (!config)
         return false;
+    const char* region_name = _rak4270_region_name(config->region);
+    if (!region_name)
+    {
+        log_error("Invalid region, setting to EU868.");
+        region_name = _rak4270_region_name(LW_REGION_EU868);
+    }
 
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%."STR(LW_APP_KEY_LEN)"s", config->app_key);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-4], sizeof(rak4270_msg_buf_t), "at+set_config=lora:region:%.*s",  LW_REGION_LEN,  region_name    );
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%.*s", LW_DEV_EUI_LEN, config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%.*s", LW_DEV_EUI_LEN, config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%.*s", LW_APP_KEY_LEN, config->app_key);
     return true;
 }
 

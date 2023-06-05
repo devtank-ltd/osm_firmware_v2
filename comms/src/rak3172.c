@@ -110,9 +110,9 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
     "AT+CFM=1",             /* Set confirmation   */
     "AT+NJM=1",             /* Set OTAA mode      */
     "AT+CLASS=C",           /* Set Class A mode   */
-    "AT+BAND=4",            /* Set to EU868       */
     "AT+ADR=0",             /* Do not use ADR     */
     "AT+DR=4",              /* Set to DR 4        */
+    "REGION goes here",     /* Set to EU868       */
     "DEVEUI goes here",
     "APPEUI goes here",
     "APPKEY goes here"
@@ -376,22 +376,43 @@ static bool _rak3172_load_config(void)
     if (!config)
         return false;
 
+    /* If outside range, default to LW_REGION_EU868 */
+    lw_region_t region;
+    if (config->region > LW_REGION_MAX)
+    {
+        log_error("Invalid region, setting to EU868.");
+        region = LW_REGION_EU868;
+    }
+    else
+    {
+        region = config->region;
+    }
+
+    snprintf(
+        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-4],
+        RAK3172_INIT_MSG_LEN,
+        "AT+BAND=%"PRIu8,
+        (uint8_t)region);
+
     snprintf(
         _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-3],
         RAK3172_INIT_MSG_LEN,
-        "AT+DEVEUI=%."STR(LW_DEV_EUI_LEN)"s",
+        "AT+DEVEUI=%.*s",
+        LW_DEV_EUI_LEN,
         config->dev_eui);
 
     snprintf(
         _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-2],
         RAK3172_INIT_MSG_LEN,
-        "AT+APPEUI=%."STR(LW_DEV_EUI_LEN)"s",
+        "AT+APPEUI=%.*s",
+        LW_DEV_EUI_LEN,
         config->dev_eui);
 
     snprintf(
         _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-1],
         RAK3172_INIT_MSG_LEN,
-        "AT+APPKEY=%."STR(LW_APP_KEY_LEN)"s",
+        "AT+APPKEY=%.*s",
+        LW_APP_KEY_LEN,
         config->app_key);
 
     return true;
