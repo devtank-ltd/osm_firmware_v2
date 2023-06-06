@@ -315,19 +315,6 @@ static void _rak3172_process_state_send_ok(char* msg)
 }
 
 
-static void _rak3172_send_err_code(uint8_t err_code)
-{
-    int8_t arr[15] = {0};
-    if (!protocol_init(arr, ARRAY_SIZE(arr)))
-    {
-        comms_debug("Could not init memory protocol.");
-        return;
-    }
-    protocol_append_error_code(err_code);
-    rak3172_send(arr, protocol_get_length());
-}
-
-
 static void _rak3172_process_state_send_ack(char* msg)
 {
     if (msg_is(RAK3172_MSG_ACK, msg))
@@ -777,7 +764,7 @@ void rak3172_loop_iteration(void)
         case RAK3172_STATE_IDLE:
             if (_rak3172_ctx.err_code)
             {
-                _rak3172_send_err_code(_rak3172_ctx.err_code);
+                protocol_send_error_code(_rak3172_ctx.err_code);
                 _rak3172_ctx.err_code = 0;
             }
             break;

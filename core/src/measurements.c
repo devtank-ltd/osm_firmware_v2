@@ -48,7 +48,6 @@ static uint32_t                     _last_sent_ms                               
 static bool                         _pending_send                                        = false;
 static measurements_check_time_t    _check_time                                          = {0, 0};
 static uint32_t                     _interval_count                                      =  0;
-static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
@@ -92,11 +91,7 @@ bool measurements_get_measurements_def(char* name, measurements_def_t ** measure
 
 static bool _measurements_send_start(void)
 {
-    unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
-    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    if (!protocol_init(_measurements_hex_arr, size))
+    if (!protocol_init())
     {
         log_error("Failed to add even version to measurements hex array.");
         _pending_send = false;
@@ -144,7 +139,7 @@ bool measurements_send_test(char * name)
     if (r)
     {
         measurements_debug("Sending test array.");
-        comms_send(_measurements_hex_arr, protocol_get_length());
+        protocol_send();
     }
     else measurements_debug("Failed to add to array.");
 
@@ -253,12 +248,9 @@ static void _measurements_send(void)
     {
         _pending_send = !is_max;
         if (_measurements_debug_mode)
-        {
-            for (unsigned j = 0; j < protocol_get_length(); j++)
-                measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
-        }
+            protocol_debug();
         else
-            comms_send(_measurements_hex_arr, protocol_get_length());
+            protocol_send();
         if (is_max)
             measurements_debug("Complete send");
         else
@@ -922,11 +914,7 @@ void _measurements_check_instant_send(void)
     if (!to_instant_send)
         return;
 
-    unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
-    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    if (!protocol_init(_measurements_hex_arr, size))
+    if (!protocol_init())
     {
         measurements_debug("Could not initialise the hex array for the protocol.");
         return;
@@ -973,7 +961,7 @@ void _measurements_check_instant_send(void)
         measurements_debug("Cannot send instant send, scheduled uplink soon.");
         return;
     }
-    comms_send(_measurements_hex_arr, protocol_get_length());
+    protocol_send();
 }
 
 
