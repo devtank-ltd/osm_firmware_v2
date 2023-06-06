@@ -112,8 +112,8 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
     "AT+CLASS=C",           /* Set Class A mode   */
     "AT+ADR=0",             /* Do not use ADR     */
     "AT+DR=4",              /* Set to DR 4        */
+    "AT+TXP=0",             /* Set highest TX     */
     "REGION goes here",     /* Set to EU868       */
-    "AT+TXP=0",             /* Set heighest TX    */
     "DEVEUI goes here",
     "APPEUI goes here",
     "APPKEY goes here"
@@ -272,12 +272,6 @@ static void _rak3172_process_state_join_wait_join(char* msg)
         comms_debug("READ JOIN FAILED");
         rak3172_reset();
     }
-}
-
-
-static bool _rak3172_reload_config(void)
-{
-    return true;
 }
 
 
@@ -832,7 +826,11 @@ static command_response_t _rak3172_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
     {
-        _rak3172_reload_config();
+        if (_rak3172_load_config())
+        {
+            _rak3172_ctx.reset_count = 0;
+            rak3172_reset();
+        }
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;

@@ -37,11 +37,14 @@ bool lw_get_id(char* str, uint8_t len)
 bool lw_persist_data_is_valid(void)
 {
     lw_config_t* config = lw_get_config();
+    if (LW_CONFIG_VERSION != config->version)
+    {
+        return false;
+    }
     for (uint8_t i = 0; i < LW_DEV_EUI_LEN; i++)
     {
         if (!isascii(config->dev_eui[i]) || config->dev_eui[i] == 0)
         {
-            log_out("Dev EUI = %s", config->dev_eui);
             return false;
         }
     }
@@ -49,7 +52,6 @@ bool lw_persist_data_is_valid(void)
     {
         if (!isascii(config->app_key[i]) || config->app_key[i] == 0)
         {
-            log_out("App Key = %s", config->app_key);
             return false;
         }
     }
@@ -317,6 +319,7 @@ bool lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1)
 static void _lw_config_init2(lw_config_t* lw_config)
 {
     lw_config->region = LW_REGION_EU868;
+    lw_config->version = LW_CONFIG_VERSION;
     memset(lw_config->dev_eui, 0, LW_DEV_EUI_LEN);
     memset(lw_config->app_key, 0, LW_APP_KEY_LEN);
 }
