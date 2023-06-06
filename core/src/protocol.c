@@ -8,8 +8,6 @@
 #include "comms.h"
 #include "platform_model.h"
 
-static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
-
 #define PROTOCOL_SEND_STR_LEN               8
 #define PROTOCOL_ERR_CODE_NAME                  "ERR"
 
@@ -33,7 +31,7 @@ typedef enum
 
 typedef struct
 {
-    int8_t*     buf;
+    int8_t      buf[PROTOCOL_HEX_ARRAY_SIZE];
     unsigned    buflen;
     unsigned    pos;
 } protocol_ctx_t;
@@ -41,8 +39,8 @@ typedef struct
 
 static protocol_ctx_t _protocol_ctx =
 {
-    .buf = NULL,
-    .buflen = 0,
+    .buf = {0},
+    .buflen = PROTOCOL_HEX_ARRAY_SIZE,
     .pos = 0,
 };
 
@@ -285,26 +283,11 @@ bool protocol_append_instant_measurement(measurements_def_t* def, measurements_r
 }
 
 
-static bool _protocol_init(int8_t* buf, unsigned buflen)
-{
-    memset(buf, 0, buflen);
-
-    _protocol_ctx.buf = buf;
-    _protocol_ctx.buflen = buflen;
-    _protocol_ctx.pos = 0;
-
-    memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
-    return _protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION);
-}
-
-
 bool protocol_init(void)
 {
-    unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
-    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-
-    return _protocol_init(_measurements_hex_arr, size);
+    _protocol_ctx.pos = 0;
+    memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
+    return _protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION);
 }
 
 
@@ -317,13 +300,13 @@ unsigned protocol_get_length(void)
 void        protocol_debug(void)
 {
     for (unsigned j = 0; j < protocol_get_length(); j++)
-        measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
+        measurements_debug("Packet %u = 0x%"PRIx8, j, _protocol_ctx.buf[j]);
 }
 
 
 void        protocol_send(void)
 {
-    comms_send(_measurements_hex_arr, protocol_get_length());
+    comms_send(_protocol_ctx.buf, protocol_get_length());
 }
 
 
@@ -331,7 +314,7 @@ void        protocol_send_error_code(uint8_t err_code)
 {
     int8_t arr[15] = {0};
     protocol_ctx_t org = _protocol_ctx;
-    if (!_protocol_init(arr, ARRAY_SIZE(arr)))
+    if (!protocol_init())
     {
         _protocol_ctx = org;
         comms_debug("Could not init memory protocol.");
