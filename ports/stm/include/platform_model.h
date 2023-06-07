@@ -1,6 +1,8 @@
 #pragma once
 #include "model.h"
 
+#define osm_main main
+
 #define model_stm_adcs_get_channel         CONCAT(fw_name, _stm_adcs_get_channel)
 #define model_persist_config_model_init    CONCAT(fw_name, _persist_config_model_init)
 #define model_persist_config_cmp           CONCAT(fw_name, _persist_config_cmp)

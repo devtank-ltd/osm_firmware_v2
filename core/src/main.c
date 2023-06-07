@@ -24,7 +24,7 @@
 #define NORMAL_FLASHING_TIME_SEC            1000
 
 
-int main(void)
+int osm_main(void)
 {
     platform_init();
     platform_blink_led_init();
