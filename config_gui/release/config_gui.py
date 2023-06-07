@@ -1413,11 +1413,15 @@ class config_gui_window_t(Tk):
             graph_canv.create_text(x, Y_START + X_AXIS_NUM_Y_OFFSET, text=str(mA))
             graph_canv.create_line(x, Y_START, x, Y_END)  # y line
 
+        Y_STEPS = 10
+        OUTPUT_STEP_SCALE = unit_y_range / Y_STEPS
+
         # Draw the Y axis labels
-        for output in range(int(unit_min_y), int(unit_max_y) + 1, int(unit_y_range / 10)):
+        for i in range(0, Y_STEPS + 1):
+            output = unit_min_y + i * OUTPUT_STEP_SCALE
             y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
             graph_canv.create_line(X_START, y, X_END, y)  # x line
-            graph_canv.create_text(X_START + Y_AXIS_NUM_X_OFFSET, y, text=str(int(output)))
+            graph_canv.create_text(X_START + Y_AXIS_NUM_X_OFFSET, y, text="%G" % output)
 
         # Draw the data points
         for mA in range(MA_MIN, MA_MAX + 1):
