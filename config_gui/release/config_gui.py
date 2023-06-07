@@ -1416,12 +1416,25 @@ class config_gui_window_t(Tk):
         Y_STEPS = 10
         OUTPUT_STEP_SCALE = unit_y_range / Y_STEPS
 
+        y_labels = []
+        t_max_width = 0
+
         # Draw the Y axis labels
         for i in range(0, Y_STEPS + 1):
             output = unit_min_y + i * OUTPUT_STEP_SCALE
             y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
             graph_canv.create_line(X_START, y, X_END, y)  # x line
-            graph_canv.create_text(X_START + Y_AXIS_NUM_X_OFFSET, y, text="%G" % output)
+            text = "%G" % output
+            t = graph_canv.create_text(0, 0, text=text)
+            t_size = graph_canv.bbox(t)
+            t_width = t_size[2] - t_size[0]
+            if t_width > t_max_width:
+                t_max_width = t_width
+            y_labels += [(t, y)]
+
+        # Reposition Y labels
+        for t, y in y_labels:
+            graph_canv.move(t, X_START - t_max_width / 2, y) # Half because it's centre, not corner drawn
 
         # Draw the data points
         for mA in range(MA_MIN, MA_MAX + 1):
