@@ -1407,23 +1407,23 @@ class config_gui_window_t(Tk):
         unit_to_pixel_x = pixel_x_range / ma_x_range
 
         PNT_SIZE=3
-        # Draw the axis labels
+        # Draw the X axis labels
         for mA in range(MA_MIN, MA_MAX + 1, 4):
             x = X_START + (mA - MA_MIN) * unit_to_pixel_x
-            output = self.calculate_output(mA)
-            y = Y_START - (output - unit_min_y) * unit_to_pixel_y
             graph_canv.create_text(x, Y_START + X_AXIS_NUM_Y_OFFSET, text=str(mA))
+            graph_canv.create_line(x, Y_START, x, Y_END)  # y line
+
+        # Draw the Y axis labels
+        for output in range(int(unit_min_y), int(unit_max_y) + 1, int(unit_y_range / 10)):
+            y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
             graph_canv.create_line(X_START, y, X_END, y)  # x line
             graph_canv.create_text(X_START + Y_AXIS_NUM_X_OFFSET, y, text=str(int(output)))
-            graph_canv.create_line(x, Y_START, x, Y_END)  # y line
 
         # Draw the data points
         for mA in range(MA_MIN, MA_MAX + 1):
             output = self.calculate_output(mA)
             x = X_START + ((mA - MA_MIN) * unit_to_pixel_x)
             y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
-            print("x: ", x)
-            print("y: ", y)
             graph_canv.create_oval(x - PNT_SIZE, y - PNT_SIZE, x + PNT_SIZE, y + PNT_SIZE, fill='blue')
 
     def calculate_output(self, milliamps):
