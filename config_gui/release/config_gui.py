@@ -1350,7 +1350,7 @@ class config_gui_window_t(Tk):
                         font=('Arial', 14, 'bold'))
         d_entry.grid(column=1, row=6, sticky=W)
 
-        ftma_btn = Button(self._ftma_window, text="Send",
+        ftma_btn = Button(self._ftma_window, text="Commit",
                                    command=lambda : self._send_coeffs(
                                     str(name_entry.get()),
                                     [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()],
@@ -1363,52 +1363,76 @@ class config_gui_window_t(Tk):
         graph_canv = Canvas(self._ftma_window)
         graph_canv.grid(column=0, row=8, columnspan=2)
 
-        milliamps = np.arange(4,21)
-        output = float(self.coeffs[0]) + \
-                 float(self.coeffs[1]) * milliamps + \
-                 float(self.coeffs[2]) * milliamps ** 2 + \
-                 float(self.coeffs[3]) * milliamps ** 3
-
-        # Define the x and y scales for the graph
-        X_SCALE = 15
-        Y_SCALE = 20
-
-        # Draw the x and y axes
+        
         X_START = 70
         X_END = 340
-        Y = 220
-        X = 70
         Y_START = 220
         Y_END = 50
-        graph_canv.create_line(X_START, Y, X_END, Y)  # x axis
-        graph_canv.create_line(X, Y_START, X, Y_END)    # y axis
+        graph_canv.create_line(X_START, Y_START, X_END, Y_START)  # x axis
+        graph_canv.create_line(X_START, Y_START, X_START, Y_END)  # y axis
+
+        EQU_X_OFFSET = 110
+        EQU_Y_OFFSET = -40
+
+        X_AXIS_LAB_X_OFFSET = -60
+        X_AXIS_LAB_Y_OFFSET = -110
+
+        Y_AXIS_LAB_X_OFFSET = 125
+        Y_AXIS_LAB_Y_OFFSET = 30
+    
+        X_AXIS_NUM_Y_OFFSET = 10
+        Y_AXIS_NUM_X_OFFSET = -10
+
+        MA_MIN = 4
+        MA_MAX = 20
 
         #title
-        graph_canv.create_text(X+110, X-40, text="y = A + Bx + Cx² + Dx³")
+        graph_canv.create_text(X_START + EQU_X_OFFSET, X_START + EQU_Y_OFFSET, text="y = A + Bx + Cx² + Dx³")
         #y axis label
-        graph_canv.create_text(X-60, Y-110, text="Output", angle=90)
+        graph_canv.create_text(X_START + X_AXIS_LAB_X_OFFSET, Y_START + X_AXIS_LAB_Y_OFFSET, text="Output", angle=90)
         #x axis label
-        graph_canv.create_text(X+125, Y+30, text="mA")
+        graph_canv.create_text(X_START + Y_AXIS_LAB_X_OFFSET, Y_START + Y_AXIS_LAB_Y_OFFSET, text="mA")
 
-        x_axis_coords = []
-        # Draw the x axis labels
-        for i in milliamps[::2]:
-            graph_canv.create_text(X-40 + i*X_SCALE, Y+10, text=str(i))
-            x_axis_coords.append(X-40 + i*X_SCALE)
+        unit_min_y = self.calculate_output(MA_MIN)
+        unit_max_y = self.calculate_output(MA_MAX)
 
-        y_axis_coords = []
-        # Draw the y axis labels
-        chunks = [output[x:x+2] for x in range(0,len(output),2)]
-        for v, i in enumerate(chunks):
-            graph_canv.create_text(X-20, Y-10-v*Y_SCALE, text=str(int(i[0])))
-            y_axis_coords.append(Y-10-v*Y_SCALE)
+        pixel_y_range = Y_START - Y_END
+        unit_y_range = unit_max_y - unit_min_y
+
+        unit_to_pixel_y = pixel_y_range / unit_y_range
+
+        pixel_x_range = X_END - X_START
+        ma_x_range = MA_MAX - MA_MIN
+
+        unit_to_pixel_x = pixel_x_range / ma_x_range
+
+        PNT_SIZE=3
+        # Draw the axis labels
+        for mA in range(MA_MIN, MA_MAX + 1, 4):
+            x = X_START + (mA - MA_MIN) * unit_to_pixel_x
+            output = self.calculate_output(mA)
+            y = Y_START - (output - unit_min_y) * unit_to_pixel_y
+            graph_canv.create_text(x, Y_START + X_AXIS_NUM_Y_OFFSET, text=str(mA))
+            graph_canv.create_line(X_START, y, X_END, y)  # x line
+            graph_canv.create_text(X_START + Y_AXIS_NUM_X_OFFSET, y, text=str(int(output)))
+            graph_canv.create_line(x, Y_START, x, Y_END)  # y line
 
         # Draw the data points
-        for i, v in enumerate(milliamps[::2]):
-            x = x_axis_coords[i]
-            y = y_axis_coords[i]
-            graph_canv.create_oval(x-3, y-3, x+3, y+3, fill='blue')
+        for mA in range(MA_MIN, MA_MAX + 1):
+            output = self.calculate_output(mA)
+            x = X_START + ((mA - MA_MIN) * unit_to_pixel_x)
+            y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
+            print("x: ", x)
+            print("y: ", y)
+            graph_canv.create_oval(x - PNT_SIZE, y - PNT_SIZE, x + PNT_SIZE, y + PNT_SIZE, fill='blue')
 
+    def calculate_output(self, milliamps):
+        output = float(self.coeffs[0]) + \
+            float(self.coeffs[1]) * milliamps + \
+            float(self.coeffs[2]) * milliamps ** 2 + \
+            float(self.coeffs[3]) * milliamps ** 3
+        return output
+    
     def _send_coeffs(self, name, args, meas):
         find_name = re.findall("[a-zA-z0-9]+", name)
         if find_name:
