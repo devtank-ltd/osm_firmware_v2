@@ -25,7 +25,7 @@ static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
 
 
-static uint32_t _uart_get_parity(uart_parity_t parity)
+static uint32_t _uart_get_parity(osm_uart_parity_t parity)
 {
     switch(parity)
     {
@@ -35,7 +35,7 @@ static uint32_t _uart_get_parity(uart_parity_t parity)
     }
 }
 
-static uint32_t _uart_get_stop(uart_stop_bits_t stop)
+static uint32_t _uart_get_stop(osm_uart_stop_bits_t stop)
 {
     switch(stop)
     {
@@ -163,7 +163,7 @@ bool uart_is_enabled(unsigned uart)
 }
 
 
-void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
+void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
 {
     if (uart >= UART_CHANNELS_COUNT || !uart)
         return;
@@ -195,11 +195,11 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
     uart_up(channel);
 
     uart_debug(uart, "%u %"PRIu8"%c%s",
-            (unsigned)channel->baud, channel->databits, uart_parity_as_char(channel->parity), uart_stop_bits_as_str(channel->stop));
+            (unsigned)channel->baud, channel->databits, osm_uart_parity_as_char(channel->parity), osm_uart_stop_bits_as_str(channel->stop));
 }
 
 
-extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_parity_t * parity, uart_stop_bits_t * stop)
+extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
 {
     if (uart >= UART_CHANNELS_COUNT )
         return false;
@@ -226,8 +226,8 @@ bool uart_resetup_str(unsigned uart, char * str)
 {
     uint32_t         speed;
     uint8_t          databits;
-    uart_parity_t    parity;
-    uart_stop_bits_t stop;
+    osm_uart_parity_t    parity;
+    osm_uart_stop_bits_t stop;
 
     if (uart >= UART_CHANNELS_COUNT )
     {
@@ -235,7 +235,7 @@ bool uart_resetup_str(unsigned uart, char * str)
         return false;
     }
 
-    if (!decompose_uart_str(str, &speed, &databits, &parity, &stop))
+    if (!osm_decompose_uart_str(str, &speed, &databits, &parity, &stop))
         return false;
 
     uart_resetup(uart, speed, databits, parity, stop);

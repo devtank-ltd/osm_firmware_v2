@@ -10,8 +10,8 @@ typedef struct
 {
     uint32_t              baud;
     uint8_t               databits:4;
-    uint8_t               parity:2 /*uart_parity_t*/;
-    uint8_t               stop:2 /*uart_stop_bits_t*/;
+    uint8_t               parity:2 /*osm_uart_parity_t*/;
+    uint8_t               stop:2 /*osm_uart_stop_bits_t*/;
     uint8_t               enabled;
     uint32_t              fd;
 } uart_channel_t;

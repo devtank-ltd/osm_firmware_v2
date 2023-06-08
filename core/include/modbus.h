@@ -10,7 +10,7 @@ extern uint16_t modbus_crc(uint8_t * buf, unsigned length);
 
 extern bool modbus_start_read(modbus_reg_t * reg);
 
-extern void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop, bool binary_framing);
+extern void modbus_setup(unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, bool binary_framing);
 
 extern bool modbus_setup_from_str(char * str);
 extern bool modbus_add_dev_from_str(char* str);

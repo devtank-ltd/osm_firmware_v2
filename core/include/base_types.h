@@ -16,7 +16,7 @@ typedef enum
     uart_parity_none = 0,
     uart_parity_odd  = 1,
     uart_parity_even = 2,
-} uart_parity_t;
+} osm_uart_parity_t;
 
 /*matches usb_cdc_line_coding_bCharFormat*/
 typedef enum
@@ -24,16 +24,16 @@ typedef enum
     uart_stop_bits_1   = 0,
     uart_stop_bits_1_5 = 1,
     uart_stop_bits_2   = 2,
-} uart_stop_bits_t;
+} osm_uart_stop_bits_t;
 
-static inline char        uart_parity_as_char(uart_parity_t parity)    { return (parity == uart_parity_even)?'E':(parity == uart_parity_odd)?'O':'N'; }
-static inline const char* uart_stop_bits_as_str(uart_stop_bits_t stop) { switch(stop) { case uart_stop_bits_1: return "1"; case uart_stop_bits_1_5: return "1.5"; case uart_stop_bits_2: return "2"; default: return "?"; } }
+static inline char        osm_uart_parity_as_char(osm_uart_parity_t parity)    { return (parity == uart_parity_even)?'E':(parity == uart_parity_odd)?'O':'N'; }
+static inline const char* osm_uart_stop_bits_as_str(osm_uart_stop_bits_t stop) { switch(stop) { case uart_stop_bits_1: return "1"; case uart_stop_bits_1_5: return "1.5"; case uart_stop_bits_2: return "2"; default: return "?"; } }
 
-extern bool decompose_uart_str(char             * str,
+extern bool osm_decompose_uart_str(char             * str,
                                uint32_t         * speed,
                                uint8_t          * databits,
-                               uart_parity_t    * parity,
-                               uart_stop_bits_t * stop);
+                               osm_uart_parity_t    * parity,
+                               osm_uart_stop_bits_t * stop);
 
 extern char * skip_space(char * pos);
 extern char * skip_to_space(char * pos);
@@ -214,8 +214,8 @@ typedef struct
     uint8_t  version;
     uint8_t  binary_protocol; /* BIN or RTU */ /* This is to support pymodbus.framer.binary_framer and http://jamod.sourceforge.net/. */
     uint8_t  databits:4;        /* 8? */
-    uint8_t  stopbits:2;        /* uart_stop_bits_t */
-    uint8_t  parity:2;          /* uart_parity_t */
+    uint8_t  stopbits:2;        /* osm_uart_stop_bits_t */
+    uint8_t  parity:2;          /* osm_uart_parity_t */
     uint8_t  dev_count;
     uint32_t baudrate;
     uint16_t first_dev_offset;

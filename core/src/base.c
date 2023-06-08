@@ -49,11 +49,11 @@ bool io_is_special(uint16_t io_state)
 }
 
 
-bool decompose_uart_str(char             * str,
+bool osm_decompose_uart_str(char             * str,
                         uint32_t         * speed,
                         uint8_t          * databits,
-                        uart_parity_t    * parity,
-                        uart_stop_bits_t * stop)
+                        osm_uart_parity_t    * parity,
+                        osm_uart_stop_bits_t * stop)
 {
     if (!str || !speed || !databits || !parity || !stop)
         return false;

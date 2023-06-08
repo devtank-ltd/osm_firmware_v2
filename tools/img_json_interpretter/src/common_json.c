@@ -169,12 +169,12 @@ bool read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
 
         if (get_string_buf(modbus_bus_json, "con_str", con_str, sizeof(con_str)))
         {
-            uart_parity_t parity;
-            uart_stop_bits_t stopbits;
+            osm_uart_parity_t parity;
+            osm_uart_stop_bits_t stopbits;
             uint8_t databits;;
 
 
-            if (!decompose_uart_str(con_str,
+            if (!osm_decompose_uart_str(con_str,
                                &modbus_bus->baudrate,
                                &databits,
                                &parity,
@@ -598,7 +598,7 @@ bool write_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
 
         char con_str[32];
 
-        snprintf(con_str, sizeof(con_str), "%"PRIu32" %u%c%s", modbus_bus->baudrate, modbus_bus->databits, uart_parity_as_char(modbus_bus->parity), uart_stop_bits_as_str(modbus_bus->stopbits));
+        snprintf(con_str, sizeof(con_str), "%"PRIu32" %u%c%s", modbus_bus->baudrate, modbus_bus->databits, osm_uart_parity_as_char(modbus_bus->parity), osm_uart_stop_bits_as_str(modbus_bus->stopbits));
 
         json_object_object_add(modbus_json, "con_str", json_object_new_string(con_str));
 

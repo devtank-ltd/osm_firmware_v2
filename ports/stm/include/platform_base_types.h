@@ -14,8 +14,8 @@ typedef struct
     enum rcc_periph_clken uart_clk;
     uint32_t              baud;
     uint8_t               databits:4;
-    uint8_t               parity:2 /*uart_parity_t*/;
-    uint8_t               stop:2 /*uart_stop_bits_t*/;
+    uint8_t               parity:2 /*osm_uart_parity_t*/;
+    uint8_t               stop:2 /*osm_uart_stop_bits_t*/;
     uint32_t              gpioport;
     uint16_t              pins;
     uint8_t               alt_func_num;
