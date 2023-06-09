@@ -3,9 +3,6 @@
 #include <stdint.h>
 
 
-#define PORT_TO_RCC(_port_)   (_port_)
-
-
 typedef struct
 {
     uint32_t              baud;
