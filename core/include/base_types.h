@@ -49,6 +49,8 @@ extern char * skip_to_space(char * pos);
 #define GPIO_PUPD_NONE     0
 #define GPIO_PUPD_PULLUP   1
 #define GPIO_PUPD_PULLDOWN 2
+#else
+#include <libopencm3/stm32/gpio.h>
 #endif //STM32L4
 
 #define IO_AS_INPUT         0x0100

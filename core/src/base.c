@@ -1,10 +1,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#ifdef STM32L4
-#include <libopencm3/stm32/gpio.h>
-#endif //STM32L4
-
 #include "base_types.h"
 #include "log.h"
 
