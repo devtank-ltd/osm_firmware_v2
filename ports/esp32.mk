@@ -1,6 +1,9 @@
 define ESP32_FIRMWARE
 $(call PORT_BASE_RULES,$(1),ESP32)
 
+ifeq ($$(origin IDF_PATH), undefined)
+  $$(error $(1) requires ESP IDF setup)
+endif
 
 $$(BUILD_DIR)/$(1)/build.ninja:
 	mkdir -p $$(BUILD_DIR)/$(1)
