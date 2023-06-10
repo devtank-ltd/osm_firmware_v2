@@ -7,7 +7,7 @@ endif
 
 $$(BUILD_DIR)/$(1)/build.ninja:
 	mkdir -p $$(BUILD_DIR)/$(1)
-	IDF_TARGET=esp32 cmake $$(MODEL_DIR)/$(1)/ -B $$(BUILD_DIR)/$(1)/ -G Ninja
+	IDF_TARGET=esp32 GIT_COMMITS=$(GIT_COMMITS) GIT_COMMIT=$(GIT_COMMIT) GIT_SHA1=$(GIT_SHA1) cmake $$(MODEL_DIR)/$(1)/ -B $$(BUILD_DIR)/$(1)/ -G Ninja
 
 
 $$(BUILD_DIR)/$(1)/$(1).bin: $$(BUILD_DIR)/$(1)/build.ninja

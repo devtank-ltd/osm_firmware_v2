@@ -1,9 +1,10 @@
 #include <string.h>
 
-#include "platform.h"
-#include "flash_data.h"
+#include <driver/i2c.h>
+#include <driver/gpio.h>
 
-#include "sos.h"
+#include "platform.h"
+
 #include "pinmap.h"
 #include "log.h"
 #include "platform_model.h"
@@ -37,6 +38,15 @@ void platform_watchdog_init(uint32_t ms)
 
 void platform_init(void)
 {
+    gpio_config_t de_485_conf = {
+        .pin_bit_mask = BIT64(DE_485_PIN),
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+    };
+
+    gpio_config(&de_485_conf);
 }
 
 
@@ -57,19 +67,15 @@ void platform_set_rs485_mode(bool driver_enable)
      *
      * */
 
-    port_n_pins_t re_port_n_pin = RE_485_PIN;
-    port_n_pins_t de_port_n_pin = DE_485_PIN;
     if (driver_enable)
     {
-        modbus_debug("driver:enable receiver:disable");
-        gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
-        gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
+        modbus_debug("driver:enable");
+        gpio_set_level(DE_485_PIN, 1);
     }
     else
     {
-        modbus_debug("driver:disable receiver:enable");
-        gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
-        gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
+        modbus_debug("driver:disable");
+        gpio_set_level(DE_485_PIN, 0);
     }
 }
 
@@ -156,12 +162,6 @@ void platform_adc_set_num_data(unsigned num_data)
 
 void platform_hpm_enable(bool enable)
 {
-    port_n_pins_t port_n_pin = HPM_EN_PIN;
-    if (enable)
-    {
-        gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
-        gpio_set(port_n_pin.port, port_n_pin.pins);
-    }
 }
 
 

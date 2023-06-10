@@ -20,7 +20,7 @@ static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 
 static void uart_up(const uart_channel_t * channel)
 {
-    uart_param_config(channel->uart, &channel->uart_config);
+    uart_param_config(channel->uart, &channel->config);
 }
 
 
@@ -107,39 +107,42 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
         log_error("Invalid high UART databits, using 9");
         databits = 8;
     }    
-    channel->baud = speed;
-    channel->databits = (uart_word_length_t)(databits - 5);
+    channel->config.baud_rate = speed;
+    channel->config.data_bits = (uart_word_length_t)(databits - 5);
 
     switch(parity)
     {
         case uart_parity_even:
-            channel->parity = UART_PARITY_EVEN;
+            channel->config.parity = UART_PARITY_EVEN;
             break;
         case uart_parity_odd:
-            channel->parity = UART_PARITY_ODD
+            channel->config.parity = UART_PARITY_ODD;
             break;
         default: 
-            channel->parity = UART_PARITY_DISABLE;
+            channel->config.parity = UART_PARITY_DISABLE;
             break;
     }
 
     switch(stop)
     {
         case uart_stop_bits_2:
-            channel->stop = UART_STOP_BITS_2;
+            channel->config.stop_bits = UART_STOP_BITS_2;
             break;
         case uart_stop_bits_1_5:
-            channel->stop = UART_STOP_BITS_1_5;
+            channel->config.stop_bits = UART_STOP_BITS_1_5;
             break;
         default:
-            channel->stop = UART_STOP_BITS_1;
+            channel->config.stop_bits = UART_STOP_BITS_1;
             break;
     }
 
     uart_up(channel);
 
     uart_debug(uart, "%u %"PRIu8"%c%s",
-            (unsigned)channel->baud, databits, osm_uart_parity_as_char(_osm_uart_parity_get(parity)), osm_uart_stop_bits_as_str(_osm_uart_stop_bits_get(channel->stop)));
+            (unsigned)channel->config.baud_rate,
+            databits,
+            osm_uart_parity_as_char(_osm_uart_parity_get(channel->config.parity)),
+            osm_uart_stop_bits_as_str(_osm_uart_stop_bits_get(channel->config.stop_bits)));
 }
 
 
@@ -151,16 +154,16 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uar
     const uart_channel_t * channel = &uart_channels[uart];
 
     if (speed)
-        *speed = channel->baud;
+        *speed = channel->config.baud_rate;
 
     if (databits)
-        *databits = ((uint8_t)channel->databits) + 5;
+        *databits = ((uint8_t)channel->config.data_bits) + 5;
 
     if (parity)
-        *parity = _osm_uart_parity_get(channel->parity);
+        *parity = _osm_uart_parity_get(channel->config.parity);
 
     if (stop)
-        *stop = _osm_uart_stop_bits_get(channel->stop);
+        *stop = _osm_uart_stop_bits_get(channel->config.stop_bits);
 
     return true;
 }
