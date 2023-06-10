@@ -31,7 +31,7 @@ static void uart_setup(uart_channel_t * channel)
     uart_set_pin(channel->uart, channel->tx_pin, channel->rx_pin, -1, -1);
     uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 0, NULL, 0);
 
-    uart_set_mode( channel->usart, UART_MODE_UART);
+    uart_set_mode( channel->uart, UART_MODE_UART);
     uart_up(channel);
 
     channel->enabled = 1;
@@ -210,7 +210,7 @@ static void process_serial(unsigned uart)
 
     char c;
 
-    if (!uart_getc(channel->usart, &c))
+    if (!uart_getc(channel->uart, &c))
         return;
 
     uart_ring_in(uart, &c, 1);
@@ -235,7 +235,7 @@ bool uart_is_tx_empty(unsigned uart)
     if (uart >= UART_CHANNELS_COUNT)
         return false;
 
-    uart = uart_channels[uart].usart;
+    uart = uart_channels[uart].uart;
 
     return ((USART_ISR(uart) & USART_ISR_TXE));
 }
@@ -248,7 +248,7 @@ void uart_blocking(unsigned uart, const char *data, int size)
 
     const uart_channel_t * channel = &uart_channels[uart];
 
-    uart = uart_channels[uart].usart;
+    uart = uart_channels[uart].uart;
 
     while(size)
     {
@@ -287,18 +287,18 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (!channel->enabled)
         return true; /* Drop the data */
 
-    uart = uart_channels[uart].usart;
+    uart = uart_channels[uart].uart;
 
     int sent = uart_tx_chars(uart, data, size);
 
-    if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
+    if (!(USART_ISR(channel->uart) & USART_ISR_TXE))
         return false;
 
     if (size == 1)
     {
         if (uart)
             uart_debug(uart, "single out.");
-        usart_send(channel->usart, *data);
+        uart_send(channel->uart, *data);
         return true;
     }
 
@@ -322,7 +322,7 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 
     dma_enable_channel(channel->dma_unit, channel->dma_channel);
 
-    usart_enable_tx_dma(channel->usart);
+    uart_enable_tx_dma(channel->uart);
 
     return true;
 }
