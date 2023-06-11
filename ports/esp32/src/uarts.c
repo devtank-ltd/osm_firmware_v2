@@ -18,10 +18,37 @@
 static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 
 
-static void uart_up(const uart_channel_t * channel)
+static void IRAM_ATTR uart_intr_handle(void *arg)
 {
-    uart_param_config(channel->uart, &channel->config);
+    uart_channel_t * channel = arg;
+
+    if (!channel->enabled)
+    {
+        uart_clear_intr_status(channel->uart, UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
+        return;
+    }
+
+    uint16_t status = channel->raw_dev->int_st.val;
+    uint16_t rx_fifo_len = channel->raw_dev->status.rxfifo_cnt;
+
+    unsigned uart = (((uintptr_t)channel)-((uintptr_t)uart_channels))/sizeof(uart_channel_t);
+
+    while(rx_fifo_len--)
+    {
+        uint8_t byte = channel->raw_dev->fifo.rw_byte;
+        char c = *(char*)&byte;
+        uart_ring_in(uart, &c, 1);
+        if (c == '\n' || c == '\r')
+        {
+            sleep_debug("Waking up.");
+            sleep_exit_sleep_mode();
+        }
+    }
+
+    uart_clear_intr_status(channel->uart, UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
+
 }
+
 
 
 static void uart_setup(uart_channel_t * channel)
@@ -32,7 +59,13 @@ static void uart_setup(uart_channel_t * channel)
     uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 0, NULL, 0);
 
     uart_set_mode( channel->uart, UART_MODE_UART);
-    uart_up(channel);
+    uart_param_config(channel->uart, &channel->config);
+    /* Stop default isr */
+    uart_isr_free(channel->uart);
+
+uart_isr_register(channel->uart, uart_intr_handle, channel, ESP_INTR_FLAG_IRAM, &channel->isr_handle);
+
+    uart_enable_rx_intr(channel->uart);
 
     channel->enabled = 1;
 }
@@ -106,7 +139,7 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
     {
         log_error("Invalid high UART databits, using 9");
         databits = 8;
-    }    
+    }
     channel->config.baud_rate = speed;
     channel->config.data_bits = (uart_word_length_t)(databits - 5);
 
@@ -118,7 +151,7 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
         case uart_parity_odd:
             channel->config.parity = UART_PARITY_ODD;
             break;
-        default: 
+        default:
             channel->config.parity = UART_PARITY_DISABLE;
             break;
     }
@@ -190,39 +223,6 @@ bool uart_resetup_str(unsigned uart, char * str)
 }
 
 
-static bool uart_getc(uint32_t uart, char* c)
-{
-    if (uart >= UART_CHANNELS_COUNT)
-        return false;
-    uart_channel_t * channel = &uart_channels[uart];
-    int r = uart_read_bytes(channel->uart, c, 1, 0);
-    return (r == 1);
-}
-
-
-
-static void process_serial(unsigned uart)
-{
-    if (uart >= UART_CHANNELS_COUNT)
-        return;
-
-    uart_channel_t * channel = &uart_channels[uart];
-
-    if (!channel->enabled)
-        return;
-
-    char c;
-
-    if (!uart_getc(channel->uart, &c))
-        return;
-
-    uart_ring_in(uart, &c, 1);
-    if (c == '\n' || c == '\r')
-    {
-        sleep_debug("Waking up.");
-        sleep_exit_sleep_mode();
-    }
-}
 
 
 void uarts_setup(void)
@@ -240,7 +240,7 @@ bool uart_is_tx_empty(unsigned uart)
 
     uart = uart_channels[uart].uart;
 
-    return ((USART_ISR(uart) & USART_ISR_TXE));
+    return (uart_wait_tx_done(uart, 0) == ESP_OK;
 }
 
 
@@ -262,16 +262,16 @@ void uart_blocking(unsigned uart, const char *data, int size)
             if (sent >= 0)
             {
                 size -= sent;
-                str  += sent;
+                data += sent;
             }
             else if (sent < 0)
             {
-                ERROR_PRINTF("Error writing to UART");
+                uart_debug(uart, "Error writing to UART");
             }
         }
         else
         {
-            ERROR_PRINTF("Trouble %s writing to the LoRa UART.", esp_err_to_name(err));
+            uart_debug(uart, "Trouble %s writing to the LoRa UART.", esp_err_to_name(err));
         }
     }
 }
@@ -282,7 +282,7 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (uart >= UART_CHANNELS_COUNT)
         return false;
 
-    if (uart_doing_dma[uart])
+    if (!uart_is_tx_empty(uart))
         return false;
 
     const uart_channel_t * channel = &uart_channels[uart];
@@ -290,68 +290,12 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (!channel->enabled)
         return true; /* Drop the data */
 
-    uart = uart_channels[uart].uart;
-
-    int sent = uart_tx_chars(uart, data, size);
-
-    if (!(USART_ISR(channel->uart) & USART_ISR_TXE))
+    int sent = uart_tx_chars(uart_channels[uart].uart, data, size);
+    if (sent <= 0)
         return false;
-
-    if (size == 1)
-    {
-        if (uart)
-            uart_debug(uart, "single out.");
-        uart_send(channel->uart, *data);
-        return true;
-    }
-
-    if (uart)
-        uart_debug(uart, "%u out on DMA channel %u", size, channel->dma_channel);
-
-    uart_doing_dma[uart] = true;
-
-    dma_channel_reset(channel->dma_unit, channel->dma_channel);
-
-    dma_set_peripheral_address(channel->dma_unit, channel->dma_channel, channel->dma_addr);
-    dma_set_memory_address(channel->dma_unit, channel->dma_channel, (uint32_t)data);
-    dma_set_number_of_data(channel->dma_unit, channel->dma_channel, size);
-    dma_set_read_from_memory(channel->dma_unit, channel->dma_channel);
-    dma_enable_memory_increment_mode(channel->dma_unit, channel->dma_channel);
-    dma_set_peripheral_size(channel->dma_unit, channel->dma_channel, DMA_CCR_PSIZE_8BIT);
-    dma_set_memory_size(channel->dma_unit, channel->dma_channel, DMA_CCR_MSIZE_8BIT);
-    dma_set_priority(channel->dma_unit, channel->dma_channel, DMA_CCR_PL_LOW);
-
-    dma_enable_transfer_complete_interrupt(channel->dma_unit, channel->dma_channel);
-
-    dma_enable_channel(channel->dma_unit, channel->dma_channel);
-
-    uart_enable_tx_dma(channel->uart);
-
+    if (sent != size)
+        uart_debug(uart, "Only sent %d of %d.", sent, size);
     return true;
 }
 
-
-// cppcheck-suppress unusedFunction ; System handler
-void uart0_in_isr(void)
-{
-    process_serial(0);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void uart1_in_isr(void)
-{
-    process_serial(1);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void uart2_in_isr(void)
-{
-    process_serial(2);
-}
-
-// cppcheck-suppress unusedFunction ; System handler
-void uart3_in_isr(void)
-{
-    process_serial(3);
-}
 

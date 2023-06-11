@@ -1,6 +1,7 @@
 #pragma once
 
 #include <driver/uart.h>
+#include <hal/uart_hal.h>
 #include <driver/i2c.h>
 
 
@@ -10,7 +11,8 @@ typedef struct
     uint32_t              uart;
     uint32_t              tx_pin;
     uint32_t              rx_pin;
-    uart_config_t         config; 
+    uart_config_t         config;
+    uart_dev_t *          raw_dev;
 } uart_channel_t;
 
 /* No port on this platform */
