@@ -17,57 +17,56 @@
 
 static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 
+static QueueHandle_t uart_queues[UART_CHANNELS_COUNT];
 
-static void IRAM_ATTR uart_intr_handle(void *arg)
+static TaskHandle_t uart_task_handles[UART_CHANNELS_COUNT];
+
+static void uart_event_task(void *arg)
 {
-    uart_channel_t * channel = arg;
+    unsigned uart = (uintptr_t)arg;
+    uart_channel_t * channel = &uart_channels[uart];
+    QueueHandle_t * uart_queue = &uart_queues[uart];
+    char tmp[128];
 
-    if (!channel->enabled)
+    while (channel->enabled)
     {
-        uart_clear_intr_status(channel->uart, UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
-        return;
-    }
-
-    uint16_t status = channel->raw_dev->int_st.val;
-    uint16_t rx_fifo_len = channel->raw_dev->status.rxfifo_cnt;
-
-    unsigned uart = (((uintptr_t)channel)-((uintptr_t)uart_channels))/sizeof(uart_channel_t);
-
-    while(rx_fifo_len--)
-    {
-        uint8_t byte = channel->raw_dev->fifo.rw_byte;
-        char c = *(char*)&byte;
-        uart_ring_in(uart, &c, 1);
-        if (c == '\n' || c == '\r')
+        uart_event_t event;
+        if(xQueueReceive(*uart_queue, (void * )&event, (TickType_t)portMAX_DELAY))
         {
-            sleep_debug("Waking up.");
-            sleep_exit_sleep_mode();
+            if (event.type == UART_DATA)
+            {
+                int read = uart_read_bytes(channel->uart, tmp, MIN(event.size,128), portMAX_DELAY);
+                for(int i=0; i < read; i++)
+                {
+                    char c = tmp[i];
+                    uart_ring_in(uart, &c, 1);
+                    if (c == '\n' || c == '\r')
+                    {
+                        sleep_debug("Waking up.");
+                        sleep_exit_sleep_mode();
+                    }
+                }
+            }
         }
     }
-
-    uart_clear_intr_status(channel->uart, UART_RXFIFO_FULL_INT_CLR|UART_RXFIFO_TOUT_INT_CLR);
-
 }
 
 
 
-static void uart_setup(uart_channel_t * channel)
+static void uart_setup(unsigned uart)
 {
+    uart_channel_t * channel = &uart_channels[uart];
     const int uart_buffer_size = 2 * 1024;
 
     uart_set_pin(channel->uart, channel->tx_pin, channel->rx_pin, -1, -1);
-    uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 0, NULL, 0);
+    uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 0, &uart_queues[uart], 0);
 
     uart_set_mode( channel->uart, UART_MODE_UART);
     uart_param_config(channel->uart, &channel->config);
-    /* Stop default isr */
-    uart_isr_free(channel->uart);
-
-uart_isr_register(channel->uart, uart_intr_handle, channel, ESP_INTR_FLAG_IRAM, &channel->isr_handle);
-
-    uart_enable_rx_intr(channel->uart);
 
     channel->enabled = 1;
+
+    xTaskCreate(uart_event_task, "uart_event_task", 2048, (void*)(uintptr_t)uart, 12, &uart_task_handles[uart]);
 }
 
 
@@ -85,7 +84,7 @@ void uart_enable(unsigned uart, bool enable)
         uart_driver_delete(channel->uart);
         channel->enabled = 0;
     }
-    else uart_setup(channel);
+    else uart_setup(uart);
 }
 
 
@@ -169,8 +168,7 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
             break;
     }
 
-    uart_up(channel);
-
+    uart_param_config(channel->uart, &channel->config);
     uart_debug(uart, "%u %"PRIu8"%c%s",
             (unsigned)channel->config.baud_rate,
             databits,
@@ -230,7 +228,7 @@ void uarts_setup(void)
     model_uarts_setup();
 
     for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
-        uart_setup(&uart_channels[n]);
+        uart_setup(n);
 }
 
 bool uart_is_tx_empty(unsigned uart)
@@ -240,7 +238,7 @@ bool uart_is_tx_empty(unsigned uart)
 
     uart = uart_channels[uart].uart;
 
-    return (uart_wait_tx_done(uart, 0) == ESP_OK;
+    return (uart_wait_tx_done(uart, 0) == ESP_OK);
 }
 
 
@@ -251,14 +249,12 @@ void uart_blocking(unsigned uart, const char *data, int size)
 
     const uart_channel_t * channel = &uart_channels[uart];
 
-    uart = uart_channels[uart].uart;
-
     while(size)
     {
-        esp_err_t err = uart_wait_tx_done(uart, 200);
+        esp_err_t err = uart_wait_tx_done(channel->uart, 200);
         if(err == ESP_OK)
         {
-            int sent = uart_tx_chars(uart, data, size);
+            int sent = uart_tx_chars(channel->uart, data, size);
             if (sent >= 0)
             {
                 size -= sent;
