@@ -21,16 +21,12 @@ void        protocol_loop_iteration(void);
 
 uint16_t    protocol_get_mtu(void);
 bool        protocol_send_ready(void);
-bool        protocol_send_str(char* str);
 bool        protocol_send_allowed(void);
-void        protocol_send(int8_t* hex_arr, uint16_t arr_len);
-void        protocol_init(void);
 void        protocol_reset(void);
 void        protocol_process(char* message);
 bool        protocol_get_connected(void);
 void        protocol_loop_iteration(void);
 
-bool        protocol_config_setup_str(char * str);
 bool        protocol_get_id(char* str, uint8_t len);
 
 struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail);

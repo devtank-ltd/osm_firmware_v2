@@ -30,6 +30,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/core/src/common.c \
     $(OSM_DIR)/core/src/debug_mode.c \
     $(OSM_DIR)/protocols/src/hexblob.c \
+    $(OSM_DIR)/protocols/src/comms_behind.c \
     $(OSM_DIR)/sensors/src/hpm.c \
     $(OSM_DIR)/sensors/src/htu21d.c \
     $(OSM_DIR)/sensors/src/ds18b20.c \

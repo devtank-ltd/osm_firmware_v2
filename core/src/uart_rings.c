@@ -9,7 +9,7 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-#include "comms.h"
+#include "common.h"
 #include "platform.h"
 #include "platform_model.h"
 
