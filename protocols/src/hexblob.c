@@ -8,6 +8,8 @@
 #include "comms.h"
 #include "platform_model.h"
 
+static int8_t                       _measurements_hex_arr[PROTOCOL_HEX_ARRAY_SIZE]   = {0};
+
 #define PROTOCOL_SEND_STR_LEN               8
 #define PROTOCOL_ERR_CODE_NAME                  "ERR"
 
@@ -31,7 +33,7 @@ typedef enum
 
 typedef struct
 {
-    int8_t      buf[PROTOCOL_HEX_ARRAY_SIZE];
+    int8_t*     buf;
     unsigned    buflen;
     unsigned    pos;
 } protocol_ctx_t;
@@ -39,8 +41,8 @@ typedef struct
 
 static protocol_ctx_t _protocol_ctx =
 {
-    .buf = {0},
-    .buflen = PROTOCOL_HEX_ARRAY_SIZE,
+    .buf = NULL,
+    .buflen = 0,
     .pos = 0,
 };
 
@@ -283,11 +285,22 @@ bool protocol_append_instant_measurement(measurements_def_t* def, measurements_r
 }
 
 
-bool protocol_init(void)
+static bool _protocol_init(int8_t* buf, unsigned buflen)
 {
+    memset(buf, 0, buflen);
+
+    _protocol_ctx.buf = buf;
+    _protocol_ctx.buflen = buflen;
     _protocol_ctx.pos = 0;
+
     memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
     return _protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION);
+}
+
+
+bool protocol_init(void)
+{
+    return _protocol_init(_measurements_hex_arr, PROTOCOL_HEX_ARRAY_SIZE);
 }
 
 
@@ -312,9 +325,10 @@ void        protocol_send(void)
 
 void        protocol_send_error_code(uint8_t err_code)
 {
+    /* Immediate sent, so temporary use a different memory buffer for protocol. */
     int8_t arr[15] = {0};
     protocol_ctx_t org = _protocol_ctx;
-    if (!protocol_init())
+    if (!_protocol_init(arr, sizeof(arr)))
     {
         _protocol_ctx = org;
         comms_debug("Could not init memory protocol.");
@@ -322,5 +336,5 @@ void        protocol_send_error_code(uint8_t err_code)
     }
     protocol_append_error_code(err_code);
     comms_send(arr, protocol_get_length());
-    _protocol_ctx = org;
+    _protocol_ctx = org; /* Restore normal memory buffer for protocol. */
 }
