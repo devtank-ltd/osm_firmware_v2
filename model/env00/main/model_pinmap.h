@@ -44,6 +44,9 @@
 
 #define UART_CHANNELS_COUNT 2
 
+#define CMD_UART 0
+#define EXT_UART 1
+
 #define I2C_BUSES                                                   \
 {                                                                   \
     {                                                               \

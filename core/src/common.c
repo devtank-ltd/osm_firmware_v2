@@ -4,6 +4,7 @@
 #include <math.h>
 
 
+#include "config.h"
 #include "common.h"
 
 #include "uart_rings.h"
