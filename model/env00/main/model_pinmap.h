@@ -2,6 +2,14 @@
 
 #define DE_485_PIN    GPIO_NUM_25
 
+#define W1_PULSE_1_IO 0
+#define W1_PULSE_2_IO 1
+
+
+#define IOS_COUNT 2
+#define IOS_PORT_N_PINS {GPIO_NUM_20, GPIO_NUM_21}
+#define IOS_STATE       {IO_AS_INPUT, IO_AS_INPUT}
+
 
 #define ENV00_UART_CHANNELS                                         \
 {                                                                   \
@@ -52,7 +60,6 @@
 }
 
 
-#define IOS_COUNT 0
 
 
 #define UART_BUFFERS_INIT                \
