@@ -35,7 +35,7 @@ int osm_main(void)
     uart_rings_init();
 
     platform_raw_msg("----start----");
-    log_sys_debug("Frequency : %"PRIu32, rcc_ahb_frequency);
+    log_sys_debug("Frequency : %"PRIu32, platform_get_frequency());
     log_sys_debug("Version : %s", GIT_VERSION);
 
     persistent_init();

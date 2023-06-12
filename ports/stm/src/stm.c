@@ -127,6 +127,12 @@ void hard_fault_handler(void)
 }
 
 
+uint32_t platform_get_frequency(void)
+{
+    return rcc_ahb_frequency;
+}
+
+
 void platform_blink_led_init(void)
 {
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);

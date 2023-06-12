@@ -34,7 +34,7 @@ uint32_t since_boot_delta(uint32_t newer, uint32_t older)
 
 void spin_blocking_ms(uint32_t ms)
 {
-    uint64_t num_loops = (rcc_ahb_frequency / 1e4) * ms;
+    uint64_t num_loops = (platform_get_frequency() / 1e4) * ms;
     for (uint64_t i = 0; i < num_loops; i++)
     {
         asm("nop");

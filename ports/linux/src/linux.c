@@ -104,8 +104,6 @@ static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
 static bool _ios_enabled[IOS_COUNT] = {0};
 
 
-uint32_t                rcc_ahb_frequency;
-
 
 static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .name={"UART_DEBUG"},
@@ -119,6 +117,13 @@ static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                    {.type=LINUX_FD_TYPE_EVENT,
                                                     .name={"ADC_GEN_EVENT"},
                                                     .cb=linux_adc_generate}};
+
+
+uint32_t platform_get_frequency(void)
+{
+    return 0;
+}
+
 
 void linux_port_debug(char * fmt, ...)
 {
