@@ -2,6 +2,7 @@
 
 #include <driver/i2c.h>
 #include <driver/gpio.h>
+#include <soc/clk_tree_defs.h>
 
 #include "platform.h"
 
@@ -14,6 +15,11 @@
 #include "adcs.h"
 
 static volatile uint32_t since_boot_ms = 0;
+
+uint32_t platform_get_frequency(void)
+{
+    return SOC_CLK_XTAL32K_FREQ_APPROX;
+}
 
 
 void platform_blink_led_init(void)
