@@ -146,6 +146,7 @@ void uart_ring_in_drain(unsigned uart)
         if (len)
             cmds_process(line_buffer, len);
     }
+#ifdef COMMS_UART
     else if (uart == COMMS_UART)
     {
         len = ring_buf_readline(ring, line_buffer, CMD_LINELEN);
@@ -155,6 +156,7 @@ void uart_ring_in_drain(unsigned uart)
             protocol_process(line_buffer);
         }
     }
+#endif
 }
 
 
