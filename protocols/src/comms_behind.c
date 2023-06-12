@@ -5,7 +5,6 @@
 void        protocol_system_init(void)              { comms_init(); }
 
 void        protocol_loop_iteration(void)           { comms_loop_iteration(); }
-uint16_t    protocol_get_mtu(void)                  { return comms_get_mtu(); }
 bool        protocol_send_ready(void)               { return comms_send_ready(); }
 bool        protocol_send_allowed(void)             { return comms_send_allowed(); }
 void        protocol_reset(void)                    { comms_reset(); }

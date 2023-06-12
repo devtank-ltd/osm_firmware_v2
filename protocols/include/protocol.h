@@ -10,16 +10,13 @@ void        protocol_system_init(void);
 
 bool        protocol_init(void);
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data);
-bool        protocol_append_error_code(uint8_t err_code);
 bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type);
-unsigned    protocol_get_length(void);
 void        protocol_debug(void);
 void        protocol_send(void);
 void        protocol_send_error_code(uint8_t err_code);
 
 void        protocol_loop_iteration(void);
 
-uint16_t    protocol_get_mtu(void);
 bool        protocol_send_ready(void);
 bool        protocol_send_allowed(void);
 void        protocol_reset(void);

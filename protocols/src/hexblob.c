@@ -255,7 +255,7 @@ bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* d
 }
 
 
-bool protocol_append_error_code(uint8_t err_code)
+static bool _protocol_append_error_code(uint8_t err_code)
 {
     unsigned before_pos = _protocol_ctx.pos;
 
@@ -304,7 +304,7 @@ bool protocol_init(void)
 }
 
 
-unsigned protocol_get_length(void)
+static unsigned _protocol_get_length(void)
 {
     return _protocol_ctx.pos;
 }
@@ -312,14 +312,14 @@ unsigned protocol_get_length(void)
 
 void        protocol_debug(void)
 {
-    for (unsigned j = 0; j < protocol_get_length(); j++)
+    for (unsigned j = 0; j < _protocol_get_length(); j++)
         measurements_debug("Packet %u = 0x%"PRIx8, j, _protocol_ctx.buf[j]);
 }
 
 
 void        protocol_send(void)
 {
-    comms_send(_protocol_ctx.buf, protocol_get_length());
+    comms_send(_protocol_ctx.buf, _protocol_get_length());
 }
 
 
@@ -334,7 +334,7 @@ void        protocol_send_error_code(uint8_t err_code)
         comms_debug("Could not init memory protocol.");
         return;
     }
-    protocol_append_error_code(err_code);
-    comms_send(arr, protocol_get_length());
+    _protocol_append_error_code(err_code);
+    comms_send(arr, _protocol_get_length());
     _protocol_ctx = org; /* Restore normal memory buffer for protocol. */
 }
