@@ -13,7 +13,7 @@
 #include "platform.h"
 #include "platform_model.h"
 
-#include "common.h"
+#include "protocol.h"
 
 
 #define UART_RATE_LIMIT_MS              250
@@ -152,7 +152,7 @@ void uart_ring_in_drain(unsigned uart)
         if (len)
         {
             comms_debug(" >> %s", line_buffer);
-            comms_process(line_buffer);
+            protocol_process(line_buffer);
         }
     }
 }

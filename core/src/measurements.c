@@ -6,7 +6,6 @@
 #include <ctype.h>
 
 #include "measurements.h"
-#include "comms.h"
 #include "log.h"
 #include "config.h"
 #include "common.h"
@@ -105,7 +104,7 @@ static bool _measurements_send_start(void)
 
 bool measurements_send_test(char * name)
 {
-    if (!comms_get_connected() || !comms_send_ready())
+    if (!protocol_get_connected() || !protocol_send_ready())
     {
         measurements_debug("LW not ready.");
         return false;
@@ -153,7 +152,7 @@ static void _measurements_send(void)
 
     static bool has_printed_no_con = false;
 
-    if (!comms_get_connected())
+    if (!protocol_get_connected())
     {
         if (!has_printed_no_con)
         {
@@ -170,9 +169,9 @@ static void _measurements_send(void)
 
     has_printed_no_con = false;
 
-    if (!comms_send_ready() && !_measurements_debug_mode)
+    if (!protocol_send_ready() && !_measurements_debug_mode)
     {
-        if (comms_send_allowed())
+        if (protocol_send_allowed())
         {
             // Tried to send but not allowed (receiving FW?)
             return;
@@ -182,7 +181,7 @@ static void _measurements_send(void)
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
-                comms_reset();
+                protocol_reset();
                 _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
                 _pending_send = false;
             }
@@ -291,7 +290,7 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 }
 
 
-void on_comms_sent_ack(bool ack)
+void on_protocol_sent_ack(bool ack)
 {
     if (!ack)
     {
@@ -972,7 +971,7 @@ void measurements_loop_iteration(void)
 
     static bool has_printed_no_con = false;
 
-    if (!comms_get_connected() && !_measurements_debug_mode)
+    if (!protocol_get_connected() && !_measurements_debug_mode)
     {
         if (!has_printed_no_con)
         {
@@ -994,7 +993,7 @@ void measurements_loop_iteration(void)
         return;
     }
 
-    if (comms_send_ready() || _measurements_debug_mode)
+    if (protocol_send_ready() || _measurements_debug_mode)
         _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)

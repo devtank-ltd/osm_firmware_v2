@@ -9,7 +9,7 @@
 #include "log.h"
 #include "common.h"
 #include "uart_rings.h"
-#include "comms.h"
+#include "protocol.h"
 #include "platform.h"
 
 #include "can_impl.h"
@@ -131,7 +131,7 @@ static void _debug_mode_iteration(void)
     }
     else
     {
-        bool now_connected = comms_get_connected();
+        bool now_connected = protocol_get_connected();
         if (!now_connected)
         {
             dm_debug("COMMS:FAILED");
@@ -179,7 +179,7 @@ void debug_mode(void)
             uart_rings_out_drain();
             _debug_mode_fast_iteration();
         }
-        comms_loop_iteration();
+        protocol_loop_iteration();
         prev_now = get_since_boot_ms();
         _debug_mode_iteration();
         platform_blink_led_toggle();

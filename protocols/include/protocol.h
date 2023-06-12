@@ -6,6 +6,7 @@
 #include "base_types.h"
 #include "measurements.h"
 
+void        protocol_system_init(void);
 
 bool        protocol_init(void);
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data);
@@ -15,3 +16,27 @@ unsigned    protocol_get_length(void);
 void        protocol_debug(void);
 void        protocol_send(void);
 void        protocol_send_error_code(uint8_t err_code);
+
+void        protocol_loop_iteration(void);
+
+uint16_t    protocol_get_mtu(void);
+bool        protocol_send_ready(void);
+bool        protocol_send_str(char* str);
+bool        protocol_send_allowed(void);
+void        protocol_send(int8_t* hex_arr, uint16_t arr_len);
+void        protocol_init(void);
+void        protocol_reset(void);
+void        protocol_process(char* message);
+bool        protocol_get_connected(void);
+void        protocol_loop_iteration(void);
+
+bool        protocol_config_setup_str(char * str);
+bool        protocol_get_id(char* str, uint8_t len);
+
+struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail);
+
+void        protocol_power_down(void);
+
+/* To be implemented by caller.*/
+extern void     on_protocol_sent_ack(bool acked) __attribute__((weak));
+
