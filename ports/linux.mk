@@ -18,7 +18,7 @@ LINUX_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 LINUX_CFLAGS		+= -fprofile-arcs -ftest-coverage
 
 
-LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)
+LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/protocols/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)
 
 LINUX_LDFLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINUX_LDFLAGS += -lgcov --coverage -pthread -lutil
