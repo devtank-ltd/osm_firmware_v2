@@ -121,7 +121,17 @@ static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
 
 uint32_t platform_get_frequency(void)
 {
-    return 0;
+    static uint32_t freq = 0;
+    if (!freq)
+    {
+        FILE * f = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+        if (f)
+        {
+            fscanf(f, PRIu32, &freq);
+            fclose(f);
+        }
+    }
+    return freq;
 }
 
 
