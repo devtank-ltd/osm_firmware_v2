@@ -12,7 +12,7 @@ env01_SOURCES := \
            $(OSM_DIR)/core/src/measurements.c \
            $(OSM_DIR)/core/src/measurements_mem.c \
            $(OSM_DIR)/core/src/modbus_measurements.c \
-           $(OSM_DIR)/core/src/update.c \
+           $(OSM_DIR)/ports/stm/src/update.c \
            $(OSM_DIR)/core/src/adcs.c \
            $(OSM_DIR)/core/src/common.c \
            $(OSM_DIR)/core/src/platform_common.c \
