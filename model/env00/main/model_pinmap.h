@@ -30,7 +30,7 @@
     },                                                              \
     {                                                               \
         .enabled = true,                                            \
-        .uart = UART_NUM_2,        /* Modbus */                     \
+        .uart = UART_NUM_1,        /* Modbus */                     \
         .tx_pin = GPIO_NUM_16,                                      \
         .rx_pin = GPIO_NUM_17,                                      \
         .config =                                                   \

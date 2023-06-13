@@ -58,8 +58,8 @@ static void uart_setup(unsigned uart)
     uart_channel_t * channel = &uart_channels[uart];
     const int uart_buffer_size = 2 * 1024;
 
-    ESP_ERROR_CHECK(uart_param_config(channel->uart, &channel->config));
     ESP_ERROR_CHECK(uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 20, &uart_queues[uart], 0));
+    ESP_ERROR_CHECK(uart_param_config(channel->uart, &channel->config));
 
     uart_set_pin(channel->uart, channel->tx_pin, channel->rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
