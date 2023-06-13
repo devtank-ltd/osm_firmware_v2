@@ -39,6 +39,7 @@
             .data_bits = UART_DATA_8_BITS,                          \
             .parity = UART_PARITY_DISABLE,                          \
             .stop_bits = UART_STOP_BITS_1,                          \
+            .source_clk = UART_SCLK_REF_TICK,                       \
         },                                                          \
     }                                                               \
 }

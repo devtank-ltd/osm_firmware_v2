@@ -58,11 +58,10 @@ static void uart_setup(unsigned uart)
     uart_channel_t * channel = &uart_channels[uart];
     const int uart_buffer_size = 2 * 1024;
 
-    uart_set_pin(channel->uart, channel->tx_pin, channel->rx_pin, -1, -1);
-    uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 0, &uart_queues[uart], 0);
+    ESP_ERROR_CHECK(uart_param_config(channel->uart, &channel->config));
+    ESP_ERROR_CHECK(uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 20, &uart_queues[uart], 0));
 
-    uart_set_mode( channel->uart, UART_MODE_UART);
-    uart_param_config(channel->uart, &channel->config);
+    uart_set_pin(channel->uart, channel->tx_pin, channel->rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
     channel->enabled = 1;
 
@@ -267,7 +266,7 @@ void uart_blocking(unsigned uart, const char *data, int size)
         }
         else
         {
-            uart_debug(uart, "Trouble %s writing to the LoRa UART.", esp_err_to_name(err));
+            uart_debug(uart, "Trouble %s writing to the UART.", esp_err_to_name(err));
         }
     }
 }
