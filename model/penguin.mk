@@ -36,7 +36,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/sensors/src/ds18b20.c \
     $(OSM_DIR)/sensors/src/veml7700.c \
     $(OSM_DIR)/sensors/src/ftma.c \
-    $(OSM_DIR)/sensors/src/bat.c \
+    $(OSM_DIR)/ports/linux/src/bat.c \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \

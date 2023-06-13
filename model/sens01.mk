@@ -28,7 +28,7 @@ sens01_SOURCES := \
            $(OSM_DIR)/sensors/src/veml7700.c \
            $(OSM_DIR)/sensors/src/sai.c \
            $(OSM_DIR)/sensors/src/ftma.c \
-           $(OSM_DIR)/sensors/src/bat.c \
+           $(OSM_DIR)/ports/stm/src/bat.c \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c \
            $(OSM_DIR)/sensors/src/io_watch.c \
