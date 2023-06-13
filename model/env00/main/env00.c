@@ -99,10 +99,26 @@ unsigned env00_measurements_add_defaults(measurements_def_t * measurements_arr)
 
 bool persistent_init(void) {return false;}
 
+char * persist_get_serial_number(void) { return NULL; }
+void persist_set_log_debug_mask(uint32_t mask) {}
 uint32_t persist_get_log_debug_mask(void) { return 0; }
 
-void protocol_system_init(void) {}
+void     persist_commit() {}
 
+persist_storage_t               persist_data;
+persist_measurements_storage_t  persist_measurements;
+
+void protocol_system_init(void) {}
+void protocol_init(void) {}
+
+bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data) { return false; }
+bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type) { return false; }
+void        protocol_debug(void) {}
+void        protocol_send(void) {}
+bool        protocol_send_ready(void) { return false; }
+bool        protocol_send_allowed(void) { return false; }
+void        protocol_reset(void) {}
+void        protocol_process(char* message) {}
 bool protocol_get_connected(void)
 {
     return false;
@@ -110,8 +126,21 @@ bool protocol_get_connected(void)
 
 void protocol_loop_iteration(void) {}
 
+bool        protocol_get_id(char* str, uint8_t len) { return false; }
+struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail) { return tail; }
 
+void        protocol_power_down(void) {}
+
+
+void can_impl_init(void) {}
 void can_impl_send_example(void) {}
+
+bool bat_on_battery(void) { return false; }
+
+bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
+{
+    return false;
+}
 
 
 void     pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge) {}
