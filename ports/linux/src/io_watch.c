@@ -11,9 +11,6 @@
 #include "log.h"
 
 
-#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
-
-
 const unsigned              ios_watch_ios[IOS_WATCH_COUNT]                  = IOS_WATCH_IOS;
 static measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
 static measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];

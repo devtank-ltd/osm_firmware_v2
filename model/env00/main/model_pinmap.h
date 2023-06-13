@@ -5,6 +5,7 @@
 #define W1_PULSE_1_IO 0
 #define W1_PULSE_2_IO 1
 
+#define IOS_WATCH_COUNT 0
 
 #define IOS_COUNT 2
 #define IOS_PORT_N_PINS {GPIO_NUM_20, GPIO_NUM_21}

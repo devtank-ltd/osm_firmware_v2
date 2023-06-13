@@ -18,8 +18,6 @@
 #include "sleep.h"
 
 
-#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
-
 
 typedef struct
 {

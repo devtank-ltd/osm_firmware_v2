@@ -32,6 +32,9 @@
                            ADCS_TYPE_CC_CLAMP2,  \
                            ADCS_TYPE_CC_CLAMP3   }
 
+#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
+#define IOS_WATCH_COUNT 2
+
 
 #define CAN_PORT_N_PINS_RX    {GPIOB, GPIO12} /* CAN1RX */
 #define CAN_PORT_N_PINS_TX    {GPIOB, GPIO13} /* CAN1TX */

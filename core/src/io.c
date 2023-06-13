@@ -662,6 +662,7 @@ void ios_measurements_init(void)
     def.type        = IO_READING;
     def.is_immediate = 1;
 
+#if IOS_WATCH_COUNT > 0
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
         unsigned io = ios_watch_ios[i];
@@ -674,6 +675,7 @@ void ios_measurements_init(void)
         }
         io_debug("Added '%s' measurement.", def.name);
     }
+#endif
 }
 
 

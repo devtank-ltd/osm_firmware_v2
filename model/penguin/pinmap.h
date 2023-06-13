@@ -102,6 +102,9 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define W1_PULSE_1_IO               4
 #define W1_PULSE_2_IO               5
 
+#define IOS_WATCH_COUNT 2
+#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
+
 #define HTU21D_I2C                  1
 #define HTU21D_I2C_INDEX            0
 #define VEML7700_I2C                1
