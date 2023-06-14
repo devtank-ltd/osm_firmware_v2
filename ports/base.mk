@@ -1,7 +1,7 @@
 
 define PORT_BASE_OBJ_RULE
 	mkdir -p "$$(@D)"
-	$$($(2)_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$($(2)_CFLAGS) -I$$(MODEL_DIR)/$(1) $$($(2)_INCLUDE_PATHS) $$< -o $$@
+	$$($(2)_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" $$($(2)_CFLAGS) -I$$(MODEL_DIR)/$(1) $$($(2)_INCLUDE_PATHS) $$< -o $$@
 endef
 
 define PORT_BASE_RULES

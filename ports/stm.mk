@@ -8,8 +8,7 @@ STM_SIZE = $(STM_TOOLCHAIN)-size
 STM_NM =$(STM_TOOLCHAIN)-nm
 
 #Target CPU options
-STM_DEFINES = -DSTM32L4 -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
-
+STM_DEFINES = -DSTM32L4
 STM_CPU_DEFINES = -mthumb -mcpu=cortex-m4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 #Compiler options

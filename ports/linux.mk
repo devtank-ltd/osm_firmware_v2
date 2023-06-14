@@ -8,7 +8,7 @@ LINUX_CC = gcc
 
 
 #Compiler options
-LINUX_DEFINES := -D_GNU_SOURCE -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+LINUX_DEFINES := -D_GNU_SOURCE
 
 LINUX_CFLAGS		+= -O0 -g -std=gnu11 -pedantic $(LINUX_DEFINES)
 LINUX_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
