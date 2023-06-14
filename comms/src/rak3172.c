@@ -982,10 +982,10 @@ static command_response_t _rak3172_conn(char* str)
 {
     if (rak3172_get_connected())
     {
-        comms_debug("1 | Connected");
+        log_out("1 | Connected");
         return COMMAND_RESP_OK;
     }
-    comms_debug("0 | Disconnected");
+    log_out("0 | Disconnected");
     return COMMAND_RESP_ERR;
 }
 
