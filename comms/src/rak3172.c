@@ -166,7 +166,7 @@ static int _rak3172_printf(char* fmt, ...)
 
 static void _rak3172_process_state_off(char* msg)
 {
-    if (msg_is(RAK3172_MSG_INIT, msg))
+    if (_rak3172_ctx.config_is_valid && msg_is(RAK3172_MSG_INIT, msg))
     {
         comms_debug("READ INIT MESSAGE");
         _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_BOOT;
@@ -375,7 +375,6 @@ static bool _rak3172_load_config(void)
 {
     if (!lw_persist_data_is_valid())
     {
-        log_error("No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
 
@@ -428,12 +427,11 @@ static bool _rak3172_load_config(void)
 
 void rak3172_init(void)
 {
-    if (!_rak3172_load_config())
+    _rak3172_ctx.config_is_valid = _rak3172_load_config();
+    if (!_rak3172_ctx.config_is_valid)
     {
         comms_debug("Config is incorrect, not initialising.");
-        return;
     }
-
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     gpio_mode_setup(_rak3172_ctx.boot_pin.port,
                     GPIO_MODE_OUTPUT,
@@ -449,9 +447,12 @@ void rak3172_init(void)
     gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
 
     _rak3172_ctx.state = RAK3172_STATE_OFF;
-    _rak3172_chip_off();
-    spin_blocking_ms(1);
-    _rak3172_chip_on();
+    if (_rak3172_ctx.config_is_valid)
+    {
+        _rak3172_chip_off();
+        spin_blocking_ms(1);
+        _rak3172_chip_on();
+    }
 }
 
 
@@ -841,7 +842,8 @@ static command_response_t _rak3172_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
     {
-        if (_rak3172_load_config())
+        _rak3172_ctx.config_is_valid = _rak3172_load_config();
+        if (_rak3172_ctx.config_is_valid)
         {
             _rak3172_ctx.reset_count = 0;
             rak3172_reset();
