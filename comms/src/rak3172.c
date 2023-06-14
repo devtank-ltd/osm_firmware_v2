@@ -113,6 +113,7 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
     "AT+ADR=0",             /* Do not use ADR     */
     "AT+DR=4",              /* Set to DR 4        */
     "REGION goes here",     /* Set to EU868       */
+    "AT+TXP=0",             /* Set heighest TX    */
     "DEVEUI goes here",
     "APPEUI goes here",
     "APPKEY goes here"
@@ -973,6 +974,70 @@ static command_response_t _rak3172_conn(char* str)
 }
 
 
+static command_response_t _rak3172_tx_power_cb(char* str)
+{
+    char* np;
+    unsigned pwr = strtoul(str, &np, 10);
+    command_response_t status = COMMAND_RESP_OK;
+    if (str != np)
+    {
+        status = _rak3172_printf("AT+TXP=%u", pwr) ? COMMAND_RESP_OK  :
+                                                     COMMAND_RESP_ERR ;
+    }
+    else
+    {
+        log_out("Enter a valid number.");
+        status = COMMAND_RESP_ERR;
+    }
+    return status;
+}
+
+
+static command_response_t _rak3172_trssi_cb(char* str)
+{
+    return _rak3172_printf("AT+TRSSI=?") ? COMMAND_RESP_OK  :
+                                           COMMAND_RESP_ERR ;
+}
+
+
+static command_response_t _rak3172_ttx_cb(char* str)
+{
+    char* np;
+    unsigned inp = strtoul(str, &np, 10);
+    command_response_t status = COMMAND_RESP_OK;
+    if (str != np)
+    {
+        status = _rak3172_printf("AT+TTX=%u", inp) ? COMMAND_RESP_OK  :
+                                                     COMMAND_RESP_ERR ;
+    }
+    else
+    {
+        log_out("Enter a valid number.");
+        status = COMMAND_RESP_ERR;
+    }
+    return status;
+}
+
+
+static command_response_t _rak3172_trx_cb(char* str)
+{
+    char* np;
+    unsigned inp = strtoul(str, &np, 10);
+    command_response_t status = COMMAND_RESP_OK;
+    if (str != np)
+    {
+        status = _rak3172_printf("AT+TRX=%u", inp) ? COMMAND_RESP_OK  :
+                                                     COMMAND_RESP_ERR ;
+    }
+    else
+    {
+        log_out("Enter a valid number.");
+        status = COMMAND_RESP_ERR;
+    }
+    return status;
+}
+
+
 struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -985,6 +1050,10 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
         { "comms_restart","Comms restart",               _rak3172_restart_cb           , false , NULL },
         { "connect",      "Send an alive packet",        _rak3172_join                 , false , NULL },
         { "comms_conn",   "Get if connected or not",     _rak3172_conn                 , false , NULL },
+        { "comms_txpower", "TX Power",                   _rak3172_tx_power_cb          , false , NULL },
+        { "comms_trssi",  "Start RF RSSI tone test",     _rak3172_trssi_cb             , false , NULL },
+        { "comms_ttx",    "Start RF TX test",            _rak3172_ttx_cb               , false , NULL },
+        { "comms_trx",    "Start RF RX test",            _rak3172_trx_cb               , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
