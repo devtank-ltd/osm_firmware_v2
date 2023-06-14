@@ -1,8 +1,12 @@
 #include <string.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 #include <driver/i2c.h>
 #include <driver/gpio.h>
 #include <soc/clk_tree_defs.h>
+#include <esp_task_wdt.h>
 
 #include "platform.h"
 
@@ -14,7 +18,6 @@
 
 #include "adcs.h"
 
-static volatile uint32_t since_boot_ms = 0;
 
 uint32_t platform_get_frequency(void)
 {
@@ -34,6 +37,7 @@ void platform_blink_led_toggle(void)
 
 void platform_watchdog_reset(void)
 {
+    esp_task_wdt_reset();
 }
 
 
@@ -171,12 +175,12 @@ void platform_hpm_enable(bool enable)
 }
 
 
-void platform_tight_loop(void) {}
+void platform_tight_loop(void) { vTaskDelay(1); }
 
 
 uint32_t get_since_boot_ms(void)
 {
-    return since_boot_ms;
+    return pdTICKS_TO_MS(xTaskGetTickCount());
 }
 
 

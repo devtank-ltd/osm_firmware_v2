@@ -14,7 +14,7 @@ static uint8_t         i2c_buses_ready = 0;
 
 static void i2c_init(unsigned i2c_index)
 {
-    if (i2c_index > ARRAY_SIZE(i2c_buses))
+/*    if (i2c_index > ARRAY_SIZE(i2c_buses))
     {
         log_error("Tried to init I2C bus with uninitialised memory.");
         return;
@@ -41,7 +41,7 @@ static void i2c_init(unsigned i2c_index)
     {
         log_error("Failed setup i2c driver : %s", esp_err_to_name(err));
         return;
-    }
+    }*/
 }
 
 
