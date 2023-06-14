@@ -18,4 +18,4 @@
 #define model_setup_pulse_pupd             CONCAT(fw_name,_setup_pulse_pupd)
 #define model_measurements_add_defaults    CONCAT(fw_name,_measurements_add_defaults)
 
-#define MODEL_NAME STR(MODEL)
+#define MODEL_NAME STR(FW_NAME)
