@@ -54,6 +54,7 @@ _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
 typedef enum
 {
     RAK3172_STATE_OFF = 0,
+    RAK3172_STATE_INIT_WAIT_BOOT,
     RAK3172_STATE_INIT_WAIT_OK,
     RAK3172_STATE_INIT_WAIT_REPLAY,
     RAK3172_STATE_JOIN_WAIT_OK,
@@ -168,9 +169,20 @@ static void _rak3172_process_state_off(char* msg)
     if (msg_is(RAK3172_MSG_INIT, msg))
     {
         comms_debug("READ INIT MESSAGE");
-        _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_OK;
+        _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_BOOT;
         _rak3172_ctx.init_count = 0;
         _rak3172_printf((char*)_rak3172_init_msgs[0]);
+    }
+}
+
+
+static void _rak3172_process_state_init_wait_boot(char* msg)
+{
+    if (msg_is(RAK3172_MSG_INIT, msg))
+    {
+        comms_debug("READ RE-BOOT MESSAGE");
+        _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_OK;
+        _rak3172_printf((char*)_rak3172_init_msgs[++_rak3172_ctx.init_count]);
     }
 }
 
@@ -666,6 +678,9 @@ void rak3172_process(char* msg)
         case RAK3172_STATE_OFF:
             _rak3172_process_state_off(p);
             break;
+        case RAK3172_STATE_INIT_WAIT_BOOT:
+            _rak3172_process_state_init_wait_boot(p);
+            break;
         case RAK3172_STATE_INIT_WAIT_REPLAY:
             _rak3172_process_state_init_wait_replay(p);
             break;
@@ -877,9 +892,10 @@ static command_response_t _rak3172_reset_cb(char* args)
 
 static const char* _rak3172_state_to_str(rak3172_state_t state)
 {
-    static const char state_strs[11][32] =
+    static const char state_strs[12][32] =
     {
         {"RAK3172_STATE_OFF"},
+        {"RAK3172_STATE_INIT_WAIT_BOOT"},
         {"RAK3172_STATE_INIT_WAIT_OK"},
         {"RAK3172_STATE_INIT_WAIT_REPLAY"},
         {"RAK3172_STATE_JOIN_WAIT_OK"},
