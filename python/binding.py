@@ -743,6 +743,51 @@ class dev_t(dev_base_t):
                     return True
         return False
 
+    def program_firmware(self, firmware:str, is_rev_c:bool=True, keep_config:bool=False)->bool:
+        if not os.path.exists(firmware):
+            self._log(f"{firmware} does not exist.")
+            return False
+        dev_name = os.path.basename(str(self.port))
+        self._serial_obj.close()
+        env = {"dev": dev_name}
+        if is_rev_c:
+            env["REVC"] = "1"
+        if keep_config:
+            env["KEEPCONFIG"] = "1"
+        this_file = os.path.abspath(__file__)
+        this_dir = os.path.dirname(this_file)
+        cmd = f"{this_dir}/tools/config_scripts/program.sh {firmware}"
+        cmd = cmd.split(" ")
+        proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        events = {
+            proc.stdout : "STDOUT",
+            proc.stderr : "STDERR"}
+        while proc.poll() is None:
+            r = select.select(list(events.keys()), [], [], 0.05)
+            sources = r[0]
+            for stream in sources:
+                pretext = events.get(stream, None)
+                msg = stream.readline()
+                if len(msg):
+                    if pretext is not None:
+                        try:
+                            msg = msg.decode()
+                        except UnicodeDecodeError:
+                            pass
+                        self._log(f"{pretext}: {msg}")
+                    else:
+                        self._log(f"Unknown pretext for {stream}")
+
+        retcode = proc.returncode
+        if retcode == 0:
+            self._log(f"Finished programming with return code: {retcode}")
+        else:
+            self._log(f"Programming exited with return code: {retcode}")
+
+        self._serial_obj.open()
+        return retcode == 0
+
+
 class dev_debug_t(dev_base_t):
     def __init__(self, port):
         super().__init__(port)
