@@ -5,6 +5,7 @@
 #include "base_types.h"
 
 #define LW_UNSOL_VERSION                    0x01
+#define LW_CONFIG_VERSION                   0x01
 
 #define LW_ID_CMD_LEN                       4
 #define LW_ID_CMD                           0x434d4400 /* CMD  */
@@ -56,6 +57,7 @@ typedef struct
     char    dev_eui[LW_DEV_EUI_LEN];
     char    app_key[LW_APP_KEY_LEN];
     uint8_t region; /* lw_region_t */
+    uint8_t version;
 } lw_config_t;
 
 

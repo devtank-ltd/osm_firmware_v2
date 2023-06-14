@@ -54,6 +54,7 @@ _Static_assert(RAK3172_JOIN_TIME_S > 5, "RAK3172 join time is less than 5");
 typedef enum
 {
     RAK3172_STATE_OFF = 0,
+    RAK3172_STATE_INIT_WAIT_BOOT,
     RAK3172_STATE_INIT_WAIT_OK,
     RAK3172_STATE_INIT_WAIT_REPLAY,
     RAK3172_STATE_JOIN_WAIT_OK,
@@ -112,8 +113,8 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
     "AT+CLASS=C",           /* Set Class A mode   */
     "AT+ADR=0",             /* Do not use ADR     */
     "AT+DR=4",              /* Set to DR 4        */
+    "AT+TXP=0",             /* Set highest TX     */
     "REGION goes here",     /* Set to EU868       */
-    "AT+TXP=0",             /* Set heighest TX    */
     "DEVEUI goes here",
     "APPEUI goes here",
     "APPKEY goes here"
@@ -165,12 +166,23 @@ static int _rak3172_printf(char* fmt, ...)
 
 static void _rak3172_process_state_off(char* msg)
 {
-    if (msg_is(RAK3172_MSG_INIT, msg))
+    if (_rak3172_ctx.config_is_valid && msg_is(RAK3172_MSG_INIT, msg))
     {
         comms_debug("READ INIT MESSAGE");
-        _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_OK;
+        _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_BOOT;
         _rak3172_ctx.init_count = 0;
         _rak3172_printf((char*)_rak3172_init_msgs[0]);
+    }
+}
+
+
+static void _rak3172_process_state_init_wait_boot(char* msg)
+{
+    if (msg_is(RAK3172_MSG_INIT, msg))
+    {
+        comms_debug("READ RE-BOOT MESSAGE");
+        _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_OK;
+        _rak3172_printf((char*)_rak3172_init_msgs[++_rak3172_ctx.init_count]);
     }
 }
 
@@ -275,12 +287,6 @@ static void _rak3172_process_state_join_wait_join(char* msg)
 }
 
 
-static bool _rak3172_reload_config(void)
-{
-    return true;
-}
-
-
 static void _rak3172_process_state_send_replay(char* msg)
 {
     if (_rak3172_msg_is_replay(msg))
@@ -369,7 +375,6 @@ static bool _rak3172_load_config(void)
 {
     if (!lw_persist_data_is_valid())
     {
-        log_error("No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
 
@@ -422,12 +427,11 @@ static bool _rak3172_load_config(void)
 
 void rak3172_init(void)
 {
-    if (!_rak3172_load_config())
+    _rak3172_ctx.config_is_valid = _rak3172_load_config();
+    if (!_rak3172_ctx.config_is_valid)
     {
         comms_debug("Config is incorrect, not initialising.");
-        return;
     }
-
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     gpio_mode_setup(_rak3172_ctx.boot_pin.port,
                     GPIO_MODE_OUTPUT,
@@ -443,9 +447,12 @@ void rak3172_init(void)
     gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
 
     _rak3172_ctx.state = RAK3172_STATE_OFF;
-    _rak3172_chip_off();
-    spin_blocking_ms(1);
-    _rak3172_chip_on();
+    if (_rak3172_ctx.config_is_valid)
+    {
+        _rak3172_chip_off();
+        spin_blocking_ms(1);
+        _rak3172_chip_on();
+    }
 }
 
 
@@ -672,6 +679,9 @@ void rak3172_process(char* msg)
         case RAK3172_STATE_OFF:
             _rak3172_process_state_off(p);
             break;
+        case RAK3172_STATE_INIT_WAIT_BOOT:
+            _rak3172_process_state_init_wait_boot(p);
+            break;
         case RAK3172_STATE_INIT_WAIT_REPLAY:
             _rak3172_process_state_init_wait_replay(p);
             break;
@@ -832,7 +842,12 @@ static command_response_t _rak3172_config_setup_str(char* str)
 {
     if (lw_config_setup_str(str))
     {
-        _rak3172_reload_config();
+        _rak3172_ctx.config_is_valid = _rak3172_load_config();
+        if (_rak3172_ctx.config_is_valid)
+        {
+            _rak3172_ctx.reset_count = 0;
+            rak3172_reset();
+        }
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;
@@ -879,9 +894,10 @@ static command_response_t _rak3172_reset_cb(char* args)
 
 static const char* _rak3172_state_to_str(rak3172_state_t state)
 {
-    static const char state_strs[11][32] =
+    static const char state_strs[12][32] =
     {
         {"RAK3172_STATE_OFF"},
+        {"RAK3172_STATE_INIT_WAIT_BOOT"},
         {"RAK3172_STATE_INIT_WAIT_OK"},
         {"RAK3172_STATE_INIT_WAIT_REPLAY"},
         {"RAK3172_STATE_JOIN_WAIT_OK"},
@@ -966,10 +982,10 @@ static command_response_t _rak3172_conn(char* str)
 {
     if (rak3172_get_connected())
     {
-        comms_debug("1 | Connected");
+        log_out("1 | Connected");
         return COMMAND_RESP_OK;
     }
-    comms_debug("0 | Disconnected");
+    log_out("0 | Disconnected");
     return COMMAND_RESP_ERR;
 }
 
