@@ -1,6 +1,6 @@
 #pragma once
 
-#define LED_PIN 33
+#define LED_PIN       GPIO_NUM_33
 
 #define DE_485_PIN    GPIO_NUM_25
 

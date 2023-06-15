@@ -18,6 +18,7 @@
 
 #include "adcs.h"
 
+static bool _led_state = false;
 
 uint32_t platform_get_frequency(void)
 {
@@ -28,12 +29,14 @@ uint32_t platform_get_frequency(void)
 void platform_blink_led_init(void)
 {
     gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+   _led_state = false;
 }
 
 
 void platform_blink_led_toggle(void)
 {
-    gpio_set_level(LED_PIN, !gpio_get_level(LED_PIN));
+    _led_state = !_led_state;
+    gpio_set_level(LED_PIN, (_led_state)?0:1);
 }
 
 
