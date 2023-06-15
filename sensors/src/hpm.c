@@ -73,6 +73,24 @@ static void _hpm_is_valid(void)
 }
 
 
+static bool _hpm_is_valid_now(void)
+{
+    uint32_t now = get_since_boot_ms();
+    if (hpm_valid)
+    {
+        if (since_boot_delta(now, _hpm_start_time) > HPM_TIMEOUT_MS)
+        {
+            hpm_valid = false;
+        }
+        else
+        {
+            hpm_valid = (since_boot_delta(now, _hpm_start_time + _hpm_last_collect_time) < HPM_TIMEOUT_MS);
+        }
+    }
+    return hpm_valid;
+}
+
+
 static void process_part_measure_response(const uint8_t *data)
 {
     if (data[1] != 5 || data[2] != 0x04)
@@ -289,7 +307,7 @@ static measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_readin
 {
     if (!val)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!hpm_valid)
+    if (!_hpm_is_valid_now())
     {
         if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
             return MEASUREMENTS_SENSOR_STATE_BUSY;
@@ -305,7 +323,7 @@ static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_readin
 {
     if (!val)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!hpm_valid)
+    if (!_hpm_is_valid_now())
     {
         if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
             return MEASUREMENTS_SENSOR_STATE_BUSY;
