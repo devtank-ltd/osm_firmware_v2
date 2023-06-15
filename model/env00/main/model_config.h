@@ -11,8 +11,6 @@
 
 #define ENV00_FW_ADDR                     NULL
 #define ENV00_NEW_FW_ADDR                 NULL
-#define ENV00_PERSIST_RAW_DATA            ((const uint8_t*)NULL)
-#define ENV00_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)NULL)
 
 #define CMD_LINELEN 128
 
