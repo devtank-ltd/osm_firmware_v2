@@ -180,6 +180,11 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 
     unsigned len = ring_buf_get_pending(ring);
 
+    if (!len)
+    {
+        return;
+    }
+
     if (!header_active)
     {
         uint8_t id;
