@@ -14,13 +14,13 @@ $$(BUILD_DIR)/$(1)/$(1).bin: $$(BUILD_DIR)/$(1)/build.ninja
 	ninja -C $$(BUILD_DIR)/$(1)
 
 $(1)_flash:
-	ninja -C $$(BUILD_DIR)/$(1) -f build.ninja flash
+	IDF_TARGET=esp32 GIT_COMMITS="$(GIT_COMMITS)" GIT_COMMIT="$(GIT_COMMIT)" GIT_SHA1="$(GIT_SHA1)" ninja -C $$(BUILD_DIR)/$(1) -f build.ninja flash
 
 $(1)_monitor:
 	ninja -C $$(BUILD_DIR)/$(1) -f build.ninja monitor
 
 $(1)_build:
-	ninja -C $$(BUILD_DIR)/$(1) -f build.ninja
+	IDF_TARGET=esp32 GIT_COMMITS="$(GIT_COMMITS)" GIT_COMMIT="$(GIT_COMMIT)" GIT_SHA1="$(GIT_SHA1)" ninja -C $$(BUILD_DIR)/$(1) -f build.ninja
 
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/$(1).bin
 

@@ -27,11 +27,13 @@ uint32_t platform_get_frequency(void)
 
 void platform_blink_led_init(void)
 {
+    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
 }
 
 
 void platform_blink_led_toggle(void)
 {
+    gpio_set_level(LED_PIN, !gpio_get_level(LED_PIN));
 }
 
 
@@ -191,13 +193,25 @@ void platform_gpio_init(const port_n_pins_t * gpio_pin)
 
 void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
+    gpio_set_direction(*gpio_pin, (is_input)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT);
+
+    gpio_pull_mode_t pull_mode = GPIO_FLOATING;
+    switch(pull)
+    {
+        case GPIO_PUPD_PULLUP: pull_mode = GPIO_PULLUP_ONLY; break;
+        case GPIO_PUPD_PULLDOWN: pull_mode = GPIO_PULLDOWN_ONLY; break;
+        default: break;
+    }
+
+    gpio_set_pull_mode(*gpio_pin, pull_mode);
 }
 
 void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 {
+    gpio_set_level(*gpio_pin, (int)is_on);
 }
 
 bool platform_gpio_get(const port_n_pins_t * gpio_pin)
 {
-    return false;
+    return (bool)gpio_get_level(*gpio_pin);
 }

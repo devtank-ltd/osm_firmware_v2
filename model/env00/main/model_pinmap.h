@@ -1,5 +1,7 @@
 #pragma once
 
+#define LED_PIN 33
+
 #define DE_485_PIN    GPIO_NUM_25
 
 #define W1_PULSE_1_IO 0
@@ -8,7 +10,7 @@
 #define IOS_WATCH_COUNT 0
 
 #define IOS_COUNT 2
-#define IOS_PORT_N_PINS {GPIO_NUM_20, GPIO_NUM_21}
+#define IOS_PORT_N_PINS {GPIO_NUM_32, GPIO_NUM_35}
 #define IOS_STATE       {IO_AS_INPUT, IO_AS_INPUT}
 
 
