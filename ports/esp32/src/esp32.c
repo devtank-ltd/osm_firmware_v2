@@ -98,6 +98,7 @@ void platform_set_rs485_mode(bool driver_enable)
 
 void platform_reset_sys(void)
 {
+    esp_restart();
 }
 
 
