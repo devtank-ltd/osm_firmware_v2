@@ -353,6 +353,10 @@ void platform_hpm_enable(bool enable)
         gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
         gpio_set(port_n_pin.port, port_n_pin.pins);
     }
+    else
+    {
+        gpio_clear(port_n_pin.port, port_n_pin.pins);
+    }
 }
 
 

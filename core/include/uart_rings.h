@@ -17,5 +17,7 @@ extern void uart_rings_out_drain();
 extern void uart_rings_check();
 
 extern void uart_rings_init(void);
+extern void uart_rings_in_wipe(unsigned uart);
+extern void uart_rings_out_wipe(unsigned uart);
 
 extern char line_buffer[CMD_LINELEN];
