@@ -40,6 +40,7 @@ void platform_blink_led_toggle(void)
 void platform_watchdog_reset(void)
 {
     esp_task_wdt_reset();
+    vTaskDelay(1); /* Give IDLE time to kick watchdog too. */
 }
 
 
@@ -177,7 +178,7 @@ void platform_hpm_enable(bool enable)
 }
 
 
-void platform_tight_loop(void) { vTaskDelay(1); }
+void platform_tight_loop(void) { }
 
 
 uint32_t get_since_boot_ms(void)
