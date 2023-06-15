@@ -118,10 +118,6 @@ bool platform_persist_commit(persist_storage_t* persist_data, persist_measuremen
     return false;
 }
 
-void platform_persist_wipe(void)
-{
-}
-
 
 bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {

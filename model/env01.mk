@@ -8,6 +8,7 @@ env01_SOURCES := \
            $(OSM_DIR)/core/src/ring.c \
            $(OSM_DIR)/core/src/modbus_mem.c \
            $(OSM_DIR)/ports/stm/src/persist_config.c \
+           $(OSM_DIR)/core/src/persist_base.c \
            $(OSM_DIR)/core/src/modbus.c \
            $(OSM_DIR)/core/src/measurements.c \
            $(OSM_DIR)/core/src/measurements_mem.c \
