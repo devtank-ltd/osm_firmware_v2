@@ -9,7 +9,7 @@
 #include "uarts.h"
 
 
-#define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
+#define MEASUREMENTS_COLLECT_TIME_HPM_MS         6000
 #define HPM_TIMEOUT_MS                           (uint32_t)(MEASUREMENTS_COLLECT_TIME_HPM_MS * 1.5)
 
 #define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
@@ -136,7 +136,7 @@ static void process_part_measure_long_response(const uint8_t *data)
      * third seems alright, fourth is better. */
     if (message_count > 2)
     {
-        hpm_valid = true;
+        _hpm_is_valid();
         if (hpm_is_on)
         {
             uart_enable(HPM_UART, false);
@@ -251,11 +251,10 @@ void hpm_enable(bool enable)
 {
     static unsigned hpm_use_ref = 0;
 
-    platform_hpm_enable(enable);
-
     hpm_is_on = enable;
     if (enable)
     {
+        platform_hpm_enable(true);
         _hpm_start_time = get_since_boot_ms();
         hpm_use_ref++;
         hpm_debug("Power On (ref:%u)", hpm_use_ref);
@@ -267,7 +266,7 @@ void hpm_enable(bool enable)
     if (!hpm_use_ref)
     {
         hpm_debug("Power Off");
-        hpm_valid = false;
+        platform_hpm_enable(false);
     }
     else
         hpm_debug("Power Off deferred (ref:%u)", hpm_use_ref);
