@@ -104,20 +104,3 @@ void persist_set_fw_ready(uint32_t size)
     persist_data.pending_fw = size;
     persist_commit();
 }
-
-void persist_set_log_debug_mask(uint32_t mask)
-{
-    persist_data.log_debug_mask = mask | DEBUG_SYS;
-}
-
-
-uint32_t persist_get_log_debug_mask(void)
-{
-    return persist_data.log_debug_mask;
-}
-
-
-char* persist_get_serial_number(void)
-{
-    return persist_data.serial_number;
-}

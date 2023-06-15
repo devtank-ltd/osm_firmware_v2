@@ -15,8 +15,6 @@
 #define PAGE2ADDR(_page_)             CONCAT(FW_NAME,_PAGE2ADDR)(_page_)
 #define FW_ADDR                       CONCAT(FW_NAME,_FW_ADDR)
 #define NEW_FW_ADDR                   CONCAT(FW_NAME,_NEW_FW_ADDR)
-#define PERSIST_RAW_DATA              CONCAT(FW_NAME,_PERSIST_RAW_DATA)
-#define PERSIST_RAW_MEASUREMENTS      CONCAT(FW_NAME,_PERSIST_RAW_MEASUREMENTS)
 
 #define PERSIST_VERSION               CONCAT(FW_NAME,_PERSIST_VERSION)
 

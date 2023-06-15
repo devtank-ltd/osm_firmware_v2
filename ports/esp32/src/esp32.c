@@ -102,18 +102,6 @@ void platform_reset_sys(void)
 }
 
 
-persist_storage_t* platform_get_raw_persist(void)
-{
-    return (persist_storage_t*)PERSIST_RAW_DATA;
-}
-
-
-persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
-{
-    return (persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
-}
-
-
 bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
     return false;

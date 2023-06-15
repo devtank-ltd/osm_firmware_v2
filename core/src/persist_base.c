@@ -10,6 +10,25 @@
 #include "persist_config.h"
 
 
+
+char * persist_get_serial_number(void)
+{
+    return persist_data.serial_number;
+}
+
+
+void persist_set_log_debug_mask(uint32_t mask)
+{
+    persist_data.log_debug_mask = mask | DEBUG_SYS;
+}
+
+
+uint32_t persist_get_log_debug_mask(void)
+{
+    return persist_data.log_debug_mask;
+}
+
+
 void persistent_wipe(void)
 {
     platform_persist_wipe();
