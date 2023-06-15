@@ -6,9 +6,10 @@
 #include "uart_rings.h"
 #include "common.h"
 #include "platform.h"
+#include "uarts.h"
 
 
-#define MEASUREMENTS_COLLECT_TIME_HPM_MS         10000
+#define MEASUREMENTS_COLLECT_TIME_HPM_MS         6000
 #define HPM_TIMEOUT_MS                           (uint32_t)(MEASUREMENTS_COLLECT_TIME_HPM_MS * 1.5)
 
 #define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
@@ -28,6 +29,7 @@ unit_entry_t pm25_entry = {0};
 unit_entry_t pm10_entry = {0};
 
 static bool     hpm_valid               = false;
+static bool     hpm_is_on               = false;
 static uint32_t _hpm_start_time         = 0;
 static uint32_t _hpm_last_collect_time  = MEASUREMENTS_COLLECT_TIME_HPM_MS;
 
@@ -44,6 +46,7 @@ typedef struct
 } hpm_response_t;
 
 
+void hpm_enable(bool enable);
 static void process_part_measure_response(const uint8_t *data);
 static void process_part_measure_long_response(const uint8_t *data);
 static void process_nack_response(const uint8_t *data);
@@ -67,6 +70,24 @@ static void _hpm_is_valid(void)
 {
     hpm_valid = true;
     _hpm_last_collect_time = since_boot_delta(get_since_boot_ms(), _hpm_start_time);
+}
+
+
+static bool _hpm_is_valid_now(void)
+{
+    uint32_t now = get_since_boot_ms();
+    if (hpm_valid)
+    {
+        if (since_boot_delta(now, _hpm_start_time) > HPM_TIMEOUT_MS)
+        {
+            hpm_valid = false;
+        }
+        else
+        {
+            hpm_valid = (since_boot_delta(now, _hpm_start_time + _hpm_last_collect_time) < HPM_TIMEOUT_MS);
+        }
+    }
+    return hpm_valid;
 }
 
 
@@ -126,7 +147,27 @@ static void process_part_measure_long_response(const uint8_t *data)
     pm25_entry.l = data[7];
     pm10_entry.h = data[8];
     pm10_entry.l = data[9];
-    hpm_valid = true;
+
+    static unsigned message_count = 0;
+
+    /* First seems to always be 0, second always seems to be high,
+     * third seems alright, fourth is better. */
+    if (message_count > 2)
+    {
+        _hpm_is_valid();
+        if (hpm_is_on)
+        {
+            uart_enable(HPM_UART, false);
+            hpm_enable(false);
+            uart_rings_in_wipe(HPM_UART);
+            uart_rings_out_wipe(HPM_UART);
+        }
+        message_count = 0;
+    }
+    else
+    {
+        message_count++;
+    }
 
     hpm_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
 }
@@ -156,6 +197,11 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
     static bool header_active = false;
 
     unsigned len = ring_buf_get_pending(ring);
+
+    if (!len)
+    {
+        return;
+    }
 
     if (!header_active)
     {
@@ -223,10 +269,10 @@ void hpm_enable(bool enable)
 {
     static unsigned hpm_use_ref = 0;
 
-    platform_hpm_enable(enable);
-
+    hpm_is_on = enable;
     if (enable)
     {
+        platform_hpm_enable(true);
         _hpm_start_time = get_since_boot_ms();
         hpm_use_ref++;
         hpm_debug("Power On (ref:%u)", hpm_use_ref);
@@ -238,7 +284,7 @@ void hpm_enable(bool enable)
     if (!hpm_use_ref)
     {
         hpm_debug("Power Off");
-        hpm_valid = false;
+        platform_hpm_enable(false);
     }
     else
         hpm_debug("Power Off deferred (ref:%u)", hpm_use_ref);
@@ -261,14 +307,13 @@ static measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_readin
 {
     if (!val)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!hpm_valid)
+    if (!_hpm_is_valid_now())
     {
         if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         hpm_enable(false);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    hpm_enable(false);
     val->v_i64 = (int64_t)pm10_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -278,14 +323,13 @@ static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_readin
 {
     if (!val)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    if (!hpm_valid)
+    if (!_hpm_is_valid_now())
     {
         if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         hpm_enable(false);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    hpm_enable(false);
     val->v_i64 = (int64_t)pm25_entry.d;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -293,7 +337,11 @@ static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_readin
 
 static measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
 {
-    hpm_enable(true);
+    if (!hpm_is_on)
+    {
+        uart_enable(HPM_UART, true);
+        hpm_enable(true);
+    }
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 

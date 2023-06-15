@@ -236,3 +236,29 @@ void uart_rings_check()
 void uart_rings_init(void)
 {
 }
+
+
+static void _uart_rings_wipe(ring_buf_t * ring)
+{
+    memset((void*)ring->buf, 0, sizeof(ring->size));
+    ring->r_pos = 0;
+    ring->w_pos = 0;
+}
+
+
+void uart_rings_in_wipe(unsigned uart)
+{
+    if (uart < UART_CHANNELS_COUNT)
+    {
+        _uart_rings_wipe(&ring_in_bufs[uart]);
+    }
+}
+
+
+void uart_rings_out_wipe(unsigned uart)
+{
+    if (uart < UART_CHANNELS_COUNT)
+    {
+        _uart_rings_wipe(&ring_out_bufs[uart]);
+    }
+}
