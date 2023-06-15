@@ -12,6 +12,9 @@
 #include "common.h"
 #include "io.h"
 
+_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
+_Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");
+
 
 persist_storage_t               persist_data __attribute__((aligned (16)));
 persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));

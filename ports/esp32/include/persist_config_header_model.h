@@ -2,11 +2,6 @@
 
 #include "model_config.h"
 
-#define FLASH_ADDRESS                 CONCAT(FW_NAME,_FLASH_ADDRESS)
-#define FLASH_PAGE_SIZE               CONCAT(FW_NAME,_FLASH_PAGE_SIZE)
-
-#define FLASH_MEASUREMENTS_PAGE       CONCAT(FW_NAME,_FLASH_MEASUREMENTS_PAGE)
-#define FLASH_CONFIG_PAGE             CONCAT(FW_NAME,_FLASH_CONFIG_PAGE)
 #define FW_PAGE                       CONCAT(FW_NAME,_FW_PAGE)
 #define NEW_FW_PAGE                   CONCAT(FW_NAME,_NEW_FW_PAGE)
 

@@ -36,6 +36,3 @@ typedef struct
     measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
 } persist_measurements_storage_t;
 
-
-_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
-_Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");
