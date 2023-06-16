@@ -247,7 +247,7 @@ static measurements_sensor_state_t _cc_get_collection_time(char* name, uint32_t*
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = _cc_collection_time * 1.1;
+    *collection_time = CC_DEFAULT_COLLECTION_TIME;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
