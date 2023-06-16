@@ -4,17 +4,23 @@
 #include <esp_event.h>
 
 #include "log.h"
+#include "common.h"
 #include "base_types.h"
 #include "persist_config.h"
 
 #include "protocol.h"
 
+#define SSID_LEN 32
+#define WFPW_LEN 32
+
+
 static volatile bool _has_ip_addr = false;
+
 
 typedef struct
 {
-    char ssid[32];
-    char password[32];
+    char ssid[SSID_LEN];
+    char password[WFPW_LEN];
     wifi_auth_mode_t automode;
 } osm_wifi_config_t;
 
@@ -22,7 +28,7 @@ typedef struct
 static osm_wifi_config_t* _wifi_get_config(void)
 {
     comms_config_t* comms_config = &persist_data.model_config.comms_config;
-    if (comms_config->type != COMMS_TYPE_LW)
+    if (comms_config->type != COMMS_TYPE_WIFI)
     {
         comms_debug("Tried to get config for WiFi but config is not for WiFi.");
         return NULL;
@@ -145,4 +151,93 @@ bool        protocol_get_id(char* str, uint8_t len) { return false; }
 void        protocol_power_down(void) {}
 
 
-struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail) { return tail; }
+static void _prep_config(void)
+{
+    comms_config_t* comms_config = &persist_data.model_config.comms_config;
+    if (comms_config->type != COMMS_TYPE_WIFI)
+    {
+        memset(comms_config, 0, sizeof(comms_config_t));
+        comms_config->type = COMMS_TYPE_WIFI;
+    }
+}
+
+static command_response_t _ssid_cb(char *args)
+{
+    char * p = skip_space(args);
+    if (!(*p))
+    {
+        osm_wifi_config_t* wifi_config = _wifi_get_config();
+        char * ssid = (wifi_config)?wifi_config->ssid:"<UNSET>";
+        log_out("SSID:%s", ssid);
+    }
+    else
+    {
+        _prep_config();
+        osm_wifi_config_t* wifi_config = _wifi_get_config();
+        char * ssid = p;
+        p = strchr(p, ' ');
+        if (p)
+            *p = 0;
+        unsigned len = strlen(ssid) + 1;
+        if (len > SSID_LEN)
+        {
+            log_out("Too long.");
+            return COMMAND_RESP_ERR;
+        }
+        memcpy(wifi_config->ssid, ssid, len);
+        log_out("SSID:%s", ssid);
+    }
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _pw_cb(char *args)
+{
+    char * p = skip_space(args);
+    if (!(*p))
+    {
+        osm_wifi_config_t* wifi_config = _wifi_get_config();
+        char * pw = (wifi_config)?wifi_config->password:NULL;
+        log_out("Password %s", (pw && pw[0])?"set":"<UNSET>");
+    }
+    else
+    {
+        _prep_config();
+        osm_wifi_config_t* wifi_config = _wifi_get_config();
+        char * pw = p;
+        p = strchr(p, ' ');
+        if (p)
+            *p = 0;
+        unsigned len = strlen(pw) + 1;
+        if (len > WFPW_LEN)
+        {
+            log_out("Too long.");
+            return COMMAND_RESP_ERR;
+        }
+        memcpy(wifi_config->password, pw, len);
+        log_out("Password set");
+    }
+
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _am_cb(char *args)
+{
+    return COMMAND_RESP_OK;
+}
+
+
+struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] =
+    {
+        { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
+        { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
+        { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL }
+    };
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}
+
+
+
