@@ -249,6 +249,7 @@ typedef enum
 typedef enum
 {
     COMMS_TYPE_LW = 1,
+    COMMS_TYPE_WIFI = 2,
 } comms_type_lw_t;
 
 
