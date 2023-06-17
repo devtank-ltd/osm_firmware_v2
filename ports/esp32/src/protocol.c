@@ -21,8 +21,27 @@ typedef struct
 {
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
-    wifi_auth_mode_t automode;
+    wifi_auth_mode_t authmode;
 } osm_wifi_config_t;
+
+
+static struct
+{
+    const char * name;
+    wifi_auth_mode_t authmode;
+} _authmodes[] =
+{
+    {"open", WIFI_AUTH_OPEN},
+    {"WEP", WIFI_AUTH_WEP},
+    {"WPA_PSK", WIFI_AUTH_WPA_PSK},
+    {"WPA2_PSK", WIFI_AUTH_WPA2_PSK},
+    {"WPA_WPA2_PSK", WIFI_AUTH_WPA_WPA2_PSK},
+    {"WPA2_ENTERPRISE", WIFI_AUTH_WPA2_ENTERPRISE},
+    {"WPA3_PSK", WIFI_AUTH_WPA3_PSK},
+    {"WPA2_WPA3_PSK", WIFI_AUTH_WPA2_WPA3_PSK},
+    {"WAPI_PSK", WIFI_AUTH_WAPI_PSK},
+    {"OWE", WIFI_AUTH_OWE},
+};
 
 
 static osm_wifi_config_t* _wifi_get_config(void)
@@ -90,7 +109,7 @@ static void _start_wifi(void)
     {
         .sta =
         {
-            .threshold.authmode = osm_config->automode,
+            .threshold.authmode = osm_config->authmode,
             .pmf_cfg =
             {
                 .capable = true,
@@ -166,14 +185,14 @@ static command_response_t _ssid_cb(char *args)
     char * p = skip_space(args);
     if (!(*p))
     {
-        osm_wifi_config_t* wifi_config = _wifi_get_config();
-        char * ssid = (wifi_config)?wifi_config->ssid:"<UNSET>";
+        osm_wifi_config_t* osm_config = _wifi_get_config();
+        char * ssid = (osm_config)?osm_config->ssid:"<UNSET>";
         log_out("SSID:%s", ssid);
     }
     else
     {
         _prep_config();
-        osm_wifi_config_t* wifi_config = _wifi_get_config();
+        osm_wifi_config_t* osm_config = _wifi_get_config();
         char * ssid = p;
         p = strchr(p, ' ');
         if (p)
@@ -184,7 +203,7 @@ static command_response_t _ssid_cb(char *args)
             log_out("Too long.");
             return COMMAND_RESP_ERR;
         }
-        memcpy(wifi_config->ssid, ssid, len);
+        memcpy(osm_config->ssid, ssid, len);
         log_out("SSID:%s", ssid);
     }
     return COMMAND_RESP_OK;
@@ -196,14 +215,14 @@ static command_response_t _pw_cb(char *args)
     char * p = skip_space(args);
     if (!(*p))
     {
-        osm_wifi_config_t* wifi_config = _wifi_get_config();
-        char * pw = (wifi_config)?wifi_config->password:NULL;
+        osm_wifi_config_t* osm_config = _wifi_get_config();
+        char * pw = (osm_config)?osm_config->password:NULL;
         log_out("Password %s", (pw && pw[0])?"set":"<UNSET>");
     }
     else
     {
         _prep_config();
-        osm_wifi_config_t* wifi_config = _wifi_get_config();
+        osm_wifi_config_t* osm_config = _wifi_get_config();
         char * pw = p;
         p = strchr(p, ' ');
         if (p)
@@ -214,7 +233,7 @@ static command_response_t _pw_cb(char *args)
             log_out("Too long.");
             return COMMAND_RESP_ERR;
         }
-        memcpy(wifi_config->password, pw, len);
+        memcpy(osm_config->password, pw, len);
         log_out("Password set");
     }
 
@@ -224,6 +243,43 @@ static command_response_t _pw_cb(char *args)
 
 static command_response_t _am_cb(char *args)
 {
+    char * p = skip_space(args);
+    if (!(*p))
+    {
+        osm_wifi_config_t* osm_config = _wifi_get_config();
+        wifi_auth_mode_t authmode = (osm_config)?osm_config->authmode:WIFI_AUTH_OPEN;
+        for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
+        {
+            if (_authmodes[n].authmode == authmode)
+            {
+                log_out("authmode: %s", _authmodes[n].name);
+                return COMMAND_RESP_OK;
+            }
+        }
+        return COMMAND_RESP_ERR;
+    }
+    else
+    {
+        _prep_config();
+        osm_wifi_config_t* osm_config = _wifi_get_config();
+ 
+        char * am = p;
+        p = strchr(p, ' ');
+        if (p)
+            *p = 0;
+        for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
+        {
+            if (!strcmp(_authmodes[n].name, am))
+            {
+                log_out("authmode: %s", am);
+                osm_config->authmode = _authmodes[n].authmode;
+                return COMMAND_RESP_OK;
+            }
+        }
+        log_out("Unknown authmode: %s", am);
+        return COMMAND_RESP_ERR;
+ 
+    }
     return COMMAND_RESP_OK;
 }
 
