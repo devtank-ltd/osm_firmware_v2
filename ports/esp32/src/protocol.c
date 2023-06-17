@@ -229,6 +229,7 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 {
     if (!_has_mqtt)
         return false;
+    return false;
 }
 
 
