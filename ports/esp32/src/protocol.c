@@ -14,8 +14,8 @@
 
 #define SSID_LEN 16
 #define WFPW_LEN 32
-#define SVR_LEN 16
-#define SVRUSR_LEN 16
+#define URI_LEN 24
+#define SVRUSR_LEN 8
 #define SVRPW_LEN 32
 
 #define MQTT_DEFAULT_PORT 1883
@@ -25,14 +25,15 @@ static char _mac[16];
 static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
 
+
 typedef struct
 {
     uint8_t  type;
     uint8_t  authmode;
-    uint16_t svr_port;
+    uint16_t _;
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
-    char server[SVR_LEN];
+    char uri[URI_LEN];
     char svr_user[SVRUSR_LEN];
     char svr_pw[SVRPW_LEN];
 } __attribute__((__packed__)) osm_wifi_config_t;
@@ -71,6 +72,32 @@ static osm_wifi_config_t* _wifi_get_config(void)
 }
 
 
+static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
+{
+    esp_mqtt_event_handle_t event = event_data;
+    esp_mqtt_client_handle_t client = event->client;
+    switch ((esp_mqtt_event_id_t)event_id)
+    {
+        case MQTT_EVENT_CONNECTED:
+            _has_mqtt = true;
+            comms_debug("MQTT connected.");
+            char topic[32];
+            snprintf(topic, sizeof(topic), "/osm/%s/cmd", _mac);
+            esp_mqtt_client_subscribe(client, topic, 0);
+            break;
+        case MQTT_EVENT_DISCONNECTED:
+            _has_mqtt = false;
+            comms_debug("MQTT disconnected.");
+            break;
+        case MQTT_EVENT_DATA:
+            comms_debug("MQTT Data %.*s", event->topic_len, event->topic);
+            break;
+        default:
+            break;
+    }
+}
+
+
 static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
@@ -85,6 +112,7 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
             case WIFI_EVENT_STA_DISCONNECTED:
                 comms_debug("WiFi STA disconnect event.");
                 _has_ip_addr = false;
+                _has_mqtt = false;
                 esp_wifi_connect();
                 break;
             default:
@@ -98,8 +126,18 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
         {
             case IP_EVENT_STA_GOT_IP:
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+                osm_wifi_config_t* osm_config = _wifi_get_config();
                 comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
                 _has_ip_addr = true;
+                esp_mqtt_client_config_t mqtt_cfg =
+                {
+                    .broker.address.uri = osm_config->uri,
+                };
+
+                esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+                esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, _mqtt_event_handler, NULL);
+                esp_mqtt_client_start(client);
+
                 break;
             default:
                 comms_debug("Unknown WiFi IP event :");
@@ -174,7 +212,7 @@ void        protocol_send(void) {}
 bool        protocol_send_ready(void) { return false; }
 bool        protocol_send_allowed(void) { return false; }
 void        protocol_reset(void) {}
-void        protocol_process(char* message) {}
+//void        protocol_process(char* message) {}
 
 
 bool protocol_get_connected(void)
@@ -284,9 +322,9 @@ static command_response_t _am_cb(char *args)
 }
 
 
-static command_response_t _mqtt_svr_cb(char *args)
+static command_response_t _mqtt_uri_cb(char *args)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, server), SVR_LEN, args, "MQTT Server", true);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, uri), URI_LEN, args, "MQTT URI", true);
 }
 
 
@@ -310,7 +348,7 @@ struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
         { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
         { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
         { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL },
-        { "mqtt_svr",   "Get/Set MQTT server", _mqtt_svr_cb                       , false , NULL },
+        { "mqtt_uri",   "Get/Set MQTT broker", _mqtt_uri_cb                       , false , NULL },
         { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
         { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
     };
