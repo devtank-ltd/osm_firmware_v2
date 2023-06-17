@@ -10,9 +10,11 @@
 
 #include "protocol.h"
 
-#define SSID_LEN 32
-#define WFPW_LEN 32
-
+#define SSID_LEN 16
+#define WFPW_LEN 24
+#define SVR_LEN 16
+#define SVRUSR_LEN 16
+#define SVRPW_LEN 24
 
 static volatile bool _has_ip_addr = false;
 
@@ -21,8 +23,12 @@ typedef struct
 {
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
-    wifi_auth_mode_t authmode;
-} osm_wifi_config_t;
+    char server[SVR_LEN];
+    char svr_user[SVRUSR_LEN];
+    char svr_pw[SVRPW_LEN];
+    uint16_t svr_port;
+    uint16_t authmode;
+} __attribute__((__packed__)) osm_wifi_config_t;
 
 
 static struct
