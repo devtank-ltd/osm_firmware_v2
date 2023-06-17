@@ -14,7 +14,7 @@
 
 #define SSID_LEN 16
 #define WFPW_LEN 32
-#define URI_LEN 24
+#define SVR_LEN 24
 #define SVRUSR_LEN 12
 #define SVRPW_LEN 32
 
@@ -33,7 +33,7 @@ typedef struct
     uint16_t _;
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
-    char uri[URI_LEN];
+    char svr[SVR_LEN];
     char svr_user[SVRUSR_LEN];
     char svr_pw[SVRPW_LEN];
 } __attribute__((__packed__)) osm_wifi_config_t;
@@ -134,11 +134,14 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
                 comms_debug("MAC: %s", _mac);
 
                 _has_ip_addr = true;
+                static char uri[128];
+                //mqtt://username:password@mqtt.eclipseprojects.io
+                snprintf(uri, sizeof(uri), "mqtt://%s:%s@%s", osm_config->svr_user, osm_config->svr_pw, osm_config->svr);
+
                 esp_mqtt_client_config_t mqtt_cfg =
                 {
-                    .broker.address.uri = osm_config->uri,
+                    .broker.address.uri = uri,
                 };
-
                 esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
                 esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, _mqtt_event_handler, NULL);
                 esp_mqtt_client_start(client);
@@ -281,6 +284,14 @@ static command_response_t _pw_cb(char *args)
 }
 
 
+static void _print_ams(void)
+{
+    log_out("Options:");
+    for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
+        log_out("  %s", _authmodes[n].name);
+}
+
+
 static command_response_t _am_cb(char *args)
 {
     char * p = skip_space(args);
@@ -293,9 +304,11 @@ static command_response_t _am_cb(char *args)
             if (_authmodes[n].authmode == authmode)
             {
                 log_out("authmode: %s", _authmodes[n].name);
+                _print_ams();
                 return COMMAND_RESP_OK;
             }
         }
+        _print_ams();
         return COMMAND_RESP_ERR;
     }
     else
@@ -321,9 +334,9 @@ static command_response_t _am_cb(char *args)
 }
 
 
-static command_response_t _mqtt_uri_cb(char *args)
+static command_response_t _mqtt_svr_cb(char *args)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, uri), URI_LEN, args, "MQTT URI", true);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr), SVR_LEN, args, "MQTT Broker", true);
 }
 
 
@@ -338,6 +351,19 @@ static command_response_t _mqtt_pw_cb(char *args)
     return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false);
 }
 
+static command_response_t _esp_conn_cb(char *args)
+{
+    if (_has_mqtt)
+    {
+        comms_debug("1 | Connected");
+        return COMMAND_RESP_OK;
+    }
+    else
+    {
+        comms_debug("0 | Disconnected");
+        return COMMAND_RESP_ERR;
+    }
+}
 
 
 struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
@@ -347,9 +373,10 @@ struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
         { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
         { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
         { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL },
-        { "mqtt_uri",   "Get/Set MQTT broker", _mqtt_uri_cb                       , false , NULL },
+        { "mqtt_svr",   "Get/Set MQTT broker", _mqtt_svr_cb                       , false , NULL },
         { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
         { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
+        { "comms_conn", "Get if connected or not", _esp_conn_cb, false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
