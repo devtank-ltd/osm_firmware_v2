@@ -9,6 +9,7 @@
 #include "modbus_measurements.h"
 #include "fw.h"
 #include "io.h"
+#include "protocol.h"
 
 void env00_post_init(void) {}
 

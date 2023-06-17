@@ -15,7 +15,7 @@
 #define SSID_LEN 16
 #define WFPW_LEN 32
 #define URI_LEN 24
-#define SVRUSR_LEN 8
+#define SVRUSR_LEN 12
 #define SVRPW_LEN 32
 
 #define MQTT_DEFAULT_PORT 1883
