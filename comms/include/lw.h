@@ -55,6 +55,7 @@ typedef enum
 typedef struct
 {
     uint8_t type;
+    uint8_t _[3];
     char    dev_eui[LW_DEV_EUI_LEN];
     char    app_key[LW_APP_KEY_LEN];
     uint8_t region; /* lw_region_t */

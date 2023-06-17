@@ -3,6 +3,8 @@
 #include <esp_wifi.h>
 #include <esp_event.h>
 
+#include <mqtt_client.h>
+
 #include "log.h"
 #include "common.h"
 #include "base_types.h"
@@ -11,26 +13,28 @@
 #include "protocol.h"
 
 #define SSID_LEN 16
-#define WFPW_LEN 24
+#define WFPW_LEN 32
 #define SVR_LEN 16
 #define SVRUSR_LEN 16
-#define SVRPW_LEN 24
+#define SVRPW_LEN 32
 
 #define MQTT_DEFAULT_PORT 1883
+
+static char _mac[16];
 
 static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
 
 typedef struct
 {
-    uint8_t type;
+    uint8_t  type;
+    uint8_t  authmode;
+    uint16_t svr_port;
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
     char server[SVR_LEN];
     char svr_user[SVRUSR_LEN];
     char svr_pw[SVRPW_LEN];
-    uint16_t svr_port;
-    uint16_t authmode;
 } __attribute__((__packed__)) osm_wifi_config_t;
 
 _Static_assert(sizeof(osm_wifi_config_t) < sizeof(comms_config_t), "WiFi config too big.");
@@ -141,6 +145,11 @@ static void _start_wifi(void)
 
 void protocol_system_init(void)
 {
+    uint8_t mac[6];
+    ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, mac));
+    snprintf(_mac, sizeof(_mac), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    comms_debug("MAC: %s", _mac);
+
     ESP_ERROR_CHECK(esp_netif_init());
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
