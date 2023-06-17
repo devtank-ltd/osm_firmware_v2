@@ -4,6 +4,8 @@
 
 #define DE_485_PIN    GPIO_NUM_25
 
+#define SW_SEL GPIO_NUM_27
+
 #define W1_PULSE_1_IO 0
 #define W1_PULSE_2_IO 1
 

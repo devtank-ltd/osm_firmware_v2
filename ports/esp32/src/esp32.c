@@ -82,6 +82,8 @@ void platform_set_rs485_mode(bool driver_enable)
      * receivers if RE is low.
      *
      * */
+    gpio_set_direction(SW_SEL, GPIO_MODE_OUTPUT);
+    gpio_set_level(SW_SEL, 1);
 
     if (driver_enable)
     {
