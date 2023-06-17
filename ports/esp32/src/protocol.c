@@ -20,7 +20,7 @@
 
 #define MQTT_DEFAULT_PORT 1883
 
-static char _mac[16];
+static char _mac[16] = {0};
 
 static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
@@ -128,6 +128,11 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
                 osm_wifi_config_t* osm_config = _wifi_get_config();
                 comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
+                uint8_t mac[6];
+                ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, mac));
+                snprintf(_mac, sizeof(_mac), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+                comms_debug("MAC: %s", _mac);
+
                 _has_ip_addr = true;
                 esp_mqtt_client_config_t mqtt_cfg =
                 {
@@ -183,13 +188,7 @@ static void _start_wifi(void)
 
 void protocol_system_init(void)
 {
-    uint8_t mac[6];
-    ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, mac));
-    snprintf(_mac, sizeof(_mac), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    comms_debug("MAC: %s", _mac);
-
     ESP_ERROR_CHECK(esp_netif_init());
-
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_sta();
 

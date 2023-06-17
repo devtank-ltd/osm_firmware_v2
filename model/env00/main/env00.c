@@ -78,6 +78,7 @@ void env00_cmds_add_all(struct cmd_link_t* tail)
     tail = ios_add_commands(tail);
     tail = modbus_add_commands(tail);
     tail = persist_config_add_commands(tail);
+    tail = protocol_add_commands(tail);
 }
 
 
