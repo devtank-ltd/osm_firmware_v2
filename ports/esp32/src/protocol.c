@@ -16,8 +16,10 @@
 #define SVRUSR_LEN 16
 #define SVRPW_LEN 24
 
-static volatile bool _has_ip_addr = false;
+#define MQTT_DEFAULT_PORT 1883
 
+static volatile bool _has_ip_addr = false;
+static volatile bool _has_mqtt = false;
 
 typedef struct
 {
@@ -186,64 +188,47 @@ static void _prep_config(void)
     }
 }
 
-static command_response_t _ssid_cb(char *args)
+
+static command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len, char * src, char * name, bool show)
 {
-    char * p = skip_space(args);
+    char * p = skip_space(src);
     if (!(*p))
     {
         osm_wifi_config_t* osm_config = _wifi_get_config();
-        char * ssid = (osm_config)?osm_config->ssid:"<UNSET>";
-        log_out("SSID:%s", ssid);
+        p = (osm_config)?((char*)osm_config) + dst_offset:"";
     }
     else
     {
         _prep_config();
         osm_wifi_config_t* osm_config = _wifi_get_config();
-        char * ssid = p;
-        p = strchr(p, ' ');
-        if (p)
-            *p = 0;
-        unsigned len = strlen(ssid) + 1;
-        if (len > SSID_LEN)
+        unsigned len = strlen(p) + 1;
+        if (len > dst_len)
         {
             log_out("Too long.");
             return COMMAND_RESP_ERR;
         }
-        memcpy(osm_config->ssid, ssid, len);
-        log_out("SSID:%s", ssid);
+        memcpy(((char*)osm_config) + dst_offset, p, len);
     }
+    if (show)
+        log_out("%s: %s", name, p);
+    else if (*p)
+        log_out("%s: is set", name);
+    else
+        log_out("%s: not set", name);
+
     return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _ssid_cb(char *args)
+{
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, ssid), SSID_LEN, args, "SSID", true);
 }
 
 
 static command_response_t _pw_cb(char *args)
 {
-    char * p = skip_space(args);
-    if (!(*p))
-    {
-        osm_wifi_config_t* osm_config = _wifi_get_config();
-        char * pw = (osm_config)?osm_config->password:NULL;
-        log_out("Password %s", (pw && pw[0])?"set":"<UNSET>");
-    }
-    else
-    {
-        _prep_config();
-        osm_wifi_config_t* osm_config = _wifi_get_config();
-        char * pw = p;
-        p = strchr(p, ' ');
-        if (p)
-            *p = 0;
-        unsigned len = strlen(pw) + 1;
-        if (len > WFPW_LEN)
-        {
-            log_out("Too long.");
-            return COMMAND_RESP_ERR;
-        }
-        memcpy(osm_config->password, pw, len);
-        log_out("Password set");
-    }
-
-    return COMMAND_RESP_OK;
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, password), WFPW_LEN, args, "Password", false);
 }
 
 
@@ -270,9 +255,6 @@ static command_response_t _am_cb(char *args)
         osm_wifi_config_t* osm_config = _wifi_get_config();
  
         char * am = p;
-        p = strchr(p, ' ');
-        if (p)
-            *p = 0;
         for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
         {
             if (!strcmp(_authmodes[n].name, am))
@@ -290,13 +272,35 @@ static command_response_t _am_cb(char *args)
 }
 
 
+static command_response_t _mqtt_svr_cb(char *args)
+{
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, server), SVR_LEN, args, "MQTT Server", true);
+}
+
+
+static command_response_t _mqtt_usr_cb(char *args)
+{
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_user), SVRUSR_LEN, args, "MQTT User", true);
+}
+
+
+static command_response_t _mqtt_pw_cb(char *args)
+{
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false);
+}
+
+
+
 struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
         { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
         { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
-        { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL }
+        { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL },
+        { "mqtt_svr",   "Get/Set MQTT server", _mqtt_svr_cb                       , false , NULL },
+        { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
+        { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
