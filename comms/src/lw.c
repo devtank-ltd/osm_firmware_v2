@@ -17,7 +17,7 @@ lw_config_t* lw_get_config(void)
         comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
         return NULL;
     }
-    return (lw_config_t*)(comms_config->setup);
+    return (lw_config_t*)comms_config;
 }
 
 
@@ -328,5 +328,5 @@ static void _lw_config_init2(lw_config_t* lw_config)
 void lw_config_init(comms_config_t* comms_config)
 {
     comms_config->type = COMMS_TYPE_LW;
-    _lw_config_init2((lw_config_t*)comms_config->setup);
+    _lw_config_init2((lw_config_t*)comms_config);
 }

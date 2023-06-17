@@ -1144,6 +1144,6 @@ void rak4270_power_down(void)
 bool rak4270_persist_config_cmp(void* d0, void* d1)
 {
     return lw_persist_config_cmp(
-        (lw_config_t*)((comms_config_t*)d0)->setup,
-        (lw_config_t*)((comms_config_t*)d1)->setup);
+        (lw_config_t*)((comms_config_t*)d0),
+        (lw_config_t*)((comms_config_t*)d1));
 }

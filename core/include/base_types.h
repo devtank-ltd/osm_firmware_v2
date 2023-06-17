@@ -250,14 +250,14 @@ typedef enum
 {
     COMMS_TYPE_LW = 1,
     COMMS_TYPE_WIFI = 2,
-} comms_type_lw_t;
+} comms_type_t;
 
 
 typedef struct
 {
-    uint8_t type;           /* comms_type_lw_t */
-    uint8_t setup[127];
-} comms_config_t;
+    uint8_t type;           /* comms_type_t */
+    uint8_t _[127];
+} __attribute__((__packed__)) comms_config_t;
 
 
 typedef enum

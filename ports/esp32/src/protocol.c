@@ -23,6 +23,7 @@ static volatile bool _has_mqtt = false;
 
 typedef struct
 {
+    uint8_t type;
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
     char server[SVR_LEN];
@@ -31,6 +32,8 @@ typedef struct
     uint16_t svr_port;
     uint16_t authmode;
 } __attribute__((__packed__)) osm_wifi_config_t;
+
+_Static_assert(sizeof(osm_wifi_config_t) < sizeof(comms_config_t), "WiFi config too big.");
 
 
 static struct
@@ -60,7 +63,7 @@ static osm_wifi_config_t* _wifi_get_config(void)
         comms_debug("Tried to get config for WiFi but config is not for WiFi.");
         return NULL;
     }
-    return (osm_wifi_config_t*)(comms_config->setup);
+    return (osm_wifi_config_t*)(comms_config);
 }
 
 
