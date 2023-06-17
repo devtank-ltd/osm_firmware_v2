@@ -6,6 +6,7 @@
 #include <mqtt_client.h>
 
 #include "log.h"
+#include "cmd.h"
 #include "common.h"
 #include "base_types.h"
 #include "persist_config.h"
@@ -25,6 +26,10 @@ static char _mac[16] = {0};
 static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
 
+static esp_mqtt_client_handle_t _client;
+
+static char _cmd[32];
+static volatile bool _cmd_ready = false;
 
 typedef struct
 {
@@ -91,6 +96,19 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             break;
         case MQTT_EVENT_DATA:
             comms_debug("MQTT Data %.*s", event->topic_len, event->topic);
+            if (_cmd_ready)
+            {
+                comms_debug("MQTT msg already pending.");
+                break;
+            }
+            memset(_cmd, 0, sizeof(_cmd));
+            if (event->data_len < sizeof(_cmd))	
+            {
+                memcpy(_cmd, event->data, event->data_len);
+                _cmd_ready = true;
+            }
+            else
+                comms_debug("MQTT msg too long.");
             break;
         default:
             break;
@@ -142,9 +160,9 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
                 {
                     .broker.address.uri = uri,
                 };
-                esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-                esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, _mqtt_event_handler, NULL);
-                esp_mqtt_client_start(client);
+                _client = esp_mqtt_client_init(&mqtt_cfg);
+                esp_mqtt_client_register_event(_client, ESP_EVENT_ANY_ID, _mqtt_event_handler, NULL);
+                esp_mqtt_client_start(_client);
 
                 break;
             default:
@@ -207,23 +225,34 @@ void protocol_system_init(void)
 
 bool protocol_init(void) { return false; }
 
-bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data) { return false; }
+bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
+{
+    if (!_has_mqtt)
+        return false;
+}
+
+
 bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type) { return false; }
 void        protocol_debug(void) {}
 void        protocol_send(void) {}
 bool        protocol_send_ready(void) { return false; }
 bool        protocol_send_allowed(void) { return false; }
 void        protocol_reset(void) {}
-//void        protocol_process(char* message) {}
 
 
 bool protocol_get_connected(void)
 {
-    return _has_ip_addr;
+    return _has_mqtt;
 }
 
 
-void protocol_loop_iteration(void) {}
+void protocol_loop_iteration(void)
+{
+    if (!_cmd_ready)
+        return;
+    cmds_process(_cmd, strlen(_cmd));
+    _cmd_ready = false;
+}
 
 bool        protocol_get_id(char* str, uint8_t len) { return false; }
 
