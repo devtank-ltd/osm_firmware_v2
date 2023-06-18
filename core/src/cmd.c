@@ -122,7 +122,7 @@ command_response_t cmds_process(char * command, unsigned len)
             args = skip_space(command + keylen);
             while(command[len-1] == ' ')
                 command[--len] = 0;
-            cmd->cb(args);
+            resp = cmd->cb(args);
             break;
         }
     }
