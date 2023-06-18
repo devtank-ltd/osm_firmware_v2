@@ -339,7 +339,7 @@ bool        protocol_get_id(char* str, uint8_t len)
     if (len < 15 || !_mac[0])
         return false;
 
-    strncpy(str, len, _mac);
+    strcpy(str, _mac);
 
     return true;
 }
