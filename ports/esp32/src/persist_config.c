@@ -58,6 +58,8 @@ void     persist_commit()
         log_error("Failed write persist_measurements : %s", esp_err_to_name(err));
     nvs_commit(config_handle);
     nvs_close(config_handle);
+
+    persist_data.config_count++;
 }
 
 
