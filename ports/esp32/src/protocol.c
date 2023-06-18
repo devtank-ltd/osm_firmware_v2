@@ -225,13 +225,13 @@ void protocol_system_init(void)
 }
 
 
-bool protocol_init(void) { return _has_mqtt; }
-
-static bool _mqtt_send(const char * name, const char * value, unsigned len)
+bool protocol_init(void)
 {
-    char topic[64];
-    snprintf(topic, sizeof(topic), "/osm/%s/measurements/%s", _mac, name);
+    return _has_mqtt;
+}
 
+static bool _mqtt_send(const char * topic, const char * value, unsigned len)
+{
     int msg_id = esp_mqtt_client_publish(_client, topic, value, len, _qos, false);
     if (msg_id < 0)
     {
@@ -240,9 +240,17 @@ static bool _mqtt_send(const char * name, const char * value, unsigned len)
     }
     else
     {
-        comms_debug("Sent MQTT %s", topic);
+        comms_debug("Sent MQTT %s (%d)", topic, msg_id);
         return true;
     }
+}
+
+
+static bool _mqtt_meas_send(const char * name, const char * value, unsigned len)
+{
+    char topic[64];
+    snprintf(topic, sizeof(topic), "/osm/%s/measurements/%s", _mac, name);
+    return _mqtt_send(topic, value, len);
 }
 
 
@@ -250,7 +258,7 @@ static bool _protocol_append_data_type_float(const char * name, int32_t value)
 {
     char svalue[16];
     unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId32".%03ld", value/1000, labs(value/1000));
-    return _mqtt_send(name, svalue, len);
+    return _mqtt_meas_send(name, svalue, len);
 }
 
 
@@ -258,7 +266,7 @@ static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 {
     char svalue[24];
     unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId64, value);
-    return _mqtt_send(name, svalue, len);
+    return _mqtt_meas_send(name, svalue, len);
 }
 
 
@@ -297,7 +305,7 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
 
 static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
 {
-    return _mqtt_send(name, data->value.value_s.str, 0);
+    return _mqtt_meas_send(name, data->value.value_s.str, 0);
 }
 
 
@@ -323,8 +331,21 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 
 
 bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type) { return false; }
-void        protocol_debug(void) {}
-void        protocol_send(void) {}
+
+
+void        protocol_debug(void)
+{
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    comms_debug("batch complete (debug)");
+}
+
+void        protocol_send(void)
+{
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    comms_debug("batch complete.");
+}
+
+
 bool        protocol_send_ready(void) { return _has_mqtt; }
 bool        protocol_send_allowed(void) { return _has_mqtt; }
 void        protocol_reset(void) {}
@@ -340,20 +361,14 @@ void protocol_loop_iteration(void)
 {
     if (!_cmd_ready)
         return;
-    cmds_process(_cmd, strlen(_cmd));
+    command_response_t resp = cmds_process(_cmd, strlen(_cmd));
+    char topic[64];
+    snprintf(topic, sizeof(topic), "/osm/%s/cmd/resp", _mac);
+    char * value = (resp == COMMAND_RESP_OK)?"ok":"error";
+
+    _mqtt_send(topic, value, 0);
     _cmd_ready = false;
 }
-
-bool        protocol_get_id(char* str, uint8_t len)
-{
-    if (len < 15 || !_mac[0])
-        return false;
-
-    strcpy(str, _mac);
-
-    return true;
-}
-
 
 void        protocol_power_down(void) {}
 
