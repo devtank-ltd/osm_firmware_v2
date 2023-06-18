@@ -225,7 +225,7 @@ void protocol_system_init(void)
 }
 
 
-bool protocol_init(void) { return false; }
+bool protocol_init(void) { return _has_mqtt; }
 
 static bool _mqtt_send(const char * name, const char * value, unsigned len)
 {

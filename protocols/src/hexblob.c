@@ -294,7 +294,12 @@ static bool _protocol_init(int8_t* buf, unsigned buflen)
     _protocol_ctx.pos = 0;
 
     memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
-    return _protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION);
+    if (!_protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    {
+        log_error("Failed to add even version to measurem     ents hex array.");
+        return false;
+    }
+    return true;
 }
 
 

@@ -92,7 +92,6 @@ static bool _measurements_send_start(void)
 {
     if (!protocol_init())
     {
-        log_error("Failed to add even version to measurements hex array.");
         _pending_send = false;
         _last_sent_ms = get_since_boot_ms();
         return false;
