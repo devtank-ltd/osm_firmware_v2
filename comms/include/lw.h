@@ -54,11 +54,14 @@ typedef enum
 
 typedef struct
 {
+    uint8_t type;
     char    dev_eui[LW_DEV_EUI_LEN];
     char    app_key[LW_APP_KEY_LEN];
     uint8_t region; /* lw_region_t */
     uint8_t version;
-} lw_config_t;
+} __attribute__((__packed__)) lw_config_t;
+
+_Static_assert(sizeof(lw_config_t) < sizeof(comms_config_t), "LoRaWAN config too big.");
 
 
 bool            lw_get_id(char* str, uint8_t len);
