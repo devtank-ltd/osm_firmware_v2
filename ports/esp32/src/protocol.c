@@ -232,7 +232,17 @@ static bool _mqtt_send(const char * name, const char * value, unsigned len)
     char topic[64];
     snprintf(topic, sizeof(topic), "/osm/%s/measurements/%s", _mac, name);
 
-    return esp_mqtt_client_publish(_client, topic, value, len, _qos, false) >= 0;
+    int msg_id = esp_mqtt_client_publish(_client, topic, value, len, _qos, false);
+    if (msg_id < 0)
+    {
+        log_error("Fail to send MQTT %s", topic);
+        return false;
+    }
+    else
+    {
+        comms_debug("Sent MQTT %s", topic);
+        return true;
+    }
 }
 
 
@@ -469,6 +479,45 @@ static command_response_t _mqtt_pw_cb(char *args)
     return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false);
 }
 
+static command_response_t _esp_comms_cb(char *args)
+{
+    struct cmd_link_t cmds[] =
+    {
+        { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
+        { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
+        { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL },
+        { "mqtt_svr",   "Get/Set MQTT broker", _mqtt_svr_cb                       , false , NULL },
+        { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
+        { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
+    };
+    command_response_t r = COMMAND_RESP_ERR;
+    if (args[0])
+    {
+	char * next = skip_to_space(args);
+        if (next[0])
+        {
+            char * t = next;
+            next = skip_space(next);
+            *t = 0;
+        }
+        for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
+        {
+            struct cmd_link_t * cmd = &cmds[n];
+            if (!strcmp(cmd->key, args))
+                return cmd->cb(next);
+        }
+    }
+    else r = COMMAND_RESP_OK;
+
+    for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
+    {
+        struct cmd_link_t * cmd = &cmds[n];
+        log_out("%10s : %s", cmd->key, cmd->desc);
+    }
+    return r;
+}
+
+
 static command_response_t _esp_conn_cb(char *args)
 {
     if (_has_mqtt)
@@ -488,12 +537,7 @@ struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
-        { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
-        { "wifi_am",   "Get/Set WiFi Auth Mode", _am_cb                       , false , NULL },
-        { "mqtt_svr",   "Get/Set MQTT broker", _mqtt_svr_cb                       , false , NULL },
-        { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
-        { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
+        { "comms_config", "Config comms", _esp_comms_cb, false , NULL },
         { "comms_conn", "Get if connected or not", _esp_conn_cb, false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
