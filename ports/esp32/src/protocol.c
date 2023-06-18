@@ -1,4 +1,5 @@
 #include <string.h>
+#include <inttypes.h>
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -25,6 +26,7 @@ static char _mac[16] = {0};
 
 static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
+static volatile int _qos = 1;
 
 static esp_mqtt_client_handle_t _client;
 
@@ -225,10 +227,87 @@ void protocol_system_init(void)
 
 bool protocol_init(void) { return false; }
 
+static bool _mqtt_send(const char * name, const char * value, unsigned len)
+{
+    char topic[64];
+    snprintf(topic, sizeof(topic), "/osm/%s/measurements/%s", _mac, name);
+
+    return esp_mqtt_client_publish(_client, topic, value, len, _qos, false) >= 0;
+}
+
+
+static bool _protocol_append_data_type_float(const char * name, int32_t value)
+{
+    char svalue[16];
+    unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId32".%03ld", value/1000, labs(value/1000));
+    return _mqtt_send(name, svalue, len);
+}
+
+
+static bool _protocol_append_data_type_i64(const char * name, int64_t value)
+{
+    char svalue[24];
+    unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId64, value);
+    return _mqtt_send(name, svalue, len);
+}
+
+
+static bool _protocol_append_value_type_float(const char * name, measurements_data_t* data)
+{
+    if (data->num_samples == 1)
+        return _protocol_append_data_type_float(name, data->value.value_f.sum);
+    bool r = true;
+    int32_t mean = data->value.value_f.sum / data->num_samples;
+    char tmp[MEASURE_NAME_NULLED_LEN + 4];
+    r &= _protocol_append_data_type_float(name, mean);
+    snprintf(tmp, sizeof(tmp), "%s_min", name);
+    r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
+    snprintf(tmp, sizeof(tmp), "%s_max", name);
+    r &= _protocol_append_data_type_float(tmp, data->value.value_f.max);
+    return r;
+}
+
+
+static bool _protocol_append_value_type_i64(const char * name, measurements_data_t* data)
+{
+    if (data->num_samples == 1)
+        return _protocol_append_data_type_i64(name, data->value.value_f.sum);
+    bool r = true;
+    int64_t mean = data->value.value_64.sum / data->num_samples;
+    char tmp[MEASURE_NAME_NULLED_LEN + 4];
+    r &= _protocol_append_data_type_i64(name, mean);
+    snprintf(tmp, sizeof(tmp), "%s_min", name);
+    r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
+    snprintf(tmp, sizeof(tmp), "%s_max", name);
+    r &= _protocol_append_data_type_i64(tmp, data->value.value_64.max);
+    return r;
+}
+
+
+
+static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
+{
+    return _mqtt_send(name, data->value.value_s.str, 0);
+}
+
+
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
 {
     if (!_has_mqtt)
         return false;
+    char * name = def->name;
+
+    switch(data->value_type)
+    {
+        case MEASUREMENTS_VALUE_TYPE_I64:
+            return _protocol_append_value_type_i64(name, data);
+        case MEASUREMENTS_VALUE_TYPE_STR:
+            return _protocol_append_value_type_str(name, data);
+        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+            return _protocol_append_value_type_float(name, data	);
+        default:
+            log_error("Unknown type '%"PRIu8"'.", data->value_type);
+    }
     return false;
 }
 
