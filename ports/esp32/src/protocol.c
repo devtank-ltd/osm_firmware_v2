@@ -315,8 +315,8 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type) { return false; }
 void        protocol_debug(void) {}
 void        protocol_send(void) {}
-bool        protocol_send_ready(void) { return false; }
-bool        protocol_send_allowed(void) { return false; }
+bool        protocol_send_ready(void) { return _has_mqtt; }
+bool        protocol_send_allowed(void) { return _has_mqtt; }
 void        protocol_reset(void) {}
 
 
@@ -334,7 +334,16 @@ void protocol_loop_iteration(void)
     _cmd_ready = false;
 }
 
-bool        protocol_get_id(char* str, uint8_t len) { return false; }
+bool        protocol_get_id(char* str, uint8_t len)
+{
+    if (len < 15 || !_mac[0])
+        return false;
+
+    strncpy(str, len, _mac);
+
+    return true;
+}
+
 
 void        protocol_power_down(void) {}
 
