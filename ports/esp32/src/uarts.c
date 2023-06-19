@@ -289,7 +289,7 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (sent <= 0)
         return false;
     if (sent != size)
-        uart_debug(uart, "Only sent %d of %d.", sent, size);
+        log_error("UART %u only sent %d of %d.", uart, sent, size);
     return true;
 }
 
