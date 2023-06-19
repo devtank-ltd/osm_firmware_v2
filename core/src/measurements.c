@@ -333,7 +333,7 @@ static bool _measurements_def_is_active(measurements_def_t* def)
 }
 
 
-static bool _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
+static measurements_sensor_state_t _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     /* returns boolean of not busy/waiting for measurement */
     measurements_inf_t inf;
@@ -343,14 +343,14 @@ static bool _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_init++;
         data->num_samples_collected++;
         data->is_collecting = 0;
-        return true;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (data->is_collecting)
     {
         measurements_debug("Measurement %s already collecting.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
-        return true;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!inf.init_cb)
     {
@@ -358,9 +358,8 @@ static bool _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_init++;
         data->is_collecting = 1;
         measurements_debug("%s has no init function (optional).", def->name);
-        return true;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    bool ret = true;
     measurements_sensor_state_t resp = inf.init_cb(def->name, false);
     switch(resp)
     {
@@ -376,10 +375,9 @@ static bool _measurements_sample_init_iteration(measurements_def_t* def, measure
             break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             // Sensor was busy, will retry.
-            ret = false;
             break;
     }
-    return ret;
+    return resp;
 }
 
 
@@ -619,13 +617,14 @@ static void _measurements_sample(void)
             }
             /* If the init function returned false, then the sensor is
              * busy, so the wait time should be 0 */
-            if (_measurements_sample_init_iteration(def, data))
+            measurements_sensor_state_t init_rsp = _measurements_sample_init_iteration(def, data);
+            if (init_rsp == MEASUREMENTS_SENSOR_STATE_BUSY)
             {
-                wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
+                wait_time = 0;
             }
             else
             {
-                wait_time = 0;
+                wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
             }
         }
         else
@@ -649,8 +648,8 @@ static void _measurements_sample(void)
         {
             if (time_since_interval >= time_collect )
             {
-                measurements_sensor_state_t rsp = _measurements_sample_get_iteration(def, data);
-                if (rsp == MEASUREMENTS_SENSOR_STATE_BUSY)
+                measurements_sensor_state_t get_rsp = _measurements_sample_get_iteration(def, data);
+                if (get_rsp == MEASUREMENTS_SENSOR_STATE_BUSY)
                 {
                     wait_time = 0;
                 }
