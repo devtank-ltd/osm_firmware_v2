@@ -333,8 +333,9 @@ static bool _measurements_def_is_active(measurements_def_t* def)
 }
 
 
-static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
+static measurements_sensor_state_t _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
 {
+    /* returns boolean of not busy/waiting for measurement */
     measurements_inf_t inf;
     if (!model_measurements_get_inf(def, data, &inf))
     {
@@ -342,14 +343,14 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_init++;
         data->num_samples_collected++;
         data->is_collecting = 0;
-        return;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (data->is_collecting)
     {
         measurements_debug("Measurement %s already collecting.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
-        return;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!inf.init_cb)
     {
@@ -357,7 +358,7 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_init++;
         data->is_collecting = 1;
         measurements_debug("%s has no init function (optional).", def->name);
-        return;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     measurements_sensor_state_t resp = inf.init_cb(def->name, false);
     switch(resp)
@@ -374,9 +375,9 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
             break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             // Sensor was busy, will retry.
-            _check_time.wait_time = 0;
             break;
     }
+    return resp;
 }
 
 
@@ -414,12 +415,12 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
 }
 
 
-static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value)
+static measurements_sensor_state_t _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value)
 {
     if (!def || !data || !inf || !new_value)
     {
         measurements_debug("Handed a NULL pointer.");
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     /* Each function should check if this has been initialised */
     measurements_sensor_state_t resp = inf->get_cb(def->name, new_value);
@@ -433,160 +434,128 @@ static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s could not collect.", def->name);
             data->num_samples_collected++;
-            return false;
+            break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             // Sensor was busy, will retry.
-            _check_time.wait_time = 0;
-            return false;
+            break;
     }
-    return true;
+    return resp;
 }
 
 
-static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+static void _measurements_sample_proc_i64(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    if (!def || !data || !inf)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
-    measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
-    {
-        return false;
-    }
-    measurements_debug("Value : %"PRIi64, new_value.v_i64);
+    measurements_debug("Value : %"PRIi64, new_value->v_i64);
 
     if (data->num_samples == 0)
     {
         // If first measurements
         data->num_samples++;
-        data->value.value_64.min = new_value.v_i64;
-        data->value.value_64.max = new_value.v_i64;
-        data->value.value_64.sum = new_value.v_i64;
-        goto good_exit;
+        data->value.value_64.min = new_value->v_i64;
+        data->value.value_64.max = new_value->v_i64;
+        data->value.value_64.sum = new_value->v_i64;
+    }
+    else
+    {
+        data->value.value_64.sum += new_value->v_i64;
+
+        data->num_samples++;
+
+        if (new_value->v_i64 > data->value.value_64.max)
+            data->value.value_64.max = new_value->v_i64;
+
+        else if (new_value->v_i64 < data->value.value_64.min)
+            data->value.value_64.min = new_value->v_i64;
     }
 
-    data->value.value_64.sum += new_value.v_i64;
-
-    data->num_samples++;
-
-    if (new_value.v_i64 > data->value.value_64.max)
-        data->value.value_64.max = new_value.v_i64;
-
-    else if (new_value.v_i64 < data->value.value_64.min)
-        data->value.value_64.min = new_value.v_i64;
-
-good_exit:
     measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
     measurements_debug("Min : %"PRIi64, data->value.value_64.min);
     measurements_debug("Max : %"PRIi64, data->value.value_64.max);
-
-    return true;
 }
 
 
-static bool _measurements_sample_get_str_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+static void _measurements_sample_proc_str(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    if (!def || !data || !inf)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
-    measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
-    {
-        measurements_debug("Sample returned false.");
-        return false;
-    }
-    uint8_t new_len = strnlen(new_value.v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
-    strncpy(data->value.value_s.str, new_value.v_str, new_len);
+    uint8_t new_len = strnlen(new_value->v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
+    strncpy(data->value.value_s.str, new_value->v_str, new_len);
     data->value.value_s.str[new_len] = 0;
     measurements_debug("Value : %s", data->value.value_s.str);
     data->num_samples++;
-    return true;
 }
 
 
-static bool _measurements_sample_get_float_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+static void _measurements_sample_proc_float(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    if (!def || !data || !inf)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
-    measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
-    {
-        return false;
-    }
-    measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value.v_f32/1000, (uint32_t)abs(new_value.v_f32)%1000);
+    measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value->v_f32/1000, (uint32_t)abs(new_value->v_f32)%1000);
 
     if (data->num_samples == 0)
     {
         // If first measurements
         data->num_samples++;
-        data->value.value_f.min = new_value.v_f32;
-        data->value.value_f.max = new_value.v_f32;
-        data->value.value_f.sum = new_value.v_f32;
-        goto good_exit;
+        data->value.value_f.min = new_value->v_f32;
+        data->value.value_f.max = new_value->v_f32;
+        data->value.value_f.sum = new_value->v_f32;
+    }
+    else
+    {
+        data->value.value_f.sum += new_value->v_f32;
+
+        data->num_samples++;
+
+        if (new_value->v_f32 > data->value.value_f.max)
+            data->value.value_f.max = new_value->v_f32;
+
+        else if (new_value->v_f32 < data->value.value_f.min)
+            data->value.value_f.min = new_value->v_f32;
     }
 
-    data->value.value_f.sum += new_value.v_f32;
-
-    data->num_samples++;
-
-    if (new_value.v_f32 > data->value.value_f.max)
-        data->value.value_f.max = new_value.v_f32;
-
-    else if (new_value.v_f32 < data->value.value_f.min)
-        data->value.value_f.min = new_value.v_f32;
-
-good_exit:
     measurements_debug("Sum : %"PRIi32".%03"PRIu32, data->value.value_f.sum/1000, (uint32_t)abs(data->value.value_f.sum)%1000);
     measurements_debug("Min : %"PRIi32".%03"PRIu32, data->value.value_f.min/1000, (uint32_t)abs(data->value.value_f.min)%1000);
     measurements_debug("Max : %"PRIi32".%03"PRIu32, data->value.value_f.max/1000, (uint32_t)abs(data->value.value_f.max)%1000);
-
-    return true;
 }
 
 
-static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
+static measurements_sensor_state_t _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
     if (!model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_collected++;
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!inf.get_cb)
     {
         // Get function is non-optional
         data->num_samples_collected++;
         measurements_debug("%s has no collect function.", def->name);
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    bool r;
-    switch(data->value_type)
+    measurements_reading_t new_value;
+    measurements_sensor_state_t rsp = _measurements_sample_get_resp(def, data, &inf, &new_value);
+
+    if (rsp == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            r = _measurements_sample_get_i64_iteration(def, data, &inf);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            r = _measurements_sample_get_str_iteration(def, data, &inf);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r = _measurements_sample_get_float_iteration(def, data, &inf);
-            break;
-        default:
-            measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
-            return false;
-    }
+        switch(data->value_type)
+        {
+            case MEASUREMENTS_VALUE_TYPE_I64:
+                _measurements_sample_proc_i64(data, &new_value);
+                break;
+            case MEASUREMENTS_VALUE_TYPE_STR:
+                _measurements_sample_proc_str(data, &new_value);
+                break;
+            case MEASUREMENTS_VALUE_TYPE_FLOAT:
+                _measurements_sample_proc_float(data, &new_value);
+                break;
+            default:
+                measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
+                return false;
+        }
 
-    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
-    return r;
+        data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+    }
+    return rsp;
 }
 
 
@@ -646,8 +615,17 @@ static void _measurements_sample(void)
                 data->num_samples_collected++;
                 measurements_debug("Could not collect before next init.");
             }
-            _measurements_sample_init_iteration(def, data);
-            wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
+            /* If the init function returned false, then the sensor is
+             * busy, so the wait time should be 0 */
+            measurements_sensor_state_t init_rsp = _measurements_sample_init_iteration(def, data);
+            if (init_rsp == MEASUREMENTS_SENSOR_STATE_BUSY)
+            {
+                wait_time = 0;
+            }
+            else
+            {
+                wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
+            }
         }
         else
         {
@@ -663,14 +641,32 @@ static void _measurements_sample(void)
         // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
         //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
 
-        if (time_since_interval >= time_collect)
+        if (data->num_samples_collected == data->num_samples_init)
         {
-            _measurements_sample_get_iteration(def, data);
-            wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+        }
+        else if (data->num_samples_collected + 1 == data->num_samples_init)
+        {
+            if (time_since_interval >= time_collect )
+            {
+                measurements_sensor_state_t get_rsp = _measurements_sample_get_iteration(def, data);
+                if (get_rsp == MEASUREMENTS_SENSOR_STATE_BUSY)
+                {
+                    wait_time = 0;
+                }
+                else
+                {
+                    wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+                }
+            }
+            else
+            {
+                wait_time = since_boot_delta(time_collect, time_since_interval);
+            }
         }
         else
         {
-            wait_time = since_boot_delta(time_collect, time_since_interval);
+            log_error("Collect and init fell out of sync for %s, skipping collects.", def->name);
+            data->num_samples_collected = data->num_samples_init;
         }
 
         if (_check_time.wait_time > wait_time)
