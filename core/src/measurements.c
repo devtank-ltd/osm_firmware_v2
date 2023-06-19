@@ -417,13 +417,12 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
 }
 
 
-static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value, bool* is_busy)
+static measurements_sensor_state_t _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value)
 {
-    if (!def || !data || !inf || !new_value || !is_busy)
+    if (!def || !data || !inf || !new_value)
     {
         measurements_debug("Handed a NULL pointer.");
-        *is_busy = false;
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     /* Each function should check if this has been initialised */
     measurements_sensor_state_t resp = inf->get_cb(def->name, new_value);
@@ -433,19 +432,16 @@ static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             measurements_debug("%s successfully collect'd.", def->name);
             data->num_samples_collected++;
-            *is_busy = false;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s could not collect.", def->name);
             data->num_samples_collected++;
-            *is_busy = false;
-            return false;
+            break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             // Sensor was busy, will retry.
-            *is_busy = true;
-            return false;
+            break;
     }
-    return true;
+    return resp;
 }
 
 
@@ -526,13 +522,8 @@ good_exit:
 }
 
 
-static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data, bool* is_busy)
+static measurements_sensor_state_t _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
 {
-    if (!is_busy)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
     measurements_inf_t inf;
     if (!model_measurements_get_inf(def, data, &inf))
     {
@@ -548,14 +539,13 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
         return false;
     }
 
-    bool r;
-    *is_busy = false;
-
     measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, &inf, &new_value, is_busy))
-    {
-        return false;
-    }
+    measurements_sensor_state_t rsp = _measurements_sample_get_resp(def, data, &inf, &new_value);
+
+    if (rsp != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+        return rsp;
+
+    bool r;
 
     switch(data->value_type)
     {
@@ -574,7 +564,7 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     }
 
     data->collection_time_cache = _measurements_get_collection_time(def, &inf);
-    return r;
+    return (r)?MEASUREMENTS_SENSOR_STATE_SUCCESS:MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
@@ -666,9 +656,8 @@ static void _measurements_sample(void)
         {
             if (time_since_interval >= time_collect )
             {
-                bool is_busy;
-                _measurements_sample_get_iteration(def, data, &is_busy);
-                if (is_busy)
+                measurements_sensor_state_t rsp = _measurements_sample_get_iteration(def, data);
+                if (rsp == MEASUREMENTS_SENSOR_STATE_BUSY)
                 {
                     wait_time = 0;
                 }
