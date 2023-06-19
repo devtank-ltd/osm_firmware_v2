@@ -445,7 +445,7 @@ static measurements_sensor_state_t _measurements_sample_get_resp(measurements_de
 }
 
 
-static bool _measurements_sample_get_i64_iteration(measurements_data_t* data, measurements_reading_t * new_value)
+static void _measurements_sample_proc_i64(measurements_data_t* data, measurements_reading_t * new_value)
 {
     measurements_debug("Value : %"PRIi64, new_value->v_i64);
 
@@ -456,40 +456,37 @@ static bool _measurements_sample_get_i64_iteration(measurements_data_t* data, me
         data->value.value_64.min = new_value->v_i64;
         data->value.value_64.max = new_value->v_i64;
         data->value.value_64.sum = new_value->v_i64;
-        goto good_exit;
+    }
+    else
+    {
+        data->value.value_64.sum += new_value->v_i64;
+
+        data->num_samples++;
+
+        if (new_value->v_i64 > data->value.value_64.max)
+            data->value.value_64.max = new_value->v_i64;
+
+        else if (new_value->v_i64 < data->value.value_64.min)
+            data->value.value_64.min = new_value->v_i64;
     }
 
-    data->value.value_64.sum += new_value->v_i64;
-
-    data->num_samples++;
-
-    if (new_value->v_i64 > data->value.value_64.max)
-        data->value.value_64.max = new_value->v_i64;
-
-    else if (new_value->v_i64 < data->value.value_64.min)
-        data->value.value_64.min = new_value->v_i64;
-
-good_exit:
     measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
     measurements_debug("Min : %"PRIi64, data->value.value_64.min);
     measurements_debug("Max : %"PRIi64, data->value.value_64.max);
-
-    return true;
 }
 
 
-static bool _measurements_sample_get_str_iteration(measurements_data_t* data, measurements_reading_t * new_value)
+static void _measurements_sample_proc_str(measurements_data_t* data, measurements_reading_t * new_value)
 {
     uint8_t new_len = strnlen(new_value->v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
     strncpy(data->value.value_s.str, new_value->v_str, new_len);
     data->value.value_s.str[new_len] = 0;
     measurements_debug("Value : %s", data->value.value_s.str);
     data->num_samples++;
-    return true;
 }
 
 
-static bool _measurements_sample_get_float_iteration(measurements_data_t* data, measurements_reading_t * new_value)
+static void _measurements_sample_proc_float(measurements_data_t* data, measurements_reading_t * new_value)
 {
     measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value->v_f32/1000, (uint32_t)abs(new_value->v_f32)%1000);
 
@@ -500,25 +497,23 @@ static bool _measurements_sample_get_float_iteration(measurements_data_t* data, 
         data->value.value_f.min = new_value->v_f32;
         data->value.value_f.max = new_value->v_f32;
         data->value.value_f.sum = new_value->v_f32;
-        goto good_exit;
+    }
+    else
+    {
+        data->value.value_f.sum += new_value->v_f32;
+
+        data->num_samples++;
+
+        if (new_value->v_f32 > data->value.value_f.max)
+            data->value.value_f.max = new_value->v_f32;
+
+        else if (new_value->v_f32 < data->value.value_f.min)
+            data->value.value_f.min = new_value->v_f32;
     }
 
-    data->value.value_f.sum += new_value->v_f32;
-
-    data->num_samples++;
-
-    if (new_value->v_f32 > data->value.value_f.max)
-        data->value.value_f.max = new_value->v_f32;
-
-    else if (new_value->v_f32 < data->value.value_f.min)
-        data->value.value_f.min = new_value->v_f32;
-
-good_exit:
     measurements_debug("Sum : %"PRIi32".%03"PRIu32, data->value.value_f.sum/1000, (uint32_t)abs(data->value.value_f.sum)%1000);
     measurements_debug("Min : %"PRIi32".%03"PRIu32, data->value.value_f.min/1000, (uint32_t)abs(data->value.value_f.min)%1000);
     measurements_debug("Max : %"PRIi32".%03"PRIu32, data->value.value_f.max/1000, (uint32_t)abs(data->value.value_f.max)%1000);
-
-    return true;
 }
 
 
@@ -529,42 +524,40 @@ static measurements_sensor_state_t _measurements_sample_get_iteration(measuremen
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_collected++;
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!inf.get_cb)
     {
         // Get function is non-optional
         data->num_samples_collected++;
         measurements_debug("%s has no collect function.", def->name);
-        return false;
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     measurements_reading_t new_value;
     measurements_sensor_state_t rsp = _measurements_sample_get_resp(def, data, &inf, &new_value);
 
-    if (rsp != MEASUREMENTS_SENSOR_STATE_SUCCESS)
-        return rsp;
-
-    bool r;
-
-    switch(data->value_type)
+    if (rsp == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            r = _measurements_sample_get_i64_iteration(data, &new_value);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            r = _measurements_sample_get_str_iteration(data, &new_value);
-            break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r = _measurements_sample_get_float_iteration(data, &new_value);
-            break;
-        default:
-            measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
-            return false;
-    }
+        switch(data->value_type)
+        {
+            case MEASUREMENTS_VALUE_TYPE_I64:
+                _measurements_sample_proc_i64(data, &new_value);
+                break;
+            case MEASUREMENTS_VALUE_TYPE_STR:
+                _measurements_sample_proc_str(data, &new_value);
+                break;
+            case MEASUREMENTS_VALUE_TYPE_FLOAT:
+                _measurements_sample_proc_float(data, &new_value);
+                break;
+            default:
+                measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
+                return false;
+        }
 
-    data->collection_time_cache = _measurements_get_collection_time(def, &inf);
-    return (r)?MEASUREMENTS_SENSOR_STATE_SUCCESS:MEASUREMENTS_SENSOR_STATE_ERROR;
+        data->collection_time_cache = _measurements_get_collection_time(def, &inf);
+    }
+    return rsp;
 }
 
 
