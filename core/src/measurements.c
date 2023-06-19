@@ -683,22 +683,33 @@ static void _measurements_sample(void)
         // ||   .   .   .   .   .   ||   .   .   .   .   .   ||
         //    ^   ^   ^   ^   ^   ^    ^   ^   ^   ^   ^   ^
 
-        if (time_since_interval >= time_collect)
+        if (data->num_samples_collected == data->num_samples_init)
         {
-            bool is_busy;
-            _measurements_sample_get_iteration(def, data, &is_busy);
-            if (is_busy)
+        }
+        else if (data->num_samples_collected + 1 == data->num_samples_init)
+        {
+            if (time_since_interval >= time_collect )
             {
-                wait_time = 0;
+                bool is_busy;
+                _measurements_sample_get_iteration(def, data, &is_busy);
+                if (is_busy)
+                {
+                    wait_time = 0;
+                }
+                else
+                {
+                    wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+                }
             }
             else
             {
-                wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+                wait_time = since_boot_delta(time_collect, time_since_interval);
             }
         }
         else
         {
-            wait_time = since_boot_delta(time_collect, time_since_interval);
+            log_error("Collect and init fell out of sync for %s, skipping collects.", def->name);
+            data->num_samples_collected = data->num_samples_init;
         }
 
         if (_check_time.wait_time > wait_time)
