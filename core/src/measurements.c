@@ -333,8 +333,9 @@ static bool _measurements_def_is_active(measurements_def_t* def)
 }
 
 
-static void _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
+static bool _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
 {
+    /* returns boolean of not busy/waiting for measurement */
     measurements_inf_t inf;
     if (!model_measurements_get_inf(def, data, &inf))
     {
@@ -342,14 +343,14 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_init++;
         data->num_samples_collected++;
         data->is_collecting = 0;
-        return;
+        return true;
     }
     if (data->is_collecting)
     {
         measurements_debug("Measurement %s already collecting.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
-        return;
+        return true;
     }
     if (!inf.init_cb)
     {
@@ -357,8 +358,9 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
         data->num_samples_init++;
         data->is_collecting = 1;
         measurements_debug("%s has no init function (optional).", def->name);
-        return;
+        return true;
     }
+    bool ret = true;
     measurements_sensor_state_t resp = inf.init_cb(def->name, false);
     switch(resp)
     {
@@ -374,9 +376,10 @@ static void _measurements_sample_init_iteration(measurements_def_t* def, measure
             break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             // Sensor was busy, will retry.
-            _check_time.wait_time = 0;
+            ret = false;
             break;
     }
+    return ret;
 }
 
 
@@ -414,11 +417,12 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
 }
 
 
-static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value)
+static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value, bool* is_busy)
 {
-    if (!def || !data || !inf || !new_value)
+    if (!def || !data || !inf || !new_value || !is_busy)
     {
         measurements_debug("Handed a NULL pointer.");
+        *is_busy = false;
         return false;
     }
     /* Each function should check if this has been initialised */
@@ -429,29 +433,31 @@ static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             measurements_debug("%s successfully collect'd.", def->name);
             data->num_samples_collected++;
+            *is_busy = false;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
             measurements_debug("%s could not collect.", def->name);
             data->num_samples_collected++;
+            *is_busy = false;
             return false;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             // Sensor was busy, will retry.
-            _check_time.wait_time = 0;
+            *is_busy = true;
             return false;
     }
     return true;
 }
 
 
-static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, bool* is_busy)
 {
-    if (!def || !data || !inf)
+    if (!def || !data || !inf || !is_busy)
     {
         measurements_debug("Handed a NULL pointer.");
         return false;
     }
     measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value, is_busy))
     {
         return false;
     }
@@ -486,15 +492,15 @@ good_exit:
 }
 
 
-static bool _measurements_sample_get_str_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+static bool _measurements_sample_get_str_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, bool* is_busy)
 {
-    if (!def || !data || !inf)
+    if (!def || !data || !inf || !is_busy)
     {
         measurements_debug("Handed a NULL pointer.");
         return false;
     }
     measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value, is_busy))
     {
         measurements_debug("Sample returned false.");
         return false;
@@ -508,15 +514,15 @@ static bool _measurements_sample_get_str_iteration(measurements_def_t* def, meas
 }
 
 
-static bool _measurements_sample_get_float_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf)
+static bool _measurements_sample_get_float_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, bool* is_busy)
 {
-    if (!def || !data || !inf)
+    if (!def || !data || !inf || !is_busy)
     {
         measurements_debug("Handed a NULL pointer.");
         return false;
     }
     measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value))
+    if (!_measurements_sample_get_resp(def, data, inf, &new_value, is_busy))
     {
         return false;
     }
@@ -551,8 +557,13 @@ good_exit:
 }
 
 
-static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
+static bool _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data, bool* is_busy)
 {
+    if (!is_busy)
+    {
+        measurements_debug("Handed a NULL pointer.");
+        return false;
+    }
     measurements_inf_t inf;
     if (!model_measurements_get_inf(def, data, &inf))
     {
@@ -569,16 +580,17 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
     }
 
     bool r;
+    *is_busy = false;
     switch(data->value_type)
     {
         case MEASUREMENTS_VALUE_TYPE_I64:
-            r = _measurements_sample_get_i64_iteration(def, data, &inf);
+            r = _measurements_sample_get_i64_iteration(def, data, &inf, is_busy);
             break;
         case MEASUREMENTS_VALUE_TYPE_STR:
-            r = _measurements_sample_get_str_iteration(def, data, &inf);
+            r = _measurements_sample_get_str_iteration(def, data, &inf, is_busy);
             break;
         case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r = _measurements_sample_get_float_iteration(def, data, &inf);
+            r = _measurements_sample_get_float_iteration(def, data, &inf, is_busy);
             break;
         default:
             measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
@@ -646,8 +658,16 @@ static void _measurements_sample(void)
                 data->num_samples_collected++;
                 measurements_debug("Could not collect before next init.");
             }
-            _measurements_sample_init_iteration(def, data);
-            wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
+            /* If the init function returned false, then the sensor is
+             * busy, so the wait time should be 0 */
+            if (_measurements_sample_init_iteration(def, data))
+            {
+                wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
+            }
+            else
+            {
+                wait_time = 0;
+            }
         }
         else
         {
@@ -665,8 +685,16 @@ static void _measurements_sample(void)
 
         if (time_since_interval >= time_collect)
         {
-            _measurements_sample_get_iteration(def, data);
-            wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+            bool is_busy;
+            _measurements_sample_get_iteration(def, data, &is_busy);
+            if (is_busy)
+            {
+                wait_time = 0;
+            }
+            else
+            {
+                wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+            }
         }
         else
         {
