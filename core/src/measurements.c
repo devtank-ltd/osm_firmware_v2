@@ -449,39 +449,29 @@ static bool _measurements_sample_get_resp(measurements_def_t* def, measurements_
 }
 
 
-static bool _measurements_sample_get_i64_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, bool* is_busy)
+static bool _measurements_sample_get_i64_iteration(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    if (!def || !data || !inf || !is_busy)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
-    measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value, is_busy))
-    {
-        return false;
-    }
-    measurements_debug("Value : %"PRIi64, new_value.v_i64);
+    measurements_debug("Value : %"PRIi64, new_value->v_i64);
 
     if (data->num_samples == 0)
     {
         // If first measurements
         data->num_samples++;
-        data->value.value_64.min = new_value.v_i64;
-        data->value.value_64.max = new_value.v_i64;
-        data->value.value_64.sum = new_value.v_i64;
+        data->value.value_64.min = new_value->v_i64;
+        data->value.value_64.max = new_value->v_i64;
+        data->value.value_64.sum = new_value->v_i64;
         goto good_exit;
     }
 
-    data->value.value_64.sum += new_value.v_i64;
+    data->value.value_64.sum += new_value->v_i64;
 
     data->num_samples++;
 
-    if (new_value.v_i64 > data->value.value_64.max)
-        data->value.value_64.max = new_value.v_i64;
+    if (new_value->v_i64 > data->value.value_64.max)
+        data->value.value_64.max = new_value->v_i64;
 
-    else if (new_value.v_i64 < data->value.value_64.min)
-        data->value.value_64.min = new_value.v_i64;
+    else if (new_value->v_i64 < data->value.value_64.min)
+        data->value.value_64.min = new_value->v_i64;
 
 good_exit:
     measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
@@ -492,21 +482,10 @@ good_exit:
 }
 
 
-static bool _measurements_sample_get_str_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, bool* is_busy)
+static bool _measurements_sample_get_str_iteration(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    if (!def || !data || !inf || !is_busy)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
-    measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value, is_busy))
-    {
-        measurements_debug("Sample returned false.");
-        return false;
-    }
-    uint8_t new_len = strnlen(new_value.v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
-    strncpy(data->value.value_s.str, new_value.v_str, new_len);
+    uint8_t new_len = strnlen(new_value->v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
+    strncpy(data->value.value_s.str, new_value->v_str, new_len);
     data->value.value_s.str[new_len] = 0;
     measurements_debug("Value : %s", data->value.value_s.str);
     data->num_samples++;
@@ -514,39 +493,29 @@ static bool _measurements_sample_get_str_iteration(measurements_def_t* def, meas
 }
 
 
-static bool _measurements_sample_get_float_iteration(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, bool* is_busy)
+static bool _measurements_sample_get_float_iteration(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    if (!def || !data || !inf || !is_busy)
-    {
-        measurements_debug("Handed a NULL pointer.");
-        return false;
-    }
-    measurements_reading_t new_value;
-    if (!_measurements_sample_get_resp(def, data, inf, &new_value, is_busy))
-    {
-        return false;
-    }
-    measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value.v_f32/1000, (uint32_t)abs(new_value.v_f32)%1000);
+    measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value->v_f32/1000, (uint32_t)abs(new_value->v_f32)%1000);
 
     if (data->num_samples == 0)
     {
         // If first measurements
         data->num_samples++;
-        data->value.value_f.min = new_value.v_f32;
-        data->value.value_f.max = new_value.v_f32;
-        data->value.value_f.sum = new_value.v_f32;
+        data->value.value_f.min = new_value->v_f32;
+        data->value.value_f.max = new_value->v_f32;
+        data->value.value_f.sum = new_value->v_f32;
         goto good_exit;
     }
 
-    data->value.value_f.sum += new_value.v_f32;
+    data->value.value_f.sum += new_value->v_f32;
 
     data->num_samples++;
 
-    if (new_value.v_f32 > data->value.value_f.max)
-        data->value.value_f.max = new_value.v_f32;
+    if (new_value->v_f32 > data->value.value_f.max)
+        data->value.value_f.max = new_value->v_f32;
 
-    else if (new_value.v_f32 < data->value.value_f.min)
-        data->value.value_f.min = new_value.v_f32;
+    else if (new_value->v_f32 < data->value.value_f.min)
+        data->value.value_f.min = new_value->v_f32;
 
 good_exit:
     measurements_debug("Sum : %"PRIi32".%03"PRIu32, data->value.value_f.sum/1000, (uint32_t)abs(data->value.value_f.sum)%1000);
@@ -581,16 +550,23 @@ static bool _measurements_sample_get_iteration(measurements_def_t* def, measurem
 
     bool r;
     *is_busy = false;
+
+    measurements_reading_t new_value;
+    if (!_measurements_sample_get_resp(def, data, &inf, &new_value, is_busy))
+    {
+        return false;
+    }
+
     switch(data->value_type)
     {
         case MEASUREMENTS_VALUE_TYPE_I64:
-            r = _measurements_sample_get_i64_iteration(def, data, &inf, is_busy);
+            r = _measurements_sample_get_i64_iteration(data, &new_value);
             break;
         case MEASUREMENTS_VALUE_TYPE_STR:
-            r = _measurements_sample_get_str_iteration(def, data, &inf, is_busy);
+            r = _measurements_sample_get_str_iteration(data, &new_value);
             break;
         case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            r = _measurements_sample_get_float_iteration(def, data, &inf, is_busy);
+            r = _measurements_sample_get_float_iteration(data, &new_value);
             break;
         default:
             measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
