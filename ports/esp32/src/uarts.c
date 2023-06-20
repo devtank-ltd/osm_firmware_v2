@@ -235,9 +235,7 @@ bool uart_is_tx_empty(unsigned uart)
     if (uart >= UART_CHANNELS_COUNT)
         return false;
 
-    uart = uart_channels[uart].uart;
-
-    return (uart_wait_tx_done(uart, 0) == ESP_OK);
+    return (uart_wait_tx_done(uart_channels[uart].uart, 0) == ESP_OK);
 }
 
 
@@ -253,7 +251,7 @@ void uart_blocking(unsigned uart, const char *data, int size)
         esp_err_t err = uart_wait_tx_done(channel->uart, 200);
         if(err == ESP_OK)
         {
-            int sent = uart_tx_chars(channel->uart, data, size);
+            int sent = uart_write_bytes(channel->uart, data, size);
             if (sent >= 0)
             {
                 size -= sent;
