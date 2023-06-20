@@ -71,7 +71,7 @@ typedef enum
 static uint16_t _rak3172_packet_max_size        = RAK3172_PAYLOAD_MAX_DEFAULT;
 
 static bool     _rak3172_boot_enabled           = false;
-static bool     _rak3172_reset_enabled          = false;
+static bool     _rak3172_reset_enabled          = true;
 static uint16_t _rak3172_next_fw_chunk_id       = 0;
 static char     _rak3172_ascii_cmd[CMD_LINELEN] = {0};
 
@@ -129,12 +129,20 @@ static uint8_t _rak3172_get_port(void)
 
 static void _rak3172_chip_on(void)
 {
-    gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
+    /* Let go of RESET line, hardware brings it high */
+    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                    GPIO_MODE_INPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.reset_pin.pins);
 }
 
 
 static void _rak3172_chip_off(void)
 {
+    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                    GPIO_MODE_OUTPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.reset_pin.pins);
     gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
 }
 
@@ -433,18 +441,7 @@ void rak3172_init(void)
         comms_debug("Config is incorrect, not initialising.");
     }
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
-    gpio_mode_setup(_rak3172_ctx.boot_pin.port,
-                    GPIO_MODE_OUTPUT,
-                    GPIO_PUPD_NONE,
-                    _rak3172_ctx.boot_pin.pins);
-    gpio_clear(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
-
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
-    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
-                    GPIO_MODE_OUTPUT,
-                    GPIO_PUPD_NONE,
-                    _rak3172_ctx.reset_pin.pins);
-    gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
 
     _rak3172_ctx.state = RAK3172_STATE_OFF;
     if (_rak3172_ctx.config_is_valid)
@@ -872,9 +869,20 @@ static command_response_t _rak3172_boot_cb(char* args)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
+    {
+        gpio_mode_setup(_rak3172_ctx.boot_pin.port,
+                        GPIO_MODE_OUTPUT,
+                        GPIO_PUPD_NONE,
+                        _rak3172_ctx.boot_pin.pins);
         gpio_set(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
+    }
     else
-        gpio_clear(_rak3172_ctx.boot_pin.port, _rak3172_ctx.boot_pin.pins);
+    {
+        gpio_mode_setup(_rak3172_ctx.boot_pin.port,
+                        GPIO_MODE_INPUT,
+                        GPIO_PUPD_NONE,
+                        _rak3172_ctx.boot_pin.pins);
+    }
     _rak3172_boot_enabled = enabled;
     return _rak3172_print_boot_reset_cb("");
 }
@@ -884,9 +892,20 @@ static command_response_t _rak3172_reset_cb(char* args)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
-        gpio_set(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
+    {
+        gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                        GPIO_MODE_INPUT,
+                        GPIO_PUPD_NONE,
+                        _rak3172_ctx.reset_pin.pins);
+    }
     else
+    {
+        gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                        GPIO_MODE_OUTPUT,
+                        GPIO_PUPD_NONE,
+                        _rak3172_ctx.reset_pin.pins);
         gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
+    }
     _rak3172_reset_enabled = enabled;
     return _rak3172_print_boot_reset_cb("");
 }
