@@ -209,8 +209,14 @@ static void _start_wifi(void)
 }
 
 
-void protocol_system_init(void)
+static void _wifi_start(void)
 {
+    static bool _wifi_started = false;
+
+    if (_wifi_started)
+        return;
+    _wifi_started = true;
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_sta();
@@ -225,8 +231,14 @@ void protocol_system_init(void)
 }
 
 
+void protocol_system_init(void)
+{
+}
+
+
 bool protocol_init(void)
 {
+    _wifi_start();
     return _has_mqtt;
 }
 
