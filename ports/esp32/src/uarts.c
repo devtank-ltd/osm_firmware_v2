@@ -35,7 +35,7 @@ static void uart_event_task(void *arg)
         {
             if (event.type == UART_DATA)
             {
-                int read = uart_read_bytes(channel->uart, tmp, MIN(event.size,128), portMAX_DELAY);
+                int read = uart_read_bytes(channel->uart, tmp, MIN(event.size,sizeof(tmp)), portMAX_DELAY);
                 for(int i=0; i < read; i++)
                 {
                     char c = tmp[i];

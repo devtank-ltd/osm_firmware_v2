@@ -54,37 +54,15 @@ void platform_watchdog_init(uint32_t ms)
 
 void platform_init(void)
 {
-    gpio_config_t de_485_conf = {
-        .pin_bit_mask = BIT64(DE_485_PIN),
-        .intr_type = GPIO_INTR_DISABLE,
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_down_en = GPIO_PULLDOWN_ENABLE,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-    };
+    gpio_set_direction(DE_485_PIN, GPIO_MODE_OUTPUT);
 
-    gpio_config(&de_485_conf);
+    gpio_set_direction(SW_SEL, GPIO_MODE_OUTPUT);
+    gpio_set_level(SW_SEL, 1);
 }
 
 
 void platform_set_rs485_mode(bool driver_enable)
 {
-    /* ST3485E
-     *
-     * 2. RE Receiver output enable. RO is enabled when RE is low; RO is
-     * high impedance when RE is high. If RE is high and DE is low, the
-     * device will enter a low power shutdown mode.
-
-     * 3. DE Driver output enable. The driver outputs are enabled by
-     * bringing DE high. They are high impedance when DE is low. If RE
-     * is high DE is low, the device will enter a low-power shutdown
-     * mode. If the driver outputs are enabled, the part functions as
-     * line driver, while they are high impedance, it functions as line
-     * receivers if RE is low.
-     *
-     * */
-    gpio_set_direction(SW_SEL, GPIO_MODE_OUTPUT);
-    gpio_set_level(SW_SEL, 1);
-
     if (driver_enable)
     {
         modbus_debug("driver:enable");

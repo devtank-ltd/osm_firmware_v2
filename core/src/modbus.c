@@ -689,6 +689,8 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
                 return;
             }
 
+            modbus_debug("Starting reply read with : %u", len);
+
             if (modbus_bus->binary_protocol)
             {
                 if (modbuspacket[0] != MODBUS_BIN_START)
@@ -703,6 +705,7 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
             uint8_t func = modbuspacket[1];
 
             len -= 3;
+            modbus_debug("Reply, Address:%"PRIu8" Function: %"PRIu8, modbuspacket[0], func);
             if (func == MODBUS_READ_HOLDING_FUNC)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
@@ -725,10 +728,11 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
             }
             else
             {
-                modbus_debug("Bad function : %"PRIu8, func);
+                modbus_debug("Bad function");
                 return;
             }
 
+            modbus_debug("Reply type length : %u", modbuspacket_len);
             if (modbus_bus->binary_protocol)
                 modbuspacket_len++;
 
