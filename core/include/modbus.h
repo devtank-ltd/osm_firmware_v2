@@ -6,6 +6,8 @@
 #include "modbus_mem.h"
 
 
+extern bool modbus_requires_echo_removal(void) __attribute__((weak));
+
 extern uint16_t modbus_crc(uint8_t * buf, unsigned length);
 
 extern bool modbus_start_read(modbus_reg_t * reg);

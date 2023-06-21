@@ -25,6 +25,12 @@ uint32_t platform_get_frequency(void)
     return SOC_CLK_XTAL32K_FREQ_APPROX;
 }
 
+/* There is an echo on RS485 to remove. */
+extern bool modbus_requires_echo_removal(void)
+{
+    return true;
+}
+
 
 void platform_blink_led_init(void)
 {

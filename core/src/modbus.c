@@ -66,6 +66,8 @@ static uint32_t modbus_send_stop_delay = 0;
 
 static uint32_t modbus_retransmit_count = 0;
 
+static unsigned _echo_bytes = 0;
+
 
 static struct
 {
@@ -85,6 +87,10 @@ static struct
         uint16_t num_written;   /* For MODBUS_WRITE_MULTIPLE_HOLDING_FUNC */
     };
 } _modbus_reg_set_expected = {0};
+
+
+/* By default, assume no echo. */
+bool modbus_requires_echo_removal() { return false; }
 
 
 static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
@@ -324,9 +330,15 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         uart_ring_out(EXT_UART, (char[]){MODBUS_BIN_START}, 1);
         tx_modbuspacket[8] = MODBUS_BIN_STOP;
         uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 9);
+        if (modbus_requires_echo_removal())
+            _echo_bytes = 10;
     }
-    else uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
-
+    else
+    {
+        uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
+        if (modbus_requires_echo_removal())
+            _echo_bytes = 8;
+    }
     reg->value_state = MB_REG_WAITING;
 }
 
@@ -675,6 +687,15 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
 
     if (!len)
         return;
+
+    if (modbus_requires_echo_removal() && _echo_bytes)
+    {
+        unsigned discarded = ring_buf_discard(ring, _echo_bytes);
+        _echo_bytes -= discarded;
+        if (!_echo_bytes)
+            modbus_debug("Echo drained.");
+        return;
+    }
 
     if (!modbuspacket_len)
     {
