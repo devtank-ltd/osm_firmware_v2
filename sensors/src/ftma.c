@@ -60,7 +60,7 @@ static measurements_sensor_state_t _ftma_get_collection_time(char* name, uint32_
 {
     if (!collection_time)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    *collection_time = _ftma_collection_time;
+    *collection_time = _ftma_collection_time * 1.1;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
