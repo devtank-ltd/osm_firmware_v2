@@ -1,32 +1,32 @@
 #!/usr/bin/python3
 
 import os
-import sys
 from tkinter import *
 import tkinter.messagebox
 from tkinter.ttk import Combobox, Notebook, Progressbar, Style
 import webbrowser
-import serial.tools.list_ports
-import serial
 import re
-import binding
 import yaml
 from idlelib.tooltip import Hovertip
 from tkinter.filedialog import askopenfilename
 import threading
 import traceback
-from modbus_funcs import modbus_funcs_t
-import modbus_db
-from modbus_db import modb_database_t, find_path
-from PIL import ImageTk, Image
 import logging
 import platform
 import signal
 from stat import *
-from gui_binding_interface import binding_interface_client_t
-import time
 import subprocess
+
+from gui_binding_interface import binding_interface_client_t
+from modbus_funcs import modbus_funcs_t
+import modbus_db
+from modbus_db import modb_database_t, find_path
+import binding
+
 import numpy as np
+import serial.tools.list_ports
+import serial
+from PIL import ImageTk, Image
 
 FW_PROCESS = False
 THREAD = threading.Thread
@@ -166,6 +166,8 @@ class config_gui_window_t(Tk):
                                 font=FONT, width=20, activebackground="green",
                                 activeforeground=IVORY)
         self._downl_fw.pack()
+        fw_hover = Hovertip(
+                self._downl_fw, "Choose a file to update the sensor's firmware with. (This can only be done before connecting)")
         self._progress = Progressbar(
             self._conn_fr, orient=HORIZONTAL, length=100, mode='determinate', maximum=150)
         self._progress.pack()
@@ -203,7 +205,7 @@ class config_gui_window_t(Tk):
         self.dev_sel = self._dev_dropdown.get()
         if self.dev_sel:
             log_func("User attempting to connect to device.. : " + self.dev_sel)
-            self._downl_fw.pack_forget()
+            self._downl_fw.configure(state='disabled')
             if self._connected == True:
                 self._connected = False
                 self._widg_del = True
@@ -1546,7 +1548,7 @@ class config_gui_window_t(Tk):
                              activebackground="green", activeforeground=IVORY)
         add_eui_btn.grid(column=7, row=7, sticky="NSEW")
 
-        app_label = Label(frame, text="AppKey: ",
+        app_label = Label(frame, text="App key: ",
                           bg=IVORY, font=FONT)
         app_label.grid(column=5, row=8, sticky="E")
 
@@ -1569,9 +1571,11 @@ class config_gui_window_t(Tk):
                           activebackground="green", activeforeground=IVORY)
         save_btn.grid(column=7, row=10, sticky="NSEW")
 
-        lora_l = Label(frame, text="Status: ",
+        lora_l = Label(frame, text="Comms: ",
                        bg=IVORY, font=FONT)
         lora_l.grid(column=5, row=9, sticky="E")
+        lora_hover = Hovertip(
+                lora_l, "External Communications Status")
 
         self._lora_status = Label(frame, text="",
                                   bg=IVORY, font=FONT)
