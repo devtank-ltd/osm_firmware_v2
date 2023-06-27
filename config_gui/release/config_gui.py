@@ -16,6 +16,7 @@ import platform
 import signal
 from stat import *
 import subprocess
+import json
 
 from gui_binding_interface import binding_interface_client_t
 from modbus_funcs import modbus_funcs_t
@@ -250,6 +251,21 @@ class config_gui_window_t(Tk):
                                 column=5, row=1,
                                 columnspan=2,
                                 pady=(0, 50), sticky='E')
+
+        self._load_config_btn = Button(self._main_fr, text="Load Config",
+                                       font=FONT, bg=IVORY,
+                                       command= self._open_json_config_file)
+        self._load_config_btn.grid(column=0, row=0, sticky='W')
+
+        self._save_config_btn = Button(self._main_fr, text="Save Config",
+                                       font=FONT, bg=IVORY,
+                                       command = self._save_config_to_json)
+        self._save_config_btn.grid(column=1, row=0, sticky='W')
+
+        self.save_load_label = Label(self._main_fr, text="",
+                                     font=FONT, bg=IVORY)
+        self.save_load_label.grid(column=1, row=0, sticky='E')
+
         self._load_meas_l = Label(
             self._main_fr,
             text="Current measurements on OSM",
@@ -344,6 +360,9 @@ class config_gui_window_t(Tk):
         self._interval_min  = None
         self.cc_gain        = None
 
+        self._load_gui()
+
+    def _load_gui(self):
         self.binding_interface.get_interval_min(self._on_get_interval_min_done_cb)
         self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
         self.binding_interface.get_serial_num(self._on_get_serial_num_done_cb)
@@ -440,6 +459,18 @@ class config_gui_window_t(Tk):
         self._interval_min = resp[1]
         self._load_headers(self._main_fr, "rif")
 
+    def _on_write_json_to_osm(self, resp):
+        self.save_load_label.configure(text="Config loaded. Reconnecting..")
+        self._on_connect()
+
+    def _on_save_config_json(self, resp):
+        loc = resp[1]
+        log_func(f"OSM configuration saved in {loc}")
+        self.save_load_label.configure(text="Config saved.")
+
+    def _save_config_to_json(self):
+        self.binding_interface.save_config_to_json(self._on_save_config_json)
+
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
         log_func(f"User changed to tab {slction}.")
@@ -463,6 +494,21 @@ class config_gui_window_t(Tk):
         entry.delete(0, END)
         return
 
+    def _open_json_config_file(self):
+        filetypes = ('json files', '*.json')
+        selected = askopenfilename(filetypes=[filetypes])
+        if selected:
+            if tkinter.messagebox.askyesnocancel("Update?", "Update sensor with config from this file?",
+                                                    parent=root):
+                self._write_json_config(self._main_fr, selected)
+
+    def _write_json_config(self, frame, filename):
+        self._visit_widgets(self._main_fr, 'disabled')
+        with open(filename, 'r') as f:
+            contents = f.read()
+            parsed = json.loads(contents)
+            self.binding_interface.write_json_to_osm(parsed, self._on_write_json_to_osm)
+
     def _visit_widgets(self, frame, cmd):
         meas = None
         # Disable tabs
@@ -475,6 +521,9 @@ class config_gui_window_t(Tk):
             widg_n = child.widgetName
             if widg_n == 'button' or widg_n == 'entry':
                 child.configure(state=cmd)
+            if widg_n == 'canvas':
+                for i in self._second_frame.winfo_children():
+                    i.configure(state=cmd)
 
     def _start_fw_cmd(self, selected, frame):
         log_func("User attempting to flash firmware to sensor...")
