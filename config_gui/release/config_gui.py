@@ -16,7 +16,6 @@ import platform
 import signal
 from stat import *
 import subprocess
-import json
 
 from gui_binding_interface import binding_interface_client_t
 from modbus_funcs import modbus_funcs_t
@@ -24,7 +23,6 @@ import modbus_db
 from modbus_db import modb_database_t, find_path
 import binding
 
-import numpy as np
 import serial.tools.list_ports
 import serial
 from PIL import ImageTk, Image
@@ -504,10 +502,7 @@ class config_gui_window_t(Tk):
 
     def _write_json_config(self, frame, filename):
         self._visit_widgets(self._main_fr, 'disabled')
-        with open(filename, 'r') as f:
-            contents = f.read()
-            parsed = json.loads(contents)
-            self.binding_interface.write_json_to_osm(parsed, self._on_write_json_to_osm)
+        self.binding_interface.write_json_to_osm(filename, self._on_write_json_to_osm)
 
     def _visit_widgets(self, frame, cmd):
         meas = None

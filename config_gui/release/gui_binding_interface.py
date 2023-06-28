@@ -6,6 +6,7 @@ import time
 import queue
 import logging
 from save_json_config import dev_to_json
+from load_json_config import json_to_dev
 
 # Interface between API and binding
 
@@ -122,8 +123,9 @@ class binding_interface_svr_t:
         self._alive = True
     
     def _load_json_conf_to_osm(self, args):
-        contents = args[1]
-        self.dev.load_json_to_osm(contents)
+        dev = json_to_dev(self.serial_obj)
+        filename = args[1]
+        dev.verify_file(filename)
 
     def _save_config_to_json(self, args):
         dev = dev_to_json(self.serial_obj)

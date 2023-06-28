@@ -380,61 +380,6 @@ class dev_t(dev_base_t):
     def _log(self, msg):
         self._log_obj.emit(msg)
 
-    def load_json_to_osm(self, contents):
-        print("Wiping device...")
-        self.do_cmd("wipe")
-        time.sleep(2)
-        if contents:
-            self.set_serial_num(contents["serial_num"])
-            new_int_mins = contents["interval_mins"]
-            print(f"Setting interval mins to {new_int_mins}.")
-            self.interval_mins = new_int_mins
-            dev_eui = contents["dev_eui"]
-            print(f"Setting dev eui to {dev_eui}")
-            self.dev_eui = dev_eui
-            app_key = contents["app_key"]
-            print(f"Setting app key to {app_key}")
-            self.app_key = app_key
-            print("Updating cc midpoints.")
-            self.update_midpoint("CC1", contents["cc_midpoints"]["CC1"])
-            self.update_midpoint("CC2", contents["cc_midpoints"]["CC2"])
-            self.update_midpoint("CC3", contents["cc_midpoints"]["CC3"])
-            print("Checking modbus setup.")
-            mb_setup = contents["modbus_bus"]["setup"]
-            if mb_setup:
-                protocol = mb_setup[0]
-                baud = mb_setup[1]
-                bit_par_stp = mb_setup[2]
-                print(f"Setting up modbus with {protocol} {baud} {bit_par_stp}")
-                self.do_cmd(f"mb_setup {protocol} {baud} {bit_par_stp}")
-            mb_devices = contents["modbus_bus"]["modbus_devices"]
-            if mb_devices:
-                for dev in mb_devices:
-                    name = dev["name"]
-                    byteorder = dev["byteorder"]
-                    wordorder = dev["wordorder"]
-                    unit = dev["unit"]
-                    print(f"Adding modbus device {unit} {byteorder} {wordorder} {name}")
-                    self.do_cmd(f"mb_dev_add {unit} {byteorder} {wordorder} {name}", timeout=3)
-                    for reg in dev["registers"]:
-                        hex = reg["address"]
-                        function = reg["function"]
-                        type = reg["type"]
-                        name = reg["reg"]
-                        print(f"Adding modbus register {unit} {hex} {function} {type} {name}")
-                        self.do_cmd(f"mb_reg_add {unit} {hex} {type} {function} {name}")
-            measurements = contents["measurements"]
-            for meas in measurements:
-                interval = measurements[meas]["interval"]
-                samplecount = measurements[meas]["samplecount"]
-                print(f"Adding interval for {meas} with intervals of {interval}")
-                self.do_cmd(f"interval {meas} {interval}")
-                print(f"Adding samplecount of {samplecount} for {meas}")
-                self.do_cmd(f"samplecount {meas} {samplecount}")
-            print("Saving osm..")
-            self.do_cmd("save")
-            self.drain()
-
     def set_serial_num(self, serial_num):
         self.do_cmd("serial_num %s" % serial_num)
 
