@@ -92,7 +92,6 @@ class config_gui_window_t(Tk):
             pass
 
         self.binding_interface = binding_interface_client_t()
-        self.binding_interface.unsolicited_handlers = {"DEBUG" : self._add_debug_line_cb}
 
         style = Style()
         style.configure('lefttab.TNotebook', tabposition='wn',
@@ -124,10 +123,6 @@ class config_gui_window_t(Tk):
                               bg=IVORY, padx=50, pady=50)
         self._modb_fr.pack(fill='both', expand=True)
         self._modb_fr.pack_propagate(0)
-
-        self._debug_fr = Frame(self._notebook, bg=IVORY)
-        self._debug_fr.pack(fill='both', expand=True)
-        self._debug_fr.pack_propagate(0)
 
         usb_label = Label(self._conn_fr, text="Select a device",
                           bg=IVORY, font=FONT)
@@ -237,8 +232,7 @@ class config_gui_window_t(Tk):
                 self._adv_fr, text='Advanced config')
             self._notebook.add(
                 self._modb_fr, text="Modbus config")
-            self._notebook.add(self._debug_fr,
-            text="Debug Mode")
+
         self._notebook.select(1)
         self._sensor_name = Label(self._main_fr, text="",
                                     bg=IVORY)
@@ -254,16 +248,16 @@ class config_gui_window_t(Tk):
         self._load_config_btn = Button(self._main_fr, text="Load Config",
                                        font=FONT, bg=IVORY,
                                        command= self._open_json_config_file)
-        self._load_config_btn.grid(column=0, row=0, sticky='W')
+        self._load_config_btn.grid(column=0, row=0, sticky='W', pady=(10, 0))
 
         self._save_config_btn = Button(self._main_fr, text="Save Config",
                                        font=FONT, bg=IVORY,
                                        command = self._save_config_to_json)
-        self._save_config_btn.grid(column=1, row=0, sticky='W')
+        self._save_config_btn.grid(column=1, row=0, sticky='W', pady=(10, 0))
 
         self.save_load_label = Label(self._main_fr, text="",
                                      font=FONT, bg=IVORY)
-        self.save_load_label.grid(column=1, row=0, sticky='E')
+        self.save_load_label.grid(column=2, row=0, sticky='W', pady=(10, 0))
 
         self._load_meas_l = Label(
             self._main_fr,
@@ -339,16 +333,12 @@ class config_gui_window_t(Tk):
         self._open_lora_config(self._main_fr)
 
         self.modbus_opened = False
-        self._dbg_open = False
+
         self._notebook.bind("<<NotebookTabChanged>>",
                             lambda e: self._tab_changed(e,
                                                         self._main_fr,
                                                         self._notebook))
 
-        self.l_img = Image.open(OSM_BG)
-        self.leaf_logo = ImageTk.PhotoImage(self.l_img)
-        self._debug_fr.img_list = []
-        self._debug_fr.img_list.append(self.leaf_logo)
 
         self._modbus        = None
         self._sens_meas     = None
@@ -484,16 +474,6 @@ class config_gui_window_t(Tk):
                 pass
             self.modbus_opened = True
             self.main_modbus_w()
-        elif slction == '.!notebook.!frame5' and self._dbg_open == False:
-            self._dbg_open = True
-            self.binding_interface.debug_begin()
-            self._open_debug_w(self._debug_fr)
-            log_func(f"User switched to tab 'Debug Mode'.")
-            self._load_debug_meas(self._debug_fr)
-
-        if slction != '.!notebook.!frame5' and self._dbg_open == True:
-            self._dbg_open = False
-            self.binding_interface.debug_end()
 
     def _clear_box(self, event, entry):
         entry.delete(0, END)
@@ -811,97 +791,6 @@ class config_gui_window_t(Tk):
         self.io_meas = meas
         self._get_ios_pin_obj(meas)
 
-    def _open_debug_w(self, frame):
-        frame.columnconfigure([0,1,2,3,4,5,6], weight=1)
-        frame.rowconfigure([0,1,2,3,4,5,6], weight=1)
-
-        self._leaf_lab = Label(
-            self._debug_fr, image=self.leaf_logo, bg=IVORY)
-        self._leaf_lab.pack()
-        self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
-            e, self._leaf_lab, self.l_img, self._debug_fr
-        ))
-
-        self._dbg_terml = Text(frame,
-                               bg=BLACK, fg=LIME_GRN,
-                               borderwidth=10, relief="sunken")
-        self._dbg_terml.grid(column=0, row=2, sticky=NS)
-        self._dbg_terml.configure(state='disabled')
-
-        self._debug_first_fr = Frame(frame, bg="green", borderwidth=8,
-                                     relief="ridge")
-        self._debug_first_fr.grid(column=3, row=2, sticky="EW")
-
-        self._dbg_canv = Canvas(
-            self._debug_first_fr)
-        self._dbg_canv.grid(column=0, row=0, sticky=NSEW)
-
-    def _load_debug_meas(self, frame):
-        hdrs = [('Measurement', 'Value')]
-        meas = []
-        self._dbg_sec_fr = Frame(self._dbg_canv)
-        self._dbg_sec_fr.pack(expand=True, fill='both')
-        self._debug_first_fr.columnconfigure(0, weight=1)
-
-        if self._sens_meas:
-            for m in self._sens_meas[1::]:
-                fw = [m[0]]
-                fw.insert(1, 0)
-                meas.append(fw)
-            for i in range(len(meas)):
-                row = tuple(meas[i])
-                hdrs.append(row)
-            total_rows = len(hdrs)
-            total_columns = len(hdrs[0])
-            self._deb_entries = []
-            for i in range(total_rows):
-                newrow = []
-                for j in range(total_columns):
-                    debug_e = Entry(self._dbg_sec_fr,
-                                    bg=IVORY, fg=CHARCOAL,
-                                    font=('Arial', 14, 'bold'))
-                    debug_e.grid(row=i, column=j, sticky=EW)
-                    self._dbg_sec_fr.columnconfigure(j, weight=1)
-                    debug_e.insert(END, hdrs[i][j])
-                    debug_e.configure(state='disabled',
-                                      disabledbackground=IVORY,
-                                      disabledforeground=BLACK)
-                    newrow.append(debug_e)
-                self._deb_entries.append(newrow)
-        self._dbg_canv.create_window(
-            (0, 0), window=self._dbg_sec_fr, anchor="nw", tags="frame")
-        self._dbg_canv.bind_all(
-            "<MouseWheel>", lambda: self._on_mousewheel(self._dbg_canv))
-        debug_sb = Scrollbar(
-            self._debug_first_fr, orient='vertical', command=self._dbg_canv.yview)
-        debug_sb.grid(column=0, row=0, sticky="NSE")
-
-        self._dbg_canv.configure(yscrollcommand=debug_sb.set)
-        self._dbg_canv.bind('<Configure>', lambda e: self._on_canvas_config(
-            e, self._dbg_canv
-        ))
-
-    def _add_debug_line_cb(self, output):
-        resp = output[2]
-        line = resp[0]
-        res = resp[1]
-        self._dbg_terml.configure(state='normal')
-        self._dbg_terml.insert('1.0', line + "\n")
-        self._dbg_terml.configure(state='disabled')
-        if res:
-            dbg_meas = res[0]
-            dbg_val = res[1]
-            if dbg_val != False:
-                for i in self._deb_entries:
-                    meas = i[0].get()
-                    if meas == dbg_meas:
-                        val_to_change = i[1]
-                        val_to_change.configure(state='normal')
-                        val_to_change.delete(0, END)
-                        val_to_change.insert(0, float(dbg_val))
-                        val_to_change.configure(
-                            state='disabled')
-
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")
 
@@ -937,7 +826,7 @@ class config_gui_window_t(Tk):
 
     def _load_headers(self, window, idy):
         tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
-                    'Interval in Mins', 'Sample Count')]
+                    'Interval in Mins', 'Sample Count', 'Value')]
         if self._sens_meas:
             pos = None
             for i in range(len(self._sens_meas)):
@@ -949,6 +838,7 @@ class config_gui_window_t(Tk):
                     if pos != -1:
                         row[n] = entry[0:pos]
                 row.insert(2, (int(self._interval_min) * int(row[1])))
+                row.insert(4, "")
                 tablist.append(row)
         else:
             log_func("No measurements on sensor detected.")
@@ -1069,9 +959,9 @@ class config_gui_window_t(Tk):
             total_columns = len(tablist[0])
         else:
             tablist = [('Measurement', 'Uplink (min)',
-                        'Interval in Mins', 'Sample Count')]
+                        'Interval in Mins', 'Sample Count', 'Value')]
             total_rows = 1
-            total_columns = 4
+            total_columns = 5
         self._entries = []
         meas_var_list = []
         self._check_meas = []
@@ -1089,9 +979,10 @@ class config_gui_window_t(Tk):
                 self._second_frame.columnconfigure(j, weight=1)
                 self._e.insert(END, tablist[i][j])
                 newrow.append(self._e)
-                self._e.configure(validate="key", validatecommand=(
-                    window.register(self._handle_input), '%P', '%d'))
-                if i == 0 or j == 0:
+                if j != 4:
+                    self._e.configure(validate="key", validatecommand=(
+                        window.register(self._handle_input), '%P', '%d'))
+                if i == 0 or j == 0 or j == 4:
                     self._e.configure(
                         state='disabled', disabledbackground="white",
                         disabledforeground="black")
@@ -1179,6 +1070,43 @@ class config_gui_window_t(Tk):
                         if cb.get() == tick:
                             cb.set(0)
 
+    def _on_get_last_val(self, resp):
+        meas = resp[1].split(":")[0]
+        try:
+            self.val = resp[1].split(":")[1].replace(" ", "")
+        except IndexError:
+            log_func("Failed to get measurement reading.")
+            self.val = "Failed"
+        for i in self._entries:
+            v = i[0].get()
+            if v == meas:
+                val_col = i[4]
+                val_col.configure(state='normal')
+                val_col.insert(0, self.val)
+                val_col.configure(state='normal')
+
+    def _insert_last_value(self, check):
+        ticked = []
+        row = None
+        if check:
+            for cb in check:
+                if cb.get():
+                    row = cb.get()
+                    ticked.append(row)
+            for tick in ticked:
+                for i in range(len(self._entries)):
+                    if i == tick:
+                        log_func(
+                            "Retrieving last value for each ticked measurement.")
+                        meas = self._entries[i][0]
+                        meas = meas.get()
+                        val_col = self._entries[i][4]
+                        val_col.delete(0, END)
+                        self.binding_interface.get_last_value(meas, self._on_get_last_val)
+                    for cb in check:
+                        if cb.get() == tick:
+                            cb.set(0)
+
     def _check_clicked(self, window, idy, check):
         for cb in check:
             if cb.get():
@@ -1195,6 +1123,12 @@ class config_gui_window_t(Tk):
                                           activebackground="green", activeforeground=IVORY,
                                           command=lambda: self._set_meas_to_zero(check))
                     self._rm_int.grid(column=0, row=15, rowspan=2, sticky=W)
+
+                    self._last_val_btn = Button(window, text='Get Value',
+                                          bg=IVORY, fg=BLACK, font=FONT,
+                                          activebackground="green", activeforeground=IVORY,
+                                          command=lambda: self._insert_last_value(check))
+                    self._last_val_btn.grid(column=1, row=15, rowspan=2, sticky=W)
 
     def _change_on_hover(self, entry):
         e = entry.get()

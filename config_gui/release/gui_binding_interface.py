@@ -63,6 +63,7 @@ REQ_SET_FTMA_NAME   = "REQ_SET_FTMA_NAME"
 REQ_GET_FTMA_COEFFS = "REQ_GET_FTMA_COEFFS"
 REQ_SAVE_CONF       = "REQ_SAVE_CONF"
 REQ_LOAD_CONF       = "REQ_LOAD_CONF"
+REQ_LAST_VAL        = "REQ_LAST_VAL"
 
 logging.basicConfig(
     format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
@@ -113,12 +114,18 @@ class binding_interface_svr_t:
                           REQ_SET_FTMA_NAME   : self._req_ftma_name,
                           REQ_GET_FTMA_COEFFS : self._req_ftma_coeffs,
                           REQ_SAVE_CONF       : self._save_config_to_json,
-                          REQ_LOAD_CONF       : self._load_json_conf_to_osm}
+                          REQ_LOAD_CONF       : self._load_json_conf_to_osm,
+                          REQ_LAST_VAL        : self._get_last_val}
 
         self.serial_obj = None
         self.dev = None
         self.debug_parse = None
         self._alive = True
+
+    def _get_last_val(self, args):
+        meas = args[1]
+        val = self.dev.do_cmd(f"get_meas {meas}")
+        return val
 
     def _load_json_conf_to_osm(self, args):
         dev = self.dev.create_json_dev()
@@ -496,6 +503,9 @@ class binding_interface_client_t:
 
     def write_json_to_osm(self, contents, answered_cb=None):
         self._basic_query((REQ_LOAD_CONF, contents), answered_cb)
+
+    def get_last_value(self, meas, answered_cb=None):
+        self._basic_query((REQ_LAST_VAL, meas,), answered_cb)
 
 
 if __name__ == "__main__":
