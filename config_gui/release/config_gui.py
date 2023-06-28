@@ -27,12 +27,6 @@ from gui_binding_interface import binding_interface_client_t
 import time
 import subprocess
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg
-)
 
 FW_PROCESS = False
 THREAD = threading.Thread
@@ -1304,7 +1298,7 @@ class config_gui_window_t(Tk):
     def _cal_ftma(self, meas):
         self._ftma_window = Toplevel(self.master)
         self._ftma_window.title(f"4-20mA Calibration ({meas})")
-        self._ftma_window.geometry("600x650")
+        self._ftma_window.geometry("375x485")
         self._ftma_window.configure(bg=IVORY)
 
         name_title = Label(self._ftma_window, text="Change measurement name",
@@ -1356,7 +1350,7 @@ class config_gui_window_t(Tk):
                         font=('Arial', 14, 'bold'))
         d_entry.grid(column=1, row=6, sticky=W)
 
-        ftma_btn = Button(self._ftma_window, text="Send",
+        ftma_btn = Button(self._ftma_window, text="Commit",
                                    command=lambda : self._send_coeffs(
                                     str(name_entry.get()),
                                     [a_entry.get(), b_entry.get(), c_entry.get(), d_entry.get()],
@@ -1369,21 +1363,93 @@ class config_gui_window_t(Tk):
         graph_canv = Canvas(self._ftma_window)
         graph_canv.grid(column=0, row=8, columnspan=2)
 
-        milliamps = np.arange(4,21)
+        
+        X_START = 70
+        X_END = 340
+        Y_START = 220
+        Y_END = 50
+        graph_canv.create_line(X_START, Y_START, X_END, Y_START)  # x axis
+        graph_canv.create_line(X_START, Y_START, X_START, Y_END)  # y axis
+
+        EQU_X_OFFSET = 110
+        EQU_Y_OFFSET = -40
+
+        X_AXIS_LAB_X_OFFSET = -60
+        X_AXIS_LAB_Y_OFFSET = -110
+
+        Y_AXIS_LAB_X_OFFSET = 125
+        Y_AXIS_LAB_Y_OFFSET = 30
+    
+        X_AXIS_NUM_Y_OFFSET = 10
+        Y_AXIS_NUM_X_OFFSET = -10
+
+        MA_MIN = 4
+        MA_MAX = 20
+
+        #title
+        graph_canv.create_text(X_START + EQU_X_OFFSET, X_START + EQU_Y_OFFSET, text="y = A + Bx + Cx² + Dx³")
+        #y axis label
+        graph_canv.create_text(X_START + X_AXIS_LAB_X_OFFSET, Y_START + X_AXIS_LAB_Y_OFFSET, text="Output", angle=90)
+        #x axis label
+        graph_canv.create_text(X_START + Y_AXIS_LAB_X_OFFSET, Y_START + Y_AXIS_LAB_Y_OFFSET, text="mA")
+
+        unit_min_y = self.calculate_output(MA_MIN)
+        unit_max_y = self.calculate_output(MA_MAX)
+
+        pixel_y_range = Y_START - Y_END
+        unit_y_range = unit_max_y - unit_min_y
+
+        unit_to_pixel_y = pixel_y_range / unit_y_range
+
+        pixel_x_range = X_END - X_START
+        ma_x_range = MA_MAX - MA_MIN
+
+        unit_to_pixel_x = pixel_x_range / ma_x_range
+
+        PNT_SIZE=3
+        # Draw the X axis labels
+        for mA in range(MA_MIN, MA_MAX + 1, 4):
+            x = X_START + (mA - MA_MIN) * unit_to_pixel_x
+            graph_canv.create_text(x, Y_START + X_AXIS_NUM_Y_OFFSET, text=str(mA))
+            graph_canv.create_line(x, Y_START, x, Y_END)  # y line
+
+        Y_STEPS = 10
+        OUTPUT_STEP_SCALE = unit_y_range / Y_STEPS
+
+        y_labels = []
+        t_max_width = 0
+
+        # Draw the Y axis labels
+        for i in range(0, Y_STEPS + 1):
+            output = unit_min_y + i * OUTPUT_STEP_SCALE
+            y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
+            graph_canv.create_line(X_START, y, X_END, y)  # x line
+            text = "%G" % output
+            t = graph_canv.create_text(0, 0, text=text)
+            t_size = graph_canv.bbox(t)
+            t_width = t_size[2] - t_size[0]
+            if t_width > t_max_width:
+                t_max_width = t_width
+            y_labels += [(t, y)]
+
+        # Reposition Y labels
+        for t, y in y_labels:
+            graph_canv.move(t, X_START - t_max_width / 2, y) # Half because it's centre, not corner drawn
+
+        # Draw the data points
+        for mA in range(MA_MIN, MA_MAX + 1):
+            output = self.calculate_output(mA)
+            x = X_START + ((mA - MA_MIN) * unit_to_pixel_x)
+            y = Y_START - ((output - unit_min_y) * unit_to_pixel_y)
+            graph_canv.create_oval(x - PNT_SIZE, y - PNT_SIZE, x + PNT_SIZE, y + PNT_SIZE, fill='blue')
+
+    def calculate_output(self, milliamps):
         output = float(self.coeffs[0]) + \
-                 float(self.coeffs[1]) * milliamps + \
-                 float(self.coeffs[2]) * milliamps ** 2 + \
-                 float(self.coeffs[3]) * milliamps ** 3
-
-        figure = Figure(figsize=(6, 4), dpi=100)
-        figure_canvas = FigureCanvasTkAgg(figure, graph_canv)
-        axes = figure.add_subplot()
-        axes.plot(milliamps, output)
-        axes.set_title("y = A + Bx + Cx² + Dx³")
-        axes.set_ylabel('Output')
-        axes.set_xlabel('mA')
-        figure_canvas.get_tk_widget().pack(side=TOP, fill=BOTH, expand=1)
-
+            float(self.coeffs[1]) * milliamps + \
+            float(self.coeffs[2]) * milliamps ** 2 + \
+            float(self.coeffs[3]) * milliamps ** 3
+        return output
+    
     def _send_coeffs(self, name, args, meas):
         find_name = re.findall("[a-zA-z0-9]+", name)
         if find_name:
