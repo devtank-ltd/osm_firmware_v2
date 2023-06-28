@@ -467,7 +467,12 @@ class config_gui_window_t(Tk):
         self.save_load_label.configure(text="Config saved.")
 
     def _save_config_to_json(self):
-        self.binding_interface.save_config_to_json(self._on_save_config_json)
+        serial = "unknown"
+        if self.ser_op:
+            serial = self.ser_op
+        filename = f"osm_sensor_{serial}.json"
+        filepath = os.path.join("/tmp/", filename)
+        self.binding_interface.save_config_to_json(filepath, self._on_save_config_json)
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
@@ -1409,7 +1414,7 @@ class config_gui_window_t(Tk):
         graph_canv = Canvas(self._ftma_window)
         graph_canv.grid(column=0, row=8, columnspan=2)
 
-        
+
         X_START = 70
         X_END = 340
         Y_START = 220
@@ -1425,7 +1430,7 @@ class config_gui_window_t(Tk):
 
         Y_AXIS_LAB_X_OFFSET = 125
         Y_AXIS_LAB_Y_OFFSET = 30
-    
+
         X_AXIS_NUM_Y_OFFSET = 10
         Y_AXIS_NUM_X_OFFSET = -10
 
@@ -1495,7 +1500,7 @@ class config_gui_window_t(Tk):
             float(self.coeffs[2]) * milliamps ** 2 + \
             float(self.coeffs[3]) * milliamps ** 3
         return output
-    
+
     def _send_coeffs(self, name, args, meas):
         find_name = re.findall("[a-zA-z0-9]+", name)
         if find_name:

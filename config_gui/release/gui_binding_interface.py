@@ -5,8 +5,7 @@ import serial
 import time
 import queue
 import logging
-from save_json_config import dev_to_json
-from load_json_config import json_to_dev
+import json_config
 
 # Interface between API and binding
 
@@ -121,16 +120,19 @@ class binding_interface_svr_t:
         self.dev = None
         self.debug_parse = None
         self._alive = True
-    
+
     def _load_json_conf_to_osm(self, args):
-        dev = json_to_dev(self.serial_obj)
+        dev = json_config.dev_json_t(self.serial_obj)
         filename = args[1]
         dev.verify_file(filename)
 
     def _save_config_to_json(self, args):
-        dev = dev_to_json(self.serial_obj)
+        dev = json_config.dev_json_t(self.serial_obj)
         dev.get_config()
-        return dev.save_config()
+        with open("/tmp/testlog.log", "a") as f:
+            f.write(str(args))
+        filename = args[1]
+        return dev.save_config(filename)
 
     def _req_ftma_specs(self, args):
         headers = args
@@ -419,10 +421,10 @@ class binding_interface_client_t:
 
     def set_coeffs(self, a, b, c, d, meas, answered_cb=None):
         self._basic_query((REQ_SET_COEFFS, a, b, c, d, meas), answered_cb)
-    
+
     def set_ftma_name(self, meas, name, answered_cb):
         self._basic_query((REQ_SET_FTMA_NAME, meas, name), answered_cb)
-    
+
     def get_ftma_specs(self, headers, answered_cb):
         self._basic_query((REQ_FTMA, headers), answered_cb)
 
@@ -492,8 +494,8 @@ class binding_interface_client_t:
     def save(self, answered_cb=None):
         self._basic_query((REQ_SAVE,), answered_cb)
 
-    def save_config_to_json(self, answered_cb=None):
-        self._basic_query((REQ_SAVE_CONF,), answered_cb)
+    def save_config_to_json(self, contents, answered_cb=None):
+        self._basic_query((REQ_SAVE_CONF, contents), answered_cb)
 
     def write_json_to_osm(self, contents, answered_cb=None):
         self._basic_query((REQ_LOAD_CONF, contents), answered_cb)
