@@ -5,7 +5,6 @@ import serial
 import time
 import queue
 import logging
-import json_config
 
 # Interface between API and binding
 
@@ -122,15 +121,13 @@ class binding_interface_svr_t:
         self._alive = True
 
     def _load_json_conf_to_osm(self, args):
-        dev = json_config.dev_json_t(self.serial_obj)
+        dev = self.dev.create_json_dev()
         filename = args[1]
         dev.verify_file(filename)
 
     def _save_config_to_json(self, args):
-        dev = json_config.dev_json_t(self.serial_obj)
+        dev = self.dev.create_json_dev()
         dev.get_config()
-        with open("/tmp/testlog.log", "a") as f:
-            f.write(str(args))
         filename = args[1]
         return dev.save_config(filename)
 

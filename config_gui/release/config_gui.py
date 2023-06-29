@@ -16,6 +16,7 @@ import platform
 import signal
 from stat import *
 import subprocess
+import tempfile
 
 from gui_binding_interface import binding_interface_client_t
 from modbus_funcs import modbus_funcs_t
@@ -469,10 +470,11 @@ class config_gui_window_t(Tk):
     def _save_config_to_json(self):
         serial = "unknown"
         if self.ser_op:
-            serial = self.ser_op
-        filename = f"osm_sensor_{serial}.json"
-        filepath = os.path.join("/tmp/", filename)
-        self.binding_interface.save_config_to_json(filepath, self._on_save_config_json)
+            s = self.ser_op.split("-")[-1]
+            match = re.findall(r"0*([0-9]+)", s)
+            serial = match[0]
+        filepath = tempfile.NamedTemporaryFile(prefix=f'osm_sensor_{serial}_',suffix='.json', delete=False)
+        self.binding_interface.save_config_to_json(filepath.name, self._on_save_config_json)
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()

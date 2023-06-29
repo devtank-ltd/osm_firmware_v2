@@ -12,7 +12,7 @@ import weakref
 import string
 import random
 import json
-
+import json_config
 
 MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_addr>0x[0-9A-Fa-f]+) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
 MODBUS_REG_SET_NAME_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_name>.{1,4})\((?P<reg_addr>0x[0-9A-Fa-f]+)\) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
@@ -370,6 +370,10 @@ class dev_t(dev_base_t):
         self.update_measurements()
         self.port = port
 
+    def create_json_dev(self):
+        json_dev = json_config.dev_json_t(self._serial_obj)
+        return json_dev
+
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
         if child:
@@ -723,7 +727,6 @@ class dev_t(dev_base_t):
                     debug_print("OSM reset'ed")
                     return True
         return False
-
 
 class dev_debug_t(dev_base_t):
     def __init__(self, port):

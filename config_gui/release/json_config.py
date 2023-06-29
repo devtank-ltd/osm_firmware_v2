@@ -64,12 +64,6 @@ class dev_json_t:
                 self.modbus_devs.append(dict)
 
     def save_config(self, filepath:str):
-        serial = "unknown"
-        if self.serial_num:
-            s = self.serial_num.split("-")[-1]
-            match = re.findall(r"0*([0-9]+)", s)
-            serial = match[0]
-
         json_pop = {
             "version": None,
             "serial_num": None,
