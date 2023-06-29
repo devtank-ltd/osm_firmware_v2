@@ -27,16 +27,17 @@ Connect
 -   You will then be transferred to the home page which displays current
     measurements and LoRaWAN configuration.
 
+</br>
 Current Measurements
 ====================
 
 ![](Images/home_p.png)
 
-This window reads all of the measurements currently on your OSM Device
-and allows you to set the amount of intervals that are bypassed by each
-measurement. This can be done by changing the number in the Uplink
-heading or if you prefer, you can change the amount of minutes per
-interval under Interval in Mins. You can also set the amount of samples
+This window reads all of the measurements available on your OSM Device 
+and allows you to set the data transmission intervals. This can be done 
+by changing the number in the Uplink heading (default is multiples of 
+15mins) or if you prefer, you can change the number of minutes per 
+interval under Interval in Mins. You can also set the number of samples 
 that are taken within each interval under the Sample Count heading.
 
 -   To make a change, you must select a cell and enter a number. Once
@@ -50,6 +51,10 @@ that are taken within each interval under the Sample Count heading.
     to select the checkbox on the row of the measurement, this will
     bring up the button “Set interval to 0” and will apply to all the
     measurements you check.
+
+-   If you want to see the last value of a measurement, similarly to the
+    last point, you select all the checkboxes of the measurements that
+    you want to see, then press "Get Value".
 
 LoRaWan Configuration
 ---------------------
@@ -71,10 +76,27 @@ Advanced Configuration
     GUI and see its raw output, you can send commands to it using the
     entry bar.
 
--   Pressing List of Commands will simply display the list of examples
-    you can enter. These commands require arguments afterwards such as
-    “mb\_dev\_add E53”. Avoid using these if you are uncomfortable doing
-    so.
+-   If you type '?' you will see a list of commands that you can use.
+
+-   Some basic commands you can use include 'get_meas' followed by the
+    name of the measurement e.g. 'get_meas TEMP'.
+
+-   Typing 'comms_conn' will tell you if your sensor is connected to
+    LoRaWAN or any other external communication type.
+
+-   Typing 'measurements' will output all of the measurements and their
+    intervals and samplecount.
+
+-   Typing 'mb_log' will output the Modbus configuration of the OSM.
+
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+
 
 Modbus Configuration
 ====================
@@ -160,17 +182,40 @@ Set IOs
 -   This must be activated before these special measurements can start
     reporting data.
 
-![](Images/io.png)
+<p align="center">
+    <img src="Images/io.png">    
+</p>
 
--   This is the window that will open for TMP2, enabling or disabling
-    this measurement will use IO 04.
+-   This is the window that will open for TMP2, select rise, fall or both
+    depending on which edge of the pulse you are watching for and then 
+    press enable.
 
-![](Images/cnt.png)
+<p align="center">
+    <img src="Images/cnt.png">    
+</p>
 
 -   Selecting CNT2 provides you with an extra option, to set the pullup
     for the IO.
 
 -   None of the options will make a dramatic effect.
+
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
 
 Scaling Current
 ===============
@@ -188,22 +233,25 @@ Scaling Current
     manually set it by entering it manually in the entry box and
     pressing Set Midpoint.
 
-Debug Mode
+</br>
+</br>
+</br>
+</br>
+
+4-20 Milliamps
 ==========
 
-![](Images/debug_mp.png)
+<p align="center">
+    <img src="Images/fta.png">    
+</p>
 
--   Opening this window will open a blank terminal screen at first and a
-    table with no values.
+-   Selecting one of the special measurements named 'FTA[1,2,3,4]' will
+    open this window.
 
--   Press Activate Debug Mode and wait a couple seconds for the sensor
-    to begin reporting, it will seem like nothing has happened until you
-    begin seeing the measurements appear so avoid pressing the button
-    again as it will turn debug mode off.
+-   Set the coefficients to whichever integers your use case requires and
+    press commit to save the changes. This will close the window, open it
+    again if you want to see the changes to the output from the equation.
 
--   This will continuously report all the measurements and their values
-    until you close the window or deactivate debug mode.
+-   You can also change the name of the measurement to something which
+    may make more sense to you, the name can't exceed 4 characters.
 
--   If you are finding it difficult to keep track of all the descending
-    measurements, use the table which stores the most recent value
-    reported by debug mode to its corresponding measurement.
