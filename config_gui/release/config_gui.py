@@ -503,7 +503,7 @@ class config_gui_window_t(Tk):
             widg_n = child.widgetName
             if widg_n == 'button' or widg_n == 'entry':
                 child.configure(state=cmd)
-            if widg_n == 'canvas':
+            if frame == self._main_fr:
                 for i in self._second_frame.winfo_children():
                     i.configure(state=cmd)
 
