@@ -83,14 +83,14 @@ You can now communicate with the Virtual OSM through serial.
 Config GUI
 ==========
 
-To use the Configuration GUI, you will need the Virtual OSM running as
-it requires an OSM sensor in order to connect.
+To use the Configuration GUI, you will to connect your OSM to your machine.
+If you don't have an OSM, use the virtual OSM.
 
 To start the GUI, run the following commands:
 
 -------
 
     cd config_gui/release
-    ./config_gui.py
+    python config_gui.py
 
-Select UART\_DEBUG\_slave from the dropdown menu and press connect.
+Select your device from the dropdown menu and press connect.
