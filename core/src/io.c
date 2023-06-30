@@ -656,13 +656,13 @@ struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
 
 void ios_measurements_init(void)
 {
+#if IOS_WATCH_COUNT > 0
     measurements_def_t def;
     def.interval    = 0;
     def.samplecount = 0;
     def.type        = IO_READING;
     def.is_immediate = 1;
 
-#if IOS_WATCH_COUNT > 0
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
         unsigned io = ios_watch_ios[i];
