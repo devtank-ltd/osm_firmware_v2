@@ -246,12 +246,12 @@ static bool _mqtt_send(const char * topic, const char * value, unsigned len)
     int msg_id = esp_mqtt_client_publish(_client, topic, value, len, _qos, false);
     if (msg_id < 0)
     {
-        log_error("Fail to send MQTT %s", topic);
+        log_error("Fail to send MQTT \"%s\"", topic);
         return false;
     }
     else
     {
-        comms_debug("Sent MQTT %s (%d)", topic, msg_id);
+        comms_debug("Sent MQTT \"%s\" : \"%.*s\" (%d)", topic, len, value, msg_id);
         return true;
     }
 }
@@ -260,7 +260,7 @@ static bool _mqtt_send(const char * topic, const char * value, unsigned len)
 static bool _mqtt_meas_send(const char * name, const char * value, unsigned len)
 {
     char topic[64];
-    snprintf(topic, sizeof(topic), "/osm/%s/measurements/%s", _mac, name);
+    snprintf(topic, sizeof(topic), "osm/%s/measurements/%s", _mac, name);
     return _mqtt_send(topic, value, len);
 }
 
@@ -316,7 +316,7 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
 
 static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
 {
-    return _mqtt_meas_send(name, data->value.value_s.str, 0);
+    return _mqtt_meas_send(name, data->value.value_s.str, strlen(data->value.value_s.str));
 }
 
 
