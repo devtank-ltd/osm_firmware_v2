@@ -519,9 +519,10 @@ class config_gui_window_t(Tk):
         self._osm1_lab.pack()
         self._visit_widgets(self._conn_fr, 'disabled')
         self._cmd = None
+        path = os.path.join(PATH, "firmware_update.py")
         try:
             self._cmd = subprocess.Popen(
-                ["sudo", PATH + "/static_program.sh", selected], shell=False)
+                ["python", path, self.dev_sel, selected], shell=False)
         except Exception as e:
             self._stop()
             traceback.print_exc()
