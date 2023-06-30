@@ -1077,14 +1077,15 @@ class config_gui_window_t(Tk):
             self.val = resp[1].split(":")[1].replace(" ", "")
         except IndexError:
             log_func("Failed to get measurement reading.")
-            self.val = "Failed"
+            self.val = 0
         for i in self._entries:
             v = i[0].get()
             if v == meas:
                 val_col = i[4]
                 val_col.configure(state='normal')
+                val_col.delete(0, END)
                 val_col.insert(0, self.val)
-                val_col.configure(state='normal')
+                val_col.configure(state='disabled')
 
     def _insert_last_value(self, check):
         ticked = []
@@ -1102,7 +1103,6 @@ class config_gui_window_t(Tk):
                         meas = self._entries[i][0]
                         meas = meas.get()
                         val_col = self._entries[i][4]
-                        val_col.delete(0, END)
                         self.binding_interface.get_last_value(meas, self._on_get_last_val)
                     for cb in check:
                         if cb.get() == tick:
