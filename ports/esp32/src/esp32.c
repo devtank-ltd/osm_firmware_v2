@@ -60,15 +60,21 @@ void platform_watchdog_init(uint32_t ms)
 
 void platform_init(void)
 {
-    gpio_set_direction(DE_485_PIN, GPIO_MODE_OUTPUT);
-
-    gpio_set_direction(SW_SEL, GPIO_MODE_OUTPUT);
-    gpio_set_level(SW_SEL, 1);
+    gpio_config_t de_485_conf = {
+        .pin_bit_mask = BIT64(DE_485_PIN),
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+    };
+    gpio_config(&de_485_conf);
 }
 
 
 void platform_set_rs485_mode(bool driver_enable)
 {
+    gpio_set_direction(SW_SEL, GPIO_MODE_OUTPUT);
+    gpio_set_level(SW_SEL, 1);
     if (driver_enable)
     {
         modbus_debug("driver:enable");
