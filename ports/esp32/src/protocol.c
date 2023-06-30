@@ -14,13 +14,13 @@
 
 #include "protocol.h"
 
+#define WIFI_DELAY_MS 1000
+
 #define SSID_LEN 16
 #define WFPW_LEN 32
 #define SVR_LEN 24
 #define SVRUSR_LEN 12
 #define SVRPW_LEN 32
-
-#define MQTT_DEFAULT_PORT 1883
 
 static char _mac[16] = {0};
 
@@ -32,6 +32,8 @@ static esp_mqtt_client_handle_t _client;
 
 static char _cmd[32];
 static volatile bool _cmd_ready = false;
+
+static bool _wifi_started = false;
 
 typedef struct
 {
@@ -211,8 +213,6 @@ static void _start_wifi(void)
 
 static void _wifi_start(void)
 {
-    static bool _wifi_started = false;
-
     if (_wifi_started)
         return;
     _wifi_started = true;
@@ -238,7 +238,6 @@ void protocol_system_init(void)
 
 bool protocol_init(void)
 {
-    _wifi_start();
     return _has_mqtt;
 }
 
@@ -371,6 +370,14 @@ bool protocol_get_connected(void)
 
 void protocol_loop_iteration(void)
 {
+    if (!_wifi_started)
+    {
+        /* Delay wifi start up. */
+        uint32_t now = get_since_boot_ms();
+        if (now > WIFI_DELAY_MS)
+            _wifi_start();
+    }
+
     if (!_cmd_ready)
         return;
     command_response_t resp = cmds_process(_cmd, strlen(_cmd));
@@ -547,6 +554,7 @@ static command_response_t _esp_comms_cb(char *args)
 
 static command_response_t _esp_conn_cb(char *args)
 {
+    _wifi_start();
     if (_has_mqtt)
     {
         comms_debug("1 | Connected");
