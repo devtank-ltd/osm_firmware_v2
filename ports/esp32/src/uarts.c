@@ -13,6 +13,7 @@
 #include "uarts.h"
 #include "sleep.h"
 #include "platform_model.h"
+#include "mqtt.h"
 
 
 static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
@@ -275,13 +276,16 @@ bool uart_dma_out(unsigned uart, char *data, int size)
     if (uart >= UART_CHANNELS_COUNT)
         return false;
 
-    if (!uart_is_tx_empty(uart))
-        return false;
-
     const uart_channel_t * channel = &uart_channels[uart];
 
     if (!channel->enabled)
         return true; /* Drop the data */
+
+    if (!uart_is_tx_empty(uart))
+        return false;
+
+    if (uart == CMD_UART)
+        mqtt_uart_forward(data, size);
 
     int sent = uart_tx_chars(uart_channels[uart].uart, data, size);
     if (sent <= 0)

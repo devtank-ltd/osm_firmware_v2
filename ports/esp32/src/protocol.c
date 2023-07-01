@@ -12,6 +12,7 @@
 #include "common.h"
 #include "base_types.h"
 #include "persist_config.h"
+#include "mqtt.h"
 
 #include "protocol.h"
 
@@ -32,7 +33,7 @@ static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
 static volatile int _qos = 1;
 
-static esp_mqtt_client_handle_t _client;
+static esp_mqtt_client_handle_t _client = NULL;
 
 static char _cmd[32];
 static volatile bool _cmd_ready = false;
@@ -43,12 +44,14 @@ static bool _mqtt_started = false;
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
 
+
 typedef struct
 {
     uint8_t  type;
     uint8_t  authmode;
     uint16_t autostart:1;
-    uint16_t _:15;
+    uint16_t fwd_uart:1;
+    uint16_t _:14;
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
     char svr[SVR_LEN];
@@ -115,6 +118,18 @@ static osm_wifi_config_t* _wifi_get_config(void)
 }
 
 
+void mqtt_uart_forward(const char * data, unsigned size)
+{
+    osm_wifi_config_t* osm_config = _wifi_get_config();
+    if (!osm_config || !_has_mqtt || !osm_config->fwd_uart)
+        return;
+    char topic[64];
+    snprintf(topic, sizeof(topic), "osm/%s/fwd", _mac);
+    topic[sizeof(topic)-1] = 0;
+    _mqtt_send(topic, data, size);
+}
+
+
 static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
     esp_mqtt_event_handle_t event = event_data;
@@ -125,7 +140,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             _has_mqtt = true;
             comms_debug("MQTT connected.");
             char topic[32];
-            snprintf(topic, sizeof(topic), "/osm/%s/cmd", _mac);
+            snprintf(topic, sizeof(topic), "osm/%s/cmd", _mac);
             topic[sizeof(topic)-1] = 0;
             esp_mqtt_client_subscribe(client, topic, 0);
             break;
@@ -589,10 +604,24 @@ static command_response_t _auto_start_cb(char *args)
 {
     osm_wifi_config_t* osm_config = _wifi_get_config();
     if (*args && osm_config)
-            osm_config->autostart = (args[0] == '1') || (tolower(args[0]) == 't');
+        osm_config->autostart = (args[0] == '1') || (tolower(args[0]) == 't');
     if (osm_config)
     {
         log_out("Autostart : %u", (unsigned)osm_config->autostart);
+        return COMMAND_RESP_OK;
+    }
+    return COMMAND_RESP_ERR;
+}
+
+
+static command_response_t _fwd_cb(char *args)
+{
+    osm_wifi_config_t* osm_config = _wifi_get_config();
+    if (*args && osm_config)
+        osm_config->fwd_uart = (args[0] == '1') || (tolower(args[0]) == 't');
+    if (osm_config)
+    {
+        log_out("MQTT UART forwarding : %u", (unsigned)osm_config->fwd_uart);
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;
@@ -610,6 +639,7 @@ static command_response_t _esp_comms_cb(char *args)
         { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
         { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
         { "autostart",   "Get/Set connection auto start", _auto_start_cb                       , false , NULL },
+        { "uart_fwd", "Enable/Disable UART MQTT forwarding", _fwd_cb, false , NULL },
     };
     command_response_t r = COMMAND_RESP_ERR;
     if (args[0])
