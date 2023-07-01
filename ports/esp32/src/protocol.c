@@ -34,6 +34,7 @@ static char _cmd[32];
 static volatile bool _cmd_ready = false;
 
 static bool _wifi_started = false;
+static bool _mqtt_started = false;
 
 typedef struct
 {
@@ -69,6 +70,30 @@ static struct
 };
 
 
+static bool _mqtt_send(const char * topic, const char * value, unsigned len)
+{
+    int msg_id = esp_mqtt_client_publish(_client, topic, value, len, _qos, false);
+    if (msg_id < 0)
+    {
+        log_error("Fail to send MQTT \"%s\"", topic);
+        return false;
+    }
+    else
+    {
+        comms_debug("Sent MQTT \"%s\" : \"%.*s\" (%d)", topic, len, value, msg_id);
+        return true;
+    }
+}
+
+
+static bool _mqtt_meas_send(const char * name, const char * value, unsigned len)
+{
+    char topic[64];
+    snprintf(topic, sizeof(topic), "osm/%s/measurements/%s", _mac, name);
+    return _mqtt_send(topic, value, len);
+}
+
+
 static osm_wifi_config_t* _wifi_get_config(void)
 {
     comms_config_t* comms_config = &persist_data.model_config.comms_config;
@@ -93,6 +118,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             char topic[32];
             snprintf(topic, sizeof(topic), "/osm/%s/cmd", _mac);
             esp_mqtt_client_subscribe(client, topic, 0);
+            _mqtt_meas_send("mqtt_start", "connected", strlen("connected"));
             break;
         case MQTT_EVENT_DISCONNECTED:
             _has_mqtt = false;
@@ -148,7 +174,6 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
         {
             case IP_EVENT_STA_GOT_IP:
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-                osm_wifi_config_t* osm_config = _wifi_get_config();
                 comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
                 uint8_t mac[6];
                 ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, mac));
@@ -156,18 +181,6 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
                 comms_debug("MAC: %s", _mac);
 
                 _has_ip_addr = true;
-                static char uri[128];
-                //mqtt://username:password@mqtt.eclipseprojects.io
-                snprintf(uri, sizeof(uri), "mqtt://%s:%s@%s", osm_config->svr_user, osm_config->svr_pw, osm_config->svr);
-
-                esp_mqtt_client_config_t mqtt_cfg =
-                {
-                    .broker.address.uri = uri,
-                };
-                _client = esp_mqtt_client_init(&mqtt_cfg);
-                esp_mqtt_client_register_event(_client, ESP_EVENT_ANY_ID, _mqtt_event_handler, NULL);
-                esp_mqtt_client_start(_client);
-
                 break;
             default:
                 comms_debug("Unknown WiFi IP event :");
@@ -177,8 +190,33 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
 }
 
 
-static void _start_wifi(void)
+static void _mqtt_start(void)
 {
+    if (_mqtt_started || !_has_ip_addr)
+        return;
+    osm_wifi_config_t* osm_config = _wifi_get_config();
+    static char uri[128];
+    //mqtt://username:password@mqtt.eclipseprojects.io
+    snprintf(uri, sizeof(uri), "mqtt://%s:%s@%s", osm_config->svr_user, osm_config->svr_pw, osm_config->svr);
+    uri[sizeof(uri)-1]=0;
+    comms_debug("Connecting to: \"%s\"", uri);
+
+    esp_mqtt_client_config_t mqtt_cfg =
+    {
+        .broker.address.uri = uri,
+    };
+    _client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_register_event(_client, ESP_EVENT_ANY_ID, _mqtt_event_handler, NULL);
+    esp_mqtt_client_start(_client);
+    _mqtt_started = true;
+}
+
+
+static void _wifi_start(void)
+{
+    if (_wifi_started)
+        return;
+
     osm_wifi_config_t* osm_config = _wifi_get_config();
     if (!osm_config)
         return;
@@ -187,6 +225,16 @@ static void _start_wifi(void)
 
     if (!ssid_len || !passwd_len)
         return;
+
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, _wifi_event_handler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, _wifi_event_handler, NULL));
 
     wifi_config_t wifi_config =
     {
@@ -208,26 +256,7 @@ static void _start_wifi(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
 
     ESP_ERROR_CHECK(esp_wifi_start());
-}
-
-
-static void _wifi_start(void)
-{
-    if (_wifi_started)
-        return;
     _wifi_started = true;
-
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, _wifi_event_handler, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, _wifi_event_handler, NULL));
-
-    _start_wifi();
 }
 
 
@@ -240,30 +269,6 @@ bool protocol_init(void)
 {
     return _has_mqtt;
 }
-
-static bool _mqtt_send(const char * topic, const char * value, unsigned len)
-{
-    int msg_id = esp_mqtt_client_publish(_client, topic, value, len, _qos, false);
-    if (msg_id < 0)
-    {
-        log_error("Fail to send MQTT \"%s\"", topic);
-        return false;
-    }
-    else
-    {
-        comms_debug("Sent MQTT \"%s\" : \"%.*s\" (%d)", topic, len, value, msg_id);
-        return true;
-    }
-}
-
-
-static bool _mqtt_meas_send(const char * name, const char * value, unsigned len)
-{
-    char topic[64];
-    snprintf(topic, sizeof(topic), "osm/%s/measurements/%s", _mac, name);
-    return _mqtt_send(topic, value, len);
-}
-
 
 static bool _protocol_append_data_type_float(const char * name, int32_t value)
 {
@@ -377,6 +382,8 @@ void protocol_loop_iteration(void)
         if (now > WIFI_DELAY_MS)
             _wifi_start();
     }
+    else if (!_mqtt_started)
+        _mqtt_start();
 
     if (!_cmd_ready)
         return;
@@ -555,6 +562,7 @@ static command_response_t _esp_comms_cb(char *args)
 static command_response_t _esp_conn_cb(char *args)
 {
     _wifi_start();
+    _mqtt_start();
     if (_has_mqtt)
     {
         comms_debug("1 | Connected");
