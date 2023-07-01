@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -40,7 +41,8 @@ typedef struct
 {
     uint8_t  type;
     uint8_t  authmode;
-    uint16_t _;
+    uint16_t autostart:1;
+    uint16_t _:15;
     char ssid[SSID_LEN];
     char password[WFPW_LEN];
     char svr[SVR_LEN];
@@ -120,7 +122,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             snprintf(topic, sizeof(topic), "/osm/%s/cmd", _mac);
             topic[sizeof(topic)-1] = 0;
             esp_mqtt_client_subscribe(client, topic, 0);
-            _mqtt_meas_send("mqtt_start", "connected", strlen("connected"));
+            _mqtt_meas_send("mqtt_conn", "connected", strlen("connected"));
             break;
         case MQTT_EVENT_DISCONNECTED:
             _has_mqtt = false;
@@ -382,10 +384,14 @@ void protocol_loop_iteration(void)
 {
     if (!_wifi_started)
     {
-        /* Delay wifi start up. */
-        uint32_t now = get_since_boot_ms();
-        if (now > WIFI_DELAY_MS)
-            _wifi_start();
+        osm_wifi_config_t* osm_config = _wifi_get_config();
+        if (osm_config && osm_config->autostart)
+        {
+            /* Delay wifi start up. */
+            uint32_t now = get_since_boot_ms();
+            if (now > WIFI_DELAY_MS)
+                _wifi_start();
+        }
     }
     else if (!_mqtt_started)
         _mqtt_start();
@@ -526,6 +532,21 @@ static command_response_t _mqtt_pw_cb(char *args)
     return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false);
 }
 
+
+static command_response_t _auto_start_cb(char *args)
+{
+    osm_wifi_config_t* osm_config = _wifi_get_config();
+    if (*args && osm_config)
+            osm_config->autostart = (args[0] == '1') || (tolower(args[0]) == 't');
+    if (osm_config)
+    {
+        log_out("Autostart : %u", (unsigned)osm_config->autostart);
+        return COMMAND_RESP_OK;
+    }
+    return COMMAND_RESP_ERR;
+}
+
+
 static command_response_t _esp_comms_cb(char *args)
 {
     struct cmd_link_t cmds[] =
@@ -536,6 +557,7 @@ static command_response_t _esp_comms_cb(char *args)
         { "mqtt_svr",   "Get/Set MQTT broker", _mqtt_svr_cb                       , false , NULL },
         { "mqtt_usr",   "Get/Set MQTT user", _mqtt_usr_cb                       , false , NULL },
         { "mqtt_pw",   "Get/Set MQTT password", _mqtt_pw_cb                       , false , NULL },
+        { "autostart",   "Get/Set connection auto start", _auto_start_cb                       , false , NULL },
     };
     command_response_t r = COMMAND_RESP_ERR;
     if (args[0])
