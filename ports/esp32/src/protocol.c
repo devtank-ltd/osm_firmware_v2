@@ -23,6 +23,9 @@
 #define SVRUSR_LEN 12
 #define SVRPW_LEN  32
 
+#define JSON_BUF_SIZE  1024
+#define JSON_CLOSE_SIZE 2
+
 static char _mac[16] = {0};
 
 static volatile bool _has_ip_addr = false;
@@ -36,6 +39,9 @@ static volatile bool _cmd_ready = false;
 
 static bool _wifi_started = false;
 static bool _mqtt_started = false;
+
+static char _json_buf[JSON_BUF_SIZE];
+static unsigned _json_buf_pos = 0;
 
 typedef struct
 {
@@ -82,18 +88,18 @@ static bool _mqtt_send(const char * topic, const char * value, unsigned len)
     }
     else
     {
-        comms_debug("Sent MQTT \"%s\" : \"%.*s\" (%d)", topic, len, value, msg_id);
+        comms_debug("Sent MQTT \"%s\" (%d)", topic, msg_id);
         return true;
     }
 }
 
 
-static bool _mqtt_meas_send(const char * name, const char * value, unsigned len)
+static bool _mqtt_meas_send(void)
 {
     char topic[64];
-    snprintf(topic, sizeof(topic), "osm/%s/measurements/%s", _mac, name);
+    snprintf(topic, sizeof(topic), "osm/%s/measurements", _mac);
     topic[sizeof(topic)-1] = 0;
-    return _mqtt_send(topic, value, len);
+    return _mqtt_send(topic, _json_buf, 0);
 }
 
 
@@ -122,7 +128,6 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             snprintf(topic, sizeof(topic), "/osm/%s/cmd", _mac);
             topic[sizeof(topic)-1] = 0;
             esp_mqtt_client_subscribe(client, topic, 0);
-            _mqtt_meas_send("mqtt_conn", "connected", strlen("connected"));
             break;
         case MQTT_EVENT_DISCONNECTED:
             _has_mqtt = false;
@@ -270,26 +275,59 @@ void protocol_system_init(void)
 }
 
 
+
+static bool _protocol_append_v(char * fmt, va_list ap)
+{
+    unsigned available = JSON_BUF_SIZE - _json_buf_pos;
+    unsigned r = vsnprintf(_json_buf + _json_buf_pos, available, fmt, ap);
+    if ((r + JSON_CLOSE_SIZE) >= available)
+        return false;
+    _json_buf_pos += r;
+    return true;
+}
+
+
+static bool _protocol_append(char * fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    bool r = _protocol_append_v(fmt, ap);
+    va_end(ap);
+    return r;
+}
+
+
 bool protocol_init(void)
 {
-    return _has_mqtt;
+    if (!_has_mqtt)
+        return false;
+    _json_buf_pos = 0;
+    return _protocol_append("{");
 }
+
+
+static bool _protocol_append_meas(char * fmt, ...)
+{
+    if (_json_buf[_json_buf_pos - 1] != '{')
+        if (!_protocol_append(","))
+            return false;
+    va_list ap;
+    va_start(ap, fmt);
+    bool r = _protocol_append_v(fmt, ap);
+    va_end(ap);
+    return r;
+}
+
 
 static bool _protocol_append_data_type_float(const char * name, int32_t value)
 {
-    char svalue[16];
-    unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId32".%03ld", value/1000, labs(value/1000));
-    svalue[sizeof(svalue)-1]=0;
-    return _mqtt_meas_send(name, svalue, len);
+    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value/1000, labs(value/1000));
 }
 
 
 static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 {
-    char svalue[24];
-    unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId64, value);
-    svalue[sizeof(svalue)-1]=0;
-    return _mqtt_meas_send(name, svalue, len);
+    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value);
 }
 
 
@@ -298,6 +336,7 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     if (data->num_samples == 1)
         return _protocol_append_data_type_float(name, data->value.value_f.sum);
     bool r = true;
+    unsigned init_pos = _json_buf_pos;
     int32_t mean = data->value.value_f.sum / data->num_samples;
     char tmp[MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_float(name, mean);
@@ -305,7 +344,12 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.max);
-    return r;
+    if (!r)
+    {
+        _json_buf_pos = init_pos;
+        return false;
+    }
+    return true;
 }
 
 
@@ -314,6 +358,7 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
     if (data->num_samples == 1)
         return _protocol_append_data_type_i64(name, data->value.value_f.sum);
     bool r = true;
+    unsigned init_pos = _json_buf_pos;
     int64_t mean = data->value.value_64.sum / data->num_samples;
     char tmp[MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_i64(name, mean);
@@ -321,6 +366,11 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.max);
+    if (!r)
+    {
+        _json_buf_pos = init_pos;
+        return false;
+    }
     return r;
 }
 
@@ -328,7 +378,7 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
 
 static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
 {
-    return _mqtt_meas_send(name, data->value.value_s.str, strlen(data->value.value_s.str));
+    return _protocol_append_meas("\"%s\" : \"%s\"", name, data->value.value_s.str);
 }
 
 
@@ -358,12 +408,14 @@ bool        protocol_append_instant_measurement(measurements_def_t* def, measure
 
 void        protocol_debug(void)
 {
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    comms_debug("batch complete (debug)");
+    protocol_send();
 }
 
 void        protocol_send(void)
 {
+    if (!_protocol_append("}"))
+        return;
+    _mqtt_meas_send();
     vTaskDelay(200 / portTICK_PERIOD_MS);
     comms_debug("batch complete.");
 }
