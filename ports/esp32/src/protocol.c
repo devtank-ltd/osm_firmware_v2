@@ -302,6 +302,7 @@ static bool _protocol_append_v(char * fmt, va_list ap)
 }
 
 
+static bool _protocol_append(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
 static bool _protocol_append(char * fmt, ...)
 {
     va_list ap;
@@ -321,6 +322,7 @@ bool protocol_init(void)
 }
 
 
+static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
 static bool _protocol_append_meas(char * fmt, ...)
 {
     if (_json_buf[_json_buf_pos - 1] != '{')
@@ -336,13 +338,13 @@ static bool _protocol_append_meas(char * fmt, ...)
 
 static bool _protocol_append_data_type_float(const char * name, int32_t value)
 {
-    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value/1000, labs(value/1000));
+    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value/1000, labs(value%1000));
 }
 
 
 static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 {
-    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value);
+    return _protocol_append_meas("\"%s\" : %"PRId64, name, value);
 }
 
 
