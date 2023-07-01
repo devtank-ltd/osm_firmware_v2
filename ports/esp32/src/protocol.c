@@ -16,11 +16,11 @@
 
 #define WIFI_DELAY_MS 1000
 
-#define SSID_LEN 16
-#define WFPW_LEN 32
-#define SVR_LEN 24
+#define SSID_LEN   16
+#define WFPW_LEN   32
+#define SVR_LEN    24
 #define SVRUSR_LEN 12
-#define SVRPW_LEN 32
+#define SVRPW_LEN  32
 
 static char _mac[16] = {0};
 
@@ -90,6 +90,7 @@ static bool _mqtt_meas_send(const char * name, const char * value, unsigned len)
 {
     char topic[64];
     snprintf(topic, sizeof(topic), "osm/%s/measurements/%s", _mac, name);
+    topic[sizeof(topic)-1] = 0;
     return _mqtt_send(topic, value, len);
 }
 
@@ -117,6 +118,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             comms_debug("MQTT connected.");
             char topic[32];
             snprintf(topic, sizeof(topic), "/osm/%s/cmd", _mac);
+            topic[sizeof(topic)-1] = 0;
             esp_mqtt_client_subscribe(client, topic, 0);
             _mqtt_meas_send("mqtt_start", "connected", strlen("connected"));
             break;
@@ -175,7 +177,7 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
             case IP_EVENT_STA_GOT_IP:
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
                 comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
-                uint8_t mac[6];
+                uint8_t mac[8];
                 ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, mac));
                 snprintf(_mac, sizeof(_mac), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
                 comms_debug("MAC: %s", _mac);
@@ -195,11 +197,12 @@ static void _mqtt_start(void)
     if (_mqtt_started || !_has_ip_addr)
         return;
     osm_wifi_config_t* osm_config = _wifi_get_config();
-    static char uri[128];
+    static char uri[5 + SSID_LEN + WFPW_LEN + SVR_LEN + SVRUSR_LEN + SVRPW_LEN];
+
     //mqtt://username:password@mqtt.eclipseprojects.io
+    comms_debug("Connecting to \"mqtt://%s@%s\"", osm_config->svr_user, osm_config->svr);
     snprintf(uri, sizeof(uri), "mqtt://%s:%s@%s", osm_config->svr_user, osm_config->svr_pw, osm_config->svr);
     uri[sizeof(uri)-1]=0;
-    comms_debug("Connecting to: \"%s\"", uri);
 
     esp_mqtt_client_config_t mqtt_cfg =
     {
@@ -274,6 +277,7 @@ static bool _protocol_append_data_type_float(const char * name, int32_t value)
 {
     char svalue[16];
     unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId32".%03ld", value/1000, labs(value/1000));
+    svalue[sizeof(svalue)-1]=0;
     return _mqtt_meas_send(name, svalue, len);
 }
 
@@ -282,6 +286,7 @@ static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 {
     char svalue[24];
     unsigned len = snprintf(svalue, sizeof(svalue), "%"PRId64, value);
+    svalue[sizeof(svalue)-1]=0;
     return _mqtt_meas_send(name, svalue, len);
 }
 
@@ -390,6 +395,7 @@ void protocol_loop_iteration(void)
     command_response_t resp = cmds_process(_cmd, strlen(_cmd));
     char topic[64];
     snprintf(topic, sizeof(topic), "/osm/%s/cmd/resp", _mac);
+    topic[sizeof(topic)-1]=0;
     char * value = (resp == COMMAND_RESP_OK)?"ok":"error";
 
     _mqtt_send(topic, value, 0);
