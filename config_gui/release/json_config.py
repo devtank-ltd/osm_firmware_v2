@@ -8,7 +8,8 @@ import re
 
 class dev_json_t:
     def __init__(self, dev):
-        self.dev = binding.dev_t(dev)
+        self.dev = dev
+        assert isinstance(self.dev, binding.dev_t)
 
     def get_config(self):
         modbus = self.dev.get_modbus()
