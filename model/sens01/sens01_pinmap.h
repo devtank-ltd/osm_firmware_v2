@@ -150,8 +150,6 @@ GPIO16 D2                   IO 11
 #define SENS01_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
 
 
-#ifndef __CONFIGTOOL__
-
 #define uart0_in_isr                    usart2_isr
 #define uart1_in_isr                    usart3_isr
 #define uart2_in_isr                    usart1_isr
@@ -166,8 +164,6 @@ GPIO16 D2                   IO 11
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 9600
-
-#endif // __CONFIGTOOL__
 
 
 #define SENS01_UART_CHANNELS                                                                                            \

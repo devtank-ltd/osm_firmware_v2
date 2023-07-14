@@ -110,8 +110,6 @@
 #define ENV01C_COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
 
 
-#ifndef __CONFIGTOOL__
-
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 115200
@@ -126,8 +124,6 @@
 #define uart1_dma_out_isr               dma1_channel2_isr
 #define uart2_dma_out_isr               dma1_channel5_isr
 #define uart3_dma_out_isr               dma2_channel6_isr
-
-#endif // __CONFIGTOOL__
 
 
 #define ENV01C_UART_CHANNELS                                                                                            \

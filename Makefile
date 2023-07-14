@@ -16,8 +16,6 @@ RELEASE_DIR ?= $(BUILD_DIR)/releases
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
-JSON_CONV := $(BUILD_DIR)/tool/json_x_img
-
 all: $(MODELS_FW)
 
 $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
@@ -29,8 +27,7 @@ $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 include $(OSM_DIR)/ports/base.mk
 include $(OSM_DIR)/ports/stm.mk
 include $(OSM_DIR)/ports/linux.mk
-include $(OSM_DIR)/ports/esp32.mk
-include $(OSM_DIR)/tools/img_json_interpretter/tool.mk
+#include $(OSM_DIR)/ports/esp32.mk
 
 define PROGRAM_template
   include $(1)

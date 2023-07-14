@@ -67,8 +67,6 @@ $$($(1)_OBJS): $(LIBOPENCM3)
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_LINK_SCRIPT)
 	$$(STM_CC) $$($(1)_OBJS) $$(STM_LINK_FLAGS) -T$$($(1)_LINK_SCRIPT) -o $$@
 
-$$(BUILD_DIR)/$(1)/config.bin : $$(MODEL_DIR)/$(1)_default_mem.json $$(JSON_CONV)
-	$$(JSON_CONV) $$@ < $$<
 
 $$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBOPENCM3)
 	mkdir -p "$$(@D)"
@@ -81,9 +79,9 @@ $$(BUILD_DIR)/$(1)/bootloader.elf : $$(BUILD_DIR)/$(1)/bootloader/bootloader.o
 $$(BUILD_DIR)/$(1)/%.bin: $$(BUILD_DIR)/$(1)/%.elf
 	$$(STM_OBJCOPY) -O binary $$< $$@
 
-$$(BUILD_DIR)/$(1)/complete.bin: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin $$(BUILD_DIR)/$(1)/config.bin
+$$(BUILD_DIR)/$(1)/complete.bin: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin
 	dd of=$$@ if=$$(BUILD_DIR)/$(1)/bootloader.bin bs=2k
-	dd of=$$@ if=$$(BUILD_DIR)/$(1)/config.bin seek=2 conv=notrunc bs=2k
+	dd of=$$@ if=/dev/zero seek=2 conv=notrunc bs=2k count=2
 	dd of=$$@ if=$$(BUILD_DIR)/$(1)/firmware.bin seek=4 conv=notrunc bs=2k
 
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/complete.bin

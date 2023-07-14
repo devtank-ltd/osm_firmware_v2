@@ -1,1 +1,0 @@
-typedef int iso_is_annoying_go_away_pls_t;

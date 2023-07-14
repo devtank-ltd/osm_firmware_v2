@@ -2,8 +2,6 @@
 
 #include "measurements.h"
 
-#ifndef __CONFIGTOOL__
-
 #include <libopencm3/stm32/gpio.h>
 
 #include "timers.h"
@@ -294,8 +292,6 @@ void env01c_setup_pulse_pupd(uint8_t* pupd)
             break;
     }
 }
-
-#endif
 
 
 unsigned env01c_measurements_add_defaults(measurements_def_t * measurements_arr)

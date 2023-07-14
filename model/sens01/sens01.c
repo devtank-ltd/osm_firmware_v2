@@ -2,8 +2,6 @@
 
 #include "measurements.h"
 
-#ifndef __CONFIGTOOL__
-
 #include "timers.h"
 #include "io.h"
 #include "adcs.h"
@@ -223,8 +221,6 @@ void sens01_uarts_setup(void)
 void sens01_setup_pulse_pupd(uint8_t* pupd)
 {
 }
-
-#endif
 
 
 unsigned sens01_measurements_add_defaults(measurements_def_t * measurements_arr)

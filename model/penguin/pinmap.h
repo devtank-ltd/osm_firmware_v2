@@ -118,10 +118,7 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define     post_init()
 
 
-#ifndef __CONFIGTOOL__
-
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 9600
 
-#endif // __CONFIGTOOL__
