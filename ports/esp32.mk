@@ -26,6 +26,7 @@ $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/$(1).bin
 else
 $$(info $(1) requires ESP IDF setup)
 $$(BUILD_DIR)/$(1)/.complete:
+	mkdir -p $$(BUILD_DIR)/$(1)
 	touch $$@
 endif
 endef
