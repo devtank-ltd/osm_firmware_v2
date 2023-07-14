@@ -20,14 +20,14 @@
 #define LW_REGION_LEN                       7
 
 
-#define LW_REGION_NAME_EU433                "EU433"
-#define LW_REGION_NAME_CN470                "CN470"
-#define LW_REGION_NAME_RU864                "RU864"
-#define LW_REGION_NAME_IN865                "IN865"
-#define LW_REGION_NAME_EU868                "EU868"
-#define LW_REGION_NAME_US915                "US915"
-#define LW_REGION_NAME_AU915                "AU915"
-#define LW_REGION_NAME_KR920                "KR920"
+#define LW_REGION_NAME_EU433                "EU433\x00\x00"
+#define LW_REGION_NAME_CN470                "CN470\x00\x00"
+#define LW_REGION_NAME_RU864                "RU864\x00\x00"
+#define LW_REGION_NAME_IN865                "IN865\x00\x00"
+#define LW_REGION_NAME_EU868                "EU868\x00\x00"
+#define LW_REGION_NAME_US915                "US915\x00\x00"
+#define LW_REGION_NAME_AU915                "AU915\x00\x00"
+#define LW_REGION_NAME_KR920                "KR920\x00\x00"
 #define LW_REGION_NAME_AS923_1              "AS923-1"
 #define LW_REGION_NAME_AS923_2              "AS923-2"
 #define LW_REGION_NAME_AS923_3              "AS923-3"
