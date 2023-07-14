@@ -27,7 +27,7 @@ $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 include $(OSM_DIR)/ports/base.mk
 include $(OSM_DIR)/ports/stm.mk
 include $(OSM_DIR)/ports/linux.mk
-#include $(OSM_DIR)/ports/esp32.mk
+include $(OSM_DIR)/ports/esp32.mk
 
 define PROGRAM_template
   include $(1)

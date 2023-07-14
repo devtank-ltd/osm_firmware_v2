@@ -1,10 +1,9 @@
 define ESP32_FIRMWARE
 $(call PORT_BASE_RULES,$(1),ESP32)
 
-ifeq ($$(origin IDF_PATH), undefined)
-  $$(error $(1) requires ESP IDF setup)
-endif
+$(1): $$(BUILD_DIR)/$(1)/.complete
 
+ifneq ($$(origin IDF_PATH), undefined)
 $$(BUILD_DIR)/$(1)/build.ninja:
 	mkdir -p $$(BUILD_DIR)/$(1)
 	IDF_TARGET=esp32 GIT_COMMITS="$(GIT_COMMITS)" GIT_COMMIT="$(GIT_COMMIT)" GIT_SHA1="$(GIT_SHA1)" cmake $$(MODEL_DIR)/$(1)/ -B $$(BUILD_DIR)/$(1)/ -G Ninja
@@ -24,6 +23,9 @@ $(1)_build:
 
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/$(1).bin
 
-$(1): $$(BUILD_DIR)/$(1)/.complete
-
+else
+$$(info $(1) requires ESP IDF setup)
+$$(BUILD_DIR)/$(1)/.complete:
+	touch $$@
+endif
 endef
