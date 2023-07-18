@@ -6,6 +6,8 @@ import json
 import time
 import re
 
+IOS_SUCCESSFUL_PATTERN = "IO \d{2} : \[[A-Z0-9\s|]+][\s+[A-Z0-9\=]+"
+
 class dev_json_t:
     def __init__(self, dev):
         self.dev = dev
@@ -71,6 +73,7 @@ class dev_json_t:
             "interval_mins":None,
             "dev_eui": None,
             "app_key": None,
+            "ios": [],
             "cc_midpoints": {
                 "CC1":None,
                 "CC2":None,
@@ -90,6 +93,10 @@ class dev_json_t:
         json_pop["cc_midpoints"]["CC1"] = self.cc1_mp
         json_pop["cc_midpoints"]["CC2"] = self.cc2_mp
         json_pop["cc_midpoints"]["CC3"] = self.cc3_mp
+        for i in self.ios:
+            match = re.search(IOS_SUCCESSFUL_PATTERN, i)
+            if match:
+                json_pop["ios"].append(i)
         if self.mb_config:
             json_pop["modbus_bus"]["setup"] = self.mb_config
             json_pop["modbus_bus"]["modbus_devices"] = self.modbus_devs
@@ -140,9 +147,40 @@ class dev_json_t:
             app_key = contents["app_key"]
             self.dev.app_key = app_key
 
-            self.dev.update_midpoint("CC1", contents["cc_midpoints"]["CC1"])
-            self.dev.update_midpoint("CC2", contents["cc_midpoints"]["CC2"])
-            self.dev.update_midpoint("CC3", contents["cc_midpoints"]["CC3"])
+            ios = contents["ios"]
+
+            '''
+            Extract
+            IO 05 : USED PLSCNT B N
+            From
+            IO 05 : [PLSCNT | PLSCNT | PLSCNT | W1 | WATCH] USED PLSCNT B N
+            '''
+
+            pattern = "\[[^\]]*\]"
+            for i in ios:
+                result = re.sub(pattern, "", i)
+                s = result.split()
+                is_off = s[-1]
+                if is_off == 'OFF':
+                    pin = s[1][-1]
+                    self.dev.disable_io(pin)
+                else:
+                    r = result.split()
+                    pin = r[1][-1]
+                    if r[4] == 'PLSCNT':
+                        rise = r[5]
+                        pullup = r[6]
+                        self.dev.do_cmd(f"en_pulse {pin} {rise} {pullup}")
+                    elif r[4] == 'WATCH':
+                        rise = r[5]
+                        self.dev.do_cmd(f"en_watch {pin} {rise}")
+                    elif r[4] == 'W1':
+                        rise = r[5]
+                        self.dev.do_cmd(f"en_w1 {pin} {rise}")
+
+            self.dev.update_midpoint(contents["cc_midpoints"]["CC1"], "CC1")
+            self.dev.update_midpoint(contents["cc_midpoints"]["CC2"], "CC2")
+            self.dev.update_midpoint(contents["cc_midpoints"]["CC3"], "CC3")
 
             mb_setup = contents["modbus_bus"]["setup"]
             if mb_setup:

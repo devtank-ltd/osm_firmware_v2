@@ -370,8 +370,8 @@ class dev_t(dev_base_t):
         self.update_measurements()
         self.port = port
 
-    def create_json_dev(self):
-        json_dev = json_config.dev_json_t(self._serial_obj)
+    def create_json_dev(self, dev):
+        json_dev = json_config.dev_json_t(dev)
         return json_dev
 
     def __getattr__(self, attr):
