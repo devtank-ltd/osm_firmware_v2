@@ -152,9 +152,10 @@ class dev_json_t:
         return filepath
 
     def verify_file(self, filename):
-        with open(filename, 'r') as f:
+        with open(filename, 'w+') if filename is not sys.stdin else sys.stdin as f:
             contents = f.read()
-            parsed = json.loads(contents)
+
+        parsed = json.loads(contents)
         if parsed:
             int_mins = parsed["interval_mins"]
             if int_mins:
@@ -242,24 +243,23 @@ class dev_json_t:
             self.dev.do_cmd("save")
             self.dev.drain()
 
+
+def main(args):
+    dev = binding.dev_t(args.device)
+    json_conv = dev_json_t(dev)
+    ret = 0
+    if sys.stdin.isatty():
+        json_conv.get_config()
+        json_conv.save_config(sys.stdout)
+    else:
+        ret = 0 if json_conv.verify_file(sys.stdin) else -1
+    return ret
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Save OSM configuration to a json file.',
         epilog='Run this program with the device as an argument e.g. python save_json_config.py /dev/ttyUSB0'
     )
     parser.add_argument('device')
-    parser.add_argument('file')
-    parser.add_argument('operation', choices=['load', 'save'])
     args = parser.parse_args()
-    dev = binding.dev_t(args.device)
-    json_conv = dev_json_t(dev)
-    filepath = args.file
-    match(args.operation):
-        case "load":
-            json_conv.verify_file(filepath)
-        case "save":
-            json_conv.get_config()
-            json_conv.save_config(filepath)
-        case other:
-            log("Unknown choice")
-            exit(-1)
+    sys.exit(main(args))
