@@ -11,7 +11,7 @@ def log(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     print("[%s] JSON : %s" % (now, msg))
 
-IOS_PATTERN = "^IO [0-9]{2} :\s+((\[(?P<specials_avail>.+)\] (.+\s+(?P<special_used>PLSCNT|W1|WATCH)|(?P<dir>(IN|OUT)))))?\s+(?P<edge>R|F|B)?\s?(?P<pupd>(DOWN|UP|U|D|N|NONE)?)"
+IOS_PATTERN = "^IO (?P<io>[0-9]{2}) : +((?P<dir>IN|OUT)|\[(?P<specials_avail>[A-Za-z0-9 \|]+)\] USED (?P<special_used>[A-Za-z0-9]+)( (?P<edge>F|R|B))?) (?P<pupd>DOWN|UP|NONE|D|U|N)( = (?P<level>ON|OFF))?$"
 
 class dev_json_t:
     def __init__(self, dev):
@@ -116,10 +116,14 @@ class dev_json_t:
                 json_pop["ios"][i].update({"edge": edge})
 
             pupd = re_dict.get("pupd")
+            if pupd == "D":
+                pupd = "DOWN"
+            elif pupd == "U":
+                pupd = "UP"
+            elif pupd == "N":
+                pupd = "NONE"
             if pupd:
                 json_pop["ios"][i].update({"pull": pupd})
-            else:
-                json_pop["ios"][i].update({"pull": "DOWN"})
 
             direction = re_dict.get("dir")
             if direction:
@@ -246,14 +250,15 @@ if __name__ == '__main__':
     parser.add_argument('file')
     parser.add_argument('operation', choices=['load', 'save'])
     args = parser.parse_args()
-    dev = dev_json_t(args.device)
+    dev = binding.dev_t(args.device)
+    json_conv = dev_json_t(dev)
     filepath = args.file
     match(args.operation):
         case "load":
-            dev.verify_file(filepath)
+            json_conv.verify_file(filepath)
         case "save":
-            dev.get_config()
-            dev.save_config(filepath)
+            json_conv.get_config()
+            json_conv.save_config(filepath)
         case other:
             log("Unknown choice")
             exit(-1)
