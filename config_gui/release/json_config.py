@@ -100,7 +100,6 @@ class dev_json_t:
         json_pop["cc_midpoints"]["CC3"] = self.cc3_mp
 
         for i, v in enumerate(self.ios):
-            spec = edge = pupd = direction = None
             m = re.match(IOS_PATTERN, v)
             if not m:
                 log("Invalid IOS configuration.")
