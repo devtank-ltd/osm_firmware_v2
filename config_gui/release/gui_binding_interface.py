@@ -197,7 +197,6 @@ class binding_interface_svr_t:
 
     def _request_do_cmd_multi(self, args):
         cmd = args[1]
-        log(f"in request_do_cmd_multi: {cmd}")
         return self.dev.do_cmd_multi(cmd)
 
     def _request_set_cc(self, args):
@@ -278,7 +277,7 @@ class binding_interface_svr_t:
 
     def _open_con_cb(self, args):
         dev = args[1]
-        log(f"Openning serial:" + dev)
+        log(f"Opening serial:" + dev)
         try:
             serial_obj = serial.Serial(port=dev,
                                             baudrate=115200,
@@ -292,7 +291,7 @@ class binding_interface_svr_t:
             return True
         except Exception as e:
             traceback.print_exc()
-            log(f"Openned Failed {e}")
+            log(f"Opened Failed {e}")
             # Todo, handle expected or error out
             return False
 

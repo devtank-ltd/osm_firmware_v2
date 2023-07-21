@@ -3,15 +3,20 @@
 import argparse
 import binding
 import json
-import time
+import datetime
 import re
+import time
 
-IOS_SUCCESSFUL_PATTERN = "IO \d{2} : \[[A-Z0-9\s|]+][\s+[A-Z0-9\=]+"
+def log(msg):
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    print("[%s] JSON : %s" % (now, msg))
+
+IOS_PATTERN = "^IO [0-9]{2} :\s+((\[(?P<specials_avail>.+)\] (.+\s+(?P<special_used>PLSCNT|W1|WATCH)|(?P<dir>(IN|OUT)))))?\s+(?P<edge>R|F|B)?\s?(?P<pupd>(DOWN|UP|U|D|N|NONE)?)"
 
 class dev_json_t:
     def __init__(self, dev):
         self.dev = dev
-        assert isinstance(self.dev, binding.dev_t)
+        assert isinstance(self.dev, binding.dev_t), log("Error: device not an instance of binding serial device.")
 
     def get_config(self):
         modbus = self.dev.get_modbus()
@@ -73,7 +78,7 @@ class dev_json_t:
             "interval_mins":None,
             "dev_eui": None,
             "app_key": None,
-            "ios": [],
+            "ios": {},
             "cc_midpoints": {
                 "CC1":None,
                 "CC2":None,
@@ -93,10 +98,36 @@ class dev_json_t:
         json_pop["cc_midpoints"]["CC1"] = self.cc1_mp
         json_pop["cc_midpoints"]["CC2"] = self.cc2_mp
         json_pop["cc_midpoints"]["CC3"] = self.cc3_mp
-        for i in self.ios:
-            match = re.search(IOS_SUCCESSFUL_PATTERN, i)
-            if match:
-                json_pop["ios"].append(i)
+
+        for i, v in enumerate(self.ios):
+            spec = edge = pupd = direction = None
+            m = re.match(IOS_PATTERN, v)
+            if not m:
+                log("Invalid IOS configuration.")
+                exit(1)
+            re_dict = m.groupdict()
+            spec = re_dict.get("special_used")
+            if spec:
+                json_pop["ios"].update({i:{"special": spec}})
+            else:
+                json_pop["ios"].update({i:{}})
+
+            edge = re_dict.get("edge")
+            if edge:
+                json_pop["ios"][i].update({"edge": edge})
+
+            pupd = re_dict.get("pupd")
+            if pupd:
+                json_pop["ios"][i].update({"pull": pupd})
+            else:
+                json_pop["ios"][i].update({"pull": "DOWN"})
+
+            direction = re_dict.get("dir")
+            if direction:
+                json_pop["ios"][i].update({"direction": direction})
+            elif not direction and not spec:
+                json_pop["ios"][i].update({"direction": "IN"})
+
         if self.mb_config:
             json_pop["modbus_bus"]["setup"] = self.mb_config
             json_pop["modbus_bus"]["modbus_devices"] = self.modbus_devs
@@ -113,7 +144,7 @@ class dev_json_t:
         with open(filepath, 'w+') as f:
             f.write(json_data)
 
-        print(f"Config file saved in {filepath}")
+        log(f"Config file saved in {filepath}")
         return filepath
 
     def verify_file(self, filename):
@@ -123,13 +154,13 @@ class dev_json_t:
         if parsed:
             int_mins = parsed["interval_mins"]
             if int_mins:
-                print("File verified, writing to osm.")
+                log("File verified, writing to osm.")
                 self.load_json_to_osm(parsed)
             else:
-                print("Invalid fields in file.")
+                log("Invalid fields in file.")
                 return False
         else:
-            print("Invalid json.")
+            log("Invalid json.")
             return False
 
     def load_json_to_osm(self, contents):
@@ -148,35 +179,29 @@ class dev_json_t:
             self.dev.app_key = app_key
 
             ios = contents["ios"]
-
-            '''
-            Extract
-            IO 05 : USED PLSCNT B N
-            From
-            IO 05 : [PLSCNT | PLSCNT | PLSCNT | W1 | WATCH] USED PLSCNT B N
-            '''
-
-            pattern = "\[[^\]]*\]"
+            spec = edge = pull = None
             for i in ios:
-                result = re.sub(pattern, "", i)
-                s = result.split()
-                is_off = s[-1]
-                if is_off == 'OFF':
-                    pin = s[1][-1]
-                    self.dev.disable_io(pin)
+                try:
+                    spec = ios[i]["special"]
+                except:
+                    log(f"No special for IO 0{i}")
+                if spec:
+                    try:
+                        edge = ios[i]["edge"]
+                    except:
+                        log(f"No edge for IO 0{i}")
+                    try:
+                        pull = ios[i]["pull"]
+                    except:
+                        log(f"No pull for IO 0{i}")
+                    if spec == 'PLSCNT':
+                        self.dev.do_cmd(f"en_pulse {i} {edge} {pull}")
+                    elif spec == 'WATCH':
+                        self.dev.do_cmd(f"en_watch {i} {pull}")
+                    elif spec == 'W1':
+                        self.dev.do_cmd(f"en_w1 {i} {pull}")
                 else:
-                    r = result.split()
-                    pin = r[1][-1]
-                    if r[4] == 'PLSCNT':
-                        rise = r[5]
-                        pullup = r[6]
-                        self.dev.do_cmd(f"en_pulse {pin} {rise} {pullup}")
-                    elif r[4] == 'WATCH':
-                        rise = r[5]
-                        self.dev.do_cmd(f"en_watch {pin} {rise}")
-                    elif r[4] == 'W1':
-                        rise = r[5]
-                        self.dev.do_cmd(f"en_w1 {pin} {rise}")
+                    self.dev.disable_io(i)
 
             self.dev.update_midpoint(contents["cc_midpoints"]["CC1"], "CC1")
             self.dev.update_midpoint(contents["cc_midpoints"]["CC2"], "CC2")
@@ -232,5 +257,5 @@ if __name__ == '__main__':
             dev.get_config()
             dev.save_config(filepath)
         case other:
-            print("Unknown choice")
+            log("Unknown choice")
             exit(-1)

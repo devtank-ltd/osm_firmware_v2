@@ -11,7 +11,7 @@ from idlelib.tooltip import Hovertip
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 import threading
 import traceback
-import logging
+import datetime
 import platform
 import signal
 from stat import *
@@ -55,9 +55,9 @@ PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
 OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
 OSM_BG    =    PATH + "/osm_pictures/logos/leaves.jpg"
 
-
 def log_func(msg):
-    logging.info(msg)
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    print("[%s] GUI : %s" % (now, msg))
 
 
 def open_url(url):
@@ -76,7 +76,7 @@ class config_gui_window_t(Tk):
     def __init__(self):
         super().__init__()
         signal.signal(signal.SIGINT, handle_exit)
-        log_func(f"current path: {PATH}")
+        log_func(f"Current path: {PATH}")
         try:
             self.db = modb_database_t(PATH)
         except Exception as e:
@@ -1908,7 +1908,7 @@ class config_gui_window_t(Tk):
             self._add_regs_window.destroy()
         # This might not catch the right error, but catching all is bad.
         except AttributeError:
-            log_func("Add register window doesn't exist")
+            pass
 
     def _shift_down(self, listbox, temp_list, name_entry, identity):
         selection = listbox.curselection()
@@ -2427,8 +2427,5 @@ if __name__ == '__main__':
     root.resizable(True, True)
     root.configure(bg="lightgrey")
     root.protocol("WM_DELETE_WINDOW", root._on_closing)
-    logging.basicConfig(
-        format='[%(asctime)s.%(msecs)06d] GUI : %(message)s',
-        level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
     binding.set_debug_print(binding.default_print)
     root.mainloop()
