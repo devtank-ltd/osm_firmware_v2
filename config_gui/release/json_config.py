@@ -239,7 +239,6 @@ class dev_json_t:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        prog='Dev to JSON',
         description='Save OSM configuration to a json file.',
         epilog='Run this program with the device as an argument e.g. python save_json_config.py /dev/ttyUSB0'
     )
