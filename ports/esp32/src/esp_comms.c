@@ -1,6 +1,4 @@
 #include <ctype.h>
-#include <string.h>
-#include <inttypes.h>
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -13,7 +11,7 @@
 #include "base_types.h"
 #include "persist_config.h"
 #include "mqtt.h"
-
+#include "esp_comms.h"
 #include "protocol.h"
 
 #define WIFI_DELAY_MS 1000
@@ -24,8 +22,6 @@
 #define SVRUSR_LEN 12
 #define SVRPW_LEN  32
 
-#define JSON_BUF_SIZE  1024
-#define JSON_CLOSE_SIZE 2
 
 static char _mac[16] = {0};
 
@@ -41,8 +37,6 @@ static volatile bool _cmd_ready = false;
 static bool _wifi_started = false;
 static bool _mqtt_started = false;
 
-static char _json_buf[JSON_BUF_SIZE];
-static unsigned _json_buf_pos = 0;
 
 
 typedef struct
@@ -97,12 +91,14 @@ static bool _mqtt_send(const char * topic, const char * value, unsigned len)
 }
 
 
-static bool _mqtt_meas_send(void)
+bool esp_comms_send(char * data, uint16_t len)
 {
     char topic[64];
     snprintf(topic, sizeof(topic), "osm/%s/measurements", _mac);
     topic[sizeof(topic)-1] = 0;
-    return _mqtt_send(topic, _json_buf, 0);
+    bool r = _mqtt_send(topic, data, len);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    return r;
 }
 
 
@@ -285,171 +281,23 @@ static void _wifi_start(void)
 }
 
 
-void protocol_system_init(void)
+void esp_comms_init(void)
 {
 }
 
+bool        esp_comms_send_ready(void) { return _has_mqtt; }
+bool        esp_comms_send_allowed(void) { return _has_mqtt; }
+void        esp_comms_reset(void) {}
 
 
-static bool _protocol_append_v(char * fmt, va_list ap)
-{
-    unsigned available = JSON_BUF_SIZE - _json_buf_pos;
-    unsigned r = vsnprintf(_json_buf + _json_buf_pos, available, fmt, ap);
-    if ((r + JSON_CLOSE_SIZE) >= available)
-        return false;
-    _json_buf_pos += r;
-    return true;
-}
-
-
-static bool _protocol_append(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
-static bool _protocol_append(char * fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    bool r = _protocol_append_v(fmt, ap);
-    va_end(ap);
-    return r;
-}
-
-
-bool protocol_init(void)
-{
-    if (!_has_mqtt)
-        return false;
-    _json_buf_pos = 0;
-    return _protocol_append("{");
-}
-
-
-static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
-static bool _protocol_append_meas(char * fmt, ...)
-{
-    if (_json_buf[_json_buf_pos - 1] != '{')
-        if (!_protocol_append(","))
-            return false;
-    va_list ap;
-    va_start(ap, fmt);
-    bool r = _protocol_append_v(fmt, ap);
-    va_end(ap);
-    return r;
-}
-
-
-static bool _protocol_append_data_type_float(const char * name, int32_t value)
-{
-    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value/1000, labs(value%1000));
-}
-
-
-static bool _protocol_append_data_type_i64(const char * name, int64_t value)
-{
-    return _protocol_append_meas("\"%s\" : %"PRId64, name, value);
-}
-
-
-static bool _protocol_append_value_type_float(const char * name, measurements_data_t* data)
-{
-    if (data->num_samples == 1)
-        return _protocol_append_data_type_float(name, data->value.value_f.sum);
-    bool r = true;
-    unsigned init_pos = _json_buf_pos;
-    int32_t mean = data->value.value_f.sum / data->num_samples;
-    char tmp[MEASURE_NAME_NULLED_LEN + 4];
-    r &= _protocol_append_data_type_float(name, mean);
-    snprintf(tmp, sizeof(tmp), "%s_min", name);
-    r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
-    snprintf(tmp, sizeof(tmp), "%s_max", name);
-    r &= _protocol_append_data_type_float(tmp, data->value.value_f.max);
-    if (!r)
-    {
-        _json_buf_pos = init_pos;
-        return false;
-    }
-    return true;
-}
-
-
-static bool _protocol_append_value_type_i64(const char * name, measurements_data_t* data)
-{
-    if (data->num_samples == 1)
-        return _protocol_append_data_type_i64(name, data->value.value_f.sum);
-    bool r = true;
-    unsigned init_pos = _json_buf_pos;
-    int64_t mean = data->value.value_64.sum / data->num_samples;
-    char tmp[MEASURE_NAME_NULLED_LEN + 4];
-    r &= _protocol_append_data_type_i64(name, mean);
-    snprintf(tmp, sizeof(tmp), "%s_min", name);
-    r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
-    snprintf(tmp, sizeof(tmp), "%s_max", name);
-    r &= _protocol_append_data_type_i64(tmp, data->value.value_64.max);
-    if (!r)
-    {
-        _json_buf_pos = init_pos;
-        return false;
-    }
-    return r;
-}
-
-
-
-static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
-{
-    return _protocol_append_meas("\"%s\" : \"%s\"", name, data->value.value_s.str);
-}
-
-
-bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
-{
-    if (!_has_mqtt)
-        return false;
-    char * name = def->name;
-
-    switch(data->value_type)
-    {
-        case MEASUREMENTS_VALUE_TYPE_I64:
-            return _protocol_append_value_type_i64(name, data);
-        case MEASUREMENTS_VALUE_TYPE_STR:
-            return _protocol_append_value_type_str(name, data);
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            return _protocol_append_value_type_float(name, data	);
-        default:
-            log_error("Unknown type '%"PRIu8"'.", data->value_type);
-    }
-    return false;
-}
-
-
-bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type) { return false; }
-
-
-void        protocol_debug(void)
-{
-    protocol_send();
-}
-
-void        protocol_send(void)
-{
-    if (!_protocol_append("}"))
-        return;
-    _mqtt_meas_send();
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    comms_debug("batch complete.");
-}
-
-
-bool        protocol_send_ready(void) { return _has_mqtt; }
-bool        protocol_send_allowed(void) { return _has_mqtt; }
-void        protocol_reset(void) {}
-
-
-bool protocol_get_connected(void)
+bool esp_comms_get_connected(void)
 {
     return _has_mqtt;
 }
 
+void        esp_comms_process(char* message) {}
 
-void protocol_loop_iteration(void)
+void esp_comms_loop_iteration(void)
 {
     if (!_wifi_started)
     {
@@ -477,8 +325,10 @@ void protocol_loop_iteration(void)
     _cmd_ready = false;
 }
 
-void        protocol_power_down(void) {}
+void        esp_comms_power_down(void) {}
 
+bool        esp_comms_send_str(char* str) { return false; }
+bool        esp_comms_get_id(char* str, uint8_t len) { return false; }
 
 static void _prep_config(void)
 {
@@ -688,7 +538,7 @@ static command_response_t _esp_conn_cb(char *args)
 }
 
 
-struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* esp_comms_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
@@ -697,6 +547,3 @@ struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail)
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
-
-
-

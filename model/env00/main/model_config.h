@@ -1,6 +1,13 @@
 #pragma once
 
-#include "model_pinmap.h"
+#include <stdint.h>
+
+#include "measurements.h"
+#include "config.h"
+#include "pinmap.h"
+#include "esp_comms.h"
+
+#define comms_name              esp_comms
 
 #define ENV00_PERSIST_VERSION             3
 
@@ -11,6 +18,8 @@
 
 #define ENV00_FW_ADDR                     NULL
 #define ENV00_NEW_FW_ADDR                 NULL
+
+#define JSON_BUF_SIZE  1024
 
 #define CMD_LINELEN 128
 
