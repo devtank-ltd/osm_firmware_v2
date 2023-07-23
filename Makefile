@@ -16,6 +16,8 @@ RELEASE_DIR ?= $(BUILD_DIR)/releases
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
+default: env01c
+
 all: $(MODELS_FW)
 
 $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
