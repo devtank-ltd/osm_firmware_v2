@@ -10,7 +10,6 @@ void        protocol_system_init(void);
 
 bool        protocol_init(void);
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data);
-bool        protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type);
 void        protocol_debug(void);
 void        protocol_send(void);
 void        protocol_send_error_code(uint8_t err_code);
@@ -32,4 +31,3 @@ void        protocol_power_down(void);
 
 /* To be implemented by caller.*/
 extern void     on_protocol_sent_ack(bool acked) __attribute__((weak));
-

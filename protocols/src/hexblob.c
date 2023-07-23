@@ -273,18 +273,6 @@ static bool _protocol_append_error_code(uint8_t err_code)
 }
 
 
-bool protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type)
-{
-    measurements_data_t data =
-    {
-        .value_type     = type,
-        .num_samples    = 1,
-    };
-    memcpy(&data.value, reading, sizeof(measurements_value_type_t));
-    return protocol_append_measurement(def, &data);
-}
-
-
 static bool _protocol_init(int8_t* buf, unsigned buflen)
 {
     memset(buf, 0, buflen);

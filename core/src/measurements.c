@@ -900,6 +900,18 @@ static void _measurements_sleep_iteration(void)
 static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, measurements_value_type_t* type);
 
 
+static bool _protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type)
+{
+    measurements_data_t data =
+    {
+        .value_type     = type,
+        .num_samples    = 1,
+    };
+    memcpy(&data.value, reading, sizeof(measurements_value_type_t));
+    return protocol_append_measurement(def, &data);
+}
+
+
 void _measurements_check_instant_send(void)
 {
     bool to_instant_send = false;
@@ -934,7 +946,7 @@ void _measurements_check_instant_send(void)
                 measurements_debug("Could not get measurement '%s' for instant send.", def->name);
                 continue;
             }
-            if (!protocol_append_instant_measurement(def, &reading, type))
+            if (!_protocol_append_instant_measurement(def, &reading, type))
             {
                 measurements_debug("Could not add measurement '%s' to array.", def->name);
                 break;
