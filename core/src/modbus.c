@@ -203,24 +203,26 @@ bool modbus_add_dev_from_str(char* str)
     uint16_t unit_id = strtoul(pos, &pos, 16);
     pos = skip_space(pos);
 
-    if (toupper(pos[0]) != 'B')
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'B'))
         goto bad_exit;
     modbus_byte_orders_t byte_order;
     if (toupper(pos[1]) == 'L')
         byte_order = MODBUS_BYTE_ORDER_LITTLE_ENDIAN;
-    else if (toupper(pos[1]) == 'B')
+    else if (toupper(pos[1]) == 'M')
         byte_order = MODBUS_BYTE_ORDER_BIG_ENDIAN;
     else
         goto bad_exit;
     pos += 2;
     pos = skip_space(pos);
 
-    if (toupper(pos[0]) != 'W')
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'W'))
         goto bad_exit;
     modbus_word_orders_t word_order;
-    if (toupper(pos[0]) == 'L')
+    if (toupper(pos[0]) == 'M')
         word_order = MODBUS_WORD_ORDER_BIG_ENDIAN;
-    else if (toupper(pos[0]) == 'B')
+    else if (toupper(pos[0]) == 'L')
         word_order = MODBUS_WORD_ORDER_LITTLE_ENDIAN;
     else
         goto bad_exit;
