@@ -156,15 +156,15 @@ typedef enum
 
 typedef enum
 {
-    MODBUS_BYTE_ORDER_MSB = 0,
-    MODBUS_BYTE_ORDER_LSB = 1,
+    MODBUS_BYTE_ORDER_BIG_ENDIAN    = 0,
+    MODBUS_BYTE_ORDER_LITTLE_ENDIAN = 1,
 } modbus_byte_orders_t;
 
 
 typedef enum
 {
-    MODBUS_WORD_ORDER_MSW = 0,
-    MODBUS_WORD_ORDER_LSW = 1,
+    MODBUS_WORD_ORDER_LITTLE_ENDIAN = 0,
+    MODBUS_WORD_ORDER_BIG_ENDIAN    = 1,
 } modbus_word_orders_t;
 
 
