@@ -41,7 +41,7 @@ DATA_FILES = [
  'static_program.sh',
 ]
 OPTIONS = {
-    'iconfile': 'osm_pictures/logos/macos-osm.icns',
+    'iconfile': 'osm_pictures/macos-osm.icns',
     'plist':    {'NSRequiresAquaSystemAppearance': False}, # Dark mode support
     'includes': ['PIL','binding','crccheck.crc','csv','datetime','idlelib.tooltip','imp','io','json','logging','modbus_db','modbus_funcs','os','platform','random','re','serial','serial.tools.list_ports','setuptools','signal','sqlite3','stat','string','subprocess','sys','threading','time','tkinter','tkinter.filedialog','tkinter.messagebox','tkinter.ttk','traceback','webbrowser','yaml'],
     'packages': ['tkinter'],

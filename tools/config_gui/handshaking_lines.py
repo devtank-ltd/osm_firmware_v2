@@ -53,17 +53,6 @@ class dev_base_t(object):
 
         fcntl.ioctl(fd, termios.TIOCMSET, tbuf, 1)
 
-        # ~ self._serial_obj.rts = False
-        # ~ self._serial_obj.dtr = True
-        # ~ print(f"RTS: {self._serial_obj.rts}")
-        # ~ print(f"DTR: {self._serial_obj.dtr}")
-        # ~ time.sleep(1)
-        # ~ print("Bringing RESET high.")
-        # ~ self._serial_obj.rts = True
-        # ~ self._serial_obj.dtr = True
-        # ~ print(f"RTS: {self._serial_obj.rts}")
-        # ~ print(f"DTR: {self._serial_obj.dtr}")
-
     def write(self, msg):
         self._serial_obj.write(("%s\n" % msg).encode())
         time.sleep(0.2)

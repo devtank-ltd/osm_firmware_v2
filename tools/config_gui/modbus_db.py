@@ -3,6 +3,10 @@ import yaml
 import os
 import sys
 
+def find_path():
+    PATH = os.environ.get("_MEIPASS2",os.path.abspath("."))
+    return PATH
+
 DROP_TABLE = lambda table_n: "DROP TABLE ?" % table_n
 
 
@@ -240,11 +244,6 @@ def generate_db(path_to_db):
     cur.execute(*CREATE_MEASUREMENTS('IO04', 'IO pin', 0, 0))
     cur.execute(*CREATE_MEASUREMENTS('IO05', 'IO pin', 0, 0))
     conn.commit()
-
-
-def find_path():
-    PATH = os.environ.get("_MEIPASS2",os.path.abspath("."))
-    return PATH
 
 class modb_database_t(object):
     def __init__(self, path):

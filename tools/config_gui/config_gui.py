@@ -46,14 +46,14 @@ FONT = ('Arial', 11, 'bold')
 FONT_L = ('Arial', 14, 'bold')
 FONT_XL = ('Arial', 20, 'bold')
 FONT_XXL = ('Karumbi', 35, 'bold')
-ICONS_T   =    PATH + "/osm_pictures/logos/icons-together.png"
-DVT_IMG   =    PATH + "/osm_pictures/logos/OSM+Powered.png"
-OSM_1     =    PATH + "/osm_pictures/logos/Lora-Rev-C.png"
-R_LOGO    =    PATH + "/osm_pictures/logos/shuffle.png"
-GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
-PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
-OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
-OSM_BG    =    PATH + "/osm_pictures/logos/leaves.jpg"
+ICONS_T   =    PATH + "/osm_pictures/icons-together.png"
+DVT_IMG   =    PATH + "/osm_pictures/OSM+Powered.png"
+OSM_1     =    PATH + "/osm_pictures/Lora-Rev-C.png"
+R_LOGO    =    PATH + "/osm_pictures/shuffle.png"
+GRPH_BG   =    PATH + "/osm_pictures/graph.png"
+PARAMS    =    PATH + "/osm_pictures/parameters.png"
+OPEN_S    =    PATH + "/osm_pictures/opensource-nb.png"
+OSM_BG    =    PATH + "/osm_pictures/leaves.jpg"
 
 def log_func(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -85,9 +85,12 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
-        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
+        yaml_path = PATH + '/yaml_files'
+        if not os.path.exists(yaml_path):
+            os.makedirs(yaml_path)
+        with open(yaml_path + '/modbus_data.yaml', 'w') as f:
             pass
-        with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
+        with open(yaml_path + '/del_file.yaml', 'w') as df:
             pass
 
         self.binding_interface = binding_interface_client_t()
