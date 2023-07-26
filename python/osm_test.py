@@ -12,6 +12,7 @@ import multiprocessing
 import serial
 import select
 import yaml
+import json
 from binding import modbus_reg_t, dev_t, set_debug_print
 
 sys.path.append("../ports/linux/peripherals/")
@@ -20,9 +21,13 @@ import comms_connection as comms
 
 import basetypes
 
-sys.path.append("../config_gui/release/")
+sys.path.append("../tools/config_gui/")
 
 import modbus_db
+
+sys.path.append("../tools/json_config_tool/")
+
+import json_config
 
 
 class test_framework_t(object):
@@ -34,6 +39,8 @@ class test_framework_t(object):
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
+
+    JSON_MEMORY_PATH        = DEFAULT_OSM_BASE + "osm.json"
 
     DEFAULT_COMMS_MATCH_DICT = {
           "PM10"    : 30,
@@ -69,7 +76,7 @@ class test_framework_t(object):
 
         self._done              = False
 
-        self._db                = modbus_db.modb_database_t(modbus_db.find_path() + "/../config_gui/release")
+        self._db                = modbus_db.modb_database_t(modbus_db.find_path() + "/../tools/config_gui/")
 
     def __enter__(self):
         return self
@@ -292,6 +299,21 @@ class test_framework_t(object):
         self._vosm_conn.measurements_enable(True)
         passed &= self._check_cmd_serial_comms()
         passed &= self._check_set_reg()
+
+        json_obj.get_config()
+        json_obj.save_config(self.JSON_MEMORY_PATH)
+
+        with open(self.JSON_MEMORY_PATH, "r") as json_file:
+            mem = json.load(json_file)
+
+        interval_mins = 3.
+        mem["interval_mins"] = interval_mins
+        mem["measurements"]["PM10"]["samplecount"] = 3
+
+        with open(self.JSON_MEMORY_PATH, "w") as json_file:
+            json.dump(mem, json_file)
+
+        json_obj.verify_file(self.JSON_MEMORY_PATH)
         return passed
 
     def _check_set_reg(self):
