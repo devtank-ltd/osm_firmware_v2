@@ -152,7 +152,7 @@ class dev_json_t:
         return filepath
 
     def verify_file(self, filename):
-        with open(filename, 'w+') if filename is not sys.stdin else sys.stdin as f:
+        with open(filename, 'r') if filename is not sys.stdin else sys.stdin as f:
             contents = f.read()
 
         parsed = json.loads(contents)
