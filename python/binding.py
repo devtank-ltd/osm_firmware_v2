@@ -12,6 +12,9 @@ import weakref
 import string
 import random
 import json
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../tools/json_config_tool/"))
+
 import json_config
 
 MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_addr>0x[0-9A-Fa-f]+) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
@@ -370,8 +373,11 @@ class dev_t(dev_base_t):
         self.update_measurements()
         self.port = port
 
-    def create_json_dev(self, dev):
-        json_dev = json_config.dev_json_t(dev)
+    def create_json_dev(self):
+        """ As this is not creating an object on this object, weakref is
+        not needed, this could be demonstrated by making this a
+        @staticmethod and handing in the device """
+        json_dev = json_config.dev_json_t(self)
         return json_dev
 
     def __getattr__(self, attr):

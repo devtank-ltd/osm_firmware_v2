@@ -128,12 +128,12 @@ class binding_interface_svr_t:
         return val
 
     def _load_json_conf_to_osm(self, args):
-        dev = self.dev.create_json_dev(self.dev)
+        dev = self.dev.create_json_dev()
         filename = args[1]
         dev.verify_file(filename)
 
     def _save_config_to_json(self, args):
-        dev = self.dev.create_json_dev(self.dev)
+        dev = self.dev.create_json_dev()
         dev.get_config()
         filename = args[1]
         return dev.save_config(filename)

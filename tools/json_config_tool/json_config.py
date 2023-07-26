@@ -1,12 +1,17 @@
 #! /usr/bin/env python3
 
+import os
 import sys
 import argparse
-import binding
 import json
 import datetime
 import re
 import time
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../python/"))
+
+import binding
+
 
 def log(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
