@@ -591,65 +591,67 @@ class config_gui_window_t(Tk):
         uplink_to_update.insert(0, 0)
 
     def _change_sample_interval(self, event):
-        meas_chang = ""
         widget = event.widget
         widget_str = str(widget)
-        length = len(widget_str)
-        widget_num = widget_str[length - 2:]
         widget_val = widget.get()
+        uplink_change = inv_change = samp_change = meas_change = change_mins = None
         if int(widget_val) > 99:
             widget_val = '99'
-        for i in range(len(self._entries)):
-            for row in self._entries[i]:
+        entries = self._entries
+        for i in range(len(entries)):
+            for index, row in enumerate(entries[i]):
                 if str(row) == widget_str:
-                    meas_chang = self._entries[i][0]
-                    meas_chang = meas_chang.get()
-                    inv_chang = self._entries[i][2]
-                    uplink_chang = self._entries[i][1]
-                    samp_chang = self._entries[i][3]
+                    meas_change = entries[i][0]
+                    meas_change = meas_change.get()
+                    if index == 1:
+                        uplink_change = entries[i][index]
+                        inv_change = entries[i][2]
+                    elif index == 2:
+                        change_mins = entries[i][index]
+                        uplink_change = entries[i][1]
+                    elif index == 3:
+                        samp_change = entries[i][index]
                     break
-        widget_no = re.findall('\d', widget_num)
-        widget_id = ''.join(widget_no)
-        if int(widget_id) % 4 == 0:
-            self.binding_interface.change_sample(meas_chang, widget_val)
-            samp_chang.delete(0, END)
-            samp_chang.insert(0, widget_val)
-        elif int(widget_id) % 2 == 0:
-            self.binding_interface.change_interval(meas_chang, widget_val)
-            if meas_chang == 'TMP2' and widget_val != '0':
+        if samp_change:
+            self.binding_interface.change_sample(meas_change, widget_val)
+            samp_change.delete(0, END)
+            samp_change.insert(0, widget_val)
+        elif inv_change:
+            self.binding_interface.change_interval(meas_change, widget_val)
+            if meas_change == 'TMP2' and widget_val != '0':
                 self.binding_interface.change_interval("CNT1", "0")
                 self._update_meas_tab('CNT1')
-            elif meas_chang == 'CNT1' and widget_val != '0':
+            elif meas_change == 'CNT1' and widget_val != '0':
                 self.binding_interface.change_interval("TMP2" ,"0")
                 self._update_meas_tab('TMP2')
             res = int(self._interval_min) * int(widget_val)
-            inv_chang.delete(0, END)
-            inv_chang.insert(0, res)
-            uplink_chang.delete(0, END)
-            uplink_chang.insert(0, widget_val)
-        else:
-            self._change_mins(widget_val, inv_chang, uplink_chang, meas_chang)
+            inv_change.delete(0, END)
+            inv_change.insert(0, res)
+            uplink_change.delete(0, END)
+            uplink_change.insert(0, widget_val)
+        elif change_mins:
+            self._change_mins(widget_val, change_mins, uplink_change, meas_change)
 
-    def _change_mins(self, widget_val, inv_chang, uplink_chang, meas_chang):
+    def _change_mins(self, widget_val, change_mins, uplink_change, meas_change):
         if int(widget_val) < int(self._interval_min):
             widget_val = self._interval_min
-            inv_chang.delete(0, END)
-            inv_chang.insert(0, int(widget_val))
+            change_mins.delete(0, END)
+            change_mins.insert(0, int(widget_val))
         elif int(widget_val) % 5 != 0:
             widget_val = self._round_to_multiple(
                 int(widget_val), int(self._interval_min))
-            inv_chang.delete(0, END)
-            inv_chang.insert(0, int(widget_val))
+            change_mins.delete(0, END)
+            change_mins.insert(0, int(widget_val))
         mins = int(widget_val) / int(self._interval_min)
         min = round(mins, 0)
-        self.binding_interface.change_interval(meas_chang, min)
-        uplink_chang.delete(0, END)
-        uplink_chang.insert(0, int(min))
+        self.binding_interface.change_interval(meas_change, min)
+        uplink_change.delete(0, END)
+        uplink_change.insert(0, int(min))
         # if user changes interval in mins for pulsecount or one wire
-        if meas_chang == 'CNT1' and widget_val != '0':
+        if meas_change == 'CNT1' and widget_val != '0':
             self.binding_interface.change_interval("TMP2", "0")
             self._update_meas_tab('TMP2')
-        elif meas_chang == 'TMP2' and widget_val != '0':
+        elif meas_change == 'TMP2' and widget_val != '0':
             self.binding_interface.change_interval("CNT1", "0")
             self._update_meas_tab('CNT1')
 
@@ -1057,15 +1059,15 @@ class config_gui_window_t(Tk):
                     if i == tick:
                         log_func(
                             "User attempting to set measurement interval 0..")
-                        meas_chang = self._entries[i][0]
-                        meas_chang = meas_chang.get()
-                        inv_chang = self._entries[i][2]
-                        uplink_chang = self._entries[i][1]
-                        self.binding_interface.change_interval(meas_chang, 0)
-                        inv_chang.delete(0, END)
-                        inv_chang.insert(0, 0)
-                        uplink_chang.delete(0, END)
-                        uplink_chang.insert(0, 0)
+                        meas_change = self._entries[i][0]
+                        meas_change = meas_change.get()
+                        inv_change = self._entries[i][2]
+                        uplink_change = self._entries[i][1]
+                        self.binding_interface.change_interval(meas_change, 0)
+                        inv_change.delete(0, END)
+                        inv_change.insert(0, 0)
+                        uplink_change.delete(0, END)
+                        uplink_change.insert(0, 0)
                     for cb in check:
                         if cb.get() == tick:
                             cb.set(0)
