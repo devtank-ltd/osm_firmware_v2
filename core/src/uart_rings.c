@@ -94,9 +94,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 
         memcpy(dma_mem, s, len);
 
-        uart_dma_out(uart, dma_mem, len);
-
-        return len;
+        return uart_dma_out(uart, dma_mem, len);
     }
 
     if (uart) // Add debug messages to debug ring buffer is a loop.
