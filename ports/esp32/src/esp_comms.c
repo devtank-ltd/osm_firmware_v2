@@ -247,6 +247,9 @@ static void _wifi_start(void)
     if (!ssid_len || !passwd_len)
         return;
 
+    if ((ssid_len > (SSID_LEN - 1)) || (passwd_len > (WFPW_LEN - 1)))
+        return;
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_sta();
