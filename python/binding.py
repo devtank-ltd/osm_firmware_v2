@@ -223,7 +223,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
-        time.sleep(0.2)
+        time.sleep(0.05)
 
     def read(self):
         try:
@@ -479,7 +479,7 @@ class dev_t(dev_base_t):
         if line.startswith(meas):
             parts = line.split(":")
             if len(parts) == 2:
-                to = int(parts[1]) / 1000
+                to = int(parts[1]) / 500
                 r = max(1.5, to)
                 debug_print(f"Measurement {meas} has timeout {r}")
                 return r

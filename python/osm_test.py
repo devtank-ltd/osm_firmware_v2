@@ -300,6 +300,7 @@ class test_framework_t(object):
         passed &= self._check_cmd_serial_comms()
         passed &= self._check_set_reg()
 
+        json_obj = self._vosm_conn.create_json_dev()
         json_obj.get_config()
         json_obj.save_config(self.JSON_MEMORY_PATH)
 
@@ -412,7 +413,7 @@ class test_framework_t(object):
     def _close_virtual_osm(self):
         if self._vosm_proc is None:
             self._logger.debug("Virtual OSM not running, skip closing.")
-            return;
+            return
         self._logger.info("Closing virtual OSM.")
         self._vosm_proc.send_signal(signal.SIGINT)
         self._vosm_proc.poll()
@@ -469,7 +470,7 @@ class test_framework_t(object):
     def _disconnect_osm(self):
         if self._vosm_conn is None:
             self._logger.debug("Virtual OSM not connected, skip disconnect.")
-            return;
+            return
         self._logger.info("Disconnecting from the virtual OSM.")
         self._vosm_conn._serial_obj.close()
         self._logger.debug("Disconnected from the virtual OSM.")
