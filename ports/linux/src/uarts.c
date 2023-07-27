@@ -155,14 +155,14 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
 }
 
 
-void uart_blocking(unsigned uart, const char *data, int size)
+void uart_blocking(unsigned uart, const char *data, unsigned size)
 {
     _uart_blocking(uart, data, size);
 }
 
 
-bool uart_dma_out(unsigned uart, char *data, int size)
+unsigned uart_dma_out(unsigned uart, char *data, unsigned size)
 {
     _uart_blocking(uart, data, size);
-    return true;
+    return size;
 }

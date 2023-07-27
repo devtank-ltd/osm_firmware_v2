@@ -164,9 +164,7 @@ static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 {
     unsigned uart = *(unsigned*)puart;
 
-    if (uart_dma_out(uart, c, len))
-        return len;
-    return 0;
+    return uart_dma_out(uart, c, len);
 }
 
 

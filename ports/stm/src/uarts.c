@@ -306,7 +306,7 @@ bool uart_is_tx_empty(unsigned uart)
 }
 
 
-void uart_blocking(unsigned uart, const char *data, int size)
+void uart_blocking(unsigned uart, const char *data, unsigned size)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
@@ -318,21 +318,21 @@ void uart_blocking(unsigned uart, const char *data, int size)
 }
 
 
-bool uart_dma_out(unsigned uart, char *data, int size)
+unsigned uart_dma_out(unsigned uart, char *data, unsigned size)
 {
     if (uart >= UART_CHANNELS_COUNT)
-        return false;
+        return 0;
 
     if (uart_doing_dma[uart])
-        return false;
+        return 0;
 
     const uart_channel_t * channel = &uart_channels[uart];
 
     if (!channel->enabled)
-        return true; /* Drop the data */
+        return size; /* Drop the data */
 
     if (!(USART_ISR(channel->usart) & USART_ISR_TXE))
-        return false;
+        return 0;
 
     if (size == 1)
     {
@@ -364,7 +364,7 @@ bool uart_dma_out(unsigned uart, char *data, int size)
 
     usart_enable_tx_dma(channel->usart);
 
-    return true;
+    return size;
 }
 
 

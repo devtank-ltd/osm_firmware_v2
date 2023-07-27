@@ -240,7 +240,7 @@ bool uart_is_tx_empty(unsigned uart)
 }
 
 
-void uart_blocking(unsigned uart, const char *data, int size)
+void uart_blocking(unsigned uart, const char *data, unsigned size)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
@@ -271,28 +271,26 @@ void uart_blocking(unsigned uart, const char *data, int size)
 }
 
 
-bool uart_dma_out(unsigned uart, char *data, int size)
+unsigned uart_dma_out(unsigned uart, char *data, unsigned size)
 {
     if (uart >= UART_CHANNELS_COUNT)
-        return false;
+        return 0;
 
     const uart_channel_t * channel = &uart_channels[uart];
 
     if (!channel->enabled)
-        return true; /* Drop the data */
+        return size; /* Drop the data */
 
     if (!uart_is_tx_empty(uart))
-        return false;
+        return 0;
 
     if (uart == CMD_UART)
         mqtt_uart_forward(data, size);
 
     int sent = uart_tx_chars(uart_channels[uart].uart, data, size);
     if (sent <= 0)
-        return false;
-    if (sent != size)
-        log_error("UART %u only sent %d of %d.", uart, sent, size);
-    return true;
+        return 0;
+    return sent;
 }
 
 
