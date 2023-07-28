@@ -223,7 +223,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
-        time.sleep(0.05)
+        time.sleep(0.2)
 
     def read(self):
         try:
@@ -659,7 +659,7 @@ class dev_t(dev_base_t):
         reg     = kwargs.get("reg",     None)
         dev     = kwargs.get("dev",     None)
         value   = kwargs.get("value",   0.  )
-        timeout = kwargs.get("timeout", 3.  )
+        timeout = kwargs.get("timeout", 5.  )
         if dev:
             reg_addr = kwargs["reg_addr"]
             type_    = kwargs["type"]

@@ -99,7 +99,7 @@ class test_framework_t(object):
     def _threshold_check(self, name, desc, value, ref, tolerance):
         if isinstance(value, str):
             assert name == "FW"
-            ref = '"%s"' % os.popen('git log -n 1 --format="%h"').read().strip()
+            ref = '"%s"' % os.popen('printf "%.*s\n" 7 $(git log -n 1 --format="%H")').read().strip()
             passed = value == ref
             tolerance = 0
         elif isinstance(value, float) or isinstance(value, int):
@@ -299,22 +299,7 @@ class test_framework_t(object):
         self._vosm_conn.measurements_enable(True)
         passed &= self._check_cmd_serial_comms()
         passed &= self._check_set_reg()
-
-        json_obj = self._vosm_conn.create_json_dev()
-        json_obj.get_config()
-        json_obj.save_config(self.JSON_MEMORY_PATH)
-
-        with open(self.JSON_MEMORY_PATH, "r") as json_file:
-            mem = json.load(json_file)
-
-        interval_mins = 3.
-        mem["interval_mins"] = interval_mins
-        mem["measurements"]["PM10"]["samplecount"] = 3
-
-        with open(self.JSON_MEMORY_PATH, "w") as json_file:
-            json.dump(mem, json_file)
-
-        json_obj.verify_file(self.JSON_MEMORY_PATH)
+        passed &= self._check_json_config_tool()
         return passed
 
     def _check_set_reg(self):
@@ -349,6 +334,42 @@ class test_framework_t(object):
                 self._logger.debug(f"Successfully set {mb_dev.name}:{hex(reg.address)} {reg.mb_type_} from {new_set_value} to {new_value2}")
                 self._bool_check(f"Modbus register {reg.name} set test", True, True)
 
+        return True
+
+    def _check_json_config_tool(self):
+        json_obj = self._vosm_conn.create_json_dev()
+        json_obj.get_config()
+        json_obj.save_config(self.JSON_MEMORY_PATH)
+
+        with open(self.JSON_MEMORY_PATH, "r") as json_file:
+            mem = json.load(json_file)
+
+        interval_mins = 3.
+        sc = 3
+        mem["interval_mins"] = interval_mins
+        mem["measurements"]["PM10"]["samplecount"] = sc
+
+        with open(self.JSON_MEMORY_PATH, "w") as json_file:
+            json.dump(mem, json_file)
+
+        json_obj.verify_file(self.JSON_MEMORY_PATH)
+
+        with open(self.JSON_MEMORY_PATH, "r") as json_file:
+            mem = json.load(json_file)
+
+        new_mins = mem["interval_mins"]
+        if float(new_mins) != interval_mins:
+            self._logger.error(f"JSON failed to set interval_mins to {new_mins}.")
+            return False
+        self._logger.debug(f"Successfully set interval mins from 1 to {new_mins}")
+        self._bool_check(f"JSON interval_mins set test", True, True)
+
+        new_sc = mem["measurements"]["PM10"]["samplecount"]
+        if new_sc != sc:
+            self._logger.error(f"JSON failed to set PM10 sample count to {new_sc}.")
+            return False
+        self._logger.debug(f"Successfully set PM10 sample count from 5 to {new_sc}")
+        self._bool_check(f"JSON sample count set test", True, True)
         return True
 
     def _check_cmd_serial_comms(self):
