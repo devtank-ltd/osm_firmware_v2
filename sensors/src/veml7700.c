@@ -543,7 +543,7 @@ static measurements_sensor_state_t _veml7700_measurements_collection_time(char* 
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = _veml7700_time.last_time_taken + VEML7700_COLLECTION_TIME_OFFSET_MS;
+    *collection_time = VEML7700_DEFAULT_COLLECT_TIME;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
