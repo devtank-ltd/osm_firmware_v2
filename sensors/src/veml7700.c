@@ -25,10 +25,10 @@ Application Guide:
 
 #define I2C_VEML7700_ADDR   0x10
 
-#define VEML7700_COLLECTION_TIME_OFFSET_MS      10
+#define VEML7700_COLLECTION_TIME_OFFSET_MS      1000
 #define VEML7700_RES_SCALE                      10000
 #define VEML7700_COUNT_LOWER_THRESHOLD          100
-#define VEML7700_DEFAULT_COLLECT_TIME           6600  // Max time in ms
+#define VEML7700_DEFAULT_COLLECT_TIME           5600  // Max time in ms is 6.6, so collect + offset
 #define VEML7700_MAX_READ_TIME                  VEML7700_DEFAULT_COLLECT_TIME + 100
 #define VEML7700_TIMEOUT_TIME_MS                1000
 
@@ -543,7 +543,7 @@ static measurements_sensor_state_t _veml7700_measurements_collection_time(char* 
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    *collection_time = VEML7700_DEFAULT_COLLECT_TIME;
+    *collection_time = _veml7700_time.last_time_taken + VEML7700_COLLECTION_TIME_OFFSET_MS;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
