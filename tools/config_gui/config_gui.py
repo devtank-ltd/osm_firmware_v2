@@ -166,7 +166,7 @@ class config_gui_window_t(Tk):
         fw_hover = Hovertip(
                 self._downl_fw, "Choose a file to update the sensor's firmware with. (This can only be done before connecting)")
         self._progress = Progressbar(
-            self._conn_fr, orient=HORIZONTAL, length=100, mode='determinate', maximum=150)
+            self._conn_fr, orient=HORIZONTAL, length=100, mode='determinate', maximum=200)
         self._progress.pack()
         self._progress.pack_forget()
         self._fw_label = Label(self._conn_fr, text="", bg=IVORY)
@@ -403,6 +403,7 @@ class config_gui_window_t(Tk):
             self.binding_interface.modbus_dev_del(self.dev_to_remove)
 
     def _on_get_measurements_done_cb(self, resp):
+        self._close_progressbar()
         self._sens_meas = resp[1]
         self.meas_headers = [i[0] for i in self._sens_meas]
         self.binding_interface.get_ftma_specs(self.meas_headers, self._on_get_ftma_specs)
@@ -451,12 +452,14 @@ class config_gui_window_t(Tk):
         self._load_headers(self._main_fr, "rif")
 
     def _on_write_json_to_osm(self, resp):
+        self._close_progressbar()
         self.save_load_label.configure(text="Config loaded. Reconnecting..")
         self._on_connect()
 
     def _on_save_config_json(self, resp):
         loc = resp[1]
         log_func(f"OSM configuration saved in {loc}")
+        self._close_progressbar()
         self.save_load_label.configure(text="Config saved.")
 
     def _save_config_to_json(self):
@@ -464,6 +467,11 @@ class config_gui_window_t(Tk):
         filepath = asksaveasfilename(filetypes=[filetypes])
         if filepath:
             self.binding_interface.save_config_to_json(filepath, self._on_save_config_json)
+            column = 2
+            b_row = 0
+            max = 100
+            delay = 20
+            self._invoke_progressbar(self._main_fr, column, b_row, max, delay)
 
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
@@ -487,8 +495,13 @@ class config_gui_window_t(Tk):
                 self._write_json_config(self._main_fr, selected)
 
     def _write_json_config(self, frame, filename):
-        self._visit_widgets(self._main_fr, 'disabled')
+        self._visit_widgets(frame, 'disabled')
         self.binding_interface.write_json_to_osm(filename, self._on_write_json_to_osm)
+        column = 2
+        b_row = 0
+        max = 200
+        delay = 100
+        self._invoke_progressbar(self._main_fr, column, b_row, max, delay)
 
     def _visit_widgets(self, frame, cmd):
         meas = None
@@ -506,8 +519,35 @@ class config_gui_window_t(Tk):
                 for i in self._second_frame.winfo_children():
                     i.configure(state=cmd)
 
+    def _invoke_progressbar(self, frame, column, row, max, delay):
+        self.progbar = Progressbar(
+                    frame,
+                    orient=HORIZONTAL,
+                    length=100,
+                    mode='determinate',
+                    maximum=max)
+        self.progbar.grid(column=column, row=row)
+        self.save_load_label.configure(text="")
+        self._load_progbar(delay)
+
+    def _load_progbar(self, delay, count=0):
+        try:
+            self.progbar['value'] = count
+        except:
+            log_func("Could not find progressbar, process finished?")
+            return
+        root.after(delay)
+        if self.progbar:
+            root.after(1, lambda: self._load_progbar(delay, count+1))
+
+    def _close_progressbar(self):
+        try:
+            self.progbar.destroy()
+        except:
+            log_func("Error, no progressbar to remove.")
+
     def _start_fw_cmd(self, selected, frame):
-        log_func("User attempting to flash firmware to sensor...")
+        log_func("User attempting to flash firmware to OSM...")
         global FW_PROCESS
         FW_PROCESS = False
         self._fw_label.configure(text="")
@@ -521,7 +561,7 @@ class config_gui_window_t(Tk):
         path = os.path.join(PATH, "firmware_update.py")
         try:
             self._cmd = subprocess.Popen(
-                ["python", path, self.dev_sel, selected], shell=False)
+                [path, self.dev_sel, selected], shell=False)
         except Exception as e:
             self._stop()
             traceback.print_exc()
@@ -542,7 +582,7 @@ class config_gui_window_t(Tk):
                 self._stop()
                 return
         root.after(100)
-        if count == 150:
+        if count == 200:
             if done is None:
                 self._step(1)
             else:
@@ -567,7 +607,7 @@ class config_gui_window_t(Tk):
         filetypes = ('bin files', '*.bin')
         selected = askopenfilename(filetypes=[filetypes])
         if selected:
-            if tkinter.messagebox.askyesnocancel("Write?", "Write latest software update to sensor?",
+            if tkinter.messagebox.askyesnocancel("Write?", "Write this firmware image to OSM?",
                                                  parent=root):
                 self._start_fw_cmd(selected, frame)
 
@@ -1025,6 +1065,11 @@ class config_gui_window_t(Tk):
 
 
     def _remove_mb_reg(self, idy, check):
+        column = 2
+        b_row = 0
+        max = 300
+        delay = 20
+        self._invoke_progressbar(self._modb_fr, column, b_row, max, delay)
         ticked = []
         self.dev_to_remove = ""
         row = None
@@ -2383,9 +2428,14 @@ class config_gui_window_t(Tk):
         regs = None
         if selection:
             index = selection[0]
-            cancel = tkinter.messagebox.askyesnocancel(
+            write = tkinter.messagebox.askyesnocancel(
                 "Save", "Write this template to your device?")
-            if cancel:
+            if write:
+                column = 2
+                b_row = 0
+                max = 300
+                delay = 20
+                self._invoke_progressbar(self._modb_fr, column, b_row, max, delay)
                 log_func("User attempting to write modbus template to sensor..")
                 chosen_template = temp_list.get(index)
                 curr_devs = []
