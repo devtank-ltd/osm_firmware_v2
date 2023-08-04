@@ -86,6 +86,7 @@ class config_gui_window_t(Tk):
         self._changes = False
         self._widg_del = False
         self._checked = False
+        self.dev_deleted = False
         yaml_path = PATH + '/yaml_files'
         if not os.path.exists(yaml_path):
             os.makedirs(yaml_path)
@@ -164,8 +165,9 @@ class config_gui_window_t(Tk):
                                 font=FONT, width=20, activebackground="green",
                                 activeforeground=IVORY)
         self._downl_fw.pack()
-        fw_hover = Hovertip(
-                self._downl_fw, "Choose a file to update the sensor's firmware with. (This can only be done before connecting)")
+        Hovertip(
+            self._downl_fw, "Choose a file to update the OSM firmware with. This can only be done before connecting.",
+            hover_delay=0)
         self._progress = Progressbar(
             self._conn_fr, orient=HORIZONTAL, length=100, mode='determinate', maximum=200)
         self._progress.pack()
@@ -252,11 +254,13 @@ class config_gui_window_t(Tk):
                                        font=FONT, bg=IVORY,
                                        command= self._open_json_config_file)
         self._load_config_btn.grid(column=0, row=0, sticky='W', pady=(10, 0))
+        Hovertip(self._load_config_btn, "Select a JSON file containing an OSM configuration to write to this sensor.", hover_delay=0)
 
         self._save_config_btn = Button(self._main_fr, text="Save Config",
                                        font=FONT, bg=IVORY,
                                        command = self._save_config_to_json)
         self._save_config_btn.grid(column=1, row=0, sticky='W', pady=(10, 0))
+        Hovertip(self._save_config_btn, "Save the current settings on this OSM to a JSON file.", hover_delay=0)
 
         self.save_load_label = Label(self._main_fr, text="",
                                      font=FONT, bg=IVORY)
@@ -402,6 +406,8 @@ class config_gui_window_t(Tk):
             list_of_devs.append(dev)
         if self.dev_to_remove not in list_of_devs:
             self.binding_interface.modbus_dev_del(self.dev_to_remove)
+        self.dev_deleted = False
+        self._checked = False
 
     def _on_get_measurements_done_cb(self, resp):
         self._close_progressbar()
@@ -960,7 +966,8 @@ class config_gui_window_t(Tk):
                     disabledforeground="black")
                 if j == 1 and i != 0:
                     reg_hover = Hovertip(
-                        self._mbe, self._get_desc(str(self._mbe.get())))
+                        self._mbe, self._get_desc(str(self._mbe.get())),
+                        hover_delay=0)
             self.mb_entries.append(newrow)
             if i != 0:
                 self._check_mb.append(IntVar())
@@ -1031,7 +1038,7 @@ class config_gui_window_t(Tk):
                         disabledforeground="black")
                     if j == 0 and i != 0:
                         reg_hover = Hovertip(
-                            self._e, self._get_desc(str(self._e.get())))
+                            self._e, self._get_desc(str(self._e.get())), hover_delay=0)
                 else:
                     self._e.bind(
                         "<FocusOut>", lambda e: self._change_sample_interval(e))
@@ -1065,32 +1072,37 @@ class config_gui_window_t(Tk):
                 check_meas.grid(row=i, column=j+1, padx=(0,15))
 
 
-    def _remove_mb_reg(self, idy, check):
+    def _remove_mb_reg(self, idy, check, type):
         column = 2
         b_row = 0
         max = 300
         delay = 20
-        self._invoke_progressbar(self._modb_fr, column, b_row, max, delay)
         ticked = []
-        self.dev_to_remove = ""
+        self.dev_to_remove = None
         row = None
-        if check:
+        if check and self.dev_deleted == False:
             for cb in check:
                 if cb.get():
                     row = cb.get()
                     ticked.append(row)
-            for tick in ticked:
-                for i in range(len(self.mb_entries)):
-                    if i == tick:
+            if ticked:
+                self._invoke_progressbar(self._modb_fr, column, b_row, max, delay)
+                for tick in ticked:
+                    for i in range(len(self.mb_entries)):
+                        if i == tick:
                             log_func(
                                 "User attempting to remove modbus register..")
                             device = self.mb_entries[i][0]
                             self.dev_to_remove = device.get()
                             mb_reg_to_change = self.mb_entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
-                            self.binding_interface.modbus_reg_del(mb_reg_to_change)
-            self.binding_interface.get_modbus(self._on_remove_mb_reg)
-            self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
+                            if type == "reg":
+                                self.binding_interface.modbus_reg_del(mb_reg_to_change)
+                            if type == "dev":
+                                self.binding_interface.modbus_dev_del(self.dev_to_remove)
+                                self.dev_deleted = True
+                self.binding_interface.get_modbus(self._on_remove_mb_reg)
+                self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
 
     def _set_meas_to_zero(self, check):
         ticked = []
@@ -1164,8 +1176,17 @@ class config_gui_window_t(Tk):
                     self._del_reg = Button(window, text='Remove',
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
-                                           command=lambda: self._remove_mb_reg(idy, check))
+                                           command=lambda: self._remove_mb_reg(idy, check, "reg"))
+                    Hovertip(self._del_reg, "Remove selected registers.", hover_delay=0)
                     self._del_reg.grid(column=4, row=8, sticky=NE)
+                    self._del_dev = Button(window, text='Remove Device',
+                                           bg=IVORY, fg=BLACK, font=FONT,
+                                           activebackground="green", activeforeground=IVORY,
+                                           command=lambda: self._remove_mb_reg(idy, check, "dev"))
+                    Hovertip(self._del_dev,
+                             "Remove device and all registers of selected register.",
+                             hover_delay=0)
+                    self._del_dev.grid(column=4, row=9, sticky=NE)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
@@ -1181,7 +1202,7 @@ class config_gui_window_t(Tk):
 
     def _change_on_hover(self, entry):
         e = entry.get()
-        reg_hover = Hovertip(self._e, self._get_desc(entry.get()))
+        reg_hover = Hovertip(self._e, self._get_desc(entry.get()), hover_delay=0)
 
     def _on_get_mp_done_cb(self, resp):
         self.midpoint = resp[1][0].split()[1]
@@ -1201,12 +1222,12 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
         cc_val_lab.grid(column=1, row=1, pady=10, columnspan=2)
         on_hover = Hovertip(
-            cc_val_lab, "Use this page to scale the current clamp")
+            cc_val_lab, "Use this page to scale the current clamp", hover_delay=0)
 
         self._outer_cc = Combobox(self._cc_window)
         self._outer_cc.grid(column=0, row=2)
         on_hover = Hovertip(
-            self._outer_cc, "Set outer and inner current (Amps/millivolts).")
+            self._outer_cc, "Set outer and inner current (Amps/millivolts).", hover_delay=0)
         self._outer_cc['values'] = ('100, 50',
                                     '200, 33'
                                     )
@@ -1215,7 +1236,7 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
         outer_cc_lab.grid(column=1, row=2)
         on_hover = Hovertip(
-            outer_cc_lab, "Set outer and inner current.")
+            outer_cc_lab, "Set outer and inner current.", hover_delay=0)
 
         send_btn = Button(self._cc_window,
                           text="Send", command=lambda: self._send_cal(cc),
@@ -1236,12 +1257,13 @@ class config_gui_window_t(Tk):
                         activebackground="green", activeforeground=IVORY)
         cal_btn.grid(column=0, row=5, pady=10)
         on_hover = Hovertip(
-            cal_btn, "Calibrate current clamp midpoint, make sure there is no live current.")
+            cal_btn, "Calibrate current clamp midpoint, make sure there is no live current.",
+            hover_delay=0)
 
         mp_entry = Entry(self._cc_window, bg=IVORY)
         mp_entry.grid(column=3, row=5)
         on_hover = Hovertip(
-            mp_entry, "Manually calibrate ADC midpoint. (Default 2048)")
+            mp_entry, "Manually calibrate ADC midpoint. (Default 2048)", hover_delay=0)
 
         mp_btn = Button(self._cc_window, text="Set midpoint",
                         bg=IVORY, fg=BLACK, font=FONT,
@@ -1249,7 +1271,7 @@ class config_gui_window_t(Tk):
                         command=lambda: self._set_midpoint(mp_entry, cc))
         mp_btn.grid(column=4, row=5)
         on_hover = Hovertip(
-            mp_btn, "Manually calibrate ADC midpoint. (Default 2048)")
+            mp_btn, "Manually calibrate ADC midpoint. (Default 2048)", hover_delay=0)
 
         self._cal_label = Label(self._cc_window, text="",
         bg=IVORY)
@@ -1262,7 +1284,7 @@ class config_gui_window_t(Tk):
             Here you can set Exterior and Interior values which are defaulted to 100A and 50mV respectively.\t\n
             You must set the midpoint when first configuring each phase, achieve this by simply selecting calibrate ADC.\t\n
             There is also the option to set the midpoint manually. A typical value is around 2030-2048.\t\n
-            ''')
+            ''', hover_delay=0)
 
     def _fill_cc_term(self):
         self._cal_terminal.configure(state='normal')
@@ -1609,7 +1631,7 @@ class config_gui_window_t(Tk):
                        bg=IVORY, font=FONT)
         lora_l.grid(column=5, row=9, sticky="E")
         lora_hover = Hovertip(
-                lora_l, "External Communications Status")
+                lora_l, "External Communications Status", hover_delay=0)
 
         self._lora_status = Label(frame, text="",
                                   bg=IVORY, font=FONT)
@@ -1690,7 +1712,7 @@ class config_gui_window_t(Tk):
                                    bg=IVORY, fg=BLACK, font=FONT,
                                activebackground="green", activeforeground=IVORY)
         delete_button.grid(column=2, row=1, sticky=EW)
-        tt_del_btn = Hovertip(delete_button, 'Remove template.')
+        tt_del_btn = Hovertip(delete_button, 'Remove template.', hover_delay=0)
 
         edit_template_button = Button(self._modb_fr, text="Edit",
                                       command=lambda: self._add_template_w(
@@ -1699,7 +1721,7 @@ class config_gui_window_t(Tk):
                                       activebackground="green", activeforeground=IVORY)
         edit_template_button.grid(column=2, row=2, sticky=EW)
         tt_edit_btn = Hovertip(edit_template_button,
-                               'Edit template.')
+                               'Edit template.', hover_delay=0)
 
         add_template_button = Button(self._modb_fr, text="Add",
                                      command=lambda: self._add_template_w(
@@ -1707,7 +1729,7 @@ class config_gui_window_t(Tk):
                                      bg=IVORY, fg=BLACK, font=FONT,
                                      activebackground="green", activeforeground=IVORY)
         add_template_button.grid(column=2, row=3, sticky=EW)
-        tt_add_btn = Hovertip(add_template_button, 'Create a new template.')
+        tt_add_btn = Hovertip(add_template_button, 'Create a new template.', hover_delay=0)
 
         apply_template_button = Button(self._modb_fr, text="Apply",
                                        command=lambda: self._write_to_dev(
@@ -1716,7 +1738,7 @@ class config_gui_window_t(Tk):
                                        activebackground="green", activeforeground=IVORY)
         apply_template_button.grid(column=2, row=4, sticky=EW)
         tt_apply_btn = Hovertip(apply_template_button,
-                                'Write template to device.')
+                                'Write template to device.', hover_delay=0)
 
         copy_template_button = Button(self._modb_fr, text="Copy",
                                       command=lambda: self._add_template_w(
@@ -1725,7 +1747,7 @@ class config_gui_window_t(Tk):
                                       activebackground="green", activeforeground=IVORY)
         copy_template_button.grid(column=2, row=5, sticky=EW)
         tt_copy_btn = Hovertip(copy_template_button,
-                               'Duplicate template.')
+                               'Duplicate template.', hover_delay=0)
 
         revert_template_button = Button(self._modb_fr, text="Revert",
                                         command=self._reset_listb,
@@ -1733,14 +1755,14 @@ class config_gui_window_t(Tk):
                                         activebackground="green", activeforeground=IVORY)
         revert_template_button.grid(column=2, row=6, sticky=EW)
         tt_revert_btn = Hovertip(
-            revert_template_button, 'Undo unsaved changes.')
+            revert_template_button, 'Undo unsaved changes.', hover_delay=0)
 
         save_template_button = Button(self._modb_fr, text="Save",
                                       command=self._send_to_save,
                                       bg=IVORY, fg=BLACK, font=FONT,
                                       activebackground="green", activeforeground=IVORY)
         save_template_button.grid(column=2, row=7, sticky=EW)
-        tt_save_btn = Hovertip(save_template_button, 'Save all changes.')
+        tt_save_btn = Hovertip(save_template_button, 'Save all changes.', hover_delay=0)
 
         unit_id = Label(self._modb_fr, text="Modbus registers on Template",
                         font=FONT, bg=IVORY)
@@ -1758,7 +1780,7 @@ class config_gui_window_t(Tk):
                                 bg=IVORY, fg=BLACK, font=FONT,
                                 activebackground="green", activeforeground=IVORY)
         del_reg_button.grid(column=2, row=9, sticky=EW)
-        tt_del_r_btn = Hovertip(del_reg_button, 'Remove register.')
+        tt_del_r_btn = Hovertip(del_reg_button, 'Remove register.', hover_delay=0)
 
         shift_up_button = Button(self._modb_fr, text="▲",
                                  command=lambda:
@@ -1768,7 +1790,7 @@ class config_gui_window_t(Tk):
                                  bg=IVORY, fg=BLACK, font=FONT,
                                  activebackground="green", activeforeground=IVORY)
         shift_up_button.grid(column=2, row=10, sticky=EW)
-        tt_sh_u_btn = Hovertip(shift_up_button, 'Shift up')
+        tt_sh_u_btn = Hovertip(shift_up_button, 'Shift up', hover_delay=0)
 
         shift_down_button = Button(self._modb_fr, text="▼",
                                    command=lambda:
@@ -1778,7 +1800,7 @@ class config_gui_window_t(Tk):
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    activebackground="green", activeforeground=IVORY)
         shift_down_button.grid(column=2, row=11, sticky=EW)
-        tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down')
+        tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down', hover_delay=0)
 
         self._current_mb = Label(
             self._modb_fr, text="Current modbus settings on OSM", font=FONT, bg=IVORY)
