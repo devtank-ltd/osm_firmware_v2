@@ -124,7 +124,7 @@ class binding_interface_svr_t:
 
     def _get_last_val(self, args):
         meas = args[1]
-        val = self.dev.do_cmd(f"get_meas {meas}")
+        val = self.dev.do_cmd(f"get_meas {meas}", timeout=10)
         return val
 
     def _load_json_conf_to_osm(self, args):

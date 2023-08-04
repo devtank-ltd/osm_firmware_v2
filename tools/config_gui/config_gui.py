@@ -85,6 +85,7 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
+        self._checked = False
         yaml_path = PATH + '/yaml_files'
         if not os.path.exists(yaml_path):
             os.makedirs(yaml_path)
@@ -1120,17 +1121,17 @@ class config_gui_window_t(Tk):
     def _on_get_last_val(self, resp):
         meas = resp[1].split(":")[0]
         try:
-            self.val = resp[1].split(":")[1].replace(" ", "")
+            val = resp[1].split(":")[1].replace(" ", "")
         except IndexError:
             log_func("Failed to get measurement reading.")
-            self.val = 0
+            return
         for i in self._entries:
             v = i[0].get()
             if v == meas:
                 val_col = i[4]
                 val_col.configure(state='normal')
                 val_col.delete(0, END)
-                val_col.insert(0, self.val)
+                val_col.insert(0, val)
                 val_col.configure(state='disabled')
 
     def _insert_last_value(self, check):
@@ -1156,7 +1157,8 @@ class config_gui_window_t(Tk):
 
     def _check_clicked(self, window, idy, check):
         for cb in check:
-            if cb.get():
+            if cb.get() and self._checked == False:
+                self._checked = True
                 log_func(f"Checkbutton clicked : {cb.get()}")
                 if idy == 'mb':
                     self._del_reg = Button(window, text='Remove',
