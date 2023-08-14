@@ -1,9 +1,6 @@
 import serial
 import select
 import time
-import fcntl
-import termios
-import array
 
 class dev_base_t(object):
     def __init__(self, port):
@@ -26,32 +23,31 @@ class dev_base_t(object):
             raise Exception("Unsupport serial port argument.")
 
         self.hard_reset()
-        self.write("?")
-        self.readlines()
         
     def hard_reset(self):
-        fd = self._serial_obj.fileno()
-        tbuf = array.array('i', [0])
+        print("Bringing BOOT and RESET low")
+        self._serial_obj.rts = True
+        self._serial_obj.dtr = False
 
-        print(fcntl.ioctl(fd, termios.TIOCMGET, tbuf, 1))
+        time.sleep(1)
+        print("Bringing RESET high")
+        self._serial_obj.rts = False
+        self._serial_obj.dtr = False
 
-        print(tbuf)
-        
-        print("Bringing BOOT and RESET low.")
-        tbuf[0] &= ~termios.TIOCM_RTS
-        tbuf[0] |= termios.TIOCM_DTR
+    def program_mode(self):
+        print("Bringing RESET high and BOOT low")
+        self._serial_obj.rts = False
+        self._serial_obj.dtr = False
+        time.sleep(1)
 
-        print(tbuf)
+        print("Bringing RESET low and BOOT high")
+        self._serial_obj.rts = False
+        self._serial_obj.dtr = True
+        time.sleep(1)
 
-        fcntl.ioctl(fd, termios.TIOCMSET, tbuf, 1)
-
-        time.sleep(0.1)
-        
-        print("Bringing RESET high.")
-        tbuf[0] |= termios.TIOCM_RTS
-        tbuf[0] |= termios.TIOCM_DTR
-
-        fcntl.ioctl(fd, termios.TIOCMSET, tbuf, 1)
+        print("Bringing RESET high and BOOT high")
+        self._serial_obj.rts = True
+        self._serial_obj.dtr = True
 
     def write(self, msg):
         self._serial_obj.write(("%s\n" % msg).encode())
