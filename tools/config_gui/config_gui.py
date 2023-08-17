@@ -134,7 +134,7 @@ class config_gui_window_t(Tk):
         returned_ports = []
         curr_platform = "COM" if platform.system(
         ) == "Windows" else "ttyUSB" if platform.system(
-        ) == "Linux" else "cu.usbserial" if platform.system(
+        ) == "Linux" else "cu." if platform.system(
         ) == "Darwin" else None
         active_ports = serial.tools.list_ports.comports(include_links=True)
         for item in active_ports:

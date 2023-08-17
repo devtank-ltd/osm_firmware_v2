@@ -5,6 +5,7 @@ import serial
 import time
 import queue
 import logging
+import platform
 
 # Interface between API and binding
 
@@ -279,12 +280,23 @@ class binding_interface_svr_t:
         dev = args[1]
         log(f"Opening serial:" + dev)
         try:
-            serial_obj = serial.Serial(port=dev,
-                                            baudrate=115200,
-                                            bytesize=serial.EIGHTBITS,
-                                            parity=serial.PARITY_NONE,
-                                            stopbits=serial.STOPBITS_ONE,
-                                            timeout=0)
+            serial_obj = serial.Serial()
+            serial_obj.port = dev
+            serial_obj.baudrate = 115200
+            serial_obj.bytesize = serial.EIGHTBITS
+            serial_obj.parity = serial.PARITY_NONE
+            serial_obj.stopbits = serial.STOPBITS_ONE
+            serial_obj.timeout = 0
+            #Control handshaking lines if on Mac OS or Windows
+            if platform.system() == "Darwin" or platform.system() == "Windows":
+                serial_obj.rts = True
+                serial_obj.dtr = True
+                time.sleep(0.1)
+                serial_obj.rts = False
+                serial_obj.dtr = False
+                time.sleep(0.1)
+
+            serial_obj.open()
             self.dev = binding.dev_t(serial_obj)
             self.serial_obj = serial_obj
             self.debug_parse = None
