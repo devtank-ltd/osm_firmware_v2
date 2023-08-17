@@ -1,17 +1,16 @@
 from distutils.core import setup
 import py2exe
-#Run this program on a windows operating system to create a config gui executable
+#Run this program on a windows operating system to create a config gui executable e.g python windows_setup.py py2exe
 
 # Dependencies (add any additional dependencies here)
 dependencies = [
     "binding",
     "modbus_db",
-    "modbus_funcs",
+    "modbus_funcs"
 ]
 
 # Data files
 data_files = [
-    ("yaml_files", ["yaml_files/del_file.yaml", "yaml_files/modbus_data.yaml"]),
     ("osm_pictures", ["osm_pictures/icons-together.png",
                       "osm_pictures/OSM+Powered.png",
                       "osm_pictures/Lora-Rev-C.png",

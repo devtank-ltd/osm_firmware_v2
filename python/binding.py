@@ -12,6 +12,7 @@ import weakref
 import string
 import random
 import json
+import platform
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../tools/json_config_tool/"))
 
@@ -219,6 +220,7 @@ class low_level_dev_t(object):
         self._serial = serial_obj
         self._log_obj = log_obj
         self.fileno = serial_obj.fileno
+        self.system = False if platform.system() == "Windows" else True
 
     def write(self, msg):
         self._log_obj.send(msg)
@@ -243,9 +245,10 @@ class low_level_dev_t(object):
         new_msg = None
         msgs = []
         while now < end_time:
-            r = select.select([self], [], [], end_time - now)
-            if not r[0]:
-                debug_print("Lines timeout")
+            if self.system:
+                r = select.select([self], [], [], end_time - now)
+                if not r[0]:
+                    debug_print("Lines timeout")
             # Should be echo of command
             new_msg = self.read()
             if new_msg is None:

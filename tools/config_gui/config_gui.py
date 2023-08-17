@@ -16,6 +16,7 @@ import platform
 import signal
 from stat import *
 import subprocess
+import multiprocessing
 
 from gui_binding_interface import binding_interface_client_t
 from modbus_funcs import modbus_funcs_t
@@ -46,14 +47,14 @@ FONT = ('Arial', 11, 'bold')
 FONT_L = ('Arial', 14, 'bold')
 FONT_XL = ('Arial', 20, 'bold')
 FONT_XXL = ('Karumbi', 35, 'bold')
-ICONS_T   =    PATH + "/osm_pictures/icons-together.png"
-DVT_IMG   =    PATH + "/osm_pictures/OSM+Powered.png"
-OSM_1     =    PATH + "/osm_pictures/Lora-Rev-C.png"
-R_LOGO    =    PATH + "/osm_pictures/shuffle.png"
-GRPH_BG   =    PATH + "/osm_pictures/graph.png"
-PARAMS    =    PATH + "/osm_pictures/parameters.png"
-OPEN_S    =    PATH + "/osm_pictures/opensource-nb.png"
-OSM_BG    =    PATH + "/osm_pictures/leaves.jpg"
+ICONS_T   =    os.path.join(PATH, "osm_pictures/icons-together.png")
+DVT_IMG   =    os.path.join(PATH, "osm_pictures/OSM+Powered.png")
+OSM_1     =    os.path.join(PATH, "osm_pictures/Lora-Rev-C.png")
+R_LOGO    =    os.path.join(PATH, "osm_pictures/shuffle.png")
+GRPH_BG   =    os.path.join(PATH, "osm_pictures/graph.png")
+PARAMS    =    os.path.join(PATH, "osm_pictures/parameters.png")
+OPEN_S    =    os.path.join(PATH, "osm_pictures/opensource-nb.png")
+OSM_BG    =    os.path.join(PATH, "osm_pictures/leaves.jpg")
 
 def log_func(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -2496,15 +2497,21 @@ class config_gui_window_t(Tk):
 
 
 if __name__ == '__main__':
+    if platform.system() == "Windows":
+        multiprocessing.freeze_support()
     own_dir = os.path.dirname(__file__)
     os.chdir(own_dir)
     root = config_gui_window_t()
     tag = os.popen("git describe --tags").read().split('-')[0]
     width, height = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry('%dx%d+0+0' % (width, height))
-    root.title(f"Open Smart Monitor Configuration: {tag}")
+    if tag:
+        root.title(f"Open Smart Monitor Configuration: {tag}")
+    else:
+        root.title("Open Smart Monitor Configuration")
     root.resizable(True, True)
     root.configure(bg="lightgrey")
     root.protocol("WM_DELETE_WINDOW", root._on_closing)
     binding.set_debug_print(binding.default_print)
     root.mainloop()
+    log_func("Closed Open Smart Monitor Configuration GUI")
