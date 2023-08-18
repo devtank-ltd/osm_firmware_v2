@@ -17,6 +17,10 @@ import signal
 from stat import *
 import subprocess
 import multiprocessing
+import sys
+#Remove prompt from Windows OS
+if sys.frozen == "windows_exe":
+    sys.stderr._error = "inhibit log creation"
 
 from gui_binding_interface import binding_interface_client_t
 from modbus_funcs import modbus_funcs_t
@@ -2499,7 +2503,7 @@ class config_gui_window_t(Tk):
 if __name__ == '__main__':
     if platform.system() == "Windows":
         multiprocessing.freeze_support()
-    own_dir = os.path.dirname(__file__)
+    own_dir = os.path.dirname(sys.argv[0])
     os.chdir(own_dir)
     root = config_gui_window_t()
     tag = os.popen("git describe --tags").read().split('-')[0]
