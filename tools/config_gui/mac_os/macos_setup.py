@@ -30,20 +30,12 @@ APP = ['config_gui.py']
 DATA_FILES = [
  'osm_pictures',
  'yaml_files',
- 'config_database',
- 'binding.py',
- 'complete.bin',
- 'modbus_db.py',
- 'modbus_funcs.py',
- 'static_program.sh',
- 'create_gui_exe.sh',
- 'create_static_stm.sh',
- 'static_program.sh',
+ 'config_database'
 ]
 OPTIONS = {
     'iconfile': 'osm_pictures/macos-osm.icns',
     'plist':    {'NSRequiresAquaSystemAppearance': False}, # Dark mode support
-    'includes': ['PIL','binding','crccheck.crc','csv','datetime','idlelib.tooltip','imp','io','json','logging','modbus_db','modbus_funcs','os','platform','random','re','serial','serial.tools.list_ports','setuptools','signal','sqlite3','stat','string','subprocess','sys','threading','time','tkinter','tkinter.filedialog','tkinter.messagebox','tkinter.ttk','traceback','webbrowser','yaml'],
+    'includes': ['PIL','binding','crccheck.crc','csv','datetime','idlelib.tooltip','imp','io','json','logging','modbus_db','modbus_funcs','os','platform','random','re','serial','serial.tools.list_ports','setuptools','signal','sqlite3','stat','string','subprocess','sys','threading','time','tkinter','tkinter.filedialog','tkinter.messagebox','tkinter.ttk','traceback','webbrowser','yaml', 'multiprocessing'],
     'packages': ['tkinter'],
 }
 

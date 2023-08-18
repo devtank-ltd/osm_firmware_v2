@@ -19,8 +19,9 @@ import subprocess
 import multiprocessing
 import sys
 #Remove prompt from Windows OS
-if sys.frozen == "windows_exe":
-    sys.stderr._error = "inhibit log creation"
+if platform.system() == "Windows":
+    if sys.frozen == "windows_exe":
+        sys.stderr._error = "inhibit log creation"
 
 from gui_binding_interface import binding_interface_client_t
 from modbus_funcs import modbus_funcs_t
