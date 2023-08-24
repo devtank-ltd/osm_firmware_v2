@@ -255,3 +255,30 @@ Scaling Current
 -   You can also change the name of the measurement to something which
     may make more sense to you, the name can't exceed 4 characters.
 
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+
+Saving / Loading Configuration Files
+==========
+
+![](Images/json_save_config.png)
+
+-   Saving the current settings of your OSM can save you a lot of time and 
+    pain if you were to lose the configuration on your OSM.
+
+-   To do this, select 'Save Config' at the top of the home page, give the file
+    a name and make sure it is a json filetype, as shown in the image above, 
+    because when loading a configuration file, the file dialog will only look for 
+    json files.
+
+-   To write a configuration file to your OSM, select 'Load Config' and select
+    the config file you want to load, the GUI will verify that is a valid config
+    before writing it to your OSM and reloading the GUI.
