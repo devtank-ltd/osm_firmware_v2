@@ -203,28 +203,30 @@ bool modbus_add_dev_from_str(char* str)
     uint16_t unit_id = strtoul(pos, &pos, 16);
     pos = skip_space(pos);
 
-    if (toupper(pos[0]) != 'B')
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'B'))
         goto bad_exit;
     modbus_byte_orders_t byte_order;
-    if (toupper(pos[1]) == 'L')
-        byte_order = MODBUS_BYTE_ORDER_LITTLE_ENDIAN;
-    else if (toupper(pos[1]) == 'B')
-        byte_order = MODBUS_BYTE_ORDER_BIG_ENDIAN;
+    if (toupper(pos[0]) == 'L')
+        byte_order = MODBUS_BYTE_ORDER_LSB;
+    else if (toupper(pos[0]) == 'M')
+        byte_order = MODBUS_BYTE_ORDER_MSB;
     else
         goto bad_exit;
-    pos += 2;
+    pos += 3;
     pos = skip_space(pos);
 
-    if (toupper(pos[0]) != 'W')
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'W'))
         goto bad_exit;
     modbus_word_orders_t word_order;
     if (toupper(pos[0]) == 'L')
-        word_order = MODBUS_WORD_ORDER_BIG_ENDIAN;
-    else if (toupper(pos[0]) == 'B')
-        word_order = MODBUS_WORD_ORDER_LITTLE_ENDIAN;
+        word_order = MODBUS_WORD_ORDER_LSW;
+    else if (toupper(pos[0]) == 'M')
+        word_order = MODBUS_WORD_ORDER_MSW;
     else
         goto bad_exit;
-    pos += 2;
+    pos += 3;
 
     pos = skip_space(pos);
 
@@ -337,12 +339,12 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
         return false;
     }
     /* TODO: Figure out which order is which */
-    if (byte_order == MODBUS_BYTE_ORDER_BIG_ENDIAN)
+    if (byte_order == MODBUS_BYTE_ORDER_MSB)
     {
         arr[0] = v >> 8;
         arr[1] = v & 0xFF;
     }
-    else if (byte_order == MODBUS_BYTE_ORDER_LITTLE_ENDIAN)
+    else if (byte_order == MODBUS_BYTE_ORDER_LSB)
         memcpy(arr, &v, 2);
     else
     {
@@ -370,14 +372,14 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
         modbus_debug("Ran out of space in array for appending u32.");
         return false;
     }
-    if (word_order == MODBUS_WORD_ORDER_LITTLE_ENDIAN)
+    if (word_order == MODBUS_WORD_ORDER_MSW)
     {
         if (!_modbus_append_u16(&arr[0], len, v >> 16, byte_order))
             return false;
         if (!_modbus_append_u16(&arr[2], len - 2, v & 0xFFFF, byte_order))
             return false;
     }
-    else if (word_order == MODBUS_WORD_ORDER_BIG_ENDIAN)
+    else if (word_order == MODBUS_WORD_ORDER_LSW)
     {
         if (!_modbus_append_u16(&arr[0], len, v & 0xFFFF, byte_order))
             return false;
@@ -902,10 +904,10 @@ static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t si
     }
     switch (byte_order)
     {
-        case MODBUS_BYTE_ORDER_BIG_ENDIAN:
+        case MODBUS_BYTE_ORDER_MSB:
             *value = ((data[0] << 8) | data[1]);
             return true;
-        case MODBUS_BYTE_ORDER_LITTLE_ENDIAN:
+        case MODBUS_BYTE_ORDER_LSB:
             *value = ((data[1] << 8) | data[0]);
             return true;
         default:
@@ -934,10 +936,10 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
         return false;
     switch (word_order)
     {
-        case MODBUS_WORD_ORDER_LITTLE_ENDIAN:
+        case MODBUS_WORD_ORDER_MSW:
             *value = (word_1 << 16) | word_2;
             return true;
-        case MODBUS_WORD_ORDER_BIG_ENDIAN:
+        case MODBUS_WORD_ORDER_LSW:
             *value = (word_2 << 16) | word_1;
             return true;
         default:

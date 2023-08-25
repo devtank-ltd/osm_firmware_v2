@@ -105,13 +105,13 @@ void modbus_log()
     modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
     {
-        char byte_char = 'B';
-        char word_char = 'L';
-        if (dev->byte_order == MODBUS_BYTE_ORDER_LITTLE_ENDIAN)
+        char byte_char = 'M';
+        char word_char = 'M';
+        if (dev->byte_order == MODBUS_BYTE_ORDER_LSB)
             byte_char = 'L';
-        if (dev->word_order == MODBUS_WORD_ORDER_BIG_ENDIAN)
-            word_char = 'B';
-        log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" B%c W%c", dev->unit_id, dev->name, byte_char, word_char);
+        if (dev->word_order == MODBUS_WORD_ORDER_LSW)
+            word_char = 'L';
+        log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->unit_id, dev->name, byte_char, word_char);
         modbus_reg_t * reg = _modbus_get_first_reg(dev);
         while(reg)
         {

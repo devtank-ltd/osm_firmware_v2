@@ -215,9 +215,9 @@ bool read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
                 }
                 uint8_t word_order;
                 if (strncmp(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE) == 0)
-                    word_order = MODBUS_WORD_ORDER_BIG_ENDIAN;
+                    word_order = MODBUS_WORD_ORDER_LSW;
                 else if (strncmp(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE) == 0)
-                    word_order = MODBUS_WORD_ORDER_LITTLE_ENDIAN;
+                    word_order = MODBUS_WORD_ORDER_MSW;
                 else
                 {
                     log_error("Word order not recognised.");
@@ -230,9 +230,9 @@ bool read_modbus_json(struct json_object * root, modbus_bus_t* modbus_bus)
                 }
                 uint8_t byte_order;
                 if (strncmp(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE) == 0)
-                    byte_order = MODBUS_BYTE_ORDER_LITTLE_ENDIAN;
+                    byte_order = MODBUS_WORD_ORDER_LSW;
                 else if (strncmp(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE) == 0)
-                    byte_order = MODBUS_BYTE_ORDER_BIG_ENDIAN;
+                    byte_order = MODBUS_WORD_ORDER_MSW;
                 else
                 {
                     log_error("Byte order not recognised.");
@@ -548,10 +548,10 @@ static bool _dev2json_cb(modbus_dev_t * dev, void * userdata)
     char w_b_order_txt[WORD_BYTE_ORDER_TXT_SIZE + 1];
     switch(dev->word_order)
     {
-        case MODBUS_WORD_ORDER_BIG_ENDIAN:
+        case MODBUS_WORD_ORDER_LSW:
             strncpy(w_b_order_txt, "LSW", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
-        case MODBUS_WORD_ORDER_LITTLE_ENDIAN:
+        case MODBUS_WORD_ORDER_MSW:
             strncpy(w_b_order_txt, "MSW", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
         default:
@@ -562,10 +562,10 @@ static bool _dev2json_cb(modbus_dev_t * dev, void * userdata)
     json_object_object_add(dev_node, "word_order", json_object_new_string(w_b_order_txt));
     switch(dev->byte_order)
     {
-        case MODBUS_BYTE_ORDER_LITTLE_ENDIAN:
+        case MODBUS_WORD_ORDER_LSW:
             strncpy(w_b_order_txt, "LSB", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
-        case MODBUS_BYTE_ORDER_BIG_ENDIAN:
+        case MODBUS_WORD_ORDER_MSW:
             strncpy(w_b_order_txt, "MSB", WORD_BYTE_ORDER_TXT_SIZE+1);
             break;
         default:
