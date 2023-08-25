@@ -1,32 +1,37 @@
 #!/usr/bin/python3
 
 import os
-import sys
 from tkinter import *
 import tkinter.messagebox
 from tkinter.ttk import Combobox, Notebook, Progressbar, Style
 import webbrowser
-import serial.tools.list_ports
-import serial
 import re
-import binding
 import yaml
 from idlelib.tooltip import Hovertip
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 import threading
 import traceback
-from modbus_funcs import modbus_funcs_t
-import modbus_db
-from modbus_db import modb_database_t, find_path
-from PIL import ImageTk, Image
-import logging
+import datetime
 import platform
 import signal
 from stat import *
-from gui_binding_interface import binding_interface_client_t
-import time
 import subprocess
-import numpy as np
+import multiprocessing
+import sys
+#Remove prompt from Windows OS
+if platform.system() == "Windows":
+    if sys.frozen == "windows_exe":
+        sys.stderr._error = "inhibit log creation"
+
+from gui_binding_interface import binding_interface_client_t
+from modbus_funcs import modbus_funcs_t
+import modbus_db
+from modbus_db import modb_database_t, find_path
+import binding
+
+import serial.tools.list_ports
+import serial
+from PIL import ImageTk, Image
 
 FW_PROCESS = False
 THREAD = threading.Thread
@@ -47,18 +52,18 @@ FONT = ('Arial', 11, 'bold')
 FONT_L = ('Arial', 14, 'bold')
 FONT_XL = ('Arial', 20, 'bold')
 FONT_XXL = ('Karumbi', 35, 'bold')
-ICONS_T   =    PATH + "/osm_pictures/logos/icons-together.png"
-DVT_IMG   =    PATH + "/osm_pictures/logos/OSM+Powered.png"
-OSM_1     =    PATH + "/osm_pictures/logos/Lora-Rev-C.png"
-R_LOGO    =    PATH + "/osm_pictures/logos/shuffle.png"
-GRPH_BG   =    PATH + "/osm_pictures/logos/graph.png"
-PARAMS    =    PATH + "/osm_pictures/logos/parameters.png"
-OPEN_S    =    PATH + "/osm_pictures/logos/opensource-nb.png"
-OSM_BG    =    PATH + "/osm_pictures/logos/leaves.jpg"
-
+ICONS_T   =    os.path.join(PATH, "osm_pictures/icons-together.png")
+DVT_IMG   =    os.path.join(PATH, "osm_pictures/OSM+Powered.png")
+OSM_1     =    os.path.join(PATH, "osm_pictures/Lora-Rev-C.png")
+R_LOGO    =    os.path.join(PATH, "osm_pictures/shuffle.png")
+GRPH_BG   =    os.path.join(PATH, "osm_pictures/graph.png")
+PARAMS    =    os.path.join(PATH, "osm_pictures/parameters.png")
+OPEN_S    =    os.path.join(PATH, "osm_pictures/opensource-nb.png")
+OSM_BG    =    os.path.join(PATH, "osm_pictures/leaves.jpg")
 
 def log_func(msg):
-    logging.info(msg)
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    print("[%s] GUI : %s" % (now, msg))
 
 
 def open_url(url):
@@ -77,7 +82,7 @@ class config_gui_window_t(Tk):
     def __init__(self):
         super().__init__()
         signal.signal(signal.SIGINT, handle_exit)
-        log_func(f"current path: {PATH}")
+        log_func(f"Current path: {PATH}")
         try:
             self.db = modb_database_t(PATH)
         except Exception as e:
@@ -86,13 +91,17 @@ class config_gui_window_t(Tk):
         self._connected = False
         self._changes = False
         self._widg_del = False
-        with open(PATH + '/yaml_files/modbus_data.yaml', 'w') as f:
+        self._checked = False
+        self.dev_deleted = False
+        yaml_path = PATH + '/yaml_files'
+        if not os.path.exists(yaml_path):
+            os.makedirs(yaml_path)
+        with open(yaml_path + '/modbus_data.yaml', 'w') as f:
             pass
-        with open(PATH + '/yaml_files/del_file.yaml', 'w') as df:
+        with open(yaml_path + '/del_file.yaml', 'w') as df:
             pass
 
         self.binding_interface = binding_interface_client_t()
-        self.binding_interface.unsolicited_handlers = {"DEBUG" : self._add_debug_line_cb}
 
         style = Style()
         style.configure('lefttab.TNotebook', tabposition='wn',
@@ -125,17 +134,13 @@ class config_gui_window_t(Tk):
         self._modb_fr.pack(fill='both', expand=True)
         self._modb_fr.pack_propagate(0)
 
-        self._debug_fr = Frame(self._notebook, bg=IVORY)
-        self._debug_fr.pack(fill='both', expand=True)
-        self._debug_fr.pack_propagate(0)
-
         usb_label = Label(self._conn_fr, text="Select a device",
                           bg=IVORY, font=FONT)
         usb_label.pack()
         returned_ports = []
         curr_platform = "COM" if platform.system(
         ) == "Windows" else "ttyUSB" if platform.system(
-        ) == "Linux" else "cu.usbserial" if platform.system(
+        ) == "Linux" else "cu." if platform.system(
         ) == "Darwin" else None
         active_ports = serial.tools.list_ports.comports(include_links=True)
         for item in active_ports:
@@ -166,8 +171,11 @@ class config_gui_window_t(Tk):
                                 font=FONT, width=20, activebackground="green",
                                 activeforeground=IVORY)
         self._downl_fw.pack()
+        Hovertip(
+            self._downl_fw, "Choose a file to update the OSM firmware with. This can only be done before connecting.",
+            hover_delay=0)
         self._progress = Progressbar(
-            self._conn_fr, orient=HORIZONTAL, length=100, mode='determinate', maximum=150)
+            self._conn_fr, orient=HORIZONTAL, length=100, mode='determinate', maximum=200)
         self._progress.pack()
         self._progress.pack_forget()
         self._fw_label = Label(self._conn_fr, text="", bg=IVORY)
@@ -203,7 +211,7 @@ class config_gui_window_t(Tk):
         self.dev_sel = self._dev_dropdown.get()
         if self.dev_sel:
             log_func("User attempting to connect to device.. : " + self.dev_sel)
-            self._downl_fw.pack_forget()
+            self._downl_fw.configure(state='disabled')
             if self._connected == True:
                 self._connected = False
                 self._widg_del = True
@@ -235,8 +243,7 @@ class config_gui_window_t(Tk):
                 self._adv_fr, text='Advanced config')
             self._notebook.add(
                 self._modb_fr, text="Modbus config")
-            self._notebook.add(self._debug_fr,
-            text="Debug Mode")
+
         self._notebook.select(1)
         self._sensor_name = Label(self._main_fr, text="",
                                     bg=IVORY)
@@ -248,6 +255,23 @@ class config_gui_window_t(Tk):
                                 column=5, row=1,
                                 columnspan=2,
                                 pady=(0, 50), sticky='E')
+
+        self._load_config_btn = Button(self._main_fr, text="Load Config",
+                                       font=FONT, bg=IVORY,
+                                       command= self._open_json_config_file)
+        self._load_config_btn.grid(column=0, row=0, sticky='W', pady=(10, 0))
+        Hovertip(self._load_config_btn, "Select a JSON file containing an OSM configuration to write to this sensor.", hover_delay=0)
+
+        self._save_config_btn = Button(self._main_fr, text="Save Config",
+                                       font=FONT, bg=IVORY,
+                                       command = self._save_config_to_json)
+        self._save_config_btn.grid(column=1, row=0, sticky='W', pady=(10, 0))
+        Hovertip(self._save_config_btn, "Save the current settings on this OSM to a JSON file.", hover_delay=0)
+
+        self.save_load_label = Label(self._main_fr, text="",
+                                     font=FONT, bg=IVORY)
+        self.save_load_label.grid(column=2, row=0, sticky='W', pady=(10, 0))
+
         self._load_meas_l = Label(
             self._main_fr,
             text="Current measurements on OSM",
@@ -322,16 +346,12 @@ class config_gui_window_t(Tk):
         self._open_lora_config(self._main_fr)
 
         self.modbus_opened = False
-        self._dbg_open = False
+
         self._notebook.bind("<<NotebookTabChanged>>",
                             lambda e: self._tab_changed(e,
                                                         self._main_fr,
                                                         self._notebook))
 
-        self.l_img = Image.open(OSM_BG)
-        self.leaf_logo = ImageTk.PhotoImage(self.l_img)
-        self._debug_fr.img_list = []
-        self._debug_fr.img_list.append(self.leaf_logo)
 
         self._modbus        = None
         self._sens_meas     = None
@@ -342,6 +362,9 @@ class config_gui_window_t(Tk):
         self._interval_min  = None
         self.cc_gain        = None
 
+        self._load_gui()
+
+    def _load_gui(self):
         self.binding_interface.get_interval_min(self._on_get_interval_min_done_cb)
         self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
         self.binding_interface.get_serial_num(self._on_get_serial_num_done_cb)
@@ -389,8 +412,11 @@ class config_gui_window_t(Tk):
             list_of_devs.append(dev)
         if self.dev_to_remove not in list_of_devs:
             self.binding_interface.modbus_dev_del(self.dev_to_remove)
+        self.dev_deleted = False
+        self._checked = False
 
     def _on_get_measurements_done_cb(self, resp):
+        self._close_progressbar()
         self._sens_meas = resp[1]
         self.meas_headers = [i[0] for i in self._sens_meas]
         self.binding_interface.get_ftma_specs(self.meas_headers, self._on_get_ftma_specs)
@@ -438,6 +464,28 @@ class config_gui_window_t(Tk):
         self._interval_min = resp[1]
         self._load_headers(self._main_fr, "rif")
 
+    def _on_write_json_to_osm(self, resp):
+        self._close_progressbar()
+        self.save_load_label.configure(text="Config loaded. Reconnecting..")
+        self._on_connect()
+
+    def _on_save_config_json(self, resp):
+        loc = resp[1]
+        log_func(f"OSM configuration saved in {loc}")
+        self._close_progressbar()
+        self.save_load_label.configure(text="Config saved.")
+
+    def _save_config_to_json(self):
+        filetypes = ('json files', '*.json')
+        filepath = asksaveasfilename(filetypes=[filetypes])
+        if filepath:
+            self.binding_interface.save_config_to_json(filepath, self._on_save_config_json)
+            column = 2
+            b_row = 0
+            max = 100
+            delay = 20
+            self._invoke_progressbar(self._main_fr, column, b_row, max, delay)
+
     def _tab_changed(self, event, frame, notebook):
         slction = notebook.select()
         log_func(f"User changed to tab {slction}.")
@@ -446,20 +494,27 @@ class config_gui_window_t(Tk):
                 pass
             self.modbus_opened = True
             self.main_modbus_w()
-        elif slction == '.!notebook.!frame5' and self._dbg_open == False:
-            self._dbg_open = True
-            self.binding_interface.debug_begin()
-            self._open_debug_w(self._debug_fr)
-            log_func(f"User switched to tab 'Debug Mode'.")
-            self._load_debug_meas(self._debug_fr)
-
-        if slction != '.!notebook.!frame5' and self._dbg_open == True:
-            self._dbg_open = False
-            self.binding_interface.debug_end()
 
     def _clear_box(self, event, entry):
         entry.delete(0, END)
         return
+
+    def _open_json_config_file(self):
+        filetypes = ('json files', '*.json')
+        selected = askopenfilename(filetypes=[filetypes])
+        if selected:
+            if tkinter.messagebox.askyesnocancel("Update?", "Update sensor with config from this file?",
+                                                    parent=root):
+                self._write_json_config(self._main_fr, selected)
+
+    def _write_json_config(self, frame, filename):
+        self._visit_widgets(frame, 'disabled')
+        self.binding_interface.write_json_to_osm(filename, self._on_write_json_to_osm)
+        column = 2
+        b_row = 0
+        max = 200
+        delay = 100
+        self._invoke_progressbar(self._main_fr, column, b_row, max, delay)
 
     def _visit_widgets(self, frame, cmd):
         meas = None
@@ -473,9 +528,39 @@ class config_gui_window_t(Tk):
             widg_n = child.widgetName
             if widg_n == 'button' or widg_n == 'entry':
                 child.configure(state=cmd)
+            if frame == self._main_fr:
+                for i in self._second_frame.winfo_children():
+                    i.configure(state=cmd)
+
+    def _invoke_progressbar(self, frame, column, row, max, delay):
+        self.progbar = Progressbar(
+                    frame,
+                    orient=HORIZONTAL,
+                    length=100,
+                    mode='determinate',
+                    maximum=max)
+        self.progbar.grid(column=column, row=row)
+        self.save_load_label.configure(text="")
+        self._load_progbar(delay)
+
+    def _load_progbar(self, delay, count=0):
+        try:
+            self.progbar['value'] = count
+        except:
+            log_func("Could not find progressbar, process finished?")
+            return
+        root.after(delay)
+        if self.progbar:
+            root.after(1, lambda: self._load_progbar(delay, count+1))
+
+    def _close_progressbar(self):
+        try:
+            self.progbar.destroy()
+        except:
+            log_func("Error, no progressbar to remove.")
 
     def _start_fw_cmd(self, selected, frame):
-        log_func("User attempting to flash firmware to sensor...")
+        log_func("User attempting to flash firmware to OSM...")
         global FW_PROCESS
         FW_PROCESS = False
         self._fw_label.configure(text="")
@@ -486,9 +571,10 @@ class config_gui_window_t(Tk):
         self._osm1_lab.pack()
         self._visit_widgets(self._conn_fr, 'disabled')
         self._cmd = None
+        path = os.path.join(PATH, "firmware_update.py")
         try:
             self._cmd = subprocess.Popen(
-                ["sudo", PATH + "/static_program.sh", selected], shell=False)
+                [path, self.dev_sel, selected], shell=False)
         except Exception as e:
             self._stop()
             traceback.print_exc()
@@ -509,7 +595,7 @@ class config_gui_window_t(Tk):
                 self._stop()
                 return
         root.after(100)
-        if count == 150:
+        if count == 200:
             if done is None:
                 self._step(1)
             else:
@@ -534,7 +620,7 @@ class config_gui_window_t(Tk):
         filetypes = ('bin files', '*.bin')
         selected = askopenfilename(filetypes=[filetypes])
         if selected:
-            if tkinter.messagebox.askyesnocancel("Write?", "Write latest software update to sensor?",
+            if tkinter.messagebox.askyesnocancel("Write?", "Write this firmware image to OSM?",
                                                  parent=root):
                 self._start_fw_cmd(selected, frame)
 
@@ -558,65 +644,67 @@ class config_gui_window_t(Tk):
         uplink_to_update.insert(0, 0)
 
     def _change_sample_interval(self, event):
-        meas_chang = ""
         widget = event.widget
         widget_str = str(widget)
-        length = len(widget_str)
-        widget_num = widget_str[length - 2:]
         widget_val = widget.get()
+        uplink_change = inv_change = samp_change = meas_change = change_mins = None
         if int(widget_val) > 99:
             widget_val = '99'
-        for i in range(len(self._entries)):
-            for row in self._entries[i]:
+        entries = self._entries
+        for i in range(len(entries)):
+            for index, row in enumerate(entries[i]):
                 if str(row) == widget_str:
-                    meas_chang = self._entries[i][0]
-                    meas_chang = meas_chang.get()
-                    inv_chang = self._entries[i][2]
-                    uplink_chang = self._entries[i][1]
-                    samp_chang = self._entries[i][3]
+                    meas_change = entries[i][0]
+                    meas_change = meas_change.get()
+                    if index == 1:
+                        uplink_change = entries[i][index]
+                        inv_change = entries[i][2]
+                    elif index == 2:
+                        change_mins = entries[i][index]
+                        uplink_change = entries[i][1]
+                    elif index == 3:
+                        samp_change = entries[i][index]
                     break
-        widget_no = re.findall('\d', widget_num)
-        widget_id = ''.join(widget_no)
-        if int(widget_id) % 4 == 0:
-            self.binding_interface.change_sample(meas_chang, widget_val)
-            samp_chang.delete(0, END)
-            samp_chang.insert(0, widget_val)
-        elif int(widget_id) % 2 == 0:
-            self.binding_interface.change_interval(meas_chang, widget_val)
-            if meas_chang == 'TMP2' and widget_val != '0':
+        if samp_change:
+            self.binding_interface.change_sample(meas_change, widget_val)
+            samp_change.delete(0, END)
+            samp_change.insert(0, widget_val)
+        elif inv_change:
+            self.binding_interface.change_interval(meas_change, widget_val)
+            if meas_change == 'TMP2' and widget_val != '0':
                 self.binding_interface.change_interval("CNT1", "0")
                 self._update_meas_tab('CNT1')
-            elif meas_chang == 'CNT1' and widget_val != '0':
+            elif meas_change == 'CNT1' and widget_val != '0':
                 self.binding_interface.change_interval("TMP2" ,"0")
                 self._update_meas_tab('TMP2')
             res = int(self._interval_min) * int(widget_val)
-            inv_chang.delete(0, END)
-            inv_chang.insert(0, res)
-            uplink_chang.delete(0, END)
-            uplink_chang.insert(0, widget_val)
-        else:
-            self._change_mins(widget_val, inv_chang, uplink_chang, meas_chang)
+            inv_change.delete(0, END)
+            inv_change.insert(0, res)
+            uplink_change.delete(0, END)
+            uplink_change.insert(0, widget_val)
+        elif change_mins:
+            self._change_mins(widget_val, change_mins, uplink_change, meas_change)
 
-    def _change_mins(self, widget_val, inv_chang, uplink_chang, meas_chang):
+    def _change_mins(self, widget_val, change_mins, uplink_change, meas_change):
         if int(widget_val) < int(self._interval_min):
             widget_val = self._interval_min
-            inv_chang.delete(0, END)
-            inv_chang.insert(0, int(widget_val))
+            change_mins.delete(0, END)
+            change_mins.insert(0, int(widget_val))
         elif int(widget_val) % 5 != 0:
             widget_val = self._round_to_multiple(
                 int(widget_val), int(self._interval_min))
-            inv_chang.delete(0, END)
-            inv_chang.insert(0, int(widget_val))
+            change_mins.delete(0, END)
+            change_mins.insert(0, int(widget_val))
         mins = int(widget_val) / int(self._interval_min)
         min = round(mins, 0)
-        self.binding_interface.change_interval(meas_chang, min)
-        uplink_chang.delete(0, END)
-        uplink_chang.insert(0, int(min))
+        self.binding_interface.change_interval(meas_change, min)
+        uplink_change.delete(0, END)
+        uplink_change.insert(0, int(min))
         # if user changes interval in mins for pulsecount or one wire
-        if meas_chang == 'CNT1' and widget_val != '0':
+        if meas_change == 'CNT1' and widget_val != '0':
             self.binding_interface.change_interval("TMP2", "0")
             self._update_meas_tab('TMP2')
-        elif meas_chang == 'TMP2' and widget_val != '0':
+        elif meas_change == 'TMP2' and widget_val != '0':
             self.binding_interface.change_interval("CNT1", "0")
             self._update_meas_tab('CNT1')
 
@@ -758,97 +846,6 @@ class config_gui_window_t(Tk):
         self.io_meas = meas
         self._get_ios_pin_obj(meas)
 
-    def _open_debug_w(self, frame):
-        frame.columnconfigure([0,1,2,3,4,5,6], weight=1)
-        frame.rowconfigure([0,1,2,3,4,5,6], weight=1)
-
-        self._leaf_lab = Label(
-            self._debug_fr, image=self.leaf_logo, bg=IVORY)
-        self._leaf_lab.pack()
-        self._debug_fr.bind('<Configure>', lambda e: self._resize_image(
-            e, self._leaf_lab, self.l_img, self._debug_fr
-        ))
-
-        self._dbg_terml = Text(frame,
-                               bg=BLACK, fg=LIME_GRN,
-                               borderwidth=10, relief="sunken")
-        self._dbg_terml.grid(column=0, row=2, sticky=NS)
-        self._dbg_terml.configure(state='disabled')
-
-        self._debug_first_fr = Frame(frame, bg="green", borderwidth=8,
-                                     relief="ridge")
-        self._debug_first_fr.grid(column=3, row=2, sticky="EW")
-
-        self._dbg_canv = Canvas(
-            self._debug_first_fr)
-        self._dbg_canv.grid(column=0, row=0, sticky=NSEW)
-
-    def _load_debug_meas(self, frame):
-        hdrs = [('Measurement', 'Value')]
-        meas = []
-        self._dbg_sec_fr = Frame(self._dbg_canv)
-        self._dbg_sec_fr.pack(expand=True, fill='both')
-        self._debug_first_fr.columnconfigure(0, weight=1)
-
-        if self._sens_meas:
-            for m in self._sens_meas[1::]:
-                fw = [m[0]]
-                fw.insert(1, 0)
-                meas.append(fw)
-            for i in range(len(meas)):
-                row = tuple(meas[i])
-                hdrs.append(row)
-            total_rows = len(hdrs)
-            total_columns = len(hdrs[0])
-            self._deb_entries = []
-            for i in range(total_rows):
-                newrow = []
-                for j in range(total_columns):
-                    debug_e = Entry(self._dbg_sec_fr,
-                                    bg=IVORY, fg=CHARCOAL,
-                                    font=('Arial', 14, 'bold'))
-                    debug_e.grid(row=i, column=j, sticky=EW)
-                    self._dbg_sec_fr.columnconfigure(j, weight=1)
-                    debug_e.insert(END, hdrs[i][j])
-                    debug_e.configure(state='disabled',
-                                      disabledbackground=IVORY,
-                                      disabledforeground=BLACK)
-                    newrow.append(debug_e)
-                self._deb_entries.append(newrow)
-        self._dbg_canv.create_window(
-            (0, 0), window=self._dbg_sec_fr, anchor="nw", tags="frame")
-        self._dbg_canv.bind_all(
-            "<MouseWheel>", lambda: self._on_mousewheel(self._dbg_canv))
-        debug_sb = Scrollbar(
-            self._debug_first_fr, orient='vertical', command=self._dbg_canv.yview)
-        debug_sb.grid(column=0, row=0, sticky="NSE")
-
-        self._dbg_canv.configure(yscrollcommand=debug_sb.set)
-        self._dbg_canv.bind('<Configure>', lambda e: self._on_canvas_config(
-            e, self._dbg_canv
-        ))
-
-    def _add_debug_line_cb(self, output):
-        resp = output[2]
-        line = resp[0]
-        res = resp[1]
-        self._dbg_terml.configure(state='normal')
-        self._dbg_terml.insert('1.0', line + "\n")
-        self._dbg_terml.configure(state='disabled')
-        if res:
-            dbg_meas = res[0]
-            dbg_val = res[1]
-            if dbg_val != False:
-                for i in self._deb_entries:
-                    meas = i[0].get()
-                    if meas == dbg_meas:
-                        val_to_change = i[1]
-                        val_to_change.configure(state='normal')
-                        val_to_change.delete(0, END)
-                        val_to_change.insert(0, float(dbg_val))
-                        val_to_change.configure(
-                            state='disabled')
-
     def _on_mousewheel(self, event, canvas):
         canvas.yview_scroll(-1*(event.delta/120), "units")
 
@@ -884,7 +881,7 @@ class config_gui_window_t(Tk):
 
     def _load_headers(self, window, idy):
         tablist = [('Measurement', 'Uplink (%smin)' % self._interval_min,
-                    'Interval in Mins', 'Sample Count')]
+                    'Interval in Mins', 'Sample Count', 'Value')]
         if self._sens_meas:
             pos = None
             for i in range(len(self._sens_meas)):
@@ -896,6 +893,7 @@ class config_gui_window_t(Tk):
                     if pos != -1:
                         row[n] = entry[0:pos]
                 row.insert(2, (int(self._interval_min) * int(row[1])))
+                row.insert(4, "")
                 tablist.append(row)
         else:
             log_func("No measurements on sensor detected.")
@@ -974,7 +972,8 @@ class config_gui_window_t(Tk):
                     disabledforeground="black")
                 if j == 1 and i != 0:
                     reg_hover = Hovertip(
-                        self._mbe, self._get_desc(str(self._mbe.get())))
+                        self._mbe, self._get_desc(str(self._mbe.get())),
+                        hover_delay=0)
             self.mb_entries.append(newrow)
             if i != 0:
                 self._check_mb.append(IntVar())
@@ -1016,9 +1015,9 @@ class config_gui_window_t(Tk):
             total_columns = len(tablist[0])
         else:
             tablist = [('Measurement', 'Uplink (min)',
-                        'Interval in Mins', 'Sample Count')]
+                        'Interval in Mins', 'Sample Count', 'Value')]
             total_rows = 1
-            total_columns = 4
+            total_columns = 5
         self._entries = []
         meas_var_list = []
         self._check_meas = []
@@ -1036,15 +1035,16 @@ class config_gui_window_t(Tk):
                 self._second_frame.columnconfigure(j, weight=1)
                 self._e.insert(END, tablist[i][j])
                 newrow.append(self._e)
-                self._e.configure(validate="key", validatecommand=(
-                    window.register(self._handle_input), '%P', '%d'))
-                if i == 0 or j == 0:
+                if j != 4:
+                    self._e.configure(validate="key", validatecommand=(
+                        window.register(self._handle_input), '%P', '%d'))
+                if i == 0 or j == 0 or j == 4:
                     self._e.configure(
                         state='disabled', disabledbackground="white",
                         disabledforeground="black")
                     if j == 0 and i != 0:
                         reg_hover = Hovertip(
-                            self._e, self._get_desc(str(self._e.get())))
+                            self._e, self._get_desc(str(self._e.get())), hover_delay=0)
                 else:
                     self._e.bind(
                         "<FocusOut>", lambda e: self._change_sample_interval(e))
@@ -1078,27 +1078,37 @@ class config_gui_window_t(Tk):
                 check_meas.grid(row=i, column=j+1, padx=(0,15))
 
 
-    def _remove_mb_reg(self, idy, check):
+    def _remove_mb_reg(self, idy, check, type):
+        column = 2
+        b_row = 0
+        max = 300
+        delay = 20
         ticked = []
-        self.dev_to_remove = ""
+        self.dev_to_remove = None
         row = None
-        if check:
+        if check and self.dev_deleted == False:
             for cb in check:
                 if cb.get():
                     row = cb.get()
                     ticked.append(row)
-            for tick in ticked:
-                for i in range(len(self.mb_entries)):
-                    if i == tick:
+            if ticked:
+                self._invoke_progressbar(self._modb_fr, column, b_row, max, delay)
+                for tick in ticked:
+                    for i in range(len(self.mb_entries)):
+                        if i == tick:
                             log_func(
                                 "User attempting to remove modbus register..")
                             device = self.mb_entries[i][0]
                             self.dev_to_remove = device.get()
                             mb_reg_to_change = self.mb_entries[i][1]
                             mb_reg_to_change = mb_reg_to_change.get()
-                            self.binding_interface.modbus_reg_del(mb_reg_to_change)
-            self.binding_interface.get_modbus(self._on_remove_mb_reg)
-            self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
+                            if type == "reg":
+                                self.binding_interface.modbus_reg_del(mb_reg_to_change)
+                            if type == "dev":
+                                self.binding_interface.modbus_dev_del(self.dev_to_remove)
+                                self.dev_deleted = True
+                self.binding_interface.get_modbus(self._on_remove_mb_reg)
+                self.binding_interface.get_measurements(self._on_get_measurements_done_cb)
 
     def _set_meas_to_zero(self, check):
         ticked = []
@@ -1113,29 +1123,76 @@ class config_gui_window_t(Tk):
                     if i == tick:
                         log_func(
                             "User attempting to set measurement interval 0..")
-                        meas_chang = self._entries[i][0]
-                        meas_chang = meas_chang.get()
-                        inv_chang = self._entries[i][2]
-                        uplink_chang = self._entries[i][1]
-                        self.binding_interface.change_interval(meas_chang, 0)
-                        inv_chang.delete(0, END)
-                        inv_chang.insert(0, 0)
-                        uplink_chang.delete(0, END)
-                        uplink_chang.insert(0, 0)
+                        meas_change = self._entries[i][0]
+                        meas_change = meas_change.get()
+                        inv_change = self._entries[i][2]
+                        uplink_change = self._entries[i][1]
+                        self.binding_interface.change_interval(meas_change, 0)
+                        inv_change.delete(0, END)
+                        inv_change.insert(0, 0)
+                        uplink_change.delete(0, END)
+                        uplink_change.insert(0, 0)
+                    for cb in check:
+                        if cb.get() == tick:
+                            cb.set(0)
+
+    def _on_get_last_val(self, resp):
+        meas = resp[1].split(":")[0]
+        try:
+            val = resp[1].split(":")[1].replace(" ", "")
+        except IndexError:
+            log_func("Failed to get measurement reading.")
+            return
+        for i in self._entries:
+            v = i[0].get()
+            if v == meas:
+                val_col = i[4]
+                val_col.configure(state='normal')
+                val_col.delete(0, END)
+                val_col.insert(0, val)
+                val_col.configure(state='disabled')
+
+    def _insert_last_value(self, check):
+        ticked = []
+        row = None
+        if check:
+            for cb in check:
+                if cb.get():
+                    row = cb.get()
+                    ticked.append(row)
+            for tick in ticked:
+                for i in range(len(self._entries)):
+                    if i == tick:
+                        log_func(
+                            "Retrieving last value for each ticked measurement.")
+                        meas = self._entries[i][0]
+                        meas = meas.get()
+                        val_col = self._entries[i][4]
+                        self.binding_interface.get_last_value(meas, self._on_get_last_val)
                     for cb in check:
                         if cb.get() == tick:
                             cb.set(0)
 
     def _check_clicked(self, window, idy, check):
         for cb in check:
-            if cb.get():
+            if cb.get() and self._checked == False:
+                self._checked = True
                 log_func(f"Checkbutton clicked : {cb.get()}")
                 if idy == 'mb':
                     self._del_reg = Button(window, text='Remove',
                                            bg=IVORY, fg=BLACK, font=FONT,
                                            activebackground="green", activeforeground=IVORY,
-                                           command=lambda: self._remove_mb_reg(idy, check))
+                                           command=lambda: self._remove_mb_reg(idy, check, "reg"))
+                    Hovertip(self._del_reg, "Remove selected registers.", hover_delay=0)
                     self._del_reg.grid(column=4, row=8, sticky=NE)
+                    self._del_dev = Button(window, text='Remove Device',
+                                           bg=IVORY, fg=BLACK, font=FONT,
+                                           activebackground="green", activeforeground=IVORY,
+                                           command=lambda: self._remove_mb_reg(idy, check, "dev"))
+                    Hovertip(self._del_dev,
+                             "Remove device and all registers of selected register.",
+                             hover_delay=0)
+                    self._del_dev.grid(column=4, row=9, sticky=NE)
                 else:
                     self._rm_int = Button(window, text='Set Interval 0',
                                           bg=IVORY, fg=BLACK, font=FONT,
@@ -1143,9 +1200,15 @@ class config_gui_window_t(Tk):
                                           command=lambda: self._set_meas_to_zero(check))
                     self._rm_int.grid(column=0, row=15, rowspan=2, sticky=W)
 
+                    self._last_val_btn = Button(window, text='Get Value',
+                                          bg=IVORY, fg=BLACK, font=FONT,
+                                          activebackground="green", activeforeground=IVORY,
+                                          command=lambda: self._insert_last_value(check))
+                    self._last_val_btn.grid(column=1, row=15, rowspan=2, sticky=W)
+
     def _change_on_hover(self, entry):
         e = entry.get()
-        reg_hover = Hovertip(self._e, self._get_desc(entry.get()))
+        reg_hover = Hovertip(self._e, self._get_desc(entry.get()), hover_delay=0)
 
     def _on_get_mp_done_cb(self, resp):
         self.midpoint = resp[1][0].split()[1]
@@ -1165,12 +1228,12 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
         cc_val_lab.grid(column=1, row=1, pady=10, columnspan=2)
         on_hover = Hovertip(
-            cc_val_lab, "Use this page to scale the current clamp")
+            cc_val_lab, "Use this page to scale the current clamp", hover_delay=0)
 
         self._outer_cc = Combobox(self._cc_window)
         self._outer_cc.grid(column=0, row=2)
         on_hover = Hovertip(
-            self._outer_cc, "Set outer and inner current (Amps/millivolts).")
+            self._outer_cc, "Set outer and inner current (Amps/millivolts).", hover_delay=0)
         self._outer_cc['values'] = ('100, 50',
                                     '200, 33'
                                     )
@@ -1179,7 +1242,7 @@ class config_gui_window_t(Tk):
             bg=IVORY, font=FONT)
         outer_cc_lab.grid(column=1, row=2)
         on_hover = Hovertip(
-            outer_cc_lab, "Set outer and inner current.")
+            outer_cc_lab, "Set outer and inner current.", hover_delay=0)
 
         send_btn = Button(self._cc_window,
                           text="Send", command=lambda: self._send_cal(cc),
@@ -1200,12 +1263,13 @@ class config_gui_window_t(Tk):
                         activebackground="green", activeforeground=IVORY)
         cal_btn.grid(column=0, row=5, pady=10)
         on_hover = Hovertip(
-            cal_btn, "Calibrate current clamp midpoint, make sure there is no live current.")
+            cal_btn, "Calibrate current clamp midpoint, make sure there is no live current.",
+            hover_delay=0)
 
         mp_entry = Entry(self._cc_window, bg=IVORY)
         mp_entry.grid(column=3, row=5)
         on_hover = Hovertip(
-            mp_entry, "Manually calibrate ADC midpoint. (Default 2048)")
+            mp_entry, "Manually calibrate ADC midpoint. (Default 2048)", hover_delay=0)
 
         mp_btn = Button(self._cc_window, text="Set midpoint",
                         bg=IVORY, fg=BLACK, font=FONT,
@@ -1213,7 +1277,7 @@ class config_gui_window_t(Tk):
                         command=lambda: self._set_midpoint(mp_entry, cc))
         mp_btn.grid(column=4, row=5)
         on_hover = Hovertip(
-            mp_btn, "Manually calibrate ADC midpoint. (Default 2048)")
+            mp_btn, "Manually calibrate ADC midpoint. (Default 2048)", hover_delay=0)
 
         self._cal_label = Label(self._cc_window, text="",
         bg=IVORY)
@@ -1226,7 +1290,7 @@ class config_gui_window_t(Tk):
             Here you can set Exterior and Interior values which are defaulted to 100A and 50mV respectively.\t\n
             You must set the midpoint when first configuring each phase, achieve this by simply selecting calibrate ADC.\t\n
             There is also the option to set the midpoint manually. A typical value is around 2030-2048.\t\n
-            ''')
+            ''', hover_delay=0)
 
     def _fill_cc_term(self):
         self._cal_terminal.configure(state='normal')
@@ -1363,7 +1427,7 @@ class config_gui_window_t(Tk):
         graph_canv = Canvas(self._ftma_window)
         graph_canv.grid(column=0, row=8, columnspan=2)
 
-        
+
         X_START = 70
         X_END = 340
         Y_START = 220
@@ -1379,7 +1443,7 @@ class config_gui_window_t(Tk):
 
         Y_AXIS_LAB_X_OFFSET = 125
         Y_AXIS_LAB_Y_OFFSET = 30
-    
+
         X_AXIS_NUM_Y_OFFSET = 10
         Y_AXIS_NUM_X_OFFSET = -10
 
@@ -1449,7 +1513,7 @@ class config_gui_window_t(Tk):
             float(self.coeffs[2]) * milliamps ** 2 + \
             float(self.coeffs[3]) * milliamps ** 3
         return output
-    
+
     def _send_coeffs(self, name, args, meas):
         find_name = re.findall("[a-zA-z0-9]+", name)
         if find_name:
@@ -1546,7 +1610,7 @@ class config_gui_window_t(Tk):
                              activebackground="green", activeforeground=IVORY)
         add_eui_btn.grid(column=7, row=7, sticky="NSEW")
 
-        app_label = Label(frame, text="AppKey: ",
+        app_label = Label(frame, text="App key: ",
                           bg=IVORY, font=FONT)
         app_label.grid(column=5, row=8, sticky="E")
 
@@ -1569,9 +1633,11 @@ class config_gui_window_t(Tk):
                           activebackground="green", activeforeground=IVORY)
         save_btn.grid(column=7, row=10, sticky="NSEW")
 
-        lora_l = Label(frame, text="Status: ",
+        lora_l = Label(frame, text="Comms: ",
                        bg=IVORY, font=FONT)
         lora_l.grid(column=5, row=9, sticky="E")
+        lora_hover = Hovertip(
+                lora_l, "External Communications Status", hover_delay=0)
 
         self._lora_status = Label(frame, text="",
                                   bg=IVORY, font=FONT)
@@ -1652,7 +1718,7 @@ class config_gui_window_t(Tk):
                                    bg=IVORY, fg=BLACK, font=FONT,
                                activebackground="green", activeforeground=IVORY)
         delete_button.grid(column=2, row=1, sticky=EW)
-        tt_del_btn = Hovertip(delete_button, 'Remove template.')
+        tt_del_btn = Hovertip(delete_button, 'Remove template.', hover_delay=0)
 
         edit_template_button = Button(self._modb_fr, text="Edit",
                                       command=lambda: self._add_template_w(
@@ -1661,7 +1727,7 @@ class config_gui_window_t(Tk):
                                       activebackground="green", activeforeground=IVORY)
         edit_template_button.grid(column=2, row=2, sticky=EW)
         tt_edit_btn = Hovertip(edit_template_button,
-                               'Edit template.')
+                               'Edit template.', hover_delay=0)
 
         add_template_button = Button(self._modb_fr, text="Add",
                                      command=lambda: self._add_template_w(
@@ -1669,7 +1735,7 @@ class config_gui_window_t(Tk):
                                      bg=IVORY, fg=BLACK, font=FONT,
                                      activebackground="green", activeforeground=IVORY)
         add_template_button.grid(column=2, row=3, sticky=EW)
-        tt_add_btn = Hovertip(add_template_button, 'Create a new template.')
+        tt_add_btn = Hovertip(add_template_button, 'Create a new template.', hover_delay=0)
 
         apply_template_button = Button(self._modb_fr, text="Apply",
                                        command=lambda: self._write_to_dev(
@@ -1678,7 +1744,7 @@ class config_gui_window_t(Tk):
                                        activebackground="green", activeforeground=IVORY)
         apply_template_button.grid(column=2, row=4, sticky=EW)
         tt_apply_btn = Hovertip(apply_template_button,
-                                'Write template to device.')
+                                'Write template to device.', hover_delay=0)
 
         copy_template_button = Button(self._modb_fr, text="Copy",
                                       command=lambda: self._add_template_w(
@@ -1687,7 +1753,7 @@ class config_gui_window_t(Tk):
                                       activebackground="green", activeforeground=IVORY)
         copy_template_button.grid(column=2, row=5, sticky=EW)
         tt_copy_btn = Hovertip(copy_template_button,
-                               'Duplicate template.')
+                               'Duplicate template.', hover_delay=0)
 
         revert_template_button = Button(self._modb_fr, text="Revert",
                                         command=self._reset_listb,
@@ -1695,14 +1761,14 @@ class config_gui_window_t(Tk):
                                         activebackground="green", activeforeground=IVORY)
         revert_template_button.grid(column=2, row=6, sticky=EW)
         tt_revert_btn = Hovertip(
-            revert_template_button, 'Undo unsaved changes.')
+            revert_template_button, 'Undo unsaved changes.', hover_delay=0)
 
         save_template_button = Button(self._modb_fr, text="Save",
                                       command=self._send_to_save,
                                       bg=IVORY, fg=BLACK, font=FONT,
                                       activebackground="green", activeforeground=IVORY)
         save_template_button.grid(column=2, row=7, sticky=EW)
-        tt_save_btn = Hovertip(save_template_button, 'Save all changes.')
+        tt_save_btn = Hovertip(save_template_button, 'Save all changes.', hover_delay=0)
 
         unit_id = Label(self._modb_fr, text="Modbus registers on Template",
                         font=FONT, bg=IVORY)
@@ -1720,7 +1786,7 @@ class config_gui_window_t(Tk):
                                 bg=IVORY, fg=BLACK, font=FONT,
                                 activebackground="green", activeforeground=IVORY)
         del_reg_button.grid(column=2, row=9, sticky=EW)
-        tt_del_r_btn = Hovertip(del_reg_button, 'Remove register.')
+        tt_del_r_btn = Hovertip(del_reg_button, 'Remove register.', hover_delay=0)
 
         shift_up_button = Button(self._modb_fr, text="▲",
                                  command=lambda:
@@ -1730,7 +1796,7 @@ class config_gui_window_t(Tk):
                                  bg=IVORY, fg=BLACK, font=FONT,
                                  activebackground="green", activeforeground=IVORY)
         shift_up_button.grid(column=2, row=10, sticky=EW)
-        tt_sh_u_btn = Hovertip(shift_up_button, 'Shift up')
+        tt_sh_u_btn = Hovertip(shift_up_button, 'Shift up', hover_delay=0)
 
         shift_down_button = Button(self._modb_fr, text="▼",
                                    command=lambda:
@@ -1740,7 +1806,7 @@ class config_gui_window_t(Tk):
                                    bg=IVORY, fg=BLACK, font=FONT,
                                    activebackground="green", activeforeground=IVORY)
         shift_down_button.grid(column=2, row=11, sticky=EW)
-        tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down')
+        tt_sh_d_btn = Hovertip(shift_down_button, 'Shift down', hover_delay=0)
 
         self._current_mb = Label(
             self._modb_fr, text="Current modbus settings on OSM", font=FONT, bg=IVORY)
@@ -1922,7 +1988,7 @@ class config_gui_window_t(Tk):
             self._add_regs_window.destroy()
         # This might not catch the right error, but catching all is bad.
         except AttributeError:
-            log_func("Add register window doesn't exist")
+            pass
 
     def _shift_down(self, listbox, temp_list, name_entry, identity):
         selection = listbox.curselection()
@@ -2392,9 +2458,14 @@ class config_gui_window_t(Tk):
         regs = None
         if selection:
             index = selection[0]
-            cancel = tkinter.messagebox.askyesnocancel(
+            write = tkinter.messagebox.askyesnocancel(
                 "Save", "Write this template to your device?")
-            if cancel:
+            if write:
+                column = 2
+                b_row = 0
+                max = 300
+                delay = 20
+                self._invoke_progressbar(self._modb_fr, column, b_row, max, delay)
                 log_func("User attempting to write modbus template to sensor..")
                 chosen_template = temp_list.get(index)
                 curr_devs = []
@@ -2431,18 +2502,21 @@ class config_gui_window_t(Tk):
 
 
 if __name__ == '__main__':
-    own_dir = os.path.dirname(__file__)
+    if platform.system() == "Windows":
+        multiprocessing.freeze_support()
+    own_dir = os.path.dirname(sys.argv[0])
     os.chdir(own_dir)
     root = config_gui_window_t()
     tag = os.popen("git describe --tags").read().split('-')[0]
     width, height = root.winfo_screenwidth(), root.winfo_screenheight()
     root.geometry('%dx%d+0+0' % (width, height))
-    root.title(f"Open Smart Monitor Configuration: {tag}")
+    if tag:
+        root.title(f"Open Smart Monitor Configuration: {tag}")
+    else:
+        root.title("Open Smart Monitor Configuration")
     root.resizable(True, True)
     root.configure(bg="lightgrey")
     root.protocol("WM_DELETE_WINDOW", root._on_closing)
-    logging.basicConfig(
-        format='[%(asctime)s.%(msecs)06d] GUI : %(message)s',
-        level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
     binding.set_debug_print(binding.default_print)
     root.mainloop()
+    log_func("Closed Open Smart Monitor Configuration GUI")

@@ -5,6 +5,7 @@ import serial
 import time
 import queue
 import logging
+import platform
 
 # Interface between API and binding
 
@@ -61,6 +62,9 @@ REQ_SET_COEFFS      = "REQ_SET_COEFFS"
 REQ_FTMA            = "REQ_FTMA"
 REQ_SET_FTMA_NAME   = "REQ_SET_FTMA_NAME"
 REQ_GET_FTMA_COEFFS = "REQ_GET_FTMA_COEFFS"
+REQ_SAVE_CONF       = "REQ_SAVE_CONF"
+REQ_LOAD_CONF       = "REQ_LOAD_CONF"
+REQ_LAST_VAL        = "REQ_LAST_VAL"
 
 logging.basicConfig(
     format='[%(asctime)s.%(msecs)06d] INTERFACE : %(message)s',
@@ -109,13 +113,32 @@ class binding_interface_svr_t:
                           REQ_SET_COEFFS      : self._req_set_coeffs,
                           REQ_FTMA            : self._req_ftma_specs,
                           REQ_SET_FTMA_NAME   : self._req_ftma_name,
-                          REQ_GET_FTMA_COEFFS : self._req_ftma_coeffs}
+                          REQ_GET_FTMA_COEFFS : self._req_ftma_coeffs,
+                          REQ_SAVE_CONF       : self._save_config_to_json,
+                          REQ_LOAD_CONF       : self._load_json_conf_to_osm,
+                          REQ_LAST_VAL        : self._get_last_val}
 
         self.serial_obj = None
         self.dev = None
         self.debug_parse = None
         self._alive = True
-    
+
+    def _get_last_val(self, args):
+        meas = args[1]
+        val = self.dev.do_cmd(f"get_meas {meas}", timeout=10)
+        return val
+
+    def _load_json_conf_to_osm(self, args):
+        dev = self.dev.create_json_dev()
+        filename = args[1]
+        dev.verify_file(filename)
+
+    def _save_config_to_json(self, args):
+        dev = self.dev.create_json_dev()
+        dev.get_config()
+        filename = args[1]
+        return dev.save_config(filename)
+
     def _req_ftma_specs(self, args):
         headers = args
         return self.dev.get_ftma_types(headers)
@@ -175,7 +198,6 @@ class binding_interface_svr_t:
 
     def _request_do_cmd_multi(self, args):
         cmd = args[1]
-        log(f"in request_do_cmd_multi: {cmd}")
         return self.dev.do_cmd_multi(cmd)
 
     def _request_set_cc(self, args):
@@ -256,21 +278,32 @@ class binding_interface_svr_t:
 
     def _open_con_cb(self, args):
         dev = args[1]
-        log(f"Openning serial:" + dev)
+        log(f"Opening serial:" + dev)
         try:
-            serial_obj = serial.Serial(port=dev,
-                                            baudrate=115200,
-                                            bytesize=serial.EIGHTBITS,
-                                            parity=serial.PARITY_NONE,
-                                            stopbits=serial.STOPBITS_ONE,
-                                            timeout=0)
+            serial_obj = serial.Serial()
+            serial_obj.port = dev
+            serial_obj.baudrate = 115200
+            serial_obj.bytesize = serial.EIGHTBITS
+            serial_obj.parity = serial.PARITY_NONE
+            serial_obj.stopbits = serial.STOPBITS_ONE
+            serial_obj.timeout = 0
+            #Control handshaking lines if on Mac OS or Windows
+            if platform.system() == "Darwin" or platform.system() == "Windows":
+                serial_obj.rts = True
+                serial_obj.dtr = True
+                time.sleep(0.1)
+                serial_obj.rts = False
+                serial_obj.dtr = False
+                time.sleep(0.1)
+
+            serial_obj.open()
             self.dev = binding.dev_t(serial_obj)
             self.serial_obj = serial_obj
             self.debug_parse = None
             return True
         except Exception as e:
             traceback.print_exc()
-            log(f"Openned Failed {e}")
+            log(f"Opened Failed {e}")
             # Todo, handle expected or error out
             return False
 
@@ -403,10 +436,10 @@ class binding_interface_client_t:
 
     def set_coeffs(self, a, b, c, d, meas, answered_cb=None):
         self._basic_query((REQ_SET_COEFFS, a, b, c, d, meas), answered_cb)
-    
+
     def set_ftma_name(self, meas, name, answered_cb):
         self._basic_query((REQ_SET_FTMA_NAME, meas, name), answered_cb)
-    
+
     def get_ftma_specs(self, headers, answered_cb):
         self._basic_query((REQ_FTMA, headers), answered_cb)
 
@@ -475,6 +508,15 @@ class binding_interface_client_t:
 
     def save(self, answered_cb=None):
         self._basic_query((REQ_SAVE,), answered_cb)
+
+    def save_config_to_json(self, contents, answered_cb=None):
+        self._basic_query((REQ_SAVE_CONF, contents), answered_cb)
+
+    def write_json_to_osm(self, contents, answered_cb=None):
+        self._basic_query((REQ_LOAD_CONF, contents), answered_cb)
+
+    def get_last_value(self, meas, answered_cb=None):
+        self._basic_query((REQ_LAST_VAL, meas,), answered_cb)
 
 
 if __name__ == "__main__":

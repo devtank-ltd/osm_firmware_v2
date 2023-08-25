@@ -4,7 +4,8 @@ MODEL_DIR ?= $(OSM_DIR)/model
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
-GIT_SHA1 := $(shell git log -n 1 --format="%h")
+GIT_SHA1 := $(shell printf "%.*s\n" 7 $$(git log -n 1 --format="%H"))
+GIT_SHA1_LEN := $(shell printf '%s' '$(GIT_SHA1)' | wc -c)
 GIT_TAG ?= $(shell git tag --points-at HEAD)
 
 MODELS = $(shell find $(MODEL_DIR)/* -maxdepth 0 -type d -printf '%f\n')
@@ -19,6 +20,9 @@ RELEASE_NAME := $(GIT_TAG)_release_bundle
 JSON_CONV := $(BUILD_DIR)/tool/json_x_img
 
 all: $(MODELS_FW)
+	@if [ $(GIT_SHA1_LEN) != 7 ]; then \
+		echo "Error: git sha is incorrect length."; \
+	fi
 
 $(BUILD_DIR)/.git.$(GIT_COMMIT): $(LIBOPENCM3)
 	mkdir -p "$(@D)"

@@ -23,7 +23,7 @@ LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_D
 LINUX_LDFLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINUX_LDFLAGS += -lgcov --coverage -pthread -lutil
 
-SQLITE_DB ?= $(OSM_DIR)/config_gui/release/config_database/modbus_templates
+SQLITE_DB ?= $(OSM_DIR)/tools/config_gui/config_database/modbus_templates
 
 
 #Linux Port Dependencies

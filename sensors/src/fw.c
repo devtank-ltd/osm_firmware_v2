@@ -2,9 +2,9 @@
 #include "log.h"
 #include "measurements.h"
 
-
 #define FW_SHA_LEN                          7
 
+_Static_assert(sizeof(GIT_SHA1) - 1 <= FW_SHA_LEN, "Firmware hash is too long.");
 
 static char fw_sha1[FW_SHA_LEN+1] = GIT_SHA1;
 

@@ -12,7 +12,11 @@ import weakref
 import string
 import random
 import json
+import platform
 
+sys.path.append(os.path.join(os.path.dirname(__file__), "../tools/json_config_tool/"))
+
+import json_config
 
 MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_addr>0x[0-9A-Fa-f]+) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
 MODBUS_REG_SET_NAME_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_name>.{1,4})\((?P<reg_addr>0x[0-9A-Fa-f]+)\) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
@@ -216,6 +220,7 @@ class low_level_dev_t(object):
         self._serial = serial_obj
         self._log_obj = log_obj
         self.fileno = serial_obj.fileno
+        self.system = False if platform.system() == "Windows" else True
 
     def write(self, msg):
         self._log_obj.send(msg)
@@ -240,9 +245,10 @@ class low_level_dev_t(object):
         new_msg = None
         msgs = []
         while now < end_time:
-            r = select.select([self], [], [], end_time - now)
-            if not r[0]:
-                debug_print("Lines timeout")
+            if self.system:
+                r = select.select([self], [], [], end_time - now)
+                if not r[0]:
+                    debug_print("Lines timeout")
             # Should be echo of command
             new_msg = self.read()
             if new_msg is None:
@@ -370,6 +376,13 @@ class dev_t(dev_base_t):
         self.update_measurements()
         self.port = port
 
+    def create_json_dev(self):
+        """ As this is not creating an object on this object, weakref is
+        not needed, this could be demonstrated by making this a
+        @staticmethod and handing in the device """
+        json_dev = json_config.dev_json_t(self)
+        return json_dev
+
     def __getattr__(self, attr):
         child = self._children.get(attr, None)
         if child:
@@ -411,11 +424,12 @@ class dev_t(dev_base_t):
     @property
     def interval_mins(self):
         r = self.do_cmd_multi("interval_mins")
+        rs = float(r[0].split()[-1])
         return float(r[0].split()[-1])
 
     @interval_mins.setter
     def interval_mins(self, value):
-        return self.do_cmd("interval_mins %u" % value)
+        return self.do_cmd_multi("interval_mins %u" % value)
 
     @property
     def app_key(self):
@@ -468,7 +482,7 @@ class dev_t(dev_base_t):
         if line.startswith(meas):
             parts = line.split(":")
             if len(parts) == 2:
-                to = int(parts[1]) / 1000
+                to = int(parts[1]) / 500
                 r = max(1.5, to)
                 debug_print(f"Measurement {meas} has timeout {r}")
                 return r
@@ -495,7 +509,7 @@ class dev_t(dev_base_t):
         self.do_cmd(f"cc_gain {phase} {outer} {inner}")
 
     def save(self):
-        self.do_cmd("save")
+        return self.do_cmd("save")
 
     def do_cmd(self, cmd: str, timeout: float = 1.5) -> str:
         r = self.do_cmd_multi(cmd, timeout)
@@ -648,7 +662,7 @@ class dev_t(dev_base_t):
         reg     = kwargs.get("reg",     None)
         dev     = kwargs.get("dev",     None)
         value   = kwargs.get("value",   0.  )
-        timeout = kwargs.get("timeout", 3.  )
+        timeout = kwargs.get("timeout", 5.  )
         if dev:
             reg_addr = kwargs["reg_addr"]
             type_    = kwargs["type"]
@@ -722,7 +736,6 @@ class dev_t(dev_base_t):
                     debug_print("OSM reset'ed")
                     return True
         return False
-
 
 class dev_debug_t(dev_base_t):
     def __init__(self, port):
