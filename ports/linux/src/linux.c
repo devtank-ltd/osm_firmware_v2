@@ -42,6 +42,8 @@
 #define LINUX_PERSIST_FILE_LOC  "osm.img"
 #define LINUX_REBOOT_FILE_LOC   "reboot.dat"
 
+#define LINUX_FD_SAVE_FMT "%s %"PRIi32" %"PRIi32" %u\n"
+
 bool linux_has_reset = false;
 
 
@@ -248,6 +250,7 @@ static void _linux_remove_symlink(char name[LINUX_PTY_NAME_SIZE])
     strncat(buf, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     if (remove(buf))
         linux_error("FAIL PTY SYMLINK CLEANUP: %s", buf);
+    linux_port_debug("Removed symlink \"%s\"", buf);
 }
 
 
@@ -258,25 +261,25 @@ static void _linux_pty_symlink(int32_t fd, char* new_tty_name)
     if (ttyname_r(fd, initial_tty, sizeof(initial_tty)))
     {
         close(fd);
-        linux_error("FAIL PTY FIND TTY");
+        linux_error("FAIL - PTY FIND TTY FOR \"%s\"", new_tty_name);
     }
 
     if (access(new_tty_name, F_OK) == 0)
     {
         close(fd);
-        linux_error("FAIL SYMLINK ALREADY EXISTS");
+        linux_error("FAIL - SYMLINK \"%s\" ALREADY EXISTS", new_tty_name);
     }
 
     if (!access(new_tty_name, F_OK) && remove(new_tty_name))
     {
         close(fd);
-        linux_error("FAIL REMOVE OLD SYMLINK");
+        linux_error("FAIL - REMOVE OLD SYMLINK \"%s\"", new_tty_name);
     }
 
     if (symlink(initial_tty, new_tty_name))
     {
         close(fd);
-        linux_error("FAIL SYMLINK TTY");
+        linux_error("FAIL - SYMLINK TTY \"%s\"", new_tty_name);
     }
 }
 
@@ -327,7 +330,8 @@ static void _linux_save_fd_file(void)
             switch (fd->type)
             {
                 case LINUX_FD_TYPE_PTY:
-                    fprintf(osm_reboot_file, "%s:%"PRIi32":%"PRIi32"\n", fd->name, fd->pty.master_fd, fd->pty.slave_fd);
+                    fprintf(osm_reboot_file, LINUX_FD_SAVE_FMT, fd->name, fd->pty.master_fd, fd->pty.slave_fd, fd->pty.uart);
+                    linux_port_debug("Save FD %i \"%s\" UART:%u", i, fd->name, fd->pty.uart);
                     break;
                 default:
                     break;
@@ -344,35 +348,59 @@ static void _linux_load_fd_file(void)
     concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     FILE* osm_reboot_file = fopen(osm_reboot_loc, "r");
     if (!osm_reboot_file)
+    {
+        linux_port_debug("No saved file descriptors.");
         return;
+    }
+    linux_port_debug("Loading saved file descriptors.");
     char line[LINUX_LINE_BUF_SIZ];
     while (fgets(line, LINUX_LINE_BUF_SIZ-1, osm_reboot_file))
     {
-        uint16_t len = strnlen(line, LINUX_LINE_BUF_SIZ-1);
-        for (unsigned j = 0; j < len; j++)
+        char  name[LINUX_PTY_NAME_SIZE] = {0};
+        int32_t master_fd;
+        int32_t slave_fd;
+        unsigned uart;
+        if (sscanf(line, LINUX_FD_SAVE_FMT, name, &master_fd, &slave_fd, &uart) != 4)
         {
-            if (line[j] == ':')
-                line[j] = '\0';
-        }
-        char* name = line;
-        uint16_t name_len = strnlen(name, LINUX_LINE_BUF_SIZ-1);
-        if (name_len > LINUX_PTY_NAME_SIZE-1)
-            /* Name is too long, ignore. */
+            linux_error("Failed to read saved FD line!");
             continue;
-        char* pos = line + name_len + 1;
-        int32_t master_fd = strtol(pos, &pos, 10);
-        int32_t slave_fd = strtol(pos+1, NULL, 10);
+        }
+        unsigned name_len = strnlen(name, LINUX_PTY_NAME_SIZE-1);
+
+        bool found = false;
+        int next_slot = -1;
         for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
         {
             fd_t* fd = &fd_list[i];
             if (!fd->name[0] || !isascii(fd->name[0]))
+            {
+                if (next_slot == -1)
+                    next_slot = i;
                 continue;
+            }
             if (strnlen(fd->name, LINUX_PTY_NAME_SIZE-1) != name_len)
                 continue;
             if (strncmp(fd->name, name, name_len) != 0)
                 continue;
             fd->pty.master_fd = master_fd;
             fd->pty.slave_fd = slave_fd;
+            fd->pty.uart = uart;
+            linux_port_debug("Saved FD %u \"%s\" UART:%u found/restored", i, fd->name, uart);
+            found = true;
+        }
+        if (!found)
+        {
+            if (next_slot != -1)
+            {
+                fd_t* fd = &fd_list[next_slot];
+                memcpy(fd->name, name, name_len+1);
+                fd->type = LINUX_FD_TYPE_PTY;
+                fd->cb = linux_uart_proc;
+                fd->pty.uart = uart;
+                fd->pty.master_fd = master_fd;
+                fd->pty.slave_fd = slave_fd;
+                linux_port_debug("Saved FD %d \"%s\" UART:%u restored", next_slot, fd->name, uart);
+            }
         }
     }
     fclose(osm_reboot_file);
@@ -582,22 +610,38 @@ static void _linux_setup_poll(void)
 
 bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 {
-    if (strlen(pty_name) >  (LINUX_PTY_NAME_SIZE - 1))
+    unsigned pty_name_len = strlen(pty_name);
+    if (pty_name_len >  (LINUX_PTY_NAME_SIZE - 1))
         return false;
+
+    int next_slot = -1;
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
         {
-            strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
-            fd->type = LINUX_FD_TYPE_PTY;
+            if (next_slot == -1)
+                next_slot = i;
+            continue;
+        }
+        if (!strncmp(fd->name, pty_name, LINUX_PTY_NAME_SIZE))
+        {
             fd->pty.uart = uart;
-            fd->cb = linux_uart_proc;
-            _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-            linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
-            _linux_setup_poll();
+            linux_port_debug("UART %u was already %s%s_slave", uart, ret_static_file_location(), pty_name);
             return true;
         }
+    }
+    if (next_slot != -1)
+    {
+        fd_t* fd = &fd_list[next_slot];
+        memcpy(fd->name, pty_name, pty_name_len + 1);
+        fd->type = LINUX_FD_TYPE_PTY;
+        fd->pty.uart = uart;
+        fd->cb = linux_uart_proc;
+        _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
+        linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
+        _linux_setup_poll();
+        return true;
     }
     return false;
 }

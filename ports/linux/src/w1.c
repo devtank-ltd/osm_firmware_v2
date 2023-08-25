@@ -13,7 +13,7 @@
 
 
 static bool _w1_connected = false;
-static int  _w1_socketfd;
+static int  _w1_socketfd = -1;
 
 
 bool w1_reset(uint8_t index)
@@ -62,7 +62,10 @@ void w1_init(uint8_t index)
 void w1_linux_deinit(void)
 {
     if (_w1_connected)
+    {
         close(_w1_socketfd);
+        unlink(W1_SERVER_LOC);
+    }
 }
 
 
