@@ -11,17 +11,7 @@
 #include "log.h"
 #include "pinmap.h"
 
-
-#define UART_CHANNELS_LINUX                                                                     \
-{                                                                                               \
-    { UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, true, 0}, /* UART 0 Debug */   \
-    { UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, true, 0}, /* UART 1 LoRa */    \
-    { UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, true, 0}, /* UART 2 HPM */     \
-    { UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, true, 0}, /* UART 3 485 */     \
-}
-
-
-static uart_channel_t uart_channels[] = UART_CHANNELS_LINUX;
+static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 
 void linux_uart_proc(unsigned uart, char* in, unsigned len)
@@ -110,6 +100,7 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uar
 
 bool uart_resetup_str(unsigned uart, char * str)
 {
+        return true;
     uint32_t         speed;
     uint8_t          databits;
     osm_uart_parity_t    parity;
