@@ -111,7 +111,7 @@ static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .cb=linux_uart_proc
                                                     },
                                                    {.type=LINUX_FD_TYPE_PTY,
-                                                    .name={"UART_LW"},
+                                                    .name={"UART_COMMS"},
                                                     .pty = {.uart = COMMS_UART},
                                                     .cb=linux_uart_proc},
                                                    {.type=LINUX_FD_TYPE_EVENT,
