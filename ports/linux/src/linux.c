@@ -894,8 +894,8 @@ bool platform_running(void)
     return _linux_running;
 }
 
-
 void platform_hpm_enable(bool enable)
+#ifdef HPM_UART
 {
     const char* on_data = "ON\n";
     const char* off_data = "OFF\n";
@@ -906,6 +906,9 @@ void platform_hpm_enable(bool enable)
     }
     uart_blocking(HPM_UART, off_data, strlen(off_data));
 }
+#else //HPM_UART
+{}
+#endif //HPM_UART
 
 
 void platform_tight_loop(void)
