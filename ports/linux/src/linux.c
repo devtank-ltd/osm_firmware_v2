@@ -936,6 +936,8 @@ uint32_t get_since_boot_ms(void)
 
 void linux_usleep(unsigned usecs)
 {
+    if (!_linux_running)
+        return; /* No sleep for the dying. */
     int64_t end_time = linux_get_current_us() + usecs;
 
     struct timespec ts = {.tv_sec = end_time / 1000000,
