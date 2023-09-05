@@ -20,6 +20,7 @@
 #include <libgen.h>
 #include <linux/limits.h>
 #include <spawn.h>
+#include <fcntl.h>
 
 #include "platform.h"
 #include "linux.h"
@@ -170,17 +171,31 @@ static void _linux_sig_handler(int signo)
 }
 
 
-void linux_error(char* fmt, ...)
+static void _linux_error(char * fmt, va_list v, int error)
 {
     fprintf(stderr, "LINUX ERROR: ");
-    va_list v;
-    va_start(v, fmt);
     vfprintf(stderr, fmt, v);
     va_end(v);
     fprintf(stderr, " (%s)", strerror(errno));
     fprintf(stderr, "\n");
     model_linux_close_fakes();
     exit(-1);
+}
+
+
+void linux_error(char* fmt, ...)
+{
+    va_list v;
+    va_start(v, fmt);
+    _linux_error(fmt, v, errno);
+}
+
+
+void linux_error2(int error, char* fmt, ...)
+{
+    va_list v;
+    va_start(v, fmt);
+    _linux_error(fmt, v, error);
 }
 
 
@@ -597,23 +612,63 @@ static void _linux_setup_poll(void)
 
 bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 {
-    if (strlen(pty_name) >  (LINUX_PTY_NAME_SIZE - 1))
-        return false;
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
         {
-            strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
-            fd->type = LINUX_FD_TYPE_PTY;
-            fd->pty.uart = uart;
-            fd->cb = linux_uart_proc;
-            _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-            linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
+            if (pty_name[0] == '/') /*Is it a path to an existing TTY? */
+            {
+                char * pty_path = pty_name;
+                linux_port_debug("UART %u given path %s", uart, pty_path);
+                pty_name = basename(pty_name);
+                int fd_id = open(pty_path, O_RDWR | O_NOCTTY | O_SYNC);
+                if (fd_id < 0)
+                {
+                    linux_error("Failed to open %s", pty_path);
+                    return false;
+                }
+                else
+                {
+                    unsigned name_len = strlen(pty_name);
+
+                    if (name_len > 6 && strncmp(pty_name + name_len - 6, "_slave", 6) == 0)
+                        name_len -= 6;
+
+                    if (name_len > (LINUX_PTY_NAME_SIZE - 1))
+                    {
+                        linux_error2(EINVAL, "PTY name %s too long", pty_name);
+                        return false;
+                    }
+                    strncpy(fd->name, pty_name, name_len);
+                    fd->type = LINUX_FD_TYPE_PTY;
+                    fd->pty.uart = uart;
+                    fd->cb = linux_uart_proc;
+                    fd->pty.slave_fd = -1;
+                    fd->pty.master_fd = fd_id;
+                    linux_port_debug("UART %u %s for %s", uart, fd->name, pty_path);
+                }
+            }
+            else
+            {
+                if (strlen(pty_name) >    (LINUX_PTY_NAME_SIZE - 1))
+                {
+                    linux_error2(EINVAL, "PTY name %s too long", pty_name);
+                    return false;
+                }
+
+                strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
+                fd->type = LINUX_FD_TYPE_PTY;
+                fd->pty.uart = uart;
+                fd->cb = linux_uart_proc;
+                _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
+                linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
+            }
             _linux_setup_poll();
             return true;
         }
     }
+    linux_error2(ENOBUFS, "No spare PTY slot.");
     return false;
 }
 
