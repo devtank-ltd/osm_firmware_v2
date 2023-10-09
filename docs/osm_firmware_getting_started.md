@@ -10,12 +10,12 @@ directory.
 
     git clone --recursive git.devtank.co.uk:/git/osm\_firmware.git
     git pull
-    git submodule init 
+    git submodule init
     git submodule update
 
 There are several dependencies required for OSM to compile successfully,install these on your machine with the following command:
 
-    sudo apt install 
+    sudo apt install
         build-essential \
         git \
         pkg-config \
@@ -60,7 +60,7 @@ This will spawn the virtual OSM test, connect to the virtual OSM and
 test values for each measurement, ensure you wait for the measurement
 loop to finish.
 
-Run
+Run Virtual OSM
 ===
 
 To spawn the Virtual OSM, use the following command:
@@ -90,7 +90,7 @@ To start the GUI, run the following commands:
 
 -------
 
-    cd config_gui/release
-    python config_gui.py
+    cd osm_firmware/tools/config_gui
+    ./config_gui.py
 
 Select your device from the dropdown menu and press connect.

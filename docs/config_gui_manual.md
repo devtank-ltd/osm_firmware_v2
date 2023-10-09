@@ -33,11 +33,11 @@ Current Measurements
 
 ![](Images/home_p.png)
 
-This window reads all of the measurements available on your OSM Device 
-and allows you to set the data transmission intervals. This can be done 
-by changing the number in the Uplink heading (default is multiples of 
-15mins) or if you prefer, you can change the number of minutes per 
-interval under Interval in Mins. You can also set the number of samples 
+This window reads all of the measurements available on your OSM Device
+and allows you to set the data transmission intervals. This can be done
+by changing the number in the Uplink heading (default is multiples of
+15mins) or if you prefer, you can change the number of minutes per
+interval under Interval in Mins. You can also set the number of samples
 that are taken within each interval under the Sample Count heading.
 
 -   To make a change, you must select a cell and enter a number. Once
@@ -47,14 +47,12 @@ that are taken within each interval under the Sample Count heading.
 -   To change the uplink, enter a number into the entry bar and press
     enter. This will affect how often the sensor sends a report.
 
--   If you want to turn off many measurements, you might find it easier
-    to select the checkbox on the row of the measurement, this will
-    bring up the button “Set interval to 0” and will apply to all the
-    measurements you check.
+-   To turn off multiple measurements, select the checkbox on the row
+    of the measurement, this will bring up the button “Set interval to 0”
+    and will apply to all the measurements you check.
 
--   If you want to see the last value of a measurement, similarly to the
-    last point, you select all the checkboxes of the measurements that
-    you want to see, then press "Get Value".
+-   If you want to see the last value of a measurement,select all the
+    checkboxes of the measurements that you want to see, then press "Get Value".
 
 LoRaWan Configuration
 ---------------------
@@ -93,7 +91,7 @@ Advanced Configuration
 </br>
 </br>
 </br>
-</br>
+</br>S
 </br>
 </br>
 
@@ -183,15 +181,15 @@ Set IOs
     reporting data.
 
 <p align="center">
-    <img src="Images/io.png">    
+    <img src="Images/io.png">
 </p>
 
 -   This is the window that will open for TMP2, select rise, fall or both
-    depending on which edge of the pulse you are watching for and then 
+    depending on which edge of the pulse you are watching for and then
     press enable.
 
 <p align="center">
-    <img src="Images/cnt.png">    
+    <img src="Images/cnt.png">
 </p>
 
 -   Selecting CNT2 provides you with an extra option, to set the pullup
@@ -242,7 +240,7 @@ Scaling Current
 ==========
 
 <p align="center">
-    <img src="Images/fta.png">    
+    <img src="Images/fta.png">
 </p>
 
 -   Selecting one of the special measurements named 'FTA[1,2,3,4]' will
@@ -271,12 +269,12 @@ Saving / Loading Configuration Files
 
 ![](Images/json_save_config.png)
 
--   Saving the current settings of your OSM can save you a lot of time and 
+-   Saving the current settings of your OSM can save you a lot of time and
     pain if you were to lose the configuration on your OSM.
 
 -   To do this, select 'Save Config' at the top of the home page, give the file
-    a name and make sure it is a json filetype, as shown in the image above, 
-    because when loading a configuration file, the file dialog will only look for 
+    a name and make sure it is a json filetype, as shown in the image above,
+    because when loading a configuration file, the file dialog will only look for
     json files.
 
 -   To write a configuration file to your OSM, select 'Load Config' and select
