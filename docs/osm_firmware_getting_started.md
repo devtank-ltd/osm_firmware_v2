@@ -8,7 +8,7 @@ directory.
 
 -------
 
-    git clone --recursive git.devtank.co.uk:/git/osm\_firmware.git
+    git clone --recursive https://git.devtank.co.uk/Devtank/osm_firmware.git
     git pull
     git submodule init
     git submodule update
