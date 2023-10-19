@@ -18,10 +18,10 @@
 #endif // DESIG_UNIQUE_ID0
 
 
-#define COMMS_DEFAULT_MTU                       256
+#define COMMS_DEFAULT_MTU                       (1024 + 128)
 #define COMMS_ID_STR                            "WIFI"
 
-#define AT_WIFI_MAX_CMD_LEN                     256
+#define AT_WIFI_MAX_CMD_LEN                     (1024 + 128)
 
 #define AT_WIFI_MQTT_TOPIC_FMT                  "osm/%.*s/measurements"
 
@@ -197,23 +197,33 @@ static void _at_wifi_start(void)
 }
 
 
-static unsigned _at_wifi_mqtt_publish(char* topic, unsigned topic_len, char* message, unsigned message_len)
+static unsigned _at_wifi_mqtt_publish(const char* topic, char* message, unsigned message_len)
 {
     unsigned len = 0;
     switch (_at_wifi_ctx.state)
     {
         case AT_WIFI_STATE_IDLE:
+        {
             _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_PUB;
-            topic_len = topic_len > AT_WIFI_MQTT_TOPIC_LEN ? AT_WIFI_MQTT_TOPIC_LEN : topic_len;
+            char full_topic[AT_WIFI_MQTT_TOPIC_LEN + 1];
+            unsigned full_topic_len = snprintf(
+                full_topic,
+                AT_WIFI_MQTT_TOPIC_LEN,
+                "%.*s/%s",
+                AT_WIFI_MQTT_TOPIC_LEN, _at_wifi_ctx.topic_header,
+                topic
+                );
+            full_topic[full_topic_len] = 0;
             len = _at_wifi_printf(
                 "AT+MQTTPUB=%u,\"%.*s\",\"%.*s\",%u,%u",
                 AT_WIFI_MQTT_LINK_ID,
-                topic_len, topic,
+                full_topic_len, full_topic,
                 message_len, message,
                 AT_WIFI_MQTT_QOS,
                 AT_WIFI_MQTT_RETAIN
                 );
             break;
+        }
         default:
             comms_debug("Wrong state to publish packet: %u", _at_wifi_ctx.state);
             break;
@@ -248,16 +258,18 @@ bool at_wifi_send_allowed(void)
 }
 
 
-void at_wifi_send(int8_t* hex_arr, uint16_t arr_len)
+static bool _at_wifi_mqtt_publish_measurements(char* data, uint16_t len)
 {
-    char buf[3];
-    for (uint16_t i = 0; i < arr_len; i++)
+    return _at_wifi_mqtt_publish(AT_WIFI_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
+}
+
+
+void at_wifi_send(char* data, uint16_t len)
+{
+    if (!_at_wifi_mqtt_publish_measurements(data, len))
     {
-        snprintf(buf, 3, "%.2"PRIx32, hex_arr[i]);
-        uart_ring_out(COMMS_UART, buf, 2);
+        comms_debug("Failed to send measurement");
     }
-    uart_ring_out(COMMS_UART, "\r\n", 2);
-    on_comms_sent_ack(true);
 }
 
 
@@ -434,15 +446,6 @@ static void _at_wifi_process_state_mqtt_wait_sub(char* msg, unsigned len)
 
 static void _at_wifi_do_command(char* payload, unsigned payload_len)
 {
-    char resp_topic[AT_WIFI_MQTT_TOPIC_LEN + 1];
-    unsigned resp_topic_len = snprintf(
-        resp_topic,
-        AT_WIFI_MQTT_TOPIC_LEN,
-        "%.*s/%s",
-        AT_WIFI_MQTT_TOPIC_LEN, _at_wifi_ctx.topic_header,
-        AT_WIFI_MQTT_TOPIC_COMMAND_RESP
-        );
-    resp_topic[resp_topic_len] = 0;
     command_response_t ret_code = cmds_process(payload, payload_len);
     char resp_payload[AT_WIFI_MQTT_RESP_PAYLOAD_LEN + 1];
     unsigned resp_payload_len = snprintf(
@@ -452,7 +455,7 @@ static void _at_wifi_do_command(char* payload, unsigned payload_len)
         (uint8_t)ret_code
         );
     resp_payload[resp_payload_len] = 0;
-    if (!_at_wifi_mqtt_publish(resp_topic, resp_topic_len, resp_payload, resp_payload_len))
+    if (!_at_wifi_mqtt_publish(AT_WIFI_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len))
     {
         comms_debug("Failed to publish response packet");
     }

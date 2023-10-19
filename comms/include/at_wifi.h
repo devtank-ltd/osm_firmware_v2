@@ -42,7 +42,7 @@ extern uint16_t at_wifi_get_mtu(void);
 extern bool     at_wifi_send_ready(void);
 extern bool     at_wifi_send_str(char* str);
 extern bool     at_wifi_send_allowed(void);
-extern void     at_wifi_send(int8_t* hex_arr, uint16_t arr_len);
+extern void     at_wifi_send(char* data, uint16_t len);
 
 extern void     at_wifi_init(void);
 extern void     at_wifi_reset(void);

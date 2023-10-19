@@ -6,7 +6,7 @@
 #include "config.h"
 #include "cc.h"
 #include "ftma.h"
-#include "linux_comms.h"
+#include "at_wifi.h"
 
 #define PERSIST_VERSION  1
 #define FLASH_PAGE_SIZE 2048
@@ -32,7 +32,7 @@
 #define ADC_CC_COUNT        3
 #define ADC_FTMA_COUNT      4
 
-#define comms_name      linux_comms
+#define comms_name      at_wifi
 
 typedef struct
 {
