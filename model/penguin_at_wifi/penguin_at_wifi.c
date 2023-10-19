@@ -237,7 +237,16 @@ unsigned penguin_at_wifi_measurements_add_defaults(measurements_def_t * measurem
 }
 
 
-static unsigned _penguin_at_wifi_pids[5] = {0};
+static unsigned _penguin_at_wifi_pids[6] = {0};
+
+
+#define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi.py"
+
+
+static void peripherals_add_at_wifi(unsigned* pid)
+{
+    *pid = linux_spawn(FAKE_AT_WIFI_SERVER);
+}
 
 
 void penguin_at_wifi_linux_spawn_fakes(void)
@@ -247,6 +256,7 @@ void penguin_at_wifi_linux_spawn_fakes(void)
     peripherals_add_hpm(HPM_UART    , &_penguin_at_wifi_pids[2]);
     peripherals_add_w1(1000000      , &_penguin_at_wifi_pids[3]);
     peripherals_add_i2c(2000000     , &_penguin_at_wifi_pids[4]);
+    peripherals_add_at_wifi(&_penguin_at_wifi_pids[5]);
 }
 
 

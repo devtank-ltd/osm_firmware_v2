@@ -162,7 +162,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
         self.reply_ok()
 
 
-class at_wifi_at_commands_t(object):
+class at_commands_t(object):
 
     NO_COMMAND      = "AT+ERROR: CMD"
     INVALID_TYPE    = "AT+ERROR: TYPE"
@@ -250,7 +250,12 @@ class at_wifi_dev_t(object):
     def __init__(self, port):
         self.port = port
 
-        self._serial = os.fdopen(port, "rb", 0)
+        if isinstance(port, int):
+            self._serial = os.fdopen(port, "rb", 0)
+        elif os.path.exists(port):
+            self._serial = serial.Serial(port)
+        else:
+            raise IOError(f"Dont know what to do with {port}")
 
         tty.setraw(self._serial)
 
@@ -263,8 +268,8 @@ class at_wifi_dev_t(object):
             at_wifi_basic_at_commands_t,
             at_wifi_at_commands_t,
             ]
-        self._command_obj = at_wifi_at_commands_t(self, command_types)
-        print("INITED")
+        self._command_obj = at_commands_t(self, command_types)
+        print("AT WIFI INITED")
 
     def __enter__(self):
         return self
@@ -288,6 +293,7 @@ class at_wifi_dev_t(object):
         return os.write(self._serial.fileno(), msg)
 
     def _do_command(self, line):
+        print(f"HACK {line}")
         self._command_obj.command(line)
 
     def _read_serial(self, fd):
@@ -298,6 +304,8 @@ class at_wifi_dev_t(object):
         eol = b'\r' # Not sure why this isn't self.EOL \r\n
         if self._serial_in.endswith(eol):
             line = self._serial_in[:-len(eol)]
+            if line.startswith(b'\n'):
+                line = line[1:]
             self._do_command(line)
             self._serial_in = b""
 
@@ -329,7 +337,7 @@ class at_wifi_dev_t(object):
         self.wifi.state = wifi.CONNECTED if connect else wifi.DISCONNECTED
 
 
-def run_fake(tty_path):
+def run_standalone(tty_path):
     directory = os.path.dirname(tty_path)
     if not os.path.exists(directory):
         os.mkdir(directory)
@@ -351,12 +359,29 @@ def run_fake(tty_path):
     os.unlink(tty_path)
     return 0
 
+def run_dependent(tty_path):
+    dev = at_wifi_dev_t(tty_path)
+    try:
+        dev.run_forever()
+    except KeyboardInterrupt:
+        print("\r", flush=True, file=sys.stderr)
+    return 0
 
-def main(args):
-    directory = "/tmp/fake_at_wifi"
-    tty_name = "tty"
-    tty_path = os.path.join(directory, tty_name)
-    return run_fake(tty_path)
+def main():
+    import argparse
+
+    def get_args():
+        parser = argparse.ArgumentParser(description='Fake AT Wifi Module.' )
+        parser.add_argument('-s', '--standalone', help="If this should spin up its own pseudoterminal or use an existing one", action='store_true')
+        parser.add_argument('pseudoterminal', metavar='PTY', type=str, nargs='?', help='The pseudoterminal for the fake AT wifi module', default="/tmp/osm/UART_COMMS_slave")
+        return parser.parse_args()
+
+    args = get_args()
+
+    if args.standalone:
+        return run_standalone(args.pseudoterminal)
+    else:
+        return run_dependent(args.pseudoterminal)
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(main())
