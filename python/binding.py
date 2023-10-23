@@ -349,9 +349,9 @@ class dev_base_t(object):
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
         self.fileno = self._ll.fileno
 
-    def drain(self):
+    def drain(self, timeout=1):
         while True:
-            r = select.select([self],[],[],0)
+            r = select.select([self],[],[],timeout)
             if r[0]:
                 self._ll.read()
             else:
