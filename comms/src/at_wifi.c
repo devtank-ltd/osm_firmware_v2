@@ -558,8 +558,7 @@ static void _at_wifi_process_state_idle(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_wait_pub(char* msg, unsigned len)
 {
-    const char publish_ok_msg[] = "+MQTTPUB:OK";
-    if (_at_wifi_is_str(publish_ok_msg, msg, len))
+    if (_at_wifi_is_ok(msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
     }

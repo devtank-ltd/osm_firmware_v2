@@ -210,7 +210,7 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
                                         base_at_commands_t.SET:         self.conn},         # Connect to MQTT Brokers
             b"AT+MQTTPUB"           : { base_at_commands_t.SET:         self.publish},      # Publish MQTT Messages in String
             b"AT+MQTTSUB"           : { base_at_commands_t.QUERY:       self.is_subscribed,
-                                        base_at_commands_t.SET:         self.subscribe},         # Connect to MQTT Brokers
+                                        base_at_commands_t.SET:         self.subscribe},    # Connect to MQTT Brokers
         }
         super().__init__(device, command_controller, commands)
 
@@ -275,8 +275,9 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         if len(arg_list) < 4:
             self.reply_param_error()
             return
-        _, topic, data, _, _ = arg_list
-        if not self.device.mqtt.publish(topic, data):
+        _, topic, *data, _, _ = arg_list
+        data = b",".join(data)
+        if not self.device.mqtt.publish(topic.decode(), data.decode()):
             self.reply_state_error()
             return
         self.reply_ok()
@@ -424,6 +425,12 @@ class at_wifi_mqtt_t(object):
         self.subscriptions = []
         self._connected = False
         self.state = self.STATES.UNINIT
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        pass
 
     def _is_valid(self):
         return (self.addr   is not None and
