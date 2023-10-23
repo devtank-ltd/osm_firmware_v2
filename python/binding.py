@@ -403,7 +403,7 @@ class dev_t(dev_base_t):
         return self.do_cmd("connect")
 
     def reconnect_announce(self, timeout_s:float=10.):
-        self.do_cmd("debug 4")
+        self.set_dbg(4)
         self.do_cmd("comms_restart")
         timeout_s = 10
         end_time = time.monotonic() + timeout_s
@@ -417,6 +417,17 @@ class dev_t(dev_base_t):
             time.sleep(sleep_time)
             connected = self.comms_conn.value
         self.send_alive_packet()
+
+    def get_rak_version(self):
+        self.set_dbg(4)
+        self.do_cmd("comms_restart")
+        comms = self._ll.readlines(timeout=1)
+        for line in comms:
+            if "Version: RUI_4.0.5_RAK3172-E" in line:
+                self.set_dbg()
+                return True
+        self.set_dbg()
+        return False
 
     def set_dbg(self, mode:int=0):
         return self.do_cmd(f"debug {mode}")
