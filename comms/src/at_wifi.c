@@ -309,7 +309,7 @@ static bool _at_wifi_is_ok(char* msg, unsigned len)
 
 static void _at_wifi_process_state_off(char* msg, unsigned len)
 {
-    if (_at_wifi_is_ok(msg, len))
+    if (_at_wifi_mem_is_valid() && _at_wifi_is_ok(msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
         _at_wifi_printf("AT+CWINIT=1");
@@ -420,7 +420,7 @@ static void _at_wifi_process_state_mqtt_connecting(char* msg, unsigned len)
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_SUB;
         _at_wifi_printf(
-            "AT+MQTTSUB=%u,\"%.%s\",%u",
+            "AT+MQTTSUB=%u,\"%.*s\",%u",
             AT_WIFI_MQTT_LINK_ID,
             AT_WIFI_MQTT_TOPIC_LEN, _at_wifi_ctx.topic_header,
             AT_WIFI_MQTT_QOS
@@ -828,16 +828,165 @@ void at_wifi_loop_iteration(void)
 }
 
 
+static void _at_wifi_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src)
+{
+    unsigned len = strlen(src);
+    if (len)
+    {
+        /* Set SSID */
+        strncpy(dest, src, max_dest_len);
+        dest[max_dest_len] = 0;
+    }
+    /* Get SSID */
+    log_out("%s: %.*s", name, max_dest_len, dest);
+}
+
+
+static command_response_t _at_wifi_config_wifi_ssid_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "SSID",
+        _at_wifi_ctx.mem->wifi.ssid,
+        AT_WIFI_MAX_SSID_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_wifi_pwd_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "PWD",
+        _at_wifi_ctx.mem->wifi.pwd,
+        AT_WIFI_MAX_PWD_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_addr_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "ADDR",
+        _at_wifi_ctx.mem->mqtt.addr,
+        AT_WIFI_MQTT_ADDR_MAX_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_client_id_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "CLID",
+        _at_wifi_ctx.mem->mqtt.client_id,
+        AT_WIFI_MQTT_CLIENTID_MAX_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_user_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "USER",
+        _at_wifi_ctx.mem->mqtt.user,
+        AT_WIFI_MQTT_USER_MAX_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_pwd_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "PWD",
+        _at_wifi_ctx.mem->mqtt.pwd,
+        AT_WIFI_MQTT_PWD_MAX_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_ca_cb(char* args)
+{
+    _at_wifi_config_get_set_str(
+        "CA",
+        _at_wifi_ctx.mem->mqtt.ca,
+        AT_WIFI_MQTT_CA_MAX_LEN,
+        args);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_port_cb(char* args)
+{
+    command_response_t ret = COMMAND_RESP_OK;
+    unsigned argslen = strlen(args);
+    if (argslen)
+    {
+        char* p = args;
+        char* np;
+        uint16_t port = strtol(p, &np, 10);
+        if (p != np)
+        {
+            ret = COMMAND_RESP_OK;
+            _at_wifi_ctx.mem->mqtt.port = port;
+        }
+        else
+        {
+            ret = COMMAND_RESP_ERR;
+        }
+    }
+    log_out("PORT: %"PRIu16, _at_wifi_ctx.mem->mqtt.port);
+    return ret;
+}
+
+
+static bool _at_wifi_config_setup_str2(char * str)
+{
+    static struct cmd_link_t cmds[] =
+    {
+        { "wifi_ssid",      "Set/get SSID",             _at_wifi_config_wifi_ssid_cb        , false , NULL },
+        { "wifi_pwd",       "Set/get password",         _at_wifi_config_wifi_pwd_cb         , false , NULL },
+        { "mqtt_addr",      "Set/get MQTT SSID",        _at_wifi_config_mqtt_addr_cb        , false , NULL },
+        { "mqtt_client_id", "Set/get MQTT client id",   _at_wifi_config_mqtt_client_id_cb   , false , NULL },
+        { "mqtt_user",      "Set/get MQTT user",        _at_wifi_config_mqtt_user_cb        , false , NULL },
+        { "mqtt_pwd",       "Set/get MQTT password",    _at_wifi_config_mqtt_pwd_cb         , false , NULL },
+        { "mqtt_ca",        "Set/get MQTT CA",          _at_wifi_config_mqtt_ca_cb          , false , NULL },
+        { "mqtt_port",      "Set/get MQTT port",        _at_wifi_config_mqtt_port_cb        , false , NULL }
+    };
+    command_response_t r = COMMAND_RESP_ERR;
+    if (str[0])
+    {
+    char * next = skip_to_space(str);
+        if (next[0])
+        {
+            char * t = next;
+            next = skip_space(next);
+            *t = 0;
+        }
+        for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
+        {
+            struct cmd_link_t * cmd = &cmds[n];
+            if (!strcmp(cmd->key, str))
+                return cmd->cb(next);
+        }
+    }
+    else r = COMMAND_RESP_OK;
+
+    for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
+    {
+        struct cmd_link_t * cmd = &cmds[n];
+        log_out("%10s : %s", cmd->key, cmd->desc);
+    }
+    return r;
+}
+
+
 void at_wifi_config_setup_str(char * str)
 {
-    if (strstr(str, "dev-eui"))
-    {
-        log_out("Dev EUI: LINUX-DEV");
-    }
-    else if (strstr(str, "app-key"))
-    {
-        log_out("App Key: LINUX-APP");
-    }
+    _at_wifi_config_setup_str2(str);
 }
 
 
@@ -857,7 +1006,51 @@ static command_response_t _at_wifi_send_cb(char * args)
 
 static command_response_t _at_wifi_config_cb(char * args)
 {
-    at_wifi_config_setup_str(skip_space(args));
+    bool ret = _at_wifi_config_setup_str2(skip_space(args));
+    if (ret && _at_wifi_mem_is_valid())
+    {
+        _at_wifi_start();
+    }
+    return ret ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
+static command_response_t _at_wifi_print_config_cb(char* args)
+{
+    const unsigned max_padding = 15;
+    const char str_fmt[] = "%*s: %.*s";
+    log_out(str_fmt,
+        max_padding, "WIFI SSID",
+        AT_WIFI_MAX_SSID_LEN, _at_wifi_ctx.mem->wifi.ssid
+        );
+    log_out(str_fmt,
+        max_padding, "WIFI PWD",
+        AT_WIFI_MAX_PWD_LEN, _at_wifi_ctx.mem->wifi.pwd
+        );
+    log_out(str_fmt,
+        max_padding, "MQTT ADDR",
+        AT_WIFI_MQTT_ADDR_MAX_LEN, _at_wifi_ctx.mem->mqtt.addr
+        );
+    log_out(str_fmt,
+        max_padding, "MQTT CLIENTID",
+        AT_WIFI_MQTT_CLIENTID_MAX_LEN, _at_wifi_ctx.mem->mqtt.client_id
+        );
+    log_out(str_fmt,
+        max_padding, "MQTT USER",
+        AT_WIFI_MQTT_USER_MAX_LEN, _at_wifi_ctx.mem->mqtt.user
+        );
+    log_out(str_fmt,
+        max_padding, "MQTT PWD",
+        AT_WIFI_MQTT_PWD_MAX_LEN, _at_wifi_ctx.mem->mqtt.pwd
+        );
+    log_out(str_fmt,
+        max_padding, "MQTT CA",
+        AT_WIFI_MQTT_CA_MAX_LEN, _at_wifi_ctx.mem->mqtt.ca
+        );
+    log_out("%*s: %"PRIu16,
+        max_padding, "MQTT PORT",
+        _at_wifi_ctx.mem->mqtt.port
+        );
     return COMMAND_RESP_OK;
 }
 
@@ -888,6 +1081,7 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "comms_send",   "Send at_wifi message",        _at_wifi_send_cb        , false , NULL },
                                        { "comms_config", "Set at_wifi config",          _at_wifi_config_cb      , false , NULL },
+                                       { "comms_pr_cfg", "Print at_wifi config",        _at_wifi_print_config_cb, false , NULL },
                                        { "comms_conn",   "LoRa connected",              _at_wifi_conn_cb        , false , NULL },
                                        { "comms_dbg",    "Comms Chip Debug",            _at_wifi_dbg_cb         , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
