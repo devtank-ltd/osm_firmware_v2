@@ -349,9 +349,9 @@ class dev_base_t(object):
         self._ll = low_level_dev_t(self._serial_obj, self._log_obj)
         self.fileno = self._ll.fileno
 
-    def drain(self):
+    def drain(self, timeout=1):
         while True:
-            r = select.select([self],[],[],0)
+            r = select.select([self],[],[],timeout)
             if r[0]:
                 self._ll.read()
             else:
@@ -366,7 +366,7 @@ class dev_t(dev_base_t):
         try:
             self._io_count = int(line.split()[-1])
         except IndexError:
-            debug_print("Cannot query OSM, is it turned on?")
+            raise IndexError("Cannot query OSM, is it turned on?")
         self._children = {
             "ios"       : ios_t(self, self._io_count),
             "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
@@ -403,7 +403,7 @@ class dev_t(dev_base_t):
         return self.do_cmd("connect")
 
     def reconnect_announce(self, timeout_s:float=10.):
-        self.do_cmd("debug 4")
+        self.set_dbg(4)
         self.do_cmd("comms_restart")
         timeout_s = 10
         end_time = time.monotonic() + timeout_s
@@ -417,6 +417,17 @@ class dev_t(dev_base_t):
             time.sleep(sleep_time)
             connected = self.comms_conn.value
         self.send_alive_packet()
+
+    def get_rak_version(self):
+        self.set_dbg(4)
+        self.do_cmd("comms_restart")
+        comms = self._ll.readlines(timeout=1)
+        for line in comms:
+            if "Version: RUI_4.0.5_RAK3172-E" in line:
+                self.set_dbg()
+                return True
+        self.set_dbg()
+        return False
 
     def set_dbg(self, mode:int=0):
         return self.do_cmd(f"debug {mode}")
@@ -454,6 +465,12 @@ class dev_t(dev_base_t):
     @dev_eui.setter
     def dev_eui(self, eui):
         self.do_cmd_multi(f"comms_config dev-eui {eui}")
+
+    def set_tx_power(self, val: int):
+        if val >= 0 and val <= 7:
+            self.do_cmd(f"comms_txpower {val}")
+        else:
+            self._log("Value must be an integer between 0 and 7.")
 
     def change_samplec(self, meas, val):
         self.do_cmd(f"samplecount {meas} {val}")
@@ -736,6 +753,51 @@ class dev_t(dev_base_t):
                     debug_print("OSM reset'ed")
                     return True
         return False
+
+    def program_firmware(self, firmware:str, is_rev_c:bool=True, keep_config:bool=False)->bool:
+        if not os.path.exists(firmware):
+            self._log(f"{firmware} does not exist.")
+            return False
+        dev_name = os.path.basename(str(self.port))
+        self._serial_obj.close()
+        env = {"dev": dev_name}
+        if is_rev_c:
+            env["REVC"] = "1"
+        if keep_config:
+            env["KEEPCONFIG"] = "1"
+        this_file = os.path.abspath(__file__)
+        this_dir = os.path.dirname(this_file)
+        cmd = f"{this_dir}/tools/config_scripts/program.sh {firmware}"
+        cmd = cmd.split(" ")
+        proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        events = {
+            proc.stdout : "STDOUT",
+            proc.stderr : "STDERR"}
+        while proc.poll() is None:
+            r = select.select(list(events.keys()), [], [], 0.05)
+            sources = r[0]
+            for stream in sources:
+                pretext = events.get(stream, None)
+                msg = stream.readline()
+                if len(msg):
+                    if pretext is not None:
+                        try:
+                            msg = msg.decode()
+                        except UnicodeDecodeError:
+                            pass
+                        self._log(f"{pretext}: {msg}")
+                    else:
+                        self._log(f"Unknown pretext for {stream}")
+
+        retcode = proc.returncode
+        if retcode == 0:
+            self._log(f"Finished programming with return code: {retcode}")
+        else:
+            self._log(f"Programming exited with return code: {retcode}")
+
+        self._serial_obj.open()
+        return retcode == 0
+
 
 class dev_debug_t(dev_base_t):
     def __init__(self, port):
