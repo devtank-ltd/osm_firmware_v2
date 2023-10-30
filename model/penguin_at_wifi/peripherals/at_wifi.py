@@ -102,6 +102,8 @@ class at_wifi_at_commands_t(base_at_commands_t):
         {
             b"AT+CWINIT"            : { base_at_commands_t.QUERY:       self.is_init,
                                         base_at_commands_t.SET:         self.init},         # Initialize/Deinitialize Wi-Fi driver
+            b"AT+CWMODE"            : { base_at_commands_t.QUERY:       self.is_mode,
+                                        base_at_commands_t.SET:         self.mode},
             b"AT+CWSTATE"           : { base_at_commands_t.QUERY:       self.info},         # Query the Wi-Fi state and Wi-Fi information
             b"AT+CWJAP"             : { base_at_commands_t.QUERY:       self.is_connect,
                                         base_at_commands_t.SET:         self.connect_info,
@@ -124,6 +126,26 @@ class at_wifi_at_commands_t(base_at_commands_t):
             self.reply_param_error()
             return
         self.device.wifi.init = bool(val)
+        self.reply_ok()
+
+    def is_mode(self, args):
+        self.reply(b"+CWMODE:%u"% (self.device.wifi.mode.value))
+
+    def mode(self, args):
+        list_args = args.split(b",")
+        if len(list_args) < 1:
+            self.reply_param_error()
+            return
+        mode,*_ = list_args
+        try:
+            mode = int(mode)
+        except ValueError:
+            self.reply_param_error()
+            return
+        if mode > len(at_wifi_info_t.MODES):
+            self.reply_param_error()
+            return
+        self.device.wifi.mode = at_wifi_info_t.MODES(mode)
         self.reply_ok()
 
     def info(self, args):
@@ -152,6 +174,14 @@ class at_wifi_at_commands_t(base_at_commands_t):
             self.reply_param_error()
             return
         ssid,pwd,*_ = list_args
+        if not ssid.startswith(b"\"") or not ssid.endswith(b"\""):
+            self.reply_param_error()
+            return
+        ssid = ssid[1:-1].decode()
+        if not pwd.startswith(b"\"") or not pwd.endswith(b"\""):
+            self.reply_param_error()
+            return
+        pwd = pwd[1:-1].decode()
         print(f"Connecting to SSID: {ssid} with PWD: {pwd}")
         """ Will now block """
         time.sleep(2)
@@ -189,7 +219,11 @@ class at_wifi_cips_at_commands_t(base_at_commands_t):
 
     def sntp_set(self, args):
         sntp_servers = args.split(b",")
-        self.device.sntp.servers = [serv.decode() for serv in sntp_servers]
+        for server in sntp_servers:
+            if not server.startswith(b"\"") or not server.endswith(b"\""):
+                self.reply_param_error()
+                return
+        self.device.sntp.servers = [serv[1:-1].decode() for serv in sntp_servers]
         self.reply_ok()
 
     def sntp_query(self, args):
@@ -364,6 +398,12 @@ class at_wifi_info_t(object):
             "DISCONNECTED",
         ])
 
+    MODES = enum.Enum(
+        "MODES", [
+            "Station",
+            "SoftAP",
+            "SoftAP_Station",
+        ])
 
     def __init__(self):
         self.init               = False
@@ -378,6 +418,7 @@ class at_wifi_info_t(object):
         self.jap_timeout        = 15
         self.pmf                = 1
         self.state              = self.STATES.NOT_CONN
+        self.mode               = self.MODES.SoftAP
 
 
 class at_wifi_sntp_info_t(object):

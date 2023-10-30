@@ -240,7 +240,7 @@ unsigned penguin_at_wifi_measurements_add_defaults(measurements_def_t * measurem
 static unsigned _penguin_at_wifi_pids[6] = {0};
 
 
-#define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi.py"
+#define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi_bridge.py"
 
 
 static void peripherals_add_at_wifi(unsigned* pid)
