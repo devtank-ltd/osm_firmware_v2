@@ -712,6 +712,7 @@ static void _at_wifi_process_state_mqtt_wait_pub(char* msg, unsigned len)
     //const char is_start_msg[] = ">";
     if (_at_wifi_is_ok(msg, len))
     {
+        _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_PUBLISHING;
         _at_wifi_raw_send(
             _at_wifi_ctx.publish_packet.message,
             _at_wifi_ctx.publish_packet.len
@@ -722,7 +723,17 @@ static void _at_wifi_process_state_mqtt_wait_pub(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_publishing(char* msg, unsigned len)
 {
-    const char pub_ok[] = ">+MQTTPUB:OK";
+    /* Prints '>' when wants to start writing message but, this isn't
+     * followed by \r so isn't handed in to be processed yet. We can get
+     * around this by just skipping it if it is there. (Theres new lines
+     * in between if 'busy p...' is printed.
+     */
+    if (msg[0] == '>')
+    {
+        msg++;
+        len--;
+    }
+    const char pub_ok[] = "+MQTTPUB:OK";
     if (_at_wifi_is_str(pub_ok, msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
