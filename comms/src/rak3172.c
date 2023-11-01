@@ -322,7 +322,7 @@ static void _rak3172_process_state_send_ack(char* msg)
         comms_debug("READ SEND ACK");
         _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
-        on_comms_sent_ack(true);
+        on_protocol_sent_ack(true);
 
         return;
     }
@@ -782,7 +782,7 @@ void rak3172_loop_iteration(void)
             if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_ACK_TIMEOUT_MS)
             {
                 comms_debug("TIMED OUT WAITING FOR ACK");
-                on_comms_sent_ack(false);
+                on_protocol_sent_ack(false);
                 rak3172_reset();
             }
             break;

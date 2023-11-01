@@ -22,6 +22,7 @@
 #include "update.h"
 #include "pinmap.h"
 #include "lw.h"
+#include "protocol.h"
 
 #define RAK4270_HEADER_SIZE                      17
 #define RAK4270_TAIL_SIZE                        2
@@ -443,7 +444,7 @@ static void _rak4270_retry_write(void)
         comms_debug("Failed to successfully resend (%u times), resetting chip.", RAK4270_MAX_RESEND);
         _rak4270_state_machine.resend_count = 0;
         rak4270_reset();
-        on_comms_sent_ack(false);
+        on_protocol_sent_ack(false);
         return;
     }
     _rak4270_state_machine.resend_count++;
@@ -759,7 +760,7 @@ static void _rak4270_handle_error(char* message)
         case RAK4270_ERROR_PACKET_SIZE:
             comms_debug("Packet size too large, reducing limit throwing data and resetting chip.");
             _rak4270_packet_max_size -= 2;
-            on_comms_sent_ack(false);
+            on_protocol_sent_ack(false);
             rak4270_reset();
             break;
         case RAK4270_ERROR_TIMEOUT_RX1:
@@ -800,7 +801,7 @@ static void _rak4270_handle_error(char* message)
         case RAK4270_ERROR_PAYLOAD_SIZE:
             comms_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
             _rak4270_packet_max_size -= 2;
-            on_comms_sent_ack(false);
+            on_protocol_sent_ack(false);
             rak4270_reset();
             break;
         case RAK4270_ERROR_INVLD_MIC:
@@ -881,7 +882,7 @@ static void _rak4270_process_wait_ack(char* message)
         _rak4270_state_machine.reset_count = 0;
         _rak4270_state_machine.resend_count = 0;
         _rak4270_clear_backup();
-        on_comms_sent_ack(true);
+        on_protocol_sent_ack(true);
     }
 }
 
@@ -1083,7 +1084,7 @@ void rak4270_loop_iteration(void)
             {
                 if (_rak4270_state_machine.state == RAK4270_STATE_WAIT_OK || _rak4270_state_machine.state == RAK4270_STATE_WAIT_ACK)
                 {
-                    on_comms_sent_ack(false);
+                    on_protocol_sent_ack(false);
                 }
                 comms_debug("LoRa chip timed out, resetting.");
                 rak4270_reset();
