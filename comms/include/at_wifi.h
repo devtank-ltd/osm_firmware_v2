@@ -55,3 +55,4 @@ extern struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail);
 extern void     at_wifi_power_down(void);
 
 extern bool     at_wifi_persist_config_cmp(void* d0, void* d1);
+extern void     at_wifi_config_init(comms_config_t* comms_config);

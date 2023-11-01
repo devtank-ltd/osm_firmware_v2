@@ -1367,3 +1367,17 @@ bool at_wifi_persist_config_cmp(void* d0, void* d1)
         d0 && d1 &&
         memcmp(d0, d1, sizeof(at_wifi_config_t)) == 0);
 }
+
+
+static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
+{
+    memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
+    at_wifi_config->mqtt.port = 1883;
+}
+
+
+void at_wifi_config_init(comms_config_t* comms_config)
+{
+    comms_config->type = COMMS_TYPE_LW;
+    _at_wifi_config_init2((at_wifi_config_t*)comms_config);
+}

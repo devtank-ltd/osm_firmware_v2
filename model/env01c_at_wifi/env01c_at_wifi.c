@@ -53,6 +53,7 @@ void env01c_at_wifi_persist_config_model_init(persist_env01c_at_wifi_config_v1_t
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
+    at_wifi_config_init(&model_config->comms_config);
     model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }
 
@@ -65,6 +66,7 @@ bool env01c_at_wifi_persist_config_cmp(persist_env01c_at_wifi_config_v1_t* d0, p
         d0 && d1 &&
         d0->mins_interval == d1->mins_interval &&
         !modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        !at_wifi_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
         memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
         memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&

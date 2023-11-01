@@ -5,7 +5,7 @@
 #include "measurements.h"
 #include "config.h"
 #include "cc.h"
-#include "rak4270.h"
+#include "at_wifi.h"
 
 #define __MODEL_CONFIG__
 
@@ -49,7 +49,9 @@
 
 #define ADC_CC_COUNT        3
 
-#define comms_name              rak4270
+#define comms_name              at_wifi
+
+#define JSON_BUF_SIZE  1024
 
 
 typedef struct
