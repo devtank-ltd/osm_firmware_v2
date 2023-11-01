@@ -164,7 +164,6 @@ static bool _at_wifi_mem_is_valid(void)
     return (_at_wifi_str_is_valid_ascii(mem->wifi.ssid      , AT_WIFI_MAX_SSID_LEN          , true  ) &&
             _at_wifi_str_is_valid_ascii(mem->wifi.pwd       , AT_WIFI_MAX_PWD_LEN           , false ) &&
             _at_wifi_str_is_valid_ascii(mem->mqtt.addr      , AT_WIFI_MQTT_ADDR_MAX_LEN     , true  ) &&
-            _at_wifi_str_is_valid_ascii(mem->mqtt.client_id , AT_WIFI_MQTT_CLIENTID_MAX_LEN , true  ) &&
             _at_wifi_str_is_valid_ascii(mem->mqtt.user      , AT_WIFI_MQTT_USER_MAX_LEN     , true  ) &&
             _at_wifi_str_is_valid_ascii(mem->mqtt.pwd       , AT_WIFI_MQTT_PWD_MAX_LEN      , true  ) &&
             _at_wifi_str_is_valid_ascii(mem->mqtt.ca        , AT_WIFI_MQTT_CA_MAX_LEN       , true  ) );
@@ -520,10 +519,10 @@ static void _at_wifi_do_mqtt_user_conf(void)
 {
     _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_USR_CONF;
     _at_wifi_printf(
-        "AT+MQTTUSERCFG=%u,%u,\"%.*s\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
+        "AT+MQTTUSERCFG=%u,%u,\"osm-0x%X\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
         AT_WIFI_MQTT_LINK_ID,
         AT_WIFI_MQTT_SCHEME,
-        AT_WIFI_MQTT_CLIENTID_MAX_LEN,  _at_wifi_ctx.mem->mqtt.client_id,
+        DESIG_UNIQUE_ID0,
         AT_WIFI_MQTT_USER_MAX_LEN,      _at_wifi_ctx.mem->mqtt.user,
         AT_WIFI_MQTT_PWD_MAX_LEN,       _at_wifi_ctx.mem->mqtt.pwd,
         AT_WIFI_MQTT_CERT_KEY_ID,
@@ -1125,17 +1124,6 @@ static command_response_t _at_wifi_config_mqtt_addr_cb(char* args)
 }
 
 
-static command_response_t _at_wifi_config_mqtt_client_id_cb(char* args)
-{
-    _at_wifi_config_get_set_str(
-        "CLID",
-        _at_wifi_ctx.mem->mqtt.client_id,
-        AT_WIFI_MQTT_CLIENTID_MAX_LEN,
-        args);
-    return COMMAND_RESP_OK;
-}
-
-
 static command_response_t _at_wifi_config_mqtt_user_cb(char* args)
 {
     _at_wifi_config_get_set_str(
@@ -1200,7 +1188,6 @@ static bool _at_wifi_config_setup_str2(char * str)
         { "wifi_ssid",      "Set/get SSID",             _at_wifi_config_wifi_ssid_cb        , false , NULL },
         { "wifi_pwd",       "Set/get password",         _at_wifi_config_wifi_pwd_cb         , false , NULL },
         { "mqtt_addr",      "Set/get MQTT SSID",        _at_wifi_config_mqtt_addr_cb        , false , NULL },
-        { "mqtt_client_id", "Set/get MQTT client id",   _at_wifi_config_mqtt_client_id_cb   , false , NULL },
         { "mqtt_user",      "Set/get MQTT user",        _at_wifi_config_mqtt_user_cb        , false , NULL },
         { "mqtt_pwd",       "Set/get MQTT password",    _at_wifi_config_mqtt_pwd_cb         , false , NULL },
         { "mqtt_ca",        "Set/get MQTT CA",          _at_wifi_config_mqtt_ca_cb          , false , NULL },
@@ -1280,10 +1267,6 @@ static command_response_t _at_wifi_print_config_cb(char* args)
     log_out(str_fmt,
         max_padding, "MQTT ADDR",
         AT_WIFI_MQTT_ADDR_MAX_LEN, _at_wifi_ctx.mem->mqtt.addr
-        );
-    log_out(str_fmt,
-        max_padding, "MQTT CLIENTID",
-        AT_WIFI_MQTT_CLIENTID_MAX_LEN, _at_wifi_ctx.mem->mqtt.client_id
         );
     log_out(str_fmt,
         max_padding, "MQTT USER",

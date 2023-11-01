@@ -9,7 +9,6 @@
 #define AT_WIFI_MAX_PWD_LEN                     63
 #define AT_WIFI_MQTT_ADDR_MAX_LEN               63
 #define AT_WIFI_MQTT_USER_MAX_LEN               63
-#define AT_WIFI_MQTT_CLIENTID_MAX_LEN           63
 #define AT_WIFI_MQTT_PWD_MAX_LEN                63
 #define AT_WIFI_MQTT_CA_MAX_LEN                 63
 
@@ -26,7 +25,6 @@ typedef struct
     struct
     {
         char        addr[AT_WIFI_MQTT_ADDR_MAX_LEN + 1];
-        char        client_id[AT_WIFI_MQTT_CLIENTID_MAX_LEN + 1];
         char        user[AT_WIFI_MQTT_USER_MAX_LEN + 1];
         char        pwd[AT_WIFI_MQTT_PWD_MAX_LEN + 1];
         char        ca[AT_WIFI_MQTT_CA_MAX_LEN + 1];
