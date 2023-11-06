@@ -30,7 +30,7 @@ class test_framework_t(object):
     DEFAULT_OSM_BASE        = "/tmp/osm/"
     DEFAULT_OSM_CONFIG      = DEFAULT_OSM_BASE + "osm.img"
     DEFAULT_DEBUG_PTY_PATH  = DEFAULT_OSM_BASE + "UART_DEBUG_slave"
-    DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_LW_slave"
+    DEFAULT_COMMS_PTY_PATH  = DEFAULT_OSM_BASE + "UART_COMMS_slave"
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
