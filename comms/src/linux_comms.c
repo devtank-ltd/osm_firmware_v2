@@ -8,6 +8,7 @@
 #include "pinmap.h"
 #include "log.h"
 #include "common.h"
+#include "protocol.h"
 
 
 #define COMMS_DEFAULT_MTU       256
@@ -49,7 +50,7 @@ void linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
         uart_ring_out(COMMS_UART, buf, 2);
     }
     uart_ring_out(COMMS_UART, "\r\n", 2);
-    on_comms_sent_ack(true);
+    on_protocol_sent_ack(true);
 }
 
 
