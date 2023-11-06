@@ -188,6 +188,7 @@ void linux_error(char* fmt, ...)
     va_list v;
     va_start(v, fmt);
     _linux_error(fmt, v, errno);
+    va_end(v);
 }
 
 
@@ -196,6 +197,7 @@ void linux_error2(int error, char* fmt, ...)
     va_list v;
     va_start(v, fmt);
     _linux_error(fmt, v, error);
+    va_end(v);
 }
 
 
