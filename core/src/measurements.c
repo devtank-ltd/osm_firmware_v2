@@ -6,7 +6,6 @@
 #include <ctype.h>
 
 #include "measurements.h"
-#include "comms.h"
 #include "log.h"
 #include "config.h"
 #include "common.h"
@@ -48,7 +47,6 @@ static uint32_t                     _last_sent_ms                               
 static bool                         _pending_send                                        = false;
 static measurements_check_time_t    _check_time                                          = {0, 0};
 static uint32_t                     _interval_count                                      =  0;
-static int8_t                       _measurements_hex_arr[MEASUREMENTS_HEX_ARRAY_SIZE]   = {0};
 static measurements_arr_t           _measurements_arr                                    = {0};
 static bool                         _measurements_debug_mode                             = false;
 
@@ -92,13 +90,8 @@ bool measurements_get_measurements_def(char* name, measurements_def_t ** measure
 
 static bool _measurements_send_start(void)
 {
-    unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
-    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    if (!protocol_init(_measurements_hex_arr, size))
+    if (!protocol_init())
     {
-        log_error("Failed to add even version to measurements hex array.");
         _pending_send = false;
         _last_sent_ms = get_since_boot_ms();
         return false;
@@ -110,7 +103,7 @@ static bool _measurements_send_start(void)
 
 bool measurements_send_test(char * name)
 {
-    if (!comms_get_connected() || !comms_send_ready())
+    if (!protocol_get_connected() || !protocol_send_ready())
     {
         measurements_debug("LW not ready.");
         return false;
@@ -144,7 +137,7 @@ bool measurements_send_test(char * name)
     if (r)
     {
         measurements_debug("Sending test array.");
-        comms_send(_measurements_hex_arr, protocol_get_length());
+        protocol_send();
     }
     else measurements_debug("Failed to add to array.");
 
@@ -158,7 +151,7 @@ static void _measurements_send(void)
 
     static bool has_printed_no_con = false;
 
-    if (!comms_get_connected())
+    if (!protocol_get_connected())
     {
         if (!has_printed_no_con)
         {
@@ -175,9 +168,9 @@ static void _measurements_send(void)
 
     has_printed_no_con = false;
 
-    if (!comms_send_ready() && !_measurements_debug_mode)
+    if (!protocol_send_ready() && !_measurements_debug_mode)
     {
-        if (comms_send_allowed())
+        if (protocol_send_allowed())
         {
             // Tried to send but not allowed (receiving FW?)
             return;
@@ -187,7 +180,7 @@ static void _measurements_send(void)
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
-                comms_reset();
+                protocol_reset();
                 _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
                 _pending_send = false;
             }
@@ -253,12 +246,9 @@ static void _measurements_send(void)
     {
         _pending_send = !is_max;
         if (_measurements_debug_mode)
-        {
-            for (unsigned j = 0; j < protocol_get_length(); j++)
-                measurements_debug("Packet %u = 0x%"PRIx8, j, _measurements_hex_arr[j]);
-        }
+            protocol_debug();
         else
-            comms_send(_measurements_hex_arr, protocol_get_length());
+            protocol_send();
         if (is_max)
             measurements_debug("Complete send");
         else
@@ -299,7 +289,7 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 }
 
 
-void on_comms_sent_ack(bool ack)
+void on_protocol_sent_ack(bool ack)
 {
     if (!ack)
     {
@@ -910,6 +900,18 @@ static void _measurements_sleep_iteration(void)
 static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, measurements_value_type_t* type);
 
 
+static bool _protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type)
+{
+    measurements_data_t data =
+    {
+        .value_type     = type,
+        .num_samples    = 1,
+    };
+    memcpy(&data.value, reading, sizeof(measurements_value_type_t));
+    return protocol_append_measurement(def, &data);
+}
+
+
 void _measurements_check_instant_send(void)
 {
     bool to_instant_send = false;
@@ -922,11 +924,7 @@ void _measurements_check_instant_send(void)
     if (!to_instant_send)
         return;
 
-    unsigned mtu_size = (comms_get_mtu() / 2);
-    unsigned buf_size = ARRAY_SIZE(_measurements_hex_arr);
-    unsigned size = mtu_size < buf_size ? mtu_size : buf_size;
-    memset(_measurements_hex_arr, 0, MEASUREMENTS_HEX_ARRAY_SIZE);
-    if (!protocol_init(_measurements_hex_arr, size))
+    if (!protocol_init())
     {
         measurements_debug("Could not initialise the hex array for the protocol.");
         return;
@@ -948,7 +946,7 @@ void _measurements_check_instant_send(void)
                 measurements_debug("Could not get measurement '%s' for instant send.", def->name);
                 continue;
             }
-            if (!protocol_append_instant_measurement(def, &reading, type))
+            if (!_protocol_append_instant_measurement(def, &reading, type))
             {
                 measurements_debug("Could not add measurement '%s' to array.", def->name);
                 break;
@@ -973,7 +971,7 @@ void _measurements_check_instant_send(void)
         measurements_debug("Cannot send instant send, scheduled uplink soon.");
         return;
     }
-    comms_send(_measurements_hex_arr, protocol_get_length());
+    protocol_send();
 }
 
 
@@ -984,7 +982,7 @@ void measurements_loop_iteration(void)
 
     static bool has_printed_no_con = false;
 
-    if (!comms_get_connected() && !_measurements_debug_mode)
+    if (!protocol_get_connected() && !_measurements_debug_mode)
     {
         if (!has_printed_no_con)
         {
@@ -1006,7 +1004,7 @@ void measurements_loop_iteration(void)
         return;
     }
 
-    if (comms_send_ready() || _measurements_debug_mode)
+    if (protocol_send_ready() || _measurements_debug_mode)
         _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
@@ -1511,7 +1509,7 @@ static command_response_t _measurements_interval_cb(char * args)
         p[0] = 0;
         p = skip_space(p+1);
     }
-    if (p && isdigit(p[0]))
+    if (p && isdigit((int)p[0]))
     {
         uint8_t new_interval = strtoul(p, NULL, 10);
 
@@ -1553,7 +1551,7 @@ static command_response_t _measurements_samplecount_cb(char * args)
         p[0] = 0;
         p = skip_space(p+1);
     }
-    if (p && isdigit(p[0]))
+    if (p && isdigit((int)p[0]))
     {
         uint8_t new_samplecount = strtoul(p, NULL, 10);
 

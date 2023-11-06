@@ -36,6 +36,8 @@
                            ADCS_TYPE_CC_CLAMP2,  \
                            ADCS_TYPE_CC_CLAMP3   }
 
+#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
+#define IOS_WATCH_COUNT 2
 
 #define CAN_PORT_N_PINS_RX    {GPIOA, GPIO11} /* CAN1RX */
 #define CAN_PORT_N_PINS_TX    {GPIOA, GPIO12} /* CAN1TX */
@@ -108,8 +110,6 @@
 #define ENV01C_COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
 
 
-#ifndef __CONFIGTOOL__
-
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 115200
@@ -124,8 +124,6 @@
 #define uart1_dma_out_isr               dma1_channel2_isr
 #define uart2_dma_out_isr               dma1_channel5_isr
 #define uart3_dma_out_isr               dma2_channel6_isr
-
-#endif // __CONFIGTOOL__
 
 
 #define ENV01C_UART_CHANNELS                                                                                            \

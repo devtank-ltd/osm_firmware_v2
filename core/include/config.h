@@ -42,7 +42,7 @@
 #define TIMER2_PRIORITY 1
 #define PPS_PRIORITY 1
 
-#define MEASUREMENTS_HEX_ARRAY_SIZE 117
+#define PROTOCOL_HEX_ARRAY_SIZE 117
 
 #define CMD_VUART 0
 #define UART_ERR_NU 0
@@ -59,6 +59,8 @@
 
 #define ALIGN_TO(_x, _y) ((_x + _y -1 ) & ~(_y - 1)) ///< Align one number to another, for instance 16 for optimial addressing.
 #define ALIGN_16(_x) ALIGN_TO(_x, 16)                ///< Align given number to 16.
+
+#define GETOFFSET(_struct, _member) (uintptr_t)&((_struct*)NULL)->_member
 
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.

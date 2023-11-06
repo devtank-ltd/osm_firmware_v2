@@ -5,7 +5,10 @@
 
 #include "log.h"
 #include "measurements.h"
+#include "comms.h"
+#include "platform_model.h"
 
+static int8_t                       _measurements_hex_arr[PROTOCOL_HEX_ARRAY_SIZE]   = {0};
 
 #define PROTOCOL_SEND_STR_LEN               8
 #define PROTOCOL_ERR_CODE_NAME                  "ERR"
@@ -28,12 +31,15 @@ typedef enum
 } protocol_send_type_t;
 
 
-struct
+typedef struct
 {
     int8_t*     buf;
     unsigned    buflen;
     unsigned    pos;
-} _protocol_ctx =
+} protocol_ctx_t;
+
+
+static protocol_ctx_t _protocol_ctx =
 {
     .buf = NULL,
     .buflen = 0,
@@ -249,7 +255,7 @@ bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* d
 }
 
 
-bool protocol_append_error_code(uint8_t err_code)
+static bool _protocol_append_error_code(uint8_t err_code)
 {
     unsigned before_pos = _protocol_ctx.pos;
 
@@ -267,30 +273,61 @@ bool protocol_append_error_code(uint8_t err_code)
 }
 
 
-bool protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, measurements_value_type_t type)
+static bool _protocol_init(int8_t* buf, unsigned buflen)
 {
-    measurements_data_t data =
-    {
-        .value_type     = type,
-        .num_samples    = 1,
-    };
-    memcpy(&data.value, reading, sizeof(measurements_value_type_t));
-    return protocol_append_measurement(def, &data);
-}
+    memset(buf, 0, buflen);
 
-
-bool protocol_init(int8_t* buf, unsigned buflen)
-{
     _protocol_ctx.buf = buf;
     _protocol_ctx.buflen = buflen;
     _protocol_ctx.pos = 0;
 
     memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
-    return _protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION);
+    if (!_protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    {
+        log_error("Failed to add even version to measurem     ents hex array.");
+        return false;
+    }
+    return true;
 }
 
 
-unsigned protocol_get_length(void)
+bool protocol_init(void)
+{
+    return _protocol_init(_measurements_hex_arr, PROTOCOL_HEX_ARRAY_SIZE);
+}
+
+
+static unsigned _protocol_get_length(void)
 {
     return _protocol_ctx.pos;
+}
+
+
+void        protocol_debug(void)
+{
+    for (unsigned j = 0; j < _protocol_get_length(); j++)
+        measurements_debug("Packet %u = 0x%"PRIx8, j, _protocol_ctx.buf[j]);
+}
+
+
+void        protocol_send(void)
+{
+    comms_send(_protocol_ctx.buf, _protocol_get_length());
+}
+
+
+void        protocol_send_error_code(uint8_t err_code)
+{
+    /* Immediate sent, so temporary use a different memory buffer for protocol. */
+    int8_t arr[15] = {0};
+    protocol_ctx_t org = _protocol_ctx;
+    if (!_protocol_init(arr, sizeof(arr)))
+    {
+        _protocol_ctx = org;
+        comms_debug("Could not init memory protocol.");
+        return;
+    }
+    _protocol_append_error_code(err_code);
+    comms_send(arr, _protocol_get_length());
+    _protocol_ctx = org; /* Restore normal memory buffer for protocol. */
 }

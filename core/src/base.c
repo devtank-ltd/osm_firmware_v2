@@ -1,10 +1,6 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#ifdef STM32L4
-#include <libopencm3/stm32/gpio.h>
-#endif //STM32L4
-
 #include "base_types.h"
 #include "log.h"
 
@@ -49,11 +45,11 @@ bool io_is_special(uint16_t io_state)
 }
 
 
-bool decompose_uart_str(char             * str,
+bool osm_decompose_uart_str(char             * str,
                         uint32_t         * speed,
                         uint8_t          * databits,
-                        uart_parity_t    * parity,
-                        uart_stop_bits_t * stop)
+                        osm_uart_parity_t    * parity,
+                        osm_uart_stop_bits_t * stop)
 {
     if (!str || !speed || !databits || !parity || !stop)
         return false;

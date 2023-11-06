@@ -15,7 +15,7 @@
 #include "io.h"
 #include "i2c.h"
 #include "persist_config.h"
-#include "comms.h"
+#include "protocol.h"
 #include "measurements.h"
 #include "debug_mode.h"
 
@@ -24,7 +24,7 @@
 #define NORMAL_FLASHING_TIME_SEC            1000
 
 
-int main(void)
+int osm_main(void)
 {
     platform_init();
     platform_blink_led_init();
@@ -35,7 +35,7 @@ int main(void)
     uart_rings_init();
 
     platform_raw_msg("----start----");
-    log_sys_debug("Frequency : %"PRIu32, rcc_ahb_frequency);
+    log_sys_debug("Frequency : %"PRIu32, platform_get_frequency());
     log_sys_debug("Version : %s", GIT_VERSION);
 
     persistent_init();
@@ -44,7 +44,7 @@ int main(void)
 
     model_sensors_init();
 
-    comms_init();
+    protocol_system_init();
 
     platform_watchdog_init(IWDG_NORMAL_TIME_MS);
 
@@ -77,8 +77,8 @@ int main(void)
             measurements_loop_iteration();
             platform_tight_loop();
         }
-        comms_loop_iteration();
-        flashing_delay = comms_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
+        protocol_loop_iteration();
+        flashing_delay = protocol_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
         platform_blink_led_toggle();
 
         prev_now = get_since_boot_ms();

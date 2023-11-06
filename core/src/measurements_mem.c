@@ -14,14 +14,12 @@ void measurements_setup_default(measurements_def_t* def, char* name, uint8_t int
 }
 
 
-#ifndef __CONFIGTOOL__
 void measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)
 {
     measurements_def_t def;
     measurements_setup_default(&def, name, interval, samplecount, type);
     measurements_add(&def);
 }
-#endif // __CONFIGTOOL__
 
 
 measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name)

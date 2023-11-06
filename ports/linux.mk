@@ -8,7 +8,7 @@ LINUX_CC = gcc
 
 
 #Compiler options
-LINUX_DEFINES := -D_GNU_SOURCE -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
+LINUX_DEFINES := -D_GNU_SOURCE
 
 LINUX_CFLAGS		+= -O0 -g -std=gnu11 -pedantic $(LINUX_DEFINES)
 LINUX_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
@@ -18,7 +18,7 @@ LINUX_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 LINUX_CFLAGS		+= -fprofile-arcs -ftest-coverage
 
 
-LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)
+LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/protocols/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)
 
 LINUX_LDFLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINUX_LDFLAGS += -lgcov --coverage -pthread -lutil
@@ -28,7 +28,7 @@ SQLITE_DB ?= $(OSM_DIR)/tools/config_gui/config_database/modbus_templates
 
 #Linux Port Dependencies
 LINUX_EXES     := gcc valgrind python3 pkg-config git js
-PY_MODULES :=  idlelib influxdb PIL pymodbus serial scipy tkinter xml argparse csv ctypes \
+PY_MODULES :=  idlelib PIL pymodbus serial scipy tkinter xml argparse csv ctypes \
                datetime errno fnmatch json logging math multiprocessing numpy random re select \
 			   selectors signal socket sqlite3 \
 			   string struct subprocess threading time traceback \

@@ -31,10 +31,10 @@ class comms_dev_t(basetypes.pty_dev_t):
 
 
 def main():
-    
+
     import argparse
 
-    DEFAULT_VIRTUAL_COMMS_PATH = "/tmp/osm/UART_LW_slave"
+    DEFAULT_VIRTUAL_COMMS_PATH = "/tmp/osm/UART_COMMS_slave"
     DEFAULT_PROTOCOL_PATH      = "%s/../../lorawan_protocol/debug.js"% os.path.dirname(__file__)
 
     def get_args():

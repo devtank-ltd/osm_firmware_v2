@@ -20,14 +20,14 @@
 #define LW_REGION_LEN                       7
 
 
-#define LW_REGION_NAME_EU433                "EU433"
-#define LW_REGION_NAME_CN470                "CN470"
-#define LW_REGION_NAME_RU864                "RU864"
-#define LW_REGION_NAME_IN865                "IN865"
-#define LW_REGION_NAME_EU868                "EU868"
-#define LW_REGION_NAME_US915                "US915"
-#define LW_REGION_NAME_AU915                "AU915"
-#define LW_REGION_NAME_KR920                "KR920"
+#define LW_REGION_NAME_EU433                "EU433\x00\x00"
+#define LW_REGION_NAME_CN470                "CN470\x00\x00"
+#define LW_REGION_NAME_RU864                "RU864\x00\x00"
+#define LW_REGION_NAME_IN865                "IN865\x00\x00"
+#define LW_REGION_NAME_EU868                "EU868\x00\x00"
+#define LW_REGION_NAME_US915                "US915\x00\x00"
+#define LW_REGION_NAME_AU915                "AU915\x00\x00"
+#define LW_REGION_NAME_KR920                "KR920\x00\x00"
 #define LW_REGION_NAME_AS923_1              "AS923-1"
 #define LW_REGION_NAME_AS923_2              "AS923-2"
 #define LW_REGION_NAME_AS923_3              "AS923-3"
@@ -54,11 +54,15 @@ typedef enum
 
 typedef struct
 {
+    uint8_t type;
+    uint8_t _[3];
     char    dev_eui[LW_DEV_EUI_LEN];
     char    app_key[LW_APP_KEY_LEN];
     uint8_t region; /* lw_region_t */
     uint8_t version;
-} lw_config_t;
+} __attribute__((__packed__)) lw_config_t;
+
+_Static_assert(sizeof(lw_config_t) < sizeof(comms_config_t), "LoRaWAN config too big.");
 
 
 bool            lw_get_id(char* str, uint8_t len);

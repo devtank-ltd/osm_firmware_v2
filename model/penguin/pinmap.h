@@ -6,6 +6,17 @@
 #define HPM_UART   2
 #define EXT_UART   3
 
+#define UART_CHANNELS                                                                           \
+{                                                                                               \
+    { UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, true, 0}, /* UART 0 Debug */   \
+    { UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, true, 0}, /* UART 1 LoRa */    \
+    { UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, true, 0}, /* UART 2 HPM */     \
+    { UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, true, 0}, /* UART 3 485 */     \
+}
+
+
+
+
 #define UART_CHANNELS_COUNT 4
 
 #define ADC_COUNT 10
@@ -102,6 +113,9 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define W1_PULSE_1_IO               4
 #define W1_PULSE_2_IO               5
 
+#define IOS_WATCH_COUNT 2
+#define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
+
 #define HTU21D_I2C                  1
 #define HTU21D_I2C_INDEX            0
 #define VEML7700_I2C                1
@@ -115,10 +129,7 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define     post_init()
 
 
-#ifndef __CONFIGTOOL__
-
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 9600
 
-#endif // __CONFIGTOOL__

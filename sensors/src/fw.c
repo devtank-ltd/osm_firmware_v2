@@ -17,6 +17,7 @@ static measurements_sensor_state_t _fw_version_get(char* name, measurements_read
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     value->v_str = fw_sha1;
+    value->v_str[FW_SHA_LEN] = 0;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
