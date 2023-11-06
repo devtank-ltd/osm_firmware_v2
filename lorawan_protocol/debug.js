@@ -1,4 +1,4 @@
-const protocol = require("./protocol");
+const protocol = require("./cs_protocol");
 
 
 function str_to_byte_arr(string_in)
