@@ -52,7 +52,7 @@ uint8_t env01c_stm_adcs_get_channel(adcs_type_t adcs_type)
 void env01c_persist_config_model_init(persist_env01c_config_v1_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-    cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
+    cc_setup_default_mem(model_config->cc_configs, sizeof(model_config->cc_configs));
     lw_config_init(&model_config->comms_config);
     model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }

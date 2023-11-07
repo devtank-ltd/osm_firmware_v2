@@ -48,7 +48,7 @@ uint8_t sens01_stm_adcs_get_channel(adcs_type_t adcs_type)
 void sens01_persist_config_model_init(persist_model_config_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
-    ftma_setup_default_mem(model_config->ftma_configs, sizeof(ftma_config_t));
+    ftma_setup_default_mem(model_config->ftma_configs, sizeof(model_config->ftma_configs));
     lw_config_init(&model_config->comms_config);
     model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
 }
