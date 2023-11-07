@@ -53,7 +53,9 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
+#endif
 
 #define MODBUS_BLOB_VERSION 2
 

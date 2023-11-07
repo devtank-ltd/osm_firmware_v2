@@ -113,62 +113,62 @@ static bool _lw_region(char* name, unsigned len, lw_region_t* region)
     bool ret = true;
     if (len <= LW_REGION_LEN)
     {
-        if (strnlen(LW_REGION_NAME_EU433, LW_REGION_LEN) == len &&
+        if (strlen(LW_REGION_NAME_EU433) == len &&
             strncmp(LW_REGION_NAME_EU433, name, len) == 0)
         {
             *region = LW_REGION_EU433;
         }
-        else if (strnlen(LW_REGION_NAME_CN470, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_CN470) == len &&
             strncmp(LW_REGION_NAME_CN470, name, len) == 0)
         {
             *region = LW_REGION_CN470;
         }
-        else if (strnlen(LW_REGION_NAME_RU864, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_RU864) == len &&
             strncmp(LW_REGION_NAME_RU864, name, len) == 0)
         {
             *region = LW_REGION_RU864;
         }
-        else if (strnlen(LW_REGION_NAME_IN865, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_IN865) == len &&
             strncmp(LW_REGION_NAME_IN865, name, len) == 0)
         {
             *region = LW_REGION_IN865;
         }
-        else if (strnlen(LW_REGION_NAME_EU868, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_EU868) == len &&
             strncmp(LW_REGION_NAME_EU868, name, len) == 0)
         {
             *region = LW_REGION_EU868;
         }
-        else if (strnlen(LW_REGION_NAME_US915, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_US915) == len &&
             strncmp(LW_REGION_NAME_US915, name, len) == 0)
         {
             *region = LW_REGION_US915;
         }
-        else if (strnlen(LW_REGION_NAME_AU915, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_AU915) == len &&
             strncmp(LW_REGION_NAME_AU915, name, len) == 0)
         {
             *region = LW_REGION_AU915;
         }
-        else if (strnlen(LW_REGION_NAME_KR920, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_KR920) == len &&
             strncmp(LW_REGION_NAME_KR920, name, len) == 0)
         {
             *region = LW_REGION_KR920;
         }
-        else if (strnlen(LW_REGION_NAME_AS923_1, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_AS923_1) == len &&
             strncmp(LW_REGION_NAME_AS923_1, name, len) == 0)
         {
             *region = LW_REGION_AS923_1;
         }
-        else if (strnlen(LW_REGION_NAME_AS923_2, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_AS923_2) == len &&
             strncmp(LW_REGION_NAME_AS923_2, name, len) == 0)
         {
             *region = LW_REGION_AS923_2;
         }
-        else if (strnlen(LW_REGION_NAME_AS923_3, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_AS923_3) == len &&
             strncmp(LW_REGION_NAME_AS923_3, name, len) == 0)
         {
             *region = LW_REGION_AS923_3;
         }
-        else if (strnlen(LW_REGION_NAME_AS923_4, LW_REGION_LEN) == len &&
+        else if (strlen(LW_REGION_NAME_AS923_4) == len &&
             strncmp(LW_REGION_NAME_AS923_4, name, len) == 0)
         {
             *region = LW_REGION_AS923_4;
