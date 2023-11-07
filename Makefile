@@ -17,7 +17,7 @@ RELEASE_DIR ?= $(BUILD_DIR)/releases
 
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
-default: env01c
+default: all
 
 all: $(MODELS_FW)
 	@if [ $(GIT_SHA1_LEN) != 7 ]; then \
