@@ -1,4 +1,4 @@
-env01_SOURCES := \
+env01b_SOURCES := \
            $(OSM_DIR)/core/src/main.c \
            $(OSM_DIR)/core/src/base.c \
            $(OSM_DIR)/core/src/log.c \
@@ -33,7 +33,7 @@ env01_SOURCES := \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c \
            $(OSM_DIR)/sensors/src/io_watch.c \
-           $(MODEL_DIR)/env01/env01.c \
+           $(MODEL_DIR)/env01b/env01b.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \
            $(OSM_DIR)/ports/stm/src/i2c.c \
@@ -42,6 +42,6 @@ env01_SOURCES := \
            $(OSM_DIR)/ports/stm/src/uarts.c \
            $(OSM_DIR)/ports/stm/src/w1.c
 
-env01_LINK_SCRIPT := $(OSM_DIR)/ports/stm/stm32l4.ld
+env01b_LINK_SCRIPT := $(OSM_DIR)/ports/stm/stm32l4.ld
 
-$(eval $(call STM_FIRMWARE,env01))
+$(eval $(call STM_FIRMWARE,env01b))
