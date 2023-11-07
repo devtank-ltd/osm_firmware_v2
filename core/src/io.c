@@ -656,6 +656,7 @@ struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
 
 void ios_measurements_init(void)
 {
+#if IOS_WATCH_COUNT > 0
     measurements_def_t def;
     def.interval    = 0;
     def.samplecount = 0;
@@ -674,6 +675,7 @@ void ios_measurements_init(void)
         }
         io_debug("Added '%s' measurement.", def.name);
     }
+#endif
 }
 
 

@@ -9,11 +9,11 @@
 #include "log.h"
 #include "cmd.h"
 #include "uarts.h"
-#include "comms.h"
+#include "common.h"
 #include "platform.h"
 #include "platform_model.h"
 
-#include "common.h"
+#include "protocol.h"
 
 
 #define UART_RATE_LIMIT_MS              250
@@ -94,9 +94,7 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 
         memcpy(dma_mem, s, len);
 
-        uart_dma_out(uart, dma_mem, len);
-
-        return len;
+        return uart_dma_out(uart, dma_mem, len);
     }
 
     if (uart) // Add debug messages to debug ring buffer is a loop.
@@ -146,15 +144,17 @@ void uart_ring_in_drain(unsigned uart)
         if (len)
             cmds_process(line_buffer, len);
     }
+#ifdef COMMS_UART
     else if (uart == COMMS_UART)
     {
         len = ring_buf_readline(ring, line_buffer, CMD_LINELEN);
         if (len)
         {
             comms_debug(" >> %s", line_buffer);
-            comms_process(line_buffer);
+            protocol_process(line_buffer);
         }
     }
+#endif
 }
 
 
@@ -162,9 +162,7 @@ static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 {
     unsigned uart = *(unsigned*)puart;
 
-    if (uart_dma_out(uart, c, len))
-        return len;
-    return 0;
+    return uart_dma_out(uart, c, len);
 }
 
 

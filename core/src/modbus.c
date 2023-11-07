@@ -66,6 +66,8 @@ static uint32_t modbus_send_stop_delay = 0;
 
 static uint32_t modbus_retransmit_count = 0;
 
+static unsigned _echo_bytes = 0;
+
 
 static struct
 {
@@ -87,7 +89,11 @@ static struct
 } _modbus_reg_set_expected = {0};
 
 
-static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
+/* By default, assume no echo. */
+bool modbus_requires_echo_removal() { return false; }
+
+
+static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
 {
     databits *= 10; /* *10 to support half bit. */
     databits += 10; /* One start bit */
@@ -112,7 +118,7 @@ static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, u
 }
 
 
-static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
+static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
 {
     if (modbus_bus->binary_protocol)
     {
@@ -124,7 +130,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t
         modbus_send_start_delay = _modbus_get_deci_char_time(35 /*3.5*/, speed, databits, parity, stop);
         modbus_send_stop_delay = _modbus_get_deci_char_time(35 /*3.5*/, speed, databits, parity, stop);
     }
-    modbus_debug("Modbus @ %s %u %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", speed, databits, uart_parity_as_char(parity), uart_stop_bits_as_str(stop));
+    modbus_debug("Modbus @ %s %u %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", speed, databits, osm_uart_parity_as_char(parity), osm_uart_stop_bits_as_str(stop));
 
     modbus_bus->baudrate    = speed;
     modbus_bus->databits    = databits;
@@ -133,7 +139,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, uart_parity_t
 }
 
 
-void modbus_setup(unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop, bool binary_framing)
+void modbus_setup(unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, bool binary_framing)
 {
     uart_resetup(EXT_UART, speed, databits, parity, stop);
 
@@ -178,8 +184,8 @@ bool modbus_setup_from_str(char * str)
 
     unsigned speed;
     uint8_t databits;
-    uart_parity_t parity;
-    uart_stop_bits_t stop;
+    osm_uart_parity_t parity;
+    osm_uart_stop_bits_t stop;
 
     uart_get_setup(EXT_UART, &speed, &databits, &parity, &stop);
 
@@ -324,9 +330,15 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         uart_ring_out(EXT_UART, (char[]){MODBUS_BIN_START}, 1);
         tx_modbuspacket[8] = MODBUS_BIN_STOP;
         uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 9);
+        if (modbus_requires_echo_removal())
+            _echo_bytes = 10;
     }
-    else uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
-
+    else
+    {
+        uart_ring_out(EXT_UART, (char*)tx_modbuspacket, 8); /* Frame is done with silence */
+        if (modbus_requires_echo_removal())
+            _echo_bytes = 8;
+    }
     reg->value_state = MB_REG_WAITING;
 }
 
@@ -676,6 +688,15 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     if (!len)
         return;
 
+    if (modbus_requires_echo_removal() && _echo_bytes)
+    {
+        unsigned discarded = ring_buf_discard(ring, _echo_bytes);
+        _echo_bytes -= discarded;
+        if (!_echo_bytes)
+            modbus_debug("Echo drained.");
+        return;
+    }
+
     if (!modbuspacket_len)
     {
         if ((!modbus_bus->binary_protocol && len > 2) || (modbus_bus->binary_protocol && len > 3))
@@ -688,6 +709,8 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
                 modbus_debug("Zero start");
                 return;
             }
+
+            modbus_debug("Starting reply read with : %u", len);
 
             if (modbus_bus->binary_protocol)
             {
@@ -703,6 +726,7 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
             uint8_t func = modbuspacket[1];
 
             len -= 3;
+            modbus_debug("Reply, Address:%"PRIu8" Function: %"PRIu8, modbuspacket[0], func);
             if (func == MODBUS_READ_HOLDING_FUNC)
             {
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
@@ -725,10 +749,11 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
             }
             else
             {
-                modbus_debug("Bad function : %"PRIu8, func);
+                modbus_debug("Bad function");
                 return;
             }
 
+            modbus_debug("Reply type length : %u", modbuspacket_len);
             if (modbus_bus->binary_protocol)
                 modbuspacket_len++;
 

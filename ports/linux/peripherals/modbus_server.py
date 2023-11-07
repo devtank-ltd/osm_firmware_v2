@@ -3,14 +3,29 @@ import os
 import logging
 from pymodbus.payload import BinaryPayloadBuilder
 from pymodbus.transaction import ModbusBinaryFramer
-from pymodbus.version import version
-if version.major < 3:
+try:
+    from pymodbus.version import version
+except ModuleNotFoundError:
+    import pymodbus
+    version_short = pymodbus.__version__
+    version_major = int(version_short.split(".")[0])
+else:
+    version_major = version.major
+    version_short = version.short
+if version_major < 3:
     from pymodbus.server.sync import StartSerialServer
 else:
     from pymodbus.server import StartSerialServer
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
 from pymodbus.constants import Endian
+
+try:
+    endian_big = Endian.Big
+    endian_little = Endian.Little
+except AttributeError:
+    endian_big = Endian.BIG
+    endian_little = Endian.LITTLE
 
 
 MODBUS_DEV_ADDRESS_E53  = 0x5
@@ -58,9 +73,9 @@ class modbus_server_t(object):
 
         self._port = port
 
-        e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=Endian.Big, wordorder=Endian.Big)
-        rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=Endian.Big, wordorder=Endian.Little)
-        rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=Endian.Big, wordorder=Endian.Big)
+        e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=endian_big, wordorder=endian_big)
+        rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=endian_big, wordorder=endian_little)
+        rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=endian_big, wordorder=endian_big)
 
         slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
                   MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block, zero_mode=True),
@@ -73,7 +88,7 @@ class modbus_server_t(object):
         self._identity.VendorUrl = 'http://github.com/riptideio/pymodbus/'
         self._identity.ProductName = 'Pymodbus Server'
         self._identity.ModelName = 'Pymodbus Server'
-        self._identity.MajorMinorRevision = version.short()
+        self._identity.MajorMinorRevision = version_short
 
     def run_forever(self):
         log = self._logger

@@ -1,5 +1,4 @@
 typedef int iso_is_annoying_go_away_pls_t;
-#ifndef __CONFIGTOOL__
 #include <string.h>
 #include <signal.h>
 
@@ -263,5 +262,3 @@ void penguin_linux_close_fakes(void)
     }
 }
 
-
-#endif //__CONFIGTOOL__

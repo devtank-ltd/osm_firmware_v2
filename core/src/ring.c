@@ -76,6 +76,23 @@ unsigned  ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
 }
 
 
+unsigned ring_buf_discard(ring_buf_t * ring_buf, unsigned len)
+{
+    unsigned r_pos = ring_buf->r_pos;
+
+    for(unsigned n = 0; n < len; n++)
+    {
+        if (r_pos == ring_buf->w_pos)
+            return n;
+        r_pos++;
+        r_pos %= ring_buf->size;
+        ring_buf->r_pos = r_pos;
+    }
+    return len;
+
+}
+
+
 unsigned ring_buf_peek(ring_buf_t * ring_buf, char * buf, unsigned len)
 {
     unsigned r_pos = ring_buf->r_pos;

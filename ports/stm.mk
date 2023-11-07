@@ -8,8 +8,7 @@ STM_SIZE = $(STM_TOOLCHAIN)-size
 STM_NM =$(STM_TOOLCHAIN)-nm
 
 #Target CPU options
-STM_DEFINES = -DSTM32L4 -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\"
-
+STM_DEFINES = -DSTM32L4
 STM_CPU_DEFINES = -mthumb -mcpu=cortex-m4 -pedantic -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 #Compiler options
@@ -20,7 +19,7 @@ STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs -flto
 
-STM_INCLUDE_PATHS += -I$(OSM_DIR)/ports/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include
+STM_INCLUDE_PATHS += -I$(OSM_DIR)/ports/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include -I$(OSM_DIR)/protocols/include
 
 STM_LINK_FLAGS =  -L$(OSM_DIR)/libs/libopencm3/lib --static -nostartfiles
 STM_LINK_FLAGS += -L$(OSM_DIR)/libs/libopencm3/lib/stm32/l4
@@ -68,8 +67,6 @@ $$($(1)_OBJS): $(LIBOPENCM3)
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_LINK_SCRIPT)
 	$$(STM_CC) $$($(1)_OBJS) $$(STM_LINK_FLAGS) -T$$($(1)_LINK_SCRIPT) -o $$@
 
-$$(BUILD_DIR)/$(1)/config.bin : $$(MODEL_DIR)/$(1)_default_mem.json $$(JSON_CONV)
-	$$(JSON_CONV) $$@ < $$<
 
 $$(BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBOPENCM3)
 	mkdir -p "$$(@D)"
@@ -82,9 +79,9 @@ $$(BUILD_DIR)/$(1)/bootloader.elf : $$(BUILD_DIR)/$(1)/bootloader/bootloader.o
 $$(BUILD_DIR)/$(1)/%.bin: $$(BUILD_DIR)/$(1)/%.elf
 	$$(STM_OBJCOPY) -O binary $$< $$@
 
-$$(BUILD_DIR)/$(1)/complete.bin: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin $$(BUILD_DIR)/$(1)/config.bin
+$$(BUILD_DIR)/$(1)/complete.bin: $$(BUILD_DIR)/$(1)/bootloader.bin $$(BUILD_DIR)/$(1)/firmware.bin
 	dd of=$$@ if=$$(BUILD_DIR)/$(1)/bootloader.bin bs=2k
-	dd of=$$@ if=$$(BUILD_DIR)/$(1)/config.bin seek=2 conv=notrunc bs=2k
+	dd of=$$@ if=/dev/zero seek=2 conv=notrunc bs=2k count=2
 	dd of=$$@ if=$$(BUILD_DIR)/$(1)/firmware.bin seek=4 conv=notrunc bs=2k
 
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/complete.bin

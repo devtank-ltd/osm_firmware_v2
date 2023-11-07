@@ -20,6 +20,7 @@
 #include <libgen.h>
 #include <linux/limits.h>
 #include <spawn.h>
+#include <fcntl.h>
 
 #include "platform.h"
 #include "linux.h"
@@ -106,8 +107,6 @@ static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
 static bool _ios_enabled[IOS_COUNT] = {0};
 
 
-uint32_t                rcc_ahb_frequency;
-
 
 static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .name={"UART_DEBUG"},
@@ -115,12 +114,29 @@ static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .cb=linux_uart_proc
                                                     },
                                                    {.type=LINUX_FD_TYPE_PTY,
-                                                    .name={"UART_LW"},
+                                                    .name={"UART_COMMS"},
                                                     .pty = {.uart = COMMS_UART},
                                                     .cb=linux_uart_proc},
                                                    {.type=LINUX_FD_TYPE_EVENT,
                                                     .name={"ADC_GEN_EVENT"},
                                                     .cb=linux_adc_generate}};
+
+
+uint32_t platform_get_frequency(void)
+{
+    static uint32_t freq = 0;
+    if (!freq)
+    {
+        FILE * f = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+        if (f)
+        {
+            fscanf(f, PRIu32, &freq);
+            fclose(f);
+        }
+    }
+    return freq;
+}
+
 
 void linux_port_debug(char * fmt, ...)
 {
@@ -157,17 +173,33 @@ static void _linux_sig_handler(int signo)
 }
 
 
-void linux_error(char* fmt, ...)
+static void _linux_error(char * fmt, va_list v, int error)
 {
     fprintf(stderr, "LINUX ERROR: ");
-    va_list v;
-    va_start(v, fmt);
     vfprintf(stderr, fmt, v);
     va_end(v);
     fprintf(stderr, " (%s)", strerror(errno));
     fprintf(stderr, "\n");
     model_linux_close_fakes();
     exit(-1);
+}
+
+
+void linux_error(char* fmt, ...)
+{
+    va_list v;
+    va_start(v, fmt);
+    _linux_error(fmt, v, errno);
+    va_end(v);
+}
+
+
+void linux_error2(int error, char* fmt, ...)
+{
+    va_list v;
+    va_start(v, fmt);
+    _linux_error(fmt, v, error);
+    va_end(v);
 }
 
 
@@ -412,7 +444,7 @@ static void _linux_rm_fd_file(void)
 {
     char osm_reboot_loc[LOCATION_LEN];
     concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
-    remove(LINUX_REBOOT_FILE_LOC);
+    remove(osm_reboot_loc);
 }
 
 
@@ -610,39 +642,72 @@ static void _linux_setup_poll(void)
 
 bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 {
-    unsigned pty_name_len = strlen(pty_name);
-    if (pty_name_len >  (LINUX_PTY_NAME_SIZE - 1))
-        return false;
-
-    int next_slot = -1;
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
         {
-            if (next_slot == -1)
-                next_slot = i;
-            continue;
-        }
-        if (!strncmp(fd->name, pty_name, LINUX_PTY_NAME_SIZE))
-        {
-            fd->pty.uart = uart;
-            linux_port_debug("UART %u was already %s%s_slave", uart, ret_static_file_location(), pty_name);
+            if (pty_name[0] == '/') /*Is it a path to an existing TTY? */
+            {
+                char * pty_path = pty_name;
+                linux_port_debug("UART %u given path %s", uart, pty_path);
+                pty_name = basename(pty_name);
+                int fd_id = open(pty_path, O_RDWR | O_NOCTTY | O_SYNC);
+                if (fd_id < 0)
+                {
+                    linux_error("Failed to open %s", pty_path);
+                    return false;
+                }
+                else
+                {
+                    unsigned name_len = strlen(pty_name);
+
+                    if (name_len > 6 && strncmp(pty_name + name_len - 6, "_slave", 6) == 0)
+                        name_len -= 6;
+
+                    if (name_len > (LINUX_PTY_NAME_SIZE - 1))
+                    {
+                        linux_error2(EINVAL, "PTY name %s too long", pty_name);
+                        return false;
+                    }
+                    strncpy(fd->name, pty_name, name_len);
+                    fd->type = LINUX_FD_TYPE_PTY;
+                    fd->pty.uart = uart;
+                    fd->cb = linux_uart_proc;
+                    fd->pty.slave_fd = -1;
+                    fd->pty.master_fd = fd_id;
+                    linux_port_debug("UART %u %s for %s", uart, fd->name, pty_path);
+                }
+            }
+            else
+            {
+                if (strlen(pty_name) >    (LINUX_PTY_NAME_SIZE - 1))
+                {
+                    linux_error2(EINVAL, "PTY name %s too long", pty_name);
+                    return false;
+                }
+
+                char tty_path[128];
+                strcpy(tty_path, ret_static_file_location());
+                strcat(tty_path, pty_name);
+                strcat(tty_path, LINUX_SLAVE_SUFFIX);
+                if (access(tty_path, F_OK) == 0)
+                {
+                    return true;
+                }
+
+                strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
+                fd->type = LINUX_FD_TYPE_PTY;
+                fd->pty.uart = uart;
+                fd->cb = linux_uart_proc;
+                _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
+                linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
+            }
+            _linux_setup_poll();
             return true;
         }
     }
-    if (next_slot != -1)
-    {
-        fd_t* fd = &fd_list[next_slot];
-        memcpy(fd->name, pty_name, pty_name_len + 1);
-        fd->type = LINUX_FD_TYPE_PTY;
-        fd->pty.uart = uart;
-        fd->cb = linux_uart_proc;
-        _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-        linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
-        _linux_setup_poll();
-        return true;
-    }
+    linux_error2(ENOBUFS, "No spare PTY slot.");
     return false;
 }
 
@@ -923,8 +988,8 @@ bool platform_running(void)
     return _linux_running;
 }
 
-
 void platform_hpm_enable(bool enable)
+#ifdef HPM_UART
 {
     const char* on_data = "ON\n";
     const char* off_data = "OFF\n";
@@ -935,6 +1000,9 @@ void platform_hpm_enable(bool enable)
     }
     uart_blocking(HPM_UART, off_data, strlen(off_data));
 }
+#else //HPM_UART
+{}
+#endif //HPM_UART
 
 
 void platform_tight_loop(void)
@@ -962,6 +1030,8 @@ uint32_t get_since_boot_ms(void)
 
 void linux_usleep(unsigned usecs)
 {
+    if (!_linux_running)
+        return; /* No sleep for the dying. */
     int64_t end_time = linux_get_current_us() + usecs;
 
     struct timespec ts = {.tv_sec = end_time / 1000000,

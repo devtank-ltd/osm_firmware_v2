@@ -29,7 +29,7 @@
 #define RAK4270_PAYLOAD_MAX_DEFAULT              242
 
 
-_Static_assert (MEASUREMENTS_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
+_Static_assert (PROTOCOL_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
 
@@ -178,7 +178,7 @@ typedef struct
         struct
         {
             uint8_t len;
-            int8_t arr[MEASUREMENTS_HEX_ARRAY_SIZE];
+            int8_t arr[PROTOCOL_HEX_ARRAY_SIZE];
         } hex;
     };
 } rak4270_backup_msg_t;
@@ -1144,6 +1144,6 @@ void rak4270_power_down(void)
 bool rak4270_persist_config_cmp(void* d0, void* d1)
 {
     return lw_persist_config_cmp(
-        (lw_config_t*)((comms_config_t*)d0)->setup,
-        (lw_config_t*)((comms_config_t*)d1)->setup);
+        (lw_config_t*)((comms_config_t*)d0),
+        (lw_config_t*)((comms_config_t*)d1));
 }

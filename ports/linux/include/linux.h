@@ -39,6 +39,7 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len);
 unsigned linux_spawn(const char * rel_path);
 
 void linux_error(char* fmt, ...);
+void linux_error2(int error, char* fmt, ...);
 
 char* ret_static_file_location(void);
 char concat_osm_location(char* new_loc, int loc_len, char* global);

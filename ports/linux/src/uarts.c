@@ -11,17 +11,7 @@
 #include "log.h"
 #include "pinmap.h"
 
-
-#define UART_CHANNELS_LINUX                                                                     \
-{                                                                                               \
-    { UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, true, 0}, /* UART 0 Debug */   \
-    { UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, true, 0}, /* UART 1 LoRa */    \
-    { UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, true, 0}, /* UART 2 HPM */     \
-    { UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, true, 0}, /* UART 3 485 */     \
-}
-
-
-static uart_channel_t uart_channels[] = UART_CHANNELS_LINUX;
+static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 
 void linux_uart_proc(unsigned uart, char* in, unsigned len)
@@ -62,7 +52,7 @@ bool uart_is_enabled(unsigned uart)
 }
 
 
-void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t parity, uart_stop_bits_t stop)
+void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
@@ -91,11 +81,11 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, uart_parity_t
     chan->stop      = stop;
 
     uart_debug(uart, "%u %"PRIu8"%c%s",
-            (unsigned)chan->baud, chan->databits, uart_parity_as_char(chan->parity), uart_stop_bits_as_str(chan->stop));
+            (unsigned)chan->baud, chan->databits, osm_uart_parity_as_char(chan->parity), osm_uart_stop_bits_as_str(chan->stop));
 }
 
 
-bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_parity_t * parity, uart_stop_bits_t * stop)
+bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return false;
@@ -110,10 +100,11 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, uart_pa
 
 bool uart_resetup_str(unsigned uart, char * str)
 {
+        return true;
     uint32_t         speed;
     uint8_t          databits;
-    uart_parity_t    parity;
-    uart_stop_bits_t stop;
+    osm_uart_parity_t    parity;
+    osm_uart_stop_bits_t stop;
 
     if (uart >= UART_CHANNELS_COUNT )
     {
@@ -121,7 +112,7 @@ bool uart_resetup_str(unsigned uart, char * str)
         return false;
     }
 
-    if (!decompose_uart_str(str, &speed, &databits, &parity, &stop))
+    if (!osm_decompose_uart_str(str, &speed, &databits, &parity, &stop))
         return false;
 
     uart_resetup(uart, speed, databits, parity, stop);
@@ -155,14 +146,14 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
 }
 
 
-void uart_blocking(unsigned uart, const char *data, int size)
+void uart_blocking(unsigned uart, const char *data, unsigned size)
 {
     _uart_blocking(uart, data, size);
 }
 
 
-bool uart_dma_out(unsigned uart, char *data, int size)
+unsigned uart_dma_out(unsigned uart, char *data, unsigned size)
 {
     _uart_blocking(uart, data, size);
-    return true;
+    return size;
 }

@@ -7,9 +7,7 @@
 #include "persist_config_header.h"
 
 
-extern uint32_t rcc_ahb_frequency;
-extern uint32_t rcc_apb1_frequency;
-extern uint32_t rcc_apb2_frequency;
+uint32_t platform_get_frequency(void);
 
 void platform_init(void);
 void platform_start(void);

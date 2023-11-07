@@ -23,6 +23,7 @@ extern unsigned ring_buf_get_pending(ring_buf_t * ring_buf);
 extern bool     ring_buf_is_full(ring_buf_t * ring_buf);
 
 extern unsigned ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len);
+extern unsigned ring_buf_discard(ring_buf_t * ring_buf, unsigned len);
 extern unsigned ring_buf_peek(ring_buf_t * ring_buf, char * buf, unsigned len);
 extern unsigned ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len);
 
