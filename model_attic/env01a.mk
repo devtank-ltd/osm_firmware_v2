@@ -1,1 +1,1 @@
-$(eval $(call ESP32_FIRMWARE,env00))
+$(eval $(call ESP32_FIRMWARE,env01a))

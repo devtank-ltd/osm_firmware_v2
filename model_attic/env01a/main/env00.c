@@ -11,18 +11,18 @@
 #include "io.h"
 #include "protocol.h"
 
-void env00_post_init(void) {}
+void env01a_post_init(void) {}
 
-void env00_sensors_init(void)
+void env01a_sensors_init(void)
 {
     ios_init();
     modbus_init();
 }
 
-void env00_debug_mode_enable_all(void) {}
+void env01a_debug_mode_enable_all(void) {}
 
 
-bool env00_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool env01a_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
@@ -33,7 +33,7 @@ bool env00_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
     return false;
 }
 
-bool env00_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool env01a_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -60,21 +60,21 @@ bool env00_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
 }
 
 
-bool env00_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool env01a_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
         return modbus_uart_ring_do_out_drain(ring);
     return true;
 }
 
-void env00_measurements_repopulate(void)
+void env01a_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
 }
 
 
-void env00_cmds_add_all(struct cmd_link_t* tail)
+void env01a_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = ios_add_commands(tail);
     tail = modbus_add_commands(tail);
@@ -84,16 +84,16 @@ void env00_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
-bool env00_can_io_be_special(unsigned io, io_special_t special)
+bool env01a_can_io_be_special(unsigned io, io_special_t special)
 {
     return false;
 }
 
 
-void env00_uarts_setup(void) {}
+void env01a_uarts_setup(void) {}
 
 
-unsigned env00_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned env01a_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;
@@ -104,7 +104,7 @@ unsigned env00_measurements_add_defaults(measurements_def_t * measurements_arr)
 }
 
 
-void env00_persist_config_model_init(persist_env00_config_v1_t* model_config)
+void env01a_persist_config_model_init(persist_env01a_config_v1_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
 }
