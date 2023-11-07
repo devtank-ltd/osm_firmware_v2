@@ -444,7 +444,7 @@ static void _linux_rm_fd_file(void)
 {
     char osm_reboot_loc[LOCATION_LEN];
     concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
-    remove(LINUX_REBOOT_FILE_LOC);
+    remove(osm_reboot_loc);
 }
 
 
