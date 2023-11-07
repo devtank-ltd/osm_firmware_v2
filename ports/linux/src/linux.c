@@ -687,6 +687,15 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
                     return false;
                 }
 
+                char tty_path[128];
+                strcpy(tty_path, ret_static_file_location());
+                strcat(tty_path, pty_name);
+                strcat(tty_path, LINUX_SLAVE_SUFFIX);
+                if (access(tty_path, F_OK) == 0)
+                {
+                    return true;
+                }
+
                 strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
                 fd->type = LINUX_FD_TYPE_PTY;
                 fd->pty.uart = uart;
