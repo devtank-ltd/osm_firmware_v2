@@ -23,8 +23,6 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
     if (written != len)
         linux_error("Failed to write all uart:%u len:%u", uart, len);
 
-    linux_port_debug("UART:%u now has %u", uart, uart_ring_in_get_len(uart));
-
     if (uart == CMD_UART)
     {
         for (unsigned i = 0; i < len; i++)
@@ -38,6 +36,7 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
     }
     else
     {
+        linux_port_debug("UART:%u now has %u", uart, uart_ring_in_get_len(uart));
         sleep_debug("Waking up on receive data.");
         sleep_exit_sleep_mode();
     }
