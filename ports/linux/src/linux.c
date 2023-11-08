@@ -607,9 +607,9 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
                 {
                     char c = data[n];
                     if (isgraph(c))
-                        linux_port_debug("%s >> '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
+                        linux_port_debug("%s(%u) >> '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
                     else
-                        linux_port_debug("%s >> [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+                        linux_port_debug("%s(%u) >> [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
                 }
             }
             return (write(fd_handler->pty.master_fd, data, size) != 0);
@@ -752,12 +752,16 @@ void _linux_iterate(void)
                         break;
                     if (r == 1)
                     {
-                        if (isgraph(c))
-                            linux_port_debug("%s << '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
-                        else
-                            linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+                        unsigned uart = fd_handler->pty.uart;
+                        if (uart != CMD_UART)
+                        {
+                            if (isgraph(c))
+                                linux_port_debug("%s(%u) << '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
+                            else
+                                linux_port_debug("%s(%u) << [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
+                        }
                         if (fd_handler->cb)
-                            fd_handler->cb(fd_handler->pty.uart, &c, 1);
+                            fd_handler->cb(uart, &c, 1);
                     }
                     break;
                 case LINUX_FD_TYPE_TIMER:
