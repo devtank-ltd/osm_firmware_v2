@@ -8,7 +8,6 @@
 #define model_uart_ring_done_in_process    CONCAT(fw_name,_uart_ring_done_in_process)
 #define model_uart_ring_do_out_drain       CONCAT(fw_name,_uart_ring_do_out_drain)
 #define model_measurements_get_inf         CONCAT(fw_name,_measurements_get_inf)
-#define model_debug_mode_enable_all        CONCAT(fw_name,_debug_mode_enable_all)
 #define model_measurements_repopulate      CONCAT(fw_name,_measurements_repopulate)
 #define model_cmds_add_all                 CONCAT(fw_name,_cmds_add_all)
 #define model_w1_pulse_enable_pupd         CONCAT(fw_name,_w1_pulse_enable_pupd)

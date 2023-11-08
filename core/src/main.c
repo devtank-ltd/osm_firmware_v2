@@ -17,7 +17,6 @@
 #include "persist_config.h"
 #include "protocol.h"
 #include "measurements.h"
-#include "debug_mode.h"
 
 
 #define SLOW_FLASHING_TIME_SEC              3000
@@ -51,16 +50,6 @@ int osm_main(void)
     measurements_init();
 
     model_post_init();
-
-    bool boot_debug_mode = DEBUG_MODE & persist_data.log_debug_mask;
-
-    if (boot_debug_mode)
-    {
-        log_async_log = true;
-        log_sys_debug("Booted in debug_mode");
-        debug_mode();
-        log_sys_debug("Left debug_mode");
-    }
 
     platform_start();
     log_async_log = true;

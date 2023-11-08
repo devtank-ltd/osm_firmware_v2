@@ -126,7 +126,7 @@
 #define DEBUG_SOUND        0x10000
 #define DEBUG_SLEEP        0x20000
 #define DEBUG_CAN          0x40000
-#define DEBUG_MODE         0x80000
+/* #define DEBUG_UNUSED       0x80000 */
 #define DEBUG_CUSTOM_0    0x100000
 #define DEBUG_CUSTOM_1    0x200000
 

@@ -307,16 +307,6 @@ class binding_interface_svr_t:
             # Todo, handle expected or error out
             return False
 
-    def _req_debug_begin(self, args):
-        if not self.debug_parse:
-            self.dev.do_cmd("debug_mode")
-            self.debug_parse = binding.dev_debug_t(self.serial_obj)
-
-    def _req_debug_end(self, args):
-        if self.debug_parse:
-            self.dev._set_debug(0)
-        self.debug_parse = None
-
     def _exit_cb(self, args):
         self._alive = False
 
