@@ -285,6 +285,7 @@ class test_framework_t(object):
         io.configure(False, "U")
         io.value = True
         passed &= self._bool_check("IO on", io.value, True)
+        passed &= self._check_set_reg()
 
         # If the CCs are left on, measurement loop fails. TODO: Fix that
         self._vosm_conn.CC1.interval = 0
@@ -298,7 +299,6 @@ class test_framework_t(object):
                 self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
         passed &= self._check_cmd_serial_comms()
-        passed &= self._check_set_reg()
         passed &= self._check_json_config_tool()
         return passed
 
