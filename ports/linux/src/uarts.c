@@ -25,13 +25,21 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
 
     linux_port_debug("UART:%u now has %u", uart, uart_ring_in_get_len(uart));
 
-    for (unsigned i = 0; i < len; i++)
+    if (uart == CMD_UART)
     {
-        if (in[i] == '\n' || in[i] == '\r')
+        for (unsigned i = 0; i < len; i++)
         {
-            sleep_debug("Waking up.");
-            sleep_exit_sleep_mode();
+            if (in[i] == '\n' || in[i] == '\r')
+            {
+                sleep_debug("Waking up on command.");
+                sleep_exit_sleep_mode();
+            }
         }
+    }
+    else
+    {
+        sleep_debug("Waking up on receive data.");
+        sleep_exit_sleep_mode();
     }
 }
 
