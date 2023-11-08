@@ -7,6 +7,9 @@
 extern unsigned uart_ring_in(unsigned uart, const char* s, unsigned len);
 extern unsigned uart_ring_out(unsigned uart, const char* s, unsigned len);
 
+extern unsigned uart_ring_in_get_len(unsigned uart);
+extern unsigned uart_ring_out_get_len(unsigned uart);
+
 extern bool uart_ring_out_busy(unsigned uart);
 extern bool uart_rings_out_busy(void);
 

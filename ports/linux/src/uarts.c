@@ -19,7 +19,12 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
-    uart_ring_in(uart, in, len);
+    unsigned written = uart_ring_in(uart, in, len);
+    if (written != len)
+        linux_error("Failed to write all uart:%u len:%u", uart, len);
+
+    linux_port_debug("UART:%u now has %u", uart, uart_ring_in_get_len(uart));
+
     for (unsigned i = 0; i < len; i++)
     {
         if (in[i] == '\n' || in[i] == '\r')
