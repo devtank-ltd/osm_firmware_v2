@@ -19,8 +19,6 @@ void env01a_sensors_init(void)
     modbus_init();
 }
 
-void env01a_debug_mode_enable_all(void) {}
-
 
 bool env01a_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {

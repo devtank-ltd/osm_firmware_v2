@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <time.h>
 #include <sys/timerfd.h>
 #include <sys/eventfd.h>
 #include <sys/socket.h>
@@ -42,6 +43,7 @@
 
 #define LINUX_PERSIST_FILE_LOC  "osm.img"
 #define LINUX_REBOOT_FILE_LOC   "reboot.dat"
+#define LINUX_REBOOT_FILE_TIMEOUT_S 60
 
 #define LINUX_FD_SAVE_FMT "%s %"PRIi32" %"PRIi32" %u\n"
 
@@ -384,6 +386,15 @@ static void _linux_load_fd_file(void)
         linux_port_debug("No saved file descriptors.");
         return;
     }
+    /* Check last modified time */
+    struct stat attr;
+    time_t utc_now = time( NULL );
+    stat(osm_reboot_loc, &attr);
+    if (utc_now - attr.st_mtime > LINUX_REBOOT_FILE_TIMEOUT_S)
+    {
+        linux_port_debug("Reboot file is outdated.");
+        return;
+    }
     linux_port_debug("Loading saved file descriptors.");
     char line[LINUX_LINE_BUF_SIZ];
     while (fgets(line, LINUX_LINE_BUF_SIZ-1, osm_reboot_file))
@@ -596,9 +607,9 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
                 {
                     char c = data[n];
                     if (isgraph(c))
-                        linux_port_debug("%s >> '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
+                        linux_port_debug("%s(%u) >> '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
                     else
-                        linux_port_debug("%s >> [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+                        linux_port_debug("%s(%u) >> [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
                 }
             }
             return (write(fd_handler->pty.master_fd, data, size) != 0);
@@ -741,12 +752,16 @@ void _linux_iterate(void)
                         break;
                     if (r == 1)
                     {
-                        if (isgraph(c))
-                            linux_port_debug("%s << '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
-                        else
-                            linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
+                        unsigned uart = fd_handler->pty.uart;
+                        if (uart != CMD_UART)
+                        {
+                            if (isgraph(c))
+                                linux_port_debug("%s(%u) << '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
+                            else
+                                linux_port_debug("%s(%u) << [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
+                        }
                         if (fd_handler->cb)
-                            fd_handler->cb(fd_handler->pty.uart, &c, 1);
+                            fd_handler->cb(uart, &c, 1);
                     }
                     break;
                 case LINUX_FD_TYPE_TIMER:

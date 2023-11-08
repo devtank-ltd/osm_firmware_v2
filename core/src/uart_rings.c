@@ -119,6 +119,22 @@ unsigned uart_ring_out(unsigned uart, const char* s, unsigned len)
 }
 
 
+unsigned uart_ring_in_get_len(unsigned uart)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return 0;
+    return ring_buf_get_pending(&ring_in_bufs[uart]);
+}
+
+
+unsigned uart_ring_out_get_len(unsigned uart)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+        return 0;
+    return ring_buf_get_pending(&ring_out_bufs[uart]);
+}
+
+
 void uart_ring_in_drain(unsigned uart)
 {
     if (uart >= UART_CHANNELS_COUNT)

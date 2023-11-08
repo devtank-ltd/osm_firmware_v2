@@ -667,6 +667,7 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, mod
 
 void modbus_uart_ring_in_process(ring_buf_t * ring)
 {
+    static unsigned _header_size = 0;
     if (!modbus_want_rx)
     {
         ring_buf_clear(ring);
@@ -701,6 +702,9 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     {
         if ((!modbus_bus->binary_protocol && len > 2) || (modbus_bus->binary_protocol && len > 3))
         {
+            _header_size = 0;
+            modbus_debug("Starting reply read with : %u", len);
+
             modbus_read_timing_init = 0;
             ring_buf_read(ring, (char*)modbuspacket, 1);
 
@@ -710,8 +714,6 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
                 return;
             }
 
-            modbus_debug("Starting reply read with : %u", len);
-
             if (modbus_bus->binary_protocol)
             {
                 if (modbuspacket[0] != MODBUS_BIN_START)
@@ -720,45 +722,62 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
                     return;
                 }
                 ring_buf_read(ring, (char*)modbuspacket, 1);
+                len-= 1;
+                modbus_debug("Binary prototype read, %u left", len);
             }
 
-            ring_buf_read(ring, (char*)modbuspacket + 1, 2);
+            ring_buf_read(ring, (char*)modbuspacket + 1, 1);
             uint8_t func = modbuspacket[1];
 
-            len -= 3;
+            len -= 2; /* We wait for 3 though as that's the longest header we deal with. */
             modbus_debug("Reply, Address:%"PRIu8" Function: %"PRIu8, modbuspacket[0], func);
             if (func == MODBUS_READ_HOLDING_FUNC)
             {
+                ring_buf_read(ring, (char*)modbuspacket + 2, 1);
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
+                _header_size = 3;
             }
             else if (func == MODBUS_READ_INPUT_FUNC)
             {
+                ring_buf_read(ring, (char*)modbuspacket + 2, 1);
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
+                _header_size = 3;
             }
             else if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
             {
-                modbuspacket_len = 5;
+                /*We waited an extra byte more than required before starting the header as body is fixed length here.*/
+                modbuspacket_len = 6; /* register and value written */
+                _header_size = 2;
             }
             else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
             {
-                modbuspacket_len = 5;
+                /*We waited an extra byte more than required before starting the header as body is fixed length here.*/
+                modbuspacket_len = 6; /* first register and number of registes written. */
+                _header_size = 2;
             }
             else if ((func & MODBUS_ERROR_MASK) == MODBUS_ERROR_MASK)
             {
-                modbuspacket_len = 2; /* Exception code is in header, so just crc*/
+                /*We waited an extra byte more than required before starting the header as body is fixed length here.*/
+                modbuspacket_len = 3; /* Exception code and crc*/
+                _header_size = 2;
             }
-            else
+
+            if (!_header_size)
             {
+                modbuspacket_len = 0;
                 modbus_debug("Bad function");
                 return;
             }
 
             modbus_debug("Reply type length : %u", modbuspacket_len);
             if (modbus_bus->binary_protocol)
+            {
                 modbuspacket_len++;
+                modbus_debug("Binary prototype extra 1 byte required.");
+            }
 
             modbus_read_timing_init = get_since_boot_ms();
-            modbus_debug("header received, timer started at:%"PRIu32, modbus_read_timing_init);
+            modbus_debug("header received, timer started at:%"PRIu32" body:%u/%u", modbus_read_timing_init, len, modbuspacket_len);
         }
         else
         {
@@ -785,11 +804,11 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     modbus_read_timing_init = 0;
     modbus_debug("Message bytes (%u) reached.", modbuspacket_len);
 
-    ring_buf_read(ring, (char*)modbuspacket + 3, modbuspacket_len);
+    ring_buf_read(ring, (char*)modbuspacket + _header_size, modbuspacket_len);
 
     if (modbus_bus->binary_protocol)
     {
-        if (modbuspacket[modbuspacket_len + 3 - 1] != MODBUS_BIN_STOP)
+        if (modbuspacket[modbuspacket_len + _header_size - 1] != MODBUS_BIN_STOP)
         {
             modbus_debug("Not binary frame stopped, discarded.");
             return;
@@ -798,7 +817,9 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     }
 
     // Now include the header too.
-    modbuspacket_len += 3;
+    modbuspacket_len += _header_size;
+
+    log_debug_data(DEBUG_MODBUS, modbuspacket, modbuspacket_len);
 
     uint16_t crc = modbus_crc(modbuspacket, modbuspacket_len - 2);
 
