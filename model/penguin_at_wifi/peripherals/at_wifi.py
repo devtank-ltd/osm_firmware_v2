@@ -285,8 +285,8 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         mqtt_obj = self.device.mqtt
         mqtt_obj.scheme = at_wifi_mqtt_t.SCHEMES(scheme)
         mqtt_obj.client_id = client_id.decode()
-        mqtt_obj.user = username.decode()
-        mqtt_obj.pwd = password.decode()
+        mqtt_obj.user = username.decode()[1:-1]
+        mqtt_obj.pwd = password.decode()[1:-1]
         mqtt_obj.ca = ca_path.decode()
         self.reply_ok()
 
@@ -316,7 +316,7 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
             self.reply_param_error()
             return
         mqtt_obj = self.device.mqtt
-        mqtt_obj.addr = addr.decode()
+        mqtt_obj.addr = addr.decode()[1:-1]
         mqtt_obj.port = port
         if not mqtt_obj.connect():
             self.reply_param_error()
@@ -344,15 +344,18 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
 
     def subscribe(self, args):
         arg_list = args.split(b",")
-        if len(arg_list) < 3:
+        if len(arg_list) != 3:
             self.reply_param_error()
             return
         _, topic, _ = arg_list
         curr_subs = self.device.mqtt.subscriptions
+        topic = topic[1:-1]
         if topic in curr_subs:
             self.reply_param_error()
             return
-        curr_subs.append(arg_list)
+        if not self.device.mqtt.subscribe(topic):
+            self.reply_param_error()
+            return
         self.reply_ok()
 
     def publish_raw(self, args):
@@ -506,6 +509,9 @@ class at_wifi_mqtt_t(object):
         self.subscriptions = []
         self._connected = False
         self.state = self.STATES.UNINIT
+        self.client = paho.mqtt.client.Client()
+        self.client.on_connect = self._on_connect
+        self.client.on_subscribe = self._on_subscribe
 
     def __del__(self):
         self.close()
@@ -520,7 +526,7 @@ class at_wifi_mqtt_t(object):
             self.pwd        is not None and
             self.ca         is not None)
 
-    def connect(self) -> bool:
+    def connect(self, timeout: float = 2) -> bool:
         if not self._is_valid():
             print("Not valid")
             print(f"{self.addr      = }")
@@ -529,10 +535,22 @@ class at_wifi_mqtt_t(object):
             print(f"{self.pwd       = }")
             print(f"{self.ca        = }")
             return False
+        self.client.username_pw_set(self.user, password=self.pwd)
+        self.client.connect(self.addr, self.port, 60)
+        self._connected = None
+        end = time.monotonic() + timeout
+        while not isinstance(self._connected, bool) and time.monotonic() < end:
+            self.client.loop()
         print(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
-        self._connected = True
-        self.state = self.STATES.CONN_NO_SUB
-        return True
+        return bool(self._connected)
+
+    def _on_connect(self, client, userdata, flags, rc):
+        print(f"ON CONNECT; {rc = }");
+        if rc == 0:
+            self._connected = True
+            self.state = self.STATES.CONN_NO_SUB
+        else:
+            self._connected = False
 
     def publish(self, topic, msg) -> bool:
         if not self._connected:
@@ -540,12 +558,27 @@ class at_wifi_mqtt_t(object):
         print(f"PUBLISH {topic}#{msg}")
         return True
 
-    def subscribe(self, topic):
+    def subscribe(self, topic, timeout=0.5):
         if not self._connected:
             return False
-        print(f"SUBSCRIBED {topic}")
-        self.state = self.STATES.CONN_WITH_SUB
-        return True
+        topic = topic.decode()
+        self.client.subscribe(topic)
+        subscribed = False
+        end = time.monotonic() + timeout
+        while topic not in self.subscriptions and time.monotonic() < end:
+            self.client.loop()
+        if topic in self.subscriptions:
+            print(f"SUBSCRIBED {topic}")
+            self.state = self.STATES.CONN_WITH_SUB
+            self.subscriptions.append(topic)
+            return True
+        return False
+
+    def _on_subscribe(self, client, userdata, mid, granted_qos):
+        print(f"ON SUBSCRIBE")
+
+    def loop(self):
+        self.client.loop()
 
 
 class at_wifi_dev_t(object):
@@ -637,7 +670,8 @@ class at_wifi_dev_t(object):
     def run_forever(self):
         r_fd_cbs = { self._serial.fileno() : self._read_serial }
         while not self.done:
-            rlist,wlist,xlist = select.select(list(r_fd_cbs.keys()), [], [], 1)
+            self.mqtt.loop()
+            rlist,wlist,xlist = select.select(list(r_fd_cbs.keys()), [], [], 0.01)
             for r in rlist:
                 cb = r_fd_cbs.get(r, None)
                 fd = r if isinstance(r, int) else r.fileno()
