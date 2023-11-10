@@ -14,7 +14,6 @@ extern void     env01c_at_wifi_post_init(void);
 extern bool     env01c_at_wifi_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring);
 extern bool     env01c_at_wifi_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring);
 extern bool     env01c_at_wifi_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
-extern void     env01c_at_wifi_debug_mode_enable_all(void);
 extern void     env01c_at_wifi_measurements_repopulate(void);
 extern void     env01c_at_wifi_cmds_add_all(struct cmd_link_t* tail);
 extern void     env01c_at_wifi_w1_pulse_enable_pupd(unsigned io, bool enabled);

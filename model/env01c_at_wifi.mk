@@ -17,7 +17,6 @@ env01c_at_wifi_SOURCES := \
            $(OSM_DIR)/core/src/adcs.c \
            $(OSM_DIR)/core/src/common.c \
            $(OSM_DIR)/core/src/platform_common.c \
-           $(OSM_DIR)/core/src/debug_mode.c \
            $(OSM_DIR)/protocols/src/jsonblob.c \
            $(OSM_DIR)/protocols/src/comms_behind.c \
            $(OSM_DIR)/comms/src/at_wifi.c \

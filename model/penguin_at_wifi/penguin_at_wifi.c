@@ -21,7 +21,6 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "sai.h"
 #include "fw.h"
 #include "persist_config.h"
-#include "debug_mode.h"
 #include "sleep.h"
 #include "update.h"
 #include "modbus.h"
@@ -146,13 +145,6 @@ bool penguin_at_wifi_measurements_get_inf(measurements_def_t * def, measurements
 }
 
 
-void penguin_at_wifi_debug_mode_enable_all(void)
-{
-    adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
-    cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
-}
-
-
 void penguin_at_wifi_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
@@ -186,7 +178,6 @@ void penguin_at_wifi_cmds_add_all(struct cmd_link_t* tail)
     tail = persist_config_add_commands(tail);
     tail = measurements_add_commands(tail);
     tail = ios_add_commands(tail);
-    tail = debug_mode_add_commands(tail);
     tail = modbus_add_commands(tail);
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
@@ -240,7 +231,7 @@ unsigned penguin_at_wifi_measurements_add_defaults(measurements_def_t * measurem
 static unsigned _penguin_at_wifi_pids[6] = {0};
 
 
-#define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi_bridge.py"
+#define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi.py"
 
 
 static void peripherals_add_at_wifi(unsigned* pid)
