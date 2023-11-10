@@ -5,6 +5,7 @@ import sys
 import tty
 import time
 import enum
+import paho.mqtt.client
 import select
 import serial
 import weakref
@@ -44,6 +45,9 @@ class base_at_commands_t(object):
     def reply(self, reply: bytes):
         return self.command_controller.reply(reply)
 
+    def reply_raw(self, reply: bytes):
+        return self.command_controller.reply_raw(reply)
+
     def reply_ok(self):
         return self.reply(self.OK)
 
@@ -58,11 +62,13 @@ class at_wifi_basic_at_commands_t(base_at_commands_t):
     def __init__(self, device, command_controller):
         commands = \
         {
-            b"AT"                   : { base_at_commands_t.EXECUTE:     self.ping},     # Test at Startup
-            b"AT+RST"               : { base_at_commands_t.EXECUTE:     self.reset},    # Restart a module
-            b"AT+GMR"               : { base_at_commands_t.EXECUTE:     self.version},  # Check version information
-            b"AT+CMD"               : { base_at_commands_t.QUERY:       self.list},     # List all AT commands and types supported in current firmware
-            b"AT+RESTORE"           : { base_at_commands_t.EXECUTE:     self.restore},  # Restore factory default settings of the module
+            b"AT"                   : { base_at_commands_t.EXECUTE:     self.ping},                     # Test at Startup
+            b"AT+RST"               : { base_at_commands_t.EXECUTE:     self.reset},                    # Restart a module
+            b"AT+GMR"               : { base_at_commands_t.EXECUTE:     self.version},                  # Check version information
+            b"AT+CMD"               : { base_at_commands_t.QUERY:       self.list},                     # List all AT commands and types supported in current firmware
+            b"AT+RESTORE"           : { base_at_commands_t.EXECUTE:     self.restore},                  # Restore factory default settings of the module
+            b"ATE0"                 : { base_at_commands_t.EXECUTE:     lambda args: self.echo(False)}, # Turn echo off
+            b"ATE1"                 : { base_at_commands_t.EXECUTE:     lambda args: self.echo(True)},  # Turn echo on
         }
         super().__init__(device, command_controller, commands)
 
@@ -94,6 +100,12 @@ class at_wifi_basic_at_commands_t(base_at_commands_t):
         self.reply_ok()
         self.device.restore()
         self.device.restart()
+        time.sleep(0.5)
+        self.reply(b"ready")
+
+    def echo(self, is_echo:bool):
+        self.device.is_echo = bool(is_echo)
+        self.reply_ok()
 
 
 class at_wifi_at_commands_t(base_at_commands_t):
@@ -163,9 +175,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
         self.reply_ok()
 
     def connect_info(self, args):
-        print(f"{args = }")
         list_args = args.split(b",")
-        print(f"{list_args = }")
         wifi = self.device.wifi
         if wifi.state != wifi.STATES.NOT_CONN and wifi.state != wifi.STATES.DISCONNECTED:
             self.reply_state_error()
@@ -188,6 +198,8 @@ class at_wifi_at_commands_t(base_at_commands_t):
         self.reply(b"WIFI CONNECTED")
         time.sleep(0.5)
         self.reply(b"WIFI GOT IP")
+        time.sleep(0.5)
+        self.reply_ok()
 
     def connect(self, args):
         wifi = self.device.wifi
@@ -218,13 +230,19 @@ class at_wifi_cips_at_commands_t(base_at_commands_t):
         super().__init__(device, command_controller, commands)
 
     def sntp_set(self, args):
-        sntp_servers = args.split(b",")
+        list_args = args.split(b",")
+        if len(list_args) < 3:
+            self.reply_param_error()
+            return
+        _,_,*sntp_servers = list_args
         for server in sntp_servers:
             if not server.startswith(b"\"") or not server.endswith(b"\""):
                 self.reply_param_error()
                 return
         self.device.sntp.servers = [serv[1:-1].decode() for serv in sntp_servers]
         self.reply_ok()
+        time.sleep(3)
+        self.reply(b"+TIME_UPDATED")
 
     def sntp_query(self, args):
         sntp = self.device.sntp
@@ -245,6 +263,7 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
             b"AT+MQTTPUB"           : { base_at_commands_t.SET:         self.publish},      # Publish MQTT Messages in String
             b"AT+MQTTSUB"           : { base_at_commands_t.QUERY:       self.is_subscribed,
                                         base_at_commands_t.SET:         self.subscribe},    # Connect to MQTT Brokers
+            b"AT+MQTTPUBRAW"        : { base_at_commands_t.SET:         self.publish_raw},  # Publish MQTT Messages in String
         }
         super().__init__(device, command_controller, commands)
 
@@ -336,6 +355,24 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         curr_subs.append(arg_list)
         self.reply_ok()
 
+    def publish_raw(self, args):
+        arg_list = args.split(b",")
+        if len(arg_list) != 5:
+            self.reply_param_error()
+            return
+        _,topic,length,_,_ = arg_list
+        try:
+            length = int(length)
+        except ValueError:
+            self.reply_param_error()
+            return
+        self.reply_ok()
+        self.reply_raw(b">")
+        print("START READ")
+        msg = self.device.read_blocking(length, timeout=1)
+        """ Do MQTT publish """
+        self.reply(b"+MQTTPUB:OK")
+
 
 class at_commands_t(object):
 
@@ -355,6 +392,9 @@ class at_commands_t(object):
 
     def reply(self, reply: bytes):
         return self.device.send(reply)
+
+    def reply_raw(self, reply: bytes):
+        return self.device.send_raw(reply)
 
     def _no_command(self):
         self.reply(self.NO_COMMAND)
@@ -530,7 +570,7 @@ class at_wifi_dev_t(object):
 
         self.done = False
         self._serial_in = b""
-        self.is_echo = False
+        self.is_echo = True
         self.sntp = at_wifi_sntp_info_t()
         self.wifi = at_wifi_info_t()
         self.mqtt = at_wifi_mqtt_t()
@@ -558,12 +598,15 @@ class at_wifi_dev_t(object):
             self._serial.close()
             self._serial = None
 
+    def send_raw(self, msg:bytes):
+        return os.write(self._serial.fileno(), msg)
+
     def send(self, msg:bytes):
         if isinstance(msg, str):
             msg = msg.encode()
         if not msg.endswith(self.EOL):
             msg += self.EOL
-        return os.write(self._serial.fileno(), msg)
+        return self.send_raw(msg)
 
     def _do_command(self, line):
         self._command_obj.command(line)
@@ -581,6 +624,16 @@ class at_wifi_dev_t(object):
             self._do_command(line)
             self._serial_in = b""
 
+    def read_blocking(self, length, timeout=0.1):
+        msg = b""
+        end = time.monotonic() + timeout
+        fd = self._serial.fileno()
+        while len(msg) < length and time.monotonic() < end:
+            rlist,wlist,xlist = select.select([fd], [], [], timeout)
+            for r in rlist:
+                msg += os.read(fd, 1)
+        return msg
+
     def run_forever(self):
         r_fd_cbs = { self._serial.fileno() : self._read_serial }
         while not self.done:
@@ -592,7 +645,8 @@ class at_wifi_dev_t(object):
                     cb(fd)
 
     def restart(self):
-        raise NotImplementedError
+        """ TODO: Make some kind of restart """
+        pass
 
     @property
     def version(self):
@@ -603,7 +657,8 @@ class at_wifi_dev_t(object):
         return version
 
     def restore(self):
-        raise NotImplementedError
+        """ TODO: Make some kind of restore """
+        pass
 
     def wifi_connect(self, connect:bool):
         self.wifi.state = wifi.CONNECTED if connect else wifi.DISCONNECTED
