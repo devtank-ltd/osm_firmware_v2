@@ -59,7 +59,7 @@ typedef struct
     uint8_t                 ______[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 8 x 16 bytes          */
-} persist_penguin_at_wifi_config_v1_t;
+} __attribute__((__packed__)) persist_penguin_at_wifi_config_v1_t;
 
 #define persist_model_config_t        persist_penguin_at_wifi_config_v1_t
 

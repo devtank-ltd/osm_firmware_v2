@@ -297,7 +297,7 @@ void at_wifi_send(char* data, uint16_t len)
 
 void at_wifi_init(void)
 {
-    _at_wifi_ctx.mem = (at_wifi_config_t*)&persist_data.model_config;
+    _at_wifi_ctx.mem = (at_wifi_config_t*)&persist_data.model_config.comms_config;
     unsigned topic_header_len = snprintf(
         _at_wifi_ctx.topic_header,
         AT_WIFI_MQTT_TOPIC_LEN,
@@ -1378,6 +1378,6 @@ static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
 
 void at_wifi_config_init(comms_config_t* comms_config)
 {
-    comms_config->type = COMMS_TYPE_LW;
+    comms_config->type = COMMS_TYPE_WIFI;
     _at_wifi_config_init2((at_wifi_config_t*)comms_config);
 }

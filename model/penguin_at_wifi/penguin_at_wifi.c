@@ -50,6 +50,7 @@ bool penguin_at_wifi_persist_config_cmp(persist_penguin_at_wifi_config_v1_t* d0,
         d0 && d1 &&
         d0->mins_interval == d1->mins_interval &&
         !modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        !at_wifi_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
         memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
         memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&
