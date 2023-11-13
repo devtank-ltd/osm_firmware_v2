@@ -21,7 +21,6 @@
 #include "sai.h"
 #include "fw.h"
 #include "persist_config.h"
-#include "debug_mode.h"
 #include "sleep.h"
 #include "update.h"
 #include "modbus.h"
@@ -156,13 +155,6 @@ bool env01_at_wifi_measurements_get_inf(measurements_def_t * def, measurements_d
 }
 
 
-void env01_at_wifi_debug_mode_enable_all(void)
-{
-    adcs_type_t all_cc_channels[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
-    cc_set_active_clamps(all_cc_channels, ADC_CC_COUNT);
-}
-
-
 void env01_at_wifi_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
@@ -192,7 +184,6 @@ void env01_at_wifi_cmds_add_all(struct cmd_link_t* tail)
     tail = persist_config_add_commands(tail);
     tail = measurements_add_commands(tail);
     tail = ios_add_commands(tail);
-    tail = debug_mode_add_commands(tail);
     tail = modbus_add_commands(tail);
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
