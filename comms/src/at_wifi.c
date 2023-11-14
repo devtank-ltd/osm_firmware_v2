@@ -136,6 +136,41 @@ static struct
 };
 
 
+static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
+{
+    static const char* state_strs[] =
+    {
+        "OFF"                                           ,
+        "IS_CONNECTED"                                  ,
+        "RESTORE"                                       ,
+        "DISABLE_ECHO"                                  ,
+        "WIFI_INIT"                                     ,
+        "WIFI_SETTING_MODE"                             ,
+        "WIFI_CONNECTING"                               ,
+        "SNTP_WAIT_SET"                                 ,
+        "MQTT_WAIT_USR_CONF"                            ,
+        "MQTT_WAIT_CONF"                                ,
+        "MQTT_CONNECTING"                               ,
+        "MQTT_WAIT_SUB"                                 ,
+        "IDLE"                                          ,
+        "MQTT_WAIT_PUB"                                 ,
+        "MQTT_PUBLISHING"                               ,
+        "MQTT_FAIL_CONNECT"                             ,
+        "WIFI_FAIL_CONNECT"                             ,
+        "WAIT_WIFI_STATE"                               ,
+        "WAIT_MQTT_STATE"                               ,
+        "TIMEDOUT_WIFI_WAIT_STATE"                      ,
+        "TIMEDOUT_MQTT_WAIT_WIFI_STATE"                 ,
+        "TIMEDOUT_MQTT_WAIT_MQTT_STATE"                 ,
+    };
+    _Static_assert(sizeof(state_strs)/sizeof(state_strs[0]) == AT_WIFI_STATE_COUNT, "Wrong number of states");
+    unsigned _state = (unsigned)state;
+    if (_state >= AT_WIFI_STATE_COUNT)
+        return "<INVALID>";
+    return state_strs[_state];
+}
+
+
 static bool _at_wifi_str_is_valid_ascii(char* str, unsigned max_len, bool required)
 {
     unsigned len = strnlen(str, max_len);
@@ -910,6 +945,9 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
 void at_wifi_process(char* msg)
 {
     unsigned len = strlen(msg);
+
+    comms_debug("Command when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+
     switch (_at_wifi_ctx.state)
     {
         case AT_WIFI_STATE_OFF:
@@ -1313,34 +1351,7 @@ static command_response_t _at_wifi_dbg_cb(char* args)
 
 static command_response_t _at_wifi_state_cb(char* args)
 {
-    const char* state_strs[] =
-    {
-        "OFF"                                           ,
-        "IS_CONNECTED"                                  ,
-        "RESTORE"                                       ,
-        "DISABLE_ECHO"                                  ,
-        "WIFI_INIT"                                     ,
-        "WIFI_SETTING_MODE"                             ,
-        "WIFI_CONNECTING"                               ,
-        "SNTP_WAIT_SET"                                 ,
-        "MQTT_WAIT_USR_CONF"                            ,
-        "MQTT_WAIT_CONF"                                ,
-        "MQTT_CONNECTING"                               ,
-        "MQTT_WAIT_SUB"                                 ,
-        "IDLE"                                          ,
-        "MQTT_WAIT_PUB"                                 ,
-        "MQTT_PUBLISHING"                               ,
-        "MQTT_FAIL_CONNECT"                             ,
-        "WIFI_FAIL_CONNECT"                             ,
-        "WAIT_WIFI_STATE"                               ,
-        "WAIT_MQTT_STATE"                               ,
-        "TIMEDOUT_WIFI_WAIT_STATE"                      ,
-        "TIMEDOUT_MQTT_WAIT_WIFI_STATE"                 ,
-        "TIMEDOUT_MQTT_WAIT_MQTT_STATE"                 ,
-    };
-    _Static_assert(sizeof(state_strs)/sizeof(state_strs[0]) == AT_WIFI_STATE_COUNT, "Wrong number of states");
-    unsigned state = (unsigned)_at_wifi_ctx.state;
-    log_out("State: %s(%u)", state_strs[state], state);
+    log_out("State: %s(%u)", _at_wifi_get_state_str(_at_wifi_ctx.state), (unsigned)_at_wifi_ctx.state);
     return COMMAND_RESP_OK;
 }
 
