@@ -1121,9 +1121,11 @@ static void _at_wifi_config_get_set_str(const char* name, char* dest, unsigned m
     unsigned len = strlen(src);
     if (len)
     {
+        if (len > max_dest_len)
+            len = max_dest_len;
         /* Set */
-        strncpy(dest, src, max_dest_len);
-        dest[max_dest_len] = 0;
+        memset(dest, 0, max_dest_len+1 /* Set full space, including final null*/);
+        memcpy(dest, src, len);
     }
     /* Get */
     log_out("%s: %.*s", name, max_dest_len, dest);
