@@ -85,21 +85,16 @@ static bool _persist_measurements_cmp(void)
 
 void persist_commit()
 {
-    bool state;
     if (_persist_data_cmp()            ||
         _persist_measurements_cmp()    )
     {
         persist_data.config_count += 1;
-        state = platform_persist_commit(&persist_data, &persist_measurements);
+        if (platform_persist_commit(&persist_data, &persist_measurements))
+            log_sys_debug("Flash successfully written.");
+        else
+            log_error("Flash write failed");
     }
-    else
-    {
-        state = true;
-    }
-    if (state)
-        log_sys_debug("Flash successfully written.");
-    else
-        log_error("Flash write failed");
+    else log_sys_debug("No changes to write to flash.");
 }
 
 void persist_set_fw_ready(uint32_t size)
