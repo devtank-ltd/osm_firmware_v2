@@ -1,6 +1,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <inttypes.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "model_config.h"
 #include "log.h"
@@ -129,7 +132,7 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
         case MEASUREMENTS_VALUE_TYPE_STR:
             return _protocol_append_value_type_str(name, data);
         case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            return _protocol_append_value_type_float(name, data	);
+            return _protocol_append_value_type_float(name, data );
         default:
             log_error("Unknown type '%"PRIu8"'.", data->value_type);
     }

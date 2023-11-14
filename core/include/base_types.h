@@ -256,7 +256,7 @@ typedef enum
 typedef struct
 {
     uint8_t type;           /* comms_type_t */
-    uint8_t _[127];
+    uint8_t _[511];
 } __attribute__((__packed__)) comms_config_t;
 
 

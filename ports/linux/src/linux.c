@@ -88,7 +88,7 @@ typedef struct
     persist_measurements_storage_t  persist_measurements;
     persist_storage_t               persist_data;
     uint8_t                         __[2048 - sizeof(persist_storage_t)];
-} persist_mem_t;
+}  __attribute__((__packed__)) persist_mem_t;
 
 
 typedef char pty_buf_t[LINUX_PTY_BUF_SIZ];

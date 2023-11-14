@@ -17,6 +17,3 @@
 #define comms_sent_ack                                  CONCAT(comms_name,_sent_ack            )
 #define comms_add_commands                              CONCAT(comms_name,_add_commands        )
 #define comms_power_down                                CONCAT(comms_name,_power_down          )
-
-/* To be implemented by caller.*/
-extern void     on_comms_sent_ack(bool acked) __attribute__((weak));

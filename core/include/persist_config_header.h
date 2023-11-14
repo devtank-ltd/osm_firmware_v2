@@ -34,5 +34,5 @@ typedef struct
 typedef struct
 {
     measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
-} persist_measurements_storage_t;
+} __attribute__((__packed__)) persist_measurements_storage_t;
 
