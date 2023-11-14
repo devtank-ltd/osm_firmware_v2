@@ -305,6 +305,7 @@ void at_wifi_init(void)
         DESIG_UNIQUE_ID0
         );
     _at_wifi_ctx.topic_header[topic_header_len] = 0;
+    comms_debug("MQTT Topic : %s", _at_wifi_ctx.topic_header);
     _at_wifi_ctx.state = AT_WIFI_STATE_OFF;
 }
 
