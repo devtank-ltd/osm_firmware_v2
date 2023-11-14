@@ -1373,11 +1373,11 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
 }
 
 
-/* Return false if different
- *        true  if same      */
+/* Return true  if different
+ *        false if same      */
 bool at_wifi_persist_config_cmp(void* d0, void* d1)
 {
-    return (
+    return !(
         d0 && d1 &&
         memcmp(d0, d1, sizeof(at_wifi_config_t)) == 0);
 }
