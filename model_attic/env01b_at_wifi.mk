@@ -1,4 +1,4 @@
-env01_at_wifi_SOURCES := \
+env01b_at_wifi_SOURCES := \
            $(OSM_DIR)/core/src/main.c \
            $(OSM_DIR)/core/src/base.c \
            $(OSM_DIR)/core/src/log.c \
@@ -31,7 +31,7 @@ env01_at_wifi_SOURCES := \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c \
            $(OSM_DIR)/sensors/src/io_watch.c \
-           $(MODEL_DIR)/env01_at_wifi/env01_at_wifi.c \
+           $(MODEL_DIR)/env01b_at_wifi/env01b_at_wifi.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \
            $(OSM_DIR)/ports/stm/src/i2c.c \
@@ -40,6 +40,6 @@ env01_at_wifi_SOURCES := \
            $(OSM_DIR)/ports/stm/src/uarts.c \
            $(OSM_DIR)/ports/stm/src/w1.c
 
-env01_at_wifi_LINK_SCRIPT := $(OSM_DIR)/ports/stm/stm32l4.ld
+env01b_at_wifi_LINK_SCRIPT := $(OSM_DIR)/ports/stm/stm32l4.ld
 
-$(eval $(call STM_FIRMWARE,env01_at_wifi))
+$(eval $(call STM_FIRMWARE,env01b_at_wifi))

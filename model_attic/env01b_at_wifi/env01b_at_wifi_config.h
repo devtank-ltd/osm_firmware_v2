@@ -9,27 +9,27 @@
 
 #define __MODEL_CONFIG__
 
-#define ENV01_AT_WIFI_FLASH_ADDRESS               0x8000000
-#define ENV01_AT_WIFI_FLASH_PAGE_SIZE             2048
+#define ENV01B_AT_WIFI_FLASH_ADDRESS               0x8000000
+#define ENV01B_AT_WIFI_FLASH_PAGE_SIZE             2048
 
-#define ENV01_AT_WIFI_FLASH_CONFIG_PAGE           2
-#define ENV01_AT_WIFI_FLASH_MEASUREMENTS_PAGE     3
-#define ENV01_AT_WIFI_FW_PAGE                     4
-#define ENV01_AT_WIFI_NEW_FW_PAGE                 120
+#define ENV01B_AT_WIFI_FLASH_CONFIG_PAGE           2
+#define ENV01B_AT_WIFI_FLASH_MEASUREMENTS_PAGE     3
+#define ENV01B_AT_WIFI_FW_PAGE                     4
+#define ENV01B_AT_WIFI_NEW_FW_PAGE                 120
 
-#define ENV01_AT_WIFI_FW_PAGES                    100
-#define ENV01_AT_WIFI_FW_MAX_SIZE                 (ENV01_AT_WIFI_FW_PAGES * ENV01_AT_WIFI_FLASH_PAGE_SIZE)
-#define ENV01_AT_WIFI_PAGE2ADDR(_page_)           (ENV01_AT_WIFI_FLASH_ADDRESS + (ENV01_AT_WIFI_FLASH_PAGE_SIZE * _page_))
-#define ENV01_AT_WIFI_FW_ADDR                     ENV01_AT_WIFI_PAGE2ADDR(ENV01_AT_WIFI_FW_PAGE)
-#define ENV01_AT_WIFI_NEW_FW_ADDR                 ENV01_AT_WIFI_PAGE2ADDR(ENV01_AT_WIFI_NEW_FW_PAGE)
-#define ENV01_AT_WIFI_PERSIST_RAW_DATA            ((const uint8_t*)ENV01_AT_WIFI_PAGE2ADDR(ENV01_AT_WIFI_FLASH_CONFIG_PAGE))
-#define ENV01_AT_WIFI_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)ENV01_AT_WIFI_PAGE2ADDR(ENV01_AT_WIFI_FLASH_MEASUREMENTS_PAGE))
+#define ENV01B_AT_WIFI_FW_PAGES                    100
+#define ENV01B_AT_WIFI_FW_MAX_SIZE                 (ENV01B_AT_WIFI_FW_PAGES * ENV01B_AT_WIFI_FLASH_PAGE_SIZE)
+#define ENV01B_AT_WIFI_PAGE2ADDR(_page_)           (ENV01B_AT_WIFI_FLASH_ADDRESS + (ENV01B_AT_WIFI_FLASH_PAGE_SIZE * _page_))
+#define ENV01B_AT_WIFI_FW_ADDR                     ENV01B_AT_WIFI_PAGE2ADDR(ENV01B_AT_WIFI_FW_PAGE)
+#define ENV01B_AT_WIFI_NEW_FW_ADDR                 ENV01B_AT_WIFI_PAGE2ADDR(ENV01B_AT_WIFI_NEW_FW_PAGE)
+#define ENV01B_AT_WIFI_PERSIST_RAW_DATA            ((const uint8_t*)ENV01B_AT_WIFI_PAGE2ADDR(ENV01B_AT_WIFI_FLASH_CONFIG_PAGE))
+#define ENV01B_AT_WIFI_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)ENV01B_AT_WIFI_PAGE2ADDR(ENV01B_AT_WIFI_FLASH_MEASUREMENTS_PAGE))
 
-#define ENV01_AT_WIFI_PERSIST_VERSION             3
+#define ENV01B_AT_WIFI_PERSIST_VERSION             3
 
-#define ENV01_AT_WIFI_PERSIST_MODEL_CONFIG_T      persist_env01_at_wifi_config_v1_t
+#define ENV01B_AT_WIFI_PERSIST_MODEL_CONFIG_T      persist_env01b_at_wifi_config_v1_t
 
-#define ENV01_AT_WIFI_MODEL_NAME                  "ENV01_AT_WIFI"
+#define ENV01B_AT_WIFI_MODEL_NAME                  "ENV01B_AT_WIFI"
 
 #define CMD_LINELEN 128
 
@@ -76,4 +76,4 @@ typedef struct
     uint8_t                 _____[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 7 x 16 bytes          */
-} persist_env01_at_wifi_config_v1_t;
+} persist_env01b_at_wifi_config_v1_t;
