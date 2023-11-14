@@ -30,7 +30,6 @@
 #define AT_WIFI_SNTP_SERVER2                    "1.pool.ntp.org"  /* TODO */
 #define AT_WIFI_SNTP_SERVER3                    "2.pool.ntp.org"  /* TODO */
 #define AT_WIFI_MQTT_LINK_ID                    0
-#define AT_WIFI_MQTT_SCHEME                     1   /* MQTT over TLS (verify server certificate) */
 #define AT_WIFI_MQTT_CERT_KEY_ID                0
 #define AT_WIFI_MQTT_CA_ID                      0
 #define AT_WIFI_MQTT_LINK_ID                    0
@@ -43,6 +42,12 @@
 #define AT_WIFI_MQTT_QOS                        0
 #define AT_WIFI_MQTT_RETAIN                     0
 
+enum at_wifi_mqtt_scheme_t
+{
+    AT_WIFI_MQTT_SCHEME_BARE               = 1,  /* MQTT over TCP. */
+    AT_WIFI_MQTT_SCHEME_TLS_NO_CERT        = 2,  /* MQTT over TLS (no certificate verify). */
+    AT_WIFI_MQTT_SCHEME_TLS_VERIFY_SERVER  = 3,  /* MQTT over TLS (verify server certificate) */
+};
 
 #define AT_WIFI_MQTT_TOPIC_LEN                  63
 #define AT_WIFI_MQTT_TOPIC_MEASUREMENTS         "measurements"
@@ -554,10 +559,21 @@ static void _at_wifi_process_state_wifi_conn(char* msg, unsigned len)
 static void _at_wifi_do_mqtt_user_conf(void)
 {
     _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_USR_CONF;
+
+    enum at_wifi_mqtt_scheme_t mqtt_scheme = AT_WIFI_MQTT_SCHEME_BARE;
+
+    const char * ca = _at_wifi_ctx.mem->mqtt.ca;
+
+    if (ca[0] && strcmp(ca,"--") /*Ignore -- as it's just a way of not wiping*/)
+    {
+        comms_debug("Using MQTT over SSL.");
+        mqtt_scheme = AT_WIFI_MQTT_SCHEME_TLS_NO_CERT;
+    }
+
     _at_wifi_printf(
         "AT+MQTTUSERCFG=%u,%u,\"osm-0x%X\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
         AT_WIFI_MQTT_LINK_ID,
-        AT_WIFI_MQTT_SCHEME,
+        (unsigned)mqtt_scheme,
         DESIG_UNIQUE_ID0,
         AT_WIFI_MQTT_USER_MAX_LEN,      _at_wifi_ctx.mem->mqtt.user,
         AT_WIFI_MQTT_PWD_MAX_LEN,       _at_wifi_ctx.mem->mqtt.pwd,
