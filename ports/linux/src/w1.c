@@ -22,7 +22,6 @@ bool w1_reset(uint8_t index)
         close(_w1_socketfd);
     char osm_w1_loc[LOCATION_LEN];
     concat_osm_location(osm_w1_loc, LOCATION_LEN, W1_SERVER_LOC);
-    unlink(osm_w1_loc);
     _w1_connected = socket_connect(osm_w1_loc, &_w1_socketfd);
     if (!_w1_connected)
         log_error("Fake one-wire failed to connect to socket.");
