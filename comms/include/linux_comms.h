@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef comms_name
+#define comms_name          linux_comms
+#endif //comms_name
 
 extern uint16_t linux_comms_get_mtu(void);
 

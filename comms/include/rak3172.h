@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef comms_name
+#define comms_name          rak3172
+#endif //comms_name
 
 extern uint16_t rak3172_get_mtu(void);
 

@@ -26,7 +26,7 @@
 #include "modbus.h"
 #include "model.h"
 #include "io_watch.h"
-#include "at_wifi.h"
+#include "model_config.h"
 
 
 uint8_t env01b_at_wifi_stm_adcs_get_channel(adcs_type_t adcs_type)

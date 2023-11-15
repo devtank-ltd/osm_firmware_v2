@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include "base_types.h"
 
+#ifndef comms_name
+#define comms_name          at_wifi
+#endif //comms_name
 
 #define AT_WIFI_MAX_SSID_LEN                    63
 #define AT_WIFI_MAX_PWD_LEN                     63

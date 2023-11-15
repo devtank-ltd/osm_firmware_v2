@@ -49,8 +49,6 @@
 
 #define ADC_CC_COUNT        3
 
-#define comms_name              at_wifi
-
 #define JSON_BUF_SIZE  1024
 
 
