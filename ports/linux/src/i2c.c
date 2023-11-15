@@ -37,12 +37,11 @@ void i2cs_init(void)
 void i2c_linux_deinit(void)
 {
     if (_i2c_connected)
-    {
-        char osm_i2c_loc[LOCATION_LEN];
-        concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
         close(_i2c_socketfd);
-        unlink(osm_i2c_loc);
-    }
+
+    char osm_i2c_loc[LOCATION_LEN];
+    concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
+    unlink(osm_i2c_loc);
 }
 
 

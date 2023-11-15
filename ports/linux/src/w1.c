@@ -9,7 +9,7 @@
 #include "linux.h"
 
 
-#define W1_SERVER_LOC                           "/tmp/osm/w1_socket"
+#define W1_SERVER_LOC                           "w1_socket"
 
 
 static bool _w1_connected = false;
@@ -20,7 +20,10 @@ bool w1_reset(uint8_t index)
 {
     if (_w1_connected)
         close(_w1_socketfd);
-    _w1_connected = socket_connect(W1_SERVER_LOC, &_w1_socketfd);
+    char osm_w1_loc[LOCATION_LEN];
+    concat_osm_location(osm_w1_loc, LOCATION_LEN, W1_SERVER_LOC);
+    unlink(osm_w1_loc);
+    _w1_connected = socket_connect(osm_w1_loc, &_w1_socketfd);
     if (!_w1_connected)
         log_error("Fake one-wire failed to connect to socket.");
     return _w1_connected;
@@ -62,10 +65,11 @@ void w1_init(uint8_t index)
 void w1_linux_deinit(void)
 {
     if (_w1_connected)
-    {
         close(_w1_socketfd);
-        unlink(W1_SERVER_LOC);
-    }
+
+    char osm_w1_loc[LOCATION_LEN];
+    concat_osm_location(osm_w1_loc, LOCATION_LEN, W1_SERVER_LOC);
+    unlink(osm_w1_loc);
 }
 
 
