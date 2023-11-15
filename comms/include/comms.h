@@ -17,3 +17,4 @@
 #define comms_sent_ack                                  CONCAT(comms_name,_sent_ack            )
 #define comms_add_commands                              CONCAT(comms_name,_add_commands        )
 #define comms_power_down                                CONCAT(comms_name,_power_down          )
+#define comms_persist_config_cmp                        CONCAT(comms_name,_persist_config_cmp  )
