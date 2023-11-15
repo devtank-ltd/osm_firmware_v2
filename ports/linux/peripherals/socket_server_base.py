@@ -16,6 +16,7 @@ class socket_server_t(object):
     def __init__(self, socket_loc, log_file=None, logger=None):
         if os.path.exists(socket_loc):
             os.unlink(socket_loc)
+        self._socket_loc = socket_loc
         self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self._server.bind(socket_loc)
         self._server.setblocking(False)
@@ -118,3 +119,5 @@ class socket_server_t(object):
             print(self.__class__.__name__ + " : Caught keyboard interrupt, exiting")
         finally:
             self._selector.close()
+            if os.path.exists(self._socket_loc):
+                os.unlink(self._socket_loc)
