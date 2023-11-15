@@ -35,7 +35,7 @@ static cc_active_clamps_t   _cc_adc_active_clamps               = {0};
 static adcs_type_t          _cc_running_isolated                = ADCS_TYPE_INVALID;
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
-static cc_config_t*         _configs;
+static cc_config_t*         _configs = NULL;
 
 
 static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor)
@@ -494,6 +494,11 @@ static bool _cc_calibrate(void)
 
 bool cc_get_blocking(char* name, measurements_reading_t* value)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return false;
+    }
     if (_cc_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
@@ -509,6 +514,11 @@ bool cc_get_blocking(char* name, measurements_reading_t* value)
 
 bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return false;
+    }
     adcs_type_t all_cc_clamps[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
     cc_active_clamps_t prev_cc_adc_active_clamps = {0};
     memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len * sizeof(_cc_adc_active_clamps.active[0]));
@@ -611,6 +621,11 @@ static measurements_value_type_t _cc_value_type(char* name)
 
 static bool _cc_is_enabled(char* name)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return false;
+    }
     uint8_t index_local;
     if (!_cc_get_index(&index_local, name))
     {
@@ -665,6 +680,11 @@ void cc_init(void)
 
 static command_response_t _cc_cb(char* args)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return COMMAND_RESP_ERR;
+    }
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
     measurements_reading_t value_1;
@@ -701,12 +721,22 @@ static command_response_t _cc_cb(char* args)
 
 static command_response_t _cc_calibrate_cb(char *args)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return COMMAND_RESP_ERR;
+    }
     return _cc_calibrate() ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
 static command_response_t _cc_mp_cb(char* args)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return COMMAND_RESP_ERR;
+    }
     // 2046 CC1
     char* p;
     float new_mp = strtof(args, &p);
@@ -728,6 +758,11 @@ static command_response_t _cc_mp_cb(char* args)
 
 static command_response_t _cc_gain(char* args)
 {
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return COMMAND_RESP_ERR;
+    }
     // <index> <ext_A> <int_mV>
     // 1       100     50
     char* p;
