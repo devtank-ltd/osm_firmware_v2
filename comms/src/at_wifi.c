@@ -63,6 +63,8 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_WIFI_FAIL_CONNECT_TIMEOUT_MS    60000
 #define AT_WIFI_MQTT_FAIL_CONNECT_TIMEOUT_MS    60000
 
+#define AT_WIFI_STILL_OFF_TIMEOUT          10000
+
 
 enum at_wifi_states_t
 {
@@ -118,6 +120,8 @@ static struct
 {
     enum at_wifi_states_t   state;
     uint32_t                last_sent;
+    uint32_t                last_recv;
+    uint32_t                off_since;
     char                    topic_header[AT_WIFI_MQTT_TOPIC_LEN + 1];
     char                    last_cmd[AT_WIFI_MAX_CMD_LEN];
     enum at_wifi_states_t   before_timedout_state;
@@ -132,6 +136,8 @@ static struct
 {
     .state                      = AT_WIFI_STATE_OFF,
     .last_sent                  = 0,
+    .last_recv                  = 0,
+    .off_since                  = 0,
     .topic_header               = "osm/unknown",
     .last_cmd                   = {0},
     .before_timedout_state      = AT_WIFI_STATE_OFF,
@@ -250,6 +256,8 @@ static void _at_wifi_start(void)
 
 static void _at_wifi_reset(void)
 {
+    comms_debug("AT wifi reset");
+    _at_wifi_ctx.off_since = get_since_boot_ms();
     _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
     _at_wifi_printf("AT+RESTORE");
 }
@@ -352,7 +360,7 @@ void at_wifi_init(void)
 
 void at_wifi_reset(void)
 {
-    _at_wifi_start();
+    _at_wifi_reset();
 }
 
 
@@ -886,8 +894,7 @@ static void _at_wifi_process_state_timedout_wifi_wait_state(char* msg, unsigned 
         }
         else
         {
-            /* reset */
-            _at_wifi_start();
+            _at_wifi_reset();
         }
     }
 }
@@ -906,8 +913,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_wifi_state(char* msg, unsi
         }
         else
         {
-            /* reset */
-            _at_wifi_start();
+            _at_wifi_reset();
         }
     }
 }
@@ -951,8 +957,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
         }
         else
         {
-            /* reset */
-            _at_wifi_start();
+            _at_wifi_reset();
         }
     }
 }
@@ -961,6 +966,8 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
 void at_wifi_process(char* msg)
 {
     unsigned len = strlen(msg);
+
+    _at_wifi_ctx.last_recv = get_since_boot_ms();
 
     comms_debug("Command when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
 
@@ -1069,8 +1076,7 @@ static void _at_wifi_wifi_fail_connect(void)
 {
     if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.last_sent) > AT_WIFI_WIFI_FAIL_CONNECT_TIMEOUT_MS)
     {
-        /* restart */
-        _at_wifi_start();
+        _at_wifi_reset();
     }
 }
 
@@ -1087,15 +1093,23 @@ static void _at_wifi_mqtt_fail_connect(void)
 
 void at_wifi_loop_iteration(void)
 {
+    uint32_t now = get_since_boot_ms();
+
     /* Check timeout */
     switch (_at_wifi_ctx.state)
     {
-        case AT_WIFI_STATE_OFF:
-            /* resend AT? */
-            break;
-        case AT_WIFI_STATE_IS_CONNECTED:
-            /* fall through */
         case AT_WIFI_STATE_RESTORE:
+            /* fall through */
+        case AT_WIFI_STATE_OFF:
+        {
+            uint32_t delta = since_boot_delta(now, _at_wifi_ctx.off_since);
+            if (delta > AT_WIFI_STILL_OFF_TIMEOUT)
+            {
+                _at_wifi_reset();
+            }
+            break;
+        }
+        case AT_WIFI_STATE_IS_CONNECTED:
             /* fall through */
         case AT_WIFI_STATE_DISABLE_ECHO:
             break;
