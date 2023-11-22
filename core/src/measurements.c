@@ -297,8 +297,9 @@ void on_protocol_sent_ack(bool ack)
          _pending_send = false;
         return;
     }
-
-    for (unsigned i = _measurements_chunk_prev_start_pos; i < _measurements_chunk_start_pos; i++)
+    unsigned start = _measurements_chunk_prev_start_pos;
+    unsigned end = _measurements_chunk_start_pos ? _measurements_chunk_start_pos : MEASUREMENTS_MAX_NUMBER;
+    for (unsigned i = start; i < end; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
         if (!def->name[0])
