@@ -246,25 +246,19 @@ static void _measurements_send(void)
     if (num_qd > 0)
     {
         _pending_send = !is_max;
-        if (_measurements_debug_mode)
-            protocol_debug();
-        else
-            if (!protocol_send())
-            {
-                measurements_debug("Protocol send failed");
-                /* Failed to send measurements, so need to go through
-                 * the previously queued measurements and set all of the
-                 * 'has_sent' booleans to false so no ack is taken
-                 */
-                unsigned start = _measurements_chunk_prev_start_pos;
-                unsigned end = _measurements_chunk_start_pos ? _measurements_chunk_start_pos : MEASUREMENTS_MAX_NUMBER;
-                for (unsigned i = start; i < end; i++)
-                {
-                    measurements_def_t*  def  = &_measurements_arr.def[i];
-                    if (def->name[0] && def->interval && (_interval_count % def->interval == 0))
-                        _measurements_arr.data[i].has_sent = false;
-                }
-            }
+        bool send_ret = _measurements_debug_mode ? protocol_debug() : protocol_send();
+        if (!send_ret)
+        {
+            measurements_debug("Protocol send failed, resetting protocol");
+            protocol_reset();
+            /* Failed to send measurements, so need to go through
+             * all measurements and set the 'has_sent' booleans to false
+             * so no ack is taken
+             */
+            for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+                _measurements_arr.data[i].has_sent = false;
+            return;
+        }
         if (is_max)
             measurements_debug("Complete send");
         else
