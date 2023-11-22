@@ -41,7 +41,7 @@ bool linux_comms_send_allowed(void)
 }
 
 
-void linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
+bool linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
 {
     char buf[3];
     for (uint16_t i = 0; i < arr_len; i++)
@@ -51,6 +51,7 @@ void linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
     }
     uart_ring_out(COMMS_UART, "\r\n", 2);
     on_protocol_sent_ack(true);
+    return true;
 }
 
 

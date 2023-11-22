@@ -12,7 +12,7 @@ extern uint16_t linux_comms_get_mtu(void);
 extern bool     linux_comms_send_ready(void);
 extern bool     linux_comms_send_str(char* str);
 extern bool     linux_comms_send_allowed(void);
-extern void     linux_comms_send(int8_t* hex_arr, uint16_t arr_len);
+extern bool     linux_comms_send(int8_t* hex_arr, uint16_t arr_len);
 
 extern void     linux_comms_init(void);
 extern void     linux_comms_reset(void);

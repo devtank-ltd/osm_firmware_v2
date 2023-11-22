@@ -156,12 +156,16 @@ void        protocol_debug(void)
 }
 
 
-void        protocol_send(void)
+bool protocol_send(void)
 {
     if (!_protocol_append("}"))
-        return;
-    comms_send(_json_buf, _json_buf_pos);
+        return false;
+    if (!comms_send(_json_buf, _json_buf_pos))
+    {
+        return false;
+    }
     comms_debug("batch complete.");
+    return true;
 }
 
 

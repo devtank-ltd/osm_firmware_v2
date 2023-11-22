@@ -12,7 +12,7 @@ extern uint16_t rak3172_get_mtu(void);
 extern bool     rak3172_send_ready(void);
 extern bool     rak3172_send_str(char* str);
 extern bool     rak3172_send_allowed(void);
-extern void     rak3172_send(int8_t* hex_arr, uint16_t arr_len);
+extern bool     rak3172_send(int8_t* hex_arr, uint16_t arr_len);
 
 extern void     rak3172_init(void);
 extern void     rak3172_reset(void);

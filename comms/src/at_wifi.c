@@ -335,12 +335,14 @@ static bool _at_wifi_mqtt_publish_measurements(char* data, uint16_t len)
 }
 
 
-void at_wifi_send(char* data, uint16_t len)
+bool at_wifi_send(char* data, uint16_t len)
 {
-    if (!_at_wifi_mqtt_publish_measurements(data, len))
+    bool ret = _at_wifi_mqtt_publish_measurements(data, len);
+    if (!ret)
     {
         comms_debug("Failed to send measurement");
     }
+    return ret;
 }
 
 

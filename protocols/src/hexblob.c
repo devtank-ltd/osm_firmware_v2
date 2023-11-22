@@ -310,9 +310,9 @@ void        protocol_debug(void)
 }
 
 
-void        protocol_send(void)
+bool protocol_send(void)
 {
-    comms_send(_protocol_ctx.buf, _protocol_get_length());
+    return comms_send(_protocol_ctx.buf, _protocol_get_length());
 }
 
 

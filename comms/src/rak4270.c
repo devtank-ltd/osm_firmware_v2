@@ -1007,7 +1007,7 @@ static unsigned _rak4270_send_size(uint16_t arr_len)
 }
 
 
-void rak4270_send(int8_t* hex_arr, uint16_t arr_len)
+bool rak4270_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak4270_state_machine.state == RAK4270_STATE_IDLE)
     {
@@ -1042,10 +1042,12 @@ void rak4270_send(int8_t* hex_arr, uint16_t arr_len)
             log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
         else
             comms_debug("Sent %u bytes", sent);
+        return true;
     }
     else
     {
         comms_debug("Incorrect state to send : %u", (unsigned)_rak4270_state_machine.state);
+        return false;
     }
 }
 
