@@ -145,6 +145,17 @@ bool measurements_send_test(char * name)
 }
 
 
+static void _measurements_reset_send(void)
+{
+    measurements_debug("Protocol reset");
+    protocol_reset();
+    _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
+    _pending_send = false;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+        _measurements_arr.data[i].has_sent = false;
+}
+
+
 static void _measurements_send(void)
 {
     uint16_t            num_qd = 0;
@@ -180,9 +191,7 @@ static void _measurements_send(void)
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
-                protocol_reset();
-                _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
-                _pending_send = false;
+                _measurements_reset_send();
             }
             return;
         }
@@ -250,13 +259,7 @@ static void _measurements_send(void)
         if (!send_ret)
         {
             measurements_debug("Protocol send failed, resetting protocol");
-            protocol_reset();
-            /* Failed to send measurements, so need to go through
-             * all measurements and set the 'has_sent' booleans to false
-             * so no ack is taken
-             */
-            for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
-                _measurements_arr.data[i].has_sent = false;
+            _measurements_reset_send();
             return;
         }
         if (is_max)

@@ -140,10 +140,10 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 }
 
 
-void        protocol_debug(void)
+bool protocol_debug(void)
 {
     if (!_json_buf_pos)
-        return;
+        return false;
     char * pos = _json_buf;
     char * next = strchr(pos,',');
     while(next)
@@ -153,6 +153,7 @@ void        protocol_debug(void)
         next = strchr(pos,',');
     }
     comms_debug("%s", pos);
+    return true;
 }
 
 
