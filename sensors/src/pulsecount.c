@@ -16,7 +16,7 @@
 #include "platform_model.h"
 
 
-#define PULSECOUNT_COLLECTION_TIME_MS       1000;
+#define PULSECOUNT_COLLECTION_TIME_MS       10
 
 #define PULSECOUNT_INSTANCES   {                                       \
     { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
