@@ -505,12 +505,23 @@ static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
 }
 
 
+static bool _at_wifi_sleep_loop_iterate(void *userdata)
+{
+    return false;
+}
+
+
+static void _at_wifi_sleep(void)
+{
+    main_loop_iterate_for(10, _at_wifi_sleep_loop_iterate, NULL);
+}
+
+
 static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
 {
     if (_at_wifi_is_ok(msg, len))
     {
-        uint32_t start = get_since_boot_ms();
-        while(since_boot_delta(get_since_boot_ms(), start) < 10);
+        _at_wifi_sleep();
         _at_wifi_printf("AT+CWMODE=1");
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_SETTING_MODE;
     }
@@ -525,8 +536,7 @@ static void at_wifi_process_state_wifi_setting_mode(char* msg, unsigned len)
 {
     if (_at_wifi_is_ok(msg, len))
     {
-        uint32_t start = get_since_boot_ms();
-        while(since_boot_delta(get_since_boot_ms(), start) < 10);
+        _at_wifi_sleep();
         _at_wifi_printf(
             "AT+CWJAP=\"%.*s\",\"%.*s\"",
             AT_WIFI_MAX_SSID_LEN,   _at_wifi_ctx.mem->wifi.ssid,
@@ -546,8 +556,7 @@ static void _at_wifi_process_state_wifi_conn(char* msg, unsigned len)
     const char error_msg[] = "ERROR";
     if (_at_wifi_is_ok(msg, len))
     {
-        uint32_t start = get_since_boot_ms();
-        while(since_boot_delta(get_since_boot_ms(), start) < 10);
+        _at_wifi_sleep();
         _at_wifi_printf(
             "AT+CIPSNTPCFG=1,0,\"%s\",\"%s\",\"%s\"",
             AT_WIFI_SNTP_SERVER1,
@@ -598,8 +607,7 @@ static void _at_wifi_process_state_sntp(char* msg, unsigned len)
     const char time_updated_msg[] = "+TIME_UPDATED";
     if (_at_wifi_is_str(time_updated_msg, msg, len))
     {
-        uint32_t start = get_since_boot_ms();
-        while(since_boot_delta(get_since_boot_ms(), start) < 10);
+        _at_wifi_sleep();
         _at_wifi_do_mqtt_user_conf();
     }
     else if (_at_wifi_is_error(msg, len))
@@ -637,8 +645,7 @@ static void _at_wifi_process_state_mqtt_wait_conf(char* msg, unsigned len)
 {
     if (_at_wifi_is_ok(msg, len))
     {
-        uint32_t start = get_since_boot_ms();
-        while(since_boot_delta(get_since_boot_ms(), start) < 10);
+        _at_wifi_sleep();
         _at_wifi_printf(
             "AT+MQTTCONN=%u,\"%.*s\",%"PRIu16",%u",
             AT_WIFI_MQTT_LINK_ID,
@@ -659,8 +666,7 @@ static void _at_wifi_process_state_mqtt_connecting(char* msg, unsigned len)
 {
     if (_at_wifi_is_ok(msg, len))
     {
-        uint32_t start = get_since_boot_ms();
-        while(since_boot_delta(get_since_boot_ms(), start) < 10);
+        _at_wifi_sleep();
         _at_wifi_printf(
             "AT+MQTTSUB=%u,\"%.*s\",%u",
             AT_WIFI_MQTT_LINK_ID,
