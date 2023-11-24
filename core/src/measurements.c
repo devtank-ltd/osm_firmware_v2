@@ -145,6 +145,17 @@ bool measurements_send_test(char * name)
 }
 
 
+static void _measurements_reset_send(void)
+{
+    measurements_debug("Protocol reset");
+    protocol_reset();
+    _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
+    _pending_send = false;
+    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+        _measurements_arr.data[i].has_sent = false;
+}
+
+
 static void _measurements_send(void)
 {
     uint16_t            num_qd = 0;
@@ -180,9 +191,7 @@ static void _measurements_send(void)
             if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
-                protocol_reset();
-                _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
-                _pending_send = false;
+                _measurements_reset_send();
             }
             return;
         }
@@ -222,6 +231,7 @@ static void _measurements_send(void)
                 _measurements_chunk_start_pos = i;
                 break;
             }
+            data->has_sent = true;
             num_qd++;
             memset(&data->value, 0, sizeof(measurements_value_t));
             data->num_samples = 0;
@@ -245,10 +255,13 @@ static void _measurements_send(void)
     if (num_qd > 0)
     {
         _pending_send = !is_max;
-        if (_measurements_debug_mode)
-            protocol_debug();
-        else
-            protocol_send();
+        bool send_ret = _measurements_debug_mode ? protocol_debug() : protocol_send();
+        if (!send_ret)
+        {
+            measurements_debug("Protocol send failed, resetting protocol");
+            _measurements_reset_send();
+            return;
+        }
         if (is_max)
             measurements_debug("Complete send");
         else
@@ -297,11 +310,12 @@ void on_protocol_sent_ack(bool ack)
          _pending_send = false;
         return;
     }
-
-    for (unsigned i = _measurements_chunk_prev_start_pos; i < _measurements_chunk_start_pos; i++)
+    unsigned start = _measurements_chunk_prev_start_pos;
+    unsigned end = _measurements_chunk_start_pos ? _measurements_chunk_start_pos : MEASUREMENTS_MAX_NUMBER;
+    for (unsigned i = start; i < end; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
-        if (!def->name[0])
+        if (!def->name[0] || !def->interval || (_interval_count % def->interval != 0))
             continue;
         measurements_inf_t inf;
         if (!model_measurements_get_inf(def, NULL, &inf))
@@ -309,6 +323,7 @@ void on_protocol_sent_ack(bool ack)
 
         if (inf.acked_cb)
             inf.acked_cb(def->name);
+        _measurements_arr.data[i].has_sent = false;
     }
     if (_pending_send)
         _measurements_send();

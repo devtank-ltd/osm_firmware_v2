@@ -12,7 +12,7 @@ extern uint16_t rak4270_get_mtu(void);
 extern bool     rak4270_send_ready(void);
 extern bool     rak4270_send_str(char* str);
 extern bool     rak4270_send_allowed(void);
-extern void     rak4270_send(int8_t* hex_arr, uint16_t arr_len);
+extern bool     rak4270_send(int8_t* hex_arr, uint16_t arr_len);
 
 extern void     rak4270_init(void);
 extern void     rak4270_reset(void);

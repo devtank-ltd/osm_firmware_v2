@@ -75,9 +75,12 @@ typedef struct
     uint8_t                 value_type:6;                                 /* measurements_value_type_t */
     uint8_t                 instant_send:1;
     uint8_t                 is_collecting:1;
-    uint8_t                 num_samples;
-    uint8_t                 num_samples_init;
-    uint8_t                 num_samples_collected;
+    uint8_t                 num_samples:7;
+    uint8_t                 has_sent:1;
+    uint8_t                 num_samples_init:7;
+    uint8_t                 _:1;
+    uint8_t                 num_samples_collected:7;
+    uint8_t                 __:1;
     uint32_t                collection_time_cache;
 
 } measurements_data_t;

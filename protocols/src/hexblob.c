@@ -303,16 +303,17 @@ static unsigned _protocol_get_length(void)
 }
 
 
-void        protocol_debug(void)
+bool protocol_debug(void)
 {
     for (unsigned j = 0; j < _protocol_get_length(); j++)
         measurements_debug("Packet %u = 0x%"PRIx8, j, _protocol_ctx.buf[j]);
+    return true;
 }
 
 
-void        protocol_send(void)
+bool protocol_send(void)
 {
-    comms_send(_protocol_ctx.buf, _protocol_get_length());
+    return comms_send(_protocol_ctx.buf, _protocol_get_length());
 }
 
 

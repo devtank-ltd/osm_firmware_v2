@@ -713,7 +713,7 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     {
         comms_debug("Incorrect state to send : %s",
             _rak3172_state_to_str((unsigned)_rak3172_ctx.state));
-        return;
+        return false;
     }
 
     char send_header[RAK3172_MSG_SEND_HEADER_LEN];
@@ -729,7 +729,7 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     if (!_rak3172_write(send_header))
     {
         comms_debug("Could not write SEND header.");
-        return;
+        return false;
     }
     char hex_str[5];
     memset(hex_str, 0, 5);
@@ -743,6 +743,7 @@ void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     uart_ring_out(CMD_UART, "\r\n", 2);
     _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_OK;
     _rak3172_ctx.cmd_last_sent = get_since_boot_ms();
+    return true;
 }
 
 
