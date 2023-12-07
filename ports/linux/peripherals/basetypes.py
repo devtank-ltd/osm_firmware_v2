@@ -69,8 +69,9 @@ class i2c_device_t(object):
         data_arr = []
         if cmd_code is None:
             cmd_code = self._last_cmd_code
-        assert cmd_code is not None, "No command code given."
-        orig_value = value_cpy = int(self._cmds[cmd_code])
+        resp = self._cmds.get(cmd_code, None)
+        assert resp is not None, f"Code not in command set for 0x{self.addr:02x}:0x{cmd_code:04x} : {resp}"
+        orig_value = value_cpy = int(resp)
 
         count = 0
         while value_cpy != 0:
