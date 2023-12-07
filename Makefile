@@ -1,6 +1,7 @@
 OSM_DIR ?= .
 BUILD_DIR ?= $(OSM_DIR)/build
 MODEL_DIR ?= $(OSM_DIR)/model
+LIB_DIR ?= $(OSM_DIR)/libs
 
 GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")

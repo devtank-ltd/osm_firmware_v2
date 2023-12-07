@@ -98,6 +98,7 @@ typedef enum
     CUSTOM_1      = 15,
     IO_READING    = 16,
     CONFIG_REVISION = 17,
+    SEN54 = 18,
 } measurements_def_type_t;
 
 

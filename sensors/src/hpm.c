@@ -12,7 +12,7 @@
 #define MEASUREMENTS_COLLECT_TIME_HPM_MS         6000
 #define HPM_TIMEOUT_MS                           (uint32_t)(MEASUREMENTS_COLLECT_TIME_HPM_MS * 1.5)
 
-#define hpm_error(...) hpm_debug("ERROR: " __VA_ARGS__)
+#define hpm_error(...) particulate_debug("ERROR: " __VA_ARGS__)
 
 
 typedef union
@@ -169,7 +169,7 @@ static void process_part_measure_long_response(const uint8_t *data)
         message_count++;
     }
 
-    hpm_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
+    particulate_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
 }
 
 
@@ -178,14 +178,14 @@ static void process_nack_response(const uint8_t *data)
     if(data[1] == 0x96)
         hpm_error("Negative ACK");
     else
-        hpm_debug("NACK");
+        particulate_debug("NACK");
 }
 
 
 static void process_ack_response(const uint8_t *data)
 {
     if (data[1] == 0xA5)
-        hpm_debug("ACK received");
+        particulate_debug("ACK received");
     else
         hpm_error("ACK broken.");
 }
@@ -275,7 +275,7 @@ void hpm_enable(bool enable)
         platform_hpm_enable(true);
         _hpm_start_time = get_since_boot_ms();
         hpm_use_ref++;
-        hpm_debug("Power On (ref:%u)", hpm_use_ref);
+        particulate_debug("Power On (ref:%u)", hpm_use_ref);
         return;
     }
 
@@ -283,11 +283,11 @@ void hpm_enable(bool enable)
         hpm_use_ref--;
     if (!hpm_use_ref)
     {
-        hpm_debug("Power Off");
+        particulate_debug("Power Off");
         platform_hpm_enable(false);
     }
     else
-        hpm_debug("Power Off deferred (ref:%u)", hpm_use_ref);
+        particulate_debug("Power Off deferred (ref:%u)", hpm_use_ref);
 }
 
 
