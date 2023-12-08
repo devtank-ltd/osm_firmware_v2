@@ -707,7 +707,7 @@ static bool _rak3172_wait_send(void* userdata)
 }
 
 
-void rak3172_send(int8_t* hex_arr, uint16_t arr_len)
+bool rak3172_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
     {
