@@ -35,7 +35,7 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
         SEN54_CMD_MEASUREMENT_START_ALL         : 0x00 ,
         SEN54_CMD_MEASUREMENT_START_RHT_GAS     : 0x00 ,
         SEN54_CMD_MEASUREMENT_STOP              : 0x00 ,
-        SEN54_CMD_DATAREADY                     : 0x00 ,
+        SEN54_CMD_DATAREADY                     : 0x0001b0 ,
         SEN54_CMD_MEASURED_VALUES               : 0x00 ,
         SEN54_CMD_TEMPERATURE_COMP              : 0x00 ,
         SEN54_CMD_WARM_START                    : 0x00 ,
@@ -45,8 +45,8 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
         SEN54_CMD_VOC_ALGORITHM_STATE           : 0x00 ,
         SEN54_CMD_FAN_CLEANING_START            : 0x00 ,
         SEN54_CMD_FAN_CLEANING_AUTO_INTERVAL    : 0x00 ,
-        SEN54_CMD_PRODUCT_NAME                  : 0x53454e3534,
-        SEN54_CMD_SERIAL_NAME                   : 0x3345364438383144343830414344433300,
+        SEN54_CMD_PRODUCT_NAME                  : 0x5345834e35553400b0000081000081000081000081000081000081000081000081000081000081000081000081000081, # "SEN54" - Has CRC between each two bytes XXXXCCXXXXCCXXXXCC...
+        SEN54_CMD_SERIAL_NAME                   : 0x3345d636449038387831443e3438cc30413f4344dc4333b3000081000081000081000081000081000081000081000081, # "3E6D881D480ACDC3" - Has CRC between each two bytes XXXXCCXXXXCCXXXXCC...
         SEN54_CMD_FIRMWARE_VERSION              : 0x00 ,
         SEN54_CMD_DEVICE_STATUS                 : 0x00 ,
         SEN54_CMD_DEVICE_STATUS_CLEAR           : 0x00 ,
@@ -150,13 +150,13 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
         scale = self.SEN54_MEASUREMENT_SCALE_FACTORS[measurement.value]
         new_raw = int(val * scale)
         new_crc = self.crc(new_raw)
-        shift = self.SEN54_MEASUREMENT_SHIFT[measurement.value]
-        crc_shift = shift + 2*8
+        shift = (21*8 - self.SEN54_MEASUREMENT_SHIFT[measurement.value])
+        crc_shift = shift
 
         mem = int(self.SEN54_CMDS[self.SEN54_CMD_MEASURED_VALUES])
 
         mem &= ~(0xFF << shift)
-        mem |= ((new_raw >> (1*8)) & 0xFF) << shift
+        mem |= ((new_raw >> (1*8)) & 0xFF) << (shift+2*8)
 
         mem &= ~(0xFF << (shift+1*8))
         mem |= (new_raw & 0xFF) << (shift+1*8)
