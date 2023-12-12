@@ -18,8 +18,8 @@ async function open_serial()
         console.log("USB device disconnect detected.")
       });
 
-    document.getElementById('disconnect').disabled = false;
-    document.getElementById('connect').disabled = true;
+    document.getElementById('main-page-disconnect').disabled = false;
+    document.getElementById('main-page-connect').disabled = true;
 
     send_cmd("?");
 }
@@ -28,8 +28,8 @@ async function close_serial()
 {
     await port.close();
     port = null;
-    document.getElementById('connect').disabled = false;
-    document.getElementById('disconnect').disabled = true;
+    document.getElementById('main-page-connect').disabled = false;
+    document.getElementById('main-page-disconnect').disabled = true;
     console.log("Disconnected");
 }
 

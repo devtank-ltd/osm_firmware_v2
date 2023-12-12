@@ -1,0 +1,104 @@
+:root {
+  --osmlight: #53aa00;
+  --white: #ffffff;
+  --black: #000000;
+  --osmdark: #0f8353;
+}
+
+
+/* Navigation Bar */
+.topnav {
+  background-color: var(--osmlight);
+  overflow: hidden;
+  margin: 0em 0.5em;
+  height: 60px;
+}
+
+.topnav a {
+  float: left;
+  display: block;
+  color: var(--white);
+  padding: 16px;
+  text-decoration: none;
+  font-size: 17px;
+  height: 100%;
+  text-align: center;
+}
+
+.topnav img {
+  float: right;
+  display: block;
+  height: 100%;
+}
+
+.topnav a:hover {
+  background-color: var(--white);
+  color: var(--black);
+}
+
+.topnav a.active {
+  background-color: var(--osmdark);
+  color: var(--white);
+}
+
+.nav-links {
+  display: flex;
+}
+.nav-links li{
+  width: 100px;
+}
+
+
+
+/* Home Page Div */
+
+.home-page-div {
+  display: flex;
+  justify-content: space-between;
+}
+
+
+
+/* Measurements Table */
+
+.measurements-table table {
+  border-collapse : collapse;
+  margin          : 2em 0.5em;
+}
+
+.measurements-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.measurements-table td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+
+
+
+/* LoRaWAN Configuration Table */
+
+.lora-config-table table {
+  float: right;
+  display: block;
+  border-collapse : collapse;
+  margin          : 2em 0.5em;
+  float: right;
+}
+
+.lora-config-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.lora-config-table td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
