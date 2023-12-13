@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
 
+import os
 import sys
 import enum
+import math
+import yaml
 import ctypes
 import datetime
+import subprocess
 
 
 class value_64_t(ctypes.Structure):
@@ -168,6 +172,8 @@ class test_blob(object):
     COLOUR_RED      = "\33[31m"
     COLOUR_DEFAULT  = COLOUR_WHITE
 
+    COMMS_PROTOCOL_PATH = os.path.abspath(os.path.dirname(__file__) + "/../../lorawan_protocol/debug.js")
+
     def __init__(self, lib_blob):
         self.lib = lib_blob
         self.lib.connect()
@@ -192,6 +198,7 @@ class test_blob(object):
         self.lib.log_debug_set_cb(self._log_debug_func)
 
         self._sent_packet = None
+        self.measurements = []
 
     def __del__(self):
         self.close()
@@ -240,26 +247,68 @@ class test_blob(object):
             sys.exit(1)
         return condition
 
+    def threshold_check(self, name, ref, val, threshold=0.05, stop_on_fail=False):
+        condition = math.isclose(ref, val, abs_tol=threshold)
+        stat_str = "passed" if condition else "failed"
+        colour = self.COLOUR_GREEN if condition else self.COLOUR_RED
+        comparitor = "==" if condition else "!="
+        print(f"{colour}{name}: {ref} {comparitor} {val} (+/- {threshold}) {stat_str}{self.COLOUR_DEFAULT}")
+        if stop_on_fail and not condition:
+            sys.exit(1)
+        return condition
+
+    def _bool_check_add_measurement(self, *args, **kwargs):
+        def_, data = self.construct_measurement(*args, **kwargs)
+        self.measurements.append((def_, data))
+        return self.bool_check(f"Append measurement '{args[0]}'",
+            self.lib.protocol_append_measurement(ctypes.pointer(def_), ctypes.pointer(data))
+            )
+
+    def _threshold_check_measurement(self, dict_, measurement):
+        def_, data = measurement
+        name = def_.name.decode()
+        success = self.bool_check(f"Decoding '{name}'",
+            name in dict_.keys())
+        avg = data.value.value_f.sum / (data.num_samples * 1000.)
+        success &= self.threshold_check(f"Measurement '{name} Avg'", avg, dict_[name])
+        if data.num_samples > 1:
+            min_ = data.value.value_f.min / 1000.
+            success &= self.threshold_check(f"Measurement '{name} Min'", min_, dict_[f"{name}_min"])
+            max_ = data.value.value_f.max / 1000.
+            success &= self.threshold_check(f"Measurement '{name} Min'", max_, dict_[f"{name}_max"])
+        return success
+
     def test(self) -> bool:
+        success = True
         self.lib.protocol_init()
-        def_, data = self.construct_measurement(
+
+        self.measurements = []
+        success &= self._bool_check_add_measurement(
             "TEMP",
             23.5,
             measurements_def_t.TYPES.HTU21D_TMP,
             min_ = 23.,
             max_ = 24.)
-        self.bool_check("Append measurement",
-            self.lib.protocol_append_measurement(ctypes.pointer(def_), ctypes.pointer(data))
-            )
+
         self._sent_packet = None
-        self.bool_check("Send protocol",
+        success &= self.bool_check("Send protocol",
             self.lib.protocol_send()
             )
         if not self._sent_packet:
             self._log(f"Packet is empty? {self._sent_packet}")
             return False
 
-        return True
+        packet_str = "".join([f"{i:02X}" for i in self._sent_packet])
+
+        command = f"js {self.COMMS_PROTOCOL_PATH}".split() + ["%s"%packet_str]
+        self._log(command)
+        with subprocess.Popen(command, stdout=subprocess.PIPE) as proc:
+            resp = proc.stdout.read()
+        resp_dict = yaml.safe_load(resp)
+        self._log(resp_dict)
+        for measurement in self.measurements:
+            self._threshold_check_measurement(resp_dict, measurement)
+        return success
 
     def _log(self, msg: str, **kwargs):
         print(f"{self.COLOUR_GREY}{self.now()}: {msg}{self.COLOUR_DEFAULT}", flush=True, **kwargs)
