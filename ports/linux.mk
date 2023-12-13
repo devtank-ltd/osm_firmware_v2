@@ -111,4 +111,16 @@ $(1)_soak: $$(BUILD_DIR)/$(1)/firmware.elf
 $(1)_valgrind: $$(BUILD_DIR)/$(1)/firmware.elf
 	valgrind --leak-check=full $$(BUILD_DIR)/$(1)/firmware.elf
 
+$$(BUILD_DIR)/.blob_test: $$(BUILD_DIR)/$(1)/protocols/src/hexblob.o $$(OSM_DIR)/tests/blob_tests.py $$(OSM_DIR)/tests/blob_empty_send.c
+	mkdir -p $$(BUILD_DIR)/blob_test
+	cp $$(OSM_DIR)/tests/blob_tests.py $$(BUILD_DIR)/blob_test/
+	chmod +x $$(BUILD_DIR)/blob_test/blob_tests.py
+	$(LINUX_CC) -c -Dfw_name=penguin -DFW_NAME=PENGUIN -DGIT_VERSION=\"[$(GIT_COMMITS)]-$(GIT_COMMIT)\" -DGIT_SHA1=\"$(GIT_SHA1)\" $$(LINUX_CFLAGS) -I$$(MODEL_DIR)/penguin $$(LINUX_INCLUDE_PATHS) $(OSM_DIR)/tests/blob_empty_send.c -o $$(BUILD_DIR)/blob_test/blob_empty_send.o
+	ld -r -o $$(BUILD_DIR)/blob_test/bloblib.o $$(BUILD_DIR)/blob_test/blob_empty_send.o $$(BUILD_DIR)/$(1)/protocols/src/hexblob.o
+	$(LINUX_CC) $$(BUILD_DIR)/blob_test/bloblib.o $$(LINUX_LDFLAGS) -shared -o $$(BUILD_DIR)/blob_test/bloblib.so
+	touch $$@
+
+$(1)_blob_test: $$(BUILD_DIR)/.blob_test
+	python3 $$(BUILD_DIR)/blob_test/blob_tests.py $$(realpath $$(BUILD_DIR)/blob_test/bloblib.so)
+
 endef
