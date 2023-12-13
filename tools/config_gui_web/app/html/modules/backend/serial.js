@@ -1,3 +1,15 @@
+import { insert_homepage } from "../gui/home.js";
+import { insert_config_gui_page } from "../gui/config_gui.js";
+
+async function listen_open_serial()
+{
+    document.getElementById("main-page-connect").addEventListener("click", open_serial);
+}
+
+listen_open_serial();
+
+let port;
+
 async function open_serial()
 {
     const filter = { usbVendorId: "0x10c4" }
@@ -5,32 +17,27 @@ async function open_serial()
     const { usbProductId, usbVendorId } = port.getInfo();
 
     await port.open({ baudRate: 115200, databits: 8, stopbits: 1, parity: 'none' });
-    console.log("Connected");
+    console.log("User connected to device ", port);
 
     navigator.serial.addEventListener("connect", (event) => {
-        // TODO: Automatically open event.target or warn user a port is available.
         console.log("USB device available.")
       });
 
-      navigator.serial.addEventListener("disconnect", (event) => {
-        // TODO: Remove |event.target| from the UI.
-        // If the serial port was opened, a stream error would be observed as well.
+    navigator.serial.addEventListener("disconnect", (event) => {
         console.log("USB device disconnect detected.")
       });
 
-    document.getElementById('main-page-disconnect').disabled = false;
-    document.getElementById('main-page-connect').disabled = true;
-
-    send_cmd("?");
+    insert_homepage();
+    document.getElementById("main-page-disconnect").addEventListener("click", close_serial);
 }
 
 async function close_serial()
 {
     await port.close();
     port = null;
-    document.getElementById('main-page-connect').disabled = false;
-    document.getElementById('main-page-disconnect').disabled = true;
     console.log("Disconnected");
+    insert_config_gui_page();
+    listen_open_serial();
 }
 
 async function send_cmd(msg)
@@ -44,7 +51,6 @@ async function send_cmd(msg)
     await writableStreamClosed;
     writer.releaseLock();
     console.log("Released writer lock.")
-    read_output();
 }
 
 async function read_output()
@@ -68,7 +74,6 @@ async function read_output()
                 console.log("DONE");
                 break;
             }
-            console.log(typeof(value));
             msgs.push(value);
         }
     }
@@ -79,11 +84,65 @@ async function read_output()
     finally
     {
         const result = msgs.join('').replace(/\\rn/g, '\rn')
-        console.log(result);
         reader.cancel();
         await readableStreamClosed.catch(() => { /* Ignore the error */ });
 
         reader.releaseLock();
         console.log("Reader released.");
+        return result;
     }
 }
+
+export async function get_measurements()
+{
+    send_cmd("measurements");
+    let meas = read_output();
+    let measurements = [];
+    let meas_split = (await meas).split("\n\r");
+    let start, end, regex, match, in_str, interval, interval_mins;
+    meas_split.forEach((i, index) =>
+    {
+        let m = i.split(/[\t]{1,2}/g);
+        if (i === "Name	Interval	Sample Count")
+        {
+            start = index;
+            m.push("Last Value");
+            measurements.push(m);
+        }
+        else if (i === "}============")
+        {
+            end = index;
+        }
+        else
+        {
+            try
+            {
+                in_str = m[1];
+                regex = /^(\d+)x(\d+)mins$/;
+                match = in_str.match(regex);
+                if (match) {
+                    interval = match[1];
+                    interval_mins = match[2];
+                }
+                m[1] = interval;
+                m.push("");
+            }
+            catch (error)
+            {
+                console.log(error);
+            }
+            finally
+            {
+                measurements.push(m);
+            }
+        }
+    })
+    let extracted_meas = measurements.slice(start, end);
+    let imins = extracted_meas[0][1].concat(" " + "(" + interval_mins + "mins)");
+    extracted_meas[0][1] = imins;
+    return extracted_meas;
+}
+
+
+
+

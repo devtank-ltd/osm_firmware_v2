@@ -2,12 +2,11 @@
 <html>
     <head>
         <title>OSM Config GUI</title>
-        <script async src="../script/serial.js"></script>
+        <script type="module" async src="./modules/backend/serial.js"></script>
         <link rel="stylesheet" href="styles/styling.css">
     </head>
-    <body>
+    <body id="main-page-body">
         <h1 id="main-page-title">OpenSmartMonitor Configuration</h1>
-        <button id='main-page-connect' onclick='open_serial()'>Connect</button>
-        <button disabled='true' id='main-page-disconnect' onclick='close_serial()'>Disconnect</button>
+        <button id='main-page-connect'>Connect</button>
     </body>
 </html>
