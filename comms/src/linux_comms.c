@@ -50,6 +50,10 @@ bool linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
         uart_ring_out(COMMS_UART, buf, 2);
     }
     uart_ring_out(COMMS_UART, "\r\n", 2);
+    while (uart_ring_out_busy(COMMS_UART))
+    {
+        uart_rings_out_drain();
+    }
     on_protocol_sent_ack(true);
     return true;
 }
