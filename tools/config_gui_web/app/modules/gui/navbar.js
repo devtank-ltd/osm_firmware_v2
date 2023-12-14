@@ -8,14 +8,14 @@ const navbar = `
 `
 
 
-function insert_navbar()
+async function insert_navbar()
 {
   document.getElementById('navbar').innerHTML = navbar;
 }
 
-export function add_active(id_)
+export async function add_active(id_)
 {
-  insert_navbar();
+  await insert_navbar();
   document.getElementById(id_).classList.add("active");
 }
 

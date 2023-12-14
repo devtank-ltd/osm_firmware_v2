@@ -96,9 +96,9 @@ async function read_output()
 export async function get_measurements()
 {
     send_cmd("measurements");
-    let meas = read_output();
+    let meas = await read_output();
     let measurements = [];
-    let meas_split = (await meas).split("\n\r");
+    let meas_split = meas.split("\n\r");
     let start, end, regex, match, in_str, interval, interval_mins;
     meas_split.forEach((i, index) =>
     {
@@ -143,6 +143,75 @@ export async function get_measurements()
     return extracted_meas;
 }
 
+async function parse_msg(msg)
+{
+    let start, end;
+    if (typeof (msg) !== 'string')
+    {
+        console.log(typeof (msg));
+        return
+    }
+    let spl = msg.split("\n\r");
+    spl.forEach((s, i) =>
+    {
+        if (s === "============{")
+        {
+            start = i + 1;
+        }
+        else if (s === "}============")
+        {
+            end = i;
+        }
+    })
+    let sliced = spl.slice(start, end)[0].split(": ");
+    let r = sliced[sliced.length - 1];
+    return r;
+}
 
+export async function get_lora_deveui()
+{
+    send_cmd("comms_config dev-eui");
+    let dev_eui = await read_output();
+    let parsed = await parse_msg(dev_eui);
+    return parsed;
+}
 
+export async function get_lora_appkey()
+{
+    send_cmd("comms_config app-key");
+    let appkey = await read_output();
+    let parsed = await parse_msg(appkey);
+    return parsed;
+}
+
+export async function get_lora_region()
+{
+    send_cmd("comms_config region");
+    let region = await read_output();
+    let parsed = await parse_msg(region);
+    return parsed;
+}
+
+export async function get_lora_conn()
+{
+    send_cmd("comms_conn");
+    let conn = await read_output();
+    let parsed = await parse_msg(conn);
+    return parsed;
+}
+
+export async function get_wifi_config()
+{
+    /*
+       comms_pr_cfg
+
+       WIFI SSID: Wifi Example SSID
+       WIFI PWD: wifipwd
+       MQTT ADDR: mqtt_addr
+       MQTT USER: mqttuser
+       MQTT PWD: mqttpwd
+       MQTT CA: server
+       MQTT PORT: 8883
+    */
+}
 

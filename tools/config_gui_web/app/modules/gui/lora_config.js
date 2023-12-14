@@ -1,7 +1,13 @@
+import { get_lora_conn, get_lora_appkey, get_lora_deveui, get_lora_region } from "../backend/serial.js";
 
 export async function populate_lora_fields() {
     const title = "LoRaWAN Configuration"
-    const lora_headers = [ "Device EUI", "Application Key", "Connected" ]
+    const lora_headers = ["Device EUI", "Application Key", "Region", "Status"]
+
+    let dev_eui = await get_lora_deveui();
+    let app_key = await get_lora_appkey();
+    let region = await get_lora_region();
+    let conn = await get_lora_conn();
 
     const lora_res = document.querySelector('div.lora-config-table');
     const lora_tbl = lora_res.appendChild(document.createElement('table'));
@@ -17,11 +23,13 @@ export async function populate_lora_fields() {
         let r = lora_tBody.insertRow();
         r.insertCell().textContent = i;
         if (i === "Device EUI")
-            r.insertCell().textContent = "sh4shk8yab5swkjf";
+            r.insertCell().textContent = dev_eui;
         else if (i === "Application Key")
-            r.insertCell().textContent = "ksyutnab6jsk58akngt482jsnyisnt8";
-        else if (i === "Connected")
-            r.insertCell().textContent = "Yes";
+            r.insertCell().textContent = app_key;
+        else if (i === "Region")
+            r.insertCell().textContent = region;
+        else if (i === "Status")
+            r.insertCell().textContent = conn;
     })
 }
 

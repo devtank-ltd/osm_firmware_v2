@@ -34,7 +34,7 @@ export async function create_measurements_table_gui() {
     })
 }
 
-function update_measurement_config(e) {
+async function update_measurement_config(e) {
     let cell_index = e.srcElement.cellIndex;
     let row_index = e.target.parentNode.rowIndex;
     let table = e.target.offsetParent;

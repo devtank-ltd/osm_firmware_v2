@@ -2,7 +2,7 @@ import { add_active } from './navbar.js'
 import { create_measurements_table_gui } from './measurements_table.js'
 import { populate_lora_fields } from './lora_config.js';
 
-export function insert_homepage()
+export async function insert_homepage()
 {
     const homepage =`
     <body>
@@ -21,7 +21,7 @@ export function insert_homepage()
     let doc = document.getElementById('main-page-body');
     doc.innerHTML = homepage;
     add_active("home");
-    create_measurements_table_gui();
+    await create_measurements_table_gui();
     populate_lora_fields();
 
 }
