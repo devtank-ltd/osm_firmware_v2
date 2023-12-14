@@ -380,10 +380,10 @@ class test_framework_t(object):
         fds = [comms_conn, self._vosm_conn]
         now = time.time()
         start_time = now
-        end_time = start_time + 90
+        end_time = start_time + (self._vosm_conn.interval_mins * 60) + 3
         count = 0
         final_dict = {}
-        while now < end_time and count < 2:
+        while now < end_time:
             r = select.select(fds, [], [], end_time-now)
             if len(r[0]):
                 if self._vosm_conn in r[0]:
