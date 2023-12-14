@@ -33,11 +33,7 @@ static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
 bool uart_ring_out_busy(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
-        return 0;
-
-    ring_buf_t * ring = &ring_out_bufs[uart];
-    return ring_buf_get_pending(ring);
+    return uart_ring_out_get_len(uart) > 0;
 }
 
 

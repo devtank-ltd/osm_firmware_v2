@@ -592,6 +592,43 @@ static void _linux_exit(int err)
 }
 
 
+static bool _safe_write(int fd, const void* data, size_t len, int64_t max_usecs)
+{
+    int64_t now = linux_get_current_us();
+    size_t written = 0;
+    while(written < len)
+    {
+        int r = write(fd, ((const uint8_t*)data) + written, len - written);
+        if (r == -1)
+        {
+            if (errno == EAGAIN)
+                continue;
+            linux_port_debug("Safe write failed : %s", strerror(errno));
+            return false;
+        }
+        else written += r;
+        if (written != len && (linux_get_current_us() - now) > max_usecs)
+        {
+            linux_port_debug("Safe write timed out.");
+            return false;
+        }
+    }
+    if (isatty(fd))
+    {
+        if (!tcdrain(fd))
+        {
+            return true;
+        }
+    }
+    else if (!syncfs(fd))
+    {
+        return true;
+    }
+    linux_port_debug("Failed to sync fd:%i : %s", fd, strerror(errno));
+    return false;
+}
+
+
 bool linux_write_pty(unsigned uart, const char *data, unsigned size)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
@@ -612,7 +649,7 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
                         linux_port_debug("%s(%u) >> [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
                 }
             }
-            return (write(fd_handler->pty.master_fd, data, size) != 0);
+            return _safe_write(fd_handler->pty.master_fd, data, size, 500);
         }
     }
     return false;

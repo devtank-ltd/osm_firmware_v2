@@ -115,7 +115,7 @@
 #define DEBUG_COMMS           0x4
 #define DEBUG_IO              0x8
 #define DEBUG_UART(_x_)     (0x10 << _x_) /*There is 4 uarts, so 4 bits, 0x10, 0x20, 0x40, 0x80*/
-#define DEBUG_HPM           0x100
+#define DEBUG_PARTICULATE   0x100
 #define DEBUG_MODBUS        0x200
 #define DEBUG_MEASUREMENTS  0x400
 #define DEBUG_FW            0x800

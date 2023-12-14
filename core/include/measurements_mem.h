@@ -28,6 +28,12 @@
 #define MEASUREMENTS_FTMA_2_NAME            "FTA2"
 #define MEASUREMENTS_FTMA_3_NAME            "FTA3"
 #define MEASUREMENTS_FTMA_4_NAME            "FTA4"
+#define MEASUREMENTS_PM1_0_NAME             "PM1"
+#define MEASUREMENTS_PM4_NAME               "PM4"
+#define MEASUREMENTS_REL_HUM_NAME           "HUM2"
+#define MEASUREMENTS_SEN54_TEMP_NAME        "TMP5"
+#define MEASUREMENTS_VOC_NAME               "VOC"
+#define MEASUREMENTS_NOX_NAME               "NOX"
 
 #define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 
