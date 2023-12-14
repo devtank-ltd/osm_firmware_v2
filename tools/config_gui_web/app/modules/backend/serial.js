@@ -40,7 +40,7 @@ async function close_serial()
     listen_open_serial();
 }
 
-async function send_cmd(msg)
+export async function send_cmd(msg)
 {
     const textEncoder = new TextEncoderStream();
     const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
