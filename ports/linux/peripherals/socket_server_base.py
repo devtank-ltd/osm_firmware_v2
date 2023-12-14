@@ -73,6 +73,7 @@ class socket_server_t(object):
             self.warning(f"Tried to read from client [fd:{fd}] but failed.")
             return
         if not len(data):
+            self._close_client(client)
             return
         self._process(client, data)
 
