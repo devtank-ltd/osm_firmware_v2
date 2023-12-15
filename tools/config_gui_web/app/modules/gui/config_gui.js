@@ -28,7 +28,7 @@ export class config_gui_t
         this.dev = new binding_t(port);
         this.home = new home_tab_t(this.dev);
         await this.home.insert_homepage();
-        let disconnect = document.getElementById("main-page-disconnect");
+        let disconnect = document.getElementById("home-disconnect");
         disconnect.addEventListener("click", () =>
         {
             port.close();

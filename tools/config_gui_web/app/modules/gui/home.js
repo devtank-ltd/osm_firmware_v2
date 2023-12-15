@@ -11,11 +11,37 @@ export class home_tab_t {
         const homepage = `
         <body>
             <div id="navbar"></div>
-            <button id='main-page-disconnect'>Disconnect</button>
 
             <div class="home-page-div">
-                <div class="measurements-table"></div>
-                <div class="lora-config-table"></div>
+                <div class="measurements-table">
+                    <div class="home-edit-uplink-field" id="home-change-uplink">
+                        <h3>Change Uplink Time</h3>
+                        <p contenteditable="true"></p>
+                    </div>
+                </div>
+
+                <div class="lora-config-table">
+                    <div class="buttons">
+                        <button id="lora-gen-dev-eui">Generate LoRa dev eui</button>
+                        <button id="lora-gen-app-key">Generate LoRa app key</button>
+                        <button id="lora-send-config">Send</button>
+                    </div>
+                </div>
+
+                <div class="wifi-config-table"></div>
+
+                <div class="home-option-buttons">
+                    <button  id="home-load-osm-config">Load Configuration</button>
+                    <button  id="home-save-osm-config">Save Configuration</button>
+                    <button  id="home-disconnect">Disconnect</button>
+                </div>
+
+                <div class="home-failed-div">
+                    <p id="home-serial-num">Failed to display serial number</p>
+                    <p id="home-firmware-version">Failed to display firmware version</p>
+                </div>
+
+
             </div>
             <script type="module" async src="./modules/gui/navbar.js"></script>
             <script type="module" async src="./modules/gui/measurements_table.js"></script>

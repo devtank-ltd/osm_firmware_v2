@@ -5,7 +5,18 @@
   --osmdark: #0f8353;
 }
 
+button {
+  color: var(--white);
+  background-color: var(--osmlight);
+  border-radius: 10%;
+  border-color: var(--white);
+  font-size: medium;
+  padding: 0.5em;
+}
 
+button:hover {
+  background-color: var(--osmdark);
+}
 /* Navigation Bar */
 .topnav {
   background-color: var(--osmlight);
@@ -57,7 +68,15 @@
   justify-content: space-between;
 }
 
+.home-edit-uplink-field {
+  margin          : 2em 0.5em;
+}
 
+.home-edit-uplink-field p {
+  border-style: solid;
+  color: #0f8353;
+  border-color: var(--osmdark);
+}
 
 /* Measurements Table */
 
@@ -101,4 +120,104 @@
   padding    : .2em .8em;
   border     : 1px solid var(--osmdark);
   text-align : center;
+}
+
+.lora-config-table .buttons {
+  text-align: center;
+  align-items: first baseline;
+  padding-top: 2em;
+}
+
+
+
+
+
+/* WiFi Configuration Table */
+
+.wifi-config-table table {
+  float: right;
+  display: block;
+  border-collapse : collapse;
+  margin          : 2em 0.5em;
+  float: right;
+}
+
+.wifi-config-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.wifi-config-table td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+
+
+/* Modbus Config Table */
+
+.modbus-config-table table {
+  border-collapse : collapse;
+  margin          : 2em 0.5em;
+}
+
+.modbus-config-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.modbus-config-table td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+/* Modbus Current Settings */
+
+.modbus-current-config table {
+  border-collapse : collapse;
+  margin          : 2em 0.5em;
+}
+
+.modbus-current-config thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.modbus-current-config td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+
+/* Options Buttons Styling */
+
+.home-option-buttons {
+  text-align: center;
+  margin: 10px;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+}
+
+
+/* failed messages */
+
+.home-failed-div {
+  text-align: left;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+}
+
+/* help for terminal */
+.console-help {
+  margin: 8px;
+  top: auto;
+  font-size: x-small;
 }
