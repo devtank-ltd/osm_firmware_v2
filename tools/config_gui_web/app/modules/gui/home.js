@@ -23,8 +23,8 @@ export class home_tab_t {
 
                 <div class="lora-config-table">
                     <div class="buttons">
-                        <button id="lora-gen-dev-eui">Generate LoRa dev eui</button>
-                        <button id="lora-gen-app-key">Generate LoRa app key</button>
+                        <button id="lora-gen-dev-eui">Generate LoRa Dev EUI</button>
+                        <button id="lora-gen-app-key">Generate LoRa App Key</button>
                         <button id="lora-send-config">Send</button>
                     </div>
                 </div>
@@ -37,7 +37,7 @@ export class home_tab_t {
                     <button  id="home-disconnect">Disconnect</button>
                 </div>
 
-                <div class="home-failed-div">
+                <div class="home-config-div">
                     <p id="home-serial-num">Failed to display serial number</p>
                     <p id="home-firmware-version">Failed to display firmware version</p>
                 </div>
@@ -60,7 +60,7 @@ export class home_tab_t {
 
         let lora = new lora_config_t(this.dev);
         await lora.populate_lora_fields();
+        await lora.add_listeners();
     }
-
 }
 

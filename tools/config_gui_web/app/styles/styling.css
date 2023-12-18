@@ -21,8 +21,7 @@ button:hover {
 .topnav {
   background-color: var(--osmlight);
   overflow: hidden;
-  margin: 0em 0.5em;
-  height: 60px;
+  height: 80px;
 }
 
 .topnav a {
@@ -55,6 +54,7 @@ button:hover {
 .nav-links {
   display: flex;
 }
+
 .nav-links li{
   width: 100px;
 }
@@ -199,7 +199,7 @@ button:hover {
 
 .home-option-buttons {
   text-align: center;
-  margin: 10px;
+  margin: 0.8em;
   position: fixed;
   bottom: 0;
   right: 0;
@@ -208,9 +208,10 @@ button:hover {
 
 /* failed messages */
 
-.home-failed-div {
+.home-config-div {
   text-align: left;
   position: fixed;
+  margin: 0em 0.5em;
   bottom: 0;
   left: 0;
 }

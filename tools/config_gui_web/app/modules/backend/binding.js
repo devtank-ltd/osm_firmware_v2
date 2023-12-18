@@ -1,4 +1,16 @@
 
+export async function generate_random(len) {
+	var chars = "0123456789ABCDEFabcdef";
+	var string_length = len;
+	var randomstring = '';
+	for (var i=0; i<string_length; i++) {
+		var rnum = Math.floor(Math.random() * chars.length);
+		randomstring += chars.substring(rnum,rnum+1);
+	}
+    return randomstring;
+}
+
+
 export class binding_t {
     constructor(port) {
         this.port = port;
@@ -52,7 +64,7 @@ export class binding_t {
         let start, end;
         if (typeof (msg) !== 'string') {
             console.log(typeof (msg));
-            return
+            return;
         }
         let spl = msg.split("\n\r");
         spl.forEach((s, i) => {
@@ -168,7 +180,21 @@ export class binding_t {
         let cmd = "get_meas " + meas
         let res = await this.do_cmd(cmd);
         return res;
+    }
 
+    async set_appkey(appkey)
+    {
+        await this.write("comms_config app-key " + appkey);
+    }
+
+    async set_deveui(deveui)
+    {
+        await this.write("comms_config dev-eui " + deveui);
+    }
+
+    async set_region(region)
+    {
+        await this.write("comms_config region " + region);
     }
 }
 
