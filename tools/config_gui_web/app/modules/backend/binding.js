@@ -4,7 +4,7 @@ export class binding_t {
         this.port = port;
     }
 
-    async send_cmd(msg) {
+    async write(msg) {
         const textEncoder = new TextEncoderStream();
         const writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
         const writer = textEncoder.writable.getWriter();
@@ -23,35 +23,72 @@ export class binding_t {
 
         // Listen to data coming from the serial device.
         let start_time = Date.now();
-        let msgs = [];
-
+        let msgs = "";
         try {
-            while (Date.now() - start_time < 100000) {
+            while (Date.now() - start_time < 100000)
+            {
                 const { value, done } = await reader.read();
-                if (value.includes("}============")) {
-                    msgs.push(value);
-                    console.log("DONE");
+                msgs += value;
+                if (msgs.includes('}============'))
+                {
+                    console.log("Finished reading OSM.");
                     break;
                 }
-                msgs.push(value);
             }
         }
         catch (error) {
             console.log(error);
         }
         finally {
-            const result = msgs.join('').replace(/\\rn/g, '\rn')
             reader.cancel();
             await readableStreamClosed.catch(() => { /* Ignore the error */ });
-
             reader.releaseLock();
             console.log("Reader released.");
-            return result;
+            return msgs;
         }
     }
 
+    async parse_msg(msg) {
+        let start, end;
+        if (typeof (msg) !== 'string') {
+            console.log(typeof (msg));
+            return
+        }
+        let spl = msg.split("\n\r");
+        spl.forEach((s, i) => {
+            if (s === "============{")
+            {
+                start = i + 1;
+            }
+            else if (s === "}============")
+            {
+                end = i;
+            }
+            if (s.includes("DEBUG") || s.includes("ERROR"))
+            {
+                start += 1;
+            }
+        })
+        if (spl)
+        {
+            let sliced = spl.slice(start, end)[0];
+            let sl = sliced.split(": ");
+            let r = sl[sl.length - 1];
+            return r;
+        }
+        return 0;
+    }
+
+    async do_cmd(cmd)
+    {
+        await this.write(cmd);
+        let output = await this.read_output();
+        let parsed = await this.parse_msg(output);
+        return parsed;
+    }
+
     async get_measurements() {
-        this.send_cmd("measurements");
+        this.write("measurements");
         let meas = await this.read_output();
         let measurements = [];
         let meas_split = meas.split("\n\r");
@@ -92,52 +129,24 @@ export class binding_t {
         return extracted_meas;
     }
 
-    async parse_msg(msg) {
-        let start, end;
-        if (typeof (msg) !== 'string') {
-            console.log(typeof (msg));
-            return
-        }
-        let spl = msg.split("\n\r");
-        spl.forEach((s, i) => {
-            if (s === "============{") {
-                start = i + 1;
-            }
-            else if (s === "}============") {
-                end = i;
-            }
-        })
-        let sliced = spl.slice(start, end)[0].split(": ");
-        let r = sliced[sliced.length - 1];
-        return r;
-    }
-
     async get_lora_deveui() {
-        this.send_cmd("comms_config dev-eui");
-        let dev_eui = await this.read_output();
-        let parsed = await this.parse_msg(dev_eui);
-        return parsed;
+        let dev_eui = await this.do_cmd("comms_config dev-eui");
+        return dev_eui;
     }
 
     async get_lora_appkey() {
-        this.send_cmd("comms_config app-key");
-        let appkey = await this.read_output();
-        let parsed = await this.parse_msg(appkey);
-        return parsed;
+        let appkey = await this.do_cmd("comms_config app-key")
+        return appkey;
     }
 
     async get_lora_region() {
-        this.send_cmd("comms_config region");
-        let region = await this.read_output();
-        let parsed = await this.parse_msg(region);
-        return parsed;
+        let region = await this.do_cmd("comms_config region")
+        return region;
     }
 
     async get_lora_conn() {
-        this.send_cmd("comms_conn");
-        let conn = await this.read_output();
-        let parsed = await this.parse_msg(conn);
-        return parsed;
+        let conn = await this.do_cmd("comms_conn")
+        return conn;
     }
 
     async get_wifi_config() {
@@ -152,6 +161,14 @@ export class binding_t {
             MQTT CA: server
             MQTT PORT: 8883
         */
+    }
+
+    async get_value(meas)
+    {
+        let cmd = "get_meas " + meas
+        let res = await this.do_cmd(cmd);
+        return res;
+
     }
 }
 

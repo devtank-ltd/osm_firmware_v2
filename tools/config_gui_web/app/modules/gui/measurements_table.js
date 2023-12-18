@@ -4,6 +4,7 @@ export class measurements_table_t
     {
         this.dev = dev;
         this.update_measurement_config = this.update_measurement_config.bind(this);
+        this.insert_last_value = this.insert_last_value.bind(this);
     }
 
     async create_measurements_table_gui() {
@@ -11,6 +12,7 @@ export class measurements_table_t
         let measurements = await this.dev.get_measurements();
         const res = document.querySelector('div.measurements-table');
         const tbl = res.appendChild(document.createElement('table'));
+        tbl.id = 'meas-table';
         const tBody = tbl.createTBody();
         tbl.createTHead()
 
@@ -34,9 +36,18 @@ export class measurements_table_t
                         entry.contentEditable = true;
                         entry.addEventListener('focusout', this.update_measurement_config);
                     }
+                    if (index === 3)
+                    {
+                        let chk = document.createElement('input');
+                        chk.type = 'checkbox';
+                        let chkcell = r.insertCell();
+                        chkcell.appendChild(chk);
+                        chk.addEventListener('click', this.insert_last_value)
+                    }
                 })
             }
         })
+        // await this.insert_last_values();
     }
 
     async update_measurement_config(e) {
@@ -49,11 +60,35 @@ export class measurements_table_t
         let type = table.rows[0].cells[cell_index].innerHTML;
 
         /* Example: interval CNT1 1 */
-        if (type.includes("Interval")) {
+        if (type.includes("Interval"))
+        {
             this.dev.send_cmd("interval " + meas + " " + new_val);
         }
-        else {
+        else
+        {
             this.dev.send_cmd("samplecount " + meas + " " + new_val);
+        }
+    }
+
+    async insert_last_value(e)
+    {
+        let last_val_index = 3;
+        let checkbox = e.target;
+        let table = checkbox.offsetParent.offsetParent;
+        for (let i = 1; i < table.rows.length; i++)
+        {
+            table.rows[i].cells[4].getElementsByTagName('input')[0].disabled = true;
+        }
+        let row_index = e.srcElement.parentElement.parentNode.rowIndex;
+        let meas = table.rows[row_index].cells[0].innerHTML;
+        let val = await this.dev.get_value(meas);
+        val = Number(val);
+        let last_val_col = table.rows[row_index].cells[last_val_index];
+        last_val_col.textContent = val;
+        checkbox.checked = false;
+        for (let i = 1; i < table.rows.length; i++)
+        {
+            table.rows[i].cells[4].getElementsByTagName('input')[0].disabled = false;
         }
     }
 }

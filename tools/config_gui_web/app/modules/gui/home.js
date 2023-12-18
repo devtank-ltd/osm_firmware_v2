@@ -14,10 +14,11 @@ export class home_tab_t {
 
             <div class="home-page-div">
                 <div class="measurements-table">
-                    <div class="home-edit-uplink-field" id="home-change-uplink">
-                        <h3>Change Uplink Time</h3>
-                        <p contenteditable="true"></p>
-                    </div>
+                </div>
+
+                <div class="home-edit-uplink-field" id="home-change-uplink">
+                    <h3>Change Uplink Time</h3>
+                    <p contenteditable="true"></p>
                 </div>
 
                 <div class="lora-config-table">
