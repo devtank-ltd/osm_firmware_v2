@@ -67,5 +67,24 @@ export class home_tab_t {
     const lora = new lora_config_t(this.dev);
     await lora.populate_lora_fields();
     await lora.add_listeners();
+
+    await this.load_serial_number();
+    await this.load_fw_ver();
+  }
+
+  async load_serial_number() {
+    this.sn = document.getElementById('home-serial-num');
+    this.serial_num = await this.dev.serial_number;
+    this.serial_num_join = `Serial Number: ${this.serial_num}`;
+    this.sn.textContent = await this.serial_num_join;
+  }
+
+  async load_fw_ver() {
+    this.fw = document.getElementById('home-firmware-version');
+    this.fw_ver = await this.dev.firmware_version;
+    this.split_fw = this.fw_ver.split('-');
+    const [, num, hash, , , , , , ,] = this.split_fw;
+    this.split_fw_join = `Firmware Version: ${num} - ${hash}`;
+    this.fw.textContent = await this.split_fw_join;
   }
 }

@@ -177,6 +177,18 @@ export class binding_t {
     return this.do_cmd('comms_conn');
   }
 
+  set serial_number(value) {
+    this.enqueue_and_process(`serial_num ${value}`);
+  }
+
+  get serial_number() {
+    return this.do_cmd('serial_num');
+  }
+
+  get firmware_version() {
+    return this.do_cmd('version');
+  }
+
   /*
   async get_wifi_config() {
 
