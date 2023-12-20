@@ -1,168 +1,185 @@
-
 export async function generate_random(len) {
-	var chars = "0123456789ABCDEFabcdef";
-	var string_length = len;
-	var randomstring = '';
-	for (var i=0; i<string_length; i++) {
-		var rnum = Math.floor(Math.random() * chars.length);
-		randomstring += chars.substring(rnum,rnum+1);
-	}
-    return randomstring;
+  const chars = '0123456789ABCDEF';
+  const string_length = len;
+  let key = '';
+  for (let i = 0; i < string_length; i += 1) {
+    const rnum = Math.floor(Math.random() * chars.length);
+    key += chars.substring(rnum, rnum + 1);
+  }
+  return key;
 }
 
-
 export class binding_t {
-    constructor(port) {
-        this.port = port;
+  constructor(port) {
+    this.port = port;
+    this.queue = [];
+    this.call_queue();
+  }
+
+  async enqueue_and_process(msg) {
+    this.queue.push(msg);
+  }
+
+  async process_queue() {
+    while (this.queue.length > 0) {
+      const msg = this.queue.shift();
+      await this.do_cmd(msg);
+      console.log(`Message from queue "${msg}" sent`);
     }
+  }
 
-    async write(msg) {
-        const textEncoder = new TextEncoderStream();
-        const writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
-        const writer = textEncoder.writable.getWriter();
-        console.log('[SEND]', msg);
-        writer.write(msg + '\n');
-        writer.close();
-        await writableStreamClosed;
-        writer.releaseLock();
-        console.log("Released writer lock.")
+  async call_queue() {
+    this.process_queue();
+    setTimeout(() => { this.call_queue(); }, 1000);
+  }
+
+  async write(msg) {
+    const encoder = new TextEncoder();
+    const writer = this.port.writable.getWriter();
+    await writer.write(encoder.encode(`${msg}\n`));
+    writer.releaseLock();
+  }
+
+  async read_output() {
+    const decoder = new TextDecoder();
+    let msgs = '';
+    const start_time = Date.now();
+    const timeout_ms = 1000;
+    const reader = this.port.readable.getReader();
+    try {
+      while (Date.now() > start_time - timeout_ms) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        const msg = decoder.decode(value);
+        msgs += msg;
+        if (msgs.includes('}============')) {
+          console.log('Finished reading OSM.');
+          break;
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      reader.releaseLock();
     }
+    console.log(`Got ${msgs}`);
+    return msgs;
+  }
 
-    async read_output() {
-        const textDecoder = new TextDecoderStream();
-        const readableStreamClosed = this.port.readable.pipeTo(textDecoder.writable);
-        const reader = textDecoder.readable.getReader();
+  async parse_msg(msg) {
+    if (typeof (msg) !== 'string') {
+      console.log(typeof (msg));
+      return '';
+    }
+    const spl = msg.split('\n\r');
+    spl.forEach((s, i) => {
+      if (s === '============{') {
+        this.start = i + 1;
+      } else if (s === '}============') {
+        this.end = i;
+      }
+      if (s.includes('DEBUG') || s.includes('ERROR')) {
+        this.start += 1;
+      }
+    });
+    if (!spl) {
+      console.log('in here');
+      return '';
+    }
+    const sliced = spl.slice(this.start, this.end)[0];
+    if (sliced) {
+      const sl = sliced.split(': ');
+      const r = sl[sl.length - 1];
+      return r;
+    }
+    return '';
+  }
 
-        // Listen to data coming from the serial device.
-        let start_time = Date.now();
-        let msgs = "";
+  async do_cmd(cmd) {
+    await this.write(cmd);
+    const output = await this.read_output();
+    const parsed = await this.parse_msg(output);
+    return parsed;
+  }
+
+  async get_measurements() {
+    await this.write('measurements');
+    const meas = await this.read_output();
+    const measurements = [];
+    const meas_split = meas.split('\n\r');
+    let start; let end; let regex; let interval; let interval_mins;
+    meas_split.forEach((i, index) => {
+      const m = i.split(/[\t]{1,2}/g);
+      if (i.includes('Sample Count')) {
+        start = index;
+        m.push('Last Value');
+        measurements.push(m);
+      } else if (i === '}============') {
+        end = index;
+      } else {
         try {
-            while (Date.now() - start_time < 100000)
-            {
-                const { value, done } = await reader.read();
-                msgs += value;
-                if (msgs.includes('}============'))
-                {
-                    console.log("Finished reading OSM.");
-                    break;
-                }
-            }
+          const [, interval_str,,] = m;
+          regex = /^(\d+)x(\d+)mins$/;
+          if (interval_str) {
+            const match = interval_str.match(regex);
+            [, interval, interval_mins] = match;
+            m[1] = interval;
+            m.push('');
+          }
+        } catch (error) {
+          console.log(error);
+        } finally {
+          measurements.push(m);
         }
-        catch (error) {
-            console.log(error);
-        }
-        finally {
-            reader.cancel();
-            await readableStreamClosed.catch(() => { /* Ignore the error */ });
-            reader.releaseLock();
-            console.log("Reader released.");
-            return msgs;
-        }
-    }
+      }
+    });
+    const extracted_meas = measurements.slice(start, end);
+    const imins = extracted_meas[0][1].concat(` (${interval_mins}mins)`);
+    extracted_meas[0][1] = imins;
+    return extracted_meas;
+  }
 
-    async parse_msg(msg) {
-        let start, end;
-        if (typeof (msg) !== 'string') {
-            console.log(typeof (msg));
-            return;
-        }
-        let spl = msg.split("\n\r");
-        spl.forEach((s, i) => {
-            if (s === "============{")
-            {
-                start = i + 1;
-            }
-            else if (s === "}============")
-            {
-                end = i;
-            }
-            if (s.includes("DEBUG") || s.includes("ERROR"))
-            {
-                start += 1;
-            }
-        })
-        if (spl)
-        {
-            let sliced = spl.slice(start, end)[0];
-            let sl = sliced.split(": ");
-            let r = sl[sl.length - 1];
-            return r;
-        }
-        return 0;
-    }
+  get lora_deveui() {
+    return this.do_cmd('comms_config dev-eui');
+  }
 
-    async do_cmd(cmd)
-    {
-        await this.write(cmd);
-        let output = await this.read_output();
-        let parsed = await this.parse_msg(output);
-        return parsed;
-    }
+  set lora_deveui(deveui) {
+    this.enqueue_and_process(`comms_config dev-eui ${deveui}`);
+  }
 
-    async get_measurements() {
-        this.write("measurements");
-        let meas = await this.read_output();
-        let measurements = [];
-        let meas_split = meas.split("\n\r");
-        let start, end, regex, match, in_str, interval, interval_mins;
-        meas_split.forEach((i, index) => {
-            let m = i.split(/[\t]{1,2}/g);
-            if (i === "Name	Interval	Sample Count") {
-                start = index;
-                m.push("Last Value");
-                measurements.push(m);
-            }
-            else if (i === "}============") {
-                end = index;
-            }
-            else {
-                try {
-                    in_str = m[1];
-                    regex = /^(\d+)x(\d+)mins$/;
-                    match = in_str.match(regex);
-                    if (match) {
-                        interval = match[1];
-                        interval_mins = match[2];
-                    }
-                    m[1] = interval;
-                    m.push("");
-                }
-                catch (error) {
-                    console.log(error);
-                }
-                finally {
-                    measurements.push(m);
-                }
-            }
-        })
-        let extracted_meas = measurements.slice(start, end);
-        let imins = extracted_meas[0][1].concat(" " + "(" + interval_mins + "mins)");
-        extracted_meas[0][1] = imins;
-        return extracted_meas;
-    }
+  get lora_appkey() {
+    return this.do_cmd('comms_config app-key');
+  }
 
-    async get_lora_deveui() {
-        let dev_eui = await this.do_cmd("comms_config dev-eui");
-        return dev_eui;
-    }
+  set lora_appkey(appkey) {
+    this.enqueue_and_process(`comms_config app-key ${appkey}`);
+  }
 
-    async get_lora_appkey() {
-        let appkey = await this.do_cmd("comms_config app-key")
-        return appkey;
-    }
+  get lora_region() {
+    return this.do_cmd('comms_config region');
+  }
 
-    async get_lora_region() {
-        let region = await this.do_cmd("comms_config region")
-        return region;
-    }
+  set lora_region(region) {
+    this.enqueue_and_process(`comms_config region ${region}`);
+  }
 
-    async get_lora_conn() {
-        let conn = await this.do_cmd("comms_conn")
-        return conn;
-    }
+  get interval_mins() {
+    return this.do_cmd('interval_mins');
+  }
 
-    async get_wifi_config() {
-        /*
+  set interval_mins(value) {
+    this.enqueue_and_process(`interval_mins ${value}`);
+  }
+
+  get comms_conn() {
+    return this.do_cmd('comms_conn');
+  }
+
+  /*
+  async get_wifi_config() {
+
             comms_pr_cfg
 
             WIFI SSID: Wifi Example SSID
@@ -172,30 +189,13 @@ export class binding_t {
             MQTT PWD: mqttpwd
             MQTT CA: server
             MQTT PORT: 8883
-        */
-    }
 
-    async get_value(meas)
-    {
-        let cmd = "get_meas " + meas
-        let res = await this.do_cmd(cmd);
-        return res;
-    }
+  }
+  */
 
-    async set_appkey(appkey)
-    {
-        await this.write("comms_config app-key " + appkey);
-    }
-
-    async set_deveui(deveui)
-    {
-        await this.write("comms_config dev-eui " + deveui);
-    }
-
-    async set_region(region)
-    {
-        await this.write("comms_config region " + region);
-    }
+  async get_value(meas) {
+    const cmd = `get_meas ${meas}`;
+    const res = await this.do_cmd(cmd);
+    return res;
+  }
 }
-
-

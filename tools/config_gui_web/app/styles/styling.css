@@ -17,7 +17,12 @@ button {
 button:hover {
   background-color: var(--osmdark);
 }
+
+
+
+
 /* Navigation Bar */
+
 .topnav {
   background-color: var(--osmlight);
   overflow: hidden;
@@ -61,7 +66,7 @@ button:hover {
 
 
 
-/* Home Page Div */
+/* Home Page */
 
 .home-page-div {
   display: flex;
@@ -72,11 +77,36 @@ button:hover {
   margin          : 2em 0.5em;
 }
 
-.home-edit-uplink-field p {
+.home-edit-uplink-field input {
   border-style: solid;
-  color: #0f8353;
+  color: var(--black);
   border-color: var(--osmdark);
 }
+
+.home-edit-uplink-field div {
+  display: flex;
+}
+
+.home-serial-firmware-config-div {
+  text-align: left;
+  position: fixed;
+  margin: 0em 0.5em;
+  bottom: 0;
+  left: 0;
+}
+
+.home-load-save-config-buttons {
+  text-align: center;
+  margin: 0.8em;
+  position: fixed;
+  bottom: 0;
+  right: 0;
+}
+
+.home-page-fieldset {
+  border: none;
+}
+
 
 /* Measurements Table */
 
@@ -96,8 +126,6 @@ button:hover {
   border     : 1px solid var(--osmdark);
   text-align : center;
 }
-
-
 
 
 /* LoRaWAN Configuration Table */
@@ -156,6 +184,7 @@ button:hover {
 
 
 
+
 /* Modbus Config Table */
 
 .modbus-config-table table {
@@ -174,6 +203,8 @@ button:hover {
   border     : 1px solid var(--osmdark);
   text-align : center;
 }
+
+
 
 /* Modbus Current Settings */
 
@@ -195,26 +226,8 @@ button:hover {
 }
 
 
-/* Options Buttons Styling */
-
-.home-option-buttons {
-  text-align: center;
-  margin: 0.8em;
-  position: fixed;
-  bottom: 0;
-  right: 0;
-}
 
 
-/* failed messages */
-
-.home-config-div {
-  text-align: left;
-  position: fixed;
-  margin: 0em 0.5em;
-  bottom: 0;
-  left: 0;
-}
 
 /* help for terminal */
 .console-help {

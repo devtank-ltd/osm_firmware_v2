@@ -1,7 +1,5 @@
-export class navbar_t
-{
-  constructor(id)
-  {
+export class navbar_t {
+  constructor(id) {
     this.id = id;
     this.navbar_html = `
     <div class="topnav" id="topnav">
@@ -13,16 +11,12 @@ export class navbar_t
     `;
   }
 
-  insert_navbar()
-  {
+  insert_navbar() {
     document.getElementById('navbar').innerHTML = this.navbar_html;
   }
 
-  change_active_tab()
-  {
+  change_active_tab() {
     this.insert_navbar();
-    document.getElementById(this.id).classList.add("active");
+    document.getElementById(this.id).classList.add('active');
   }
-
 }
-

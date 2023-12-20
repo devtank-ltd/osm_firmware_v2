@@ -1,4 +1,4 @@
 __pycache__/
 build/
 *.pyc
-
+tools/config_gui_web/app/modules/node_modules
