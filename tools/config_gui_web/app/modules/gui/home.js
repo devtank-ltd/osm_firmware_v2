@@ -1,6 +1,7 @@
 import { navbar_t } from './navbar.js';
 import { measurements_table_t } from './measurements_table.js';
 import { lora_config_t } from './lora_config.js';
+import { load_configuration_t } from './load_configuration.js';
 
 export class home_tab_t {
   constructor(dev) {
@@ -70,6 +71,9 @@ export class home_tab_t {
 
     await this.load_serial_number();
     await this.load_fw_ver();
+
+    const load_config = new load_configuration_t(this.dev);
+    await load_config.add_listener();
   }
 
   async load_serial_number() {
@@ -83,7 +87,7 @@ export class home_tab_t {
     this.fw = document.getElementById('home-firmware-version');
     this.fw_ver = await this.dev.firmware_version;
     this.split_fw = this.fw_ver.split('-');
-    const [, num, hash, , , , , , ,] = this.split_fw;
+    const [, num, hash] = this.split_fw;
     this.split_fw_join = `Firmware Version: ${num} - ${hash}`;
     this.fw.textContent = await this.split_fw_join;
   }
