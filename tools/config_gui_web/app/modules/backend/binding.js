@@ -173,6 +173,13 @@ export class binding_t {
     return extracted_meas;
   }
 
+  async extract_interval_mins() {
+    const imins = await this.do_cmd('interval_mins');
+    const regex = /\d+/g;
+    const match = imins.match(regex)[0];
+    return match;
+  }
+
   get lora_deveui() {
     return this.do_cmd('comms_config dev-eui');
   }
@@ -198,7 +205,7 @@ export class binding_t {
   }
 
   get interval_mins() {
-    return this.do_cmd('interval_mins');
+    return this.extract_interval_mins();
   }
 
   set interval_mins(value) {

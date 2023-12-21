@@ -13,6 +13,7 @@ export class measurements_table_t {
     tbl.id = 'meas-table';
     const tBody = tbl.createTBody();
     tbl.createTHead();
+    this.interval_mins = await this.dev.interval_mins;
 
     measurements.forEach((cell, i) => {
       if (i === 0) {
@@ -25,10 +26,24 @@ export class measurements_table_t {
         const r = tBody.insertRow();
         cell.forEach((j, index) => {
           const entry = r.insertCell();
-          entry.textContent = j;
+          if (index === 0) {
+            entry.textContent = j;
+          }
           if (index === 1 || index === 2) {
             /* If entry is interval or sample count, user can edit the cell */
-            entry.contentEditable = true;
+            let val;
+            const num_input = document.createElement('input');
+            num_input.type = 'number';
+            num_input.className = 'meas-table-inputs';
+            num_input.min = 0;
+            if (index === 1) {
+              val = Number(this.interval_mins) * Number(j);
+            } else {
+              val = j;
+            }
+
+            entry.appendChild(num_input);
+            num_input.value = val;
             entry.addEventListener('focusout', this.update_measurement_config);
           }
           if (index === 3) {
@@ -48,20 +63,46 @@ export class measurements_table_t {
     uplink_submit.onclick = this.change_uplink_time;
   }
 
-  async update_measurement_config(e) {
-    const cell_index = e.srcElement.cellIndex;
-    const row_index = e.target.parentNode.rowIndex;
-    const table = e.target.offsetParent;
+  async get_minimum_interval(val) {
+    const interval_mins = await this.dev.interval_mins;
+    let m;
+    const multiple = 5;
+    // let imins = await self.dev.interval_mins;
+    if (Number(val) < interval_mins) {
+      m = interval_mins;
+    } else {
+      m = val;
+    }
+    if (m % 5 !== 0) {
+      m = await this.round_to_nearest(m, multiple);
+    }
+    let int_mins_converted = m / interval_mins;
+    int_mins_converted = Math.round(int_mins_converted);
+    return int_mins_converted;
+  }
 
+  async round_to_nearest(val, multiple) {
+    this.val = val;
+    return Math.round(this.val / multiple) * multiple;
+  }
+
+  async update_measurement_config(e) {
+    const interval_mins = await this.dev.interval_mins;
+    const cell_index = e.srcElement.parentNode.cellIndex;
+    const row_index = e.target.parentNode.parentNode.rowIndex;
+    const table = e.target.offsetParent.offsetParent;
     const meas = table.rows[row_index].cells[0].innerHTML;
-    const new_val = table.rows[row_index].cells[cell_index].innerHTML;
+    const val_col = table.rows[row_index].cells[cell_index].childNodes[0];
+    const val = val_col.value;
     const type = table.rows[0].cells[cell_index].innerHTML;
 
     /* Example: interval CNT1 1 */
     if (type.includes('Interval')) {
-      this.dev.enqueue_and_process(`interval ${meas} ${new_val}`);
+      const int_mins_converted = await this.get_minimum_interval(val);
+      val_col.value = int_mins_converted * interval_mins;
+      this.dev.enqueue_and_process(`interval ${meas} ${int_mins_converted}`);
     } else {
-      this.dev.enqueue_and_process(`samplecount ${meas} ${new_val}`);
+      this.dev.enqueue_and_process(`samplecount ${meas} ${val}`);
     }
   }
 
@@ -83,13 +124,20 @@ export class measurements_table_t {
   async change_uplink_time() {
     const table = document.getElementById('meas-table');
     const imins_header = table.rows[0].cells[1];
+    const interval_mins = await this.dev.interval_mins;
 
     const uplink_input = document.getElementById('home-uplink-input');
-    const mins = uplink_input.value;
+    const mins = await this.round_to_nearest(uplink_input.value, 5);
     if (mins) {
       this.dev.interval_mins = mins;
       imins_header.innerHTML = `Interval (${mins} mins)`;
       uplink_input.value = '';
+    }
+    for (let i = 1; i < table.rows.length; i += 1) {
+      console.log(table.rows[i].cells[1].value);
+      const interval_val = table.rows[i].cells[1].childNodes[0].value;
+      const interval_cell = table.rows[i].cells[1].childNodes[0];
+      interval_cell.value = (interval_val * mins) / interval_mins;
     }
   }
 }

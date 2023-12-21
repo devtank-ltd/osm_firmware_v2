@@ -127,6 +127,12 @@ button:hover {
   text-align : center;
 }
 
+.meas-table-inputs {
+  border: none;
+  text-align: center;
+  width: 50%;
+}
+
 
 /* LoRaWAN Configuration Table */
 
