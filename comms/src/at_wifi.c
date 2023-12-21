@@ -66,6 +66,25 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_STILL_OFF_TIMEOUT          10000
 
 
+#define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID                "    \"WIFI SSID\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD                 "    \"WIFI PWD\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR                "    \"MQTT ADDR\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_USER                "    \"MQTT USER\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA                  "    \"MQTT CA\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
+
+#define AT_WIFI_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT WIFI\",\n\r  \"config\": {"
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN      ,_wifi_ssid
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN       , _wifi_pwd
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_WIFI_MQTT_ADDR_MAX_LEN , _mqtt_addr
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_WIFI_MQTT_USER_MAX_LEN , _mqtt_user
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PWD     , AT_WIFI_MQTT_PWD_MAX_LEN  , _mqtt_pwd
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_CA(_mqtt_ca)            AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA      , AT_WIFI_MQTT_CA_MAX_LEN   , _mqtt_ca
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_PORT(_mqtt_port)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT    , _mqtt_port
+#define AT_WIFI_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
+
+
 enum at_wifi_states_t
 {
     AT_WIFI_STATE_OFF,
@@ -1337,36 +1356,25 @@ static command_response_t _at_wifi_config_cb(char * args)
 
 static command_response_t _at_wifi_print_config_cb(char* args)
 {
-    const unsigned max_padding = 15;
-    const char str_fmt[] = "%*s: %.*s";
-    log_out(str_fmt,
-        max_padding, "WIFI SSID",
-        AT_WIFI_MAX_SSID_LEN, _at_wifi_ctx.mem->wifi.ssid
-        );
-    log_out(str_fmt,
-        max_padding, "WIFI PWD",
-        AT_WIFI_MAX_PWD_LEN, _at_wifi_ctx.mem->wifi.pwd
-        );
-    log_out(str_fmt,
-        max_padding, "MQTT ADDR",
-        AT_WIFI_MQTT_ADDR_MAX_LEN, _at_wifi_ctx.mem->mqtt.addr
-        );
-    log_out(str_fmt,
-        max_padding, "MQTT USER",
-        AT_WIFI_MQTT_USER_MAX_LEN, _at_wifi_ctx.mem->mqtt.user
-        );
-    log_out(str_fmt,
-        max_padding, "MQTT PWD",
-        AT_WIFI_MQTT_PWD_MAX_LEN, _at_wifi_ctx.mem->mqtt.pwd
-        );
-    log_out(str_fmt,
-        max_padding, "MQTT CA",
-        AT_WIFI_MQTT_CA_MAX_LEN, _at_wifi_ctx.mem->mqtt.ca
-        );
-    log_out("%*s: %"PRIu16,
-        max_padding, "MQTT PORT",
-        _at_wifi_ctx.mem->mqtt.port
-        );
+    const uint32_t loop_timeout = 10;
+    log_out(AT_WIFI_PRINT_CFG_JSON_HEADER);
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_at_wifi_ctx.mem->wifi.ssid));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_at_wifi_ctx.mem->wifi.pwd));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_MQTT_ADDR(_at_wifi_ctx.mem->mqtt.addr));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_MQTT_USER(_at_wifi_ctx.mem->mqtt.user));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_MQTT_PWD(_at_wifi_ctx.mem->mqtt.pwd));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_MQTT_CA(_at_wifi_ctx.mem->mqtt.ca));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_MQTT_PORT(_at_wifi_ctx.mem->mqtt.port));
+    log_out_drain(loop_timeout);
+    log_out(AT_WIFI_PRINT_CFG_JSON_TAIL);
+    log_out_drain(loop_timeout);
     return COMMAND_RESP_OK;
 }
 

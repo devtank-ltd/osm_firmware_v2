@@ -200,3 +200,15 @@ uint16_t modbus_crc(uint8_t * buf, unsigned length)
     }
     return crc;
 }
+
+
+static bool _log_out_drain_iteration(void* userdata)
+{
+    return !uart_ring_out_busy(CMD_UART);
+}
+
+
+bool log_out_drain(uint32_t timeout)
+{
+    return main_loop_iterate_for(timeout, _log_out_drain_iteration, NULL);
+}

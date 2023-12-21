@@ -7,6 +7,15 @@
 #include "log.h"
 #include "base_types.h"
 #include "persist_config.h"
+#include "common.h"
+
+#define LW_PRINT_CFG_JSON_FMT_DEV_EUI                   "    \"DEV EUI\": \"%.*s\","
+#define LW_PRINT_CFG_JSON_FMT_APP_KEY                   "    \"APP KEY\": \"%.*s\""
+
+#define LW_PRINT_CFG_JSON_HEADER                        "{\n\r  \"type\": \"LW PENGUIN\",\n\r  \"config\": {"
+#define LW_PRINT_CFG_JSON_DEV_EUI(_dev_eui)             LW_PRINT_CFG_JSON_FMT_DEV_EUI, LW_DEV_EUI_LEN, _dev_eui
+#define LW_PRINT_CFG_JSON_APP_KEY(_app_key)             LW_PRINT_CFG_JSON_FMT_APP_KEY, LW_APP_KEY_LEN, _app_key
+#define LW_PRINT_CFG_JSON_TAIL                          "  }\n\r}"
 
 
 lw_config_t* lw_get_config(void)
@@ -329,4 +338,19 @@ void lw_config_init(comms_config_t* comms_config)
 {
     comms_config->type = COMMS_TYPE_LW;
     _lw_config_init2((lw_config_t*)comms_config);
+}
+
+
+void lw_print_config(void)
+{
+    const uint32_t loop_timeout = 10;
+    log_out(LW_PRINT_CFG_JSON_HEADER);
+    lw_config_t* config = lw_get_config();
+    log_out_drain(loop_timeout);
+    log_out(LW_PRINT_CFG_JSON_DEV_EUI(config->dev_eui));
+    log_out_drain(loop_timeout);
+    log_out(LW_PRINT_CFG_JSON_APP_KEY(config->app_key));
+    log_out_drain(loop_timeout);
+    log_out(LW_PRINT_CFG_JSON_TAIL);
+    log_out_drain(loop_timeout);
 }

@@ -1125,12 +1125,20 @@ bool rak4270_get_id(char* str, uint8_t len)
 }
 
 
+static command_response_t _rak4270_print_config_cb(char* str)
+{
+    lw_print_config();
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
         { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
         { "comms_conn",   "Get if connected or not",     _rak4270_conn                  , false , NULL },
+        { "comms_pr_cfg", "Print comms config",          _rak4270_print_config_cb      , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

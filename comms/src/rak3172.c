@@ -1061,6 +1061,13 @@ static command_response_t _rak3172_trx_cb(char* str)
 }
 
 
+static command_response_t _rak3172_print_config_cb(char* str)
+{
+    lw_print_config();
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -1077,6 +1084,7 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
         { "comms_trssi",  "Start RF RSSI tone test",     _rak3172_trssi_cb             , false , NULL },
         { "comms_ttx",    "Start RF TX test",            _rak3172_ttx_cb               , false , NULL },
         { "comms_trx",    "Start RF RX test",            _rak3172_trx_cb               , false , NULL },
+        { "comms_pr_cfg", "Print comms config",          _rak3172_print_config_cb      , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
