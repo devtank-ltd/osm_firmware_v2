@@ -11,15 +11,16 @@ export class load_configuration_t {
 
   async load_gui_with_config(content) {
     this.content = JSON.parse(content);
-    console.log(this.content);
     this.serial_num = this.content.serial_num;
     this.fw_ver = this.content.version;
     this.modbus_setup = this.content.modbus_bus.setup;
     this.modbus_devices = this.content.modbus_bus.modbus_devices;
-    console.log(this.serial_num);
-    console.log(this.fw_ver);
-    console.log(this.modbus_setup);
-    console.log(this.modbus_devices);
+    this.measurements = this.content.measurements;
+    this.ios = this.content.ios;
+    this.interval_mins = this.content.interval_mins;
+    this.app_key = this.content.app_key;
+    this.dev_eui = this.content.dev_eui;
+    this.cc_midpoints = this.content.cc_midpoints;
   }
 
   async open_file_dialog() {
