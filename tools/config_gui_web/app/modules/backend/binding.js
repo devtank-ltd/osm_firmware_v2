@@ -9,28 +9,28 @@ export async function generate_random(len) {
   return key;
 }
 
-export class binding_t {
+class low_level_socket_t {
+  constructor(port) {
+    this.port = new WebSocket(port);
+    this.port.onopen = (e) => {
+      console.log(`Socket opened on port ${port}`);
+    };
+    this.port.onmessage = (e) => { this.read(e.data); };
+  }
+
+  async write(msg) {
+    this.port.send(msg);
+  }
+
+  async read(data) {
+    this.data = data;
+    return this.data;
+  }
+}
+
+class low_level_serial_t {
   constructor(port) {
     this.port = port;
-    this.queue = [];
-    this.call_queue();
-  }
-
-  async enqueue_and_process(msg) {
-    this.queue.push(msg);
-  }
-
-  async process_queue() {
-    while (this.queue.length > 0) {
-      const msg = this.queue.shift();
-      await this.do_cmd(msg);
-      console.log(`Message from queue "${msg}" sent`);
-    }
-  }
-
-  async call_queue() {
-    this.process_queue();
-    setTimeout(() => { this.call_queue(); }, 1000);
   }
 
   async write(msg) {
@@ -40,7 +40,7 @@ export class binding_t {
     writer.releaseLock();
   }
 
-  async read_output() {
+  async read() {
     const decoder = new TextDecoder();
     let msgs = '';
     const start_time = Date.now();
@@ -66,6 +66,38 @@ export class binding_t {
     }
     console.log(`Got ${msgs}`);
     return msgs;
+  }
+}
+
+export class binding_t {
+  constructor(port, type) {
+    this.port = port;
+    this.type = type;
+    if (this.type === 'Serial') {
+      this.ll = new low_level_serial_t(this.port);
+    } else {
+      this.ll = new low_level_socket_t(this.port);
+    }
+
+    this.queue = [];
+    this.call_queue();
+  }
+
+  async enqueue_and_process(msg) {
+    this.queue.push(msg);
+  }
+
+  async process_queue() {
+    while (this.queue.length > 0) {
+      const msg = this.queue.shift();
+      await this.do_cmd(msg);
+      console.log(`Message from queue "${msg}" sent`);
+    }
+  }
+
+  async call_queue() {
+    this.process_queue();
+    setTimeout(() => { this.call_queue(); }, 1000);
   }
 
   async parse_msg(msg) {
@@ -98,15 +130,15 @@ export class binding_t {
   }
 
   async do_cmd(cmd) {
-    await this.write(cmd);
-    const output = await this.read_output();
+    await this.ll.write(cmd);
+    const output = await this.ll.read();
     const parsed = await this.parse_msg(output);
     return parsed;
   }
 
   async get_measurements() {
-    await this.write('measurements');
-    const meas = await this.read_output();
+    await this.ll.write('measurements');
+    const meas = await this.ll.read();
     const measurements = [];
     const meas_split = meas.split('\n\r');
     let start; let end; let regex; let interval; let interval_mins;

@@ -8,6 +8,7 @@ class config_gui_t {
 
   async open_serial() {
     const filter = { usbVendorId: '0x10c4' };
+    const type = 'Serial';
     let port = await navigator.serial.requestPort({ filters: [filter] });
     port.getInfo();
 
@@ -24,7 +25,7 @@ class config_gui_t {
       console.log('USB device disconnect detected.');
     });
 
-    this.dev = new binding_t(port);
+    this.dev = new binding_t(port, type);
     this.home = new home_tab_t(this.dev);
     await this.home.insert_homepage();
     const disconnect = document.getElementById('home-disconnect');
