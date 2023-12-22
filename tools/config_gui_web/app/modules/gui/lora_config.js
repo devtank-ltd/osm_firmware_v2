@@ -1,4 +1,5 @@
 import { generate_random } from '../backend/binding.js';
+import { disable_interaction } from './disable.js';
 
 export class lora_config_t {
   constructor(dev) {
@@ -94,6 +95,7 @@ export class lora_config_t {
   }
 
   async write_config() {
+    disable_interaction(true);
     const deveui = document.getElementById('lora-dev-eui-value').innerHTML;
     const appkey = document.getElementById('lora-app-key-value').innerHTML;
     const reg = document.getElementById('lora-config-region-dropdown').value.split(' ')[0];
@@ -101,5 +103,6 @@ export class lora_config_t {
     this.dev.lora_deveui = deveui;
     this.dev.lora_appkey = appkey;
     this.dev.lora_region = reg;
+    disable_interaction(false);
   }
 }

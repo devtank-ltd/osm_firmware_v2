@@ -1,7 +1,9 @@
+import { disable_interaction } from './disable.js';
+
 export class measurements_table_t {
   constructor(dev) {
     this.dev = dev;
-    this.update_measurement_config = this.update_measurement_config.bind(this);
+    this.set_interval_or_samplec = this.set_interval_or_samplec.bind(this);
     this.insert_last_value = this.insert_last_value.bind(this);
     this.change_uplink_time = this.change_uplink_time.bind(this);
   }
@@ -44,7 +46,7 @@ export class measurements_table_t {
 
             entry.appendChild(num_input);
             num_input.value = val;
-            entry.addEventListener('focusout', this.update_measurement_config);
+            entry.addEventListener('focusout', this.set_interval_or_samplec);
           }
           if (index === 3) {
             const chk = document.createElement('input');
@@ -67,7 +69,6 @@ export class measurements_table_t {
     const interval_mins = await this.dev.interval_mins;
     let m;
     const multiple = 5;
-    // let imins = await self.dev.interval_mins;
     if (Number(val) < interval_mins) {
       m = interval_mins;
     } else {
@@ -86,7 +87,7 @@ export class measurements_table_t {
     return Math.round(this.val / multiple) * multiple;
   }
 
-  async update_measurement_config(e) {
+  async set_interval_or_samplec(e) {
     const interval_mins = await this.dev.interval_mins;
     const cell_index = e.srcElement.parentNode.cellIndex;
     const row_index = e.target.parentNode.parentNode.rowIndex;
@@ -110,7 +111,7 @@ export class measurements_table_t {
     const last_val_index = 3;
     const checkbox = e.target;
     const table = checkbox.offsetParent.offsetParent;
-    document.getElementById('home-page-fieldset').disabled = true;
+    disable_interaction(true);
     const row_index = e.srcElement.parentElement.parentNode.rowIndex;
     const meas = table.rows[row_index].cells[0].innerHTML;
     let val = await this.dev.get_value(meas);
@@ -118,26 +119,28 @@ export class measurements_table_t {
     const last_val_col = table.rows[row_index].cells[last_val_index];
     last_val_col.textContent = val;
     checkbox.checked = false;
-    document.getElementById('home-page-fieldset').disabled = false;
+    disable_interaction(false);
   }
 
   async change_uplink_time() {
+    disable_interaction(true);
     const table = document.getElementById('meas-table');
     const imins_header = table.rows[0].cells[1];
     const interval_mins = await this.dev.interval_mins;
+    const multiple = 5;
 
     const uplink_input = document.getElementById('home-uplink-input');
-    const mins = await this.round_to_nearest(uplink_input.value, 5);
+    const mins = await this.round_to_nearest(uplink_input.value, multiple);
     if (mins) {
       this.dev.interval_mins = mins;
       imins_header.innerHTML = `Interval (${mins} mins)`;
       uplink_input.value = '';
     }
     for (let i = 1; i < table.rows.length; i += 1) {
-      console.log(table.rows[i].cells[1].value);
       const interval_val = table.rows[i].cells[1].childNodes[0].value;
       const interval_cell = table.rows[i].cells[1].childNodes[0];
       interval_cell.value = (interval_val * mins) / interval_mins;
     }
+    disable_interaction(false);
   }
 }
