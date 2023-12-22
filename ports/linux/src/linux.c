@@ -22,6 +22,8 @@
 #include <linux/limits.h>
 #include <spawn.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+
 
 #include "platform.h"
 #include "linux.h"
@@ -34,7 +36,6 @@
 #include "pinmap.h"
 
 #define LINUX_PTY_BUF_SIZ       64
-#define LINUX_PTY_NAME_SIZE     16
 #define LINUX_LINE_BUF_SIZ      32
 #define LINUX_MAX_NFDS          32
 
@@ -47,6 +48,10 @@
 
 #define LINUX_FD_SAVE_FMT "%s %"PRIi32" %"PRIi32" %u\n"
 
+#define LINUX_DEFAULT_SOCKET_PORT       10240
+
+
+static int _linux_socket_port = LINUX_DEFAULT_SOCKET_PORT;
 bool linux_has_reset = false;
 
 
@@ -55,10 +60,12 @@ typedef enum
     LINUX_FD_TYPE_PTY,
     LINUX_FD_TYPE_TIMER,
     LINUX_FD_TYPE_EVENT,
+    LINUX_FD_TYPE_SOCKET_SERVER,
+    LINUX_FD_TYPE_SOCKET_CLIENT,
 } linux_fd_type_t;
 
 
-typedef struct
+struct fd_t
 {
     linux_fd_type_t type;
     union
@@ -77,10 +84,21 @@ typedef struct
         {
             int32_t fd;
         } event;
+        struct
+        {
+            int32_t fd;
+            unsigned uart;
+            struct fd_t* client;
+        } socket_server;
+        struct
+        {
+            int32_t fd;
+            struct fd_t* server;
+        } socket_client;
     };
     char            name[LINUX_PTY_NAME_SIZE];
     void            (*cb)();
-} fd_t;
+};
 
 
 typedef struct
@@ -110,7 +128,7 @@ static bool _ios_enabled[IOS_COUNT] = {0};
 
 
 
-static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
+static struct fd_t      fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .name={"UART_DEBUG"},
                                                     .pty = {.uart = CMD_UART},
                                                     .cb=linux_uart_proc
@@ -243,14 +261,14 @@ int64_t linux_get_current_us(void)
 }
 
 
-static fd_t* _linux_get_fd_handler(int32_t fd)
+static struct fd_t* _linux_get_fd_handler(int32_t fd)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         if (!fd_list[i].name[0])
             return NULL;
 
-        fd_t* fd_h = &fd_list[i];
+        struct fd_t* fd_h = &fd_list[i];
         switch (fd_h->type)
         {
             case LINUX_FD_TYPE_PTY:
@@ -263,6 +281,14 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
                 break;
             case LINUX_FD_TYPE_EVENT:
                 if (fd_h->event.fd == fd)
+                    return fd_h;
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                if (fd_h->socket_server.fd == fd)
+                    return fd_h;
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                if (fd_h->socket_client.fd == fd)
                     return fd_h;
                 break;
             default:
@@ -358,7 +384,7 @@ static void _linux_save_fd_file(void)
         linux_error("Could not make a OSM reboot file.");
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd = &fd_list[i];
+        struct fd_t* fd = &fd_list[i];
         if (fd->name[0] && isascii(fd->name[0]))
         {
             switch (fd->type)
@@ -414,7 +440,7 @@ static void _linux_load_fd_file(void)
         int next_slot = -1;
         for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
         {
-            fd_t* fd = &fd_list[i];
+            struct fd_t* fd = &fd_list[i];
             if (!fd->name[0] || !isascii(fd->name[0]))
             {
                 if (next_slot == -1)
@@ -435,7 +461,7 @@ static void _linux_load_fd_file(void)
         {
             if (next_slot != -1)
             {
-                fd_t* fd = &fd_list[next_slot];
+                struct fd_t* fd = &fd_list[next_slot];
                 memcpy(fd->name, name, name_len+1);
                 fd->type = LINUX_FD_TYPE_PTY;
                 fd->cb = linux_uart_proc;
@@ -488,7 +514,7 @@ bool linux_kick_adc_gen(void)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd = &fd_list[i];
+        struct fd_t* fd = &fd_list[i];
         switch(fd->type)
         {
             case LINUX_FD_TYPE_EVENT:
@@ -515,13 +541,39 @@ static void _linux_setup_event(int* fd)
 }
 
 
+static void _linux_setup_socket_server(int* fd)
+{
+    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_fd < 0)
+    {
+        linux_error("Error opening socket");
+    }
+    struct sockaddr_in addr;
+    addr.sin_port = htons(_linux_socket_port);
+    addr.sin_addr.s_addr = 0;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_family = AF_INET;
+
+    if(bind(socket_fd, (struct sockaddr *)&addr,sizeof(struct sockaddr_in) ) < 0)
+    {
+        linux_error("Error binding socket");
+    }
+
+    if (listen(socket_fd, 1) < 0)
+    {
+        linux_error("Error listening socket");
+    }
+    *fd = socket_fd;
+}
+
+
 static void _linux_setup_fd_handlers(void)
 {
     _linux_load_fd_file();
     _linux_rm_fd_file();
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd = &fd_list[i];
+        struct fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
             break; /*End of used slots.*/
         switch(fd->type)
@@ -538,6 +590,12 @@ static void _linux_setup_fd_handlers(void)
                 if (!fd->event.fd)
                     _linux_setup_event(&fd->event.fd);
                 break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                if (!fd->socket_server.fd)
+                    _linux_setup_socket_server(&fd->socket_server.fd);
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                break;
             default:
                 linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
                 break;
@@ -550,7 +608,7 @@ static void _linux_cleanup_fd_handlers(void)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd = &fd_list[i];
+        struct fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
             continue;
         switch(fd->type)
@@ -569,6 +627,17 @@ static void _linux_cleanup_fd_handlers(void)
             case LINUX_FD_TYPE_EVENT:
                 if (close(fd->event.fd))
                     linux_error("Fail close EVENT '%s'", fd->name);
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                if (fd->socket_server.client &&
+                    close(fd->socket_server.client->socket_client.fd))
+                    linux_error("Fail close SOCKET client '%s'", fd->name);
+                if (close(fd->socket_server.fd))
+                    linux_error("Fail close SOCKET server '%s'", fd->name);
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                if (close(fd->socket_client.fd))
+                    linux_error("Fail close SOCKET client '%s'", fd->name);
                 break;
             default:
                 linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
@@ -633,10 +702,13 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd_handler = &fd_list[i];
+        struct fd_t* fd_handler = &fd_list[i];
         if (!fd_handler->name[0] || !isascii(fd_handler->name[0]))
-            return false;
-        if (fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart)
+        {
+            continue;
+        }
+        if ((fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart) ||
+            (fd_handler->type == LINUX_FD_TYPE_SOCKET_CLIENT && fd_handler->socket_client.server->socket_server.uart == uart))
         {
             if (uart != CMD_UART)
             {
@@ -662,7 +734,7 @@ static void _linux_setup_poll(void)
     nfds = 0;
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd = &fd_list[i];
+        struct fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
             return;
         switch (fd->type)
@@ -679,6 +751,14 @@ static void _linux_setup_poll(void)
                 pfds[i].fd = fd->event.fd;
                 pfds[i].events = POLLIN;
                 break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                pfds[i].fd = fd->socket_server.fd;
+                pfds[i].events = POLLIN;
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                pfds[i].fd = fd->socket_client.fd;
+                pfds[i].events = POLLIN;
+                break;
             default:
                 linux_error("Not implemented.");
                 break;
@@ -692,7 +772,7 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 {
     for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
-        fd_t* fd = &fd_list[i];
+        struct fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
         {
             if (pty_name[0] == '/') /*Is it a path to an existing TTY? */
@@ -777,7 +857,7 @@ void _linux_iterate(void)
             pfds[i].revents &= ~POLLIN;
             char c;
 
-            fd_t* fd_handler = _linux_get_fd_handler(pfds[i].fd);
+            struct fd_t* fd_handler = _linux_get_fd_handler(pfds[i].fd);
             if (!fd_handler)
                 linux_error("PTY is NULL pointer");
             int r;
@@ -818,6 +898,74 @@ void _linux_iterate(void)
                         fd_handler->cb(fd_handler->event.fd);
                     break;
                 }
+                case LINUX_FD_TYPE_SOCKET_SERVER:
+                {
+                    if (fd_handler->socket_server.client)
+                    {
+                        linux_error("Another socket connection attempted?");
+                    }
+                    struct sockaddr_in client_address;
+                    socklen_t client_len = sizeof(client_address);
+                    int client_sockfd = accept(fd_handler->socket_server.fd, (struct sockaddr*)&client_address, &client_len);
+                    for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
+                    {
+                        struct fd_t* tfdh = &fd_list[i];
+                        if (tfdh == fd_handler)
+                            continue;
+                        if (!tfdh->name[0])
+                        {
+                            strncpy(tfdh->name, fd_handler->name, LINUX_PTY_NAME_SIZE-1);
+                            unsigned rem_len = LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, LINUX_PTY_NAME_SIZE-1) - 1;
+                            strncat(tfdh->name, "_CLIENT", rem_len);
+                            tfdh->name[LINUX_PTY_NAME_SIZE] = 0;
+                            tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
+                            tfdh->socket_client.fd = client_sockfd;
+                            tfdh->socket_client.server = fd_handler;
+                            tfdh->cb = linux_uart_proc;
+                            fd_handler->socket_server.client = tfdh;
+                            _linux_setup_poll();
+                            linux_port_debug("SOCKET CLIENT CONNECTED");
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case LINUX_FD_TYPE_SOCKET_CLIENT:
+                {
+                    int total = 0;
+                    int r = 1;
+                    int fd = fd_handler->socket_client.fd;
+                    while (r)
+                    {
+                        char c;
+                        r = read(fd, &c, 1);
+                        if (r == 1)
+                        {
+                            int uart = fd_handler->socket_server.uart;
+                            if (uart != CMD_UART)
+                            {
+                                if (isgraph(c))
+                                    linux_port_debug("%s(%u) << '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
+                                else
+                                    linux_port_debug("%s(%u) << [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
+                            }
+                            if (fd_handler->cb)
+                            {
+                                fd_handler->cb(uart, &c, 1);
+                            }
+                        }
+                        total += r;
+                    }
+                    if (total == 0)
+                    {
+                        close(fd);
+                        fd_handler->socket_client.server->socket_server.client = NULL;
+                        memset(fd_handler, 0, sizeof(struct fd_t));
+                        _linux_setup_poll();
+                        linux_port_debug("DISCONNECTED CLIENT");
+                    }
+                    break;
+                }
                 default:
                     break;
             }
@@ -852,6 +1000,31 @@ void platform_init(void)
     {
         _linux_in_debug = true;
         linux_port_debug("Enabled Linux Debug");
+    }
+
+    char* port = getenv("USE_PORT");
+    if (port)
+    {
+        int l_port = strtol(port, NULL, 10);
+        if (l_port < 1000)
+        {
+            linux_port_debug("Bad port, using default %d", _linux_socket_port);
+        }
+        else
+        {
+            _linux_socket_port = l_port;
+        }
+        for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
+        {
+            struct fd_t* fd = &fd_list[i];
+            if (fd->type == LINUX_FD_TYPE_PTY && strcmp(fd->name, "UART_DEBUG") == 0)
+            {
+                unsigned uart = fd->pty.uart;
+                fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
+                fd->socket_server.uart = uart;
+                break;
+            }
+        }
     }
 
     fprintf(stdout, "-------------\n");
