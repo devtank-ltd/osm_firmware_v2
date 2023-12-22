@@ -22,6 +22,8 @@
 #include <linux/limits.h>
 #include <spawn.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+
 
 #include "platform.h"
 #include "linux.h"
@@ -34,7 +36,6 @@
 #include "pinmap.h"
 
 #define LINUX_PTY_BUF_SIZ       64
-#define LINUX_PTY_NAME_SIZE     16
 #define LINUX_LINE_BUF_SIZ      32
 #define LINUX_MAX_NFDS          32
 
@@ -47,6 +48,10 @@
 
 #define LINUX_FD_SAVE_FMT "%s %"PRIi32" %"PRIi32" %u\n"
 
+#define LINUX_DEFAULT_SOCKET_PORT       10240
+
+
+static int _linux_socket_port = LINUX_DEFAULT_SOCKET_PORT;
 bool linux_has_reset = false;
 
 
@@ -55,10 +60,13 @@ typedef enum
     LINUX_FD_TYPE_PTY,
     LINUX_FD_TYPE_TIMER,
     LINUX_FD_TYPE_EVENT,
+    LINUX_FD_TYPE_SOCKET_SERVER,
+    LINUX_FD_TYPE_SOCKET_CLIENT,
 } linux_fd_type_t;
 
+typedef struct fd_t fd_t;
 
-typedef struct
+struct fd_t
 {
     linux_fd_type_t type;
     union
@@ -77,10 +85,21 @@ typedef struct
         {
             int32_t fd;
         } event;
+        struct
+        {
+            int32_t fd;
+            unsigned uart;
+            fd_t* client;
+        } socket_server;
+        struct
+        {
+            int32_t fd;
+            fd_t* server;
+        } socket_client;
     };
     char            name[LINUX_PTY_NAME_SIZE];
     void            (*cb)();
-} fd_t;
+};
 
 
 typedef struct
@@ -263,6 +282,14 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
                 break;
             case LINUX_FD_TYPE_EVENT:
                 if (fd_h->event.fd == fd)
+                    return fd_h;
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                if (fd_h->socket_server.fd == fd)
+                    return fd_h;
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                if (fd_h->socket_client.fd == fd)
                     return fd_h;
                 break;
             default:
@@ -515,6 +542,32 @@ static void _linux_setup_event(int* fd)
 }
 
 
+static void _linux_setup_socket_server(int* fd)
+{
+    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_fd < 0)
+    {
+        linux_error("Error opening socket");
+    }
+    struct sockaddr_in addr;
+    addr.sin_port = htons(_linux_socket_port);
+    addr.sin_addr.s_addr = 0;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_family = AF_INET;
+
+    if(bind(socket_fd, (struct sockaddr *)&addr,sizeof(struct sockaddr_in) ) < 0)
+    {
+        linux_error("Error binding socket");
+    }
+
+    if (listen(socket_fd, 1) < 0)
+    {
+        linux_error("Error listening socket");
+    }
+    *fd = socket_fd;
+}
+
+
 static void _linux_setup_fd_handlers(void)
 {
     _linux_load_fd_file();
@@ -537,6 +590,12 @@ static void _linux_setup_fd_handlers(void)
             case LINUX_FD_TYPE_EVENT:
                 if (!fd->event.fd)
                     _linux_setup_event(&fd->event.fd);
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                if (!fd->socket_server.fd)
+                    _linux_setup_socket_server(&fd->socket_server.fd);
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
                 break;
             default:
                 linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
@@ -569,6 +628,17 @@ static void _linux_cleanup_fd_handlers(void)
             case LINUX_FD_TYPE_EVENT:
                 if (close(fd->event.fd))
                     linux_error("Fail close EVENT '%s'", fd->name);
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                if (fd->socket_server.client &&
+                    close(fd->socket_server.client->socket_client.fd))
+                    linux_error("Fail close SOCKET client '%s'", fd->name);
+                if (close(fd->socket_server.fd))
+                    linux_error("Fail close SOCKET server '%s'", fd->name);
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                if (close(fd->socket_client.fd))
+                    linux_error("Fail close SOCKET client '%s'", fd->name);
                 break;
             default:
                 linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
@@ -635,8 +705,11 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
     {
         fd_t* fd_handler = &fd_list[i];
         if (!fd_handler->name[0] || !isascii(fd_handler->name[0]))
-            return false;
-        if (fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart)
+        {
+            continue;
+        }
+        if ((fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart) ||
+            (fd_handler->type == LINUX_FD_TYPE_SOCKET_CLIENT && fd_handler->socket_client.server->socket_server.uart == uart))
         {
             if (uart != CMD_UART)
             {
@@ -677,6 +750,14 @@ static void _linux_setup_poll(void)
                 break;
             case LINUX_FD_TYPE_EVENT:
                 pfds[i].fd = fd->event.fd;
+                pfds[i].events = POLLIN;
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                pfds[i].fd = fd->socket_server.fd;
+                pfds[i].events = POLLIN;
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                pfds[i].fd = fd->socket_client.fd;
                 pfds[i].events = POLLIN;
                 break;
             default:
@@ -818,6 +899,83 @@ void _linux_iterate(void)
                         fd_handler->cb(fd_handler->event.fd);
                     break;
                 }
+                case LINUX_FD_TYPE_SOCKET_SERVER:
+                {
+                    struct sockaddr_in client_address;
+                    socklen_t client_len = sizeof(client_address);
+                    int client_sockfd = accept(fd_handler->socket_server.fd, (struct sockaddr*)&client_address, &client_len);
+                    if (client_sockfd < 0)
+                    {
+                        linux_error("Client socket connection accept failed.");
+                        break;
+                    }
+                    if (fd_handler->socket_server.client)
+                    {
+                        close(client_sockfd);
+                        linux_error("Another socket connection attempted?");
+                        break;
+                    }
+                    for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
+                    {
+                        fd_t* tfdh = &fd_list[i];
+                        if (tfdh == fd_handler)
+                            continue;
+                        if (!tfdh->name[0])
+                        {
+                            strncpy(tfdh->name, fd_handler->name, LINUX_PTY_NAME_SIZE-1);
+                            unsigned rem_len = LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, LINUX_PTY_NAME_SIZE-1) - 1;
+                            strncat(tfdh->name, "_CLIENT", rem_len);
+                            tfdh->name[LINUX_PTY_NAME_SIZE] = 0;
+                            tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
+                            tfdh->socket_client.fd = client_sockfd;
+                            tfdh->socket_client.server = fd_handler;
+                            tfdh->cb = linux_uart_proc;
+                            fd_handler->socket_server.client = tfdh;
+                            _linux_setup_poll();
+                            linux_port_debug("SOCKET CLIENT CONNECTED");
+                            break;
+                        }
+                    }
+                    close(client_sockfd);
+                    linux_error("Client socket connection failed, no spare slot.");
+                    break;
+                }
+                case LINUX_FD_TYPE_SOCKET_CLIENT:
+                {
+                    int total = 0;
+                    int r = 1;
+                    int fd = fd_handler->socket_client.fd;
+                    while (r)
+                    {
+                        char c;
+                        r = read(fd, &c, 1);
+                        if (r == 1)
+                        {
+                            int uart = fd_handler->socket_server.uart;
+                            if (uart != CMD_UART)
+                            {
+                                if (isgraph(c))
+                                    linux_port_debug("%s(%u) << '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
+                                else
+                                    linux_port_debug("%s(%u) << [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
+                            }
+                            if (fd_handler->cb)
+                            {
+                                fd_handler->cb(uart, &c, 1);
+                            }
+                        }
+                        total += r;
+                    }
+                    if (total == 0)
+                    {
+                        close(fd);
+                        fd_handler->socket_client.server->socket_server.client = NULL;
+                        memset(fd_handler, 0, sizeof(fd_t));
+                        _linux_setup_poll();
+                        linux_port_debug("DISCONNECTED CLIENT");
+                    }
+                    break;
+                }
                 default:
                     break;
             }
@@ -852,6 +1010,31 @@ void platform_init(void)
     {
         _linux_in_debug = true;
         linux_port_debug("Enabled Linux Debug");
+    }
+
+    char* port = getenv("USE_PORT");
+    if (port)
+    {
+        int l_port = strtol(port, NULL, 10);
+        if (l_port < 1000)
+        {
+            linux_port_debug("Bad port, using default %d", _linux_socket_port);
+        }
+        else
+        {
+            _linux_socket_port = l_port;
+        }
+        for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
+        {
+            fd_t* fd = &fd_list[i];
+            if (fd->type == LINUX_FD_TYPE_PTY && strcmp(fd->name, "UART_DEBUG") == 0)
+            {
+                unsigned uart = fd->pty.uart;
+                fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
+                fd->socket_server.uart = uart;
+                break;
+            }
+        }
     }
 
     fprintf(stdout, "-------------\n");
