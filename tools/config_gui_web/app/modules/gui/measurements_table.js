@@ -69,7 +69,7 @@ export class measurements_table_t {
     const interval_mins = await this.dev.interval_mins;
     let m;
     const multiple = 5;
-    if (Number(val) < interval_mins) {
+    if (Number(val) < interval_mins && Number(val) > 0) {
       m = interval_mins;
     } else {
       m = val;

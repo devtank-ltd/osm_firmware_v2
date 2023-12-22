@@ -21,10 +21,10 @@ export class home_tab_t {
     await meas_table.create_measurements_table_gui();
     await meas_table.add_uplink_listener();
 
-    const comms_config = await this.dev.do_cmd('comms_pr_cfg');
+    const comms_config = await this.dev.do_cmd('j_comms_cfg');
     const json_config = JSON.parse(comms_config);
     const comms_type = await json_config.type;
-    if (comms_type === 'LW PENGUIN') {
+    if (comms_type === 'LW') {
       this.comms = new lora_comms_t(this.dev);
       const lora = new lora_config_t(this.comms);
       await lora.populate_lora_fields();
