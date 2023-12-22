@@ -12,7 +12,7 @@
 #define LW_PRINT_CFG_JSON_FMT_DEV_EUI                   "    \"DEV EUI\": \"%.*s\","
 #define LW_PRINT_CFG_JSON_FMT_APP_KEY                   "    \"APP KEY\": \"%.*s\""
 
-#define LW_PRINT_CFG_JSON_HEADER                        "{\n\r  \"type\": \"LW PENGUIN\",\n\r  \"config\": {"
+#define LW_PRINT_CFG_JSON_HEADER                        "{\n\r  \"type\": \"LW\",\n\r  \"config\": {"
 #define LW_PRINT_CFG_JSON_DEV_EUI(_dev_eui)             LW_PRINT_CFG_JSON_FMT_DEV_EUI, LW_DEV_EUI_LEN, _dev_eui
 #define LW_PRINT_CFG_JSON_APP_KEY(_app_key)             LW_PRINT_CFG_JSON_FMT_APP_KEY, LW_APP_KEY_LEN, _app_key
 #define LW_PRINT_CFG_JSON_TAIL                          "  }\n\r}"
