@@ -29,8 +29,9 @@ class low_level_socket_t {
 }
 
 class low_level_serial_t {
-  constructor(port) {
+  constructor(port, timeout_ms) {
     this.port = port;
+    this.timeout_ms = timeout_ms;
   }
 
   async write(msg) {
@@ -44,10 +45,9 @@ class low_level_serial_t {
     const decoder = new TextDecoder();
     let msgs = '';
     const start_time = Date.now();
-    const timeout_ms = 1000;
     const reader = this.port.readable.getReader();
     try {
-      while (Date.now() > start_time - timeout_ms) {
+      while (Date.now() > start_time - this.timeout_ms) {
         const { value, done } = await reader.read();
         if (done) {
           break;
@@ -73,8 +73,9 @@ export class binding_t {
   constructor(port, type) {
     this.port = port;
     this.type = type;
+    this.timeout = 1000;
     if (this.type === 'Serial') {
-      this.ll = new low_level_serial_t(this.port);
+      this.ll = new low_level_serial_t(this.port, this.timeout);
     } else {
       this.ll = new low_level_socket_t(this.port);
     }
@@ -105,28 +106,23 @@ export class binding_t {
       console.log(typeof (msg));
       return '';
     }
+    this.msgs = '';
     const spl = msg.split('\n\r');
     spl.forEach((s, i) => {
       if (s === '============{') {
-        this.start = i + 1;
+        console.log('Start found');
       } else if (s === '}============') {
-        this.end = i;
-      }
-      if (s.includes('DEBUG') || s.includes('ERROR')) {
-        this.start += 1;
+        console.log('End found');
+      } else if (s.includes('DEBUG') || s.includes('ERROR')) {
+        console.log('Ignoring debug/error msg.');
+      } else {
+        this.msgs += s;
       }
     });
     if (!spl) {
-      console.log('in here');
       return '';
     }
-    const sliced = spl.slice(this.start, this.end)[0];
-    if (sliced) {
-      const sl = sliced.split(': ');
-      const r = sl[sl.length - 1];
-      return r;
-    }
-    return '';
+    return this.msgs;
   }
 
   async do_cmd(cmd) {
@@ -152,7 +148,7 @@ export class binding_t {
         end = index;
       } else {
         try {
-          const [, interval_str,,] = m;
+          const [, interval_str] = m;
           regex = /^(\d+)x(\d+)mins$/;
           if (interval_str) {
             const match = interval_str.match(regex);
@@ -247,6 +243,16 @@ export class binding_t {
   async get_value(meas) {
     const cmd = `get_meas ${meas}`;
     const res = await this.do_cmd(cmd);
+    if (res === 'Failed to get measurement reading.') {
+      return 'n/a';
+    }
+    if (res.includes(':')) {
+      const [, value] = res.split(':');
+      if (value.includes('"')) {
+        return value.replace(/"/g, '');
+      }
+      return value;
+    }
     return res;
   }
 }
