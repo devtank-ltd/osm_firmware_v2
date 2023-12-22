@@ -120,14 +120,14 @@ static command_response_t _linux_comms_send_cb(char * args)
 }
 
 
-static command_response_t _linux_comms_config_cb(char * args)
+command_response_t linux_comms_cmd_config_cb(char * args)
 {
     linux_comms_config_setup_str(skip_space(args));
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _linux_comms_conn_cb(char* args)
+command_response_t linux_comms_cmd_conn_cb(char* args)
 {
     if (linux_comms_get_connected())
     {
@@ -141,7 +141,7 @@ static command_response_t _linux_comms_conn_cb(char* args)
 }
 
 
-static command_response_t _linux_comms_print_config_cb(char* args)
+command_response_t linux_comms_cmd_j_cfg_cb(char* args)
 {
     const uint32_t loop_timeout = 10;
     log_out(LINUX_COMMS_PRINT_CFG_JSON_HEADER);
@@ -169,9 +169,6 @@ struct cmd_link_t* linux_comms_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] =
     {
         { "comms_send"  ,  "Send linux_comms message"   , _linux_comms_send_cb          , false , NULL },
-        { "comms_config", "Set linux_comms config"      , _linux_comms_config_cb        , false , NULL },
-        { "comms_conn"  , "LoRa connected"              , _linux_comms_conn_cb          , false , NULL },
-        { "comms_pr_cfg", "Print comms config"          , _linux_comms_print_config_cb  , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"            , _linux_comms_dbg_cb           , false , NULL }
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));

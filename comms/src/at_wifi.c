@@ -1343,7 +1343,7 @@ static command_response_t _at_wifi_send_cb(char * args)
 }
 
 
-static command_response_t _at_wifi_config_cb(char * args)
+command_response_t at_wifi_cmd_config_cb(char * args)
 {
     bool ret = _at_wifi_config_setup_str2(skip_space(args));
     if (ret && _at_wifi_mem_is_valid())
@@ -1354,7 +1354,7 @@ static command_response_t _at_wifi_config_cb(char * args)
 }
 
 
-static command_response_t _at_wifi_print_config_cb(char* args)
+command_response_t at_wifi_cmd_j_cfg_cb(char* args)
 {
     const uint32_t loop_timeout = 10;
     log_out(AT_WIFI_PRINT_CFG_JSON_HEADER);
@@ -1379,7 +1379,7 @@ static command_response_t _at_wifi_print_config_cb(char* args)
 }
 
 
-static command_response_t _at_wifi_conn_cb(char* args)
+command_response_t at_wifi_cmd_conn_cb(char* args)
 {
     if (at_wifi_get_connected())
     {
@@ -1413,9 +1413,6 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] =
     {
         { "comms_send"  , "Send at_wifi message"    , _at_wifi_send_cb          , false , NULL },
-        { "comms_config", "Set at_wifi config"      , _at_wifi_config_cb        , false , NULL },
-        { "comms_pr_cfg", "Print at_wifi config"    , _at_wifi_print_config_cb  , false , NULL },
-        { "comms_conn"  , "Wifi connected"          , _at_wifi_conn_cb          , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"        , _at_wifi_dbg_cb           , false , NULL },
         { "comms_state" , "Get Comms state"         , _at_wifi_state_cb         , false , NULL },
     };

@@ -19,6 +19,7 @@ env01c_SOURCES := \
            $(OSM_DIR)/core/src/platform_common.c \
            $(OSM_DIR)/protocols/src/hexblob.c \
            $(OSM_DIR)/protocols/src/comms_behind.c \
+           $(OSM_DIR)/comms/src/common.c \
            $(OSM_DIR)/comms/src/lw.c \
            $(OSM_DIR)/comms/src/rak3172.c \
            $(OSM_DIR)/sensors/src/hpm.c \

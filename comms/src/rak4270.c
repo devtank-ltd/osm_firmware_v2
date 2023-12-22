@@ -1096,7 +1096,7 @@ void rak4270_loop_iteration(void)
 }
 
 
-static command_response_t _rak4270_conn(char* str)
+static command_response_t _rak4270_cmd_conn_cb(char* str)
 {
     if (rak4270_get_connected())
     {
@@ -1108,7 +1108,7 @@ static command_response_t _rak4270_conn(char* str)
 }
 
 
-static command_response_t _rak4270_config_setup_str(char* str)
+command_response_t rak4270_cmd_config_cb(char* str)
 {
     if (lw_config_setup_str(str))
     {
@@ -1125,7 +1125,7 @@ bool rak4270_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _rak4270_print_config_cb(char* str)
+command_response_t rak4270_cmd_j_cfg_cb(char* str)
 {
     lw_print_config();
     return COMMAND_RESP_OK;
@@ -1134,12 +1134,7 @@ static command_response_t _rak4270_print_config_cb(char* str)
 
 struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
-    {
-        { "comms_config", "Set the comms config",        _rak4270_config_setup_str      , false , NULL },
-        { "comms_conn",   "Get if connected or not",     _rak4270_conn                  , false , NULL },
-        { "comms_pr_cfg", "Print comms config",          _rak4270_print_config_cb      , false , NULL },
-    };
+    return tail;
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
 

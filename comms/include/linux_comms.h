@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "base_types.h"
+
 #ifndef comms_name
 #define comms_name          linux_comms
 #endif //comms_name
@@ -27,3 +29,7 @@ extern bool     linux_comms_get_id(char* str, uint8_t len);
 extern struct cmd_link_t* linux_comms_add_commands(struct cmd_link_t* tail);
 
 extern void     linux_comms_power_down(void);
+
+extern command_response_t linux_comms_cmd_config_cb(char * args);
+extern command_response_t linux_comms_cmd_j_cfg_cb(char* args);
+extern command_response_t linux_comms_cmd_conn_cb(char* args);
