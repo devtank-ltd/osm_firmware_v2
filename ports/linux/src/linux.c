@@ -901,13 +901,20 @@ void _linux_iterate(void)
                 }
                 case LINUX_FD_TYPE_SOCKET_SERVER:
                 {
-                    if (fd_handler->socket_server.client)
-                    {
-                        linux_error("Another socket connection attempted?");
-                    }
                     struct sockaddr_in client_address;
                     socklen_t client_len = sizeof(client_address);
                     int client_sockfd = accept(fd_handler->socket_server.fd, (struct sockaddr*)&client_address, &client_len);
+                    if (client_sockfd < 0)
+                    {
+                        linux_error("Client socket connection accpet failed.");
+                        break;
+                    }
+                    if (fd_handler->socket_server.client)
+                    {
+                        close(client_sockfd);
+                        linux_error("Another socket connection attempted?");
+                        break;
+                    }
                     for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
                     {
                         fd_t* tfdh = &fd_list[i];
@@ -929,6 +936,8 @@ void _linux_iterate(void)
                             break;
                         }
                     }
+                    close(client_sockfd);
+                    linux_error("Client socket connection failed, no spare slot.");
                     break;
                 }
                 case LINUX_FD_TYPE_SOCKET_CLIENT:
@@ -960,7 +969,9 @@ void _linux_iterate(void)
                     if (total == 0)
                     {
                         close(fd);
+                        fd_handler->socket_client.fd = 0;
                         fd_handler->socket_client.server->socket_server.client = NULL;
+                        fd_handler->socket_client.server = NULL;
                         memset(fd_handler, 0, sizeof(fd_t));
                         _linux_setup_poll();
                         linux_port_debug("DISCONNECTED CLIENT");
