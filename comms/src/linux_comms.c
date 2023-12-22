@@ -14,6 +14,14 @@
 #define COMMS_DEFAULT_MTU       256
 #define COMMS_ID_STR            "LINUX_COMMS"
 
+#define LINUX_COMMS_DEV_EUI     "LINUX-DEV"
+#define LINUX_COMMS_APP_KEY     "LINUX-APP"
+
+#define LINUX_COMMS_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"LW PENGUIN\",\n\r  \"config\": {"
+#define LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI                      "    \"DEV EUI\": \""LINUX_COMMS_DEV_EUI"\","
+#define LINUX_COMMS_PRINT_CFG_JSON_APP_KEY                      "    \"APP KEY\": \""LINUX_COMMS_APP_KEY"\""
+#define LINUX_COMMS_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
+
 
 uint16_t linux_comms_get_mtu(void)
 {
@@ -89,7 +97,7 @@ void linux_comms_config_setup_str(char * str)
 {
     if (strstr(str, "dev-eui"))
     {
-        log_out("Dev EUI: LINUX-DEV");
+        log_out("Dev EUI: "LINUX_COMMS_DEV_EUI);
     }
     else if (strstr(str, "app-key"))
     {
@@ -112,14 +120,14 @@ static command_response_t _linux_comms_send_cb(char * args)
 }
 
 
-static command_response_t _linux_comms_config_cb(char * args)
+command_response_t linux_comms_cmd_config_cb(char * args)
 {
     linux_comms_config_setup_str(skip_space(args));
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _linux_comms_conn_cb(char* args)
+command_response_t linux_comms_cmd_conn_cb(char* args)
 {
     if (linux_comms_get_connected())
     {
@@ -129,6 +137,21 @@ static command_response_t _linux_comms_conn_cb(char* args)
     {
         log_out("0 | Disconnected");
     }
+    return COMMAND_RESP_OK;
+}
+
+
+command_response_t linux_comms_cmd_j_cfg_cb(char* args)
+{
+    const uint32_t loop_timeout = 10;
+    log_out(LINUX_COMMS_PRINT_CFG_JSON_HEADER);
+    log_out_drain(loop_timeout);
+    log_out(LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
+    log_out_drain(loop_timeout);
+    log_out(LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
+    log_out_drain(loop_timeout);
+    log_out(LINUX_COMMS_PRINT_CFG_JSON_TAIL);
+    log_out_drain(loop_timeout);
     return COMMAND_RESP_OK;
 }
 
@@ -143,9 +166,10 @@ static command_response_t _linux_comms_dbg_cb(char* args)
 
 struct cmd_link_t* linux_comms_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "comms_send",   "Send linux_comms message",        _linux_comms_send_cb        , false , NULL },
-                                       { "comms_config", "Set linux_comms config",          _linux_comms_config_cb      , false , NULL },
-                                       { "comms_conn",   "LoRa connected",                  _linux_comms_conn_cb        , false , NULL },
-                                       { "comms_dbg",    "Comms Chip Debug",                _linux_comms_dbg_cb         , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "comms_send"  ,  "Send linux_comms message"   , _linux_comms_send_cb          , false , NULL },
+        { "comms_dbg"   , "Comms Chip Debug"            , _linux_comms_dbg_cb           , false , NULL }
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

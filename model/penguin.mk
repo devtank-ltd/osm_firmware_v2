@@ -48,6 +48,7 @@ penguin_SOURCES := \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
     $(MODEL_DIR)/penguin/penguin.c \
+    $(OSM_DIR)/comms/src/common.c \
     $(OSM_DIR)/comms/src/linux_comms.c
 
 $(eval $(call LINUX_FIRMWARE,penguin))

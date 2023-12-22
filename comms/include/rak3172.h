@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "base_types.h"
+
 #ifndef comms_name
 #define comms_name          rak3172
 #endif //comms_name
@@ -27,3 +29,7 @@ extern struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail);
 extern void     rak3172_power_down(void);
 
 extern bool     rak3172_persist_config_cmp(void* d0, void* d1);
+
+extern command_response_t rak3172_cmd_config_cb(char* str);
+extern command_response_t rak3172_cmd_j_cfg_cb(char* str);
+extern command_response_t rak3172_cmd_conn_cb(char* str);

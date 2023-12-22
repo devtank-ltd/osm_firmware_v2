@@ -31,4 +31,6 @@ extern bool     main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(v
 extern int32_t  to_f32_from_float(float in);
 extern int32_t  to_f32_from_double(double in);
 
+extern bool log_out_drain(uint32_t timeout);
+
 extern struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds);

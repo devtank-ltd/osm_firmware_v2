@@ -823,7 +823,7 @@ void _rak3172_send_alive(void)
 }
 
 
-static command_response_t _rak3172_config_setup_str(char* str)
+command_response_t rak3172_cmd_config_cb(char* str)
 {
     if (lw_config_setup_str(str))
     {
@@ -985,7 +985,7 @@ static command_response_t _rak3172_join(char* str)
 }
 
 
-static command_response_t _rak3172_conn(char* str)
+command_response_t rak3172_cmd_conn_cb(char* str)
 {
     if (rak3172_get_connected())
     {
@@ -1061,18 +1061,23 @@ static command_response_t _rak3172_trx_cb(char* str)
 }
 
 
+command_response_t rak3172_cmd_j_cfg_cb(char* str)
+{
+    lw_print_config();
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "comms_config", "Set the comms config",        _rak3172_config_setup_str     , false , NULL },
         { "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
         { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
         { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
         { "comms_state",  "Print comms state",           _rak3172_state_cb             , false , NULL },
         { "comms_restart","Comms restart",               _rak3172_restart_cb           , false , NULL },
         { "connect",      "Send an alive packet",        _rak3172_join                 , false , NULL },
-        { "comms_conn",   "Get if connected or not",     _rak3172_conn                 , false , NULL },
         { "comms_txpower", "TX Power",                   _rak3172_tx_power_cb          , false , NULL },
         { "comms_trssi",  "Start RF RSSI tone test",     _rak3172_trssi_cb             , false , NULL },
         { "comms_ttx",    "Start RF TX test",            _rak3172_ttx_cb               , false , NULL },
