@@ -969,9 +969,7 @@ void _linux_iterate(void)
                     if (total == 0)
                     {
                         close(fd);
-                        fd_handler->socket_client.fd = 0;
                         fd_handler->socket_client.server->socket_server.client = NULL;
-                        fd_handler->socket_client.server = NULL;
                         memset(fd_handler, 0, sizeof(fd_t));
                         _linux_setup_poll();
                         linux_port_debug("DISCONNECTED CLIENT");
