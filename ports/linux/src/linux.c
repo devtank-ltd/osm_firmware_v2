@@ -906,7 +906,7 @@ void _linux_iterate(void)
                     int client_sockfd = accept(fd_handler->socket_server.fd, (struct sockaddr*)&client_address, &client_len);
                     if (client_sockfd < 0)
                     {
-                        linux_error("Client socket connection accpet failed.");
+                        linux_error("Client socket connection accept failed.");
                         break;
                     }
                     if (fd_handler->socket_server.client)
