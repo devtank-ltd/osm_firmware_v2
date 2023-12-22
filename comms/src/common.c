@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "comms.h"
 #include "common.h"
 #include "cmd.h"
