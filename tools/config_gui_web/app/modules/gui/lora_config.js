@@ -1,26 +1,12 @@
 import { generate_random } from '../backend/binding.js';
 import { disable_interaction } from './disable.js';
+import { region_dropdown } from './html/region_dropdown_html.js';
 
 export class lora_config_t {
-  constructor(dev) {
-    this.dev = dev;
+  constructor(comms) {
+    this.comms = comms;
     this.write_config = this.write_config.bind(this);
-    this.region_dropdown = `
-            <select class="lora-config-region-dropdown" id="lora-config-region-dropdown">
-                <option>EU433 (0)</option>
-                <option>CN470 (1)</option>
-                <option>RU864 (2)</option>
-                <option>IN865 (3)</option>
-                <option>EU868 (4)</option>
-                <option>US915 (5)</option>
-                <option>AU915 (6)</option>
-                <option>KR920 (7)</option>
-                <option>AS923-1 (8)</option>
-                <option>AS923-2 (9)</option>
-                <option>AS923-3 (10)</option>
-                <option>AS923-4 (11)</option>
-            </select>
-        `;
+    this.region_dropdown = region_dropdown;
   }
 
   async add_listeners() {
@@ -38,10 +24,10 @@ export class lora_config_t {
     const title = 'LoRaWAN Configuration';
     const lora_headers = ['Device EUI', 'Application Key', 'Region', 'Status'];
 
-    const dev_eui = await this.dev.lora_deveui;
-    const app_key = await this.dev.lora_appkey;
-    const region = await this.dev.lora_region;
-    let conn = await this.dev.comms_conn;
+    const dev_eui = await this.comms.lora_deveui;
+    const app_key = await this.comms.lora_appkey;
+    const region = await this.comms.lora_region;
+    let conn = await this.comms.comms_conn;
 
     const lora_res = document.querySelector('div.lora-config-table');
     const lora_tbl = lora_res.appendChild(document.createElement('table'));
@@ -69,7 +55,7 @@ export class lora_config_t {
         td.innerHTML = this.region_dropdown;
         const sel = document.getElementById('lora-config-region-dropdown');
         for (let v = 0; v < sel.length; v += 1) {
-          if (region === sel[v].innerHTML) {
+          if (region.includes(sel[v].innerHTML)) {
             sel.selectedIndex = v;
           }
         }
@@ -89,9 +75,9 @@ export class lora_config_t {
   }
 
   async random_deveui() {
-    this.devfield = document.getElementById('lora-dev-eui-value');
+    this.deveui_field = document.getElementById('lora-dev-eui-value');
     const deveui = await generate_random(16);
-    this.devfield.textContent = deveui;
+    this.deveui_field.textContent = deveui;
   }
 
   async write_config() {
@@ -100,9 +86,9 @@ export class lora_config_t {
     const appkey = document.getElementById('lora-app-key-value').innerHTML;
     const reg = document.getElementById('lora-config-region-dropdown').value.split(' ')[0];
 
-    this.dev.lora_deveui = deveui;
-    this.dev.lora_appkey = appkey;
-    this.dev.lora_region = reg;
+    this.comms.lora_deveui = deveui;
+    this.comms.lora_appkey = appkey;
+    this.comms.lora_region = reg;
     disable_interaction(false);
   }
 }

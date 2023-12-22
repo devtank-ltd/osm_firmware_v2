@@ -1,14 +1,9 @@
+import { navbar } from './html/navbar_html.js';
+
 export class navbar_t {
   constructor(id) {
     this.id = id;
-    this.navbar_html = `
-    <div class="topnav" id="topnav">
-        <a id="home">Home</a>
-        <a id="console">Console</a>
-        <a id="modbus">Modbus</a>
-      <img id="nav-img" src="./imgs/osm.png" alt="OpenSmartMonitor Navbar Logo">
-    </div>
-    `;
+    this.navbar_html = navbar;
   }
 
   insert_navbar() {

@@ -1,5 +1,6 @@
 import { binding_t } from '../backend/binding.js';
 import { home_tab_t } from './home.js';
+import { config_gui } from './html/config_gui_html.js';
 
 class config_gui_t {
   constructor() {
@@ -33,8 +34,6 @@ class config_gui_t {
       port.close();
       port = null;
       console.log('Disconnected');
-      const config_gui = `<h1 id="main-page-title">OpenSmartMonitor Configuration</h1>
-                              <button id='main-page-connect'>Connect</button>`;
       document.getElementById('main-page-body').innerHTML = config_gui;
     });
   }

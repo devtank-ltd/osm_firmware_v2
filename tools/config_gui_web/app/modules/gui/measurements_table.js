@@ -114,7 +114,7 @@ export class measurements_table_t {
     disable_interaction(true);
     const row_index = e.srcElement.parentElement.parentNode.rowIndex;
     const meas = table.rows[row_index].cells[0].innerHTML;
-    const val = await this.dev.get_value(meas);
+    const val = await this.dev.get_value(`get_meas ${meas}`);
     const last_val_col = table.rows[row_index].cells[last_val_index];
     last_val_col.textContent = val;
     checkbox.checked = false;

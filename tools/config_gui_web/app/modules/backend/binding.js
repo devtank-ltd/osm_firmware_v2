@@ -70,11 +70,11 @@ class low_level_serial_t {
 }
 
 export class binding_t {
-  constructor(port, type) {
+  constructor(port, port_type) {
     this.port = port;
-    this.type = type;
+    this.port_type = port_type;
     this.timeout = 1000;
-    if (this.type === 'Serial') {
+    if (this.port_type === 'Serial') {
       this.ll = new low_level_serial_t(this.port, this.timeout);
     } else {
       this.ll = new low_level_socket_t(this.port);
@@ -176,30 +176,6 @@ export class binding_t {
     return match;
   }
 
-  get lora_deveui() {
-    return this.do_cmd('comms_config dev-eui');
-  }
-
-  set lora_deveui(deveui) {
-    this.enqueue_and_process(`comms_config dev-eui ${deveui}`);
-  }
-
-  get lora_appkey() {
-    return this.do_cmd('comms_config app-key');
-  }
-
-  set lora_appkey(appkey) {
-    this.enqueue_and_process(`comms_config app-key ${appkey}`);
-  }
-
-  get lora_region() {
-    return this.do_cmd('comms_config region');
-  }
-
-  set lora_region(region) {
-    this.enqueue_and_process(`comms_config region ${region}`);
-  }
-
   get interval_mins() {
     return this.extract_interval_mins();
   }
@@ -208,20 +184,16 @@ export class binding_t {
     this.enqueue_and_process(`interval_mins ${value}`);
   }
 
-  get comms_conn() {
-    return this.do_cmd('comms_conn');
-  }
-
   set serial_number(value) {
     this.enqueue_and_process(`serial_num ${value}`);
   }
 
   get serial_number() {
-    return this.do_cmd('serial_num');
+    return this.get_value('serial_num');
   }
 
   get firmware_version() {
-    return this.do_cmd('version');
+    return this.get_value('version');
   }
 
   /*
@@ -240,8 +212,7 @@ export class binding_t {
   }
   */
 
-  async get_value(meas) {
-    const cmd = `get_meas ${meas}`;
+  async get_value(cmd) {
     const res = await this.do_cmd(cmd);
     if (res === 'Failed to get measurement reading.') {
       return 'n/a';
@@ -254,5 +225,39 @@ export class binding_t {
       return value;
     }
     return res;
+  }
+}
+
+export class lora_comms_t {
+  constructor(dev) {
+    this.dev = dev;
+  }
+
+  get lora_deveui() {
+    return this.dev.get_value('comms_config dev-eui');
+  }
+
+  set lora_deveui(deveui) {
+    this.dev.enqueue_and_process(`comms_config dev-eui ${deveui}`);
+  }
+
+  get lora_appkey() {
+    return this.dev.get_value('comms_config app-key');
+  }
+
+  set lora_appkey(appkey) {
+    this.dev.enqueue_and_process(`comms_config app-key ${appkey}`);
+  }
+
+  get lora_region() {
+    return this.dev.get_value('comms_config region');
+  }
+
+  set lora_region(region) {
+    this.dev.enqueue_and_process(`comms_config region ${region}`);
+  }
+
+  get comms_conn() {
+    return this.dev.get_value('comms_conn');
   }
 }
