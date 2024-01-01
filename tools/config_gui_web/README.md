@@ -16,7 +16,16 @@ Other ways include:
 
 3. Run a http server with `npm install http-server -g`
 
-4. Go to localhost:8080 in your browser.
+4. Go to localhost:8080 in a Webkit based browser.
+
+You can also use Python to run a simple http server with:
+
+1. On terminal
+2. Navigate to the location of `config_gui.html`
+3. Doing:
+  python -m http.server
+4. Go to localhost:8000 in a Webkit based browser.
+
 
 Once you have reached the home page, connect an OSM via micro USB, press connect and select the device.
 
