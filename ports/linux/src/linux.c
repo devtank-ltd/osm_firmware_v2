@@ -933,7 +933,7 @@ void _linux_iterate(void)
                             fd_handler->socket_server.client = tfdh;
                             _linux_setup_poll();
                             linux_port_debug("SOCKET CLIENT CONNECTED");
-                            break;
+                            return;
                         }
                     }
                     close(client_sockfd);
