@@ -633,6 +633,8 @@ static void _linux_cleanup_fd_handlers(void)
                 if (fd->socket_server.client &&
                     close(fd->socket_server.client->socket_client.fd))
                     linux_error("Fail close SOCKET client '%s'", fd->name);
+                memset(fd->socket_server.client, 0, sizeof(fd_t));
+                fd->socket_server.client = NULL;
                 if (close(fd->socket_server.fd))
                     linux_error("Fail close SOCKET server '%s'", fd->name);
                 break;
