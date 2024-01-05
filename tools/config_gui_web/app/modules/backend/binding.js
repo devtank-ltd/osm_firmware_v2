@@ -132,6 +132,19 @@ export class binding_t {
     return parsed;
   }
 
+  async do_cmd_raw(cmd) {
+    await this.ll.write(cmd);
+    const output = await this.ll.read();
+    return output;
+  }
+
+  async help() {
+    this.raw = await this.do_cmd_raw('?');
+    [, this.text] = this.raw.split('=============');
+    [this.s] = this.text.split('}============');
+    return this.s;
+  }
+
   async get_measurements() {
     await this.ll.write('measurements');
     const meas = await this.ll.read();

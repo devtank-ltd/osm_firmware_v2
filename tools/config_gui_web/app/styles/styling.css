@@ -235,9 +235,50 @@ button:hover {
 
 
 
-/* help for terminal */
+/* Console Tab */
+
+.console-grid-container {
+  display: grid;
+  gap: 50px;
+}
+
+.console-cmd-field {
+  margin-top: 20px;
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 1;
+  grid-row-end: 1;
+}
+
+.console-cmd-field input {
+  width: 500px;
+  padding: 0.5em;
+
+}
+
 .console-help {
-  margin: 8px;
-  top: auto;
-  font-size: x-small;
+  grid-column-start: 2;
+  grid-column-end: 2;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+.console-terminal {
+  background-color: var(--black);
+  color: var(--osmlight);
+  height: 500px;
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 2;
+  grid-row-end: 3;
+  overflow:auto;
+
+}
+
+.console-terminal-para {
+  white-space: pre-wrap;
+}
+
+.help-container {
+  white-space: pre-wrap;
 }

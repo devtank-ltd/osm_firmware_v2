@@ -3,10 +3,22 @@ import { measurements_table_t } from './measurements_table.js';
 import { lora_config_t } from './lora_config.js';
 import { load_configuration_t } from './load_configuration.js';
 import { lora_comms_t } from '../backend/binding.js';
+import { console_t } from './console.js';
 
 export class home_tab_t {
   constructor(dev) {
     this.dev = dev;
+    this.change_to_console_tab = this.change_to_console_tab.bind(this);
+    this.insert_homepage = this.insert_homepage.bind(this);
+    this.return_to_home_tab = this.return_to_home_tab.bind(this);
+  }
+
+  async return_to_home_tab() {
+    await this.insert_homepage();
+    const disconnect = document.getElementById('home-disconnect');
+    disconnect.addEventListener('click', () => {
+      window.location.reload();
+    });
   }
 
   async insert_homepage() {
@@ -15,8 +27,8 @@ export class home_tab_t {
     const text = await response.text();
     doc.innerHTML = text;
 
-    const active_tab = new navbar_t('home');
-    active_tab.change_active_tab();
+    this.navbar = new navbar_t();
+    await this.navbar.change_active_tab('home-tab');
 
     const meas_table = new measurements_table_t(this.dev);
     await meas_table.create_measurements_table_gui();
@@ -37,6 +49,8 @@ export class home_tab_t {
 
     const load_config = new load_configuration_t(this.dev);
     await load_config.add_listener();
+
+    await this.add_event_listeners();
   }
 
   async load_serial_number() {
@@ -53,5 +67,16 @@ export class home_tab_t {
     const [, num, hash] = this.split_fw;
     this.split_fw_join = `Firmware Version: ${num} - ${hash}`;
     this.fw.textContent = this.split_fw_join;
+  }
+
+  async add_event_listeners() {
+    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
+  }
+
+  async change_to_console_tab() {
+    this.console = new console_t(this.dev);
+    await this.console.open_console();
+    await this.navbar.change_active_tab('console-tab');
+    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
   }
 }
