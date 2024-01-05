@@ -1,6 +1,5 @@
 import { binding_t } from '../backend/binding.js';
 import { home_tab_t } from './home.js';
-import { config_gui } from './html/config_gui_html.js';
 
 class config_gui_t {
   constructor() {
@@ -34,7 +33,7 @@ class config_gui_t {
       port.close();
       port = null;
       console.log('Disconnected');
-      document.getElementById('main-page-body').innerHTML = config_gui;
+      window.location.reload();
     });
   }
 

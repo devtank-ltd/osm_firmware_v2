@@ -1,12 +1,16 @@
 import { generate_random } from '../backend/binding.js';
 import { disable_interaction } from './disable.js';
-import { region_dropdown } from './html/region_dropdown_html.js';
 
 export class lora_config_t {
   constructor(comms) {
     this.comms = comms;
     this.write_config = this.write_config.bind(this);
-    this.region_dropdown = region_dropdown;
+  }
+
+  async get_region_html() {
+    this.resp = await fetch('modules/gui/html/region_dropdown.html');
+    this.text = await this.resp.text();
+    return this.text;
   }
 
   async add_listeners() {
@@ -28,6 +32,7 @@ export class lora_config_t {
     const app_key = await this.comms.lora_appkey;
     const region = await this.comms.lora_region;
     let conn = await this.comms.comms_conn;
+    const region_dropdwn = await this.get_region_html();
 
     const lora_res = document.querySelector('div.lora-config-table');
     const lora_tbl = lora_res.appendChild(document.createElement('table'));
@@ -52,7 +57,7 @@ export class lora_config_t {
         td.id = 'lora-app-key-value';
       } else if (i === 'Region') {
         const td = r.insertCell();
-        td.innerHTML = this.region_dropdown;
+        td.innerHTML = region_dropdwn;
         const sel = document.getElementById('lora-config-region-dropdown');
         for (let v = 0; v < sel.length; v += 1) {
           if (region.includes(sel[v].innerHTML)) {

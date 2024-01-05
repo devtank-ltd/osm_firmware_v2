@@ -1,17 +1,16 @@
-import { navbar } from './html/navbar_html.js';
-
 export class navbar_t {
   constructor(id) {
     this.id = id;
-    this.navbar_html = navbar;
   }
 
-  insert_navbar() {
-    document.getElementById('navbar').innerHTML = this.navbar_html;
+  async insert_navbar() {
+    this.resp = await fetch('modules/gui/html/navbar.html');
+    this.text = await this.resp.text();
+    document.getElementById('navbar').innerHTML = this.text;
   }
 
-  change_active_tab() {
-    this.insert_navbar();
+  async change_active_tab() {
+    await this.insert_navbar();
     document.getElementById(this.id).classList.add('active');
   }
 }

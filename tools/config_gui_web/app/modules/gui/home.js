@@ -3,7 +3,6 @@ import { measurements_table_t } from './measurements_table.js';
 import { lora_config_t } from './lora_config.js';
 import { load_configuration_t } from './load_configuration.js';
 import { lora_comms_t } from '../backend/binding.js';
-import { home_page } from './html/home_page_html.js';
 
 export class home_tab_t {
   constructor(dev) {
@@ -12,7 +11,9 @@ export class home_tab_t {
 
   async insert_homepage() {
     const doc = document.getElementById('main-page-body');
-    doc.innerHTML = home_page;
+    const response = await fetch('modules/gui/html/home_page.html');
+    const text = await response.text();
+    doc.innerHTML = text;
 
     const active_tab = new navbar_t('home');
     active_tab.change_active_tab();
