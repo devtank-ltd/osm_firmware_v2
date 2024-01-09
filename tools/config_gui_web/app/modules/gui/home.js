@@ -11,6 +11,7 @@ export class home_tab_t {
     this.change_to_console_tab = this.change_to_console_tab.bind(this);
     this.insert_homepage = this.insert_homepage.bind(this);
     this.return_to_home_tab = this.return_to_home_tab.bind(this);
+    this.save_settings = this.save_settings.bind(this);
   }
 
   async return_to_home_tab() {
@@ -71,6 +72,11 @@ export class home_tab_t {
 
   async add_event_listeners() {
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
+    document.getElementById('home-save-setting').addEventListener('click', this.save_settings);
+  }
+
+  async save_settings() {
+    this.dev.save();
   }
 
   async change_to_console_tab() {

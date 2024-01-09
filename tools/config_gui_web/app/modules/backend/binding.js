@@ -182,6 +182,10 @@ export class binding_t {
     return extracted_meas;
   }
 
+  async save() {
+    this.do_cmd('save');
+  }
+
   async extract_interval_mins() {
     const imins = await this.do_cmd('interval_mins');
     const regex = /\d+/g;
