@@ -69,6 +69,31 @@ class low_level_serial_t {
   }
 }
 
+class modbus_bus_t {
+  constructor(config, devices) {
+    this.config = config;
+    this.devices = devices;
+  }
+}
+
+class modbus_device_t {
+  constructor(name, slave_id, byteorder, wordorder, registers) {
+    this.name = name;
+    this.byteorder = byteorder;
+    this.wordorder = wordorder;
+    this.registers = registers;
+    this.slave_id = slave_id;
+  }
+}
+
+class modbus_register_t {
+  constructor(hex, func, name) {
+    this.hex = hex;
+    this.func = func;
+    this.name = name;
+  }
+}
+
 export class binding_t {
   constructor(port, port_type) {
     this.port = port;
@@ -125,6 +150,30 @@ export class binding_t {
     return this.msgs;
   }
 
+  async parse_msg_multi(msg) {
+    if (typeof (msg) !== 'string') {
+      console.log(typeof (msg));
+      return '';
+    }
+    this.msgs = [];
+    const spl = msg.split('\n\r');
+    spl.forEach((s, i) => {
+      if (s === '============{') {
+        console.log('Start found');
+      } else if (s === '}============') {
+        console.log('End found');
+      } else if (s.includes('DEBUG') || s.includes('ERROR')) {
+        console.log('Ignoring debug/error msg.');
+      } else {
+        this.msgs.push(s);
+      }
+    });
+    if (!spl) {
+      return [];
+    }
+    return this.msgs;
+  }
+
   async do_cmd(cmd) {
     await this.ll.write(cmd);
     const output = await this.ll.read();
@@ -136,6 +185,13 @@ export class binding_t {
     await this.ll.write(cmd);
     const output = await this.ll.read();
     return output;
+  }
+
+  async do_cmd_multi(cmd) {
+    await this.ll.write(cmd);
+    const output = await this.ll.read();
+    const parsed = await this.parse_msg_multi(output);
+    return parsed;
   }
 
   async help() {
@@ -242,6 +298,52 @@ export class binding_t {
       return value;
     }
     return res;
+  }
+
+  async modbus_config() {
+    this.mb = await this.do_cmd_multi('mb_log');
+    this.conf = [];
+    this.dev = {};
+    this.devs = [];
+    for (let line = 0; line < this.mb.length; line += 1) {
+      const curr = this.mb[line];
+      if (curr.includes('Modbus')) {
+        const [,, ...conf] = curr.split(' ');
+        this.conf = conf;
+      }
+      if (curr.includes('- Device')) {
+        const [,,, slave_id, name, byteorder, wordorder] = curr.split(' ');
+        this.dev = {
+          slave_id: parseInt(slave_id.slice(2), 16),
+          name: name.replace(/"/g, ''),
+          byteorder,
+          wordorder,
+          registers: [],
+        };
+        this.devs.push(this.dev);
+      }
+      if (curr.includes('- Reg')) {
+        const [, , , , , h, f, n] = await curr.split(' ');
+        const regname = n.replace(/"/g, '');
+        const func_str = f.match(/\d+/g);
+        const hex = parseInt(h.slice(2), 16);
+        const func = Number(func_str);
+        const reg = new modbus_register_t(hex, func, regname);
+        this.dev.registers.push(reg);
+      }
+    }
+
+    this.mb_object = new modbus_bus_t(
+      this.conf,
+      this.devs.map((dev) => new modbus_device_t(
+        dev.name,
+        dev.slave_id,
+        dev.byteorder,
+        dev.wordorder,
+        dev.registers,
+      )),
+    );
+    return this.mb_object;
   }
 }
 

@@ -4,6 +4,7 @@ import { lora_config_t } from './lora_config.js';
 import { load_configuration_t } from './load_configuration.js';
 import { lora_comms_t } from '../backend/binding.js';
 import { console_t } from './console.js';
+import { modbus_t } from './modbus.js';
 
 export class home_tab_t {
   constructor(dev) {
@@ -12,6 +13,7 @@ export class home_tab_t {
     this.insert_homepage = this.insert_homepage.bind(this);
     this.return_to_home_tab = this.return_to_home_tab.bind(this);
     this.save_settings = this.save_settings.bind(this);
+    this.change_to_modbus_tab = this.change_to_modbus_tab.bind(this);
   }
 
   async return_to_home_tab() {
@@ -73,6 +75,7 @@ export class home_tab_t {
   async add_event_listeners() {
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
     document.getElementById('home-save-setting').addEventListener('click', this.save_settings);
+    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
   }
 
   async save_settings() {
@@ -84,5 +87,14 @@ export class home_tab_t {
     await this.console.open_console();
     await this.navbar.change_active_tab('console-tab');
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
+    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
+  }
+
+  async change_to_modbus_tab() {
+    this.modbus = new modbus_t(this.dev);
+    await this.modbus.open_modbus();
+    await this.navbar.change_active_tab('modbus-tab');
+    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
+    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
   }
 }

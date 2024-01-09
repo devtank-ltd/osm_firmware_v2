@@ -31,7 +31,6 @@ export class console_t {
   async send_cmd() {
     this.cmd = document.getElementById('console-cmd-input');
     const output = await this.dev.do_cmd_raw(this.cmd.value);
-    console.log(output);
     this.terminal = document.getElementById('console-terminal-para');
     this.terminal.textContent = output;
     this.cmd.value = '';
