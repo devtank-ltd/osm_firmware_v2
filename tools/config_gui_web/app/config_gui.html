@@ -5,8 +5,22 @@
         <script type="module" async src="./modules/gui/config_gui.js"></script>
         <link rel="stylesheet" href="styles/styling.css">
     </head>
-    <body id="main-page-body">
-        <h1 id="main-page-title">OpenSmartMonitor Configuration</h1>
-        <button id='main-page-connect'>Connect</button>
-    </body>
+    <fieldset id="global-fieldset" class="global-fieldset">
+
+        <body id="top-level-body">
+            <div id="navbar"></div>
+            <div id="main-page-body">
+                <h1 id="main-page-title">OpenSmartMonitor Configuration</h1>
+                <button id='main-page-connect'>Connect</button>
+            </div>
+
+            <div class="global-load-save-config-buttons" id="global-load-save-config-buttons" style="display: none;">
+                <button id="global-save-setting">Save</button>
+                <button id="global-load-osm-config">Load Configuration</button>
+                <button id="global-save-osm-config">Save Configuration</button>
+                <button id="global-disconnect">Disconnect</button>
+            </div>
+        </body>
+    </fieldset>
+
 </html>

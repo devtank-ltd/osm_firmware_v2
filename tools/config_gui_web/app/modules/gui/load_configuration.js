@@ -1,7 +1,7 @@
 export class load_configuration_t {
   constructor(dev) {
     this.dev = dev;
-    this.btn = document.getElementById('home-load-osm-config');
+    this.btn = document.getElementById('global-load-osm-config');
     this.open_file_dialog = this.open_file_dialog.bind(this);
   }
 

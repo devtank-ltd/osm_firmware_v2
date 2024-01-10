@@ -77,12 +77,12 @@ class modbus_bus_t {
 }
 
 class modbus_device_t {
-  constructor(name, slave_id, byteorder, wordorder, registers) {
+  constructor(name, unit_id, byteorder, wordorder, registers) {
     this.name = name;
     this.byteorder = byteorder;
     this.wordorder = wordorder;
     this.registers = registers;
-    this.slave_id = slave_id;
+    this.unit_id = unit_id;
   }
 }
 
@@ -213,7 +213,7 @@ export class binding_t {
         start = index;
         m.push('Last Value');
         measurements.push(m);
-      } else if (i === '}============') {
+      } else if (i.includes('}============')) {
         end = index;
       } else {
         try {
@@ -312,9 +312,9 @@ export class binding_t {
         this.conf = conf;
       }
       if (curr.includes('- Device')) {
-        const [,,, slave_id, name, byteorder, wordorder] = curr.split(' ');
+        const [,,, unit_id, name, byteorder, wordorder] = curr.split(' ');
         this.dev = {
-          slave_id: parseInt(slave_id.slice(2), 16),
+          unit_id: parseInt(unit_id.slice(2), 16),
           name: name.replace(/"/g, ''),
           byteorder,
           wordorder,
@@ -337,7 +337,7 @@ export class binding_t {
       this.conf,
       this.devs.map((dev) => new modbus_device_t(
         dev.name,
-        dev.slave_id,
+        dev.unit_id,
         dev.byteorder,
         dev.wordorder,
         dev.registers,

@@ -28,13 +28,15 @@ class config_gui_t {
     this.dev = new binding_t(port, type);
     this.home = new home_tab_t(this.dev);
     await this.home.insert_homepage();
-    const disconnect = document.getElementById('home-disconnect');
+    const disconnect = document.getElementById('global-disconnect');
     disconnect.addEventListener('click', () => {
       port.close();
       port = null;
       console.log('Disconnected');
       window.location.reload();
     });
+    const globalbtns = document.getElementById('global-load-save-config-buttons');
+    globalbtns.style.removeProperty('display');
   }
 
   async listen_open_serial() {

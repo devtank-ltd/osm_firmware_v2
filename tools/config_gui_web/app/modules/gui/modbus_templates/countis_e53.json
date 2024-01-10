@@ -1,0 +1,52 @@
+{
+    "name": "Countis E53",
+    "unit_id": "5",
+    "wordorder": "MSW",
+    "byteorder": "MSB",
+    "bits": 8,
+    "parity": "None",
+    "stopbits": 1,
+    "registers": {
+        "ImEn": {
+            "hex": "0xc652",
+            "function": 3,
+            "unit": "U32"
+        },
+        "mAP1": {
+            "hex": "0xc560",
+            "function": 3,
+            "unit": "U32"
+        },
+        "mAP2": {
+            "hex": "0xc562",
+            "function": 3,
+            "unit": "U32"
+        },
+        "mAP3": {
+            "hex": "0xc564",
+            "function": 3,
+            "unit": "U32"
+        },
+        "cVP1": {
+            "hex": "0xc552",
+            "function": 3,
+            "unit": "U32"
+        },
+        "cVP2": {
+            "hex": "0xc554",
+            "function": 3,
+            "unit": "U32"
+        },
+        "cVP3": {
+            "hex": "0xc556",
+            "function": 3,
+            "unit": "U32"
+        },
+        "PF": {
+            "hex": "0xc56e",
+            "function": 3,
+            "unit": "U32"
+        }
+    }
+
+}

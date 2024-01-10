@@ -6,7 +6,9 @@ export class navbar_t {
   }
 
   async change_active_tab(id) {
-    await this.insert_navbar();
-    document.getElementById(id).classList.add('active');
+    document.getElementById('home-tab').classList.remove('active');
+    document.getElementById('console-tab').classList.remove('active');
+    document.getElementById('modbus-tab').classList.remove('active');
+    this.active = document.getElementById(id).classList.add('active');
   }
 }

@@ -9,6 +9,7 @@ import { modbus_t } from './modbus.js';
 export class home_tab_t {
   constructor(dev) {
     this.dev = dev;
+    this.navbar = new navbar_t();
     this.change_to_console_tab = this.change_to_console_tab.bind(this);
     this.insert_homepage = this.insert_homepage.bind(this);
     this.return_to_home_tab = this.return_to_home_tab.bind(this);
@@ -18,19 +19,16 @@ export class home_tab_t {
 
   async return_to_home_tab() {
     await this.insert_homepage();
-    const disconnect = document.getElementById('home-disconnect');
-    disconnect.addEventListener('click', () => {
-      window.location.reload();
-    });
   }
 
   async insert_homepage() {
+    const body = document.getElementById('top-level-body');
     const doc = document.getElementById('main-page-body');
     const response = await fetch('modules/gui/html/home_page.html');
     const text = await response.text();
     doc.innerHTML = text;
 
-    this.navbar = new navbar_t();
+    await this.navbar.insert_navbar();
     await this.navbar.change_active_tab('home-tab');
 
     const meas_table = new measurements_table_t(this.dev);
@@ -74,7 +72,7 @@ export class home_tab_t {
 
   async add_event_listeners() {
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
-    document.getElementById('home-save-setting').addEventListener('click', this.save_settings);
+    document.getElementById('global-save-setting').addEventListener('click', this.save_settings);
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
   }
 

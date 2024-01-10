@@ -95,7 +95,7 @@ button:hover {
   left: 0;
 }
 
-.home-load-save-config-buttons {
+.global-load-save-config-buttons {
   text-align: center;
   margin: 0.8em;
   position: fixed;
@@ -103,12 +103,18 @@ button:hover {
   right: 0;
 }
 
-.home-page-fieldset {
+.global-fieldset {
   border: none;
 }
 
 
 /* Measurements Table */
+
+.measurements-table {
+  display: grid;
+  overflow:auto;
+
+}
 
 .measurements-table table {
   border-collapse : collapse;
@@ -193,18 +199,18 @@ button:hover {
 
 /* Modbus Config Table */
 
-.modbus-config-table table {
+.modbus-template-config table {
   border-collapse : collapse;
   margin          : 2em 0.5em;
 }
 
-.modbus-config-table thead {
+.modbus-template-config thead {
   background-color : var(--osmlight);
   font-weight      : bold;
   color: var(--white);
 }
 
-.modbus-config-table td {
+.modbus-template-config td {
   padding    : .2em .8em;
   border     : 1px solid var(--osmdark);
   text-align : center;
@@ -280,5 +286,17 @@ button:hover {
 }
 
 .help-container {
+  white-space: pre-wrap;
+}
+
+
+/* Modbus Template Table */
+
+.selected-cell {
+  background-color: var(--osmdark);
+  color: var(--white)
+}
+
+.modbus-template-config-table-reg-field {
   white-space: pre-wrap;
 }
