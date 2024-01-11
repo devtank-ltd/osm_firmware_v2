@@ -199,9 +199,14 @@ button:hover {
 
 /* Modbus Config Table */
 
+.modbus-template-table-top-level {
+  margin: 2em 0.5em;
+}
+
 .modbus-template-config table {
   border-collapse : collapse;
-  margin          : 2em 0.5em;
+  width: 500px;
+  height: 300px;
 }
 
 .modbus-template-config thead {
@@ -211,10 +216,11 @@ button:hover {
 }
 
 .modbus-template-config td {
-  padding    : .2em .8em;
   border     : 1px solid var(--osmdark);
   text-align : center;
+  padding: 0;
 }
+
 
 
 

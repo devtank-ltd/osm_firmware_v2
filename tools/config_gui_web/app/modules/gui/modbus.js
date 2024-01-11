@@ -142,16 +142,14 @@ export class modbus_t {
 
     let count = 0;
     this.templates.forEach((tmp) => {
-      const r = tbody.insertRow();
-
-      const cell = r.insertCell();
+      this.modbus_row = tbody.insertRow();
+      const cell = this.modbus_row.insertCell();
       cell.textContent = tmp.desc;
       cell.id = 'modbus-device-name-cell';
       cell.addEventListener('click', this.select_template);
       if (count === 0) {
-        this.regfield = r.insertCell();
+        this.regfield = this.modbus_row.insertCell();
         this.regfield.rowSpan = this.templates.length;
-        this.regfield.classList.add('modbus-template-config-table-reg-field');
         count += 1;
       }
     });
@@ -180,9 +178,36 @@ export class modbus_t {
       }
     }
 
+    this.nested_table = await this.regfield.appendChild(document.createElement('table'));
+    this.nested_table.style.width = '100%';
+    this.nested_table.style.height = '100%';
+    this.nested_table.createTHead();
+    const tbody = this.nested_table.createTBody();
+
+    const reg_headers_row = this.nested_table.tHead.insertRow();
+    reg_headers_row.insertCell().textContent = 'Name';
+    reg_headers_row.insertCell().textContent = 'Address';
+    reg_headers_row.insertCell().textContent = 'Type';
+    reg_headers_row.insertCell().textContent = 'Unit';
+
     for (const [key, value] of Object.entries(this.template.registers)) {
-      this.regfield.textContent += `Name: ${key}, Address: ${value.hex},
-      Function: ${value.function}, Unit: ${value.unit}\n\n`;
+      let type = '';
+      if (value.function === 3) {
+        type = 'Holding Register';
+      } else if (value.function === 4) {
+        type = 'Input Register';
+      }
+      let unit_str = '';
+      if (value.unit === 'F') {
+        unit_str = 'Float';
+      } else if (value.unit === 'U32') {
+        unit_str = 'U32';
+      }
+      const nested_row = tbody.insertRow();
+      nested_row.insertCell().textContent = key;
+      nested_row.insertCell().textContent = value.hex;
+      nested_row.insertCell().textContent = type;
+      nested_row.insertCell().textContent = unit_str;
     }
   }
 
