@@ -1,7 +1,16 @@
 <body'>
     <div id="navbar"></div>
 
-    <div id="modbus-template-config" class="modbus-template-config"></div>
+    <div>
+        <div id="modbus-template-config" class="modbus-template-config"></div>
+        <button id="modbus-template-del-template-btn">Delete Template</button>
+        <button id="modbus-template-add-template-btn">Add New Template</button>
+        <button id="modbus-template-apply-template-btn">Apply Template</button>
+    </div>
 
-    <div id="modbus-current-config" class="modbus-current-config"></div>
+    <div>
+        <div id="modbus-current-config" class="modbus-current-config"></div>
+        <button disabled='true' id="modbus-current-config-remove-reg">Remove Register</button>
+        <button disabled='true' id="modbus-current-config-remove-dev">Remove Device</button>
+    </div>
 </body>

@@ -1,5 +1,6 @@
 {
-    "name": "Rayleigh RIF-220",
+    "name": "RIF",
+    "desc": "Rayleigh RIF-220",
     "unit_id": "1",
     "wordorder": "LSW",
     "byteorder": "MSB",

@@ -1,5 +1,6 @@
 {
-    "name": "Countis E53",
+    "name": "E53",
+    "desc": "Countis E53",
     "unit_id": "5",
     "wordorder": "MSW",
     "byteorder": "MSB",

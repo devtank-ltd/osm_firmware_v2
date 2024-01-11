@@ -345,6 +345,22 @@ export class binding_t {
     );
     return this.mb_object;
   }
+
+  async mb_dev_add(unit_id, byteorder, wordorder, name) {
+    await this.do_cmd(`mb_dev_add ${unit_id} ${byteorder} ${wordorder} ${name}`);
+  }
+
+  async mb_reg_add(unit_id, hex, func, unit, reg) {
+    await this.do_cmd(`mb_reg_add ${unit_id} ${hex} ${func} ${unit} ${reg}`);
+  }
+
+  async remove_modbus_reg(reg) {
+    await this.do_cmd(`mb_reg_del ${reg}`);
+  }
+
+  async remove_modbus_dev(dev) {
+    await this.do_cmd(`mb_dev_del ${dev}`);
+  }
 }
 
 export class lora_comms_t {
