@@ -195,18 +195,27 @@ button:hover {
 }
 
 
+/* Modbus */
 
+.modbus-tab-widgets {
+  display: grid;
+}
 
 /* Modbus Config Table */
 
 .modbus-template-table-top-level {
   margin: 2em 0.5em;
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 1;
+  grid-row-end: 2;
 }
 
 .modbus-template-config table {
   border-collapse : collapse;
   width: 500px;
   height: 300px;
+
 }
 
 .modbus-template-config thead {
@@ -226,9 +235,20 @@ button:hover {
 
 /* Modbus Current Settings */
 
+.modbus-current-config-top-level {
+  margin          : 2em 0.5em;
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 2;
+
+}
+
 .modbus-current-config table {
   border-collapse : collapse;
-  margin          : 2em 0.5em;
+  width: 500px;
+  height: 300px;
+
 }
 
 .modbus-current-config thead {
@@ -244,6 +264,41 @@ button:hover {
 }
 
 
+
+
+/* Modbus Add New Template Table */
+
+.modbus-add-new-template-div {
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 3;
+  grid-row-end: 4;
+
+}
+
+.modbus-add-new-template-div table {
+  border-collapse : collapse;
+  width: 500px;
+  height: 200px;
+
+}
+
+.modbus-add-new-template-div thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.modbus-add-new-template-div td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+.modbus-add-new-template-div input {
+  text-align: center;
+  border: none;
+  width: 90%;
+}
 
 
 
