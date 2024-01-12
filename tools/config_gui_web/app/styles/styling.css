@@ -113,12 +113,14 @@ button:hover {
 .measurements-table {
   display: grid;
   overflow:auto;
+  height: 500px;
+  margin          : 2em 0.5em;
+
 
 }
 
 .measurements-table table {
   border-collapse : collapse;
-  margin          : 2em 0.5em;
 }
 
 .measurements-table thead {
@@ -199,6 +201,7 @@ button:hover {
 
 .modbus-tab-widgets {
   display: grid;
+
 }
 
 /* Modbus Config Table */
@@ -209,6 +212,7 @@ button:hover {
   grid-column-end: 2;
   grid-row-start: 1;
   grid-row-end: 2;
+
 }
 
 .modbus-template-config table {
@@ -235,6 +239,12 @@ button:hover {
 
 /* Modbus Current Settings */
 
+
+.modbus-current-config {
+  height: 300px;
+  overflow:auto;
+}
+
 .modbus-current-config-top-level {
   margin          : 2em 0.5em;
   grid-column-start: 2;
@@ -242,13 +252,12 @@ button:hover {
   grid-row-start: 1;
   grid-row-end: 2;
 
+
 }
 
 .modbus-current-config table {
   border-collapse : collapse;
   width: 500px;
-  height: 300px;
-
 }
 
 .modbus-current-config thead {
@@ -306,7 +315,7 @@ button:hover {
 
 .console-grid-container {
   display: grid;
-  gap: 50px;
+  gap: 50px 0px;
 }
 
 .console-cmd-field {
@@ -334,6 +343,7 @@ button:hover {
   background-color: var(--black);
   color: var(--osmlight);
   height: 500px;
+  width:1000px;
   grid-column-start: 1;
   grid-column-end: 2;
   grid-row-start: 2;
@@ -348,6 +358,8 @@ button:hover {
 
 .help-container {
   white-space: pre-wrap;
+  overflow: auto;
+  height: 500px;
 }
 
 
