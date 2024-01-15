@@ -696,9 +696,9 @@ static command_response_t _cc_cb(char* args)
             log_out("Could not get CC values.");
             return COMMAND_RESP_ERR;
         }
-        log_out("CC1 = %"PRIi64".%"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
-        log_out("CC2 = %"PRIi64".%"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
-        log_out("CC3 = %"PRIi64".%"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
+        log_out("CC1 = %"PRIi64".%03"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        log_out("CC2 = %"PRIi64".%03"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        log_out("CC3 = %"PRIi64".%03"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
         return COMMAND_RESP_OK;
     }
     if (cc_num > 3 || cc_num == 0)
