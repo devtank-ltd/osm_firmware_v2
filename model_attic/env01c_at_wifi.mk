@@ -20,6 +20,7 @@ env01c_at_wifi_SOURCES := \
            $(OSM_DIR)/protocols/src/jsonblob.c \
            $(OSM_DIR)/protocols/src/comms_behind.c \
            $(OSM_DIR)/comms/src/at_wifi.c \
+           $(OSM_DIR)/comms/src/common.c \
            $(OSM_DIR)/sensors/src/hpm.c \
            $(OSM_DIR)/sensors/src/htu21d.c \
            $(OSM_DIR)/sensors/src/ds18b20.c \

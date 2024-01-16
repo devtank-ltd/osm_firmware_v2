@@ -1096,7 +1096,7 @@ void rak4270_loop_iteration(void)
 }
 
 
-static command_response_t _rak4270_cmd_conn_cb(char* str)
+command_response_t rak4270_cmd_conn_cb(char* str)
 {
     if (rak4270_get_connected())
     {
@@ -1135,7 +1135,6 @@ command_response_t rak4270_cmd_j_cfg_cb(char* str)
 struct cmd_link_t* rak4270_add_commands(struct cmd_link_t* tail)
 {
     return tail;
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
 
 
