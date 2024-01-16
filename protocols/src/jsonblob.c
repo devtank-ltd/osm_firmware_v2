@@ -16,7 +16,7 @@
 
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
-
+static unsigned _json_values_start = 0;
 
 static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
 
@@ -144,7 +144,7 @@ bool protocol_debug(void)
 {
     if (!_json_buf_pos)
         return false;
-    char * pos = _json_buf;
+    char * pos = _json_buf + _json_values_start;
     char * next = strchr(pos,',');
     while(next)
     {
@@ -159,7 +159,7 @@ bool protocol_debug(void)
 
 bool protocol_send(void)
 {
-    if (!_protocol_append("}"))
+    if (!_protocol_append("}}"))
         return false;
     if (!comms_send(_json_buf, _json_buf_pos))
     {
@@ -172,6 +172,15 @@ bool protocol_send(void)
 
 bool protocol_init(void)
 {
+    int64_t ts;
+
+    if (!comms_get_unix_time(&ts))
+        return false;
+
     _json_buf_pos = 0;
-    return _protocol_append("{");
+
+    char tmp[32];
+    _json_values_start = snprintf(tmp, sizeof(tmp),"{\"UNIX\":%"PRIi64",\"VALUES\":{", ts);
+
+    return _protocol_append(tmp);
 }
