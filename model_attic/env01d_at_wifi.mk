@@ -22,6 +22,7 @@ env01d_at_wifi_SOURCES := \
            $(OSM_DIR)/protocols/src/jsonblob.c \
            $(OSM_DIR)/protocols/src/comms_behind.c \
            $(OSM_DIR)/comms/src/at_wifi.c \
+           $(OSM_DIR)/comms/src/common.c \
            $(OSM_DIR)/sensors/src/sen54.c \
            $(OSM_DIR)/sensors/src/sensirion_i2c_hal.c \
            $(LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \

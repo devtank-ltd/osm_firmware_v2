@@ -687,7 +687,7 @@ static void _at_wifi_process_state_mqtt_connecting(char* msg, unsigned len)
     {
         _at_wifi_sleep();
         _at_wifi_printf(
-            "AT+MQTTSUB=%u,\"%.*s\",%u",
+            "AT+MQTTSUB=%u,\"%.*s/"AT_WIFI_MQTT_TOPIC_COMMAND"\",%u",
             AT_WIFI_MQTT_LINK_ID,
             AT_WIFI_MQTT_TOPIC_LEN, _at_wifi_ctx.topic_header,
             AT_WIFI_MQTT_QOS
@@ -738,7 +738,7 @@ static void _at_wifi_do_command(char* payload, unsigned payload_len)
 }
 
 
-static void _at_wifi_parse_payload(char* topic, unsigned topic_len, char* payload, unsigned payload_len)
+static bool _at_wifi_parse_payload(char* topic, unsigned topic_len, char* payload, unsigned payload_len)
 {
     /* Check for this sensor */
     unsigned own_topic_header_len = strnlen(_at_wifi_ctx.topic_header, AT_WIFI_MQTT_TOPIC_LEN);
@@ -752,7 +752,7 @@ static void _at_wifi_parse_payload(char* topic, unsigned topic_len, char* payloa
             if (topic_tail[0] != '/')
             {
                 /* Bad format */
-                return;
+                return false;
             }
             topic_tail++;
             topic_tail_len--;
@@ -764,10 +764,12 @@ static void _at_wifi_parse_payload(char* topic, unsigned topic_len, char* payloa
         }
     }
     /* leave room for potential broadcast messages */
+    log_out("Command from OTA");
+    return true;
 }
 
 
-static void _at_wifi_parse_msg(char* msg, unsigned len)
+static bool _at_wifi_parse_msg(char* msg, unsigned len)
 {
     /* Destructive
      *
@@ -779,46 +781,48 @@ static void _at_wifi_parse_msg(char* msg, unsigned len)
     (void)link_id;
     if (p == np)
     {
-        return;
+        return false;
     }
     if (np[0] != ',' || np[1] != '"')
     {
-        return;
+        return false;
     }
+    p = np;
     char* topic = np + 2;
     np = strchr(topic, '"');
     if (!np)
     {
-        return;
+        return false;
     }
-    unsigned topic_len = np - msg;
+    unsigned topic_len = np - p - 2;
     if (topic_len > len)
     {
-        return;
+        return false;
     }
     topic[topic_len] = 0;
     np = topic + topic_len + 1;
     if (np[0] != ',')
     {
-        return;
+        return false;
     }
     p = np + 1;
     unsigned payload_length = strtoul(p, &np, 10);
     if (p == np)
     {
-        return;
+        return false;
     }
     if (np[0] != ',')
     {
-        return;
+        return false;
     }
     char* payload = np + 1;
-    _at_wifi_parse_payload(topic, topic_len, payload, payload_length);
+    return _at_wifi_parse_payload(topic, topic_len, payload, payload_length);
 }
 
 
-static void _at_wifi_process_state_idle(char* msg, unsigned len)
+static bool _at_wifi_process_event(char* msg, unsigned len)
 {
+    bool r = false;
     const char recv_msg[] = "+MQTTSUBRECV:";
     const unsigned recv_msg_len = strlen(recv_msg);
     if (recv_msg_len <= len &&
@@ -827,8 +831,14 @@ static void _at_wifi_process_state_idle(char* msg, unsigned len)
         /* Received message */
         char* msg_tail = msg + recv_msg_len;
         unsigned msg_tail_len = len - recv_msg_len;
-        _at_wifi_parse_msg(msg_tail, msg_tail_len);
+        r = _at_wifi_parse_msg(msg_tail, msg_tail_len);
     }
+    return r;
+}
+
+
+static void _at_wifi_process_state_idle(char* msg, unsigned len)
+{
 }
 
 
@@ -1000,6 +1010,11 @@ void at_wifi_process(char* msg)
     _at_wifi_ctx.last_recv = get_since_boot_ms();
 
     comms_debug("Message when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+
+    if (_at_wifi_process_event(msg, len))
+    {
+        return;
+    }
 
     switch (_at_wifi_ctx.state)
     {

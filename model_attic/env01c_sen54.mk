@@ -23,6 +23,7 @@ env01c_sen54_SOURCES := \
            $(OSM_DIR)/protocols/src/comms_behind.c \
            $(OSM_DIR)/comms/src/lw.c \
            $(OSM_DIR)/comms/src/rak3172.c \
+           $(OSM_DIR)/comms/src/common.c \
            $(OSM_DIR)/sensors/src/sen54.c \
            $(OSM_DIR)/sensors/src/sensirion_i2c_hal.c \
            $(LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
