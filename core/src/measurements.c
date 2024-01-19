@@ -48,7 +48,6 @@ static bool                         _pending_send                               
 static measurements_check_time_t    _check_time                                          = {0, 0};
 static uint32_t                     _interval_count                                      =  0;
 static measurements_arr_t           _measurements_arr                                    = {0};
-static bool                         _measurements_debug_mode                             = false;
 
 bool                                 measurements_enabled                                = true;
 
@@ -171,15 +170,12 @@ static void _measurements_send(void)
             _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
         }
         _pending_send = false;
-        if (_measurements_debug_mode)
-            _last_sent_ms = get_since_boot_ms();
-        else
-            return;
+        return;
     }
 
     has_printed_no_con = false;
 
-    if (!protocol_send_ready() && !_measurements_debug_mode)
+    if (!protocol_send_ready())
     {
         if (protocol_send_allowed())
         {
@@ -255,7 +251,7 @@ static void _measurements_send(void)
     if (num_qd > 0)
     {
         _pending_send = !is_max;
-        bool send_ret = _measurements_debug_mode ? protocol_debug() : protocol_send();
+        bool send_ret = protocol_send();
         if (!send_ret)
         {
             measurements_debug("Protocol send failed, resetting protocol");
@@ -997,7 +993,7 @@ void measurements_loop_iteration(void)
 
     static bool has_printed_no_con = false;
 
-    if (!protocol_get_connected() && !_measurements_debug_mode)
+    if (!protocol_get_connected())
     {
         if (!has_printed_no_con)
         {
@@ -1019,7 +1015,7 @@ void measurements_loop_iteration(void)
         return;
     }
 
-    if (protocol_send_ready() || _measurements_debug_mode)
+    if (protocol_send_ready())
         _measurements_check_instant_send();
 
     if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
@@ -1133,16 +1129,6 @@ void measurements_init(void)
         measurements_debug("Loading interval of %"PRIu32".%03"PRIu32" minutes", transmit_interval/1000, transmit_interval%1000);
     else
         measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval/1000);
-}
-
-
-void measurements_set_debug_mode(bool enable)
-{
-    if (enable)
-        measurements_debug("Enabling measurements debug mode.");
-    else
-        measurements_debug("Disabling measurements debug mode.");
-    _measurements_debug_mode = enable;
 }
 
 
@@ -1506,14 +1492,6 @@ static command_response_t _measurements_get_type_cb(char* args)
 }
 
 
-static command_response_t _measurements_no_comms_cb(char* args)
-{
-    bool enable = strtoul(args, NULL, 10);
-    measurements_set_debug_mode(enable);
-    return COMMAND_RESP_OK;
-}
-
-
 static command_response_t _measurements_interval_cb(char * args)
 {
     char* name = args;
@@ -1680,7 +1658,6 @@ struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
         { "get_meas",     "Get a measurement",                   _measurements_get_cb            , false , NULL },
         { "get_meas_to",  "Get timeout of measurement",          _measurements_get_to_cb         , false , NULL },
         { "get_meas_type","Get the type of measurement",         _measurements_get_type_cb       , false , NULL },
-        { "no_comms",     "Dont need comms for measurements",    _measurements_no_comms_cb       , false , NULL },
         { "interval",     "Set the interval",                    _measurements_interval_cb       , false , NULL },
         { "samplecount",  "Set the samplecount",                 _measurements_samplecount_cb    , false , NULL },
         { "interval_mins","Get/Set interval minutes",            _measurements_interval_mins_cb  , false , NULL },

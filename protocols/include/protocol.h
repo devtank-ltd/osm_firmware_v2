@@ -10,7 +10,6 @@ void        protocol_system_init(void);
 
 bool        protocol_init(void);
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data);
-bool        protocol_debug(void);
 bool        protocol_send(void);
 void        protocol_send_error_code(uint8_t err_code);
 
