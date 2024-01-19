@@ -16,7 +16,6 @@
 
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
-static unsigned _json_values_start = 0;
 
 static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
 
@@ -144,7 +143,7 @@ bool protocol_debug(void)
 {
     if (!_json_buf_pos)
         return false;
-    char * pos = _json_buf + _json_values_start;
+    char * pos = _json_buf + strnlen(_json_buf, JSON_BUF_SIZE);
     char * next = strchr(pos,',');
     while(next)
     {
@@ -179,8 +178,5 @@ bool protocol_init(void)
 
     _json_buf_pos = 0;
 
-    char tmp[32];
-    _json_values_start = snprintf(tmp, sizeof(tmp),"{\"UNIX\":%"PRIi64",\"VALUES\":{", ts);
-
-    return _protocol_append(tmp);
+    return _protocol_append("{\"UNIX\":%"PRIi64",\"VALUES\":{", ts);
 }
