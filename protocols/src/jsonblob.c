@@ -143,7 +143,7 @@ bool protocol_debug(void)
 {
     if (!_json_buf_pos)
         return false;
-    char * pos = _json_buf + strnlen(_json_buf, JSON_BUF_SIZE);
+    char * pos = _json_buf + _json_buf_pos;
     char * next = strchr(pos,',');
     while(next)
     {
