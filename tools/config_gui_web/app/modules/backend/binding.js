@@ -268,6 +268,24 @@ export class binding_t {
     this.do_cmd('save');
   }
 
+  async activate_io(meas, index, edge, pull) {
+    let m = '';
+    if (meas === 'PLSCNT') {
+      m = 'pulse';
+    } else if (meas === 'W1') {
+      m = 'w1';
+    }
+    await this.do_cmd(`en_${m} ${index} ${edge} ${pull}`);
+  }
+
+  async disable_io(index) {
+    this.do_cmd(`io ${index} : I N`);
+  }
+
+  async update_midpoint(value, phase) {
+    await this.do_cmd(`cc_mp ${value} ${phase}`);
+  }
+
   async extract_interval_mins() {
     const imins = await this.do_cmd('interval_mins');
     const regex = /\d+/g;
@@ -386,6 +404,10 @@ export class binding_t {
 
   async remove_modbus_dev(dev) {
     await this.do_cmd(`mb_dev_del ${dev}`);
+  }
+
+  async modbus_setup(mode, baud, config) {
+    await this.do_cmd(`mb_setup ${mode} ${baud} ${config}`);
   }
 }
 

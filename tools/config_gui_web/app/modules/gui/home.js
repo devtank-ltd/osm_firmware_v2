@@ -48,7 +48,7 @@ export class home_tab_t {
     await this.load_serial_number();
     await this.load_fw_ver();
 
-    const load_config = new load_configuration_t(this.dev);
+    const load_config = new load_configuration_t(this.dev, this.comms);
     await load_config.add_listener();
 
     await this.add_event_listeners();
