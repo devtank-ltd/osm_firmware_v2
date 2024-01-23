@@ -15,16 +15,42 @@ class low_level_socket_t {
     this.port.onopen = (e) => {
       console.log(`Socket opened on port ${port}`);
     };
-    this.port.onmessage = (e) => { this.read(e.data); };
+    this.msgs = '';
+    this.port.onerror = (event) => {
+      console.log('WebSocket error: ', event);
+    };
+    this.on_message();
   }
 
   async write(msg) {
-    this.port.send(msg);
+    this.port.send(`${msg}\n`);
   }
 
-  async read(data) {
-    this.data = data;
-    return this.data;
+  async read() {
+    await this.wait_for_messages();
+    const msg = this.msgs;
+    this.msgs = '';
+    return msg;
+  }
+
+  async on_message() {
+    this.port.onmessage = async (e) => {
+      this.msgs += e.data;
+      console.log(e.data);
+    };
+  }
+
+  async wait_for_messages() {
+    return new Promise((resolve) => {
+      const check_messages = () => {
+        if (this.msgs.includes('}============')) {
+          resolve();
+        } else {
+          setTimeout(check_messages, 100);
+        }
+      };
+      check_messages();
+    });
   }
 }
 

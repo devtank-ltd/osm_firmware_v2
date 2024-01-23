@@ -38,7 +38,7 @@ export class home_tab_t {
     const comms_config = await this.dev.do_cmd('j_comms_cfg');
     const json_config = JSON.parse(comms_config);
     const comms_type = await json_config.type;
-    if (comms_type === 'LW') {
+    if (comms_type.includes('LW')) {
       this.comms = new lora_comms_t(this.dev);
       const lora = new lora_config_t(this.comms);
       await lora.populate_lora_fields();
