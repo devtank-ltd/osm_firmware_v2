@@ -1020,6 +1020,9 @@ static void _at_wifi_process_state_wait_timestamp(char* msg, unsigned len)
     {
         _at_wifi_ctx.time.ts_unix = strtoull(&msg[sys_ts_msg_len], NULL, 10);
         _at_wifi_ctx.time.sys = get_since_boot_ms();
+    }
+    else if (_at_wifi_is_ok(msg, len))
+    {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
     }
 }
