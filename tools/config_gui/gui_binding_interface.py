@@ -106,8 +106,6 @@ class binding_interface_svr_t:
                           REQ_RAND_APP        : self._req_rand_app,
                           REQ_ADD_DEV         : self._req_add_dev,
                           REQ_ADD_REG         : self._req_add_reg,
-                          REQ_DEBUG_BEGIN     : self._req_debug_begin,
-                          REQ_DEBUG_END       : self._req_debug_end,
                           REQ_DIS_IO          : self._req_disable_io,
                           REQ_ACT_IO          : self._req_activate_io,
                           REQ_SET_COEFFS      : self._req_set_coeffs,

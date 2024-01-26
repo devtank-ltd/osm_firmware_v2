@@ -24,9 +24,9 @@ There are several dependencies required for OSM to compile successfully,install 
         stm32flash \
         valgrind \
         minicom \
-        idle-python3.10 \
+        idle-python3.11 \
         python3-influxdb \
-        python3-pil \
+        python3-pil.imagetk \
         python3-pymodbus \
         python3-scipy \
         python3-yaml \
