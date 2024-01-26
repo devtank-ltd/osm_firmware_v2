@@ -286,6 +286,16 @@ export class binding_t {
     await this.do_cmd(`cc_mp ${value} ${phase}`);
   }
 
+  async get_cc_gain() {
+    const gain = await this.do_cmd_multi('cc_gain');
+    return gain;
+  }
+
+  async get_cc_mp(phase) {
+    const mp = await this.do_cmd_multi(`cc_mp CC${phase}`);
+    return mp;
+  }
+
   async extract_interval_mins() {
     const imins = await this.do_cmd('interval_mins');
     const regex = /\d+/g;

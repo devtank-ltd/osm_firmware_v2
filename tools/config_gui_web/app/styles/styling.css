@@ -235,7 +235,29 @@ button:hover {
 }
 
 
+/* Current Clamp Configuration */
 
+.current-clamp-div {
+  margin-top: 50px;
+}
+
+.current-clamp-table table {
+  border-collapse : collapse;
+  width: 500px;
+  height: 300px;
+
+}
+
+.current-clamp-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.current-clamp-table td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
 
 /* Modbus Current Settings */
 
