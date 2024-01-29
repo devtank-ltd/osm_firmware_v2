@@ -291,9 +291,17 @@ export class binding_t {
     return gain;
   }
 
+  async set_cc_gain(phase, ext, int) {
+    await this.do_cmd(`cc_gain ${phase} ${ext} ${int}`);
+  }
+
   async get_cc_mp(phase) {
     const mp = await this.do_cmd_multi(`cc_mp CC${phase}`);
     return mp;
+  }
+
+  async cc_cal() {
+    await this.do_cmd('cc_cal');
   }
 
   async extract_interval_mins() {

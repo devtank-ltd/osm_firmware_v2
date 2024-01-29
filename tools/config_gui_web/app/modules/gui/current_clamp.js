@@ -2,6 +2,10 @@ export class current_clamp_t {
   constructor(dev) {
     this.dev = dev;
     this.create_cc_table = this.create_cc_table.bind(this);
+    this.open_cc_modal = this.open_cc_modal.bind(this);
+    this.set_cc_exterior = this.set_cc_exterior.bind(this);
+    this.set_cc_interior = this.set_cc_interior.bind(this);
+    this.set_cc_midpoint = this.set_cc_midpoint.bind(this);
   }
 
   async open_cc_tab() {
@@ -9,11 +13,35 @@ export class current_clamp_t {
     this.response = await fetch('modules/gui/html/current_clamp.html');
     this.text = await this.response.text();
     this.doc.innerHTML = this.text;
-    this.create_cc_table();
+    await this.create_cc_table();
+    await this.add_event_listeners();
+  }
+
+  async add_event_listeners() {
+    console.log('Adding event listeners');
+    document.getElementById('current-clamp-cal-btn').addEventListener('click', this.open_cc_modal);
+  }
+
+  async open_cc_modal() {
+    console.log('Reached');
+    this.dialog = document.getElementById('cc-cal-dialog');
+    this.confirm = document.getElementById('cc-modal-confirm');
+    this.cancel = document.getElementById('cc-modal-cancel');
+
+    this.dialog.showModal();
+    this.confirm.addEventListener('click', async () => {
+      console.log('Calibrating CC');
+      await this.dev.cc_cal();
+      this.create_cc_table();
+    });
+    this.cancel.addEventListener('click', () => {
+      this.dialog.close();
+    });
   }
 
   async create_cc_table() {
     this.cc_div = document.getElementById('current-clamp-div');
+    this.cc_div.innerHTML = '';
     this.add_cc_table = this.cc_div.appendChild(document.createElement('table'));
     this.add_cc_table.id = 'current-clamp-table';
     this.add_cc_table.classList = 'current-clamp-table';
@@ -96,12 +124,63 @@ export class current_clamp_t {
       const ext_cell = cc_row.insertCell();
       ext_cell.textContent = ext;
       ext_cell.contentEditable = true;
+      ext_cell.addEventListener('focusout', this.set_cc_exterior);
+
       const int_cell = cc_row.insertCell();
       int_cell.textContent = int * 1000;
       int_cell.contentEditable = true;
+      int_cell.addEventListener('focusout', this.set_cc_interior);
+
       const mp_cell = cc_row.insertCell();
       mp_cell.textContent = mp;
       mp_cell.contentEditable = true;
+      mp_cell.addEventListener('focusout', this.set_cc_midpoint);
     });
+  }
+
+  async set_cc_exterior(event) {
+    this.extphase = event.target.parentElement.cells[0].innerHTML;
+    this.ext_val = event.target.innerHTML;
+    switch (this.extphase) {
+      case 'CC1':
+        this.extphase = 1;
+        break;
+      case 'CC2':
+        this.extphase = 2;
+        break;
+      case 'CC3':
+        this.extphase = 3;
+        break;
+      default:
+        this.extphase = 'undefined';
+    }
+    this.interior = event.target.parentElement.cells[2].innerHTML;
+    await this.dev.set_cc_gain(this.extphase, this.ext_val, this.interior);
+  }
+
+  async set_cc_interior(event) {
+    this.intphase = event.target.parentElement.cells[0].innerHTML;
+    this.int_val = event.target.innerHTML;
+    switch (this.intphase) {
+      case 'CC1':
+        this.intphase = 1;
+        break;
+      case 'CC2':
+        this.intphase = 2;
+        break;
+      case 'CC3':
+        this.intphase = 3;
+        break;
+      default:
+        this.intphase = 'undefined';
+    }
+    this.exterior = event.target.parentElement.cells[1].innerHTML;
+    await this.dev.set_cc_gain(this.intphase, this.exterior, this.int_val);
+  }
+
+  async set_cc_midpoint(event) {
+    this.mpphase = event.target.parentElement.cells[0].innerHTML;
+    this.mp_val = event.target.innerHTML;
+    this.dev.update_midpoint(this.mp_val, this.mpphase);
   }
 }
