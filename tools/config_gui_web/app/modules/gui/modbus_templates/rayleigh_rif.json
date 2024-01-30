@@ -11,42 +11,42 @@
         "Imp": {
             "hex": "0x60",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "AP1": {
             "hex": "0x10",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "AP2": {
             "hex": "0x12",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "AP3": {
             "hex": "0x14",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "VP1": {
             "hex": "0x0",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "VP2": {
             "hex": "0x2",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "VP3": {
             "hex": "0x4",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         },
         "PF": {
             "hex": "0x36",
             "function": 4,
-            "unit": "F"
+            "datatype": "F"
         }
     }
 

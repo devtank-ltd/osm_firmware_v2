@@ -35,6 +35,7 @@ export class lora_config_t {
     const region_dropdwn = await this.get_region_html();
 
     const lora_res = document.querySelector('div.lora-config-table');
+    lora_res.style.display = 'block';
     const lora_tbl = lora_res.appendChild(document.createElement('table'));
     const lora_tBody = lora_tbl.createTBody();
     lora_tbl.createTHead();
@@ -66,7 +67,7 @@ export class lora_config_t {
         }
       } else if (i === 'Status') {
         const td = r.insertCell();
-        if (conn === '0 | Disconnected') { conn = 'Disconnected'; } else if (conn === '1 | Connected') { conn = 'Connected'; }
+        conn = (conn === '1 | Connected') ? 'Connected' : 'Disconnected';
         td.textContent = conn;
         td.id = 'lora-status-value';
       }

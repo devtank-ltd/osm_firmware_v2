@@ -11,6 +11,7 @@ export class modbus_t {
     this.add_new_template = this.add_new_template.bind(this);
     this.export_template = this.export_template.bind(this);
     this.import_template_dialog = this.import_template_dialog.bind(this);
+    this.load_json_templates = this.load_json_templates.bind(this);
   }
 
   async open_modbus() {
@@ -126,12 +127,13 @@ export class modbus_t {
 
   async load_json_templates() {
     this.objs = [];
-    this.rayleigh = await fetch('modules/gui/modbus_templates/rayleigh_rif.json');
-    this.objs.push(await this.rayleigh.json());
-    this.e53 = await fetch('modules/gui/modbus_templates/countis_e53.json');
-    this.objs.push(await this.e53.json());
-    this.wt9 = await fetch('modules/gui/modbus_templates/wt901c-rs485.json');
-    this.objs.push(await this.wt9.json());
+    this.pub_templates = await fetch('modules/gui/modbus_templates/published_templates.json');
+    this.template_json = await this.pub_templates.json();
+    for (let i = 0; i < this.template_json.templates.length; i += 1) {
+      const tmp = this.template_json.templates[i];
+      const obj = await fetch(`modules/gui/modbus_templates/${tmp}`);
+      this.objs.push(await obj.json());
+    }
     return this.objs;
   }
 
@@ -205,7 +207,7 @@ export class modbus_t {
     reg_headers_row.insertCell().textContent = 'Name';
     reg_headers_row.insertCell().textContent = 'Address';
     reg_headers_row.insertCell().textContent = 'Type';
-    reg_headers_row.insertCell().textContent = 'Unit';
+    reg_headers_row.insertCell().textContent = 'Datatype';
 
     for (const [key, value] of Object.entries(this.template.registers)) {
       let type = '';
@@ -216,17 +218,17 @@ export class modbus_t {
       } else {
         type = value.function;
       }
-      let unit_str = '';
+      let datatype_str = '';
       if (value.unit === 'F') {
-        unit_str = 'Float';
+        datatype_str = 'Float';
       } else {
-        unit_str = value.unit;
+        datatype_str = value.datatype;
       }
       const nested_row = tbody.insertRow();
       nested_row.insertCell().textContent = key;
       nested_row.insertCell().textContent = value.hex;
       nested_row.insertCell().textContent = type;
-      nested_row.insertCell().textContent = unit_str;
+      nested_row.insertCell().textContent = datatype_str;
     }
   }
 
@@ -239,7 +241,13 @@ export class modbus_t {
     );
 
     for (const [key, value] of Object.entries(this.template.registers)) {
-      await this.dev.mb_reg_add(this.template.unit_id, value.hex, value.function, value.unit, key);
+      await this.dev.mb_reg_add(
+        this.template.unit_id,
+        value.hex,
+        value.function,
+        value.datatype,
+        key,
+      );
     }
 
     this.mb_current_config_div.innerHTML = '';
