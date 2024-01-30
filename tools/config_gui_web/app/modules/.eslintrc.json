@@ -17,6 +17,7 @@
         "import/prefer-default-export": "off",
         "no-unused-vars": "off",
         "max-classes-per-file": "off",
-        "no-restricted-syntax": "off"
+        "no-restricted-syntax": "off",
+        "no-case-declarations": "off"
     }
 }

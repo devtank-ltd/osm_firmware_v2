@@ -244,7 +244,7 @@ export class binding_t {
       } else {
         try {
           const [, interval_str] = m;
-          regex = /^(\d+)x(\d+)mins$/;
+          regex = /^(\d+)x(\d+(\.\d+)?)mins$/;
           if (interval_str) {
             const match = interval_str.match(regex);
             [, interval, interval_mins] = match;
@@ -259,7 +259,13 @@ export class binding_t {
       }
     });
     const extracted_meas = measurements.slice(start, end);
-    const imins = extracted_meas[0][1].concat(` (${interval_mins}mins)`);
+    let imins = '';
+    if (interval_mins < 1 && interval_mins > 0) {
+      interval_mins *= 60;
+      imins = extracted_meas[0][1].concat(` (${interval_mins}seconds)`);
+    } else {
+      imins = extracted_meas[0][1].concat(` (${interval_mins}mins)`);
+    }
     extracted_meas[0][1] = imins;
     return extracted_meas;
   }
@@ -306,8 +312,15 @@ export class binding_t {
 
   async extract_interval_mins() {
     const imins = await this.do_cmd('interval_mins');
-    const regex = /\d+/g;
+    const regex = /\d+(\.\d+)?/g;
     const match = imins.match(regex)[0];
+    return match;
+  }
+
+  async get_interval_meas(meas) {
+    this.int = await this.do_cmd(`interval ${meas}`);
+    const regex = /\d+/g;
+    const match = this.int.match(regex)[0];
     return match;
   }
 
@@ -330,22 +343,6 @@ export class binding_t {
   get firmware_version() {
     return this.get_value('version');
   }
-
-  /*
-  async get_wifi_config() {
-
-            comms_pr_cfg
-
-            WIFI SSID: Wifi Example SSID
-            WIFI PWD: wifipwd
-            MQTT ADDR: mqtt_addr
-            MQTT USER: mqttuser
-            MQTT PWD: mqttpwd
-            MQTT CA: server
-            MQTT PORT: 8883
-
-  }
-  */
 
   async get_value(cmd) {
     const res = await this.do_cmd(cmd);
@@ -456,6 +453,72 @@ export class lora_comms_t {
 
   set lora_region(region) {
     this.dev.enqueue_and_process(`comms_config region ${region}`);
+  }
+
+  get comms_conn() {
+    return this.dev.get_value('comms_conn');
+  }
+}
+
+export class wifi_comms_t {
+  constructor(dev) {
+    this.dev = dev;
+  }
+
+  get wifi_ssid() {
+    return this.dev.get_value('comms_config wifi_ssid');
+  }
+
+  set wifi_ssid(ssid) {
+    this.dev.enqueue_and_process(`comms_config wifi_ssid ${ssid}`);
+  }
+
+  get wifi_pwd() {
+    return this.dev.get_value('comms_config wifi_pwd');
+  }
+
+  set wifi_pwd(pwd) {
+    this.dev.enqueue_and_process(`comms_config wifi_pwd ${pwd}`);
+  }
+
+  get mqtt_addr() {
+    return this.dev.get_value('comms_config mqtt_addr');
+  }
+
+  set mqtt_addr(addr) {
+    this.dev.enqueue_and_process(`comms_config mqtt_addr ${addr}`);
+  }
+
+  get mqtt_user() {
+    return this.dev.get_value('comms_config mqtt_user');
+  }
+
+  set mqtt_user(mqtt_user) {
+    this.dev.enqueue_and_process(`comms_config mqtt_user ${mqtt_user}`);
+  }
+
+  get mqtt_pwd() {
+    return this.dev.get_value('comms_config mqtt_pwd');
+  }
+
+  set mqtt_pwd(mqtt_pwd) {
+    this.dev.enqueue_and_process(`comms_config mqtt_pwd ${mqtt_pwd}`);
+  }
+
+  get mqtt_ca() {
+    return this.dev.get_value('comms_config mqtt_ca');
+  }
+
+  set mqtt_ca(mqtt_ca) {
+    this.dev.enqueue_and_process(`comms_config mqtt_ca ${mqtt_ca}`);
+  }
+
+  get mqtt_port() {
+    return this.dev.get_value('comms_config mqtt_port');
+  }
+
+  set mqtt_port(mqtt_port) {
+    this.dev.enqueue_and_process(`comms_config mqtt_port ${mqtt_port}`);
   }
 
   get comms_conn() {

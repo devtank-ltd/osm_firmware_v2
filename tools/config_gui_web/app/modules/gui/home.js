@@ -2,7 +2,8 @@ import { navbar_t } from './navbar.js';
 import { measurements_table_t } from './measurements_table.js';
 import { lora_config_t } from './lora_config.js';
 import { load_configuration_t } from './load_configuration.js';
-import { lora_comms_t } from '../backend/binding.js';
+import { lora_comms_t, wifi_comms_t } from '../backend/binding.js';
+import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
 import { modbus_t } from './modbus.js';
 import { current_clamp_t } from './current_clamp.js';
@@ -45,6 +46,11 @@ export class home_tab_t {
       const lora = new lora_config_t(this.comms);
       await lora.populate_lora_fields();
       await lora.add_listeners();
+    } else if (comms_type.includes('AT WIFI')) {
+      this.comms = new wifi_comms_t(this.dev);
+      const wifi = new wifi_config_t(this.comms);
+      await wifi.populate_wifi_fields();
+      await wifi.add_listeners();
     }
 
     await this.load_serial_number();
