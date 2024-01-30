@@ -16,6 +16,12 @@ export class measurements_table_t {
     const tBody = tbl.createTBody();
     tbl.createTHead();
     this.interval_mins = await this.dev.interval_mins;
+    if (this.interval_mins < 1 && this.interval_mins > 0) {
+      this.interval_mins *= 60;
+      this.is_seconds = true;
+    } else {
+      this.is_seconds = false;
+    }
 
     measurements.forEach((cell, i) => {
       if (i === 0) {
@@ -39,7 +45,7 @@ export class measurements_table_t {
             num_input.className = 'meas-table-inputs';
             num_input.min = 0;
             if (index === 1) {
-              val = Number(this.interval_mins) * Number(j);
+              val = parseFloat(this.interval_mins) * parseFloat(j);
             } else {
               val = j;
             }
@@ -67,9 +73,13 @@ export class measurements_table_t {
 
   async get_minimum_interval(val) {
     const interval_mins = await this.dev.interval_mins;
+    let interval_seconds = null;
+    if (interval_mins < 1 && interval_mins > 0) {
+      interval_seconds = interval_mins * 60;
+    }
     let m;
     const multiple = 5;
-    if (Number(val) < interval_mins && Number(val) > 0) {
+    if (parseFloat(val) < interval_mins && parseFloat(val) > 0) {
       m = interval_mins;
     } else {
       m = val;
@@ -78,6 +88,9 @@ export class measurements_table_t {
       m = await this.round_to_nearest(m, multiple);
     }
     let int_mins_converted = m / interval_mins;
+    if (interval_seconds != null) {
+      int_mins_converted = m / interval_mins / 60;
+    }
     int_mins_converted = Math.round(int_mins_converted);
     return int_mins_converted;
   }
@@ -88,7 +101,10 @@ export class measurements_table_t {
   }
 
   async set_interval_or_samplec(e) {
-    const interval_mins = await this.dev.interval_mins;
+    let interval_mins = await this.dev.interval_mins;
+    if (interval_mins < 1 && interval_mins > 0) {
+      interval_mins *= 60;
+    }
     const cell_index = e.srcElement.parentNode.cellIndex;
     const row_index = e.target.parentNode.parentNode.rowIndex;
     const table = e.target.offsetParent.offsetParent;
@@ -126,19 +142,34 @@ export class measurements_table_t {
     const table = document.getElementById('meas-table');
     const imins_header = table.rows[0].cells[1];
     const interval_mins = await this.dev.interval_mins;
-    const multiple = 5;
 
     const uplink_input = document.getElementById('home-uplink-input');
-    const mins = await this.round_to_nearest(uplink_input.value, multiple);
-    if (mins) {
-      this.dev.interval_mins = mins;
+    const mins = uplink_input.value;
+    this.dev.interval_mins = mins;
+    let seconds = null;
+    if (mins < 1 && mins > 0) {
+      seconds = mins * 60;
+      this.is_seconds = true;
+      if (seconds != null) {
+        imins_header.innerHTML = `Interval (${seconds} seconds)`;
+      }
+    } else {
       imins_header.innerHTML = `Interval (${mins} mins)`;
-      uplink_input.value = '';
     }
+    uplink_input.value = '';
     for (let i = 1; i < table.rows.length; i += 1) {
       const interval_val = table.rows[i].cells[1].childNodes[0].value;
       const interval_cell = table.rows[i].cells[1].childNodes[0];
-      interval_cell.value = (interval_val * mins) / interval_mins;
+      if (seconds != null) {
+        interval_cell.value = ((interval_val * mins) / interval_mins) * 60;
+      } else if (this.is_seconds === true) {
+        interval_cell.value = ((interval_val * mins) / interval_mins) / 60;
+      } else {
+        interval_cell.value = ((interval_val * mins) / interval_mins);
+      }
+    }
+    if (seconds === null) {
+      this.is_seconds = false;
     }
     disable_interaction(false);
   }
