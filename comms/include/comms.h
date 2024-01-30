@@ -18,6 +18,7 @@
 #define comms_add_extra_commands                        CONCAT(comms_name,_add_commands        )
 #define comms_power_down                                CONCAT(comms_name,_power_down          )
 #define comms_persist_config_cmp                        CONCAT(comms_name,_persist_config_cmp  )
+#define comms_get_unix_time                             CONCAT(comms_name,_get_unix_time  )
 
 #define comms_cmd_config_cb                             CONCAT(comms_name,_cmd_config_cb       )
 #define comms_cmd_j_cfg_cb                              CONCAT(comms_name,_cmd_j_cfg_cb        )

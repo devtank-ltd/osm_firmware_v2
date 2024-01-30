@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include "base_types.h"
+#include "measurements.h"
 
 #ifndef comms_name
 #define comms_name          at_wifi
@@ -63,3 +64,5 @@ extern void     at_wifi_config_init(comms_config_t* comms_config);
 extern command_response_t at_wifi_cmd_config_cb(char * args);
 extern command_response_t at_wifi_cmd_j_cfg_cb(char* args);
 extern command_response_t at_wifi_cmd_conn_cb(char* args);
+
+extern bool at_wifi_get_unix_time(int64_t * ts);

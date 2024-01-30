@@ -420,6 +420,7 @@ static void _linux_load_fd_file(void)
     if (utc_now - attr.st_mtime > LINUX_REBOOT_FILE_TIMEOUT_S)
     {
         linux_port_debug("Reboot file is outdated.");
+        fclose(osm_reboot_file);
         return;
     }
     linux_port_debug("Loading saved file descriptors.");
@@ -927,7 +928,7 @@ void _linux_iterate(void)
                             strncpy(tfdh->name, fd_handler->name, LINUX_PTY_NAME_SIZE-1);
                             unsigned rem_len = LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, LINUX_PTY_NAME_SIZE-1) - 1;
                             strncat(tfdh->name, "_CLIENT", rem_len);
-                            tfdh->name[LINUX_PTY_NAME_SIZE] = 0;
+                            tfdh->name[LINUX_PTY_NAME_SIZE-1] = 0;
                             tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
                             tfdh->socket_client.fd = client_sockfd;
                             tfdh->socket_client.server = fd_handler;

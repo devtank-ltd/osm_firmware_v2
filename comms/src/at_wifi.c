@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <string.h>
@@ -109,6 +110,7 @@ enum at_wifi_states_t
     AT_WIFI_STATE_TIMEDOUT_WIFI_WAIT_STATE,
     AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_WIFI_STATE,
     AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_MQTT_STATE,
+    AT_WIFI_STATE_WAIT_TIMESTAMP,
     AT_WIFI_STATE_COUNT,
 };
 
@@ -151,6 +153,11 @@ static struct
         char message[COMMS_DEFAULT_MTU];
         unsigned len;
     } publish_packet;
+    struct
+    {
+        uint64_t ts_unix;
+        uint32_t sys;
+    } time;
 } _at_wifi_ctx =
 {
     .state                      = AT_WIFI_STATE_OFF,
@@ -163,6 +170,7 @@ static struct
     .before_timedout_last_cmd   = {0},
     .mem                        = NULL,
     .publish_packet             = {.message = {0}, .len = 0},
+    .time                       = {.ts_unix = 0, .sys = 0},
 };
 
 
@@ -192,6 +200,7 @@ static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
         "TIMEDOUT_WIFI_WAIT_STATE"                      ,
         "TIMEDOUT_MQTT_WAIT_WIFI_STATE"                 ,
         "TIMEDOUT_MQTT_WAIT_MQTT_STATE"                 ,
+        "WAIT_TIMESTAMP"                                ,
     };
     _Static_assert(sizeof(state_strs)/sizeof(state_strs[0]) == AT_WIFI_STATE_COUNT, "Wrong number of states");
     unsigned _state = (unsigned)state;
@@ -1003,6 +1012,22 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
 }
 
 
+static void _at_wifi_process_state_wait_timestamp(char* msg, unsigned len)
+{
+    const char sys_ts_msg[] = "+SYSTIMESTAMP:";
+    unsigned sys_ts_msg_len = strlen(sys_ts_msg);
+    if (_at_wifi_is_str(sys_ts_msg, msg, sys_ts_msg_len))
+    {
+        _at_wifi_ctx.time.ts_unix = strtoull(&msg[sys_ts_msg_len], NULL, 10);
+        _at_wifi_ctx.time.sys = get_since_boot_ms();
+    }
+    else if (_at_wifi_is_ok(msg, len))
+    {
+        _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
+    }
+}
+
+
 void at_wifi_process(char* msg)
 {
     unsigned len = strlen(msg);
@@ -1072,6 +1097,9 @@ void at_wifi_process(char* msg)
         case AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_MQTT_STATE:
             _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(msg, len);
             break;
+        case AT_WIFI_STATE_WAIT_TIMESTAMP:
+            _at_wifi_process_state_wait_timestamp(msg, len);
+            break;
         default:
             break;
     }
@@ -1081,7 +1109,8 @@ void at_wifi_process(char* msg)
 bool at_wifi_get_connected(void)
 {
     return _at_wifi_ctx.state == AT_WIFI_STATE_IDLE ||
-           _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_WAIT_PUB;
+           _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_WAIT_PUB ||
+           _at_wifi_ctx.state == AT_WIFI_STATE_WAIT_TIMESTAMP;
 }
 
 
@@ -1456,4 +1485,45 @@ void at_wifi_config_init(comms_config_t* comms_config)
 {
     comms_config->type = COMMS_TYPE_WIFI;
     _at_wifi_config_init2((at_wifi_config_t*)comms_config);
+}
+
+
+/*                  TIMESTAMP RETRIEVAL                  */
+#define AT_WIFI_TS_TIMEOUT                      50
+
+
+static bool _at_wifi_ts_loop_iteration(void* userdata)
+{
+    return _at_wifi_ctx.state != AT_WIFI_STATE_WAIT_TIMESTAMP;
+}
+
+
+bool at_wifi_get_unix_time(int64_t * ts)
+{
+    if (!ts || _at_wifi_ctx.state != AT_WIFI_STATE_IDLE)
+    {
+        return false;
+    }
+    _at_wifi_printf("AT+SYSTIMESTAMP?");
+    _at_wifi_ctx.state = AT_WIFI_STATE_WAIT_TIMESTAMP;
+    if (!main_loop_iterate_for(AT_WIFI_TS_TIMEOUT, _at_wifi_ts_loop_iteration, NULL))
+    {
+        /* Timed out - Not sure what to do with the chip really... */
+        comms_debug("Timed out");
+        return false;
+    }
+    if (!_at_wifi_ctx.time.sys ||
+        since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.time.sys) > AT_WIFI_TS_TIMEOUT)
+    {
+        comms_debug("Old timestamp; invalid");
+        comms_debug("_at_wifi_ctx.time.sys = %"PRIu32, _at_wifi_ctx.time.sys);
+        comms_debug("diff = %"PRIu32" > %u", since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.time.sys), (unsigned)AT_WIFI_TS_TIMEOUT);
+        _at_wifi_ctx.time.sys = 0;
+        _at_wifi_ctx.time.ts_unix = 0;
+        return false;
+    }
+    *ts = (int64_t)_at_wifi_ctx.time.ts_unix;
+    _at_wifi_ctx.time.sys = 0;
+    _at_wifi_ctx.time.ts_unix = 0;
+    return true;
 }

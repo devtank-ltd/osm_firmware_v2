@@ -17,7 +17,6 @@
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
 
-
 static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
 
 
@@ -140,26 +139,9 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 }
 
 
-bool protocol_debug(void)
-{
-    if (!_json_buf_pos)
-        return false;
-    char * pos = _json_buf;
-    char * next = strchr(pos,',');
-    while(next)
-    {
-        comms_debug("%.*s,", (int)(((uintptr_t)next) - (uintptr_t)pos), pos);
-        pos = next + 1;
-        next = strchr(pos,',');
-    }
-    comms_debug("%s", pos);
-    return true;
-}
-
-
 bool protocol_send(void)
 {
-    if (!_protocol_append("}"))
+    if (!_protocol_append("}}"))
         return false;
     if (!comms_send(_json_buf, _json_buf_pos))
     {
@@ -172,6 +154,12 @@ bool protocol_send(void)
 
 bool protocol_init(void)
 {
+    int64_t ts;
+
+    if (!comms_get_unix_time(&ts))
+        return false;
+
     _json_buf_pos = 0;
-    return _protocol_append("{");
+
+    return _protocol_append("{\"UNIX\":%"PRIi64",\"VALUES\":{", ts);
 }
