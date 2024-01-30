@@ -115,8 +115,6 @@ button:hover {
   overflow:auto;
   height: 500px;
   margin          : 2em 0.5em;
-
-
 }
 
 .measurements-table table {
@@ -255,6 +253,31 @@ button:hover {
 }
 
 .current-clamp-table td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+
+/* IO Configuration */
+
+.io-div {
+  margin-top: 50px;
+}
+
+.io-table table {
+  border-collapse : collapse;
+  width: 500px;
+  height: 300px;
+
+}
+
+.io-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.io-table td {
   border     : 1px solid var(--osmdark);
   text-align : center;
 }

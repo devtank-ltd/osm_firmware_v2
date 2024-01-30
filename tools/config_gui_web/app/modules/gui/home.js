@@ -7,6 +7,7 @@ import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
 import { modbus_t } from './modbus.js';
 import { current_clamp_t } from './current_clamp.js';
+import { io_t } from './ios.js';
 
 export class home_tab_t {
   constructor(dev) {
@@ -18,6 +19,7 @@ export class home_tab_t {
     this.save_settings = this.save_settings.bind(this);
     this.change_to_modbus_tab = this.change_to_modbus_tab.bind(this);
     this.change_to_current_clamp_tab = this.change_to_current_clamp_tab.bind(this);
+    this.change_to_io_tab = this.change_to_io_tab.bind(this);
   }
 
   async return_to_home_tab() {
@@ -83,6 +85,7 @@ export class home_tab_t {
     document.getElementById('global-save-setting').addEventListener('click', this.save_settings);
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
+    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
   }
 
   async save_settings() {
@@ -96,6 +99,7 @@ export class home_tab_t {
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
+    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
   }
 
   async change_to_modbus_tab() {
@@ -105,6 +109,7 @@ export class home_tab_t {
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
+    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
   }
 
   async change_to_current_clamp_tab() {
@@ -114,5 +119,16 @@ export class home_tab_t {
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
+    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
+  }
+
+  async change_to_io_tab() {
+    this.io = new io_t(this.dev);
+    await this.io.open_io_tab();
+    await this.navbar.change_active_tab('io-tab');
+    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
+    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
+    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
+    document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
   }
 }

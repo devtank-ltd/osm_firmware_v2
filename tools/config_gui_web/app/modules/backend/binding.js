@@ -274,18 +274,24 @@ export class binding_t {
     this.do_cmd('save');
   }
 
+  async ios() {
+    this.io_obj = this.do_cmd_multi('ios');
+    return this.io_obj;
+  }
+
   async activate_io(meas, index, edge, pull) {
-    let m = '';
-    if (meas === 'PLSCNT') {
-      m = 'pulse';
-    } else if (meas === 'W1') {
-      m = 'w1';
+    if (meas.includes('CNT') || meas === 'PLSCNT') {
+      await this.do_cmd(`en_pulse ${index} ${edge} ${pull}`);
+    } else if (meas.includes('TMP' || meas === 'W1')) {
+      await this.do_cmd(`en_w1 ${index} ${pull}`);
+    } else if (meas.includes('IO0' || meas === 'WATCH')) {
+      await this.do_cmd(`en_watch ${index} ${pull}`);
     }
-    await this.do_cmd(`en_${m} ${index} ${edge} ${pull}`);
   }
 
   async disable_io(index) {
-    this.do_cmd(`io ${index} : I N`);
+    this.disabled = this.do_cmd(`io ${index} : I N`);
+    return this.disabled;
   }
 
   async update_midpoint(value, phase) {
