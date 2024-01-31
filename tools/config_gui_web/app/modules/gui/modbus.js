@@ -388,7 +388,7 @@ export class modbus_t {
 
       cell = row.insertCell();
       input = document.createElement('input');
-      input.placeholder = 'Unit';
+      input.placeholder = 'Datatype';
       cell.appendChild(input);
     });
 
@@ -429,8 +429,8 @@ export class modbus_t {
       const regname = regs[0].value;
       const addr = regs[1].value;
       const func = Number(regs[2].value);
-      const unitv = regs[3].value;
-      this.regs[regname] = { hex: addr, function: func, unit: unitv };
+      const datatypev = regs[3].value;
+      this.regs[regname] = { hex: addr, function: func, datatype: datatypev };
     }
     this.json.registers = await this.regs;
 

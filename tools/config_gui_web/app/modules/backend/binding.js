@@ -270,8 +270,18 @@ export class binding_t {
     return extracted_meas;
   }
 
+  async change_interval(meas, num) {
+    this.int = await this.do_cmd(`interval ${meas} ${num}`);
+    return this.int;
+  }
+
+  async change_samplecount(meas, num) {
+    this.sample = await this.do_cmd(`samplecount ${meas} ${num}`);
+    return this.sample;
+  }
+
   async save() {
-    this.do_cmd('save');
+    await this.do_cmd('save');
   }
 
   async ios() {
@@ -412,23 +422,33 @@ export class binding_t {
   }
 
   async mb_dev_add(unit_id, byteorder, wordorder, name) {
-    await this.do_cmd(`mb_dev_add ${unit_id} ${byteorder} ${wordorder} ${name}`);
+    this.mb_dev = await this.do_cmd(`mb_dev_add ${unit_id} ${byteorder} ${wordorder} ${name}`);
+    return this.mb_dev;
   }
 
   async mb_reg_add(unit_id, hex, func, unit, reg) {
-    await this.do_cmd(`mb_reg_add ${unit_id} ${hex} ${func} ${unit} ${reg}`);
+    this.reg = await this.do_cmd(`mb_reg_add ${unit_id} ${hex} ${func} ${unit} ${reg}`);
+    return this.reg;
   }
 
   async remove_modbus_reg(reg) {
-    await this.do_cmd(`mb_reg_del ${reg}`);
+    this.reg_del = await this.do_cmd(`mb_reg_del ${reg}`);
+    return this.reg_del;
   }
 
   async remove_modbus_dev(dev) {
-    await this.do_cmd(`mb_dev_del ${dev}`);
+    this.dev_del = await this.do_cmd(`mb_dev_del ${dev}`);
+    return this.dev_del;
   }
 
   async modbus_setup(mode, baud, config) {
-    await this.do_cmd(`mb_setup ${mode} ${baud} ${config}`);
+    this.setup = await this.ll.write(`mb_setup ${mode} ${baud} ${config}`);
+    return this.setup;
+  }
+
+  async wipe() {
+    this.wipe_cmd = this.do_cmd('wipe');
+    return this.wipe_cmd;
   }
 }
 

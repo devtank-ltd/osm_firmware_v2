@@ -17,22 +17,19 @@ export class load_configuration_t {
   async load_gui_with_config(content) {
     disable_interaction(true);
     this.content = JSON.parse(content);
-    this.serial_num = this.content.serial_num;
-    this.dev.serial_number = this.serial_num;
-
     this.modbus_setup = this.content.modbus_bus.setup;
     this.modbus_devices = this.content.modbus_bus.modbus_devices;
-    await this.dev.modbus_setup(
+    this.setup = await this.dev.modbus_setup(
       this.modbus_setup[0],
       this.modbus_setup[1],
       this.modbus_setup[2],
     );
-    await this.write_modbus(this.modbus_devices);
+    this.devs = await this.write_modbus(this.modbus_devices);
 
     this.measurements = this.content.measurements;
     for (const [key, value] of Object.entries(this.measurements)) {
-      await this.dev.do_cmd(`interval ${key} ${value.interval}`);
-      await this.dev.do_cmd(`samplecount ${key} ${value.samplecount}`);
+      await this.dev.change_interval(key, value.interval);
+      await this.dev.change_samplecount(key, value.samplecount);
     }
 
     this.ios = this.content.ios;
@@ -46,30 +43,44 @@ export class load_configuration_t {
       }
     }
 
-    this.interval_mins = this.content.interval_mins;
-    this.dev.interval_mins = this.interval_mins;
-
     this.app_key = this.content.app_key;
     this.dev_eui = this.content.dev_eui;
     if (this.app_key) {
-      this.comms.lora_appkey = this.app_key;
-      this.comms.lora_deveui = this.dev_eui;
+      await this.dev.do_cmd(`comms_config app-key ${this.app_key}`);
+      await this.dev.do_cmd(`comms_config dev-eui ${this.dev_eui}`);
     }
 
     this.cc_midpoints = this.content.cc_midpoints;
     for (const [key, value] of Object.entries(this.cc_midpoints)) {
       await this.dev.update_midpoint(key, value);
     }
+    await this.dev.do_cmd(`serial_num ${this.content.serial_num}`);
+    await this.dev.do_cmd(`interval_mins ${this.content.interval_mins}`);
+
+    await this.dev.save();
     disable_interaction(false);
+    window.location.reload();
   }
 
   async write_modbus(mb_devs) {
-    mb_devs.forEach((i) => {
-      this.dev.mb_dev_add(i.unit, i.byteorder, i.wordorder, i.name);
-      i.registers.forEach((e) => {
-        this.dev.mb_reg_add(i.unit, e.address, e.type, e.function, e.reg);
-      });
-    });
+    for (let i = 0; i < mb_devs.length; i += 1) {
+      await this.dev.mb_dev_add(
+        mb_devs[i].unit,
+        mb_devs[i].byteorder,
+        mb_devs[i].wordorder,
+        mb_devs[i].name,
+      );
+      const regs = mb_devs[i].registers;
+      for (let v = 0; v < regs.length; v += 1) {
+        await this.dev.mb_reg_add(
+          mb_devs[i].unit,
+          regs[v].address,
+          regs[v].type,
+          regs[v].function,
+          regs[v].reg,
+        );
+      }
+    }
   }
 
   async open_file_dialog() {
