@@ -16,7 +16,6 @@
 #include "cc.h"
 #include "modbus_measurements.h"
 #include "ds18b20.h"
-#include "htu21d.h"
 #include "pulsecount.h"
 #include "veml7700.h"
 #include "sai.h"
@@ -84,7 +83,6 @@ void env01d_at_wifi_sensors_init(void)
     sai_init();
     adcs_init();
     cc_init();
-    htu21d_init();
     veml7700_init();
     ds18b20_temp_init();
     pulsecount_init();
@@ -144,8 +142,6 @@ bool env01d_at_wifi_measurements_get_inf(measurements_def_t * def, measurements_
         case MODBUS:        modbus_inf_init(inf);      break;
         case CURRENT_CLAMP: cc_inf_init(inf);          break;
         case W1_PROBE:      ds18b20_inf_init(inf);     break;
-        case HTU21D_TMP:    htu21d_temp_inf_init(inf); break;
-        case HTU21D_HUM:    htu21d_humi_inf_init(inf); break;
         case PULSE_COUNT:   pulsecount_inf_init(inf);  break;
         case LIGHT:         veml7700_inf_init(inf);    break;
         case SOUND:         sai_inf_init(inf);         break;
@@ -179,8 +175,6 @@ void env01d_at_wifi_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  W1_PROBE        );
-    measurements_repop_indiv(MEASUREMENTS_HTU21D_TEMP,          1,  1,  HTU21D_TMP      );
-    measurements_repop_indiv(MEASUREMENTS_HTU21D_HUMI,          1,  1,  HTU21D_HUM      );
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
     measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
@@ -249,8 +243,6 @@ unsigned env01d_at_wifi_measurements_add_defaults(measurements_def_t * measureme
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_1,      0,  1, W1_PROBE        );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_HTU21D_TEMP,          1,  1, HTU21D_TMP      );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_HTU21D_HUMI,          1,  1, HTU21D_HUM      );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1, PULSE_COUNT     );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, PULSE_COUNT     );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
