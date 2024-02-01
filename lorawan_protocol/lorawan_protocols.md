@@ -12,8 +12,8 @@ There are nuances between the custom protocols
 for these applications. Therefore, we have
 a script for each.
 
-If you are using ChirpStack, use cs_protocol.js
+If you are using ChirpStack versions 3 and below, use cs_protocol.js
 
-For The Things Network, use ttn_protocol.js
+For The Things Network or ChirpStack version 4, use cs4_ttn_protocol.js
 
 For Helium, use hl_protocol.js
