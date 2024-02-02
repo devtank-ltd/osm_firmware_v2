@@ -28,7 +28,6 @@ env01d_at_wifi_SOURCES := \
            $(LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
            $(LIB_DIR)/embedded-i2c-sen5x/sensirion_i2c.c \
            $(LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
-           $(OSM_DIR)/sensors/src/htu21d.c \
            $(OSM_DIR)/sensors/src/ds18b20.c \
            $(OSM_DIR)/sensors/src/pulsecount.c \
            $(OSM_DIR)/sensors/src/veml7700.c \

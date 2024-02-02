@@ -104,12 +104,12 @@ extern void log_init(void)
 }
 
 
-void log_debug_data(uint32_t flag, void * data, unsigned size)
+void log_debug_data(uint32_t flag, const void * data, unsigned size)
 {
     if ((flag & log_debug_mask) != flag)
         return;
-    uint8_t * src_start = (uint8_t*)data;
-    uint8_t * src = src_start;
+    const uint8_t * src_start = (const uint8_t*)data;
+    const uint8_t * src = src_start;
     snprintf(log_buffer, LOG_LINELEN, "Start %p", src_start);
     _dispatch_line(UART_ERR_NU, false, NULL, strnlen(log_buffer, LOG_LINELEN-1));
     uart_rings_out_drain();

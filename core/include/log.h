@@ -16,7 +16,7 @@ extern void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
 extern void log_out(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
 extern void log_init(void);
 
-extern void log_debug_data(uint32_t flag, void * data, unsigned size);
+extern void log_debug_data(uint32_t flag, const void * data, unsigned size);
 
 #ifdef NOPODEBUG
 inline static void _empty_log() {}

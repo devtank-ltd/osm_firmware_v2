@@ -14,6 +14,25 @@ static const i2c_def_t i2c_buses[]     = I2C_BUSES;
 static uint8_t         i2c_buses_ready = 0;
 
 
+static void _i2c_setup(uint32_t i2c)
+{
+    i2c_reset(i2c);
+    i2c_peripheral_disable(i2c);
+
+    i2c_set_scl_low_period(i2c, 236);
+    i2c_set_scl_high_period(i2c, 156);
+    i2c_set_data_hold_time(i2c, 0);
+    i2c_set_data_setup_time(i2c, 9);
+    i2c_set_prescaler(i2c, 1);
+
+    i2c_set_7bit_addr_mode(i2c);
+    i2c_enable_analog_filter(i2c);
+    i2c_set_digital_filter(i2c, 0);
+
+    i2c_peripheral_enable(i2c);
+}
+
+
 static void i2c_init(unsigned i2c_index)
 {
     if (i2c_index > ARRAY_SIZE(i2c_buses))
@@ -36,20 +55,7 @@ static void i2c_init(unsigned i2c_index)
     gpio_mode_setup(i2c_bus->port_n_pins.port,  GPIO_MODE_AF, GPIO_PUPD_NONE, i2c_bus->port_n_pins.pins);
     gpio_set_output_options(i2c_bus->port_n_pins.port, GPIO_OTYPE_OD, GPIO_OSPEED_VERYHIGH, i2c_bus->port_n_pins.pins);
 
-    i2c_reset(i2c_bus->i2c);
-    i2c_peripheral_disable(i2c_bus->i2c);
-
-    i2c_set_scl_low_period(i2c_bus->i2c, 236);
-    i2c_set_scl_high_period(i2c_bus->i2c, 156);
-    i2c_set_data_hold_time(i2c_bus->i2c, 0);
-    i2c_set_data_setup_time(i2c_bus->i2c, 9);
-    i2c_set_prescaler(i2c_bus->i2c, 1);
-
-    i2c_set_7bit_addr_mode(i2c_bus->i2c);
-    i2c_enable_analog_filter(i2c_bus->i2c);
-    i2c_set_digital_filter(i2c_bus->i2c, 0);
-
-    i2c_peripheral_enable(i2c_bus->i2c);
+    _i2c_setup(i2c_bus->i2c);
 }
 
 
@@ -82,8 +88,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                 if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     log_error("I2C timeout WAITing");
-                    i2c_set_bytes_to_transfer(i2c, 0);
-                    i2c_send_stop(i2c);
+                    _i2c_setup(i2c);
                     return false;
                 }
                 while (i2c_nack(i2c))
@@ -91,8 +96,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                     if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                     {
                         log_error("I2C timeout NACKing");
-                        i2c_set_bytes_to_transfer(i2c, 0);
-                        i2c_send_stop(i2c);
+                        _i2c_setup(i2c);
                         return false;
                     }
                     uart_rings_out_drain();
@@ -108,8 +112,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                 if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     log_error("I2C timeout READing");
-                    i2c_set_bytes_to_transfer(i2c, 0);
-                    i2c_send_stop(i2c);
+                    _i2c_setup(i2c);
                     return false;
                 }
                 uart_rings_out_drain();
@@ -133,8 +136,7 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
                 if (since_boot_delta(get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     log_error("I2C timeout");
-                    i2c_set_bytes_to_transfer(i2c, 0);
-                    i2c_send_stop(i2c);
+                    _i2c_setup(i2c);
                     return false;
                 }
                 uart_rings_out_drain();
