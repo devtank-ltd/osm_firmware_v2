@@ -32,7 +32,7 @@ export class io_t {
     headers.insertCell().textContent = 'Edge';
     headers.insertCell().textContent = 'Enabled';
 
-    const measurements = ['TMP2', 'CNT1', 'CNT2', 'IO04', 'IO05'];
+    const measurements = ['TMP2', 'CNT1', 'CNT2', 'IO01', 'IO02'];
 
     measurements.forEach((meas) => {
       const io_row = tbody.insertRow();
@@ -71,25 +71,25 @@ export class io_t {
       this.checkboxes.push(chk);
       if (meas === 'TMP2') {
         this.edge_cell_input.disabled = true;
-        if (ios[4].includes('USED W1')) {
+        if (ios[1].includes('USED W1')) {
           chk.checked = true;
         }
       } else if (meas === 'CNT1') {
-        if (ios[4].includes('USED PLSCNT')) {
+        if (ios[1].includes('USED PLSCNT')) {
           chk.checked = true;
         }
       } else if (meas === 'CNT2') {
-        if (ios[5].includes('USED PLSCNT')) {
+        if (ios[2].includes('USED PLSCNT')) {
           chk.checked = true;
         }
-      } else if (meas === 'IO04') {
+      } else if (meas === 'IO01') {
         this.edge_cell_input.disabled = true;
-        if (ios[4].includes('USED WATCH')) {
+        if (ios[1].includes('USED WATCH')) {
           chk.checked = true;
         }
-      } else if (meas === 'IO05') {
+      } else if (meas === 'IO02') {
         this.edge_cell_input.disabled = true;
-        if (ios[5].includes('USED WATCH')) {
+        if (ios[2].includes('USED WATCH')) {
           chk.checked = true;
         }
       }
@@ -106,13 +106,13 @@ export class io_t {
 
   async enable_disable_io(e) {
     this.checked = e.target.checked;
-    this.index = 4;
+    this.index = 1;
     this.meas = e.target.parentNode.parentNode.cells[0].innerHTML;
-    if (this.meas === 'IO05') {
-      this.index = 5;
+    if (this.meas === 'IO02') {
+      this.index = 2;
     }
     if (this.meas === 'CNT2') {
-      this.index = 5;
+      this.index = 1;
     }
     [this.pullup] = e.target.parentNode.parentNode.cells[1].childNodes[0].value;
     [this.edge] = e.target.parentNode.parentNode.cells[2].childNodes[0].value;
@@ -129,14 +129,14 @@ export class io_t {
       this.checkboxes[0].checked = false;
       this.checkboxes[3].checked = false;
     }
-    if (this.meas === 'IO04' && this.checked === true) {
+    if (this.meas === 'IO01' && this.checked === true) {
       this.checkboxes[0].checked = false;
       this.checkboxes[1].checked = false;
     }
     if (this.meas === 'CNT2' && this.checked === true) {
       this.checkboxes[4].checked = false;
     }
-    if (this.meas === 'IO05' && this.checked === true) {
+    if (this.meas === 'IO02' && this.checked === true) {
       this.checkboxes[2].checked = false;
     }
   }
