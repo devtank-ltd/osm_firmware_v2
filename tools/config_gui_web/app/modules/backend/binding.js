@@ -461,6 +461,33 @@ export class binding_t {
     const type = await json_config.type;
     return type;
   }
+
+  async get_ftma_types() {
+    const measurements = await this.get_measurements();
+    const ftma_list = [];
+    for (let i = 1; i < measurements.length; i += 1) {
+      const meas = measurements[i][0];
+      this.ftma_types = await this.do_cmd(`get_meas_type ${meas}`);
+      const s = this.ftma_types.split(': ');
+      if (s[1] === 'FTMA') {
+        ftma_list.push(s[0]);
+      }
+    }
+    return ftma_list;
+  }
+
+  async get_ftma_coeffs(meas) {
+    this.coeffs = await this.do_cmd_multi(`ftma_coeff ${meas}`);
+    return this.coeffs;
+  }
+
+  async set_ftma_coeffs(meas, a, b, c, d) {
+    await this.do_cmd(`ftma_coeff ${meas} ${a} ${b} ${c} ${d}`);
+  }
+
+  async set_ftma_name(old_name, new_name) {
+    await this.do_cmd(`ftma_name ${old_name} ${new_name}`);
+  }
 }
 
 export class lora_comms_t {

@@ -11,6 +11,7 @@ export class navbar_t {
     document.getElementById('modbus-tab').classList.remove('active');
     document.getElementById('current-clamp-tab').classList.remove('active');
     document.getElementById('io-tab').classList.remove('active');
+    document.getElementById('ftma-tab').classList.remove('active');
     this.active = document.getElementById(id).classList.add('active');
   }
 }

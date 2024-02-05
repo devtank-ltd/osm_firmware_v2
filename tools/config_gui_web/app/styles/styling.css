@@ -282,6 +282,31 @@ button:hover {
   text-align : center;
 }
 
+
+/* 4-20mA Configuration */
+
+.ftma-div {
+  margin-top: 50px;
+}
+
+.ftma-table table {
+  border-collapse : collapse;
+  width: 500px;
+  height: 300px;
+
+}
+
+.ftma-table thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.ftma-table td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
 /* Modbus Current Settings */
 
 
