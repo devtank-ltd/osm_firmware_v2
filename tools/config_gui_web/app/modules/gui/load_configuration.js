@@ -43,11 +43,31 @@ export class load_configuration_t {
       }
     }
 
-    this.app_key = this.content.app_key;
-    this.dev_eui = this.content.dev_eui;
-    if (this.app_key) {
-      await this.dev.do_cmd(`comms_config app-key ${this.app_key}`);
-      await this.dev.do_cmd(`comms_config dev-eui ${this.dev_eui}`);
+    this.comms_type = this.content.comms.type;
+    if (this.comms_type.includes('LW')) {
+      this.app_key = this.content.comms.app_key;
+      this.dev_eui = this.content.comms.dev_eui;
+      this.region = this.content.comms.region;
+      if (this.app_key) {
+        await this.dev.do_cmd(`comms_config app-key ${this.app_key}`);
+        await this.dev.do_cmd(`comms_config dev-eui ${this.dev_eui}`);
+        await this.dev.do_cmd(`comms_config region ${this.region}`);
+      }
+    } else if (this.comms_type.includes('WIFI')) {
+      this.ssid = this.content.wifi_ssid;
+      this.wifi_pwd = this.content.wifi_pwd;
+      this.mqtt_addr = this.content.mqtt_addr;
+      this.mqtt_user = this.content.mqtt_user;
+      this.mqtt_pwd = this.content.mqtt_pwd;
+      this.mqtt_port = this.content.mqtt_port;
+      if (this.ssid) {
+        await this.dev.do_cmd(`comms_config wifi_ssid ${this.ssid}`);
+        await this.dev.do_cmd(`comms_config wifi_pwd ${this.wifi_pwd}`);
+        await this.dev.do_cmd(`comms_config mqtt_addr ${this.mqtt_addr}`);
+        await this.dev.do_cmd(`comms_config mqtt_user ${this.mqtt_user}`);
+        await this.dev.do_cmd(`comms_config mqtt_pwd ${this.mqtt_pwd}`);
+        await this.dev.do_cmd(`comms_config mqtt_port ${this.mqtt_port}`);
+      }
     }
 
     this.cc_midpoints = this.content.cc_midpoints;
@@ -75,8 +95,8 @@ export class load_configuration_t {
         await this.dev.mb_reg_add(
           mb_devs[i].unit,
           regs[v].address,
-          regs[v].type,
           regs[v].function,
+          regs[v].datatype,
           regs[v].reg,
         );
       }
