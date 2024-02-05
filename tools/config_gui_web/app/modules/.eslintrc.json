@@ -18,6 +18,7 @@
         "no-unused-vars": "off",
         "max-classes-per-file": "off",
         "no-restricted-syntax": "off",
-        "no-case-declarations": "off"
+        "no-case-declarations": "off",
+        "no-useless-escape": "off"
     }
 }

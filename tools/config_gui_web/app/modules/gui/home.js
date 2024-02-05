@@ -2,6 +2,7 @@ import { navbar_t } from './navbar.js';
 import { measurements_table_t } from './measurements_table.js';
 import { lora_config_t } from './lora_config.js';
 import { load_configuration_t } from './load_configuration.js';
+import { save_configuration_t } from './save_configuration.js';
 import { lora_comms_t, wifi_comms_t } from '../backend/binding.js';
 import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
@@ -40,9 +41,7 @@ export class home_tab_t {
     await meas_table.create_measurements_table_gui();
     await meas_table.add_uplink_listener();
 
-    const comms_config = await this.dev.do_cmd('j_comms_cfg');
-    const json_config = JSON.parse(comms_config);
-    const comms_type = await json_config.type;
+    const comms_type = await this.dev.comms_type();
     if (comms_type.includes('LW')) {
       this.comms = new lora_comms_t(this.dev);
       const lora = new lora_config_t(this.comms);
@@ -60,6 +59,9 @@ export class home_tab_t {
 
     const load_config = new load_configuration_t(this.dev, this.comms);
     await load_config.add_listener();
+
+    const save_config = new save_configuration_t(this.dev, this.comms);
+    await save_config.add_event_listeners();
 
     await this.add_event_listeners();
   }
