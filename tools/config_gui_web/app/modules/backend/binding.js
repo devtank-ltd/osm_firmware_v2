@@ -113,10 +113,11 @@ class modbus_device_t {
 }
 
 class modbus_register_t {
-  constructor(hex, func, name) {
+  constructor(hex, func, name, datatype) {
     this.hex = hex;
     this.func = func;
     this.name = name;
+    this.datatype = datatype;
   }
 }
 
@@ -285,7 +286,7 @@ export class binding_t {
   }
 
   async ios() {
-    this.io_obj = this.do_cmd_multi('ios');
+    this.io_obj = await this.do_cmd_multi('ios');
     return this.io_obj;
   }
 
@@ -319,7 +320,10 @@ export class binding_t {
 
   async get_cc_mp(phase) {
     const mp = await this.do_cmd_multi(`cc_mp CC${phase}`);
-    return mp;
+    const mp_regex = /MP:\s(\d+(\.\d+)?)/;
+    const mp_match = mp[0].match(mp_regex);
+    const mp_extracted = mp_match[1];
+    return mp_extracted;
   }
 
   async cc_cal() {
@@ -366,7 +370,7 @@ export class binding_t {
       return 'n/a';
     }
     if (res.includes(':')) {
-      const [, value] = res.split(':');
+      const [, value] = res.split(': ');
       if (value.includes('"')) {
         return value.replace(/"/g, '');
       }
@@ -398,12 +402,12 @@ export class binding_t {
         this.devs.push(this.dev);
       }
       if (curr.includes('- Reg')) {
-        const [, , , , , h, f, n] = await curr.split(' ');
+        const [, , , , , h, f, n, datatype] = await curr.split(' ');
         const regname = n.replace(/"/g, '');
         const func_str = f.match(/\d+/g);
         const hex = parseInt(h.slice(2), 16);
         const func = Number(func_str);
-        const reg = new modbus_register_t(hex, func, regname);
+        const reg = new modbus_register_t(hex, func, regname, datatype);
         this.dev.registers.push(reg);
       }
     }
@@ -442,13 +446,20 @@ export class binding_t {
   }
 
   async modbus_setup(mode, baud, config) {
-    this.setup = await this.ll.write(`mb_setup ${mode} ${baud} ${config}`);
+    this.setup = await this.do_cmd(`mb_setup ${mode} ${baud} ${config}`);
     return this.setup;
   }
 
   async wipe() {
     this.wipe_cmd = this.do_cmd('wipe');
     return this.wipe_cmd;
+  }
+
+  async comms_type() {
+    const comms_config = await this.do_cmd('j_comms_cfg');
+    const json_config = JSON.parse(comms_config);
+    const type = await json_config.type;
+    return type;
   }
 }
 

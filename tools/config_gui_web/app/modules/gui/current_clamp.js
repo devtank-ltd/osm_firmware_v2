@@ -18,12 +18,10 @@ export class current_clamp_t {
   }
 
   async add_event_listeners() {
-    console.log('Adding event listeners');
     document.getElementById('current-clamp-cal-btn').addEventListener('click', this.open_cc_modal);
   }
 
   async open_cc_modal() {
-    console.log('Reached');
     this.dialog = document.getElementById('cc-cal-dialog');
     this.confirm = document.getElementById('cc-modal-confirm');
     this.cancel = document.getElementById('cc-modal-cancel');
@@ -92,25 +90,13 @@ export class current_clamp_t {
           measurements.push(int_extracted);
 
           if (index <= 1) {
-            const mp_regex = /MP:\s(\d+(\.\d+)?)/;
-            const mp_match = phase_one_mp[0].match(mp_regex);
-            const mp_extracted = mp_match[1];
-            measurements.push(mp_extracted);
-
+            measurements.push(phase_one_mp);
             top_level.push(measurements);
           } else if (index <= 3) {
-            const mp_regex = /MP:\s(\d+(\.\d+)?)/;
-            const mp_match = phase_two_mp[0].match(mp_regex);
-            const mp_extracted = mp_match[1];
-            measurements.push(mp_extracted);
-
+            measurements.push(phase_two_mp);
             top_level.push(measurements);
           } else if (index <= 5) {
-            const mp_regex = /MP:\s(\d+(\.\d+)?)/;
-            const mp_match = phase_three_mp[0].match(mp_regex);
-            const mp_extracted = mp_match[1];
-            measurements.push(mp_extracted);
-
+            measurements.push(phase_three_mp);
             top_level.push(measurements);
           }
         }
