@@ -50,16 +50,28 @@ class config_gui_t {
 
   async open_websocket() {
     this.url = 'ws://localhost:10240/websocket';
-    this.dev = new binding_t(this.url, 'websocket');
-    this.home = new home_tab_t(this.dev);
-    await this.home.insert_homepage();
-    const disconnect = document.getElementById('global-disconnect');
-    disconnect.addEventListener('click', () => {
-      console.log('Disconnected');
-      window.location.reload();
-    });
-    const globalbtns = document.getElementById('global-load-save-config-buttons');
-    globalbtns.style.removeProperty('display');
+    this.port_check = new WebSocket(this.url);
+    this.port_check.onopen = async (e) => {
+      console.log(`Socket detected at ${this.url}`);
+      this.port_check.close();
+      this.dev = new binding_t(this.url, 'websocket');
+      this.home = new home_tab_t(this.dev);
+      await this.home.insert_homepage();
+      const disconnect = document.getElementById('global-disconnect');
+      disconnect.addEventListener('click', () => {
+        console.log('Disconnected');
+        window.location.reload();
+      });
+      const globalbtns = document.getElementById('global-load-save-config-buttons');
+      globalbtns.style.removeProperty('display');
+    };
+    this.port_check.onerror = (event) => {
+      console.log('WebSocket error: ', event);
+      const div = document.createElement('div');
+      const main = document.getElementById('main-page-body');
+      main.appendChild(div);
+      div.textContent = 'No Virtual OSM detected.';
+    };
   }
 }
 
