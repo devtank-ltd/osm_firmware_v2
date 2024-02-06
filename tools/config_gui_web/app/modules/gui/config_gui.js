@@ -3,8 +3,7 @@ import { home_tab_t } from './home.js';
 
 class config_gui_t {
   constructor() {
-    this.listen_open_websocket();
-    this.listen_open_serial();
+    this.add_event_listeners();
   }
 
   async open_serial() {
@@ -40,38 +39,46 @@ class config_gui_t {
     globalbtns.style.removeProperty('display');
   }
 
-  async listen_open_serial() {
+  async add_event_listeners() {
     document.getElementById('main-page-connect').addEventListener('click', this.open_serial);
+    document.getElementById('main-page-websocket-connect').addEventListener('click', this.spin_fake_osm);
   }
 
-  async listen_open_websocket() {
-    document.getElementById('main-page-websocket-connect').addEventListener('click', this.open_websocket);
-  }
+  async spin_fake_osm() {
+    this.msg = 'Spawn virtual OSM';
+    this.body = JSON.stringify({
+      cmd: this.msg,
+    });
+    const request = new XMLHttpRequest();
+    request.open('POST', 'http://localhost:8000', false); // `false` makes the request synchronous
+    request.send(this.body);
 
-  async open_websocket() {
-    this.url = 'ws://localhost:10240/websocket';
-    this.port_check = new WebSocket(this.url);
-    this.port_check.onopen = async (e) => {
-      console.log(`Socket detected at ${this.url}`);
-      this.port_check.close();
-      this.dev = new binding_t(this.url, 'websocket');
-      this.home = new home_tab_t(this.dev);
-      await this.home.insert_homepage();
-      const disconnect = document.getElementById('global-disconnect');
-      disconnect.addEventListener('click', () => {
-        console.log('Disconnected');
-        window.location.reload();
-      });
-      const globalbtns = document.getElementById('global-load-save-config-buttons');
-      globalbtns.style.removeProperty('display');
-    };
-    this.port_check.onerror = (event) => {
-      console.log('WebSocket error: ', event);
-      const div = document.createElement('div');
-      const main = document.getElementById('main-page-body');
-      main.appendChild(div);
-      div.textContent = 'No Virtual OSM detected.';
-    };
+    if (request.status === 200) {
+      this.resp = JSON.parse(request.responseText);
+      this.url = await this.resp.websocket;
+      this.port_check = new WebSocket(this.url);
+      this.port_check.onopen = async (e) => {
+        console.log(`Socket detected at ${this.url}`);
+        this.port_check.close();
+        this.dev = new binding_t(this.url, 'websocket');
+        this.home = new home_tab_t(this.dev);
+        await this.home.insert_homepage();
+        const disconnect = document.getElementById('global-disconnect');
+        disconnect.addEventListener('click', () => {
+          console.log('Disconnected');
+          window.location.reload();
+        });
+        const globalbtns = document.getElementById('global-load-save-config-buttons');
+        globalbtns.style.removeProperty('display');
+      };
+      this.port_check.onerror = (event) => {
+        console.log('WebSocket error: ', event);
+        const div = document.createElement('div');
+        const main = document.getElementById('main-page-body');
+        main.appendChild(div);
+        div.textContent = 'No Virtual OSM detected.';
+      };
+    }
   }
 }
 
