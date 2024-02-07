@@ -49,36 +49,53 @@ class config_gui_t {
     this.body = JSON.stringify({
       cmd: this.msg,
     });
-    const request = new XMLHttpRequest();
-    request.open('POST', 'http://localhost:8000', false); // `false` makes the request synchronous
-    request.send(this.body);
-
-    if (request.status === 200) {
-      this.resp = JSON.parse(request.responseText);
-      this.url = await this.resp.websocket;
-      this.port_check = new WebSocket(this.url);
-      this.port_check.onopen = async (e) => {
-        console.log(`Socket detected at ${this.url}`);
-        this.port_check.close();
-        this.dev = new binding_t(this.url, 'websocket');
-        this.home = new home_tab_t(this.dev);
-        await this.home.insert_homepage();
-        const disconnect = document.getElementById('global-disconnect');
-        disconnect.addEventListener('click', () => {
-          console.log('Disconnected');
-          window.location.reload();
-        });
-        const globalbtns = document.getElementById('global-load-save-config-buttons');
-        globalbtns.style.removeProperty('display');
-      };
-      this.port_check.onerror = (event) => {
-        console.log('WebSocket error: ', event);
-        const div = document.createElement('div');
-        const main = document.getElementById('main-page-body');
-        main.appendChild(div);
-        div.textContent = 'No Virtual OSM detected.';
-      };
-    }
+    fetch('http://localhost:8000', {
+      method: 'POST',
+      body: this.body,
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    }).then((response) => response.json())
+      .then(async (json) => {
+        this.resp = json;
+        this.url = await this.resp.websocket;
+        this.given_port = await this.resp.port;
+        this.location = await this.resp.location;
+        this.port_check = new WebSocket(this.url);
+        this.port_check.onopen = async (e) => {
+          console.log(`Socket detected at ${this.url}`);
+          this.port_check.close();
+          this.dev = new binding_t(this.url, 'websocket');
+          this.home = new home_tab_t(this.dev);
+          await this.home.insert_homepage();
+          const disconnect = document.getElementById('global-disconnect');
+          disconnect.addEventListener('click', () => {
+            console.log('Disconnected');
+            this.close = JSON.stringify({
+              cmd: 'Close',
+              port: this.given_port,
+              location: this.location,
+            });
+            fetch('http://localhost:8000', {
+              method: 'POST',
+              body: this.close,
+              headers: {
+                'Content-type': 'application/json; charset=UTF-8',
+              },
+            }).then((response) => response.json())
+              .then(async (jresp) => {
+                window.location.reload();
+              });
+          });
+          const globalbtns = document.getElementById('global-load-save-config-buttons');
+          globalbtns.style.removeProperty('display');
+        };
+        this.port_check.onerror = (event) => {
+          console.log('WebSocket error: ', event);
+          const error_div = document.getElementById('error-div');
+          error_div.textContent = 'No Virtual OSM detected.';
+        };
+      });
   }
 }
 
