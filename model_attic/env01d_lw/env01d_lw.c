@@ -32,13 +32,13 @@
 #include "lw.h"
 
 
-uint8_t env01d_stm_adcs_get_channel(adcs_type_t adcs_type)
+uint8_t env01d_lw_stm_adcs_get_channel(adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_CC_CLAMP1: return ENV01D_ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2: return ENV01D_ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3: return ENV01D_ADC1_CHANNEL_CURRENT_CLAMP_3;
+        case ADCS_TYPE_CC_CLAMP1: return ENV01D_LW_ADC1_CHANNEL_CURRENT_CLAMP_1;
+        case ADCS_TYPE_CC_CLAMP2: return ENV01D_LW_ADC1_CHANNEL_CURRENT_CLAMP_2;
+        case ADCS_TYPE_CC_CLAMP3: return ENV01D_LW_ADC1_CHANNEL_CURRENT_CLAMP_3;
         default:
             break;
     }
@@ -46,7 +46,7 @@ uint8_t env01d_stm_adcs_get_channel(adcs_type_t adcs_type)
 }
 
 
-void env01d_persist_config_model_init(persist_env01d_config_v1_t* model_config)
+void env01d_lw_persist_config_model_init(persist_env01d_lw_config_v1_t* model_config)
 {
     model_config->mins_interval = 5 * 1000 / 60; /* 5 seconds */
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t));
@@ -57,7 +57,7 @@ void env01d_persist_config_model_init(persist_env01d_config_v1_t* model_config)
 
 /* Return true  if different
  *        false if same      */
-bool env01d_persist_config_cmp(persist_env01d_config_v1_t* d0, persist_env01d_config_v1_t* d1)
+bool env01d_lw_persist_config_cmp(persist_env01d_lw_config_v1_t* d0, persist_env01d_lw_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
@@ -71,14 +71,14 @@ bool env01d_persist_config_cmp(persist_env01d_config_v1_t* d0, persist_env01d_co
 }
 
 
-static void _env01d_core_3v3_init(void)
+static void _env01d_lw_core_3v3_init(void)
 {
 }
 
 
-void env01d_sensors_init(void)
+void env01d_lw_sensors_init(void)
 {
-    _env01d_core_3v3_init();
+    _env01d_lw_core_3v3_init();
     timers_init();
     ios_init();
     sai_init();
@@ -93,13 +93,13 @@ void env01d_sensors_init(void)
 }
 
 
-void env01d_post_init(void)
+void env01d_lw_post_init(void)
 {
     io_watch_init();
 }
 
 
-bool env01d_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool env01d_lw_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
@@ -118,7 +118,7 @@ bool env01d_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool env01d_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool env01d_lw_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
         return modbus_uart_ring_do_out_drain(ring);
@@ -126,7 +126,7 @@ bool env01d_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool env01d_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool env01d_lw_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -160,7 +160,7 @@ bool env01d_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
 }
 
 
-void env01d_measurements_repopulate(void)
+void env01d_lw_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,         100,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,    100,  1,  CONFIG_REVISION );
@@ -183,7 +183,7 @@ void env01d_measurements_repopulate(void)
 }
 
 
-void env01d_cmds_add_all(struct cmd_link_t* tail)
+void env01d_lw_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = cc_add_commands(tail);
     tail = can_impl_add_commands(tail);
@@ -199,12 +199,12 @@ void env01d_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
-void env01d_w1_pulse_enable_pupd(unsigned io, bool enabled)
+void env01d_lw_w1_pulse_enable_pupd(unsigned io, bool enabled)
 {
 }
 
 
-bool env01d_can_io_be_special(unsigned io, io_special_t special)
+bool env01d_lw_can_io_be_special(unsigned io, io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
             ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
@@ -213,19 +213,19 @@ bool env01d_can_io_be_special(unsigned io, io_special_t special)
 }
 
 
-void env01d_uarts_setup(void)
+void env01d_lw_uarts_setup(void)
 {
     uint32_t reg32 = RCC_CCIPR & ~(RCC_CCIPR_LPUART1SEL_MASK << RCC_CCIPR_LPUART1SEL_SHIFT);
     RCC_CCIPR = reg32 | ((RCC_CCIPR_LPUART1SEL_HSI16 & RCC_CCIPR_LPUART1SEL_MASK) << RCC_CCIPR_LPUART1SEL_SHIFT);
 }
 
 
-void env01d_setup_pulse_pupd(uint8_t* pupd)
+void env01d_lw_setup_pulse_pupd(uint8_t* pupd)
 {
 }
 
 
-unsigned env01d_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned env01d_lw_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;

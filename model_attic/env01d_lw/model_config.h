@@ -10,27 +10,27 @@
 
 #define __MODEL_CONFIG__
 
-#define ENV01D_FLASH_ADDRESS               0x8000000
-#define ENV01D_FLASH_PAGE_SIZE             2048
+#define ENV01D_LW_FLASH_ADDRESS               0x8000000
+#define ENV01D_LW_FLASH_PAGE_SIZE             2048
 
-#define ENV01D_FLASH_CONFIG_PAGE           2
-#define ENV01D_FLASH_MEASUREMENTS_PAGE     3
-#define ENV01D_FW_PAGE                     4
-#define ENV01D_NEW_FW_PAGE                 120
+#define ENV01D_LW_FLASH_CONFIG_PAGE           2
+#define ENV01D_LW_FLASH_MEASUREMENTS_PAGE     3
+#define ENV01D_LW_FW_PAGE                     4
+#define ENV01D_LW_NEW_FW_PAGE                 120
 
-#define ENV01D_FW_PAGES                    100
-#define ENV01D_FW_MAX_SIZE                 (ENV01D_FW_PAGES * ENV01D_FLASH_PAGE_SIZE)
-#define ENV01D_PAGE2ADDR(_page_)           (ENV01D_FLASH_ADDRESS + (ENV01D_FLASH_PAGE_SIZE * _page_))
-#define ENV01D_FW_ADDR                     ENV01D_PAGE2ADDR(ENV01D_FW_PAGE)
-#define ENV01D_NEW_FW_ADDR                 ENV01D_PAGE2ADDR(ENV01D_NEW_FW_PAGE)
-#define ENV01D_PERSIST_RAW_DATA            ((const uint8_t*)ENV01D_PAGE2ADDR(ENV01D_FLASH_CONFIG_PAGE))
-#define ENV01D_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)ENV01D_PAGE2ADDR(ENV01D_FLASH_MEASUREMENTS_PAGE))
+#define ENV01D_LW_FW_PAGES                    100
+#define ENV01D_LW_FW_MAX_SIZE                 (ENV01D_LW_FW_PAGES * ENV01D_LW_FLASH_PAGE_SIZE)
+#define ENV01D_LW_PAGE2ADDR(_page_)           (ENV01D_LW_FLASH_ADDRESS + (ENV01D_LW_FLASH_PAGE_SIZE * _page_))
+#define ENV01D_LW_FW_ADDR                     ENV01D_LW_PAGE2ADDR(ENV01D_LW_FW_PAGE)
+#define ENV01D_LW_NEW_FW_ADDR                 ENV01D_LW_PAGE2ADDR(ENV01D_LW_NEW_FW_PAGE)
+#define ENV01D_LW_PERSIST_RAW_DATA            ((const uint8_t*)ENV01D_LW_PAGE2ADDR(ENV01D_LW_FLASH_CONFIG_PAGE))
+#define ENV01D_LW_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)ENV01D_LW_PAGE2ADDR(ENV01D_LW_FLASH_MEASUREMENTS_PAGE))
 
-#define ENV01D_PERSIST_VERSION             3
+#define ENV01D_LW_PERSIST_VERSION             3
 
-#define ENV01D_PERSIST_MODEL_CONFIG_T      persist_env01d_config_v1_t
+#define ENV01D_LW_PERSIST_MODEL_CONFIG_T      persist_env01d_lw_config_v1_t
 
-#define ENV01D_MODEL_NAME                  "ENV01D"
+#define ENV01D_LW_MODEL_NAME                  "ENV01D_LW"
 
 #define CMD_LINELEN 128
 
@@ -72,4 +72,4 @@ typedef struct
     uint32_t                sai_no_buf;
     uint8_t                 _____[16-(sizeof(uint32_t)%16)];
     /* 7 x 16 bytes          */
-} persist_env01d_config_v1_t;
+} persist_env01d_lw_config_v1_t;

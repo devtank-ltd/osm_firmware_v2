@@ -1,6 +1,6 @@
 STM_INCLUDE_PATHS += -I$(LIB_DIR)/embedded-i2c-sen5x
 
-env01d_SOURCES := \
+env01d_lw_SOURCES := \
            $(OSM_DIR)/core/src/main.c \
            $(OSM_DIR)/core/src/base.c \
            $(OSM_DIR)/core/src/log.c \
@@ -37,7 +37,7 @@ env01d_SOURCES := \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c \
            $(OSM_DIR)/sensors/src/io_watch.c \
-           $(MODEL_DIR)/env01d/env01d.c \
+           $(MODEL_DIR)/env01d_lw/env01d_lw.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \
            $(OSM_DIR)/ports/stm/src/i2c.c \
@@ -46,6 +46,6 @@ env01d_SOURCES := \
            $(OSM_DIR)/ports/stm/src/uarts.c \
            $(OSM_DIR)/ports/stm/src/w1.c
 
-env01d_LINK_SCRIPT := $(OSM_DIR)/ports/stm/stm32l4.ld
+env01d_lw_LINK_SCRIPT := $(OSM_DIR)/ports/stm/stm32l4.ld
 
-$(eval $(call STM_FIRMWARE,env01d))
+$(eval $(call STM_FIRMWARE,env01d_lw))
