@@ -1,3 +1,5 @@
+import { disable_interaction } from './disable.js';
+
 export class console_t {
   constructor(dev) {
     this.dev = dev;
@@ -6,12 +8,14 @@ export class console_t {
   }
 
   async open_console() {
+    await disable_interaction(true);
     this.doc = document.getElementById('main-page-body');
     this.response = await fetch('modules/gui/html/console.html');
     this.text = await this.response.text();
     this.doc.innerHTML = this.text;
     await this.help_btn();
     await this.bind_input_submit();
+    await disable_interaction(false);
   }
 
   async help_btn() {
@@ -29,10 +33,12 @@ export class console_t {
   }
 
   async send_cmd() {
+    await disable_interaction(true);
     this.cmd = document.getElementById('console-cmd-input');
     const output = await this.dev.do_cmd_raw(this.cmd.value);
     this.terminal = document.getElementById('console-terminal-para');
     this.terminal.textContent = output;
     this.cmd.value = '';
+    await disable_interaction(false);
   }
 }

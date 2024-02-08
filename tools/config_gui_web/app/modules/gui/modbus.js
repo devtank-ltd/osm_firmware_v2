@@ -1,3 +1,5 @@
+import { disable_interaction } from './disable.js';
+
 export class modbus_t {
   constructor(dev) {
     this.dev = dev;
@@ -15,20 +17,25 @@ export class modbus_t {
   }
 
   async open_modbus() {
+    await disable_interaction(true);
     this.doc = document.getElementById('main-page-body');
     this.response = await fetch('modules/gui/html/modbus.html');
     this.text = await this.response.text();
     this.doc.innerHTML = this.text;
     this.load_modbus_config();
+    await disable_interaction(false);
   }
 
   async load_modbus_config() {
+    await disable_interaction(true);
     this.mb_bus = await this.dev.modbus_config();
     this.current_modbus_config_table();
     this.modbus_template_table();
+    await disable_interaction(false);
   }
 
   async current_modbus_config_table() {
+    await disable_interaction(true);
     this.checkboxes = [];
     this.remove_reg_btn = document.getElementById('modbus-current-config-remove-reg');
     this.remove_dev_btn = document.getElementById('modbus-current-config-remove-dev');
@@ -80,9 +87,11 @@ export class modbus_t {
     });
     this.remove_reg_btn.addEventListener('click', this.remove_modbus_register);
     this.remove_dev_btn.addEventListener('click', this.remove_modbus_device);
+    await disable_interaction(false);
   }
 
   async remove_modbus_register() {
+    await disable_interaction(true);
     this.dev_to_remove = '';
     this.list_of_current_devs = [];
     for (let i = 0; i < this.checkboxes.length; i += 1) {
@@ -108,9 +117,11 @@ export class modbus_t {
     }
     this.remove_reg_btn.disabled = true;
     this.remove_dev_btn.disabled = true;
+    await disable_interaction(false);
   }
 
   async remove_modbus_device() {
+    await disable_interaction(true);
     for (let i = 0; i < this.checkboxes.length; i += 1) {
       const chkbox = this.checkboxes[i];
       const is_checked = chkbox.checked;
@@ -123,9 +134,11 @@ export class modbus_t {
     await this.current_modbus_config_table();
     this.remove_reg_btn.disabled = true;
     this.remove_dev_btn.disabled = true;
+    await disable_interaction(false);
   }
 
   async load_json_templates() {
+    await disable_interaction(true);
     this.objs = [];
     this.pub_templates = await fetch('modules/gui/modbus_templates/published_templates.json');
     this.template_json = await this.pub_templates.json();
@@ -134,10 +147,12 @@ export class modbus_t {
       const obj = await fetch(`modules/gui/modbus_templates/${tmp}`);
       this.objs.push(await obj.json());
     }
+    await disable_interaction(false);
     return this.objs;
   }
 
   async modbus_template_table() {
+    await disable_interaction(true);
     this.templates = await this.load_json_templates();
     this.div = document.getElementById('modbus-template-config');
     const tbl = this.div.appendChild(document.createElement('table'));
@@ -174,6 +189,7 @@ export class modbus_t {
     this.add_new_template_btn.addEventListener('click', this.add_new_template);
     this.import_template_btn = document.getElementById('modbus-template-import-btn');
     this.import_template_btn.addEventListener('click', this.import_template_dialog);
+    await disable_interaction(false);
   }
 
   async select_template(e) {
@@ -233,6 +249,7 @@ export class modbus_t {
   }
 
   async apply_template() {
+    await disable_interaction(true);
     await this.dev.mb_dev_add(
       this.template.unit_id,
       this.template.byteorder,
@@ -252,6 +269,7 @@ export class modbus_t {
 
     this.mb_current_config_div.innerHTML = '';
     await this.current_modbus_config_table();
+    await disable_interaction(false);
   }
 
   async add_new_template() {

@@ -1,3 +1,5 @@
+import { disable_interaction } from './disable.js';
+
 export class navbar_t {
   async insert_navbar() {
     this.resp = await fetch('modules/gui/html/navbar.html');
@@ -6,12 +8,13 @@ export class navbar_t {
   }
 
   async change_active_tab(id) {
+    await disable_interaction(true);
     document.getElementById('home-tab').classList.remove('active');
     document.getElementById('console-tab').classList.remove('active');
     document.getElementById('modbus-tab').classList.remove('active');
     document.getElementById('current-clamp-tab').classList.remove('active');
     document.getElementById('io-tab').classList.remove('active');
-    document.getElementById('ftma-tab').classList.remove('active');
     this.active = document.getElementById(id).classList.add('active');
+    await disable_interaction(false);
   }
 }

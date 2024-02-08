@@ -87,7 +87,7 @@ export class lora_config_t {
   }
 
   async write_config() {
-    disable_interaction(true);
+    await disable_interaction(true);
     const deveui = document.getElementById('lora-dev-eui-value').innerHTML;
     const appkey = document.getElementById('lora-app-key-value').innerHTML;
     const reg = document.getElementById('lora-config-region-dropdown').value.split(' ')[0];
@@ -95,6 +95,6 @@ export class lora_config_t {
     this.comms.lora_deveui = deveui;
     this.comms.lora_appkey = appkey;
     this.comms.lora_region = reg;
-    disable_interaction(false);
+    await disable_interaction(false);
   }
 }

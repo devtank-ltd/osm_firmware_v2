@@ -1,17 +1,22 @@
+import { disable_interaction } from './disable.js';
+
 export class io_t {
   constructor(dev) {
     this.dev = dev;
   }
 
   async open_io_tab() {
+    await disable_interaction(true);
     this.doc = document.getElementById('main-page-body');
     this.response = await fetch('modules/gui/html/io.html');
     this.text = await this.response.text();
     this.doc.innerHTML = this.text;
     await this.create_io_table();
+    await disable_interaction(false);
   }
 
   async create_io_table() {
+    await disable_interaction(true);
     const ios = await this.get_ios();
     this.checkboxes = [];
     this.io_div = document.getElementById('io-div');
@@ -97,6 +102,7 @@ export class io_t {
         this.enable_disable_io(e);
       });
     });
+    await disable_interaction(false);
   }
 
   async get_ios() {
@@ -105,6 +111,7 @@ export class io_t {
   }
 
   async enable_disable_io(e) {
+    await disable_interaction(true);
     this.checked = e.target.checked;
     this.index = 1;
     this.meas = e.target.parentNode.parentNode.cells[0].innerHTML;
@@ -139,5 +146,6 @@ export class io_t {
     if (this.meas === 'IO02' && this.checked === true) {
       this.checkboxes[2].checked = false;
     }
+    await disable_interaction(false);
   }
 }

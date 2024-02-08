@@ -1,5 +1,6 @@
 import { binding_t } from '../backend/binding.js';
 import { home_tab_t } from './home.js';
+import { disable_interaction } from './disable.js';
 
 class config_gui_t {
   constructor() {
@@ -45,6 +46,7 @@ class config_gui_t {
   }
 
   async spin_fake_osm() {
+    await disable_interaction(true);
     this.msg = 'Spawn virtual OSM';
     this.body = JSON.stringify({
       cmd: this.msg,
@@ -83,7 +85,7 @@ class config_gui_t {
                 'Content-type': 'application/json; charset=UTF-8',
               },
             }).then((response) => response.json())
-              .then(async (jresp) => {
+              .then(() => {
                 window.location.reload();
               });
           });

@@ -1,14 +1,18 @@
+import { disable_interaction } from './disable.js';
+
 export class ftma_t {
   constructor(dev) {
     this.dev = dev;
   }
 
   async open_ftma_tab() {
+    await disable_interaction(true);
     this.doc = document.getElementById('main-page-body');
     this.response = await fetch('modules/gui/html/ftma.html');
     this.text = await this.response.text();
     this.doc.innerHTML = this.text;
     this.create_ftma_table();
+    await disable_interaction(false);
   }
 
   async get_ftma_specs() {
@@ -69,14 +73,18 @@ export class ftma_t {
   }
 
   async change_ftma_name(meas, e) {
+    await disable_interaction(true);
     this.new_name = e.target.textContent;
     if (this.new_name !== meas) {
+      disable_interaction(true);
       await this.dev.set_ftma_name(meas, this.new_name);
       await this.create_ftma_table();
     }
+    await disable_interaction(false);
   }
 
   async change_ftma_coeffs(meas, e) {
+    await disable_interaction(true);
     const checkbox = e.target;
     this.coeff_a = checkbox.parentNode.parentNode.cells[1].textContent;
     this.coeff_b = checkbox.parentNode.parentNode.cells[2].textContent;
@@ -85,6 +93,7 @@ export class ftma_t {
     await this.dev.set_ftma_coeffs(meas, this.coeff_a, this.coeff_b, this.coeff_c, this.coeff_d);
     await this.draw_ftma_coeff_graph(meas);
     checkbox.checked = false;
+    await disable_interaction(false);
   }
 
   async limit_characters(cell, maxLength) {
@@ -97,6 +106,8 @@ export class ftma_t {
   }
 
   async draw_ftma_coeff_graph(meas) {
+    const dis = document.getElementById('global-fieldset');
+    console.log(`INSIDE DRAW GRAPH ${dis.disabled}`);
     const canvas_id = 'coeff-canvas';
     this.canvas = document.getElementById(canvas_id);
     const ctx = this.canvas.getContext('2d');

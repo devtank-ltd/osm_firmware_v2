@@ -1,3 +1,5 @@
+import { disable_interaction } from './disable.js';
+
 export class current_clamp_t {
   constructor(dev) {
     this.dev = dev;
@@ -9,12 +11,14 @@ export class current_clamp_t {
   }
 
   async open_cc_tab() {
+    await disable_interaction(true);
     this.doc = document.getElementById('main-page-body');
     this.response = await fetch('modules/gui/html/current_clamp.html');
     this.text = await this.response.text();
     this.doc.innerHTML = this.text;
     await this.create_cc_table();
     await this.add_event_listeners();
+    await disable_interaction(false);
   }
 
   async add_event_listeners() {
@@ -38,6 +42,7 @@ export class current_clamp_t {
   }
 
   async create_cc_table() {
+    await disable_interaction(true);
     this.cc_div = document.getElementById('current-clamp-div');
     this.cc_div.innerHTML = '';
     this.add_cc_table = this.cc_div.appendChild(document.createElement('table'));
@@ -122,9 +127,11 @@ export class current_clamp_t {
       mp_cell.contentEditable = true;
       mp_cell.addEventListener('focusout', this.set_cc_midpoint);
     });
+    await disable_interaction(false);
   }
 
   async set_cc_exterior(event) {
+    await disable_interaction(true);
     this.extphase = event.target.parentElement.cells[0].innerHTML;
     this.ext_val = event.target.innerHTML;
     switch (this.extphase) {
@@ -142,9 +149,11 @@ export class current_clamp_t {
     }
     this.interior = event.target.parentElement.cells[2].innerHTML;
     await this.dev.set_cc_gain(this.extphase, this.ext_val, this.interior);
+    await disable_interaction(false);
   }
 
   async set_cc_interior(event) {
+    await disable_interaction(true);
     this.intphase = event.target.parentElement.cells[0].innerHTML;
     this.int_val = event.target.innerHTML;
     switch (this.intphase) {
@@ -162,11 +171,14 @@ export class current_clamp_t {
     }
     this.exterior = event.target.parentElement.cells[1].innerHTML;
     await this.dev.set_cc_gain(this.intphase, this.exterior, this.int_val);
+    await disable_interaction(false);
   }
 
   async set_cc_midpoint(event) {
+    await disable_interaction(true);
     this.mpphase = event.target.parentElement.cells[0].innerHTML;
     this.mp_val = event.target.innerHTML;
     this.dev.update_midpoint(this.mp_val, this.mpphase);
+    await disable_interaction(false);
   }
 }

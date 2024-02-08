@@ -10,6 +10,7 @@ import { modbus_t } from './modbus.js';
 import { current_clamp_t } from './current_clamp.js';
 import { io_t } from './ios.js';
 import { ftma_t } from './ftma.js';
+import { disable_interaction } from './disable.js';
 
 export class home_tab_t {
   constructor(dev) {
@@ -26,10 +27,13 @@ export class home_tab_t {
   }
 
   async return_to_home_tab() {
+    await disable_interaction(true);
     await this.insert_homepage();
+    await disable_interaction(false);
   }
 
   async insert_homepage() {
+    await disable_interaction(true);
     const body = document.getElementById('top-level-body');
     const doc = document.getElementById('main-page-body');
     const response = await fetch('modules/gui/html/home_page.html');
@@ -66,6 +70,7 @@ export class home_tab_t {
     await save_config.add_event_listeners();
 
     await this.add_event_listeners();
+    await disable_interaction(false);
   }
 
   async load_serial_number() {
@@ -90,7 +95,6 @@ export class home_tab_t {
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
     document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-    document.getElementById('ftma-tab').addEventListener('click', this.change_to_ftma_tab);
   }
 
   async save_settings() {
@@ -105,7 +109,6 @@ export class home_tab_t {
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
     document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-    document.getElementById('ftma-tab').addEventListener('click', this.change_to_ftma_tab);
   }
 
   async change_to_modbus_tab() {
@@ -116,7 +119,6 @@ export class home_tab_t {
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
     document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-    document.getElementById('ftma-tab').addEventListener('click', this.change_to_ftma_tab);
   }
 
   async change_to_current_clamp_tab() {
@@ -127,7 +129,6 @@ export class home_tab_t {
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
     document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-    document.getElementById('ftma-tab').addEventListener('click', this.change_to_ftma_tab);
   }
 
   async change_to_io_tab() {
@@ -138,7 +139,6 @@ export class home_tab_t {
     document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
     document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
-    document.getElementById('ftma-tab').addEventListener('click', this.change_to_ftma_tab);
   }
 
   async change_to_ftma_tab() {

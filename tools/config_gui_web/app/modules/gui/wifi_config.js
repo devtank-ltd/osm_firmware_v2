@@ -89,7 +89,7 @@ export class wifi_config_t {
   }
 
   async write_config() {
-    disable_interaction(true);
+    await disable_interaction(true);
     const ssid = document.getElementById('wifi-ssid-value').innerHTML;
     const wifi_pwd = document.getElementById('wifi-pwd-value').innerHTML;
     const mqtt_addr = document.getElementById('wifi-mqtt-addr-value').innerHTML;
@@ -104,6 +104,6 @@ export class wifi_config_t {
     this.comms.mqtt_pwd = mqtt_pwd;
     this.comms.mqtt_port = mqtt_port;
 
-    disable_interaction(false);
+    await disable_interaction(false);
   }
 }

@@ -15,7 +15,7 @@ export class load_configuration_t {
   }
 
   async load_gui_with_config(content) {
-    disable_interaction(true);
+    await disable_interaction(true);
     this.content = JSON.parse(content);
     this.modbus_setup = this.content.modbus_bus.setup;
     this.modbus_devices = this.content.modbus_bus.modbus_devices;
@@ -78,7 +78,7 @@ export class load_configuration_t {
     await this.dev.do_cmd(`interval_mins ${this.content.interval_mins}`);
 
     await this.dev.save();
-    disable_interaction(false);
+    await disable_interaction(false);
     window.location.reload();
   }
 

@@ -9,6 +9,8 @@ export class measurements_table_t {
   }
 
   async create_measurements_table_gui() {
+    await disable_interaction(true);
+    console.log('TEST');
     const measurements = await this.dev.get_measurements();
     const res = document.querySelector('div.measurements-table');
     const tbl = res.appendChild(document.createElement('table'));
@@ -64,6 +66,7 @@ export class measurements_table_t {
         });
       }
     });
+    await disable_interaction(false);
   }
 
   async add_uplink_listener() {
@@ -101,6 +104,7 @@ export class measurements_table_t {
   }
 
   async set_interval_or_samplec(e) {
+    await disable_interaction(true);
     let interval_mins = await this.dev.interval_mins;
     if (interval_mins < 1 && interval_mins > 0) {
       interval_mins *= 60;
@@ -121,24 +125,25 @@ export class measurements_table_t {
     } else {
       this.dev.enqueue_and_process(`samplecount ${meas} ${val}`);
     }
+    await disable_interaction(false);
   }
 
   async insert_last_value(e) {
+    await disable_interaction(true);
     const last_val_index = 3;
     const checkbox = e.target;
     const table = checkbox.offsetParent.offsetParent;
-    disable_interaction(true);
     const row_index = e.srcElement.parentElement.parentNode.rowIndex;
     const meas = table.rows[row_index].cells[0].innerHTML;
     const val = await this.dev.get_value(`get_meas ${meas}`);
     const last_val_col = table.rows[row_index].cells[last_val_index];
     last_val_col.textContent = val;
     checkbox.checked = false;
-    disable_interaction(false);
+    await disable_interaction(false);
   }
 
   async change_uplink_time() {
-    disable_interaction(true);
+    await disable_interaction(true);
     const table = document.getElementById('meas-table');
     const imins_header = table.rows[0].cells[1];
     const interval_mins = await this.dev.interval_mins;
@@ -171,6 +176,6 @@ export class measurements_table_t {
     if (seconds === null) {
       this.is_seconds = false;
     }
-    disable_interaction(false);
+    await disable_interaction(false);
   }
 }
