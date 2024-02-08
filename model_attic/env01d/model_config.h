@@ -50,8 +50,6 @@
 
 #define ADC_CC_COUNT        3
 
-#define JSON_BUF_SIZE  1024
-
 
 typedef struct
 {
