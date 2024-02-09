@@ -6,24 +6,24 @@ import { save_configuration_t } from './save_configuration.js';
 import { lora_comms_t, wifi_comms_t } from '../backend/binding.js';
 import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
-import { modbus_t } from './modbus.js';
-import { current_clamp_t } from './current_clamp.js';
-import { io_t } from './ios.js';
-import { ftma_t } from './ftma.js';
+import { adv_config_t } from './adv_conf.js';
 import { disable_interaction } from './disable.js';
 
 export class home_tab_t {
   constructor(dev) {
     this.dev = dev;
     this.navbar = new navbar_t();
+    this.change_to_adv_conf_tab = this.change_to_adv_conf_tab.bind(this);
     this.change_to_console_tab = this.change_to_console_tab.bind(this);
     this.insert_homepage = this.insert_homepage.bind(this);
     this.return_to_home_tab = this.return_to_home_tab.bind(this);
     this.save_settings = this.save_settings.bind(this);
-    this.change_to_modbus_tab = this.change_to_modbus_tab.bind(this);
-    this.change_to_current_clamp_tab = this.change_to_current_clamp_tab.bind(this);
-    this.change_to_io_tab = this.change_to_io_tab.bind(this);
-    this.change_to_ftma_tab = this.change_to_ftma_tab.bind(this);
+    this.hide_img();
+  }
+
+  async hide_img() {
+    this.hide = document.getElementById('gui-img');
+    this.hide.style.display = 'none';
   }
 
   async return_to_home_tab() {
@@ -92,13 +92,19 @@ export class home_tab_t {
   async add_event_listeners() {
     document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
     document.getElementById('global-save-setting').addEventListener('click', this.save_settings);
-    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
-    document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
-    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
+    document.getElementById('adv-conf-tab').addEventListener('click', this.change_to_adv_conf_tab);
   }
 
   async save_settings() {
     this.dev.save();
+  }
+
+  async change_to_adv_conf_tab() {
+    this.adv_conf = new adv_config_t(this.dev);
+    await this.adv_conf.open_adv_config_tab();
+    await this.navbar.change_active_tab('adv-conf-tab');
+    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
+    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
   }
 
   async change_to_console_tab() {
@@ -106,49 +112,6 @@ export class home_tab_t {
     await this.console.open_console();
     await this.navbar.change_active_tab('console-tab');
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
-    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
-    document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
-    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-  }
-
-  async change_to_modbus_tab() {
-    this.modbus = new modbus_t(this.dev);
-    await this.modbus.open_modbus();
-    await this.navbar.change_active_tab('modbus-tab');
-    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
-    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
-    document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
-    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-  }
-
-  async change_to_current_clamp_tab() {
-    this.cc = new current_clamp_t(this.dev);
-    await this.cc.open_cc_tab();
-    await this.navbar.change_active_tab('current-clamp-tab');
-    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
-    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
-    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
-    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
-  }
-
-  async change_to_io_tab() {
-    this.io = new io_t(this.dev);
-    await this.io.open_io_tab();
-    await this.navbar.change_active_tab('io-tab');
-    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
-    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
-    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
-    document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
-  }
-
-  async change_to_ftma_tab() {
-    this.ftma = new ftma_t(this.dev);
-    await this.ftma.open_ftma_tab();
-    await this.navbar.change_active_tab('ftma-tab');
-    document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
-    document.getElementById('modbus-tab').addEventListener('click', this.change_to_modbus_tab);
-    document.getElementById('console-tab').addEventListener('click', this.change_to_console_tab);
-    document.getElementById('current-clamp-tab').addEventListener('click', this.change_to_current_clamp_tab);
-    document.getElementById('io-tab').addEventListener('click', this.change_to_io_tab);
+    document.getElementById('adv-conf-tab').addEventListener('click', this.open_adv_conf_tab);
   }
 }

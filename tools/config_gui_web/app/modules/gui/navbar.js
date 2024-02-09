@@ -11,9 +11,7 @@ export class navbar_t {
     await disable_interaction(true);
     document.getElementById('home-tab').classList.remove('active');
     document.getElementById('console-tab').classList.remove('active');
-    document.getElementById('modbus-tab').classList.remove('active');
-    document.getElementById('current-clamp-tab').classList.remove('active');
-    document.getElementById('io-tab').classList.remove('active');
+    document.getElementById('adv-conf-tab').classList.remove('active');
     this.active = document.getElementById(id).classList.add('active');
     await disable_interaction(false);
   }

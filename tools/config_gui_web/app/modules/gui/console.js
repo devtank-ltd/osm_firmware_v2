@@ -30,15 +30,23 @@ export class console_t {
 
   async bind_input_submit() {
     this.send = document.getElementById('console-send-cmd-btn').addEventListener('click', this.send_cmd);
+    this.enter = document.getElementById('console-cmd-input').addEventListener('keyup', this.send_cmd);
   }
 
-  async send_cmd() {
-    await disable_interaction(true);
-    this.cmd = document.getElementById('console-cmd-input');
-    const output = await this.dev.do_cmd_raw(this.cmd.value);
-    this.terminal = document.getElementById('console-terminal-para');
-    this.terminal.textContent = output;
-    this.cmd.value = '';
-    await disable_interaction(false);
+  async send_cmd(e) {
+    console.log(e);
+    if (e.key === 'Enter' || e.pointerType === 'mouse' || e.type === 'click') {
+      await disable_interaction(true);
+      this.text = e.target.value;
+      this.cmd = document.getElementById('console-cmd-input');
+      this.value = this.cmd.value;
+      if (this.text || this.value) {
+        const output = await this.dev.do_cmd_raw(this.value);
+        this.terminal = document.getElementById('console-terminal-para');
+        this.terminal.textContent = output;
+        this.cmd.value = '';
+      }
+      await disable_interaction(false);
+    }
   }
 }

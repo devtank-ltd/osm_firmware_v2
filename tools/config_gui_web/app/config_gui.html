@@ -10,18 +10,14 @@
         <body id="top-level-body">
             <div id="navbar"></div>
             <div id="main-page-body">
-                <h1 id="main-page-title">OpenSmartMonitor Configuration</h1>
-                <button id='main-page-connect'>Connect</button>
-                <button id='main-page-websocket-connect'>Connect to Virtual OSM</button>
-                <div id="error-div" class="error-div"></div>
+                <h1 class="main-page-title" id="main-page-title">OpenSmartMonitor Configuration</h1>
+                <div class="title-page">
+                    <button id='main-page-connect'>Connect via USB</button>
+                    <button id='main-page-websocket-connect'>Connect to Virtual OSM</button>
+                    <div id="error-div" class="error-div"></div>
+                </div>
             </div>
-
-            <div class="global-load-save-config-buttons" id="global-load-save-config-buttons" style="display: none;">
-                <button id="global-save-setting">Save</button>
-                <button id="global-load-osm-config">Load Configuration</button>
-                <button id="global-save-osm-config">Save Configuration</button>
-                <button id="global-disconnect">Disconnect</button>
-            </div>
+            <img class="gui-img" id="gui-img" src="./imgs/gui.jpg" alt="OpenSmartMonitor GUI Image">
 
             <dialog id="save-as-dialog">
                 <form method="dialog">
@@ -31,6 +27,13 @@
                   <button id="save-as-cancel" type="submit">Cancel</button>
                 </form>
             </dialog>
+
+            <div class="global-load-save-config-buttons" id="global-load-save-config-buttons" style="display: none;">
+                <button id="global-save-setting">Save</button>
+                <button id="global-load-osm-config">Load Configuration</button>
+                <button id="global-save-osm-config">Save Configuration</button>
+                <button id="global-disconnect">Disconnect</button>
+              </div>
         </body>
     </fieldset>
 

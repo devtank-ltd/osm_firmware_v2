@@ -14,23 +14,21 @@ export class modbus_t {
     this.export_template = this.export_template.bind(this);
     this.import_template_dialog = this.import_template_dialog.bind(this);
     this.load_json_templates = this.load_json_templates.bind(this);
+    this.reload_template_table = this.reload_template_table.bind(this);
   }
 
   async open_modbus() {
     await disable_interaction(true);
-    this.doc = document.getElementById('main-page-body');
-    this.response = await fetch('modules/gui/html/modbus.html');
-    this.text = await this.response.text();
-    this.doc.innerHTML = this.text;
-    this.load_modbus_config();
+    await this.load_modbus_config();
     await disable_interaction(false);
   }
 
   async load_modbus_config() {
     await disable_interaction(true);
     this.mb_bus = await this.dev.modbus_config();
-    this.current_modbus_config_table();
-    this.modbus_template_table();
+    await this.current_modbus_config_table();
+    await this.modbus_template_table();
+    await this.add_new_template();
     await disable_interaction(false);
   }
 
@@ -185,8 +183,6 @@ export class modbus_t {
     });
     const apply_btn = document.getElementById('modbus-template-apply-template-btn');
     apply_btn.addEventListener('click', this.apply_template);
-    this.add_new_template_btn = document.getElementById('modbus-template-add-template-btn');
-    this.add_new_template_btn.addEventListener('click', this.add_new_template);
     this.import_template_btn = document.getElementById('modbus-template-import-btn');
     this.import_template_btn.addEventListener('click', this.import_template_dialog);
     await disable_interaction(false);
@@ -274,6 +270,7 @@ export class modbus_t {
 
   async add_new_template() {
     this.add_new_div = document.getElementById('modbus-add-new-template-div');
+    this.add_new_div.innerHTML = '';
     this.add_new_template_table = this.add_new_div.appendChild(document.createElement('table'));
     this.add_new_template_table.id = 'modbus-add-new-template-table';
     const tbody = this.add_new_template_table.createTBody();
@@ -413,7 +410,14 @@ export class modbus_t {
     this.export_btn = this.add_new_template_table.appendChild(document.createElement('button'));
     this.export_btn.textContent = 'Export';
     this.export_btn.addEventListener('click', this.export_template);
-    this.add_new_template_btn.disabled = true;
+
+    this.restart_btn = this.add_new_template_table.appendChild(document.createElement('button'));
+    this.restart_btn.textContent = 'Restart';
+    this.restart_btn.addEventListener('click', this.reload_template_table);
+  }
+
+  async reload_template_table() {
+    await this.add_new_template();
   }
 
   async export_template(e) {
@@ -451,12 +455,24 @@ export class modbus_t {
       this.regs[regname] = { hex: addr, function: func, datatype: datatypev };
     }
     this.json.registers = await this.regs;
+    const ver = await this.verify_template(this.json);
+    if (ver) {
+      const json_data = JSON.stringify(this.json);
+      await this.download_template(json_data, `${name}.json`, 'application/json');
+      await this.import_template(json_data);
+    }
+    await this.add_new_template();
+  }
 
-    const json_data = JSON.stringify(this.json);
-    await this.download_template(json_data, `${name}.json`, 'application/json');
-    await this.import_template(json_data);
-    this.add_new_div.innerHTML = '';
-    this.add_new_template_btn.disabled = false;
+  async verify_template(data) {
+    this.bool = false;
+    for (const [key, value] of Object.entries(data)) {
+      if (!value) {
+        return this.bool;
+      }
+    }
+    this.bool = true;
+    return this.bool;
   }
 
   async download_template(content, file_name, content_type) {

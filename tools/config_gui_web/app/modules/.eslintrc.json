@@ -21,6 +21,8 @@
         "no-case-declarations": "off",
         "no-useless-escape": "off",
         "no-eval": "off",
-        "import/no-relative-packages": "off"
+        "import/no-relative-packages": "off",
+        "no-promise-executor-return": "off",
+        "no-alert": "off"
     }
 }

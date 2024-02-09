@@ -4,18 +4,15 @@ export class current_clamp_t {
   constructor(dev) {
     this.dev = dev;
     this.create_cc_table = this.create_cc_table.bind(this);
+    this.open_cc = this.open_cc.bind(this);
     this.open_cc_modal = this.open_cc_modal.bind(this);
     this.set_cc_exterior = this.set_cc_exterior.bind(this);
     this.set_cc_interior = this.set_cc_interior.bind(this);
     this.set_cc_midpoint = this.set_cc_midpoint.bind(this);
   }
 
-  async open_cc_tab() {
+  async open_cc() {
     await disable_interaction(true);
-    this.doc = document.getElementById('main-page-body');
-    this.response = await fetch('modules/gui/html/current_clamp.html');
-    this.text = await this.response.text();
-    this.doc.innerHTML = this.text;
     await this.create_cc_table();
     await this.add_event_listeners();
     await disable_interaction(false);
@@ -63,8 +60,8 @@ export class current_clamp_t {
 
     const headers = this.add_cc_table.tHead.insertRow();
     headers.insertCell().textContent = 'Measurement';
-    headers.insertCell().textContent = 'Exterior (A)';
-    headers.insertCell().textContent = 'Interior (mV)';
+    headers.insertCell().textContent = 'Primary (A)';
+    headers.insertCell().textContent = 'Secondary (mV)';
     headers.insertCell().textContent = 'Midpoint';
 
     const top_level = [];

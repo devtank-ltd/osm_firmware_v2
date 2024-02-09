@@ -5,12 +5,8 @@ export class io_t {
     this.dev = dev;
   }
 
-  async open_io_tab() {
+  async open_io() {
     await disable_interaction(true);
-    this.doc = document.getElementById('main-page-body');
-    this.response = await fetch('modules/gui/html/io.html');
-    this.text = await this.response.text();
-    this.doc.innerHTML = this.text;
     await this.create_io_table();
     await disable_interaction(false);
   }

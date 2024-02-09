@@ -1,0 +1,34 @@
+<body>
+    <div class="adv-conf-dropdowns">
+        <div class="modbus-tab-widgets">
+            <div class="modbus-template-table-top-level">
+                <div id="modbus-template-config" class="modbus-template-config"></div>
+                <button id="modbus-template-apply-template-btn">Write Template to OSM</button>
+                <button id="modbus-template-import-btn">Import Template</button>
+            </div>
+
+            <div class="modbus-current-config-top-level">
+                <div id="modbus-current-config" class="modbus-current-config"></div>
+                <button disabled='true' id="modbus-current-config-remove-reg">Remove Register</button>
+                <button disabled='true' id="modbus-current-config-remove-dev">Remove Device</button>
+            </div>
+            <div id="modbus-add-new-template-div" class="modbus-add-new-template-div"></div>
+        </div>
+
+        <div class="current-clamp-overview" id="current-clamp-overview">
+            <div class="current-clamp-div" id="current-clamp-div"></div>
+            <button id="current-clamp-cal-btn">Calibrate ADCs</button>
+        </div>
+
+        <div class="io-div" id="io-div"></div>
+
+        <dialog id="cc-cal-dialog">
+            <form method="dialog">
+                Ensure there is no live current going through the OSM.
+            <button id="cc-modal-confirm" type="submit">Confirm</button>
+            <button id="cc-modal-cancel" type="submit">Cancel</button>
+            </form>
+        </dialog>
+
+    </div>
+</body>

@@ -16,10 +16,29 @@ button {
 
 button:hover {
   background-color: var(--osmdark);
+  cursor: pointer;
 }
 
 .error-div {
   color: red;
+}
+
+
+/* Title Page */
+
+.title-page {
+  display: flex;
+  justify-content: center;
+}
+
+.main-page-title {
+  display: flex;
+  justify-content: center;
+}
+
+.gui-img {
+  position: fixed;
+  width: 1500px;
 }
 
 
@@ -28,7 +47,8 @@ button:hover {
 .topnav {
   background-color: var(--osmlight);
   overflow: hidden;
-  height: 80px;
+  height: 50px;
+  border-radius: 10px;
 }
 
 .topnav a {
@@ -42,15 +62,19 @@ button:hover {
   text-align: center;
 }
 
-.topnav img {
+.nav-img a img {
+  width: 100px;
+  position: fixed;
   float: right;
-  display: block;
-  height: 100%;
+  top: 0;
+  right: 0;
+
 }
 
 .topnav a:hover {
   background-color: var(--white);
   color: var(--black);
+  cursor: pointer;
 }
 
 .topnav a.active {
@@ -71,12 +95,15 @@ button:hover {
 /* Home Page */
 
 .home-page-div {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
 }
 
 .home-edit-uplink-field {
   margin          : 2em 0.5em;
+  grid-column-start: 0;
+  grid-column-end: 1;
+  grid-row-start: 1;
+  grid-row-end: 2;
 }
 
 .home-edit-uplink-field input {
@@ -97,12 +124,33 @@ button:hover {
   left: 0;
 }
 
+.monitor-img {
+  margin-top: 2em;
+  grid-column-start: 3;
+  grid-column-end: 4;
+  grid-row-start: 0;
+  grid-row-end: 1;
+}
+
 .global-load-save-config-buttons {
   text-align: center;
-  margin: 0.8em;
+  margin-top: 1.5em;
+  margin-right: 6.5em;
   position: fixed;
-  bottom: 0;
   right: 0;
+  top: 0;
+}
+
+.global-load-save-config-buttons button {
+  background-color: var(--white);
+  color: var(--osmdark);
+  padding: 0.3em;
+  margin-right: 0.3em;
+}
+
+.global-load-save-config-buttons button:hover {
+  background-color: var(--osmdark);
+  color: var(--white);
 }
 
 .global-fieldset {
@@ -113,10 +161,17 @@ button:hover {
 /* Measurements Table */
 
 .measurements-table {
-  display: grid;
+  grid-column-start: 0;
+  grid-column-end: 1;
+  grid-row-start: 0;
+  grid-row-end: 1;
   overflow:auto;
   height: 500px;
-  margin          : 2em 0.5em;
+  width: 600px;
+  margin-top: 2em;
+  border-style: solid;
+  border-radius: 5px;
+  border-color: var(--osmdark);
 }
 
 .measurements-table table {
@@ -144,12 +199,16 @@ button:hover {
 
 /* LoRaWAN Configuration Table */
 
+.lora-config-table {
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 0;
+  grid-row-end: 1;
+}
+
 .lora-config-table table {
-  float: right;
-  display: block;
   border-collapse : collapse;
   margin          : 2em 0.5em;
-  float: right;
 }
 
 .lora-config-table thead {
@@ -165,8 +224,6 @@ button:hover {
 }
 
 .lora-config-table .buttons {
-  text-align: center;
-  align-items: first baseline;
   padding-top: 2em;
 }
 
@@ -176,12 +233,17 @@ button:hover {
 
 /* WiFi Configuration Table */
 
+.wifi-config-table {
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 0;
+  grid-row-end: 1;
+}
+
+
 .wifi-config-table table {
-  float: right;
-  display: block;
   border-collapse : collapse;
   margin          : 2em 0.5em;
-  float: right;
 }
 
 .wifi-config-table thead {
@@ -197,23 +259,8 @@ button:hover {
 }
 
 
-/* Modbus */
-
-.modbus-tab-widgets {
-  display: grid;
-
-}
-
 /* Modbus Config Table */
 
-.modbus-template-table-top-level {
-  margin: 2em 0.5em;
-  grid-column-start: 1;
-  grid-column-end: 2;
-  grid-row-start: 1;
-  grid-row-end: 2;
-
-}
 
 .modbus-template-config table {
   border-collapse : collapse;
@@ -221,6 +268,70 @@ button:hover {
   height: 300px;
 
 }
+
+/* Modbus Current Settings */
+
+
+.modbus-current-config {
+  height: 300px;
+  overflow:auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+
+.modbus-current-config table {
+  border-collapse : collapse;
+  width: 480px;
+}
+
+.modbus-current-config thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.modbus-current-config td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+
+
+/* Modbus Add New Template Table */
+
+.modbus-add-new-template-div {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.modbus-add-new-template-div table {
+  border-collapse : collapse;
+  width: 500px;
+  height: 200px;
+
+}
+
+.modbus-add-new-template-div thead {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.modbus-add-new-template-div td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+.modbus-add-new-template-div input {
+  text-align: center;
+  border: none;
+  width: 90%;
+}
+
 
 .modbus-template-config thead {
   background-color : var(--osmlight);
@@ -234,17 +345,31 @@ button:hover {
   padding: 0;
 }
 
+/* Modbus Template Table */
+
+.modbus-template-config {
+  display: flex;
+  justify-content: center;
+}
+
+.selected-cell {
+  background-color: var(--osmdark);
+  color: var(--white)
+}
+
+.modbus-template-config-table-reg-field {
+  white-space: pre-wrap;
+}
+
 
 /* Current Clamp Configuration */
 
-.current-clamp-div {
-  margin-top: 50px;
-}
 
 .current-clamp-table table {
   border-collapse : collapse;
   width: 500px;
   height: 300px;
+
 
 }
 
@@ -261,10 +386,6 @@ button:hover {
 
 
 /* IO Configuration */
-
-.io-div {
-  margin-top: 50px;
-}
 
 .io-table table {
   border-collapse : collapse;
@@ -309,106 +430,32 @@ button:hover {
   text-align : center;
 }
 
-/* Modbus Current Settings */
-
-
-.modbus-current-config {
-  height: 300px;
-  overflow:auto;
-}
-
-.modbus-current-config-top-level {
-  margin          : 2em 0.5em;
-  grid-column-start: 2;
-  grid-column-end: 3;
-  grid-row-start: 1;
-  grid-row-end: 2;
-
-
-}
-
-.modbus-current-config table {
-  border-collapse : collapse;
-  width: 500px;
-}
-
-.modbus-current-config thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.modbus-current-config td {
-  padding    : .2em .8em;
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-}
-
-
-
-
-/* Modbus Add New Template Table */
-
-.modbus-add-new-template-div {
-  grid-column-start: 1;
-  grid-column-end: 2;
-  grid-row-start: 3;
-  grid-row-end: 4;
-
-}
-
-.modbus-add-new-template-div table {
-  border-collapse : collapse;
-  width: 500px;
-  height: 200px;
-
-}
-
-.modbus-add-new-template-div thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.modbus-add-new-template-div td {
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-}
-
-.modbus-add-new-template-div input {
-  text-align: center;
-  border: none;
-  width: 90%;
-}
-
-
 
 /* Console Tab */
 
 .console-grid-container {
   display: grid;
   gap: 50px 0px;
+  margin-top: 50px;
 }
 
 .console-cmd-field {
-  margin-top: 20px;
   grid-column-start: 1;
   grid-column-end: 2;
-  grid-row-start: 1;
-  grid-row-end: 1;
+  grid-row-start: 2;
+  grid-row-end: 2;
 }
 
 .console-cmd-field input {
   width: 500px;
   padding: 0.5em;
-
 }
 
 .console-help {
   grid-column-start: 2;
   grid-column-end: 2;
-  grid-row-start: 2;
-  grid-row-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 2;
 }
 
 .console-terminal {
@@ -418,8 +465,8 @@ button:hover {
   width:1000px;
   grid-column-start: 1;
   grid-column-end: 2;
-  grid-row-start: 2;
-  grid-row-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 2;
   overflow:auto;
 
 }
@@ -435,13 +482,63 @@ button:hover {
 }
 
 
-/* Modbus Template Table */
+/* Advanced Config Tab */
 
-.selected-cell {
-  background-color: var(--osmdark);
-  color: var(--white)
+.adv-conf-dropdowns {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, fr);
+  grid-template-rows: repeat(3, 100px);
+  width: 100%;
+  text-align: center;
 }
 
-.modbus-template-config-table-reg-field {
-  white-space: pre-wrap;
+.adv-conf-dropdowns label {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
 }
+
+.modbus-template-table-top-level{
+  grid-column-start: 1;
+  grid-column-end: 1;
+  grid-row-start: 1;
+  grid-row-end: 1;
+}
+
+.modbus-current-config-top-level {
+  grid-column-start: 1;
+  grid-column-end: 1;
+  grid-row-start: 2;
+  grid-row-end: 2;
+}
+
+.modbus-add-new-template-div {
+  grid-column-start: 1;
+  grid-column-end: 1;
+  grid-row-start: 3;
+  grid-row-end: 3;
+}
+
+.current-clamp-overview {
+  grid-column-start: 3;
+  grid-column-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 1;
+}
+
+.current-clamp-div {
+  display: flex;
+  justify-content: center;
+}
+
+
+.io-div {
+  display: flex;
+  justify-content: center;
+  grid-column-start: 3;
+  grid-column-end: 3;
+  grid-row-start: 3;
+  grid-row-end: 3;
+}
+
