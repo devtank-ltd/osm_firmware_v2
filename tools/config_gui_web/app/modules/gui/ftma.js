@@ -107,7 +107,6 @@ export class ftma_t {
 
   async draw_ftma_coeff_graph(meas) {
     const dis = document.getElementById('global-fieldset');
-    console.log(`INSIDE DRAW GRAPH ${dis.disabled}`);
     const canvas_id = 'coeff-canvas';
     this.canvas = document.getElementById(canvas_id);
     const ctx = this.canvas.getContext('2d');

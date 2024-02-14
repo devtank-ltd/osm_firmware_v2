@@ -34,7 +34,6 @@ export class console_t {
   }
 
   async send_cmd(e) {
-    console.log(e);
     if (e.key === 'Enter' || e.pointerType === 'mouse' || e.type === 'click') {
       await disable_interaction(true);
       this.text = e.target.value;
