@@ -36,7 +36,6 @@ class low_level_socket_t {
   async on_message() {
     this.port.onmessage = async (e) => {
       this.msgs += e.data;
-      console.log(e.data);
     };
   }
 
@@ -460,6 +459,20 @@ export class binding_t {
     const json_config = JSON.parse(comms_config);
     const type = await json_config.type;
     return type;
+  }
+
+  async get_io_types() {
+    const measurements = await this.get_measurements();
+    const io_list = [];
+    for (let i = 1; i < measurements.length; i += 1) {
+      const meas = measurements[i][0];
+      this.ftma_types = await this.do_cmd(`get_meas_type ${meas}`);
+      const s = this.ftma_types.split(': ');
+      if (s[1] === 'IO_READING' || s[1] === 'PULSE_COUNT' || s[1] === 'W1_PROBE') {
+        io_list.push(s[0]);
+      }
+    }
+    return io_list;
   }
 
   async get_ftma_types() {

@@ -11,9 +11,46 @@ export class io_t {
     await disable_interaction(false);
   }
 
+  async get_ios_measurements() {
+    const io_types = await this.dev.get_io_types();
+    return io_types;
+  }
+
+  async get_indexs() {
+    const ios = await this.get_ios();
+    this.indexs = {};
+    const ios_regex = /\IO (?<io>[0-9]{2}) : +(\[(?<specials_avail>[A-Za-z0-9 \|]+)\])? ((USED (?<special_used>[A-Za-z0-9]+)( (?<edge>F|R|B))?)|(?<dir>IN|OUT)) (?<pupd>DOWN|UP|NONE|D|U|N)( = (?<level>ON|OFF))?/;
+
+    for (let i = 0; i < ios.length; i += 1) {
+      const m = await ios[i].match(ios_regex);
+      if (!m) {
+        console.log('Invalid IOS configuration.');
+        break;
+      }
+      const { io } = await m.groups;
+      const { specials_avail } = await m.groups;
+      const { special_used } = await m.groups;
+      const { edge } = await m.groups;
+      const { pupd } = await m.groups;
+      const io_p = io[1];
+
+      if (specials_avail) {
+        this.indexs[io_p] = { specials_avail };
+      }
+      if (special_used) {
+        this.indexs[io_p].used = special_used;
+        this.indexs[io_p].edge = edge;
+        this.indexs[io_p].pullup = pupd;
+        this.indexs[io_p].index = io_p;
+        this.indexs[io_p].avail_meas = [];
+      }
+    }
+    return this.indexs;
+  }
+
   async create_io_table() {
     await disable_interaction(true);
-    const ios = await this.get_ios();
+    const indexs = await this.get_indexs();
     this.checkboxes = [];
     this.io_div = document.getElementById('io-div');
     this.add_io_table = this.io_div.appendChild(document.createElement('table'));
@@ -33,7 +70,7 @@ export class io_t {
     headers.insertCell().textContent = 'Edge';
     headers.insertCell().textContent = 'Enabled';
 
-    const measurements = ['TMP2', 'CNT1', 'CNT2', 'IO01', 'IO02'];
+    const measurements = await this.get_ios_measurements();
 
     measurements.forEach((meas) => {
       const io_row = tbody.insertRow();
@@ -70,35 +107,139 @@ export class io_t {
       const chkcell = io_row.insertCell();
       chkcell.appendChild(chk);
       this.checkboxes.push(chk);
-      if (meas === 'TMP2') {
-        this.edge_cell_input.disabled = true;
-        if (ios[1].includes('USED W1')) {
-          chk.checked = true;
-        }
-      } else if (meas === 'CNT1') {
-        if (ios[1].includes('USED PLSCNT')) {
-          chk.checked = true;
-        }
-      } else if (meas === 'CNT2') {
-        if (ios[2].includes('USED PLSCNT')) {
-          chk.checked = true;
-        }
-      } else if (meas === 'IO01') {
-        this.edge_cell_input.disabled = true;
-        if (ios[1].includes('USED WATCH')) {
-          chk.checked = true;
-        }
-      } else if (meas === 'IO02') {
-        this.edge_cell_input.disabled = true;
-        if (ios[2].includes('USED WATCH')) {
-          chk.checked = true;
-        }
+
+      let key; let
+        value;
+      switch (meas) {
+        case 'TMP2':
+          [key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          this.edge_cell_input.disabled = true;
+          if (value.used && value.used === 'W1') {
+            chk.checked = true;
+            if (value.edge) {
+              this.get_edge(value.edge);
+            }
+          }
+          break;
+        case 'TMP3':
+          [, key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          this.edge_cell_input.disabled = true;
+          if (value.used && value.used === 'W1') {
+            chk.checked = true;
+            if (value.edge) {
+              this.get_edge(value.edge);
+            }
+          }
+          break;
+        case 'CNT1':
+          [key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          if (value.used && value.used === 'PLSCNT') {
+            chk.checked = true;
+            if (value.edge) {
+              this.get_edge(value.edge);
+            }
+          }
+          if (value.pullup) {
+            this.get_pullup(value.pullup);
+          }
+          break;
+        case 'CNT2':
+          [, key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          if (value.used && value.used === 'PLSCNT') {
+            chk.checked = true;
+            if (value.edge) {
+              this.get_edge(value.edge);
+            }
+          }
+          if (value.pullup) {
+            this.get_pullup(value.pullup);
+          }
+          break;
+        case 'IO01':
+          [key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          this.edge_cell_input.disabled = true;
+          if (value.used && value.used === 'WATCH') {
+            chk.checked = true;
+            if (value.pullup) {
+              this.get_pullup(value.pullup);
+            }
+          }
+          break;
+        case 'IO02':
+          [, key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          this.edge_cell_input.disabled = true;
+          if (value.used && value.used === 'WATCH') {
+            chk.checked = true;
+            if (value.pullup) {
+              this.get_pullup(value.pullup);
+            }
+          }
+          break;
+        case 'IO04':
+          [key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          this.edge_cell_input.disabled = true;
+          if (value.used && value.used === 'WATCH') {
+            chk.checked = true;
+            if (value.pullup) {
+              this.get_pullup(value.pullup);
+            }
+          }
+          break;
+        case 'IO05':
+          [, key] = Object.keys(indexs);
+          value = indexs[key];
+          value.avail_meas.push(meas);
+          this.edge_cell_input.disabled = true;
+          if (value.used && value.used === 'WATCH') {
+            chk.checked = true;
+            if (value.pullup) {
+              this.get_pullup(value.pullup);
+            }
+          }
+          break;
+        default:
+          break;
       }
+
       chk.addEventListener('click', (e) => {
         this.enable_disable_io(e);
       });
     });
     await disable_interaction(false);
+  }
+
+  async get_pullup(pullup) {
+    if (pullup === 'U') {
+      this.pullup_cell_input.selectedIndex = 0;
+    } else if (pullup === 'D') {
+      this.pullup_cell_input.selectedIndex = 1;
+    } else if (pullup === 'N') {
+      this.pullup_cell_input.selectedIndex = 2;
+    }
+  }
+
+  async get_edge(edge) {
+    if (edge === 'R') {
+      this.edge_cell_input.selectedIndex = 0;
+    } else if (edge === 'F') {
+      this.edge_cell_input.selectedIndex = 1;
+    } else if (edge === 'B') {
+      this.edge_cell_input.selectedIndex = 2;
+    }
   }
 
   async get_ios() {
@@ -108,39 +249,52 @@ export class io_t {
 
   async enable_disable_io(e) {
     await disable_interaction(true);
+    let index;
     this.checked = e.target.checked;
-    this.index = 1;
     this.meas = e.target.parentNode.parentNode.cells[0].innerHTML;
-    if (this.meas === 'IO02') {
-      this.index = 2;
-    }
-    if (this.meas === 'CNT2') {
-      this.index = 1;
+    for (const [key, value] of Object.entries(this.indexs)) {
+      if (value.avail_meas.includes(this.meas)) {
+        index = key;
+      }
     }
     [this.pullup] = e.target.parentNode.parentNode.cells[1].childNodes[0].value;
     [this.edge] = e.target.parentNode.parentNode.cells[2].childNodes[0].value;
     if (this.checked === true) {
-      await this.dev.activate_io(this.meas, this.index, this.edge, this.pullup);
+      await this.dev.activate_io(this.meas, index, this.edge, this.pullup);
     } else {
-      await this.dev.disable_io(this.index);
+      await this.dev.disable_io(index);
     }
     if (this.meas === 'TMP2' && this.checked === true) {
-      this.checkboxes[1].checked = false;
+      this.checkboxes[2].checked = false;
+      this.checkboxes[4].checked = false;
+    }
+    if (this.meas === 'TMP3' && this.checked === true) {
       this.checkboxes[3].checked = false;
+      this.checkboxes[5].checked = false;
     }
     if (this.meas === 'CNT1' && this.checked === true) {
       this.checkboxes[0].checked = false;
-      this.checkboxes[3].checked = false;
+      this.checkboxes[4].checked = false;
+    }
+    if (this.meas === 'CNT2' && this.checked === true) {
+      this.checkboxes[1].checked = false;
+      this.checkboxes[5].checked = false;
     }
     if (this.meas === 'IO01' && this.checked === true) {
       this.checkboxes[0].checked = false;
-      this.checkboxes[1].checked = false;
-    }
-    if (this.meas === 'CNT2' && this.checked === true) {
-      this.checkboxes[4].checked = false;
+      this.checkboxes[2].checked = false;
     }
     if (this.meas === 'IO02' && this.checked === true) {
+      this.checkboxes[1].checked = false;
+      this.checkboxes[3].checked = false;
+    }
+    if (this.meas === 'IO04' && this.checked === true) {
+      this.checkboxes[0].checked = false;
       this.checkboxes[2].checked = false;
+    }
+    if (this.meas === 'IO05' && this.checked === true) {
+      this.checkboxes[1].checked = false;
+      this.checkboxes[3].checked = false;
     }
     await disable_interaction(false);
   }
