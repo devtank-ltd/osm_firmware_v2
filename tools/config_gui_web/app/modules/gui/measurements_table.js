@@ -10,7 +10,6 @@ export class measurements_table_t {
 
   async create_measurements_table_gui() {
     await disable_interaction(true);
-    console.log('TEST');
     const measurements = await this.dev.get_measurements();
     const res = document.querySelector('div.measurements-table');
     const tbl = res.appendChild(document.createElement('table'));
