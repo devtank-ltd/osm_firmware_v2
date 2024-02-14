@@ -12,6 +12,8 @@ import subprocess
 import string
 import atexit
 
+PATH = os.path.dirname(os.path.abspath(__file__))
+
 all_processes = {}
 all_threads = []
 
@@ -75,7 +77,7 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         return self.vosm_subp
 
     def find_linux_binary(self):
-        output = '../../../build/penguin/firmware.elf'
+        output = f'{PATH}/../../../build/penguin/firmware.elf'
         try:
             sub = subprocess.check_output(f'ls {output}')
             return True
@@ -83,7 +85,7 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             return False
 
     def generate_linux_binary(self):
-        sub = subprocess.run('cd ../../.. && make penguin && cd -', stdout=subprocess.PIPE, shell=True)
+        sub = subprocess.run(f'cd {PATH}/../../.. && make penguin && cd -', stdout=subprocess.PIPE, shell=True)
         return sub.returncode
 
 @atexit.register

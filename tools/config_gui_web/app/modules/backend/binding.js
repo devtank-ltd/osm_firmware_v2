@@ -29,6 +29,7 @@ class low_level_socket_t {
   async read() {
     await this.wait_for_messages();
     const msg = this.msgs;
+    console.log(msg);
     this.msgs = '';
     return msg;
   }

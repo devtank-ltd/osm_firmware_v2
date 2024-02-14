@@ -36,13 +36,13 @@ export class io_t {
 
       if (specials_avail) {
         this.indexs[io_p] = { specials_avail };
+        this.indexs[io_p].avail_meas = [];
       }
       if (special_used) {
         this.indexs[io_p].used = special_used;
         this.indexs[io_p].edge = edge;
         this.indexs[io_p].pullup = pupd;
         this.indexs[io_p].index = io_p;
-        this.indexs[io_p].avail_meas = [];
       }
     }
     return this.indexs;
@@ -51,7 +51,7 @@ export class io_t {
   async create_io_table() {
     await disable_interaction(true);
     const indexs = await this.get_indexs();
-    this.checkboxes = [];
+    this.checkboxes = {};
     this.io_div = document.getElementById('io-div');
     this.add_io_table = this.io_div.appendChild(document.createElement('table'));
     this.add_io_table.id = 'io-table';
@@ -106,7 +106,7 @@ export class io_t {
       chk.type = 'checkbox';
       const chkcell = io_row.insertCell();
       chkcell.appendChild(chk);
-      this.checkboxes.push(chk);
+      this.checkboxes[meas] = chk;
 
       let key; let
         value;
@@ -114,6 +114,7 @@ export class io_t {
         case 'TMP2':
           [key] = Object.keys(indexs);
           value = indexs[key];
+          console.log(value);
           value.avail_meas.push(meas);
           this.edge_cell_input.disabled = true;
           if (value.used && value.used === 'W1') {
@@ -265,36 +266,80 @@ export class io_t {
       await this.dev.disable_io(index);
     }
     if (this.meas === 'TMP2' && this.checked === true) {
-      this.checkboxes[2].checked = false;
-      this.checkboxes[4].checked = false;
+      if (this.checkboxes.CNT1) {
+        this.checkboxes.CNT1.checked = false;
+      }
+      if (this.checkboxes.IO01) {
+        this.checkboxes.IO01.checked = false;
+      }
+      if (this.checkboxes.IO04) {
+        this.checkboxes.IO04.checked = false;
+      }
     }
     if (this.meas === 'TMP3' && this.checked === true) {
-      this.checkboxes[3].checked = false;
-      this.checkboxes[5].checked = false;
+      if (this.checkboxes.CNT2) {
+        this.checkboxes.CNT2.checked = false;
+      }
+      if (this.checkboxes.IO02) {
+        this.checkboxes.IO02.checked = false;
+      }
+      if (this.checkboxes.IO05) {
+        this.checkboxes.IO05.checked = false;
+      }
     }
     if (this.meas === 'CNT1' && this.checked === true) {
-      this.checkboxes[0].checked = false;
-      this.checkboxes[4].checked = false;
+      if (this.checkboxes.TMP2) {
+        this.checkboxes.TMP2.checked = false;
+      }
+      if (this.checkboxes.IO01) {
+        this.checkboxes.IO01.checked = false;
+      }
+      if (this.checkboxes.IO04) {
+        this.checkboxes.IO04.checked = false;
+      }
     }
     if (this.meas === 'CNT2' && this.checked === true) {
-      this.checkboxes[1].checked = false;
-      this.checkboxes[5].checked = false;
+      if (this.checkboxes.TMP3) {
+        this.checkboxes.TMP3.checked = false;
+      }
+      if (this.checkboxes.IO02) {
+        this.checkboxes.IO02.checked = false;
+      }
+      if (this.checkboxes.IO05) {
+        this.checkboxes.IO05.checked = false;
+      }
     }
     if (this.meas === 'IO01' && this.checked === true) {
-      this.checkboxes[0].checked = false;
-      this.checkboxes[2].checked = false;
+      if (this.checkboxes.TMP2) {
+        this.checkboxes.TMP2.checked = false;
+      }
+      if (this.checkboxes.CNT1) {
+        this.checkboxes.CNT1.checked = false;
+      }
     }
     if (this.meas === 'IO02' && this.checked === true) {
-      this.checkboxes[1].checked = false;
-      this.checkboxes[3].checked = false;
+      if (this.checkboxes.CNT2) {
+        this.checkboxes.CNT2.checked = false;
+      }
+      if (this.checkboxes.IO02) {
+        this.checkboxes.IO02.checked = false;
+      }
     }
     if (this.meas === 'IO04' && this.checked === true) {
-      this.checkboxes[0].checked = false;
-      this.checkboxes[2].checked = false;
+      if (this.checkboxes.TMP2) {
+        this.checkboxes.TMP2.checked = false;
+      }
+      if (this.checkboxes.CNT1) {
+        this.checkboxes.CNT1.checked = false;
+      }
     }
     if (this.meas === 'IO05' && this.checked === true) {
-      this.checkboxes[1].checked = false;
-      this.checkboxes[3].checked = false;
+      if (this.checkboxes.CNT2) {
+        this.checkboxes.CNT2.checked = false;
+      }
+      if (this.checkboxes.IO02) {
+        this.checkboxes.IO02.checked = false;
+      }
     }
     await disable_interaction(false);
   }
