@@ -260,14 +260,12 @@ export class binding_t {
       }
     });
     const extracted_meas = measurements.slice(start, end);
-    let imins = '';
     if (interval_mins < 1 && interval_mins > 0) {
       interval_mins *= 60;
-      imins = extracted_meas[0][1].concat(` (${interval_mins}seconds)`);
+      extracted_meas[0][1] = (`Uplink Time (${interval_mins}seconds)`);
     } else {
-      imins = extracted_meas[0][1].concat(` (${interval_mins}mins)`);
+      extracted_meas[0][1] = (`Uplink Time (${interval_mins}mins)`);
     }
-    extracted_meas[0][1] = imins;
     return extracted_meas;
   }
 

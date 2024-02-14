@@ -113,15 +113,21 @@ export class measurements_table_t {
     const table = e.target.offsetParent.offsetParent;
     const meas = table.rows[row_index].cells[0].innerHTML;
     const val_col = table.rows[row_index].cells[cell_index].childNodes[0];
-    const val = val_col.value;
+    let val = val_col.value;
+    if (val > 999) {
+      val = 999;
+    } else if (val < 0) {
+      val = 0;
+    }
     const type = table.rows[0].cells[cell_index].innerHTML;
 
     /* Example: interval CNT1 1 */
-    if (type.includes('Interval')) {
+    if (type.includes('Uplink')) {
       const int_mins_converted = await this.get_minimum_interval(val);
       val_col.value = int_mins_converted * interval_mins;
       this.dev.enqueue_and_process(`interval ${meas} ${int_mins_converted}`);
     } else {
+      val_col.value = val;
       this.dev.enqueue_and_process(`samplecount ${meas} ${val}`);
     }
     await disable_interaction(false);
@@ -155,10 +161,10 @@ export class measurements_table_t {
       seconds = mins * 60;
       this.is_seconds = true;
       if (seconds != null) {
-        imins_header.innerHTML = `Interval (${seconds} seconds)`;
+        imins_header.innerHTML = `Uplink Time (${seconds} seconds)`;
       }
     } else {
-      imins_header.innerHTML = `Interval (${mins} mins)`;
+      imins_header.innerHTML = `Uplink Time (${mins} mins)`;
     }
     uplink_input.value = '';
     for (let i = 1; i < table.rows.length; i += 1) {

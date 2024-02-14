@@ -5,6 +5,15 @@
   --osmdark: #0f8353;
 }
 
+input[type=number].meas-table-inputs::-webkit-inner-spin-button,
+input[type=number].meas-table-inputs::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+     margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 button {
   color: var(--white);
   background-color: var(--osmlight);
