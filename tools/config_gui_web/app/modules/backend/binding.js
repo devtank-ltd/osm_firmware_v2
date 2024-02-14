@@ -262,9 +262,9 @@ export class binding_t {
     const extracted_meas = measurements.slice(start, end);
     if (interval_mins < 1 && interval_mins > 0) {
       interval_mins *= 60;
-      extracted_meas[0][1] = (`Uplink Time (${interval_mins}seconds)`);
+      extracted_meas[0][1] = ('Uplink Time (Seconds)');
     } else {
-      extracted_meas[0][1] = (`Uplink Time (${interval_mins}mins)`);
+      extracted_meas[0][1] = ('Uplink Time (Mins)');
     }
     return extracted_meas;
   }

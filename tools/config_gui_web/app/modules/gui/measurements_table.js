@@ -161,10 +161,10 @@ export class measurements_table_t {
       seconds = mins * 60;
       this.is_seconds = true;
       if (seconds != null) {
-        imins_header.innerHTML = `Uplink Time (${seconds} seconds)`;
+        imins_header.innerHTML = 'Uplink Time (Seconds)';
       }
     } else {
-      imins_header.innerHTML = `Uplink Time (${mins} mins)`;
+      imins_header.innerHTML = 'Uplink Time (Mins)';
     }
     uplink_input.value = '';
     for (let i = 1; i < table.rows.length; i += 1) {
