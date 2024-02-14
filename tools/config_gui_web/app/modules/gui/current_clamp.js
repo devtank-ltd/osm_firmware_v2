@@ -108,16 +108,61 @@ export class current_clamp_t {
     top_level.forEach((i) => {
       const cc_row = tbody.insertRow();
       const [meas, ext, int, mp] = i;
+
+      const int_p = parseInt(parseFloat(int) * 1000, 10);
+      const ext_p = parseInt(ext, 10);
       cc_row.insertCell().textContent = meas;
       const ext_cell = cc_row.insertCell();
-      ext_cell.textContent = ext;
-      ext_cell.contentEditable = true;
-      ext_cell.addEventListener('focusout', this.set_cc_exterior);
+
+      const ext_cell_sel = document.createElement('select');
+      const opt1 = document.createElement('option');
+      opt1.text = 25;
+      const opt2 = document.createElement('option');
+      opt2.text = 50;
+      const opt3 = document.createElement('option');
+      opt3.text = 75;
+      const opt4 = document.createElement('option');
+      opt4.text = 100;
+      ext_cell_sel.add(opt1);
+      ext_cell_sel.add(opt2);
+      ext_cell_sel.add(opt3);
+      ext_cell_sel.add(opt4);
+      ext_cell_sel.addEventListener('change', this.set_cc_exterior);
+
+      for (let k = 0; k < ext_cell_sel.options.length; k += 1) {
+        const ext_cell_val = parseInt(ext_cell_sel[k].value, 10);
+        if (ext_cell_val === ext_p) {
+          ext_cell_sel.selectedIndex = k;
+          break;
+        }
+      }
+      ext_cell.appendChild(ext_cell_sel);
 
       const int_cell = cc_row.insertCell();
-      int_cell.textContent = int * 1000;
-      int_cell.contentEditable = true;
-      int_cell.addEventListener('focusout', this.set_cc_interior);
+
+      const int_cell_sel = document.createElement('select');
+      const opt5 = document.createElement('option');
+      opt5.text = 25;
+      const opt6 = document.createElement('option');
+      opt6.text = 50;
+      const opt7 = document.createElement('option');
+      opt7.text = 75;
+      const opt8 = document.createElement('option');
+      opt8.text = 100;
+      int_cell_sel.add(opt5);
+      int_cell_sel.add(opt6);
+      int_cell_sel.add(opt7);
+      int_cell_sel.add(opt8);
+      int_cell_sel.addEventListener('change', this.set_cc_interior);
+
+      for (let k = 0; k < int_cell_sel.options.length; k += 1) {
+        const int_cell_val = parseInt(int_cell_sel[k].value, 10);
+        if (int_cell_val === int_p) {
+          int_cell_sel.selectedIndex = k;
+          break;
+        }
+      }
+      int_cell.appendChild(int_cell_sel);
 
       const mp_cell = cc_row.insertCell();
       mp_cell.textContent = mp;
@@ -129,8 +174,8 @@ export class current_clamp_t {
 
   async set_cc_exterior(event) {
     await disable_interaction(true);
-    this.extphase = event.target.parentElement.cells[0].innerHTML;
-    this.ext_val = event.target.innerHTML;
+    this.extphase = event.target.parentNode.parentNode.cells[0].innerHTML;
+    this.ext_val = event.srcElement.value;
     switch (this.extphase) {
       case 'CC1':
         this.extphase = 1;
@@ -144,15 +189,15 @@ export class current_clamp_t {
       default:
         this.extphase = 'undefined';
     }
-    this.interior = event.target.parentElement.cells[2].innerHTML;
+    this.interior = event.target.parentNode.parentNode.cells[2].childNodes[0].value;
     await this.dev.set_cc_gain(this.extphase, this.ext_val, this.interior);
     await disable_interaction(false);
   }
 
   async set_cc_interior(event) {
     await disable_interaction(true);
-    this.intphase = event.target.parentElement.cells[0].innerHTML;
-    this.int_val = event.target.innerHTML;
+    this.intphase = event.target.parentNode.parentNode.cells[0].innerHTML;
+    this.int_val = event.srcElement.value;
     switch (this.intphase) {
       case 'CC1':
         this.intphase = 1;
@@ -166,7 +211,7 @@ export class current_clamp_t {
       default:
         this.intphase = 'undefined';
     }
-    this.exterior = event.target.parentElement.cells[1].innerHTML;
+    this.exterior = event.target.parentNode.parentNode.cells[1].childNodes[0].value;
     await this.dev.set_cc_gain(this.intphase, this.exterior, this.int_val);
     await disable_interaction(false);
   }
