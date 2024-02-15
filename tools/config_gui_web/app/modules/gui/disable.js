@@ -17,3 +17,16 @@ export async function disable_interaction(bool) {
   }
   return bool;
 }
+
+export async function limit_characters(cell, max_len) {
+  const cellt = cell.target;
+  let text = cellt.innerHTML;
+  if (cellt.nodeName === 'INPUT') {
+    text = cellt.value;
+    if (text.length > max_len) {
+      cellt.value = text.slice(0, max_len);
+    }
+  } else if (text.length > max_len) {
+    cellt.innerHTML = text.slice(0, max_len);
+  }
+}

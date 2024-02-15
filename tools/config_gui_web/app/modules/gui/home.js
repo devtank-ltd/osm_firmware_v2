@@ -7,11 +7,12 @@ import { lora_comms_t, wifi_comms_t } from '../backend/binding.js';
 import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
 import { adv_config_t } from './adv_conf.js';
-import { disable_interaction } from './disable.js';
+import { disable_interaction, limit_characters } from './disable.js';
 
 export class home_tab_t {
   constructor(dev) {
     this.dev = dev;
+    this.change_serial_num = this.change_serial_num.bind(this);
     this.navbar = new navbar_t();
     this.change_to_adv_conf_tab = this.change_to_adv_conf_tab.bind(this);
     this.change_to_console_tab = this.change_to_console_tab.bind(this);
@@ -75,9 +76,19 @@ export class home_tab_t {
 
   async load_serial_number() {
     this.sn = document.getElementById('home-serial-num');
+    this.sn_input = document.getElementById('serial-num-input');
     this.serial_num = await this.dev.serial_number;
-    this.serial_num_join = `Serial Number: ${this.serial_num}`;
+    this.serial_num_join = 'Serial Number: ';
     this.sn.textContent = await this.serial_num_join;
+    this.sn_input.textContent = this.serial_num;
+    this.sn_input.contentEditable = true;
+    this.sn_input.oninput = (e) => { limit_characters(e, 20); };
+    this.sn_input.addEventListener('focusout', this.change_serial_num);
+  }
+
+  async change_serial_num(e) {
+    this.val = e.target.innerHTML;
+    this.dev.serial_number = this.val;
   }
 
   async load_fw_ver() {

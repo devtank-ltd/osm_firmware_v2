@@ -1,4 +1,4 @@
-import { disable_interaction } from './disable.js';
+import { disable_interaction, limit_characters } from './disable.js';
 
 export class modbus_t {
   constructor(dev) {
@@ -287,9 +287,11 @@ export class modbus_t {
     this.dev_name_input = document.createElement('input');
     this.dev_name_cell.appendChild(this.dev_name_input);
     this.dev_name_input.placeholder = 'Enter Device Name (Max 4 characters)...';
+    this.dev_name_cell.oninput = (e) => { limit_characters(e, 4); };
 
     this.dev_desc_cell = row.insertCell();
     this.dev_desc_input = document.createElement('input');
+    this.dev_desc_input.oninput = (e) => { limit_characters(e, 32); };
     this.dev_desc_cell.appendChild(this.dev_desc_input);
     this.dev_desc_input.placeholder = 'Enter Device Description';
 
@@ -298,6 +300,7 @@ export class modbus_t {
     this.dev_unit_cell = row.insertCell();
     this.dev_unit_input = document.createElement('input');
     this.dev_unit_input.type = 'number';
+    this.dev_unit_input.oninput = (e) => { limit_characters(e, 3); };
     this.dev_unit_cell.appendChild(this.dev_unit_input);
     this.dev_unit_input.placeholder = 'Enter Unit ID';
 
@@ -305,6 +308,7 @@ export class modbus_t {
     this.dev_bits_input = document.createElement('input');
     this.dev_bits_input.type = 'number';
     this.dev_bits_input.value = 8;
+    this.dev_bits_input.oninput = (e) => { limit_characters(e, 3); };
     this.dev_bits_cell.appendChild(this.dev_bits_input);
     this.dev_bits_input.placeholder = 'Data Bits';
 
@@ -355,6 +359,7 @@ export class modbus_t {
     this.dev_stopbits_input = document.createElement('input');
     this.dev_stopbits_input.type = 'number';
     this.dev_stopbits_input.value = 1;
+    this.dev_stopbits_input.oninput = (e) => { limit_characters(e, 1); };
     this.dev_stopbits_cell.appendChild(this.dev_stopbits_input);
     this.dev_stopbits_input.placeholder = 'Enter Stop Bits';
 
@@ -389,21 +394,25 @@ export class modbus_t {
       let cell = row.insertCell();
       let input = document.createElement('input');
       input.placeholder = 'Name';
+      cell.oninput = (e) => { limit_characters(e, 4); };
       cell.appendChild(input);
 
       cell = row.insertCell();
       input = document.createElement('input');
       input.placeholder = 'Address';
+      input.oninput = (e) => { limit_characters(e, 6); };
       cell.appendChild(input);
 
       cell = row.insertCell();
       input = document.createElement('input');
       input.placeholder = 'Function Code';
+      input.oninput = (e) => { limit_characters(e, 2); };
       cell.appendChild(input);
 
       cell = row.insertCell();
       input = document.createElement('input');
       input.placeholder = 'Datatype';
+      input.oninput = (e) => { limit_characters(e, 5); };
       cell.appendChild(input);
     });
 

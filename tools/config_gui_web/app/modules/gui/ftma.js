@@ -1,4 +1,4 @@
-import { disable_interaction } from './disable.js';
+import { disable_interaction, limit_characters } from './disable.js';
 
 export class ftma_t {
   constructor(dev) {
@@ -51,7 +51,7 @@ export class ftma_t {
       const meas_cell = row.insertCell();
       meas_cell.textContent = meas;
       meas_cell.contentEditable = true;
-      meas_cell.oninput = (e) => { this.limit_characters(e, 4); };
+      meas_cell.oninput = (e) => { limit_characters(e, 4); };
       meas_cell.addEventListener('focusout', (e) => { this.change_ftma_name(meas, e); });
       this.coeffs.forEach((coeff) => {
         const regex = /[A-D]: (\d+\.\d+)/;
@@ -94,15 +94,6 @@ export class ftma_t {
     await this.draw_ftma_coeff_graph(meas);
     checkbox.checked = false;
     await disable_interaction(false);
-  }
-
-  async limit_characters(cell, maxLength) {
-    this.cell = cell.target;
-    this.text = this.cell.innerText;
-
-    if (this.text.length > maxLength) {
-      this.cell.innerText = this.text.slice(0, maxLength);
-    }
   }
 
   async draw_ftma_coeff_graph(meas) {

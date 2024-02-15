@@ -34,11 +34,12 @@ export class io_t {
       const { pupd } = await m.groups;
       const io_p = io[1];
 
+      console.log(io, specials_avail, special_used);
       if (specials_avail) {
         this.indexs[io_p] = { specials_avail };
         this.indexs[io_p].avail_meas = [];
       }
-      if (special_used) {
+      if (special_used && specials_avail) {
         this.indexs[io_p].used = special_used;
         this.indexs[io_p].edge = edge;
         this.indexs[io_p].pullup = pupd;
@@ -114,7 +115,6 @@ export class io_t {
         case 'TMP2':
           [key] = Object.keys(indexs);
           value = indexs[key];
-          console.log(value);
           value.avail_meas.push(meas);
           this.edge_cell_input.disabled = true;
           if (value.used && value.used === 'W1') {

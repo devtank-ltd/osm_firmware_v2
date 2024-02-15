@@ -1,5 +1,5 @@
 import { generate_random } from '../backend/binding.js';
-import { disable_interaction } from './disable.js';
+import { disable_interaction, limit_characters } from './disable.js';
 
 export class lora_config_t {
   constructor(comms) {
@@ -51,10 +51,16 @@ export class lora_config_t {
       if (i === 'Device EUI') {
         const td = r.insertCell();
         td.textContent = dev_eui;
+        td.contentEditable = true;
+        td.spellcheck = false;
+        td.oninput = (e) => { limit_characters(e, 16); };
         td.id = 'lora-dev-eui-value';
       } else if (i === 'Application Key') {
         const td = r.insertCell();
         td.textContent = app_key;
+        td.contentEditable = true;
+        td.spellcheck = false;
+        td.oninput = (e) => { limit_characters(e, 32); };
         td.id = 'lora-app-key-value';
       } else if (i === 'Region') {
         const td = r.insertCell();
