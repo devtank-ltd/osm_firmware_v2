@@ -17,10 +17,12 @@ input[type=number] {
 button {
   color: var(--white);
   background-color: var(--osmlight);
-  border-radius: 10%;
-  border-color: var(--white);
+  border-radius: 20px; /* changed to pixels to ensure roundness */
+  border: none;
   font-size: medium;
-  padding: 0.5em;
+  padding: 10px 20px;
+  margin: 5px;
+  cursor: pointer;
 }
 
 button:hover {
@@ -32,22 +34,37 @@ button:hover {
   color: red;
 }
 
+/* Responsive layout */
+@media only screen and (max-width: 600px) {
+    /* Adjust styles for smaller screens */
+    .main-page-title {
+        font-size: 24px;
+    }
+
+    .gui-img {
+        width: 80%;
+    }
+    
+    /* Adjust other elements as needed */
+}
 
 /* Title Page */
 
 .title-page {
   display: flex;
   justify-content: center;
-}
+  }
 
 .main-page-title {
   display: flex;
   justify-content: center;
 }
 
+
 .gui-img {
-  position: fixed;
-  width: 1500px;
+  position: center;
+  max-width: 60%;
+  padding-top:30px;
 }
 
 
@@ -57,7 +74,7 @@ button:hover {
   background-color: var(--osmlight);
   overflow: hidden;
   height: 50px;
-  border-radius: 10px;
+  border-radius: 20px;
 }
 
 .topnav a {
@@ -113,12 +130,21 @@ button:hover {
   grid-column-end: 1;
   grid-row-start: 1;
   grid-row-end: 2;
+  border-radius: 10%;
+
+
 }
 
 .home-edit-uplink-field input {
   border-style: solid;
   color: var(--black);
   border-color: var(--osmdark);
+    color: var(--black);
+  background-color: var(--white);
+  border-radius: 15px; /* changed to pixels to ensure roundness */
+  margin: 2px;
+  cursor: pointer;
+
 }
 
 .home-edit-uplink-field div {
@@ -133,7 +159,7 @@ button:hover {
   left: 0;
 }
 
-.monitor-img {
+.icon-row {
   margin-top: 2em;
   grid-column-start: 3;
   grid-column-end: 4;
@@ -143,7 +169,7 @@ button:hover {
 
 .global-load-save-config-buttons {
   text-align: center;
-  margin-top: 1.5em;
+  margin-top: 1.2em;
   margin-right: 6.5em;
   position: fixed;
   right: 0;
@@ -152,9 +178,13 @@ button:hover {
 
 .global-load-save-config-buttons button {
   background-color: var(--white);
-  color: var(--osmdark);
+  color: var(--black);
   padding: 0.3em;
   margin-right: 0.3em;
+  border-radius:20px!important;
+  padding-left:15px;
+  padding-right:15px;
+  margin-left:15px
 }
 
 .global-load-save-config-buttons button:hover {
@@ -179,7 +209,7 @@ button:hover {
   width: 600px;
   margin-top: 2em;
   border-style: solid;
-  border-radius: 5px;
+  border-radius: 15px;
   border-color: var(--osmdark);
 }
 
@@ -216,7 +246,13 @@ button:hover {
 }
 
 .lora-config-table table {
-  border-collapse : collapse;
+  overflow:auto;
+  height:150px;
+  width:270px;
+  margin-top: 2em;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
   margin          : 2em 0.5em;
 }
 
@@ -228,13 +264,14 @@ button:hover {
 
 .lora-config-table td {
   padding    : .2em .8em;
-  border     : 1px solid var(--osmdark);
+  border     : .6px solid var(--osmdark);
   text-align : center;
 }
 
 .lora-config-table .buttons {
   padding-top: 2em;
 }
+
 
 
 
@@ -272,9 +309,11 @@ button:hover {
 
 
 .modbus-template-config table {
-  border-collapse : collapse;
+ border-style:solid;
+  border-color: var(--osmdark);
   width: 500px;
   height: 300px;
+  border-radius:15px;
 
 }
 
@@ -283,10 +322,14 @@ button:hover {
 
 .modbus-current-config {
   height: 300px;
+  width:500px;
   overflow:auto;
   display: flex;
   justify-content: center;
   margin-top: 40px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
 }
 
 
@@ -314,7 +357,12 @@ button:hover {
 .modbus-add-new-template-div {
   display: flex;
   justify-content: center;
+  width:510px;
+  height:250px;
   margin-top: 40px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
 }
 
 .modbus-add-new-template-div table {
@@ -477,6 +525,7 @@ button:hover {
   grid-row-start: 1;
   grid-row-end: 2;
   overflow:auto;
+  border-radius:15px;
 
 }
 
