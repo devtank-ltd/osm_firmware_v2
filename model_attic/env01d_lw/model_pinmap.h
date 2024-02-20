@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define ENV01D_LW_ADCS_PORT_N_PINS                             \
+#define ADCS_PORT_N_PINS                             \
 {                                                                   \
     {GPIOA, GPIO1},      /* ADC 1  = Channel 6  , CT1+          */  \
     {GPIOC, GPIO3},      /* ADC 2  = Channel 4  , 5VIN_MONITOR  */  \
@@ -10,20 +10,20 @@
     {GPIOA, GPIO4},      /* ADC 5  = Channel 9  , CT3+          */  \
 }
 
-#define ENV01D_LW_ADC1_CHANNEL_CURRENT_CLAMP_1    6
-#define ENV01D_LW_ADC1_CHANNEL_CURRENT_CLAMP_2    16
-#define ENV01D_LW_ADC1_CHANNEL_CURRENT_CLAMP_3    9
-#define ENV01D_LW_ADC1_CHANNEL_3V3_RAIL_MON       15
-#define ENV01D_LW_ADC1_CHANNEL_5V_RAIL_MON        4
+#define ADC1_CHANNEL_CURRENT_CLAMP_1    6
+#define ADC1_CHANNEL_CURRENT_CLAMP_2    16
+#define ADC1_CHANNEL_CURRENT_CLAMP_3    9
+#define ADC1_CHANNEL_3V3_RAIL_MON       15
+#define ADC1_CHANNEL_5V_RAIL_MON        4
 
-#define ENV01D_LW_ADC_DMA_CHANNELS                                                  \
+#define ADC_DMA_CHANNELS                                                  \
 {                                                                               \
     { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
 }
 
-#define ENV01D_LW_ADC_DMA_CHANNELS_COUNT  1
+#define ADC_DMA_CHANNELS_COUNT  1
 
-#define ENV01D_LW_ADC_COUNT       5
+#define ADC_COUNT       5
 
 #define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
                            ADCS_TYPE_CC_CLAMP2,  \
@@ -87,8 +87,8 @@
 }
 
 
-#define ENV01D_LW_COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
-#define ENV01D_LW_COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
+#define COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
+#define COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
 
 
 #define UART_1_SPEED 115200
@@ -107,7 +107,7 @@
 #define uart3_dma_out_isr               dma2_channel6_isr
 
 
-#define ENV01D_LW_UART_CHANNELS                                   \
+#define UART_CHANNELS                                   \
 {                                                                      \
     { USART2,  RCC_USART2,  UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2|GPIO3,   GPIO_AF7, NVIC_USART2_IRQ, (uint32_t)&USART2_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, UART2_PRIORITY,   true , 2 }, /* UART 0 Debug */ \
     { USART3,  RCC_USART3,  UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4|GPIO5,   GPIO_AF7, NVIC_USART3_IRQ, (uint32_t)&USART3_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, UART3_PRIORITY,   true , 2 }, \

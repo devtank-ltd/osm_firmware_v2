@@ -7,29 +7,23 @@
 #include "cc.h"
 #include "rak4270.h"
 
-#define __MODEL_CONFIG__
+#define FLASH_ADDRESS               0x8000000
+#define FLASH_PAGE_SIZE             2048
 
-#define ENV01B_FLASH_ADDRESS               0x8000000
-#define ENV01B_FLASH_PAGE_SIZE             2048
+#define FLASH_CONFIG_PAGE           2
+#define FLASH_MEASUREMENTS_PAGE     3
+#define FW_PAGE                     4
+#define NEW_FW_PAGE                 120
 
-#define ENV01B_FLASH_CONFIG_PAGE           2
-#define ENV01B_FLASH_MEASUREMENTS_PAGE     3
-#define ENV01B_FW_PAGE                     4
-#define ENV01B_NEW_FW_PAGE                 120
+#define FW_PAGES                    100
+#define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
+#define PAGE2ADDR(_page_)           (FLASH_ADDRESS + (FLASH_PAGE_SIZE * _page_))
+#define FW_ADDR                     PAGE2ADDR(FW_PAGE)
+#define NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
+#define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
+#define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define ENV01B_FW_PAGES                    100
-#define ENV01B_FW_MAX_SIZE                 (ENV01B_FW_PAGES * ENV01B_FLASH_PAGE_SIZE)
-#define ENV01B_PAGE2ADDR(_page_)           (ENV01B_FLASH_ADDRESS + (ENV01B_FLASH_PAGE_SIZE * _page_))
-#define ENV01B_FW_ADDR                     ENV01B_PAGE2ADDR(ENV01B_FW_PAGE)
-#define ENV01B_NEW_FW_ADDR                 ENV01B_PAGE2ADDR(ENV01B_NEW_FW_PAGE)
-#define ENV01B_PERSIST_RAW_DATA            ((const uint8_t*)ENV01B_PAGE2ADDR(ENV01B_FLASH_CONFIG_PAGE))
-#define ENV01B_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)ENV01B_PAGE2ADDR(ENV01B_FLASH_MEASUREMENTS_PAGE))
-
-#define ENV01B_PERSIST_VERSION             3
-
-#define ENV01B_PERSIST_MODEL_CONFIG_T      persist_env01b_config_v1_t
-
-#define ENV01B_MODEL_NAME                  "ENV01"
+#define PERSIST_VERSION             3
 
 #define CMD_LINELEN 128
 
@@ -72,4 +66,6 @@ typedef struct
     uint8_t                 _____[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 7 x 16 bytes          */
-} persist_env01b_config_v1_t;
+} persist_model_config_v1_t;
+
+#define persist_model_config_t        persist_model_config_v1_t

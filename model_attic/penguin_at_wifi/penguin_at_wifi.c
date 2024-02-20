@@ -33,7 +33,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "linux.h"
 
 
-void penguin_at_wifi_persist_config_model_init(persist_penguin_at_wifi_config_v1_t* model_config)
+void model_persist_config_model_init(persist_model_config_v1_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
@@ -44,7 +44,7 @@ void penguin_at_wifi_persist_config_model_init(persist_penguin_at_wifi_config_v1
 
 /* Return true  if different
  *        false if same      */
-bool penguin_at_wifi_persist_config_cmp(persist_penguin_at_wifi_config_v1_t* d0, persist_penguin_at_wifi_config_v1_t* d1)
+bool model_persist_config_cmp(persist_model_config_v1_t* d0, persist_model_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
@@ -58,7 +58,7 @@ bool penguin_at_wifi_persist_config_cmp(persist_penguin_at_wifi_config_v1_t* d0,
 }
 
 
-void penguin_at_wifi_sensors_init(void)
+void model_sensors_init(void)
 {
     timers_init();
     ios_init();
@@ -76,13 +76,13 @@ void penguin_at_wifi_sensors_init(void)
 }
 
 
-void penguin_at_wifi_post_init(void)
+void model_post_init(void)
 {
     io_watch_init();
 }
 
 
-bool penguin_at_wifi_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
@@ -99,7 +99,7 @@ bool penguin_at_wifi_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool penguin_at_wifi_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
         return modbus_uart_ring_do_out_drain(ring);
@@ -107,7 +107,7 @@ bool penguin_at_wifi_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool penguin_at_wifi_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -146,7 +146,7 @@ bool penguin_at_wifi_measurements_get_inf(measurements_def_t * def, measurements
 }
 
 
-void penguin_at_wifi_measurements_repopulate(void)
+void model_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
@@ -170,7 +170,7 @@ void penguin_at_wifi_measurements_repopulate(void)
 }
 
 
-void penguin_at_wifi_cmds_add_all(struct cmd_link_t* tail)
+void model_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = bat_add_commands(tail);
     tail = cc_add_commands(tail);
@@ -187,12 +187,12 @@ void penguin_at_wifi_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
-void penguin_at_wifi_w1_pulse_enable_pupd(unsigned io, bool enabled)
+void model_w1_pulse_enable_pupd(unsigned io, bool enabled)
 {
 }
 
 
-bool penguin_at_wifi_can_io_be_special(unsigned io, io_special_t special)
+bool model_can_io_be_special(unsigned io, io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
             ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
@@ -201,7 +201,7 @@ bool penguin_at_wifi_can_io_be_special(unsigned io, io_special_t special)
 }
 
 
-unsigned penguin_at_wifi_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;
@@ -229,7 +229,7 @@ unsigned penguin_at_wifi_measurements_add_defaults(measurements_def_t * measurem
 }
 
 
-static unsigned _penguin_at_wifi_pids[6] = {0};
+static unsigned _model_pids[6] = {0};
 
 
 #define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi.py"
@@ -241,25 +241,25 @@ static void peripherals_add_at_wifi(unsigned* pid)
 }
 
 
-void penguin_at_wifi_linux_spawn_fakes(void)
+void model_linux_spawn_fakes(void)
 {
-    peripherals_add_cmd(&_penguin_at_wifi_pids[0]);
-    peripherals_add_modbus(EXT_UART , &_penguin_at_wifi_pids[1]);
-    peripherals_add_hpm(HPM_UART    , &_penguin_at_wifi_pids[2]);
-    peripherals_add_w1(1000000      , &_penguin_at_wifi_pids[3]);
-    peripherals_add_i2c(2000000     , &_penguin_at_wifi_pids[4]);
-    peripherals_add_at_wifi(&_penguin_at_wifi_pids[5]);
+    peripherals_add_cmd(&_model_pids[0]);
+    peripherals_add_modbus(EXT_UART , &_model_pids[1]);
+    peripherals_add_hpm(HPM_UART    , &_model_pids[2]);
+    peripherals_add_w1(1000000      , &_model_pids[3]);
+    peripherals_add_i2c(2000000     , &_model_pids[4]);
+    peripherals_add_at_wifi(&_model_pids[5]);
 }
 
 
-void penguin_at_wifi_linux_close_fakes(void)
+void model_linux_close_fakes(void)
 {
-    for(unsigned n=0; n<ARRAY_SIZE(_penguin_at_wifi_pids); n++)
+    for(unsigned n=0; n<ARRAY_SIZE(_model_pids); n++)
     {
-        if (_penguin_at_wifi_pids[n])
+        if (_model_pids[n])
         {
-            linux_port_debug("Killing child PID %u", _penguin_at_wifi_pids[n]);
-            kill(_penguin_at_wifi_pids[n], SIGINT);
+            linux_port_debug("Killing child PID %u", _model_pids[n]);
+            kill(_model_pids[n], SIGINT);
         }
     }
 }

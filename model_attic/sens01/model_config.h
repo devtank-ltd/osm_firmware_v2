@@ -8,29 +8,23 @@
 #include "ftma.h"
 #include "rak4270.h"
 
-#define __MODEL_CONFIG__
+#define FLASH_ADDRESS               0x8000000
+#define FLASH_PAGE_SIZE             2048
 
-#define SENS01_FLASH_ADDRESS               0x8000000
-#define SENS01_FLASH_PAGE_SIZE             2048
+#define FLASH_CONFIG_PAGE           2
+#define FLASH_MEASUREMENTS_PAGE     3
+#define FW_PAGE                     4
+#define NEW_FW_PAGE                 120
+#define FW_PAGES                    100
+#define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
+#define PAGE2ADDR(_page_)           (FLASH_ADDRESS + (FLASH_PAGE_SIZE * _page_))
+#define FW_ADDR                     PAGE2ADDR(FW_PAGE)
+#define NEW_FW_ADDR                 PAGE2ADDR(NEW_FW_PAGE)
 
-#define SENS01_FLASH_CONFIG_PAGE           2
-#define SENS01_FLASH_MEASUREMENTS_PAGE     3
-#define SENS01_FW_PAGE                     4
-#define SENS01_NEW_FW_PAGE                 120
-#define SENS01_FW_PAGES                    100
-#define SENS01_FW_MAX_SIZE                 (SENS01_FW_PAGES * SENS01_FLASH_PAGE_SIZE)
-#define SENS01_PAGE2ADDR(_page_)           (SENS01_FLASH_ADDRESS + (SENS01_FLASH_PAGE_SIZE * _page_))
-#define SENS01_FW_ADDR                     SENS01_PAGE2ADDR(SENS01_FW_PAGE)
-#define SENS01_NEW_FW_ADDR                 SENS01_PAGE2ADDR(SENS01_NEW_FW_PAGE)
+#define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
+#define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define SENS01_PERSIST_RAW_DATA            ((const uint8_t*)SENS01_PAGE2ADDR(SENS01_FLASH_CONFIG_PAGE))
-#define SENS01_PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)SENS01_PAGE2ADDR(SENS01_FLASH_MEASUREMENTS_PAGE))
-
-#define SENS01_PERSIST_VERSION             3
-
-#define SENS01_PERSIST_MODEL_CONFIG_T      persist_sens01_config_v1_t
-
-#define SENS01_MODEL_NAME                  "SENS01"
+#define PERSIST_VERSION             3
 
 #define CMD_LINELEN 128
 
@@ -48,8 +42,6 @@
 
 #define IOS_COUNT           10
 #define ADC_FTMA_COUNT  4
-
-#define comms_name              rak4270
 
 
 typedef struct
@@ -74,7 +66,9 @@ typedef struct
     uint8_t                 _____[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 7 x 16 bytes          */
-} persist_sens01_config_v1_t;
+} persist_model_config_v1_t;
+
+#define persist_model_config_t        persist_model_config_v1_t
 
 #define FTMA_RESISTOR_S_OHM                                 30
 #define FTMA_RESISTOR_0_OHM                                 50000

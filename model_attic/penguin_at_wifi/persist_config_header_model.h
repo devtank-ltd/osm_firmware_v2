@@ -32,8 +32,6 @@
 #define ADC_CC_COUNT        3
 #define ADC_FTMA_COUNT      4
 
-#define comms_name      at_wifi
-
 typedef struct
 {
     uint32_t                mins_interval;
@@ -59,9 +57,9 @@ typedef struct
     uint8_t                 ______[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 8 x 16 bytes          */
-} __attribute__((__packed__)) persist_penguin_at_wifi_config_v1_t;
+} __attribute__((__packed__)) persist_model_config_v1_t;
 
-#define persist_model_config_t        persist_penguin_at_wifi_config_v1_t
+#define persist_model_config_t        persist_model_config_v1_t
 
 #define FTMA_RESISTOR_S_OHM                                 30
 #define FTMA_RESISTOR_0_OHM                                 50000

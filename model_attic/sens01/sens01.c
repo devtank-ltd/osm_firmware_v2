@@ -29,22 +29,22 @@
 #include "lw.h"
 
 
-uint8_t sens01_stm_adcs_get_channel(adcs_type_t adcs_type)
+uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_BAT:   return SENS01_ADC1_CHANNEL_BAT_MON;
-        case ADCS_TYPE_FTMA1: return SENS01_ADC1_CHANNEL_FTMA_1;
-        case ADCS_TYPE_FTMA2: return SENS01_ADC1_CHANNEL_FTMA_2;
-        case ADCS_TYPE_FTMA3: return SENS01_ADC1_CHANNEL_FTMA_3;
-        case ADCS_TYPE_FTMA4: return SENS01_ADC1_CHANNEL_FTMA_4;
+        case ADCS_TYPE_BAT:   return ADC1_CHANNEL_BAT_MON;
+        case ADCS_TYPE_FTMA1: return ADC1_CHANNEL_FTMA_1;
+        case ADCS_TYPE_FTMA2: return ADC1_CHANNEL_FTMA_2;
+        case ADCS_TYPE_FTMA3: return ADC1_CHANNEL_FTMA_3;
+        case ADCS_TYPE_FTMA4: return ADC1_CHANNEL_FTMA_4;
         default: break;
     }
     return 0;
 }
 
 
-void sens01_persist_config_model_init(persist_model_config_t* model_config)
+void model_persist_config_model_init(persist_model_config_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     ftma_setup_default_mem(model_config->ftma_configs, sizeof(model_config->ftma_configs));
@@ -55,7 +55,7 @@ void sens01_persist_config_model_init(persist_model_config_t* model_config)
 
 /* Return true  if different
  *        false if same      */
-bool sens01_persist_config_cmp(persist_sens01_config_v1_t* d0, persist_sens01_config_v1_t* d1)
+bool model_persist_config_cmp(persist_model_config_v1_t* d0, persist_model_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
@@ -69,7 +69,7 @@ bool sens01_persist_config_cmp(persist_sens01_config_v1_t* d0, persist_sens01_co
 }
 
 
-void sens01_sensors_init(void)
+void model_sensors_init(void)
 {
     timers_init();
     ios_init();
@@ -86,13 +86,13 @@ void sens01_sensors_init(void)
 }
 
 
-void sens01_post_init(void)
+void model_post_init(void)
 {
     io_watch_init();
 }
 
 
-bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
@@ -109,7 +109,7 @@ bool sens01_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool sens01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 {
     if (uart == EXT_UART)
         return modbus_uart_ring_do_out_drain(ring);
@@ -117,7 +117,7 @@ bool sens01_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool sens01_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -155,7 +155,7 @@ bool sens01_measurements_get_inf(measurements_def_t * def, measurements_data_t* 
 }
 
 
-void sens01_measurements_repopulate(void)
+void model_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
@@ -175,7 +175,7 @@ void sens01_measurements_repopulate(void)
 }
 
 
-void sens01_cmds_add_all(struct cmd_link_t* tail)
+void model_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = bat_add_commands(tail);
     tail = ftma_add_commands(tail);
@@ -191,12 +191,12 @@ void sens01_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
-void sens01_w1_pulse_enable_pupd(unsigned io, bool enabled)
+void model_w1_pulse_enable_pupd(unsigned io, bool enabled)
 {
 }
 
 
-bool sens01_can_io_be_special(unsigned io, io_special_t special)
+bool model_can_io_be_special(unsigned io, io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
             ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
@@ -205,18 +205,18 @@ bool sens01_can_io_be_special(unsigned io, io_special_t special)
 }
 
 
-void sens01_uarts_setup(void)
+void model_uarts_setup(void)
 {
 }
 
 
 
-void sens01_setup_pulse_pupd(uint8_t* pupd)
+void model_setup_pulse_pupd(uint8_t* pupd)
 {
 }
 
 
-unsigned sens01_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;

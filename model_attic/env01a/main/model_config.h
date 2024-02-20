@@ -7,17 +7,12 @@
 #include "pinmap.h"
 #include "esp_comms.h"
 
-#define comms_name              esp_comms
+#define PERSIST_VERSION             3
 
-#define ENV01A_PERSIST_VERSION             3
+#define FLASH_PAGE_SIZE             2048
 
-#define ENV01A_PERSIST_MODEL_CONFIG_T      persist_env01a_config_v1_t
-
-#define ENV01A_FLASH_PAGE_SIZE             2048
-#define ENV01A_MODEL_NAME                  "ENV01A"
-
-#define ENV01A_FW_ADDR                     NULL
-#define ENV01A_NEW_FW_ADDR                 NULL
+#define FW_ADDR                     NULL
+#define NEW_FW_ADDR                 NULL
 
 #define JSON_BUF_SIZE  1024
 
@@ -42,4 +37,6 @@ typedef struct
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ___[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
-} persist_env01a_config_v1_t;
+} persist_model_config_v1_t;
+
+#define persist_model_config_t        persist_model_config_v1_t
