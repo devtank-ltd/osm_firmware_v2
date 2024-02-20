@@ -46,8 +46,6 @@
 
 #define ADC_CC_COUNT        3
 
-#define comms_name              rak3172
-
 
 typedef struct
 {
@@ -70,4 +68,6 @@ typedef struct
     uint32_t                sai_no_buf;
     uint8_t                 _____[16-(sizeof(uint32_t)%16)];
     /* 7 x 16 bytes          */
-} persist_model_config_t;
+} persist_model_config_v1_t;
+
+#define persist_model_config_t        persist_model_config_v1_t
