@@ -40,7 +40,7 @@ define PROGRAM_template
   include $(1)
 endef
 
-PROGRAMS_MKS = $(shell find $(MODEL_DIR) -maxdepth 1 -name "*.mk" -printf "%p\n")
+PROGRAMS_MKS = $(shell find $(MODEL_DIR) -maxdepth 2 -name "*.mk" -printf "%p\n")
 
 # To see what it's doing, just replace "eval" with "info"
 $(foreach file_mk,$(PROGRAMS_MKS),$(eval $(call PROGRAM_template,$(file_mk))))
