@@ -4,6 +4,7 @@
 
 #include "base_types.h"
 #include "uart_rings.h"
+#include "model_config.h"
 
 
 extern void     model_sensors_init(void);
