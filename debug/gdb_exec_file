@@ -1,3 +1,0 @@
-file build/firmware.elf
-target extended-remote localhost:3333
-layout split
