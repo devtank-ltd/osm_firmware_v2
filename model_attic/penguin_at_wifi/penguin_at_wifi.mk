@@ -40,7 +40,7 @@ penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
-    $(MODEL_DIR)/penguin_at_wifi/penguin_at_wifi.c \
+    $(MODEL_DIR)/penguin_at_wifi/model.c \
     $(OSM_DIR)/comms/src/common.c \
     $(OSM_DIR)/comms/src/at_wifi.c
 

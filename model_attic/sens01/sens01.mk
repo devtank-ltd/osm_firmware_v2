@@ -33,7 +33,7 @@ sens01_SOURCES := \
            $(OSM_DIR)/sensors/src/can_impl.c \
            $(OSM_DIR)/sensors/src/fw.c \
            $(OSM_DIR)/sensors/src/io_watch.c \
-           $(MODEL_DIR)/sens01/sens01.c \
+           $(MODEL_DIR)/sens01/model.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \
            $(OSM_DIR)/ports/stm/src/i2c.c \
