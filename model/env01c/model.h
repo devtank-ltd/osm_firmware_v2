@@ -4,6 +4,7 @@
 
 #include "base_types.h"
 #include "uart_rings.h"
+#include "model_config.h"
 
 
 extern uint8_t  model_stm_adcs_get_channel(adcs_type_t adcs_type);
