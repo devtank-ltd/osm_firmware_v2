@@ -8,8 +8,6 @@
 #include "cc.h"
 #include "rak3172.h"
 
-#define __MODEL_CONFIG__
-
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
 
