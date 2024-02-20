@@ -24,17 +24,6 @@
 #define LED_PORT   GPIOA
 #define LED_PIN    GPIO0
 
-#define ADCS_PORT_N_PINS                CONCAT(FW_NAME,_ADCS_PORT_N_PINS)
-
-#define ADC1_CHANNEL_BAT_MON            CONCAT(FW_NAME,_ADC1_CHANNEL_BAT_MON)
-#define ADC1_CHANNEL_3V3_RAIL_MON       CONCAT(FW_NAME,_ADC1_CHANNEL_3V3_RAIL_MON)
-#define ADC1_CHANNEL_5V_RAIL_MON        CONCAT(FW_NAME,_ADC1_CHANNEL_5V_RAIL_MON)
-
-#define ADC_DMA_CHANNELS                CONCAT(FW_NAME,_ADC_DMA_CHANNELS)
-#define ADC_DMA_CHANNELS_COUNT          CONCAT(FW_NAME,_ADC_DMA_CHANNELS_COUNT)
-
-#define ADC_COUNT                       CONCAT(FW_NAME,_ADC_COUNT)
-
 #define PPS_PORT_N_PINS             \
 {                                   \
     {GPIOB, GPIO3},     /* PPS 0 */ \
@@ -56,10 +45,6 @@
 
 #define PPS0_EXTI_ISR        exti2_3_isr
 #define PPS1_EXTI_ISR        exti4_15_isr
-
-#define UART_CHANNELS                   CONCAT(FW_NAME,_UART_CHANNELS)
-#define COMMS_RESET_PORT_N_PINS         CONCAT(FW_NAME,_COMMS_RESET_PORT_N_PINS)
-#define COMMS_BOOT_PORT_N_PINS          CONCAT(FW_NAME,_COMMS_BOOT_PORT_N_PINS)
 
 #define HPM_EN_PIN  { GPIOB, GPIO15 }
 
