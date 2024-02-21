@@ -16,7 +16,7 @@
 #define IOS_STATE       {IO_AS_INPUT, IO_AS_INPUT}
 
 
-#define ENV01A_UART_CHANNELS                                         \
+#define UART_CHANNELS                                               \
 {                                                                   \
     {                                                               \
         .enabled = true,                                            \

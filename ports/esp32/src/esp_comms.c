@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <sys/time.h>
 
 #include <esp_wifi.h>
 #include <esp_event.h>
@@ -288,6 +289,7 @@ void esp_comms_init(void)
 {
 }
 
+
 bool        esp_comms_send_ready(void) { return _has_mqtt; }
 bool        esp_comms_send_allowed(void) { return _has_mqtt; }
 void        esp_comms_reset(void) {}
@@ -329,6 +331,19 @@ void esp_comms_loop_iteration(void)
 }
 
 void        esp_comms_power_down(void) {}
+
+bool        esp_comms_get_unix_time(int64_t * ts)
+{
+    if (!ts)
+        false;
+    struct timeval tv_now;
+    if (gettimeofday(&tv_now, NULL) != 0)
+        false;
+    *ts = (int64_t)tv_now.tv_sec * 1000000L + (int64_t)tv_now.tv_usec;
+    return true;
+}
+
+
 
 bool        esp_comms_send_str(char* str) { return false; }
 bool        esp_comms_get_id(char* str, uint8_t len) { return false; }
@@ -541,7 +556,7 @@ static command_response_t _esp_conn_cb(char *args)
 }
 
 
-struct cmd_link_t* esp_comms_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
