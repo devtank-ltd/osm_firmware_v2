@@ -27,5 +27,4 @@ define tests_PROGRAM_template
 	$(CC) $$($(1)_OBJS) $$(tests_LDFLAGS) -o $$@
 endef
 
-include $(tests_DIR)/ring/ring_test.mk
-include $(tests_DIR)/blob/blob_test.mk
+$(foreach file_mk,$(shell find $(tests_DIR) -maxdepth 2 -mindepth 2 -name "*.mk"),$(eval include $(file_mk)))
