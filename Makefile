@@ -53,3 +53,5 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
+
+include $(OSM_DIR)/tests/tests.mk
