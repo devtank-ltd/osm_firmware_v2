@@ -172,17 +172,17 @@ class test_blob(object):
     COLOUR_RED      = "\33[31m"
     COLOUR_DEFAULT  = COLOUR_WHITE
 
-    COMMS_PROTOCOL_PATH = os.path.abspath(os.path.dirname(__file__) + "/../../lorawan_protocol/debug.js")
+    COMMS_PROTOCOL_PATH = os.path.abspath(os.path.dirname(__file__) + "/debug.js")
 
     def __init__(self, lib_blob):
         self.lib = lib_blob
         self.lib.connect()
-        self._LINUX_COMMS_SEND_FUNC = ctypes.CFUNCTYPE(
+        self._TEST_COMMS_SEND_FUNC = ctypes.CFUNCTYPE(
             ctypes.c_bool,                  # Retval
             ctypes.POINTER(ctypes.c_byte),  # Param1
             ctypes.c_ushort)                # Param2
-        self._linux_comms_send_func = self._LINUX_COMMS_SEND_FUNC(self._linux_comms_send)
-        self.lib.linux_comms_send_set_cb(self._linux_comms_send_func)
+        self._test_comms_send_func = self._TEST_COMMS_SEND_FUNC(self._test_comms_send)
+        self.lib.test_comms_send_set_cb(self._test_comms_send_func)
 
         self._LOG_ERROR_FUNC = ctypes.CFUNCTYPE(
             ctypes.c_void_p,                # Retval
@@ -319,7 +319,7 @@ class test_blob(object):
     def _log_debug(self, flag: int, msg: bytes):
         self._log(msg.decode(), file=sys.stderr)
 
-    def _linux_comms_send(self, hex_arr: list, arr_len: int):
+    def _test_comms_send(self, hex_arr: list, arr_len: int):
         self._sent_packet = [(256 + hex_arr[i]) % 256 for i in range(arr_len)] # Convert to uint8_t from int8_t
         self._log(f"SEND: {self._sent_packet}", file=sys.stderr)
         return True

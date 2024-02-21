@@ -28,3 +28,4 @@ define tests_PROGRAM_template
 endef
 
 include $(tests_DIR)/ring/ring_test.mk
+include $(tests_DIR)/blob/blob_test.mk

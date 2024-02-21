@@ -33,14 +33,14 @@
 #include "log.h"
 
 
-static bool (*_linux_comms_send)(int8_t* hex_arr, uint16_t arr_len) = NULL;
+static bool (*_test_comms_send)(int8_t* hex_arr, uint16_t arr_len) = NULL;
 static void (*_log_error)(char * s) = NULL;
 static void (*_log_debug)(uint32_t flag, char * s) = NULL;
 
 
-void linux_comms_send_set_cb(bool (*cb)(int8_t* hex_arr, uint16_t arr_len))
+void test_comms_send_set_cb(bool (*cb)(int8_t* hex_arr, uint16_t arr_len))
 {
-    _linux_comms_send = cb;
+    _test_comms_send = cb;
 }
 
 
@@ -101,11 +101,11 @@ void PRINTF_FMT_CHECK( 2, 3) log_debug(uint32_t flag, const char * s, ...)
 }
 
 
-bool linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
+bool test_comms_send(int8_t* hex_arr, uint16_t arr_len)
 {
-    if (_linux_comms_send)
+    if (_test_comms_send)
     {
-        return _linux_comms_send(hex_arr, arr_len);
+        return _test_comms_send(hex_arr, arr_len);
     }
     return false;
 }
