@@ -1,12 +1,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef STM32L4
-#include <libopencm3/stm32/usart.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/cm3/nvic.h>
-#endif
-
 #include "base_types.h"
 #include "uarts.h"
 #include "io.h"
@@ -44,20 +38,22 @@ static struct
 
 void passthrough_init(void)
 {
-    _passthrough_ctx.default_cmd_uart = &_passthrough_default_uarts[CMD_UART];
-    _passthrough_ctx.default_comms_uart = &_passthrough_default_uarts[COMMS_UART];
+    const uart_channel_t* cmd_uart = &_passthrough_default_uarts[CMD_UART];
+    const uart_channel_t* comms_uart = &_passthrough_default_uarts[COMMS_UART];
+    _passthrough_ctx.default_cmd_uart = cmd_uart;
+    _passthrough_ctx.default_comms_uart = comms_uart;
 
-    _passthrough_ctx.cmd_rx_ports_n_pins.port = _passthrough_default_uarts[CMD_UART].gpioport;
-    _passthrough_ctx.cmd_rx_ports_n_pins.pins = GPIO3;
+    _passthrough_ctx.cmd_rx_ports_n_pins.port = cmd_uart->gpioport;
+    _passthrough_ctx.cmd_rx_ports_n_pins.pins = cmd_uart->rx_pin;
 
-    _passthrough_ctx.cmd_tx_ports_n_pins.port = _passthrough_default_uarts[CMD_UART].gpioport;
-    _passthrough_ctx.cmd_tx_ports_n_pins.pins = GPIO2;
+    _passthrough_ctx.cmd_tx_ports_n_pins.port = cmd_uart->gpioport;
+    _passthrough_ctx.cmd_tx_ports_n_pins.pins = cmd_uart->tx_pin;
 
-    _passthrough_ctx.comms_rx_ports_n_pins.port = _passthrough_default_uarts[COMMS_UART].gpioport;
-    _passthrough_ctx.comms_rx_ports_n_pins.pins = GPIO5;
+    _passthrough_ctx.comms_rx_ports_n_pins.port = comms_uart->gpioport;
+    _passthrough_ctx.comms_rx_ports_n_pins.pins = comms_uart->rx_pin;
 
-    _passthrough_ctx.comms_tx_ports_n_pins.port = _passthrough_default_uarts[COMMS_UART].gpioport;
-    _passthrough_ctx.comms_tx_ports_n_pins.pins = GPIO4;
+    _passthrough_ctx.comms_tx_ports_n_pins.port = comms_uart->gpioport;
+    _passthrough_ctx.comms_tx_ports_n_pins.pins = comms_uart->tx_pin;
 }
 
 
