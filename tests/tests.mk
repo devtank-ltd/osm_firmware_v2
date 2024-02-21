@@ -18,8 +18,8 @@ tests: $(TESTS_ELFS)
 
 
 define tests_PROGRAM_template
-  $(1)_OBJS=$$($(1)_SOURCES:%.c=$(BUILD_DIR)/%.o)
-  $$($(1)_OBJS): $$($(1)_SOURCES)
+  $(1)_OBJS=$$($(1)_SOURCES:%.c=$(BUILD_DIR)/tests/%.o)
+  $$($(1)_OBJS): $$(BUILD_DIR)/tests/%.o: $$(OSM_DIR)/%.c
 	@mkdir -p "$$(@D)"
 	$(CC) -c $(tests_CFLAGS) $$($(1)_CFLAGS) $$< -o $$@
   $(tests_BUILD_DIR)/$(1).elf: $$($(1)_OBJS)
