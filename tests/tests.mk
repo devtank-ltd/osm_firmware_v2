@@ -1,4 +1,5 @@
 tests_CFLAGS:=-Os -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include --coverage
+tests_CFLAGS+=-Wall -Werror -pedantic
 tests_LDFLAGS:= -lgcov
 
 tests_DIR:=$(OSM_DIR)/tests

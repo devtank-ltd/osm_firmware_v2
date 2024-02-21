@@ -19,7 +19,7 @@ static unsigned test_consume_cb(char * buf, unsigned len, void *data)
 }
 
 
-int main(int argc, char * argv)
+int main(int argc, char ** argv)
 {
     char buf[512];
 
