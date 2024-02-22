@@ -31,7 +31,7 @@
 #include "w1.h"
 #include "io_watch.h"
 #include "lw.h"
-#include "passthrough.h"
+#include "comms_direct.h"
 
 
 uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
