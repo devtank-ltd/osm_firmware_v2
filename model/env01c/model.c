@@ -97,7 +97,7 @@ void model_sensors_init(void)
     pulsecount_init();
     modbus_init();
     can_impl_init();
-    passthrough_init();
+    comms_direct_init();
 }
 
 
@@ -204,7 +204,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
-    tail = passthrough_add_commands(tail);
+    tail = comms_direct_add_commands(tail);
 }
 
 
