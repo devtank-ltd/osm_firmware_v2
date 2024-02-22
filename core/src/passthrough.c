@@ -6,9 +6,10 @@
 #include "io.h"
 #include "common.h"
 #include "platform.h"
+#include "uart_rings.h"
 
 
-#define PASSTHROUGH_TIMEOUT_MS                  10000
+#define PASSTHROUGH_TIMEOUT_MS                  3000
 
 
 static const uart_channel_t _passthrough_default_uarts[] = UART_CHANNELS;
@@ -91,9 +92,9 @@ static void _passthrough_setup(void)
     }
 
     platform_gpio_setup(&_passthrough_ctx.cmd_rx_ports_n_pins, true, IO_PUPD_NONE);
-    platform_gpio_setup(&_passthrough_ctx.cmd_tx_ports_n_pins, false, IO_PUPD_NONE);
+    platform_gpio_setup(&_passthrough_ctx.cmd_tx_ports_n_pins, false, IO_PUPD_UP);
     platform_gpio_setup(&_passthrough_ctx.comms_rx_ports_n_pins, true, IO_PUPD_NONE);
-    platform_gpio_setup(&_passthrough_ctx.comms_tx_ports_n_pins, false, IO_PUPD_NONE);
+    platform_gpio_setup(&_passthrough_ctx.comms_tx_ports_n_pins, false, IO_PUPD_UP);
 }
 
 
@@ -103,10 +104,11 @@ static void _passthrough_exit(void)
     uart_channel_t* comms = &_passthrough_ctx.prev_comms_uart;
     uart_resetup(CMD_UART, cmd->baud, cmd->databits, cmd->parity, cmd->stop);
     uart_resetup(COMMS_UART, comms->baud, comms->databits, comms->parity, comms->stop);
+    uarts_setup();
 }
 
 
-static bool _passthrough_loop_iteration(void* userdata)
+static bool _passthrough_loop_iteration(void)
 {
     const bool cmd_rx = platform_gpio_get(&_passthrough_ctx.cmd_rx_ports_n_pins);
     const bool comms_rx = platform_gpio_get(&_passthrough_ctx.comms_rx_ports_n_pins);
@@ -138,7 +140,8 @@ static void _passthrough_enter(void)
     bool done = false;
     while (!done)
     {
-        done = main_loop_iterate_for(0xFFFFFFFF, _passthrough_loop_iteration, NULL);
+        done = _passthrough_loop_iteration();
+        platform_watchdog_reset();
     }
 
     _passthrough_exit();
