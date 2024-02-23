@@ -36,6 +36,7 @@ void platform_adc_set_num_data(unsigned num_data);
 void platform_hpm_enable(bool enable);
 
 void platform_tight_loop(void);
+void platform_main_loop_iterate(void);
 
 void platform_gpio_init(const port_n_pins_t * gpio_pin);
 void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull);

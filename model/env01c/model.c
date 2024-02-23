@@ -311,3 +311,9 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
     return pos;
 }
+
+
+void model_main_loop_iterate(void)
+{
+    comms_direct_loop_iterate();
+}

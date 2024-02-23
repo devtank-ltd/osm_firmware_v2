@@ -21,3 +21,4 @@ extern bool     model_can_io_be_special(unsigned io, io_special_t special);
 extern unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr);
 extern void     model_linux_spawn_fakes(void);
 extern void     model_linux_close_fakes(void);
+extern void     model_main_loop_iterate(void);

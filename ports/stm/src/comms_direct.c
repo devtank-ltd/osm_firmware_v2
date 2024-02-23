@@ -7,6 +7,7 @@
 #include "common.h"
 #include "platform.h"
 #include "uart_rings.h"
+#include "log.h"
 
 
 #define COMMS_DIRECT_TIMEOUT_MS                  3000
@@ -27,6 +28,7 @@ static struct
     bool                        prev_comms_rx;
     uart_channel_t              prev_cmd_uart;
     uart_channel_t              prev_comms_uart;
+    bool                        begin;
 }  _comms_direct_ctx =
 {
     .default_cmd_uart   = NULL,
@@ -34,6 +36,7 @@ static struct
     .last_msg_time      = 0,
     .prev_cmd_rx        = false,
     .prev_comms_rx      = false,
+    .begin              = false,
 };
 
 
@@ -105,6 +108,7 @@ static void _comms_direct_exit(void)
     uart_resetup(CMD_UART, cmd->baud, cmd->databits, cmd->parity, cmd->stop);
     uart_resetup(COMMS_UART, comms->baud, comms->databits, comms->parity, comms->stop);
     uarts_setup();
+    log_out("Exiting COMMS_DIRECT mode");
 }
 
 
@@ -131,9 +135,38 @@ static bool _comms_direct_loop_iteration(void)
 }
 
 
-static void _comms_direct_enter(void)
+static void _comms_direct_preamble(void)
 {
     _comms_direct_ctx.last_msg_time = get_since_boot_ms();
+
+    log_out("Entering COMMS_DIRECT mode");
+    while (uart_rings_out_busy())
+    {
+        uart_rings_out_drain();
+    }
+
+    /* As we are changing the pins for the UART, need to wait for the
+     * DMA to finish writing to the UART, and then the UART to finish
+     * writing to the pins. */
+    bool done = false;
+    while (!done)
+    {
+        for (unsigned i = 0; i < ARRAY_SIZE(_comms_direct_default_uarts); i++)
+        {
+            done = true;
+            if (!usart_get_flag(_comms_direct_default_uarts[i].usart, USART_ISR_TC))
+            {
+                done = false;
+                break;
+            }
+        }
+    }
+}
+
+
+static void _comms_direct_enter(void)
+{
+    _comms_direct_preamble();
 
     _comms_direct_setup();
 
@@ -150,7 +183,7 @@ static void _comms_direct_enter(void)
 
 static command_response_t _comms_direct_enter_cb(char* args)
 {
-    _comms_direct_enter();
+    _comms_direct_ctx.begin = true;
     return COMMAND_RESP_OK;
 }
 
@@ -162,4 +195,14 @@ struct cmd_link_t* comms_direct_add_commands(struct cmd_link_t* tail)
         { "comms_direct",    "Enter comms_direct mode",       _comms_direct_enter_cb       , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}
+
+
+void comms_direct_loop_iterate(void)
+{
+    if (_comms_direct_ctx.begin)
+    {
+        _comms_direct_ctx.begin = false;
+        _comms_direct_enter();
+    }
 }
