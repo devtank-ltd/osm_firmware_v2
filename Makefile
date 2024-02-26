@@ -7,7 +7,14 @@ GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell printf "%.*s\n" 7 $$(git log -n 1 --format="%H"))
 GIT_SHA1_LEN := $(shell printf '%s' '$(GIT_SHA1)' | wc -c)
-GIT_TAG ?= $(shell git tag --points-at HEAD)
+GIT_VERSION ?= $(shell GIT_TAG=$$(git describe --tags --exact-match --abbrev=0 2> /dev/null); \
+  if [ "$$?" -ne 0 ]; then \
+    echo "[$(GIT_COMMITS)]-$(GIT_COMMIT)"; \
+  else \
+    echo "[$(GIT_COMMITS)]-$(GIT_SHA1)-$${GIT_TAG}"; \
+  fi \
+  )
+
 
 MODELS = $(shell find $(MODEL_DIR)/* -maxdepth 0 -type d -printf '%f\n')
 MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/.complete)
