@@ -15,6 +15,8 @@ import string
 import atexit
 import logging
 import weakref
+import ssl
+import base64
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,10 +25,9 @@ all_threads = []
 
 
 class base_handler_t(object):
-    def __init__(self, fparent, parent):
+    def __init__(self, parent):
         self._parent = parent
         self._logger = self.parent._logger
-        self._logger.critical(parent)
 
     @property
     def parent(self):
@@ -40,10 +41,8 @@ class base_handler_t(object):
 
 
 class close_handler(base_handler_t):
-    def __init__(self, parent):
-        super().__init__(self, parent)
-
     def do_POST(self, received_data: dict) -> tuple:
+        received_data = self._read_content()
         p = received_data["port"]
         process = all_processes[p]
         fw_pid = int(process.pid)
@@ -56,14 +55,22 @@ class close_handler(base_handler_t):
 
 class spawn_virtual_osm_handler(base_handler_t):
     def __init__(self, parent):
-        super().__init__(self, parent)
+        super().__init__(parent)
+        self.port = self.gen_random_port()
 
     def do_POST(self, received_data: dict) -> tuple:
+
         self.port = self.gen_random_port()
         loc = self.random_str()
         location = f"/tmp/osm_{loc}/"
         websocket = f"ws://localhost:{self.port}/websocket"
         linux_osm = 0
+
+        fake_linux_exists = self.check_server()
+        if not fake_linux_exists:
+            response = json.dumps({"msg": "unavailable"})
+            self.wfile.write(response.encode("utf-8"))
+            return response
 
         osm_bin_exists = self.find_linux_binary()
         if not osm_bin_exists:
@@ -80,12 +87,12 @@ class spawn_virtual_osm_handler(base_handler_t):
         return (HTTPStatus.OK, response)
 
     @staticmethod
-    def gen_random_port():
+    def gen_random_port(self):
         port = random.randint(1096, 65535)
         return port
 
     @staticmethod
-    def random_str():
+    def random_str(self):
         length = 20
         letters = string.ascii_lowercase
         return ''.join(random.choice(letters) for i in range(length))
@@ -110,30 +117,64 @@ class spawn_virtual_osm_handler(base_handler_t):
         return sub.returncode
 
 class latest_fw_version(base_handler_t):
-    def do_POST(self):
+    LATEST_VERSION_INFO_PATH = "version_info.txt"
+
+    def _do_cmd(self, cmd: str) -> str:
+        return subprocess.check_output(cmd, shell=True)
+
+    def _read_info(self):
+        with open(self.LATEST_VERSION_INFO_PATH, "r") as f:
+            info = f.read()
+        self._logger.debug(f"READ INFO: {info}")
+        return json.loads(info)
+
+    def do_GET(self):
         self._logger.debug("SENDING VERSION")
-        return (HTTPStatus.OK, {"version": "new"})
+        return (HTTPStatus.OK, self._read_info())
 
 class latest_fw_file(base_handler_t):
-    def do_POST(self):
-        pass
+    LATEST_FIRMWARE_PATH = "latest_version.bin"
+
+    def _read_firmware(self):
+        with open(self.LATEST_FIRMWARE_PATH, "rb") as f:
+            bin_data = f.read()
+        return bin_data
+
+    def do_GET(self):
+        self._logger.debug("SENDING BINARY FILE")
+        firmware_bin = self._read_firmware()
+        firmware_b64 = base64.b64encode(firmware_bin)
+        return (HTTPStatus.OK, firmware_b64)
+
+def run_forever():
+    handler_object = MyHttpRequestHandler
+    PORT = 8000
+    my_server = socketserver.TCPServer(("", PORT), handler_object)
+    while True:
+        my_server.serve_forever()
+        if stop_threads:
+            break
 
 class master_request_handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, request, client_address, server, directory=None, logger=None):
         if logger is None:
             logger = logging.getLogger(__name__)
         self._logger = logger
-        self._handlers = \
+        self._post_handlers = \
             {
                 "Close"                     : close_handler,
                 "Spawn virtual OSM"         : spawn_virtual_osm_handler,
-                "Get latest fw version"     : latest_fw_version,
-                "Get latest fw file"        : latest_fw_file,
+            }
+        self._get_handlers = \
+            {
+                "/latest_firmware_info"     : latest_fw_version,
+                "/latest_firmware"          : latest_fw_file,
             }
         self._request = request
         self._client_address = client_address
         self._server = server
         self._directory = directory
+
         super().__init__(request, client_address, server, directory=directory)
 
     def _read_content(self):
@@ -143,15 +184,34 @@ class master_request_handler(http.server.SimpleHTTPRequestHandler):
         return received_data
 
     def _send_response_json(self, response_code: HTTPStatus, response: dict):
+        response_json = json.dumps(response)
+        response_json_utf8 = response_json.encode('utf-8')
         self.send_response(response_code.value)
         self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Length', str(len(response_json_utf8)))
         self.end_headers()
-        response_json = json.dumps(response)
-        self.wfile.write(response_json.encode('utf-8'))
+        self.wfile.write(response_json_utf8)
         self._logger.debug(f"SENT: {response_code.name} ({response_code.value}): '{response_json}'")
 
+    def _send_response_bin(self, response_code: HTTPStatus, response: bin):
+        self.send_response(response_code.value)
+        self.send_header('Content-type', "application/octet-stream")
+        self.send_header('Content-Length', str(len(response)))
+        self.end_headers()
+        self.wfile.write(response)
+        self._logger.debug(f"SENT BIN DATA: {response_code.name} ({response_code.value}): SIZ:{len(response)}")
+
     def do_GET(self):
-        if self.path == '/':
+        handler = self._get_handlers.get(self.path)
+        if handler is not None:
+            response, ret = handler(self).do_GET()
+            if isinstance(ret, dict):
+                self._send_response_json(response, ret)
+            else:
+                self._send_response_bin(response, ret)
+            return ret
+        elif self.path == '/':
+            self._logger.debug("GIVING INDEX")
             self.path = './index.html'
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
@@ -165,7 +225,7 @@ class master_request_handler(http.server.SimpleHTTPRequestHandler):
             self._send_response_json(response, ret)
             return ret
         self._logger.debug(f"GOT CMD: '{cmd}'")
-        handler_t = self._handlers.get(cmd)
+        handler_t = self._post_handlers.get(cmd)
         if handler_t is None:
             self._logger.error(f"NO HANDLER: {cmd}")
             response, ret = (HTTPStatus.NOT_FOUND, {})
@@ -173,7 +233,7 @@ class master_request_handler(http.server.SimpleHTTPRequestHandler):
             return ret
         self._logger.debug(f"USING HANDLER TYPE: {handler_t}")
         try:
-            response, ret = handler_t(self).do_POST(received_data)
+            response, ret = handler_t(self).do_POST()
         except NotImplementedError:
             response, ret = (HTTPStatus.NOT_FOUND, {})
         self._logger.info(f"RETURNING: {response.name} ({response.value}): '{ret}'")
@@ -181,13 +241,37 @@ class master_request_handler(http.server.SimpleHTTPRequestHandler):
         return ret
 
 
-def run_server(port, is_verbose):
+class webserver_t(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True, use_ssl=False):
+            self._use_ssl = use_ssl
+            self._ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            self._ssl_ctx.load_cert_chain("/root/cert.pem", "/root/key.pem")
+            socketserver.TCPServer.__init__(self, server_address=server_address, RequestHandlerClass=RequestHandlerClass, bind_and_activate=bind_and_activate)
+
+        def server_bind(self):
+            if self._use_ssl:
+                socketserver.TCPServer.server_bind(self)
+                self.socket = self._ssl_ctx.wrap_socket(
+                    self.socket, server_side=True,
+                    do_handshake_on_connect=False)
+            else:
+                socketserver.TCPServer.server_bind(self)
+
+        def get_request(self):
+            if self._use_ssl:
+                (socket, addr) = socketserver.TCPServer.get_request(self)
+                socket.do_handshake()
+                return (socket, addr)
+            return socketserver.TCPServer.get_request()
+
+
+def run_server(port, use_ssl, is_verbose):
     class server_t(object):
-        def __init__(self, port=8000):
+        def __init__(self, port=8000, use_ssl=False):
             self._done = False
             handler_object = master_request_handler
             socketserver.TCPServer.allow_reuse_address = True
-            self._webserver = socketserver.TCPServer(("", port), handler_object)
+            self._webserver = webserver_t(("", port), handler_object, use_ssl=use_ssl)
 
         def __enter__(self):
             return self
@@ -220,22 +304,23 @@ def run_server(port, is_verbose):
     if is_verbose:
         logging.basicConfig(level=logging.DEBUG)
 
-    with server_t(port=port) as server:
+    with server_t(port=port, use_ssl=use_ssl) as server:
         server.run_forever()
 
 def main():
     import argparse
 
     def get_args():
-        parser = argparse.ArgumentParser(description="OSM Config GUI Server")
-        parser.add_argument("-p", "--port"      , help="Serial Port"                    , required=False, type=int                  , default=8000          )
+        parser = argparse.ArgumentParser(description="Jigboard binding test")
+        parser.add_argument("-p", "--port"      , help="Serial Port"                    , required=False, type=int                  , default=443           )
         parser.add_argument("-v", "--verbose"   , help="Verbose messages"               , action="store_true"                                               )
+        parser.add_argument("--ssl"             , help="Use SSL"                        , action="store_true"                                               )
         return parser.parse_args()
 
     args = get_args()
 
     stop_threads = False
-    t = Thread(target=run_server, args=(args.port, args.verbose))
+    t = Thread(target=run_server, args=(args.port, args.ssl, args.verbose))
     t.start()
     all_threads.append(t)
     return 0

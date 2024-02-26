@@ -1,4 +1,30 @@
 import { STMApi } from '../stm-serial-flasher/src/api/STMapi.js'
+import logger from '../stm-serial-flasher/src/api/Logger.js';
+import WebSerial from '../stm-serial-flasher/src/api/WebSerial.js';
+import settings from '../stm-serial-flasher/src/api/Settings.js';
+
+
+const PIN_HIGH = false;
+const PIN_LOW = true;
+
+const SYNCHR = 0x7F;
+const ACK = 0x79;
+const NACK = 0x1F;
+
+
+function u8a(array) {
+    return new Uint8Array(array);
+}
+
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+
+const EwrLoadState = Object.freeze({
+    NOT_LOADED: Symbol("not_loaded"),
+    LOADING: Symbol("loading"),
+    LOADED: Symbol("loaded")
+});
 
 
 export class osm_flash_api_t extends STMApi {
@@ -10,7 +36,7 @@ export class osm_flash_api_t extends STMApi {
     async connect(params) {
         this.ewrLoadState = EwrLoadState.NOT_LOADED;
         return new Promise((resolve, reject) => {
-            logger.log('Connecting with baudrate ' + params.baudrate + ' and reply mode ' + (params.replyMode ? 'on' : 'off'));
+            console.log('Connecting with baudrate ' + params.baudrate + ' and reply mode ' + (params.replyMode ? 'on' : 'off'));
             if (this.serial.isOpen()) {
                 reject(new Error('Port already opened'));
                 return;
@@ -18,16 +44,18 @@ export class osm_flash_api_t extends STMApi {
 
             this.replyMode = params.replyMode || false;
 
-            this.serial.open({
+            let open_params = {
                 baudRate: parseInt(params.baudrate, 10),
                 parity: this.replyMode ? 'none' : 'even'
-            })
+            }
+            let signal = {};
+            this.serial.open(open_params)
                 .then(() => {
-                    let signal = {}
-                    signal["dataTerminalReady"] = PIN_LOW;
-                    signal["requestToSend"] = PIN_LOW;
-                    return this.serial.control(signal);
+                    signal["dataTerminalReady"] = PIN_HIGH;
+                    signal["requestToSend"] = PIN_HIGH;
+                    return this.serial.control(signal)
                 })
+                .then(() => console.log("Before BOOTLOADER", Date.now()))
                 .then(() => this.activateBootloader())
                 .then(resolve)
                 .catch(reject);
@@ -59,26 +87,22 @@ export class osm_flash_api_t extends STMApi {
      */
     async activateBootloader() {
         return new Promise((resolve, reject) => {
-            logger.log('Activating bootloader...');
+            console.log('Activating bootloader...');
             if (!this.serial.isOpen()) {
                 reject(new Error('Port must be opened before activating the bootloader'));
                 return;
             }
 
             let signal = {};
-            signal["dataTerminalReady"] = PIN_HIGH;
+            signal["dataTerminalReady"] = PIN_LOW;
             signal["requestToSend"] = PIN_HIGH;
             this.serial.control(signal)
                 .then(() => {
                     signal["dataTerminalReady"] = PIN_LOW;
-                    signal["requestToSend"] = PIN_HIGH;
-                    return this.serial.control(signal)
-                })
-                .then(() => {
-                    signal["dataTerminalReady"] = PIN_LOW;
                     signal["requestToSend"] = PIN_LOW;
-                    return this.serial.control(signal)
+                    this.serial.control(signal);
                 })
+                .then(() => sleep(100)) /* Wait for bootloader to finish booting */
                 .then(() => this.serial.write(u8a([SYNCHR])))
                 .then(() => this.serial.read())
                 .then(response => {
@@ -92,7 +116,7 @@ export class osm_flash_api_t extends STMApi {
                     }
                 })
                 .then(() => {
-                    logger.log('Bootloader is ready for commands');
+                    console.log('Bootloader is ready for commands');
                     resolve();
                 })
                 .catch(reject);
@@ -106,7 +130,7 @@ export class osm_flash_api_t extends STMApi {
      */
     async resetTarget() {
         return new Promise((resolve, reject) => {
-            logger.log('Resetting target...');
+            console.log('Resetting target...');
             let signal = {};
 
             if (!this.serial.isOpen()) {
@@ -124,11 +148,132 @@ export class osm_flash_api_t extends STMApi {
                 })
                 .then(() => {
                     // wait for device init
-                    logger.log('Reset done. Wait for init.');
+                    console.log('Reset done. Wait for init.');
                     this.ewrLoadState = EwrLoadState.NOT_LOADED;
                     setTimeout(resolve, 200);
                 })
                 .catch(reject);
         });
+    }
+}
+
+
+export class flash_controller_t {
+    constructor(dev) {
+        this.dev = dev;
+        this.PAGE_SIZE          = 0x800;
+        this.SIZE_BOOTLOADER    = 2 * this.PAGE_SIZE;
+        this.SIZE_CONFIG        = 2 * this.PAGE_SIZE;
+        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress);
+        this.ADDRESS_CONFIG     = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER
+        this.ADDRESS_FIRMWARE   = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
+    }
+
+    get_latest_firmware_info_loaded(evt) {
+        let firmware_info = JSON.parse(evt.target.response);
+        console.log("FIRMWARE INFO: LOADED:", firmware_info);
+    }
+
+    get_latest_firmware_info_error(evt) {
+        console.log("FIRMWARE INFO: ERROR");
+        console.log(evt);
+    }
+
+    async get_latest_firmware_info() {
+        const req = new XMLHttpRequest();
+        req.addEventListener("load", (e) => { this.get_latest_firmware_info_loaded(e) });
+        req.addEventListener("error", (e) => { this.get_latest_firmware_info_error(e) });
+        req.open("GET", "/latest_firmware_info");
+        req.overrideMimeType("application/json");
+        req.send();
+    }
+
+    flash_start (osmAPI) {
+        return new Promise( function (resolve, reject) {
+            let deviceInfo = {
+                family: '-',
+                bl: '-',
+                pid: '-',
+                commands: [],
+            };
+
+            let error = null;
+            osmAPI.connect({baudrate: 115200, replyMode: false})
+                .then(() => {return osmAPI.cmdGET()})
+                .then((info) => {
+                    deviceInfo.bl = info.blVersion;
+                    deviceInfo.commands = info.commands;
+                    deviceInfo.family = info.getFamily();
+                })
+                .then(() => {
+                    let pid;
+                    if (deviceInfo.family === 'STM32') {
+                        pid = osmAPI.cmdGID();
+                    } else {
+                        pid = '-';
+                    }
+                    deviceInfo.pid = pid;
+                    return pid;
+                })
+                .then(resolve)
+                .catch(reject);
+        })
+    }
+
+    flash_firmware_loaded(evt) {
+        console.log("FIRMWARE: LOADED");
+        let fw_b64 = evt.target.response;
+        let data = Uint8Array.from(atob(fw_b64), c => c.charCodeAt(0))
+
+        let osmAPI;
+        let serial;
+        let start_address = parseInt(settings.startAddress);
+        this.dev.port.close()
+            .then(() => {
+                serial = new WebSerial(this.dev.port)
+                serial.onConnect = () => {};
+                serial.onDisconnect = () => {};
+            })
+            .then(() => osmAPI = new osm_flash_api_t(serial))
+            .then(() => this.flash_start(osmAPI))
+            .then(() => console.log("FINISHED START"))
+            .then(() => osmAPI.eraseAll() )
+            .then(async () => {
+                console.log("BOOTLOADER ADDRESS: 0x" + this.ADDRESS_BOOTLOADER.toString(16));
+                let data_bootloader = new Uint8Array(data.slice(0, this.SIZE_BOOTLOADER));
+                console.log("BOOTLOADER SIZE = " + data_bootloader.length);
+                await osmAPI.write(data_bootloader, this.ADDRESS_BOOTLOADER);
+
+                console.log("FIRMWARE ADDRESS: 0x" + this.ADDRESS_FIRMWARE.toString(16));
+                let data_firmware = new Uint8Array(data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1));
+                console.log("FIRMWARE SIZE = " + data_firmware.length);
+                await osmAPI.write(data_firmware, this.ADDRESS_FIRMWARE);
+                console.log("FINISHED WRITING");
+            })
+            .then(() => {
+                console.log("GONE");
+                return osmAPI.disconnect();
+            })
+            .then(() => this.dev.port.open({"baudRate": 115200}));
+    }
+
+    flash_firmware_error(evt) {
+        console.log("FIRMWARE: ERROR");
+    }
+
+    async flash_firmware() {
+        console.log("FLASH FIRMWARE CALLED");
+        if (confirm("Are you sure you want to update the firmware?")) {
+            console.log("FIRMWARE: CONFIRMED");
+            const req = new XMLHttpRequest();
+            req.addEventListener("load", (e) => { this.flash_firmware_loaded(e) });
+            req.addEventListener("error", (e) => { this.flash_firmware_error(e) });
+            req.open("GET", "/latest_firmware");
+            req.overrideMimeType("application/octet-stream");
+            req.send();
+        }
+        else {
+            console.log("FIRMWARE: CANCELLED");
+        }
     }
 }

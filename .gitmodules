@@ -6,4 +6,4 @@
 	url = ../embedded-i2c-sen5x
 [submodule "tools/config_gui_web/app/modules/stm-serial-flasher"]
 	path = tools/config_gui_web/app/modules/stm-serial-flasher
-	url = https://github.com/Gamadril/stm-serial-flasher.git
+	url = ../stm-serial-flasher
