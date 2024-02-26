@@ -36,6 +36,7 @@ class osm_flash_api_t extends STMApi {
     async connect(params) {
         this.ewrLoadState = EwrLoadState.NOT_LOADED;
         return new Promise((resolve, reject) => {
+            logger.log('Connecting with baudrate ' + params.baudrate + ' and reply mode ' + (params.replyMode ? 'on' : 'off'));
             if (this.serial.isOpen()) {
                 reject(new Error('Port already opened'));
                 return;
@@ -85,6 +86,7 @@ class osm_flash_api_t extends STMApi {
      */
     async activateBootloader() {
         return new Promise((resolve, reject) => {
+            logger.log('Activating bootloader...');
             if (!this.serial.isOpen()) {
                 reject(new Error('Port must be opened before activating the bootloader'));
                 return;
@@ -94,6 +96,11 @@ class osm_flash_api_t extends STMApi {
             signal["dataTerminalReady"] = PIN_LOW;
             signal["requestToSend"] = PIN_HIGH;
             this.serial.control(signal)
+                .then(() => {
+                    signal["dataTerminalReady"] = PIN_LOW;
+                    signal["requestToSend"] = PIN_HIGH;
+                    return this.serial.control(signal)
+                })
                 .then(() => {
                     signal["dataTerminalReady"] = PIN_LOW;
                     signal["requestToSend"] = PIN_LOW;
@@ -113,6 +120,7 @@ class osm_flash_api_t extends STMApi {
                     }
                 })
                 .then(() => {
+                    logger.log('Bootloader is ready for commands');
                     resolve();
                 })
                 .catch(reject);
@@ -126,6 +134,7 @@ class osm_flash_api_t extends STMApi {
      */
     async resetTarget() {
         return new Promise((resolve, reject) => {
+            logger.log('Resetting target...');
             let signal = {};
 
             if (!this.serial.isOpen()) {
@@ -143,6 +152,7 @@ class osm_flash_api_t extends STMApi {
                 })
                 .then(() => {
                     // wait for device init
+                    logger.log('Reset done. Wait for init.');
                     this.ewrLoadState = EwrLoadState.NOT_LOADED;
                     setTimeout(resolve, 200);
                 })
