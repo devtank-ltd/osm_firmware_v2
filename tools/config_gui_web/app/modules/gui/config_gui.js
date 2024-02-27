@@ -6,6 +6,7 @@ import { osm_flash_api_t } from './flash.js';
 class config_gui_t {
   constructor() {
     this.add_event_listeners();
+    this.server_check();
   }
 
   async open_serial() {
@@ -53,6 +54,15 @@ class config_gui_t {
     document.getElementById('main-page-websocket-connect').addEventListener('click', this.spin_fake_osm);
   }
 
+  async server_check() {
+    const web = document.getElementById('main-page-websocket-connect');
+    const con = document.getElementById('main-page-connect')
+    await fetch('http://localhost:8000', {}).catch(() => {
+      web.style.display = 'none';
+      con.innerHTML = 'Connect';
+    })
+  }
+
   async spin_fake_osm() {
     await disable_interaction(true);
     this.msg = 'Spawn virtual OSM';
@@ -65,12 +75,9 @@ class config_gui_t {
       body: this.body,
       headers: {
         'Content-type': 'application/json; charset=UTF-8',
-      },
+      }
     }).then(async (response) => {
       this.resp = await response.json();
-      if (this.resp.msg === 'unavailable') {
-        error_div.textContent = 'Unavailable';
-      }
       this.url = await this.resp.websocket;
       this.given_port = await this.resp.port;
       this.location = await this.resp.location;
