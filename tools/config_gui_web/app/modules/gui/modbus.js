@@ -174,6 +174,7 @@ export class modbus_t {
       const cell = this.modbus_row.insertCell();
       cell.textContent = tmp.desc;
       cell.id = 'modbus-device-name-cell';
+      cell.style.cursor = 'pointer';
       cell.addEventListener('click', this.select_template);
       if (count === 0) {
         this.regfield = this.modbus_row.insertCell();
@@ -270,7 +271,6 @@ export class modbus_t {
 
   async add_new_template() {
     this.add_new_div = document.getElementById('modbus-add-new-template-div');
-    this.add_new_div.innerHTML = '';
     this.add_new_template_table = this.add_new_div.appendChild(document.createElement('table'));
     this.add_new_template_table.id = 'modbus-add-new-template-table';
     const tbody = this.add_new_template_table.createTBody();
@@ -415,17 +415,18 @@ export class modbus_t {
       input.oninput = (e) => { limit_characters(e, 5); };
       cell.appendChild(input);
     });
+    this.add_new_reg_btn.click();
 
-    this.export_btn = this.add_new_template_table.appendChild(document.createElement('button'));
-    this.export_btn.textContent = 'Export';
+    this.export_btn = document.getElementById('modbus-add-new-export');
     this.export_btn.addEventListener('click', this.export_template);
 
-    this.restart_btn = this.add_new_template_table.appendChild(document.createElement('button'));
-    this.restart_btn.textContent = 'Restart';
+    this.restart_btn = document.getElementById('modbus-add-new-restart');
     this.restart_btn.addEventListener('click', this.reload_template_table);
   }
 
   async reload_template_table() {
+    this.add_new_div = document.getElementById('modbus-add-new-template-div');
+    this.add_new_div.innerHTML = '';
     await this.add_new_template();
   }
 

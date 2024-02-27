@@ -34,16 +34,16 @@ button:hover {
 
 }
 
-td {
-  padding    : .2em .8em;
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-}
 
 thead {
   background-color : var(--osmdark);
   font-weight      : bold;
   color: var(--white);
+}
+
+td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
 }
 
 .error-div {
@@ -59,6 +59,10 @@ thead {
 
     .gui-img {
         width: 80%;
+    }
+
+    .console-terminal {
+
     }
 
     /* Adjust other elements as needed */
@@ -228,6 +232,9 @@ thead {
   border-collapse : collapse;
 }
 
+.measurements-table td {
+  padding    : .2em .8em;
+}
 .meas-table-inputs {
   border: none;
   text-align: center;
@@ -300,24 +307,30 @@ thead {
   justify-content: center;
 }
 
+
+/* Modbus */
+
+
+.modbus-tab-widgets {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+}
+
+
 /* Modbus Config Table */
 
-
 .modbus-template-config table {
- border-style:solid;
+  border-style:solid;
   border-color: var(--osmdark);
-  width: 500px;
-  height: 300px;
+  width: 100%;
   border-radius:15px;
-
 }
 
 /* Modbus Current Settings */
 
 
 .modbus-current-config {
-  height: 300px;
-  width:500px;
   overflow:auto;
   display: flex;
   justify-content: center;
@@ -329,19 +342,14 @@ thead {
 
 
 .modbus-current-config table {
-  border-collapse : collapse;
-  width: 480px;
+  width: 100%;
 }
-
-
 
 /* Modbus Add New Template Table */
 
 .modbus-add-new-template-div {
   display: flex;
   justify-content: center;
-  width:510px;
-  height:250px;
   margin-top: 40px;
   border-style:solid;
   border-radius:15px;
@@ -349,10 +357,8 @@ thead {
 }
 
 .modbus-add-new-template-div table {
-  border-collapse : collapse;
-  width: 500px;
-  height: 200px;
-
+  width: 100%;
+  height: 100%;
 }
 
 .modbus-add-new-template-div input {
@@ -360,6 +366,7 @@ thead {
   border: none;
   width: 90%;
 }
+
 
 /* Modbus Template Table */
 
@@ -381,21 +388,24 @@ thead {
 /* Current Clamp Configuration */
 
 
-.current-clamp-table table {
-  border-collapse : collapse;
-  width: 500px;
-  height: 300px;
-
-
+.current-clamp-table {
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  width: 100%;
+  margin-right:50px;
 }
 
 
 /* IO Configuration */
 
-.io-table table {
-  border-collapse : collapse;
-  width: 500px;
-  height: 300px;
+.io-table {
+  margin-top: 50px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  width: 100%;
+  margin-right:50px;
 
 }
 
@@ -417,9 +427,7 @@ thead {
 /* Console Tab */
 
 .console-grid-container {
-  display: grid;
-  gap: 50px 0px;
-  margin-top: 50px;
+  padding: 2em;;
 }
 
 .console-cmd-field {
@@ -435,6 +443,7 @@ thead {
 }
 
 .console-help {
+  margin-left: 2em;
   grid-column-start: 2;
   grid-column-end: 2;
   grid-row-start: 1;
@@ -444,15 +453,15 @@ thead {
 .console-terminal {
   background-color: var(--black);
   color: var(--osmlight);
+  width: 100%;
   height: 500px;
-  width:1000px;
   grid-column-start: 1;
   grid-column-end: 2;
   grid-row-start: 1;
   grid-row-end: 2;
   overflow:auto;
   border-radius:15px;
-
+  text-align: left;
 }
 
 .console-terminal-para {
