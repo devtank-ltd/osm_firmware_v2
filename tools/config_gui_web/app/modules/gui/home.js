@@ -120,6 +120,6 @@ export class home_tab_t {
     await this.console.open_console();
     await this.navbar.change_active_tab('console-tab');
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
-    document.getElementById('adv-conf-tab').addEventListener('click', this.open_adv_conf_tab);
+    document.getElementById('adv-conf-tab').addEventListener('click', this.change_to_adv_conf_tab);
   }
 }

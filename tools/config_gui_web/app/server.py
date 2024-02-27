@@ -23,9 +23,10 @@ all_threads = []
 
 
 class base_handler_t(object):
-    def __init__(self, parent):
+    def __init__(self, fparent, parent):
         self._parent = parent
         self._logger = self.parent._logger
+        self._logger.critical(parent)
 
     @property
     def parent(self):
@@ -39,8 +40,10 @@ class base_handler_t(object):
 
 
 class close_handler(base_handler_t):
+    def __init__(self, parent):
+        super().__init__(self, parent)
+
     def do_POST(self, received_data: dict) -> tuple:
-        received_data = self._read_content()
         p = received_data["port"]
         process = all_processes[p]
         fw_pid = int(process.pid)
@@ -54,12 +57,10 @@ class close_handler(base_handler_t):
 class spawn_virtual_osm_handler(base_handler_t):
     def __init__(self, parent):
         super().__init__(self, parent)
-        self.port = self.gen_random_port()
 
     def do_POST(self, received_data: dict) -> tuple:
-
         self.port = self.gen_random_port()
-        loc = self.parent.random_str()
+        loc = self.random_str()
         location = f"/tmp/osm_{loc}/"
         websocket = f"ws://localhost:{self.port}/websocket"
         linux_osm = 0
@@ -84,12 +85,12 @@ class spawn_virtual_osm_handler(base_handler_t):
         return (HTTPStatus.OK, response)
 
     @staticmethod
-    def gen_random_port(self):
+    def gen_random_port():
         port = random.randint(1096, 65535)
         return port
 
     @staticmethod
-    def random_str(self):
+    def random_str():
         length = 20
         letters = string.ascii_lowercase
         return ''.join(random.choice(letters) for i in range(length))
@@ -100,27 +101,27 @@ class spawn_virtual_osm_handler(base_handler_t):
         return self.vosm_subp
 
     @staticmethod
-    def find_linux_binary(self):
+    def find_linux_binary():
         output = f"{PATH}/../../../build/penguin/firmware.elf"
         try:
             sub = subprocess.check_output(f"ls {output}", shell=True)
-            print(sub)
             return True
         except FileNotFoundError:
             return False
 
     @staticmethod
-    def generate_linux_binary(self):
+    def generate_linux_binary():
         sub = subprocess.run(f"cd {PATH}/../../.. && make penguin && cd -", stdout=subprocess.PIPE, shell=True)
         return sub.returncode
 
- def check_server(self):
-        cmd = f"hostname"
-        host = subprocess.check_output(cmd, shell=True).decode()
-        if host != "osm-config":
-            return True
-        else:
-            return False
+    @staticmethod
+    def check_server():
+            cmd = f"hostname"
+            host = subprocess.check_output(cmd, shell=True).decode()
+            if host != "osm-config":
+                return True
+            else:
+                return False
 
 class latest_fw_version(base_handler_t):
     def do_POST(self):
@@ -130,15 +131,6 @@ class latest_fw_version(base_handler_t):
 class latest_fw_file(base_handler_t):
     def do_POST(self):
         pass
-
-def run_forever():
-    handler_object = MyHttpRequestHandler
-    PORT = 8000
-    my_server = socketserver.TCPServer(("", PORT), handler_object)
-    while True:
-        my_server.serve_forever()
-        if stop_threads:
-            break
 
 class master_request_handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, request, client_address, server, directory=None, logger=None):
@@ -195,7 +187,7 @@ class master_request_handler(http.server.SimpleHTTPRequestHandler):
             return ret
         self._logger.debug(f"USING HANDLER TYPE: {handler_t}")
         try:
-            response, ret = handler_t(self).do_POST()
+            response, ret = handler_t(self).do_POST(received_data)
         except NotImplementedError:
             response, ret = (HTTPStatus.NOT_FOUND, {})
         self._logger.info(f"RETURNING: {response.name} ({response.value}): '{ret}'")
@@ -249,7 +241,7 @@ def main():
     import argparse
 
     def get_args():
-        parser = argparse.ArgumentParser(description="Jigboard binding test")
+        parser = argparse.ArgumentParser(description="OSM Config GUI Server")
         parser.add_argument("-p", "--port"      , help="Serial Port"                    , required=False, type=int                  , default=8000          )
         parser.add_argument("-v", "--verbose"   , help="Verbose messages"               , action="store_true"                                               )
         return parser.parse_args()

@@ -6,7 +6,7 @@
     "extends": "airbnb-base",
     "parserOptions": {
         "ecmaVersion": "latest",
-        "sourceType": "module"
+        "sourceType": "module",
     },
     "rules": {
         "no-console": "off",
@@ -23,6 +23,8 @@
         "no-eval": "off",
         "import/no-relative-packages": "off",
         "no-promise-executor-return": "off",
-        "no-alert": "off"
+        "no-alert": "off",
+        "indent": [4, "tab"],
+        "no-tabs": 0
     }
 }

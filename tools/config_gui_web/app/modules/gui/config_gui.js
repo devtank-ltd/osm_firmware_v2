@@ -13,13 +13,14 @@ class config_gui_t {
     const type = 'Serial';
     navigator.serial
       .requestPort({ filters: [filter] })
-      .then((port) => {
-        port.getInfo();
+      .then(async (port) => {
+        this.port = port;
+        this.port.getInfo();
 
-        port.open({
+        this.port.open({
           baudRate: 115200, databits: 8, stopbits: 1, parity: 'none',
         });
-        console.log('User connected to device ', port);
+        console.log('User connected to device ', this.port);
 
         navigator.serial.addEventListener('connect', () => {
           console.log('USB device available.');
@@ -29,13 +30,13 @@ class config_gui_t {
           console.log('USB device disconnect detected.');
         });
 
-        this.dev = new binding_t(port, type);
+        this.dev = new binding_t(this.port, type);
         this.home = new home_tab_t(this.dev);
-        this.home.insert_homepage();
+        await this.home.insert_homepage();
         const disconnect = document.getElementById('global-disconnect');
         disconnect.addEventListener('click', () => {
-          port.close();
-          port = null;
+          this.port.close();
+          this.port = null;
           console.log('Disconnected');
           window.location.reload();
         });
@@ -45,7 +46,7 @@ class config_gui_t {
       .catch((e) => {
         console.log(e);
       });
-    };
+  }
 
   async add_event_listeners() {
     document.getElementById('main-page-connect').addEventListener('click', this.open_serial);
