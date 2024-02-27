@@ -62,7 +62,7 @@ class spawn_virtual_osm_handler(base_handler_t):
         loc = self.parent.random_str()
         location = f"/tmp/osm_{loc}/"
         websocket = f"ws://localhost:{self.port}/websocket"
-
+        linux_osm = 0
         fake_linux_exists = self.check_server()
         if not fake_linux_exists:
             response = json.dumps({"msg": "unavailable"})
@@ -113,6 +113,14 @@ class spawn_virtual_osm_handler(base_handler_t):
     def generate_linux_binary(self):
         sub = subprocess.run(f"cd {PATH}/../../.. && make penguin && cd -", stdout=subprocess.PIPE, shell=True)
         return sub.returncode
+
+ def check_server(self):
+        cmd = f"hostname"
+        host = subprocess.check_output(cmd, shell=True).decode()
+        if host != "osm-config":
+            return True
+        else:
+            return False
 
 class latest_fw_version(base_handler_t):
     def do_POST(self):
