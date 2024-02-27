@@ -189,9 +189,8 @@ class master_request_handler(http.server.SimpleHTTPRequestHandler):
         try:
             response, ret = handler_t(self).do_POST()
         except NotImplementedError:
-            self._logger.error(f"RETURNING: {response}: '{ret}'")
             response, ret = (HTTPStatus.NOT_FOUND, {})
-        self._logger.info(f"RETURNING: {response}: '{ret}'")
+        self._logger.info(f"RETURNING: {response.name} ({response.value}): '{ret}'")
         self._send_response_json(response, ret)
         return ret
 
