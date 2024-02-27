@@ -75,12 +75,9 @@ export class home_tab_t {
   }
 
   async load_serial_number() {
-    this.sn = document.getElementById('home-serial-num');
     this.sn_input = document.getElementById('serial-num-input');
     this.serial_num = await this.dev.serial_number;
-    this.serial_num_join = 'Serial Number: ';
-    this.sn.textContent = await this.serial_num_join;
-    this.sn_input.textContent = this.serial_num;
+    this.sn_input.value = this.serial_num;
     this.sn_input.contentEditable = true;
     this.sn_input.oninput = (e) => { limit_characters(e, 20); };
     this.sn_input.addEventListener('focusout', this.change_serial_num);

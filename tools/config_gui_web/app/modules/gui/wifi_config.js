@@ -26,7 +26,8 @@ export class wifi_config_t {
 
     const wifi_res = document.querySelector('div.wifi-config-table');
     wifi_res.style.display = 'block';
-
+    const wifi_btns = document.getElementById('wifi-btns');
+    wifi_btns.style.display = 'flex';
     const wifi_tbl = wifi_res.appendChild(document.createElement('table'));
     const wifi_tBody = wifi_tbl.createTBody();
     wifi_tbl.createTHead();

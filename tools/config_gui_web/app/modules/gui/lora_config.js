@@ -36,6 +36,9 @@ export class lora_config_t {
 
     const lora_res = document.querySelector('div.lora-config-table');
     lora_res.style.display = 'block';
+
+    const lora_btns = document.getElementById('lora-btns');
+    lora_btns.style.display = 'flex';
     const lora_tbl = lora_res.appendChild(document.createElement('table'));
     const lora_tBody = lora_tbl.createTBody();
     lora_tbl.createTHead();

@@ -4,6 +4,9 @@
         <title>OSM Config GUI</title>
         <script type="module" async src="./modules/gui/config_gui.js"></script>
         <link rel="stylesheet" href="styles/styling.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     </head>
     <fieldset id="global-fieldset" class="global-fieldset">
 
@@ -14,8 +17,8 @@
                 <div class="title-page">
                     <button id="main-page-connect">Connect via USB</button>
                     <button id="main-page-websocket-connect">Connect to Virtual OSM</button>
-                    <div id="error-div" class="error-div"></div>
                 </div>
+                <center><div id="error-div" class="error-div"></div></center>
             </div>
             <center><img class="gui-img" id="gui-img" src="./imgs/gui.jpg" alt="OpenSmartMonitor GUI Image"></center>
 
@@ -28,12 +31,7 @@
                 </form>
             </dialog>
 
-            <div class="global-load-save-config-buttons" id="global-load-save-config-buttons" style="display: none;">
-                <button id="global-save-setting">Save Configuration</button>
-                <button id="global-load-osm-config">Load Configuration</button>
-                <button id="global-save-osm-config">Download Configuration</button>
-                <button id="global-disconnect">Disconnect</button>
-              </div>
+
         </body>
     </fieldset>
 

@@ -3,6 +3,7 @@
   --white: #ffffff;
   --black: #000000;
   --osmdark: #0f8353;
+  font-family: "Open Sans", sans-serif;
 }
 
 input[type=number].meas-table-inputs::-webkit-inner-spin-button,
@@ -16,18 +17,33 @@ input[type=number] {
 
 button {
   color: var(--white);
-  background-color: var(--osmlight);
+  background-color: var(--osmdark);
   border-radius: 20px; /* changed to pixels to ensure roundness */
   border: none;
   font-size: medium;
   padding: 10px 20px;
   margin: 5px;
   cursor: pointer;
+
 }
 
 button:hover {
-  background-color: var(--osmdark);
+  background-color: var(--osmlight);
   cursor: pointer;
+  transform: scale(1.05);
+
+}
+
+td {
+  padding    : .2em .8em;
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+thead {
+  background-color : var(--osmdark);
+  font-weight      : bold;
+  color: var(--white);
 }
 
 .error-div {
@@ -44,7 +60,7 @@ button:hover {
     .gui-img {
         width: 80%;
     }
-    
+
     /* Adjust other elements as needed */
 }
 
@@ -62,7 +78,7 @@ button:hover {
 
 
 .gui-img {
-  position: center;
+  justify-content: center;
   max-width: 60%;
   padding-top:30px;
 }
@@ -71,9 +87,8 @@ button:hover {
 /* Navigation Bar */
 
 .topnav {
-  background-color: var(--osmlight);
+  background-color: var(--osmdark);
   overflow: hidden;
-  height: 50px;
   border-radius: 20px;
 }
 
@@ -88,23 +103,14 @@ button:hover {
   text-align: center;
 }
 
-.nav-img a img {
-  width: 100px;
-  position: fixed;
-  float: right;
-  top: 0;
-  right: 0;
-
-}
-
 .topnav a:hover {
-  background-color: var(--white);
-  color: var(--black);
+  background-color: var(--osmlight);
+  color: var(--white);
   cursor: pointer;
 }
 
 .topnav a.active {
-  background-color: var(--osmdark);
+  background-color: var(--osmlight);
   color: var(--white);
 }
 
@@ -116,7 +122,23 @@ button:hover {
   width: 100px;
 }
 
+.global-load-save-config-buttons {
+  float: right;
+}
 
+.global-load-save-config-buttons button {
+  background-color: var(--white);
+  color: var(--black);
+  margin-right: 0.4em;
+  margin-top: 0.5em;
+  border-radius:20px!important;
+  margin-left:15px
+}
+
+.global-load-save-config-buttons button:hover {
+  background-color: var(--osmlight);
+  color: var(--white);
+}
 
 /* Home Page */
 
@@ -125,88 +147,77 @@ button:hover {
 }
 
 .home-edit-uplink-field {
-  margin          : 2em 0.5em;
   grid-column-start: 0;
-  grid-column-end: 1;
-  grid-row-start: 1;
+  grid-column-end: 0;
+  grid-row-start: 2;
   grid-row-end: 2;
   border-radius: 10%;
-
-
+  margin: auto;
 }
 
 .home-edit-uplink-field input {
   border-style: solid;
   color: var(--black);
   border-color: var(--osmdark);
-    color: var(--black);
+  color: var(--black);
   background-color: var(--white);
   border-radius: 15px; /* changed to pixels to ensure roundness */
-  margin: 2px;
-  cursor: pointer;
-
+  margin-bottom: 20px;
 }
 
-.home-edit-uplink-field div {
-  display: flex;
+.home-uplink-submit {
+  cursor: pointer;
 }
 
 .home-serial-firmware-config-div {
-  text-align: left;
-  position: fixed;
-  margin: 0em 0.5em;
-  bottom: 0;
-  left: 0;
+  margin          : 2em 0.5em;
+  grid-column-start: 0;
+  grid-column-end: 0;
+  grid-row-start: 4;
+  grid-row-end: 4;
+}
+
+
+.serial-num-input {
+  border-style: solid;
+  border-radius: 15px;
+  width: 40%;
+  border-color: var(--osmdark);
+  grid-column-start: 0;
+  grid-column-end: 0;
+  grid-row-start: 0;
+  grid-row-end: 0;
 }
 
 .icon-row {
   margin-top: 2em;
-  grid-column-start: 3;
+  grid-column-start: 4;
   grid-column-end: 4;
-  grid-row-start: 0;
-  grid-row-end: 1;
-}
-
-.global-load-save-config-buttons {
-  text-align: center;
-  margin-top: 1.2em;
-  margin-right: 6.5em;
-  position: fixed;
-  right: 0;
-  top: 0;
-}
-
-.global-load-save-config-buttons button {
-  background-color: var(--white);
-  color: var(--black);
-  padding: 0.3em;
-  margin-right: 0.3em;
-  border-radius:20px!important;
-  padding-left:15px;
-  padding-right:15px;
-  margin-left:15px
-}
-
-.global-load-save-config-buttons button:hover {
-  background-color: var(--osmdark);
-  color: var(--white);
+  grid-row-start: 1;
+  grid-row-end: 2;
 }
 
 .global-fieldset {
   border: none;
 }
 
+.osm-sensor {
+  grid-column-start: 4;
+  grid-column-end: 4;
+  grid-row-start: 2;
+  grid-row-end: 4;
+  margin: auto;
+}
 
 /* Measurements Table */
 
 .measurements-table {
   grid-column-start: 0;
-  grid-column-end: 1;
+  grid-column-end: 2;
   grid-row-start: 0;
-  grid-row-end: 1;
+  grid-row-end: 0;
   overflow:auto;
-  height: 500px;
-  width: 600px;
+  height: 400px;
   margin-top: 2em;
   border-style: solid;
   border-radius: 15px;
@@ -215,18 +226,6 @@ button:hover {
 
 .measurements-table table {
   border-collapse : collapse;
-}
-
-.measurements-table thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.measurements-table td {
-  padding    : .2em .8em;
-  border     : 1px solid var(--osmdark);
-  text-align : center;
 }
 
 .meas-table-inputs {
@@ -238,52 +237,50 @@ button:hover {
 
 /* LoRaWAN Configuration Table */
 
-.lora-config-table {
-  grid-column-start: 1;
-  grid-column-end: 2;
-  grid-row-start: 0;
-  grid-row-end: 1;
-}
-
 .lora-config-table table {
-  overflow:auto;
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  width: 90%;
+  margin: auto;
+  overflow: auto;
   height:150px;
-  width:270px;
-  margin-top: 2em;
   border-style:solid;
   border-radius:15px;
   border-color: var(--osmdark);
-  margin          : 2em 0.5em;
+  margin-top: 2em;
+  margin-left: 2em;
 }
 
-.lora-config-table thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
 
-.lora-config-table td {
-  padding    : .2em .8em;
-  border     : .6px solid var(--osmdark);
-  text-align : center;
-}
-
-.lora-config-table .buttons {
+.lora-config-div .buttons {
+  margin: auto;
+  margin-left: 1em;
   padding-top: 2em;
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-
-
-
 
 
 
 /* WiFi Configuration Table */
 
 .wifi-config-table {
-  grid-column-start: 1;
-  grid-column-end: 2;
-  grid-row-start: 0;
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 1;
   grid-row-end: 1;
+  margin: auto;
+  overflow: auto;
+  height:150px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  margin-top: 2em;
+  margin-left: 2em;
 }
 
 
@@ -292,18 +289,16 @@ button:hover {
   margin          : 2em 0.5em;
 }
 
-.wifi-config-table thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
 
-.wifi-config-table td {
-  padding    : .2em .8em;
-  border     : 1px solid var(--osmdark);
-  text-align : center;
+.wifi-config-div .buttons {
+  margin: auto;
+  margin-left: 1em;
+  padding-top: 2em;
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-
 
 /* Modbus Config Table */
 
@@ -338,18 +333,6 @@ button:hover {
   width: 480px;
 }
 
-.modbus-current-config thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.modbus-current-config td {
-  padding    : .2em .8em;
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-}
-
 
 
 /* Modbus Add New Template Table */
@@ -372,34 +355,10 @@ button:hover {
 
 }
 
-.modbus-add-new-template-div thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.modbus-add-new-template-div td {
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-}
-
 .modbus-add-new-template-div input {
   text-align: center;
   border: none;
   width: 90%;
-}
-
-
-.modbus-template-config thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.modbus-template-config td {
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-  padding: 0;
 }
 
 /* Modbus Template Table */
@@ -430,17 +389,6 @@ button:hover {
 
 }
 
-.current-clamp-table thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.current-clamp-table td {
-  border     : 1px solid var(--osmdark);
-  text-align : center;
-}
-
 
 /* IO Configuration */
 
@@ -449,17 +397,6 @@ button:hover {
   width: 500px;
   height: 300px;
 
-}
-
-.io-table thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.io-table td {
-  border     : 1px solid var(--osmdark);
-  text-align : center;
 }
 
 
@@ -474,17 +411,6 @@ button:hover {
   width: 500px;
   height: 300px;
 
-}
-
-.ftma-table thead {
-  background-color : var(--osmlight);
-  font-weight      : bold;
-  color: var(--white);
-}
-
-.ftma-table td {
-  border     : 1px solid var(--osmdark);
-  text-align : center;
 }
 
 

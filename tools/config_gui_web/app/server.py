@@ -19,15 +19,16 @@ all_threads = []
 
 class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/':
-            self.path = './config_gui.html'
+        if self.path == "/":
+            self.path = "./config_gui.html"
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
+        content_length = int(self.headers["Content-Length"])
         post_data = self.rfile.read(content_length)
-        received_data = json.loads(post_data.decode('utf-8'))
-        if received_data["cmd"] == 'Close':
+        received_data = json.loads(post_data.decode("utf-8"))
+        linux_osm = 0
+        if received_data["cmd"] == "Close":
             p = received_data["port"]
             process = all_processes[p]
             fw_pid = int(process.pid)
@@ -35,14 +36,14 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             os.kill(bash_pid, signal.SIGINT)
             os.kill(fw_pid, signal.SIGINT)
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header("Content-type", "application/json")
             self.end_headers()
-            response = json.dumps({'Closed': True})
+            response = json.dumps({"Closed": True})
             self.wfile.write(response.encode('utf-8'))
             return response
 
         self.send_response(200)
-        self.send_header('Content-type', 'application/json')
+        self.send_header("Content-type", "application/json")
         self.end_headers()
 
         self.port = self.gen_random_port()
@@ -50,14 +51,20 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         location = f"/tmp/osm_{loc}/"
         websocket = f"ws://localhost:{self.port}/websocket"
 
+        fake_linux_exists = self.check_server()
+        if not fake_linux_exists:
+            response = json.dumps({"msg": "unavailable"})
+            self.wfile.write(response.encode("utf-8"))
+            return response
+
         osm_bin_exists = self.find_linux_binary()
         if not osm_bin_exists:
             linux_osm = self.generate_linux_binary()
 
         if linux_osm == 0:
             cmd = [f"DEBUG=1 USE_PORT={self.port} USE_WS=1 LOC={location} ../../../build/penguin/firmware.elf"]
-            response = json.dumps({'location': location, "websocket": websocket, "port": self.port})
-            self.wfile.write(response.encode('utf-8'))
+            response = json.dumps({"location": location, "websocket": websocket, "port": self.port})
+            self.wfile.write(response.encode("utf-8"))
             self.spawn_virtual_osm(cmd, self.port)
             time.sleep(2)
             return response
@@ -77,16 +84,26 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         return self.vosm_subp
 
     def find_linux_binary(self):
-        output = f'{PATH}/../../../build/penguin/firmware.elf'
+        output = f"{PATH}/../../../build/penguin/firmware.elf"
         try:
-            sub = subprocess.check_output(f'ls {output}')
+            sub = subprocess.check_output(f"ls {output}", shell=True)
+            print(sub)
             return True
         except FileNotFoundError:
             return False
 
     def generate_linux_binary(self):
-        sub = subprocess.run(f'cd {PATH}/../../.. && make penguin && cd -', stdout=subprocess.PIPE, shell=True)
+        sub = subprocess.run(f"cd {PATH}/../../.. && make penguin && cd -", stdout=subprocess.PIPE, shell=True)
         return sub.returncode
+
+    def check_server(self):
+        output = f"{PATH}/../../../__init__.py"
+        try:
+            subprocess.check_output(f"ls {output}", shell=True)
+            return True
+        except FileNotFoundError:
+            return False
+
 
 @atexit.register
 def cleanup():
