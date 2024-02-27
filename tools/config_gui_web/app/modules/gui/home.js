@@ -14,6 +14,7 @@ export class home_tab_t {
     this.dev = dev;
     this.change_serial_num = this.change_serial_num.bind(this);
     this.navbar = new navbar_t();
+    this.navbar.insert_navbar();
     this.change_to_adv_conf_tab = this.change_to_adv_conf_tab.bind(this);
     this.change_to_console_tab = this.change_to_console_tab.bind(this);
     this.insert_homepage = this.insert_homepage.bind(this);
@@ -41,7 +42,6 @@ export class home_tab_t {
     const text = await response.text();
     doc.innerHTML = text;
 
-    await this.navbar.insert_navbar();
     await this.navbar.change_active_tab('home-tab');
 
     const meas_table = new measurements_table_t(this.dev);
