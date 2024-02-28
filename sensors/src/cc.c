@@ -803,11 +803,65 @@ syntax_exit:
 }
 
 
+static command_response_t _cc_type_cb(char* args)
+{
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return COMMAND_RESP_ERR;
+    }
+    // <index> <A/V>
+    command_response_t ret = COMMAND_RESP_ERR;
+
+    char* p;
+    uint8_t index = strtoul(args, &p, 10);
+    p = skip_space(p);
+    if (!strlen(p))
+    {
+        /* Print all */
+        ret = COMMAND_RESP_OK;
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            log_out("CC%"PRIu8" Type: %c", i+1, _configs[i].type);
+        }
+    }
+    else if (index != 0 && index <= ADC_CC_COUNT && p != args)
+    {
+        /* Set index */
+        index--;
+
+        char new_type = *skip_space(p);
+        switch (new_type)
+        {
+            case CC_TYPE_V:
+                /* fall through */
+            case CC_TYPE_A:
+                _configs[index].type = new_type;
+                ret = COMMAND_RESP_OK;
+                break;
+            default:
+                break;
+        }
+        log_out("CC%"PRIu8" Type: %c", index+1, _configs[index].type);
+    }
+    else
+    {
+        log_out("Syntax: cc_type <channel> <V/A>");
+        log_out("e.g cc_type 3 100 50");
+    }
+    return ret;
+}
+
+
 struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cc",           "CC value",                 _cc_cb                         , false , NULL },
-                                       { "cc_cal",       "Calibrate the cc",         _cc_calibrate_cb               , false , NULL },
-                                       { "cc_mp",        "Set the CC midpoint",      _cc_mp_cb                      , false , NULL },
-                                       { "cc_gain",      "Set the max int and ext",  _cc_gain                       , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "cc"          , "CC value"                , _cc_cb                         , false , NULL },
+        { "cc_cal"      , "Calibrate the cc"        , _cc_calibrate_cb               , false , NULL },
+        { "cc_mp"       , "Set the CC midpoint"     , _cc_mp_cb                      , false , NULL },
+        { "cc_gain"     , "Set the max int and ext" , _cc_gain                       , false , NULL },
+        { "cc_type"     , "Set type of CT"          , _cc_type_cb                    , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
