@@ -5,6 +5,8 @@ import { osm_flash_api_t } from './flash.js';
 
 class config_gui_t {
   constructor() {
+    this.add_event_listeners = this.add_event_listeners.bind(this);
+    this.open_serial = this.open_serial.bind(this);
     this.add_event_listeners();
     this.server_check();
   }
@@ -27,8 +29,10 @@ class config_gui_t {
           console.log('USB device available.');
         });
 
-        navigator.serial.addEventListener('disconnect', () => {
+        this.port.addEventListener('disconnect', () => {
           console.log('USB device disconnect detected.');
+          this.port.close();
+          this.disconnect_modal();
         });
 
         this.dev = new binding_t(this.port, type);
@@ -49,6 +53,19 @@ class config_gui_t {
       });
   }
 
+  async disconnect_modal() {
+    this.dialog = document.getElementById('usb-disconnect-dialog');
+    this.confirm = document.getElementById('usb-disconnect-confirm')
+    this.dialog.showModal();
+    const controller = new AbortController();
+
+    this.confirm.addEventListener('click', async () => {
+      this.dialog.close();
+      controller.abort();
+      window.location.reload();
+    });
+  }
+
   async add_event_listeners() {
     document.getElementById('main-page-connect').addEventListener('click', this.open_serial);
     document.getElementById('main-page-websocket-connect').addEventListener('click', this.spin_fake_osm);
@@ -62,6 +79,7 @@ class config_gui_t {
       con.innerHTML = 'Connect';
     })
   }
+
 
   async spin_fake_osm() {
     await disable_interaction(true);
