@@ -163,7 +163,7 @@ export class binding_t {
     spl.forEach((s, i) => {
       if (s === '============{') {
         console.log('Start found');
-      } else if (s === '}============') {
+      } else if (s.includes('}============')) {
         console.log('End found');
       } else if (s.includes('DEBUG') || s.includes('ERROR')) {
         console.log('Ignoring debug/error msg.');

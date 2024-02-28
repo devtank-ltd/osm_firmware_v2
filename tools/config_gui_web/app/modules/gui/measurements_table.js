@@ -181,6 +181,14 @@ export class measurements_table_t {
 
   async change_uplink_time() {
     await disable_interaction(true);
+    let min_uplink;
+    const comms_type = await this.dev.comms_type();
+    if (comms_type.includes('LW')) {
+      min_uplink = 1;
+    }
+    else {
+      min_uplink = 0;
+    }
     const errordiv = document.getElementById('home-uplink-error-div');
     const msgdiv = document.getElementById('home-uplink-msg-div');
     errordiv.textContent = '';
@@ -193,11 +201,11 @@ export class measurements_table_t {
     let mins = uplink_input.value;
     if (mins > 999) {
       mins = 999
-      errordiv.textContent = 'Max uplink time is 999'
+      errordiv.textContent = 'Max uplink time is 999';
     }
-    if (mins < 0) {
+    if (mins < min_uplink) {
       mins = 1
-      errordiv.textContent = 'Uplink cannot be less than zero'
+      errordiv.textContent = `Uplink cannot be less than ${min_uplink}`;
     }
 
     this.dev.interval_mins = mins;
