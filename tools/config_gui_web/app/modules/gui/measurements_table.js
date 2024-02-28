@@ -3,14 +3,37 @@ import { disable_interaction } from './disable.js';
 export class measurements_table_t {
   constructor(dev) {
     this.dev = dev;
-    this.set_interval_or_samplec = this.set_interval_or_samplec.bind(this);
+    this.set_interval = this.set_interval.bind(this);
     this.insert_last_value = this.insert_last_value.bind(this);
     this.change_uplink_time = this.change_uplink_time.bind(this);
+    this.desc_map = {
+      "PM1"  : "Air Quality",
+      "PM4"  : "Air Quality",
+      "PM10" : "Air Quality",
+      "PM25" : "Air Quality",
+      "CC1"  : "Phase 1 Current",
+      "CC2"  : "Phase 2 Current",
+      "CC3"  : "Phase 3 Current",
+      "TMP2" : "One Wire Probe Temperature",
+      "TMP3" : "One Wire Probe Temperature",
+      "TMP5" : "Temperature (Particulate Sensor)",
+      "TEMP" : "Temperature",
+      "HUM2" : "Humidity (Particulate Sensor)",
+      "HUMI" : "Humidity",
+      "BAT"  : "Battery",
+      "CNT1" : "Pulsecount",
+      "CNT2" : "Pulsecount",
+      "LGHT" : "Light",
+      "SND"  : "Sound",
+      "IO01" : "Pulsecount",
+      "IO02" : "Pulsecount",
+    }
   }
 
   async create_measurements_table_gui() {
     await disable_interaction(true);
     const measurements = await this.dev.get_measurements();
+    measurements.splice(1, 2); /* Removes FW and CREV from measurements */
     const res = document.querySelector('div.measurements-table');
     const tbl = res.appendChild(document.createElement('table'));
     tbl.id = 'meas-table';
@@ -29,16 +52,22 @@ export class measurements_table_t {
         /* Insert headers */
         const row = tbl.tHead.insertRow();
         cell.forEach((c) => {
-          row.insertCell().textContent = c;
+          if (c !== 'Sample Count') {
+            row.insertCell().textContent = c;
+          }
         });
       } else {
         const r = tBody.insertRow();
         cell.forEach((j, index) => {
-          const entry = r.insertCell();
+          let entry;
+          if (index !== 2) {
+            entry = r.insertCell();
+          }
           if (index === 0) {
             entry.textContent = j;
+            entry.title = this.desc_map[j];
           }
-          if (index === 1 || index === 2) {
+          if (index === 1) {
             /* If entry is interval or sample count, user can edit the cell */
             let val;
             const num_input = document.createElement('input');
@@ -53,7 +82,7 @@ export class measurements_table_t {
 
             entry.appendChild(num_input);
             num_input.value = val;
-            entry.addEventListener('focusout', this.set_interval_or_samplec);
+            entry.addEventListener('focusout', this.set_interval);
           }
           if (index === 3) {
             const chk = document.createElement('input');
@@ -102,7 +131,7 @@ export class measurements_table_t {
     return Math.round(this.val / multiple) * multiple;
   }
 
-  async set_interval_or_samplec(e) {
+  async set_interval(e) {
     await disable_interaction(true);
     let interval_mins = await this.dev.interval_mins;
     if (interval_mins < 1 && interval_mins > 0) {
@@ -122,20 +151,16 @@ export class measurements_table_t {
     const type = table.rows[0].cells[cell_index].innerHTML;
 
     /* Example: interval CNT1 1 */
-    if (type.includes('Uplink')) {
-      const int_mins_converted = await this.get_minimum_interval(val);
-      val_col.value = int_mins_converted * interval_mins;
-      this.dev.enqueue_and_process(`interval ${meas} ${int_mins_converted}`);
-    } else {
-      val_col.value = val;
-      this.dev.enqueue_and_process(`samplecount ${meas} ${val}`);
-    }
+    const int_mins_converted = await this.get_minimum_interval(val);
+    val_col.value = int_mins_converted * interval_mins;
+    this.dev.enqueue_and_process(`interval ${meas} ${int_mins_converted}`);
+
     await disable_interaction(false);
   }
 
   async insert_last_value(e) {
     await disable_interaction(true);
-    const last_val_index = 3;
+    const last_val_index = 2;
     const checkbox = e.target;
     const table = checkbox.offsetParent.offsetParent;
     const row_index = e.srcElement.parentElement.parentNode.rowIndex;
