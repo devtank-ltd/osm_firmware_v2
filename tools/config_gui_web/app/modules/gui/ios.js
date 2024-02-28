@@ -34,7 +34,6 @@ export class io_t {
       const { pupd } = await m.groups;
       const io_p = io[1];
 
-      console.log(io, specials_avail, special_used);
       if (specials_avail) {
         this.indexs[io_p] = { specials_avail };
         this.indexs[io_p].avail_meas = [];

@@ -53,6 +53,10 @@ export class current_clamp_t {
     const phase_two_mp = await this.dev.get_cc_mp(2);
     const phase_three_mp = await this.dev.get_cc_mp(3);
 
+    const phase_one_type = await this.dev.get_cc_type(1);
+    const phase_two_type = await this.dev.get_cc_type(2);
+    const phase_three_type = await this.dev.get_cc_type(3);
+
     const title = this.add_cc_table.tHead.insertRow();
     const title_cell = title.insertCell();
     title_cell.textContent = 'Current Clamp Configuration';
@@ -60,8 +64,8 @@ export class current_clamp_t {
 
     const headers = this.add_cc_table.tHead.insertRow();
     headers.insertCell().textContent = 'Measurement';
-    headers.insertCell().textContent = 'Primary (A)';
-    headers.insertCell().textContent = 'Secondary (mV)';
+    headers.insertCell().textContent = 'Primary';
+    headers.insertCell().textContent = 'Secondary';
     headers.insertCell().textContent = 'Midpoint';
 
     const top_level = [];
@@ -105,7 +109,18 @@ export class current_clamp_t {
       }
     });
 
-    top_level.forEach((i) => {
+    top_level.forEach(async (i, index) => {
+      const phase = index + 1;
+      let cc_type;
+      if (phase === 1) {
+        cc_type = phase_one_type;
+      }
+      else if (phase === 2) {
+        cc_type = phase_two_type;
+      }
+      else if (phase === 3) {
+        cc_type = phase_three_type;
+      }
       const cc_row = tbody.insertRow();
       const [meas, ext, int, mp] = i;
 
@@ -136,23 +151,41 @@ export class current_clamp_t {
           break;
         }
       }
+      ext_cell_sel.style.float = 'left';
       ext_cell.appendChild(ext_cell_sel);
+      const primdiv = document.createElement('div');
+      primdiv.textContent = 'A';
+      ext_cell.appendChild(primdiv);
 
       const int_cell = cc_row.insertCell();
-
       const int_cell_sel = document.createElement('select');
-      const opt5 = document.createElement('option');
-      opt5.text = 25;
-      const opt6 = document.createElement('option');
-      opt6.text = 50;
-      const opt7 = document.createElement('option');
-      opt7.text = 75;
-      const opt8 = document.createElement('option');
-      opt8.text = 100;
-      int_cell_sel.add(opt5);
-      int_cell_sel.add(opt6);
-      int_cell_sel.add(opt7);
-      int_cell_sel.add(opt8);
+      let unit;
+
+      if (cc_type === 'A') {
+        const opt5 = document.createElement('option');
+        opt5.text = 25;
+        const opt6 = document.createElement('option');
+        opt6.text = 50;
+        const opt7 = document.createElement('option');
+        opt7.text = 75;
+        const opt8 = document.createElement('option');
+        opt8.text = 100;
+        int_cell_sel.add(opt5);
+        int_cell_sel.add(opt6);
+        int_cell_sel.add(opt7);
+        int_cell_sel.add(opt8);
+        unit = 'mA';
+      }
+      else {
+        const opt5 = document.createElement('option');
+        opt5.text = 333;
+        const opt6 = document.createElement('option');
+        opt6.text = 1000;
+        int_cell_sel.add(opt5);
+        int_cell_sel.add(opt6);
+        unit = 'mV'
+      }
+
       int_cell_sel.addEventListener('change', this.set_cc_interior);
 
       for (let k = 0; k < int_cell_sel.options.length; k += 1) {
@@ -162,7 +195,11 @@ export class current_clamp_t {
           break;
         }
       }
+      int_cell_sel.style.float = 'left';
       int_cell.appendChild(int_cell_sel);
+      const unitdiv = document.createElement('div');
+      unitdiv.textContent = unit;
+      int_cell.appendChild(unitdiv);
 
       const mp_cell = cc_row.insertCell();
       mp_cell.textContent = mp;

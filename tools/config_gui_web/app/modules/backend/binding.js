@@ -307,6 +307,16 @@ export class binding_t {
     await this.do_cmd(`cc_mp ${value} ${phase}`);
   }
 
+  async get_cc_type(phase) {
+    this.types = await this.do_cmd('cc_type');
+
+    const regex = new RegExp(`CC${phase}\\sType:\\s([AV])`, 'g');
+    let match;
+    while ((match = regex.exec(this.types)) !== null) {
+      return match[1];
+    }
+  }
+
   async get_cc_gain() {
     const gain = await this.do_cmd_multi('cc_gain');
     return gain;
