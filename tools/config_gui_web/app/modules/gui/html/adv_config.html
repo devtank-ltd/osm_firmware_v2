@@ -3,35 +3,57 @@
         <div class="modbus-tab-widgets">
             <div class="modbus-template-table-top-level">
                 <div id="modbus-template-config" class="modbus-template-config"></div>
-                <button id="modbus-template-apply-template-btn">Write Template to OSM</button>
-                <button id="modbus-template-import-btn">Import Template</button>
+                <button id="modbus-template-apply-template-btn"
+                        title="Add the device and registers from the selected template to the OSM.">
+                        Write Template to OSM
+                </button>
+                <button id="modbus-template-import-btn"
+                        title="Import a JSON Modbus template, making it available to be written to the OSM. (Templates can be created below in the Add New Modbus Template table.)">
+                        Import Template
+                </button>
             </div>
 
-            <div class="modbus-current-config-top-level">
+            <div title="The devices and registers that are currently saved on the OSM." class="modbus-current-config-top-level">
                 <div id="modbus-current-config" class="modbus-current-config"></div>
-                <button disabled='true' id="modbus-current-config-remove-reg">Remove Register</button>
-                <button disabled='true' id="modbus-current-config-remove-dev">Remove Device</button>
+                <button title="Remove register associated with selected checkbox."
+                        id="modbus-current-config-remove-reg">Remove Register
+                </button>
+                <button title="Remove all registers and device associated with selected checkbox."
+                        id="modbus-current-config-remove-dev">Remove Device
+                </button>
             </div>
             <div class="modbus-add-new-template-placeholder">
                 <div id="modbus-add-new-template-div" class="modbus-add-new-template-div"></div>
-                <button id="modbus-add-new-restart" class="modbus-add-new-restart">Restart</button>
-                <button id="modbus-add-new-export" class="modbus-add-new-export">Export</button>
+                <button title="Deletes all the current contents in the fields."
+                        id="modbus-add-new-restart" class="modbus-add-new-restart">Restart</button>
+                <button title="Exports the template as a JSON file which can be imported into the device templates."
+                        id="modbus-add-new-export" class="modbus-add-new-export">Export</button>
             </div>
 
         </div>
 
-        <div class="current-clamp-overview" id="current-clamp-overview">
+        <div title="Configure the primary and secondary columns to match the configuration of your current clamps."
+            class="current-clamp-overview" id="current-clamp-overview">
             <div class="current-clamp-div" id="current-clamp-div"></div>
-            <button id="current-clamp-cal-btn">Calibrate ADCs</button>
+            <button id="current-clamp-cal-btn"
+                    title="Calibrate the midpoints for each current clamp phase.">Calibrate ADCs
+            </button>
         </div>
 
-        <div class="io-div" id="io-div"></div>
+        <div title="These measurements use an IO when enabled, only two slots can be used at a time and each measurement is tied to one of these slots. You may find that enabling one measurement disables another." class="io-div" id="io-div"></div>
 
         <dialog id="cc-cal-dialog">
             <form method="dialog">
                 Ensure there is no live current going through the OSM.
             <button id="cc-modal-confirm" type="submit">Confirm</button>
             <button id="cc-modal-cancel" type="submit">Cancel</button>
+            </form>
+        </dialog>
+
+        <dialog id="modbus-dialog">
+            <form method="dialog">
+                <div id="modbus-dialog-msg"></div>
+            <button id="modbus-dialog-confirm" type="submit">Ok</button>
             </form>
         </dialog>
 

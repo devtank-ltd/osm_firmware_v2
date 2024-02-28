@@ -77,10 +77,6 @@ export class modbus_t {
         const chkcell = r.insertCell();
         chkcell.appendChild(chk);
         this.checkboxes.push(chk);
-        chk.addEventListener('click', () => {
-          this.remove_reg_btn.disabled = false;
-          this.remove_dev_btn.disabled = false;
-        });
       });
     });
     this.remove_reg_btn.addEventListener('click', this.remove_modbus_register);
@@ -91,15 +87,22 @@ export class modbus_t {
   async remove_modbus_register() {
     await disable_interaction(true);
     this.dev_to_remove = '';
+    let found = false;
     this.list_of_current_devs = [];
     for (let i = 0; i < this.checkboxes.length; i += 1) {
       const chkbox = this.checkboxes[i];
       const is_checked = chkbox.checked;
       if (is_checked === true) {
+        found = true;
         const reg = chkbox.parentNode.parentNode.cells[1].textContent;
         this.dev_to_remove = chkbox.parentNode.parentNode.cells[0].textContent;
         await this.dev.remove_modbus_reg(reg);
       }
+    }
+    if (!found) {
+      this.modbus_modal('Select a register.');
+      await disable_interaction(false);
+      return;
     }
     this.mb_current_config_div.innerHTML = '';
     await this.current_modbus_config_table();
@@ -120,13 +123,21 @@ export class modbus_t {
 
   async remove_modbus_device() {
     await disable_interaction(true);
+    let found = false;
     for (let i = 0; i < this.checkboxes.length; i += 1) {
       const chkbox = this.checkboxes[i];
       const is_checked = chkbox.checked;
       if (is_checked === true) {
+        found = true;
         const dev = chkbox.parentNode.parentNode.cells[0].textContent;
         await this.dev.remove_modbus_dev(dev);
       }
+    }
+    console.log(found);
+    if (!found) {
+      this.modbus_modal('Select a register.');
+      await disable_interaction(false);
+      return;
     }
     this.mb_current_config_div.innerHTML = '';
     await this.current_modbus_config_table();
@@ -245,28 +256,33 @@ export class modbus_t {
     }
   }
 
-  async apply_template() {
-    await disable_interaction(true);
-    await this.dev.mb_dev_add(
-      this.template.unit_id,
-      this.template.byteorder,
-      this.template.wordorder,
-      this.template.name,
-    );
-
-    for (const [key, value] of Object.entries(this.template.registers)) {
-      await this.dev.mb_reg_add(
+  async apply_template(e) {
+    if (this.template) {
+      await disable_interaction(true);
+      await this.dev.mb_dev_add(
         this.template.unit_id,
-        value.hex,
-        value.function,
-        value.datatype,
-        key,
+        this.template.byteorder,
+        this.template.wordorder,
+        this.template.name,
       );
-    }
 
-    this.mb_current_config_div.innerHTML = '';
-    await this.current_modbus_config_table();
-    await disable_interaction(false);
+      for (const [key, value] of Object.entries(this.template.registers)) {
+        await this.dev.mb_reg_add(
+          this.template.unit_id,
+          value.hex,
+          value.function,
+          value.datatype,
+          key,
+        );
+      }
+
+      this.mb_current_config_div.innerHTML = '';
+      await this.current_modbus_config_table();
+      await disable_interaction(false);
+    }
+    else {
+      this.modbus_modal('Select a template.');
+    }
   }
 
   async add_new_template() {
@@ -471,7 +487,11 @@ export class modbus_t {
       await this.download_template(json_data, `${name}.json`, 'application/json');
       await this.import_template(json_data);
     }
-    await this.add_new_template();
+    else {
+      this.modbus_modal('Incomplete template.')
+      return;
+    }
+    await this.reload_template_table();
   }
 
   async verify_template(data) {
@@ -479,6 +499,14 @@ export class modbus_t {
     for (const [key, value] of Object.entries(data)) {
       if (!value) {
         return this.bool;
+      }
+      if (key === 'registers') {
+        for (const [regkey, regvalue] of Object.entries(value)) {
+          console.log(regkey, regvalue);
+          if (!regkey || !regvalue.hex || !regvalue.datatype || !regvalue.function) {
+            return this.bool;
+          }
+        }
       }
     }
     this.bool = true;
@@ -515,12 +543,32 @@ export class modbus_t {
 
   async import_template(content) {
     this.template_json = await JSON.parse(content);
-    this.templates.push(this.template_json);
+    const ver = await this.verify_template(this.template_json);
+    if (ver) {
+      this.templates.push(this.template_json);
 
-    this.import_row = this.template_tbody.insertRow();
-    const cell = this.import_row.insertCell();
-    cell.textContent = this.template_json.desc;
-    this.regfield.rowSpan = this.templates.length;
-    cell.addEventListener('click', this.select_template);
+      this.import_row = this.template_tbody.insertRow();
+      const cell = this.import_row.insertCell();
+      cell.textContent = this.template_json.desc;
+      this.regfield.rowSpan = this.templates.length;
+      cell.addEventListener('click', this.select_template);
+    }
+    else {
+      this.modbus_modal('Invalid JSON file.')
+    }
+  }
+
+  async modbus_modal(msg) {
+    this.dialog = document.getElementById('modbus-dialog');
+    this.confirm = document.getElementById('modbus-dialog-confirm');
+    this.msg = document.getElementById('modbus-dialog-msg');
+    this.msg.textContent = msg;
+    this.dialog.showModal();
+    const controller = new AbortController();
+
+    this.confirm.addEventListener('click', async () => {
+      this.dialog.close();
+      controller.abort();
+    });
   }
 }

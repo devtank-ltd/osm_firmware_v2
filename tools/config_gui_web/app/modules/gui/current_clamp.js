@@ -31,7 +31,7 @@ export class current_clamp_t {
     this.confirm.addEventListener('click', async () => {
       console.log('Calibrating CC');
       await this.dev.cc_cal();
-      this.create_cc_table();
+      await this.create_cc_table();
     });
     this.cancel.addEventListener('click', () => {
       this.dialog.close();

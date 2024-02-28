@@ -124,4 +124,5 @@ export class home_tab_t {
     document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
     document.getElementById('adv-conf-tab').addEventListener('click', this.change_to_adv_conf_tab);
   }
+
 }
