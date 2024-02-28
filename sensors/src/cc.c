@@ -801,7 +801,7 @@ static command_response_t _cc_gain(char* args)
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
             log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
-            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[index].type);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[i].type);
         }
         return COMMAND_RESP_ERR;
     }
@@ -841,7 +841,8 @@ static command_response_t _cc_type_cb(char* args)
     // <index> <A/V>
     command_response_t ret = COMMAND_RESP_ERR;
 
-    char* p;
+    char* p, * np;
+    np = skip_space(args);
     uint8_t index = strtoul(args, &p, 10);
     p = skip_space(p);
     if (!strlen(p))
@@ -853,7 +854,7 @@ static command_response_t _cc_type_cb(char* args)
             log_out("CC%"PRIu8" Type: %c", i+1, _configs[i].type);
         }
     }
-    else if (index != 0 && index <= ADC_CC_COUNT && p != args)
+    else if (index != 0 && index <= ADC_CC_COUNT && p != np)
     {
         /* Set index */
         index--;
