@@ -38,7 +38,7 @@ static uint32_t             _cc_collection_time                 = CC_DEFAULT_COL
 static cc_config_t*         _configs = NULL;
 
 
-static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor)
+static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor, bool is_iv_ct)
 {
     /**
      First must calculate the peak voltage
@@ -47,12 +47,23 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
      Next convert peak voltage to RMS. For DC this is "=" to it. Kind of.
      For AC it can approximated by V_RMS = 1/sqrt(2) * V_peak
 
-     Now converting from a voltage to a current we use our trusty
-     V = I * R      - >     I = V / R
-     The resistor used is 22 Ohms.
+     Unfortunately there are two types of CT clamp, there is Current to
+     Current clamps (i.e. 100A on the main line is 5A on the clamp)
+     which require a load resistor to convert to a voltage to be
+     measured by the ADC, or there are Current to Voltage clamps (i.e.
+     100A on the main line is 1V on the clamp), which basically have the
+     load resistor on the clamp, and so the gain value isn't truely a
+     gain as it isn't unitless, but actually Ohm (or 1 / Ohm depending
+     on your perspective).
 
-     The current is scaled by the current clamp to the effect of
-     I_t = 2000 * I.
+     If we are using a Current to Voltage transformer, we will have to
+     use Ohm's law ourself:
+         Now converting from a voltage to a current we use our trusty
+         V = I * R      - >     I = V / R
+         The resistor used is 22 Ohms.
+
+     The current is scaled by the current clamp gain to the effect of
+     I_t = gain * I.
 
      To retain precision, multiplications should be done first (after casting to
      a uint32_t and then divisions after.
@@ -82,7 +93,10 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
         return false;
     }
     inter_value *= scale_factor;
-    inter_value /= (CC_RESISTOR_OHM * 1000);
+    if (is_iv_ct)
+    {
+        inter_value /= (CC_RESISTOR_OHM * 1000);
+    }
     *cc_mA = inter_value;
     return true;
 }
@@ -346,6 +360,19 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 
     uint32_t adcs_rms;
     uint32_t midpoint = _configs[index].midpoint;
+    bool is_iv_ct;
+    switch (_configs[index].type)
+    {
+        case CC_TYPE_A:
+            is_iv_ct = false;
+            break;
+        case CC_TYPE_V:
+            is_iv_ct = true;
+            break;
+        default:
+            adc_debug("ADC type is invalid '%c'", _configs[index].type);
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     unsigned cc_len;
 
@@ -381,7 +408,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mV;
-    if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
+    if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor, is_iv_ct))
     {
         adc_debug("Failed to get current clamp");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
