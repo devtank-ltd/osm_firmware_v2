@@ -321,8 +321,8 @@ export class io_t {
       if (this.checkboxes.CNT2) {
         this.checkboxes.CNT2.checked = false;
       }
-      if (this.checkboxes.IO02) {
-        this.checkboxes.IO02.checked = false;
+      if (this.checkboxes.TMP3) {
+        this.checkboxes.TMP3.checked = false;
       }
     }
     if (this.meas === 'IO04' && this.checked === true) {
@@ -337,8 +337,8 @@ export class io_t {
       if (this.checkboxes.CNT2) {
         this.checkboxes.CNT2.checked = false;
       }
-      if (this.checkboxes.IO02) {
-        this.checkboxes.IO02.checked = false;
+      if (this.checkboxes.TMP3) {
+        this.checkboxes.TMP3.checked = false;
       }
     }
     await disable_interaction(false);
