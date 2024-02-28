@@ -4,20 +4,23 @@
             <div class="measurements-table"></div>
 
             <div class="home-edit-uplink-field" id="home-change-uplink">
-                <h3>Change Uplink Time</h3>
+                <center><div class="home-uplink-error-div" id="home-uplink-error-div"></div></center>
+                <center><h3>Set Minimum Uplink Time</h3></center>
                 <div>
-                    <input autocomplete="off"
+                    <center><input autocomplete="off"
                         type="number"
                         min="0"
                         id="home-uplink-input"
                         placeholder="Enter a number of minutes">
-                    </input>
+                    </input></center>
                 </div>
                 <center><input class="home-uplink-submit" id="home-uplink-submit" type="submit"></center>
+                <center><div class="home-uplink-msg-div" id="home-uplink-msg-div"></div></center>
             </div>
 
             <div class="lora-config-div">
               <div class="lora-config-table" style="display: none"></div>
+              <center><div class="lora-msg-div" id="lora-msg-div"></div></center>
               <div id="lora-btns" class="buttons" style="display: none">
                 <button id="lora-gen-dev-eui">Generate LoRa Dev EUI</button>
                 <button id="lora-gen-app-key">Generate LoRa App Key</button>
@@ -27,6 +30,7 @@
 
             <div class="wifi-config-div">
               <div class="wifi-config-table"  style="display: none"></div>
+              <center><div class="wifi-msg-div" id="wifi-msg-div"></div></center>
               <div id="wifi-btns" class="buttons" style="display: none">
                   <button id="wifi-send-config">Send</button>
               </div>
@@ -34,6 +38,7 @@
 
             <div class="home-serial-firmware-config-div">
                 <input class="serial-num-input" id="serial-num-input" placeholder="Serial Number">
+                <div class="serial-num-msg-div" id="serial-num-msg-div"></div>
                 <p id="home-firmware-version">Failed to display firmware version</p>
             </div>
 

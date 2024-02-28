@@ -104,7 +104,9 @@ export class home_tab_t {
   }
 
   async save_settings() {
+    const savemsg = document.getElementById('global-save-config-msg');
     this.dev.save();
+    savemsg.textContent = 'Saved'
   }
 
   async change_to_adv_conf_tab() {

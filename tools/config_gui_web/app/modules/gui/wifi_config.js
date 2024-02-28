@@ -91,6 +91,8 @@ export class wifi_config_t {
 
   async write_config() {
     await disable_interaction(true);
+    const wifimsg = document.getElementById('wifi-msg-div');
+    wifimsg.textContent = '';
     const ssid = document.getElementById('wifi-ssid-value').innerHTML;
     const wifi_pwd = document.getElementById('wifi-pwd-value').innerHTML;
     const mqtt_addr = document.getElementById('wifi-mqtt-addr-value').innerHTML;
@@ -104,7 +106,9 @@ export class wifi_config_t {
     this.comms.mqtt_user = mqtt_user;
     this.comms.mqtt_pwd = mqtt_pwd;
     this.comms.mqtt_port = mqtt_port;
+    this.comms.mqtt_ca = 'a';   /* Current firmware doesn't allow CA to be an empty string */
 
+    wifimsg.textContent = 'Configuration sent.'
     await disable_interaction(false);
   }
 }

@@ -103,6 +103,10 @@ export class measurements_table_t {
   }
 
   async get_minimum_interval(val) {
+    const errordiv = document.getElementById('home-uplink-error-div');
+    const msgdiv = document.getElementById('home-uplink-msg-div');
+    errordiv.textContent = '';
+    msgdiv.textContent = '';
     const interval_mins = await this.dev.interval_mins;
     let interval_seconds = null;
     if (interval_mins < 1 && interval_mins > 0) {
@@ -111,11 +115,13 @@ export class measurements_table_t {
     let m;
     const multiple = 5;
     if (parseFloat(val) < interval_mins && parseFloat(val) > 0) {
+      errordiv.textContent = `Rounded value entered to the minimum uplink (${interval_mins}) `
       m = interval_mins;
     } else {
       m = val;
     }
     if (m % 5 !== 0) {
+      errordiv.textContent = `Rounded value entered to nearest multiple of the minimum uplink (${interval_mins})`
       m = await this.round_to_nearest(m, multiple);
     }
     let int_mins_converted = m / interval_mins;
@@ -133,6 +139,7 @@ export class measurements_table_t {
 
   async set_interval(e) {
     await disable_interaction(true);
+    const errordiv = document.getElementById('home-uplink-error-div');
     let interval_mins = await this.dev.interval_mins;
     if (interval_mins < 1 && interval_mins > 0) {
       interval_mins *= 60;
@@ -145,16 +152,16 @@ export class measurements_table_t {
     let val = val_col.value;
     if (val > 999) {
       val = 999;
+      errordiv.textContent = 'Uplink time cannot be over 999.'
     } else if (val < 0) {
       val = 0;
+      errordiv.textContent = 'Uplink time cannot be less than zero.'
     }
-    const type = table.rows[0].cells[cell_index].innerHTML;
 
     /* Example: interval CNT1 1 */
     const int_mins_converted = await this.get_minimum_interval(val);
     val_col.value = int_mins_converted * interval_mins;
     this.dev.enqueue_and_process(`interval ${meas} ${int_mins_converted}`);
-
     await disable_interaction(false);
   }
 
@@ -174,12 +181,25 @@ export class measurements_table_t {
 
   async change_uplink_time() {
     await disable_interaction(true);
+    const errordiv = document.getElementById('home-uplink-error-div');
+    const msgdiv = document.getElementById('home-uplink-msg-div');
+    errordiv.textContent = '';
+    msgdiv.textContent = '';
     const table = document.getElementById('meas-table');
     const imins_header = table.rows[0].cells[1];
     const interval_mins = await this.dev.interval_mins;
 
     const uplink_input = document.getElementById('home-uplink-input');
-    const mins = uplink_input.value;
+    let mins = uplink_input.value;
+    if (mins > 999) {
+      mins = 999
+      errordiv.textContent = 'Max uplink time is 999'
+    }
+    if (mins < 0) {
+      mins = 1
+      errordiv.textContent = 'Uplink cannot be less than zero'
+    }
+
     this.dev.interval_mins = mins;
     let seconds = null;
     if (mins < 1 && mins > 0) {
@@ -187,9 +207,11 @@ export class measurements_table_t {
       this.is_seconds = true;
       if (seconds != null) {
         imins_header.innerHTML = 'Uplink Time (Seconds)';
+        msgdiv.textContent = `Minimum uplink time set to ${seconds} seconds`;
       }
     } else {
       imins_header.innerHTML = 'Uplink Time (Mins)';
+      msgdiv.textContent = `Minimum uplink time set to ${mins} minutes`;
     }
     uplink_input.value = '';
     for (let i = 1; i < table.rows.length; i += 1) {

@@ -130,6 +130,12 @@ td {
   float: right;
 }
 
+.global-save-config-msg {
+  float: left;
+  padding: 16px;
+  color: var(--white);
+}
+
 .global-load-save-config-buttons button {
   background-color: var(--white);
   color: var(--black);
@@ -181,6 +187,9 @@ td {
   grid-row-end: 4;
 }
 
+.home-uplink-error-div {
+  color: red;
+}
 
 .serial-num-input {
   border-style: solid;
