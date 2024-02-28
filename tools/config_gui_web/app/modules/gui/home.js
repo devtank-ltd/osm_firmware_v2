@@ -2,7 +2,7 @@ import { navbar_t } from './navbar.js';
 import { measurements_table_t } from './measurements_table.js';
 import { lora_config_t } from './lora_config.js';
 import { load_configuration_t } from './load_configuration.js';
-import { save_configuration_t } from './save_configuration.js';
+import { save_configuration_t } from './download_config.js';
 import { lora_comms_t, wifi_comms_t } from '../backend/binding.js';
 import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';

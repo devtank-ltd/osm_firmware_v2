@@ -546,3 +546,46 @@ td {
   grid-row-end: 3;
 }
 
+/* Icons */
+
+.icon-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.icon-row a {
+      width: calc(50% - 20px); /* Adjust width to occupy half of the container minus margin */
+}
+
+a {
+  text-decoration: none;
+  color: #333;
+  display: inline-block;
+  text-align: center;
+}
+
+svg {
+  vertical-align: middle;
+  fill: #52b374;
+  width: 40px;
+  height: 40px;
+}
+
+a:hover {
+  color: black;
+}
+
+a:hover svg {
+  fill: var(--osmlight);
+  transform: scale(1.2);
+}
+
+/* Adjustments for small screens */
+@media screen and (max-width: 600px) {
+  .icon-row a {
+    width: 100%; /* Occupy full width on smaller screens */
+    margin-right: 0;
+  }
+}
