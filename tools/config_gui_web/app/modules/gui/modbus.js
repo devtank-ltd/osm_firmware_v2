@@ -58,13 +58,13 @@ export class modbus_t {
     row.insertCell().textContent = 'Type';
 
     this.mb_bus.devices.forEach((cell, i) => {
-      cell.registers.forEach((j, index) => {
+      cell.registers.forEach(async (j, _index) => {
         const r = tbody.insertRow();
 
         r.insertCell().textContent = cell.name;
         r.insertCell().textContent = j.name;
         r.insertCell().textContent = j.hex;
-        const type = this.function_code_check(j.func);
+        const type = await this.function_code_check(j.func);
         r.insertCell().textContent = type;
         const chk = document.createElement('input');
         chk.type = 'checkbox';
@@ -275,11 +275,18 @@ export class modbus_t {
       );
 
       for (const [key, value] of Object.entries(this.template.registers)) {
+        let datat;
+        if (value.datatype === 'Float') {
+          datat = 'F'
+        }
+        else {
+          datat = value.datatype;
+        }
         await this.dev.mb_reg_add(
           this.template.unit_id,
           value.hex,
           value.function,
-          value.datatype,
+          datat,
           key,
         );
       }
