@@ -98,36 +98,48 @@ export class measurements_table_t {
   }
 
   async add_uplink_listener() {
-    const uplink_submit = document.getElementById('home-uplink-submit');
-    uplink_submit.onclick = this.change_uplink_time;
+    document.getElementById('home-uplink-submit').addEventListener('click', this.change_uplink_time);
+    document.getElementById('home-uplink-input').addEventListener('keyup', this.change_uplink_time);
   }
+
+  async get_lowest_multiple(number) {
+    let multiples = [];
+    for (let i = 1; i <= number; i++) {
+        if (number % i === 0) {
+            multiples.push(i);
+        }
+    }
+    if (multiples.length >= 2) {
+      return multiples[1];
+    } else {
+        return 1;
+    }
+}
 
   async get_minimum_interval(val) {
     const errordiv = document.getElementById('home-uplink-error-div');
     const msgdiv = document.getElementById('home-uplink-msg-div');
     errordiv.textContent = '';
     msgdiv.textContent = '';
-    const interval_mins = await this.dev.interval_mins;
-    let interval_seconds = null;
-    if (interval_mins < 1 && interval_mins > 0) {
-      interval_seconds = interval_mins * 60;
+    let duration = await this.dev.interval_mins;
+    if (duration < 1 && duration > 0) {
+      duration *= 60;
     }
-    let m;
-    const multiple = 5;
-    if (parseFloat(val) < interval_mins && parseFloat(val) > 0) {
-      errordiv.textContent = `Rounded value entered to the minimum uplink (${interval_mins}) `
-      m = interval_mins;
+    let minimum_val;
+    let multiple;
+
+    multiple = await this.get_lowest_multiple(duration);
+    if (parseFloat(val) < duration && parseFloat(val) > 0) {
+      errordiv.textContent = `Rounded value entered to the minimum uplink (${duration})`;
+      minimum_val = duration;
     } else {
-      m = val;
+      minimum_val = val;
     }
-    if (m % 5 !== 0) {
-      errordiv.textContent = `Rounded value entered to nearest multiple of the minimum uplink (${interval_mins})`
-      m = await this.round_to_nearest(m, multiple);
+    if (minimum_val % multiple !== 0) {
+      errordiv.textContent = `Rounded value entered to nearest multiple of the minimum uplink (${duration})`;
+      minimum_val = await this.round_to_nearest(minimum_val, multiple);
     }
-    let int_mins_converted = m / interval_mins;
-    if (interval_seconds != null) {
-      int_mins_converted = m / interval_mins / 60;
-    }
+    let int_mins_converted = minimum_val / duration;
     int_mins_converted = Math.round(int_mins_converted);
     return int_mins_converted;
   }
@@ -179,63 +191,66 @@ export class measurements_table_t {
     await disable_interaction(false);
   }
 
-  async change_uplink_time() {
-    await disable_interaction(true);
-    let min_uplink;
-    const comms_type = await this.dev.comms_type();
-    if (comms_type.includes('LW')) {
-      min_uplink = 1;
-    }
-    else {
-      min_uplink = 0;
-    }
-    const errordiv = document.getElementById('home-uplink-error-div');
-    const msgdiv = document.getElementById('home-uplink-msg-div');
-    errordiv.textContent = '';
-    msgdiv.textContent = '';
-    const table = document.getElementById('meas-table');
-    const imins_header = table.rows[0].cells[1];
-    const interval_mins = await this.dev.interval_mins;
-
-    const uplink_input = document.getElementById('home-uplink-input');
-    let mins = uplink_input.value;
-    if (mins > 999) {
-      mins = 999
-      errordiv.textContent = 'Max uplink time is 999';
-    }
-    if (mins < min_uplink) {
-      mins = 1
-      errordiv.textContent = `Uplink cannot be less than ${min_uplink}`;
-    }
-
-    this.dev.interval_mins = mins;
-    let seconds = null;
-    if (mins < 1 && mins > 0) {
-      seconds = mins * 60;
-      this.is_seconds = true;
-      if (seconds != null) {
-        imins_header.innerHTML = 'Uplink Time (Seconds)';
-        msgdiv.textContent = `Minimum uplink time set to ${seconds} seconds`;
+  async change_uplink_time(e) {
+    if (e.key === 'Enter' || e.pointerType === 'mouse' || e.type === 'click') {
+      await disable_interaction(true);
+      let min_uplink = 0;
+      const comms_type = await this.dev.comms_type();
+      if (comms_type.includes('LW')) {
+        min_uplink = 1;
       }
-    } else {
-      imins_header.innerHTML = 'Uplink Time (Mins)';
-      msgdiv.textContent = `Minimum uplink time set to ${mins} minutes`;
-    }
-    uplink_input.value = '';
-    for (let i = 1; i < table.rows.length; i += 1) {
-      const interval_val = table.rows[i].cells[1].childNodes[0].value;
-      const interval_cell = table.rows[i].cells[1].childNodes[0];
-      if (seconds != null) {
-        interval_cell.value = ((interval_val * mins) / interval_mins) * 60;
-      } else if (this.is_seconds === true) {
-        interval_cell.value = ((interval_val * mins) / interval_mins) / 60;
+      else {
+        min_uplink = 0;
+      }
+
+      const errordiv = document.getElementById('home-uplink-error-div');
+      const msgdiv = document.getElementById('home-uplink-msg-div');
+      errordiv.textContent = '';
+      msgdiv.textContent = '';
+      const table = document.getElementById('meas-table');
+      const imins_header = table.rows[0].cells[1];
+      const interval_mins = await this.dev.interval_mins;
+
+      const uplink_input = document.getElementById('home-uplink-input');
+      let mins = uplink_input.value;
+      if (mins > 999) {
+        mins = 999
+        errordiv.textContent = 'Max uplink time is 999';
+      }
+      if (mins < min_uplink) {
+        mins = 1
+        errordiv.textContent = `Uplink cannot be less than ${min_uplink}`;
+      }
+
+      this.dev.interval_mins = mins;
+      let seconds = null;
+      if (mins < 1 && mins > 0) {
+        seconds = mins * 60;
+        this.is_seconds = true;
+        if (seconds != null) {
+          imins_header.innerHTML = 'Uplink Time (Seconds)';
+          msgdiv.textContent = `Minimum uplink time set to ${seconds} seconds`;
+        }
       } else {
-        interval_cell.value = ((interval_val * mins) / interval_mins);
+        imins_header.innerHTML = 'Uplink Time (Mins)';
+        msgdiv.textContent = `Minimum uplink time set to ${mins} minutes`;
       }
+      uplink_input.value = '';
+      for (let i = 1; i < table.rows.length; i += 1) {
+        const interval_val = table.rows[i].cells[1].childNodes[0].value;
+        const interval_cell = table.rows[i].cells[1].childNodes[0];
+        if (seconds != null) {
+          interval_cell.value = ((interval_val * mins) / interval_mins) * 60;
+        } else if (this.is_seconds === true) {
+          interval_cell.value = ((interval_val * mins) / interval_mins) / 60;
+        } else {
+          interval_cell.value = ((interval_val * mins) / interval_mins);
+        }
+      }
+      if (seconds === null) {
+        this.is_seconds = false;
+      }
+      await disable_interaction(false);
     }
-    if (seconds === null) {
-      this.is_seconds = false;
-    }
-    await disable_interaction(false);
   }
 }
