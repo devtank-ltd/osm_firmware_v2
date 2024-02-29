@@ -15,6 +15,7 @@ export class modbus_t {
     this.import_template_dialog = this.import_template_dialog.bind(this);
     this.load_json_templates = this.load_json_templates.bind(this);
     this.reload_template_table = this.reload_template_table.bind(this);
+    this.convert_hex_addr = this.convert_hex_addr.bind(this);
   }
 
   async open_modbus() {
@@ -63,14 +64,7 @@ export class modbus_t {
         r.insertCell().textContent = cell.name;
         r.insertCell().textContent = j.name;
         r.insertCell().textContent = j.hex;
-        let type = '';
-        if (j.func === 3) {
-          type = 'Holding Register';
-        } else if (j.func === 4) {
-          type = 'Input Register';
-        } else {
-          type = j.func;
-        }
+        const type = this.function_code_check(j.func);
         r.insertCell().textContent = type;
         const chk = document.createElement('input');
         chk.type = 'checkbox';
@@ -82,6 +76,28 @@ export class modbus_t {
     this.remove_reg_btn.addEventListener('click', this.remove_modbus_register);
     this.remove_dev_btn.addEventListener('click', this.remove_modbus_device);
     await disable_interaction(false);
+  }
+
+  async function_code_check(func) {
+    let type;
+    switch (func) {
+      case 1:
+        type = 'Coil';
+        break;
+      case 2:
+        type = 'Discrete Input';
+        break;
+      case 3:
+        type = 'Holding Register';
+        break;
+      case 4:
+        type = 'Input Register';
+        break;
+      default:
+        type = 'Unknown';
+        break;
+    }
+    return type;
   }
 
   async remove_modbus_register() {
@@ -133,7 +149,6 @@ export class modbus_t {
         await this.dev.remove_modbus_dev(dev);
       }
     }
-    console.log(found);
     if (!found) {
       this.modbus_modal('Select a register.');
       await disable_interaction(false);
@@ -234,14 +249,7 @@ export class modbus_t {
     reg_headers_row.insertCell().textContent = 'Datatype';
 
     for (const [key, value] of Object.entries(this.template.registers)) {
-      let type = '';
-      if (value.function === 3) {
-        type = 'Holding Register';
-      } else if (value.function === 4) {
-        type = 'Input Register';
-      } else {
-        type = value.function;
-      }
+      const type = await this.function_code_check(value.function);
       let datatype_str = '';
       if (value.unit === 'F') {
         datatype_str = 'Float';
@@ -416,19 +424,50 @@ export class modbus_t {
       cell = row.insertCell();
       input = document.createElement('input');
       input.placeholder = 'Address';
+      input.title = 'A decimal address will be converted to its corresponding hex address and will automatically select the matching function code.'
       input.oninput = (e) => { limit_characters(e, 6); };
+      input.addEventListener('focusout', this.convert_hex_addr)
       cell.appendChild(input);
 
       cell = row.insertCell();
-      input = document.createElement('input');
-      input.placeholder = 'Function Code';
-      input.oninput = (e) => { limit_characters(e, 2); };
+      input = document.createElement('select');
+      input.title = "Function Code"
+      const func = document.createElement('option');
+      func.text = 'Coil (1)';
+      func.value = 1;
+      const func2 = document.createElement('option');
+      func2.text = 'Discrete Input (2)';
+      func2.value = 2;
+      const func3 = document.createElement('option');
+      func3.text = 'Input Register (3)';
+      func3.value = 3;
+      const func4 = document.createElement('option');
+      func4.text = 'Holding Register (4)';
+      func4.value = 4;
+      input.add(func);
+      input.add(func2);
+      input.add(func3);
+      input.add(func4);
       cell.appendChild(input);
 
       cell = row.insertCell();
-      input = document.createElement('input');
-      input.placeholder = 'Datatype';
-      input.oninput = (e) => { limit_characters(e, 5); };
+      input = document.createElement('select');
+      input.title = "Data Type"
+      const datatf = document.createElement('option');
+      datatf.text = 'Float';
+      const datati32 = document.createElement('option');
+      datati32.text = 'I32';
+      const datati16 = document.createElement('option');
+      datati16.text = 'I16';
+      const datatu32 = document.createElement('option');
+      datatu32.text = 'U32';
+      const datatu16 = document.createElement('option');
+      datatu16.text = 'U16';
+      input.add(datatf);
+      input.add(datati32);
+      input.add(datati16);
+      input.add(datatu32);
+      input.add(datatu16);
       cell.appendChild(input);
     });
     this.add_new_reg_btn.click();
@@ -474,10 +513,11 @@ export class modbus_t {
     const rows = this.reg_tbody.getElementsByTagName('tr');
     for (let i = 1; i < rows.length; i += 1) {
       const regs = rows[i].getElementsByTagName('input');
+      const options = rows[i].getElementsByTagName('select');
       const regname = regs[0].value;
       const addr = regs[1].value;
-      const func = Number(regs[2].value);
-      const datatypev = regs[3].value;
+      const func = Number(options[0].value);
+      const datatypev = options[1].value;
       this.regs[regname] = { hex: addr, function: func, datatype: datatypev };
     }
     this.json.registers = await this.regs;
@@ -502,7 +542,6 @@ export class modbus_t {
       }
       if (key === 'registers') {
         for (const [regkey, regvalue] of Object.entries(value)) {
-          console.log(regkey, regvalue);
           if (!regkey || !regvalue.hex || !regvalue.datatype || !regvalue.function) {
             return this.bool;
           }
@@ -571,4 +610,74 @@ export class modbus_t {
       controller.abort();
     });
   }
+
+  async convert_hex_addr(e) {
+    this.input = e.target;
+    this.input_value = e.target.value;
+    this.function_dropdwn = e.target.parentNode.parentNode.cells[2].firstChild;
+
+    this.function_code = await this.extract_function_code(this.input_value);
+    if (this.function_code) {
+      this.function_dropdwn.value = this.function_code;
+      this.converted = await this.convert_decimal_to_hex(this.input_value);
+      if (this.converted) {
+        this.input.value = this.converted;
+      }
+    }
+  }
+
+  async decimal_to_hex(decimal) {
+    const dec = parseInt(decimal);
+    let hexstr = '0x'
+    return hexstr.concat(dec.toString(16));
+  }
+
+  async extract_function_code(decimal) {
+    let dec_str = decimal.toString();
+    let function_code;
+
+    switch (dec_str[0]) {
+      case '1':
+        function_code = 1;
+        break;
+      case '2':
+        function_code = 2;
+        break;
+      case '3':
+        function_code = 4;
+        break;
+      case '4':
+        function_code = 3;
+        break;
+      default:
+        function_code = false;
+        break;
+    }
+    return function_code;
+  }
+
+  async convert_decimal_to_hex(dec_str) {
+    const hex_str = await this.get_hex(dec_str.substring(1))
+    if (hex_str) {
+      let finalstr = await this.decimal_to_hex(hex_str);
+      return finalstr;
+    }
+    return false;
+  }
+
+  async get_hex(stringc) {
+    let extracted = '';
+    for (let i = 0; i < stringc.length; i += 1) {
+      if (stringc[i] !== '0') {
+          if (extracted) {
+            extracted += stringc[i];
+          }
+          else {
+            extracted = stringc[i];
+          }
+      }
+    }
+    return extracted;
+  }
+
 }
