@@ -27,7 +27,7 @@ const EwrLoadState = Object.freeze({
 });
 
 
-export class osm_flash_api_t extends STMApi {
+class osm_flash_api_t extends STMApi {
     /**
      * Connect to the target by resetting it and activating the ROM bootloader
      * @param {object} params
@@ -158,7 +158,7 @@ export class osm_flash_api_t extends STMApi {
 }
 
 
-export class flash_controller_t {
+class flash_controller_t {
     constructor(dev) {
         this.dev = dev;
         this.PAGE_SIZE          = 0x800;
@@ -276,4 +276,14 @@ export class flash_controller_t {
             console.log("FIRMWARE: CANCELLED");
         }
     }
+}
+
+
+export function flash_firmware(dev) {
+    return new Promise( function (resolve, reject) {
+        let flash_controller = new flash_controller_t(dev);
+        flash_controller.flash_firmware()
+            .then(resolve)
+            .catch(reject);
+    })
 }
