@@ -14,6 +14,7 @@ import sys
 
 import aiohttp
 from aiohttp import web
+
 import asyncio
 
 
@@ -23,37 +24,41 @@ all_processes = {}
 
 
 class osm_websocket_server:
-    def __init__(self, tcpport, loc):
-        self.open_connections = {}
-        self.wsport = 8765
+    def __init__(self,tcpport, loc):
         self.tcpport = tcpport
         self.loc = loc
 
-    def forward(self, request):
+    def start_websocket_osm(self, host):
+        ws_port = 8765
+        self.host = host
+        self.open_tcp()
+        loop = asyncio.get_event_loop()
+        app = web.Application()
+        app.add_routes([web.get(f'/api/{self.loc}', self.websocket_handler)])
+        runner = web.AppRunner(app)
+        loop.run_until_complete(runner.setup())
+        site = web.TCPSite(runner, port=ws_port)
+        loop.run_until_complete(site.start())
+
+    def websocket_handler(self, request):
         print("new websocket")
         ws = web.WebSocketResponse()
         ws.prepare(request)
 
         for msg in ws:
+            print(ws)
             if msg.type == aiohttp.WSMsgType.TEXT:
                 if msg.data == 'close':
                     ws.close()
                 else:
-                    output = self.do_cmd(msg.data)
-                    ws.send_str(output)
+                    # output = self.do_cmd(msg.data)
+                    ws.send_str(msg.data)
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 print('ws connection closed with exception %s' %
                     ws.exception())
 
         print('websocket connection closed')
         return ws
-
-    def start_websocket_osm(self):
-        print("ghi")
-        self.open_tcp()
-        app = web.Application()
-        app.add_routes([web.get(f'/api/{self.loc}', self.forward)])
-        web.run_app(app)
 
     def open_tcp(self):
         self.tcp = osm_tcp_socket_client(self.tcpport, 'localhost')
@@ -115,7 +120,7 @@ class osm_tcp_socket_client:
         self.osm.close()
 
 class base_handler_t(object):
-    def __init__(self, fparent, parent):
+    def __init__(self, parent):
         self._parent = parent
         self._logger = self.parent._logger
 
@@ -132,7 +137,7 @@ class base_handler_t(object):
 
 class close_handler(base_handler_t):
     def __init__(self, parent):
-        super().__init__(self, parent)
+        super().__init__(parent)
 
     def do_POST(self, received_data: dict) -> tuple:
         p = received_data["port"]
@@ -142,18 +147,20 @@ class close_handler(base_handler_t):
         os.kill(bash_pid, signal.SIGINT)
         os.kill(fw_pid, signal.SIGINT)
         response = {'Closed': True}
-        return response
+        return web.json_response(response)
+
 
 
 class spawn_virtual_osm_handler(base_handler_t):
     def __init__(self, parent):
-        super().__init__(self, parent)
+        super().__init__(parent)
 
-    def do_POST(self):
+    def do_POST(self, received_data):
         self.port = self.gen_random_port()
         loc = self.random_str()
         location = f"/tmp/osm_{loc}/"
-        url = f"ws://localhost:8080/api/{loc}"
+        url = f"ws://localhost:8765/api/{loc}"
+        host = f"ws://localhost/api/{loc}"
         linux_osm = 0
 
         osm_bin_exists = self.find_linux_binary()
@@ -166,12 +173,12 @@ class spawn_virtual_osm_handler(base_handler_t):
             cmd = [f"DEBUG=1 USE_PORT={self.port} LOC={location} ../../../build/penguin/firmware.elf"]
             response = {"location": location, "url": url, "port": self.port}
             self.spawn_virtual_osm(cmd, self.port)
-            time.sleep(6)
+            time.sleep(2)
             svr = osm_websocket_server(self.port, loc)
-            svr.start_websocket_osm()
+            svr.start_websocket_osm(host)
 
+        return web.json_response(response)
 
-        return response
 
     @staticmethod
     def gen_random_port():
@@ -204,11 +211,10 @@ class spawn_virtual_osm_handler(base_handler_t):
         return sub.returncode
 
 class master_request_handler:
-    def __init__(self, port, is_verbose, logger=None):
+    def __init__(self, is_verbose, logger=None):
         if logger is None:
             logger = logging.getLogger(__name__)
         self._logger = logger
-
         if is_verbose:
             logging.basicConfig(level=logging.DEBUG)
         self._handlers = \
@@ -217,10 +223,20 @@ class master_request_handler:
                 "Spawn virtual OSM"         : spawn_virtual_osm_handler,
             }
 
-        app = web.Application()
-        app.add_routes([web.get('/', self.do_get),
+    def run_server(self, port):
+        self.app = web.Application()
+        self.app.add_routes([web.get('/', self.do_get),
                         web.post('/', self.do_post)])
-        asyncio.run(web.run_app(app, port=port))
+        self.app.router.add_static('/', path=('.'),
+                      name='app')
+
+        loop = asyncio.get_event_loop()
+        runner = web.AppRunner(self.app)
+        loop.run_until_complete(runner.setup())
+        site = web.TCPSite(runner, port=port)
+        loop.run_until_complete(site.start())
+        print(site.name)
+        loop.run_forever()
 
 
     async def do_get(self, request):
@@ -242,13 +258,11 @@ class master_request_handler:
             return ret
         self._logger.debug(f"USING HANDLER TYPE: {handler_t}")
         try:
-            response, ret = handler_t(self).do_POST(received_data)
+            ret = handler_t(self).do_POST(received_data)
         except NotImplementedError:
             ret = {}
 
-        self._logger.info(f"RETURNING: {response.name} ({response.value}): '{ret}'")
         return ret
-
 
 def main():
     import argparse
@@ -260,7 +274,8 @@ def main():
         return parser.parse_args()
 
     args = get_args()
-    master_request_handler(args.port, args.verbose)
+    svr = master_request_handler(args.verbose)
+    svr.run_server(args.port)
 
     return 0
 
