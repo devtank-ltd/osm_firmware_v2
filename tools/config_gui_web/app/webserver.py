@@ -16,7 +16,8 @@ import aiohttp
 from aiohttp import web
 
 import asyncio
-
+import nest_asyncio
+nest_asyncio.apply()
 
 PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,22 +29,26 @@ class osm_websocket_server:
         self.tcpport = tcpport
         self.loc = loc
 
-    def start_websocket_osm(self, host):
+    async def start_websocket_osm(self):
         ws_port = 8765
-        self.host = host
-        self.open_tcp()
+        await self.open_tcp()
         loop = asyncio.get_event_loop()
-        app = web.Application()
-        app.add_routes([web.get(f'/api/{self.loc}', self.websocket_handler)])
-        runner = web.AppRunner(app)
+        websocket_server = web.Application()
+        websocket_server.add_routes([web.get(f'/api/{self.loc}', self.websocket_handler),
+                                     web.post(f'/api/{self.loc}', self.websocket_post)])
+        print(f"Running websocket on ws://0.0.0.0:{ws_port}/api/{self.loc}")
+        runner = web.AppRunner(websocket_server)
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, port=ws_port)
         loop.run_until_complete(site.start())
 
-    def websocket_handler(self, request):
+    async def websocket_post(self, response):
+        print(response)
+
+    async def websocket_handler(self, request):
         print("new websocket")
         ws = web.WebSocketResponse()
-        ws.prepare(request)
+        await ws.prepare(request)
 
         for msg in ws:
             print(ws)
@@ -51,7 +56,6 @@ class osm_websocket_server:
                 if msg.data == 'close':
                     ws.close()
                 else:
-                    # output = self.do_cmd(msg.data)
                     ws.send_str(msg.data)
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 print('ws connection closed with exception %s' %
@@ -60,14 +64,13 @@ class osm_websocket_server:
         print('websocket connection closed')
         return ws
 
-    def open_tcp(self):
+    async def open_tcp(self):
         self.tcp = osm_tcp_socket_client(self.tcpport, 'localhost')
         self.tcp.open_socket_connection()
-        return self.tcp
 
-    def do_cmd(self, msg):
-        self.tcp.write(msg)
-        output = self.tcp.read()
+    async def do_cmd(self, msg):
+        await self.tcp.write(msg)
+        output = await self.tcp.read()
         return output
 
 class osm_tcp_socket_client:
@@ -175,10 +178,9 @@ class spawn_virtual_osm_handler(base_handler_t):
             self.spawn_virtual_osm(cmd, self.port)
             time.sleep(2)
             svr = osm_websocket_server(self.port, loc)
-            svr.start_websocket_osm(host)
+            asyncio.run(svr.start_websocket_osm())
 
         return web.json_response(response)
-
 
     @staticmethod
     def gen_random_port():
@@ -235,7 +237,6 @@ class master_request_handler:
         loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, port=port)
         loop.run_until_complete(site.start())
-        print(site.name)
         loop.run_forever()
 
 
