@@ -10,20 +10,20 @@ export async function generate_random(len) {
 }
 
 class low_level_socket_t {
-  constructor(port) {
-    this.port = new WebSocket(port);
-    this.port.onopen = (e) => {
-      console.log(`Socket opened on port ${port}`);
+  constructor(url) {
+    this.url = new WebSocket("ws://localhost:8000/api");
+    this.url.onopen = (e) => {
+      console.log(`Socket opened on url ${url}`);
     };
     this.msgs = '';
-    this.port.onerror = (event) => {
+    this.url.onerror = (event) => {
       console.log('WebSocket error: ', event);
     };
     this.on_message();
   }
 
   async write(msg) {
-    this.port.send(`${msg}\n`);
+    this.url.send(`${msg}\n`);
   }
 
   async read() {
@@ -35,7 +35,7 @@ class low_level_socket_t {
   }
 
   async on_message() {
-    this.port.onmessage = async (e) => {
+    this.url.onmessage = async (e) => {
       this.msgs += e.data;
     };
   }
@@ -43,7 +43,7 @@ class low_level_socket_t {
   async wait_for_messages() {
     return new Promise((resolve) => {
       const check_messages = () => {
-        if (this.msgs.includes('}============')) {
+        if (this.msgs.includes('}========')) {
           resolve();
         } else {
           setTimeout(check_messages, 100);
@@ -328,8 +328,14 @@ export class binding_t {
 
   async get_cc_mp(phase) {
     const mp = await this.do_cmd_multi(`cc_mp CC${phase}`);
+    let mp_match;
     const mp_regex = /MP:\s(\d+(\.\d+)?)/;
-    const mp_match = mp[0].match(mp_regex);
+    for (let i = 0; i < mp.length; i += 1) {
+      mp_match = await mp[i].match(mp_regex);
+      if (mp_match) {
+        break;
+      }
+    }
     const mp_extracted = mp_match[1];
     return mp_extracted;
   }
