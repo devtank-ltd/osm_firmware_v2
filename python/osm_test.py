@@ -211,12 +211,13 @@ class test_framework_t(object):
 
     def _check_cc_val(self):
         passed = True
+        types_ = self._vosm_conn.cc_type()
         cc_g = self._vosm_conn.print_cc_gain
-
         for p in range(3):
             cc_name = "CC%u" % (p+1)
+            unit = types_[p][-1]
             passed &= self._str_check(f"Valid {cc_name} Exterior value", cc_g[p*2], f"{cc_name} EXT max: 100.000A")
-            passed &= self._str_check(f"Valid {cc_name} Interior value", cc_g[p*2+1], f"{cc_name} INT max: 0.050V")
+            passed &= self._str_check(f"Valid {cc_name} Interior value", cc_g[p*2+1], f"{cc_name} INT max: 0.050{unit}")
             mp = self._vosm_conn.get_midpoint(cc_name)
             passed &= self._str_check(f"{cc_name} Midpoint value is valid", mp[0], "MP: 2048.000")
         return passed
