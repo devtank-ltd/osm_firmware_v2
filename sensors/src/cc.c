@@ -93,7 +93,7 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
         return false;
     }
     inter_value *= scale_factor;
-    if (is_iv_ct)
+    if (!is_iv_ct)
     {
         inter_value /= (CC_RESISTOR_OHM * 1000);
     }
