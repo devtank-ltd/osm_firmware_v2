@@ -135,7 +135,10 @@ class osm_tcp_client:
 
     def osm_svr(self):
         self.osm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.osm.connect((self.host, self.port))
+        try:
+            self.osm.connect((self.host, self.port))
+        except ConnectionRefusedError:
+            return False
         return self.osm
 
     def write(self, msg):
@@ -226,6 +229,8 @@ class http_server:
 
         tcp_client = osm_tcp_client(osm, self.host)
         svr = tcp_client.osm_svr()
+        if not svr:
+            return False
         tcpsockets.append(svr)
 
         async for msg in ws:

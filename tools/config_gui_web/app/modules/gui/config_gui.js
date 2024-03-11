@@ -1,7 +1,6 @@
 import { binding_t } from '../backend/binding.js';
 import { home_tab_t } from './home.js';
 import { disable_interaction } from './disable.js';
-import { osm_flash_api_t } from './flash.js';
 
 class config_gui_t {
     constructor() {
