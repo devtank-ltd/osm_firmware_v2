@@ -158,7 +158,7 @@ td {
 
 .home-edit-uplink-field {
   grid-column-start: 0;
-  grid-column-end: 0;
+  grid-column-end: 2;
   grid-row-start: 2;
   grid-row-end: 2;
   border-radius: 10%;
@@ -169,7 +169,6 @@ td {
   border-style: solid;
   color: var(--black);
   border-color: var(--osmdark);
-  color: var(--black);
   background-color: var(--white);
   border-radius: 15px; /* changed to pixels to ensure roundness */
   margin-bottom: 20px;
@@ -182,7 +181,7 @@ td {
 .home-serial-firmware-config-div {
   margin          : 2em 0.5em;
   grid-column-start: 0;
-  grid-column-end: 0;
+  grid-column-end: 2;
   grid-row-start: 4;
   grid-row-end: 4;
 }
@@ -283,17 +282,15 @@ td {
 }
 
 
-
 /* WiFi Configuration Table */
 
-.wifi-config-table {
+.wifi-config-table table {
   grid-column-start: 2;
   grid-column-end: 3;
   grid-row-start: 1;
-  grid-row-end: 1;
-  margin: auto;
-  overflow: auto;
+  grid-row-end: 2;
   height:150px;
+  width: 90%;
   border-style:solid;
   border-radius:15px;
   border-color: var(--osmdark);
@@ -302,22 +299,39 @@ td {
 }
 
 
-.wifi-config-table table {
-  border-collapse : collapse;
-  margin          : 2em 0.5em;
-}
-
-
 .wifi-config-div .buttons {
-  margin: auto;
   margin-left: 1em;
-  padding-top: 2em;
   display:flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
 }
 
+
+/* Firmware Tool */
+
+
+.home-firmware-div {
+  grid-column-start: 3;
+  grid-column-end: 3;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+.home-firmware-div table {
+  width: 90%;
+  height:150px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  margin-top: 2em;
+  margin-left: 2em;
+}
+
+.fw-btn {
+  display:flex;
+  justify-content: center;
+}
 
 /* Modbus */
 
@@ -350,7 +364,6 @@ td {
   border-radius:15px;
   border-color: var(--osmdark);
 }
-
 
 .modbus-current-config table {
   width: 100%;

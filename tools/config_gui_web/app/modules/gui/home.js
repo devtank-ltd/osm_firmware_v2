@@ -11,8 +11,9 @@ import { disable_interaction, limit_characters } from './disable.js';
 import { firmware_t } from './flash.js';
 
 export class home_tab_t {
-    constructor(dev) {
+    constructor(dev, is_virtual) {
         this.dev = dev;
+        this.is_virtual = is_virtual;
         this.change_serial_num = this.change_serial_num.bind(this);
         this.navbar = new navbar_t();
         this.navbar.insert_navbar();
@@ -49,12 +50,20 @@ export class home_tab_t {
         await meas_table.create_measurements_table_gui();
         await meas_table.add_uplink_listener();
 
+        if (!this.is_virtual) {
+            const fw_table = new firmware_t(this.dev);
+            await fw_table.get_latest_firmware_info();
+        }
+
         const comms_type = await this.dev.comms_type();
         if (comms_type.includes('LW')) {
             this.comms = new lora_comms_t(this.dev);
             const lora = new lora_config_t(this.comms);
             await lora.populate_lora_fields();
             await lora.add_listeners();
+            const fw_table = document.getElementById("home-firmware-div");
+            fw_table.style.gridColumnStart = 2;
+            fw_table.style.gridColumnEnd = 3;
         } else if (comms_type.includes('WIFI')) {
             this.comms = new wifi_comms_t(this.dev);
             const wifi = new wifi_config_t(this.comms);
@@ -62,8 +71,6 @@ export class home_tab_t {
             await wifi.add_listeners();
         }
 
-        const fw_table = new firmware_t(this.dev);
-        await fw_table.get_latest_firmware_info();
 
         await this.load_serial_number();
         await this.load_fw_ver();

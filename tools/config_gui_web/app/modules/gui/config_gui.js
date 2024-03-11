@@ -36,7 +36,7 @@ class config_gui_t {
                 this.dev = new binding_t(this.port, type);
                 this.writer = await this.dev.open_ll_obj()
                 if (this.writer) {
-                    this.home = new home_tab_t(this.dev);
+                    this.home = new home_tab_t(this.dev, false);
                     await this.home.insert_homepage();
                     const disconnect = document.getElementById('global-disconnect');
                     disconnect.addEventListener('click', () => {
@@ -50,10 +50,11 @@ class config_gui_t {
                 }
                 else {
                     const error_div = document.getElementById('error-div');
-                    error_div.textContent = 'Failed to connect.';
+                    error_div.textContent = 'Failed to connect, refresh page and try again.';
                 }
             })
             .catch((e) => {
+                this.disconnect_modal();
                 console.log(e);
             });
     }
@@ -86,7 +87,7 @@ class config_gui_t {
         error_div.textContent = "Connecting...";
         this.writer = await this.dev.open_ll_obj();
         if (this.writer) {
-            this.home = new home_tab_t(this.dev);
+            this.home = new home_tab_t(this.dev, true);
             await this.home.insert_homepage();
 
             const disconnect = document.getElementById('global-disconnect');
@@ -101,7 +102,7 @@ class config_gui_t {
             globalbtns.style.removeProperty('display');
         }
         else {
-            error_div.textContent = 'Failed to connect.';
+            error_div.textContent = 'Failed to connect, refresh page and try again.';
         }
     }
 };
