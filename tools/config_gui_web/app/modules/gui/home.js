@@ -8,6 +8,7 @@ import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
 import { adv_config_t } from './adv_conf.js';
 import { disable_interaction, limit_characters } from './disable.js';
+import { firmware_t } from './flash.js';
 
 export class home_tab_t {
     constructor(dev) {
@@ -60,6 +61,9 @@ export class home_tab_t {
             await wifi.populate_wifi_fields();
             await wifi.add_listeners();
         }
+
+        const fw_table = new firmware_t(this.dev);
+        await fw_table.get_latest_firmware_info();
 
         await this.load_serial_number();
         await this.load_fw_ver();

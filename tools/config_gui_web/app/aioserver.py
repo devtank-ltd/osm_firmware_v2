@@ -263,29 +263,19 @@ class http_server:
     async def get_index(self, request):
         return web.FileResponse('./index.html')
 
-    def _send_response_json(self, response: dict):
-        response_json = json.dumps(response)
-        response_json_utf8 = response_json.encode('utf-8')
-        self._logger.debug(f"SENT: '{response_json}'")
-        return web.json_response(response_json_utf8)
-
-    def _send_response_bin(self, response: bin):
-        self._logger.debug(f"SENT BIN DATA: {response}: SIZ:{len(response)}")
-        return web.Response(body=response, content_type='bin')
-
-    def do_json_GET(self):
+    def do_json_GET(self, request):
         handler = self._get_handlers.get("/latest_firmware_info")
         if handler is not None:
             ret = handler(self).do_GET()
-            self._send_response_json(ret)
-            return ret
+            self._logger.debug(f"SENT: '{ret}'")
+            return web.json_response(ret)
 
-    def do_bin_GET(self):
-        handler = self._get_handlers.get("/latest_firmware_info")
+    def do_bin_GET(self, request):
+        handler = self._get_handlers.get("/latest_firmware")
         if handler is not None:
             ret = handler(self).do_GET()
-            self._send_response_bin(ret)
-            return ret
+            self._logger.debug(f"SENT BIN DATA: {ret}: SIZ:{len(ret)}")
+            return web.Response(body=ret, content_type='bin')
 
 def main():
     import argparse

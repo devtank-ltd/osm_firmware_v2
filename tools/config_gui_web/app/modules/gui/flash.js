@@ -3,6 +3,8 @@ import logger from '../stm-serial-flasher/src/api/Logger.js';
 import WebSerial from '../stm-serial-flasher/src/api/WebSerial.js';
 import settings from '../stm-serial-flasher/src/api/Settings.js';
 
+import { disable_interaction, limit_characters } from './disable.js';
+
 
 const PIN_HIGH = false;
 const PIN_LOW = true;
@@ -169,25 +171,6 @@ class flash_controller_t {
         this.ADDRESS_FIRMWARE   = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
     }
 
-    get_latest_firmware_info_loaded(evt) {
-        let firmware_info = JSON.parse(evt.target.response);
-        console.log("FIRMWARE INFO: LOADED:", firmware_info);
-    }
-
-    get_latest_firmware_info_error(evt) {
-        console.log("FIRMWARE INFO: ERROR");
-        console.log(evt);
-    }
-
-    async get_latest_firmware_info() {
-        const req = new XMLHttpRequest();
-        req.addEventListener("load", (e) => { this.get_latest_firmware_info_loaded(e) });
-        req.addEventListener("error", (e) => { this.get_latest_firmware_info_error(e) });
-        req.open("GET", "/latest_firmware_info");
-        req.overrideMimeType("application/json");
-        req.send();
-    }
-
     flash_start (osmAPI) {
         return new Promise( function (resolve, reject) {
             let deviceInfo = {
@@ -279,11 +262,62 @@ class flash_controller_t {
 }
 
 
-export function flash_firmware(dev) {
-    return new Promise( function (resolve, reject) {
-        let flash_controller = new flash_controller_t(dev);
-        flash_controller.flash_firmware()
-            .then(resolve)
-            .catch(reject);
-    })
+export class firmware_t {
+    constructor(dev) {
+        this.dev = dev;
+        this.create_firmware_table = this.create_firmware_table.bind(this);
+    }
+
+    async create_firmware_table(fw_info) {
+        await disable_interaction(true);
+        const json_fw = JSON.parse(fw_info);
+        console.log(typeof (json_fw));
+        console.log(json_fw.sha);
+
+        const div = document.getElementById('home-firmware-div');
+        const tbl = div.appendChild(document.createElement('table'));
+        tbl.id = 'home-firmware-table';
+        const body = tbl.createTBody();
+        tbl.createTHead();
+
+        const title = tbl.tHead.insertRow();
+        const title_cell = title.insertCell();
+        title_cell.textContent = 'Firmware Tool';
+
+        /* Insert headers */
+        const row = tbl.tHead.insertRow();
+        row.insertCell().textContent = 'Latest Firmware Info';
+
+
+
+        for (const [key, value] of Object.entries(json_fw)) {
+            let fw_row = body.insertRow();
+            let keyh = fw_row.insertCell();
+            let key_f = key.charAt(0).toUpperCase() + key.slice(1);
+            keyh.textContent = `${key_f}: ${value}`;
+        }
+
+        await disable_interaction(false);
+    }
+
+    get_latest_firmware_info_loaded(evt) {
+        let firmware_info = evt.target.response;
+        console.log("FIRMWARE INFO: LOADED:", firmware_info);
+        this.create_firmware_table(firmware_info);
+    }
+
+    get_latest_firmware_info_error(evt) {
+        console.log("FIRMWARE INFO: ERROR");
+        console.log(evt);
+    }
+
+    async get_latest_firmware_info() {
+        const req = new XMLHttpRequest();
+        req.addEventListener("load", (e) => { this.get_latest_firmware_info_loaded(e) });
+        req.addEventListener("error", (e) => { this.get_latest_firmware_info_error(e) });
+        req.open("GET", "/latest_firmware_info");
+        req.overrideMimeType("application/json");
+        req.send();
+    }
 }
+

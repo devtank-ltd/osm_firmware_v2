@@ -34,18 +34,24 @@ class config_gui_t {
                 });
 
                 this.dev = new binding_t(this.port, type);
-                await this.dev.open_ll_obj()
-                this.home = new home_tab_t(this.dev);
-                await this.home.insert_homepage();
-                const disconnect = document.getElementById('global-disconnect');
-                disconnect.addEventListener('click', () => {
-                    this.port.close();
-                    this.port = null;
-                    console.log('Disconnected');
-                    window.location.reload();
-                });
-                const globalbtns = document.getElementById('global-load-save-config-buttons');
-                globalbtns.style.removeProperty('display');
+                this.writer = await this.dev.open_ll_obj()
+                if (this.writer) {
+                    this.home = new home_tab_t(this.dev);
+                    await this.home.insert_homepage();
+                    const disconnect = document.getElementById('global-disconnect');
+                    disconnect.addEventListener('click', () => {
+                        this.port.close();
+                        this.port = null;
+                        console.log('Disconnected');
+                        window.location.reload();
+                    });
+                    const globalbtns = document.getElementById('global-load-save-config-buttons');
+                    globalbtns.style.removeProperty('display');
+                }
+                else {
+                    const error_div = document.getElementById('error-div');
+                    error_div.textContent = 'Failed to connect.';
+                }
             })
             .catch((e) => {
                 console.log(e);
@@ -77,21 +83,26 @@ class config_gui_t {
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.open("GET", this.url, true);
         this.dev = new binding_t(this.url, "websocket");
-        error_div.textContent = "Connecting..."
-        await this.dev.open_ll_obj()
-        this.home = new home_tab_t(this.dev);
-        await this.home.insert_homepage();
+        error_div.textContent = "Connecting...";
+        this.writer = await this.dev.open_ll_obj();
+        if (this.writer) {
+            this.home = new home_tab_t(this.dev);
+            await this.home.insert_homepage();
 
-        const disconnect = document.getElementById('global-disconnect');
-        disconnect.addEventListener('click', async () => {
-            await this.dev.ll.write('close');
-            await this.dev.ll.url.close();
-            window.location.reload();
-            throw new Error();
-        });
+            const disconnect = document.getElementById('global-disconnect');
+            disconnect.addEventListener('click', async () => {
+                await this.dev.ll.write('close');
+                await this.dev.ll.url.close();
+                window.location.reload();
+                throw new Error();
+            });
 
-        const globalbtns = document.getElementById('global-load-save-config-buttons');
-        globalbtns.style.removeProperty('display');
+            const globalbtns = document.getElementById('global-load-save-config-buttons');
+            globalbtns.style.removeProperty('display');
+        }
+        else {
+            error_div.textContent = 'Failed to connect.';
+        }
     }
 };
 
