@@ -16,6 +16,9 @@ export class load_configuration_t {
 
     async load_gui_with_config(content) {
         await disable_interaction(true);
+        await this.dev.wipe();
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        await sleep(2000);
         this.content = JSON.parse(content);
         this.modbus_setup = this.content.modbus_bus.setup;
         this.modbus_devices = this.content.modbus_bus.modbus_devices;

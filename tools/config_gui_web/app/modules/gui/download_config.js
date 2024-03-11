@@ -5,34 +5,14 @@ export class save_configuration_t {
         this.dev = dev;
         this.comms = comms;
         this.btn = document.getElementById('global-save-osm-config');
-        this.save_as_modal = this.save_as_modal.bind(this);
         this.save_config = this.save_config.bind(this);
     }
 
     async add_event_listeners() {
-        this.btn.addEventListener('click', this.save_as_modal);
+        this.btn.addEventListener('click', this.save_config);
     }
 
-    async save_as_modal() {
-        this.dialog = document.getElementById('save-as-dialog');
-        this.confirm = document.getElementById('save-as-confirm');
-        this.cancel = document.getElementById('save-as-cancel');
-        this.input = document.getElementById('save-as-input');
-
-        this.dialog.showModal();
-        const controller = new AbortController();
-
-        this.confirm.addEventListener('click', async () => {
-            const filename = this.input.value;
-            this.save_config(filename);
-        }, { signal: controller.signal, once: true });
-        this.cancel.addEventListener('click', () => {
-            this.dialog.close();
-            controller.abort();
-        });
-    }
-
-    async save_config(filename) {
+    async save_config() {
         await disable_interaction(true);
         const ios_regex = /\IO (?<io>[0-9]{2}) : +(\[(?<specials_avail>[A-Za-z0-9 \|]+)\])? ((USED (?<special_used>[A-Za-z0-9]+)( (?<edge>F|R|B))?)|(?<dir>IN|OUT)) (?<pupd>DOWN|UP|NONE|D|U|N)( = (?<level>ON|OFF))?/;
 
@@ -166,17 +146,17 @@ export class save_configuration_t {
         json_pop.cc_midpoints.CC2 = await this.dev.get_cc_mp(2);
         json_pop.cc_midpoints.CC3 = await this.dev.get_cc_mp(3);
 
-        this.create_download(json_pop, filename);
+        this.create_download(json_pop);
         await disable_interaction(false);
     }
 
-    async create_download(contents, name) {
+    async create_download(contents) {
         const dlAnchorElem = window.document.createElement('a');
         window.document.body.appendChild(dlAnchorElem);
         this.dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(contents, null, 2))}`;
 
         dlAnchorElem.setAttribute('href', this.dataStr);
-        dlAnchorElem.setAttribute('download', name);
+        dlAnchorElem.setAttribute('download', 'config.json');
         dlAnchorElem.click();
     }
 }

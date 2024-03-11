@@ -64,7 +64,7 @@ class low_level_serial_t {
         writer.releaseLock();
     }
 
-    async read() {
+    async read(end_line='}============') {
         const decoder = new TextDecoder();
         let msgs = '';
         const start_time = Date.now();
@@ -77,7 +77,7 @@ class low_level_serial_t {
                 }
                 const msg = decoder.decode(value);
                 msgs += msg;
-                if (msgs.includes('}============')) {
+                if (msgs.includes(end_line)) {
                     console.log('Finished reading OSM.');
                     break;
                 }
@@ -90,6 +90,7 @@ class low_level_serial_t {
         console.log(`Got ${msgs}`);
         return msgs;
     }
+
 }
 
 class modbus_bus_t {
@@ -494,8 +495,9 @@ export class binding_t {
     }
 
     async wipe() {
-        this.wipe_cmd = this.do_cmd('wipe');
-        return this.wipe_cmd;
+        this.wipe_cmd = this.ll.write('wipe');
+        await this.ll.read("Flash successfully written");
+        return;
     }
 
     async comms_type() {
