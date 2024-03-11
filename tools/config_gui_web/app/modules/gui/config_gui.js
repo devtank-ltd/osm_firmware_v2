@@ -35,6 +35,7 @@ class config_gui_t {
                 });
 
                 this.dev = new binding_t(this.port, type);
+                await this.dev.open_ll_obj()
                 this.home = new home_tab_t(this.dev);
                 await this.home.insert_homepage();
                 const disconnect = document.getElementById('global-disconnect');
@@ -73,30 +74,25 @@ class config_gui_t {
     async spin_fake_osm() {
         await disable_interaction(true);
         const error_div = document.getElementById('error-div');
-        this.url = window.document.URL + 'api';
-        const headers = new Headers();
-        fetch(this.url, {
-            method: "GET",
-            headers: headers,
-            mode: "cors",
-            cache: "no-cache",
-        }).then(async (resp) => {
-            console.log(resp);
-            this.dev = new binding_t(this.url, 'websocket');
-            this.home = new home_tab_t(this.dev);
-            await this.home.insert_homepage();
+        this.url = window.document.URL + '/api';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open("GET", this.url, true);
+        this.dev = new binding_t(this.url, "websocket");
+        error_div.textContent = "Connecting..."
+        await this.dev.open_ll_obj()
+        this.home = new home_tab_t(this.dev);
+        await this.home.insert_homepage();
 
-            const disconnect = document.getElementById('global-disconnect');
-            disconnect.addEventListener('click', () => {
-                this.dev.ll.write('close');
-                window.location.reload(true);
-            });
-
-            const globalbtns = document.getElementById('global-load-save-config-buttons');
-            globalbtns.style.removeProperty('display');
-        }).catch((error) => {
-            error_div.textContent = 'No Virtual OSM detected.'
+        const disconnect = document.getElementById('global-disconnect');
+        disconnect.addEventListener('click', async () => {
+            await this.dev.ll.write('close');
+            await this.dev.ll.url.close();
+            window.location.reload();
+            throw new Error();
         });
+
+        const globalbtns = document.getElementById('global-load-save-config-buttons');
+        globalbtns.style.removeProperty('display');
     }
 };
 
