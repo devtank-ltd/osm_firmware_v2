@@ -278,10 +278,9 @@ export class firmware_t {
     async create_firmware_table(fw_info) {
         await disable_interaction(true);
         const json_fw = JSON.parse(fw_info);
+        const tablediv = document.getElementById('home-firmware-table');
 
-        const div = document.getElementById('home-firmware-table');
-
-        const tbl = div.appendChild(document.createElement('table'));
+        const tbl = tablediv.appendChild(document.createElement('table'));
         const body = tbl.createTBody();
         tbl.createTHead();
 
@@ -292,11 +291,18 @@ export class firmware_t {
         for (const [key, value] of Object.entries(json_fw)) {
             let fw_row = body.insertRow();
             let keyh = fw_row.insertCell();
-            let key_f = key.charAt(0).toUpperCase() + key.slice(1);
+            let key_f;
+            if (key === 'sha') {
+                key_f = key.toUpperCase();
+            }
+            else {
+                key_f = key.charAt(0).toUpperCase() + key.slice(1);
+            }
             keyh.textContent = `${key_f}: ${value}`;
         }
 
         const flash_btn = document.getElementById('fw-btn');
+        flash_btn.style.display = 'block';
         flash_btn.addEventListener('click', this.flash_latest);
 
         await disable_interaction(false);
