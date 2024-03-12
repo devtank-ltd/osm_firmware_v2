@@ -66,7 +66,7 @@ class latest_fw_version(base_handler_t):
         return self._read_info()
 
 class latest_fw_file(base_handler_t):
-    LATEST_FIRMWARE_PATH = "latest_version.bin"
+    LATEST_FIRMWARE_PATH = "fw_releases/complete.bin"
 
     def _read_firmware(self):
         with open(self.LATEST_FIRMWARE_PATH, "rb") as f:
