@@ -14,9 +14,8 @@ export class home_tab_t {
     constructor(dev, is_virtual) {
         this.dev = dev;
         this.is_virtual = is_virtual;
+        this.create_navbar = this.create_navbar.bind(this);
         this.change_serial_num = this.change_serial_num.bind(this);
-        this.navbar = new navbar_t();
-        this.navbar.insert_navbar();
         this.change_to_adv_conf_tab = this.change_to_adv_conf_tab.bind(this);
         this.change_to_console_tab = this.change_to_console_tab.bind(this);
         this.insert_homepage = this.insert_homepage.bind(this);
@@ -34,6 +33,12 @@ export class home_tab_t {
         await disable_interaction(true);
         await this.insert_homepage();
         await disable_interaction(false);
+    }
+
+    async create_navbar() {
+        this.navbar = new navbar_t();
+        await this.navbar.insert_navbar();
+        return this.navbar;
     }
 
     async insert_homepage() {

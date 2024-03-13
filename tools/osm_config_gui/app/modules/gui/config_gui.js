@@ -37,6 +37,7 @@ class config_gui_t {
                 this.writer = await this.dev.open_ll_obj()
                 if (this.writer) {
                     this.home = new home_tab_t(this.dev, false);
+                    await this.home.create_navbar();
                     await this.home.insert_homepage();
                     const disconnect = document.getElementById('global-disconnect');
                     disconnect.addEventListener('click', () => {
@@ -88,6 +89,7 @@ class config_gui_t {
         this.writer = await this.dev.open_ll_obj();
         if (this.writer) {
             this.home = new home_tab_t(this.dev, true);
+            await this.home.create_navbar();
             await this.home.insert_homepage();
 
             const disconnect = document.getElementById('global-disconnect');
