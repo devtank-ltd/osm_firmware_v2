@@ -32,7 +32,8 @@ class config_gui_t {
                     this.port.close();
                     this.disconnect_modal();
                 });
-
+                const loader = document.getElementById('loader');
+                loader.style.display = 'block';
                 this.dev = new binding_t(this.port, type);
                 this.writer = await this.dev.open_ll_obj()
                 if (this.writer) {
@@ -81,11 +82,12 @@ class config_gui_t {
     async spin_fake_osm() {
         await disable_interaction(true);
         const error_div = document.getElementById('error-div');
+        const loader = document.getElementById('loader');
         this.url = window.document.URL + '/api';
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.open("GET", this.url, true);
         this.dev = new binding_t(this.url, "websocket");
-        error_div.textContent = "Connecting...";
+        loader.style.display = 'block';
         this.writer = await this.dev.open_ll_obj();
         if (this.writer) {
             this.home = new home_tab_t(this.dev, true);
@@ -105,6 +107,7 @@ class config_gui_t {
         }
         else {
             error_div.textContent = 'Failed to connect, refresh page and try again.';
+            loader.style.display = 'none';
         }
     }
 };

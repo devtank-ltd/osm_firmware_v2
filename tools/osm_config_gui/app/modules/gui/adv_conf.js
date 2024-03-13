@@ -15,11 +15,14 @@ export class adv_config_t {
 
     async open_adv_config_tab() {
         await disable_interaction(true);
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         this.doc = document.getElementById('main-page-body');
         this.response = await fetch('modules/gui/html/adv_config.html');
         this.text = await this.response.text();
         this.doc.innerHTML = this.text;
         await this.add_event_listeners();
+        loader.style.display = 'none';
         await disable_interaction(false);
     }
 

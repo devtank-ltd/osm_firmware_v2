@@ -97,6 +97,8 @@ export class lora_config_t {
 
     async write_config() {
         await disable_interaction(true);
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         const loramsg = document.getElementById('lora-msg-div');
         loramsg.textContent = '';
         const deveui = document.getElementById('lora-dev-eui-value').innerHTML;
@@ -107,6 +109,7 @@ export class lora_config_t {
         this.comms.lora_appkey = appkey;
         this.comms.lora_region = reg;
         loramsg.textContent = 'Configuration sent.'
+        loader.style.display = 'none';
         await disable_interaction(false);
     }
 }

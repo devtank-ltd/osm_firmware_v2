@@ -179,6 +179,8 @@ export class measurements_table_t {
 
     async insert_last_value(e) {
         await disable_interaction(true);
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         const last_val_index = 2;
         const checkbox = e.target;
         const table = checkbox.offsetParent.offsetParent;
@@ -188,6 +190,7 @@ export class measurements_table_t {
         const last_val_col = table.rows[row_index].cells[last_val_index];
         last_val_col.textContent = val;
         checkbox.checked = false;
+        loader.style.display = 'none';
         await disable_interaction(false);
     }
 
