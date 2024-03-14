@@ -75,7 +75,13 @@ class config_gui_t {
     }
 
     async add_event_listeners() {
-        document.getElementById('main-page-connect').addEventListener('click', this.open_serial);
+        const conn = document.getElementById('main-page-connect');
+        if (!navigator.serial) {
+            conn.style.backgroundColor = 'grey';
+            conn.disabled = true;
+            conn.title = "This browser does not support USB communications."
+        }
+        conn.addEventListener('click', this.open_serial);
         document.getElementById('main-page-websocket-connect').addEventListener('click', this.spin_fake_osm);
     }
 
