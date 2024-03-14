@@ -270,16 +270,18 @@ export class firmware_t {
         title_cell.textContent = 'Latest Firmware Available';
 
         for (const [key, value] of Object.entries(json_fw)) {
-            let fw_row = body.insertRow();
-            let keyh = fw_row.insertCell();
-            let key_f;
-            if (key === 'sha') {
-                key_f = key.toUpperCase();
+            if (key !== 'path') {
+                let fw_row = body.insertRow();
+                let keyh = fw_row.insertCell();
+                let key_f;
+                if (key === 'sha') {
+                    key_f = key.toUpperCase();
+                }
+                else {
+                    key_f = key.charAt(0).toUpperCase() + key.slice(1);
+                }
+                keyh.textContent = `${key_f}: ${value}`;
             }
-            else {
-                key_f = key.charAt(0).toUpperCase() + key.slice(1);
-            }
-            keyh.textContent = `${key_f}: ${value}`;
         }
 
         const flash_btn = document.getElementById('fw-btn');
