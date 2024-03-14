@@ -1,9 +1,8 @@
 import { STMApi } from '../stm-serial-flasher/src/api/STMapi.js'
-import logger from '../stm-serial-flasher/src/api/Logger.js';
 import WebSerial from '../stm-serial-flasher/src/api/WebSerial.js';
 import settings from '../stm-serial-flasher/src/api/Settings.js';
 
-import { disable_interaction, limit_characters } from './disable.js';
+import { disable_interaction } from './disable.js';
 
 
 const PIN_HIGH = false;
@@ -204,6 +203,8 @@ class flash_controller_t {
     }
 
     flash_firmware_loaded(evt) {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         let disabled = disable_interaction(true);
         if (disabled) {
             console.log("FIRMWARE: LOADED");
@@ -241,6 +242,7 @@ class flash_controller_t {
                 })
                 .then(() => {
                     this.dev.port.open({ "baudRate": 115200 });
+                    loader.style.display = 'none';
                     disable_interaction(false);
                 });
         }

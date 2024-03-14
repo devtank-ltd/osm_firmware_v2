@@ -101,6 +101,8 @@ export class modbus_t {
     }
 
     async remove_modbus_register() {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         await disable_interaction(true);
         this.dev_to_remove = '';
         let found = false;
@@ -123,7 +125,6 @@ export class modbus_t {
         this.mb_current_config_div.innerHTML = '';
         await this.current_modbus_config_table();
         this.config_table = document.getElementById('modbus-current-config-table');
-
         const rows = this.config_table.getElementsByTagName('tr');
         for (let i = 0; i < rows.length; i += 1) {
             const dev = rows[i].cells[0].textContent;
@@ -135,9 +136,12 @@ export class modbus_t {
         this.remove_reg_btn.disabled = true;
         this.remove_dev_btn.disabled = true;
         await disable_interaction(false);
+        loader.style.display = 'none';
     }
 
     async remove_modbus_device() {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         await disable_interaction(true);
         let found = false;
         for (let i = 0; i < this.checkboxes.length; i += 1) {
@@ -159,6 +163,7 @@ export class modbus_t {
         this.remove_reg_btn.disabled = true;
         this.remove_dev_btn.disabled = true;
         await disable_interaction(false);
+        loader.style.display = 'none';
     }
 
     async load_json_templates() {
@@ -266,6 +271,8 @@ export class modbus_t {
 
     async apply_template(e) {
         if (this.template) {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
             await disable_interaction(true);
             await this.dev.mb_dev_add(
                 this.template.unit_id,
@@ -294,6 +301,7 @@ export class modbus_t {
             this.mb_current_config_div.innerHTML = '';
             await this.current_modbus_config_table();
             await disable_interaction(false);
+            loader.style.display = 'none';
         }
         else {
             this.modbus_modal('Select a template.');

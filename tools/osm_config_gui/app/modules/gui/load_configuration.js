@@ -16,6 +16,8 @@ export class load_configuration_t {
 
     async load_gui_with_config(content) {
         await disable_interaction(true);
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
         await this.dev.wipe();
         const sleep = ms => new Promise(r => setTimeout(r, ms));
         await sleep(2000);
@@ -81,6 +83,7 @@ export class load_configuration_t {
         await this.dev.do_cmd(`interval_mins ${this.content.interval_mins}`);
 
         await this.dev.save();
+        loader.style.display = 'none';
         await disable_interaction(false);
         window.location.reload();
     }

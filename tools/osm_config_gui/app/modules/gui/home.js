@@ -42,8 +42,9 @@ export class home_tab_t {
     }
 
     async insert_homepage() {
-        await disable_interaction(true);
         const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        await disable_interaction(true);
         const doc = document.getElementById('main-page-body');
         const response = await fetch('modules/gui/html/home_page.html');
         const text = await response.text();
@@ -87,8 +88,8 @@ export class home_tab_t {
         await save_config.add_event_listeners();
 
         await this.add_event_listeners();
-        loader.style.display = 'none';
         await disable_interaction(false);
+        loader.style.display = 'none';
     }
 
     async load_serial_number() {
