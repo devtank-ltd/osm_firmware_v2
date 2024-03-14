@@ -12,7 +12,6 @@ const SYNCHR = 0x7F;
 const ACK = 0x79;
 const NACK = 0x1F;
 
-
 function u8a(array) {
     return new Uint8Array(array);
 }
@@ -202,13 +201,12 @@ class flash_controller_t {
         })
     }
 
-    flash_firmware_loaded(evt) {
+    flash_firmware(fw_b64) {
         const loader = document.getElementById('loader');
         loader.style.display = 'block';
         let disabled = disable_interaction(true);
         if (disabled) {
             console.log("FIRMWARE: LOADED");
-            let fw_b64 = evt.target.response;
             let data = Uint8Array.from(atob(fw_b64), c => c.charCodeAt(0))
 
             let osmAPI;
@@ -248,25 +246,6 @@ class flash_controller_t {
         }
     }
 
-    flash_firmware_error(evt) {
-        console.log("FIRMWARE: ERROR");
-    }
-
-    async flash_firmware() {
-        console.log("FLASH FIRMWARE CALLED");
-        if (confirm("Are you sure you want to update the firmware?")) {
-            console.log("FIRMWARE: CONFIRMED");
-            const req = new XMLHttpRequest();
-            req.addEventListener("load", (e) => { this.flash_firmware_loaded(e) });
-            req.addEventListener("error", (e) => { this.flash_firmware_error(e) });
-            req.open("GET", "/latest_firmware");
-            req.overrideMimeType("application/octet-stream");
-            req.send();
-        }
-        else {
-            console.log("FIRMWARE: CANCELLED");
-        }
-    }
 }
 
 
@@ -279,7 +258,7 @@ export class firmware_t {
 
     async create_firmware_table(fw_info) {
         await disable_interaction(true);
-        const json_fw = JSON.parse(fw_info);
+        const json_fw = fw_info;
         const tablediv = document.getElementById('home-firmware-table');
 
         const tbl = tablediv.appendChild(document.createElement('table'));
@@ -305,34 +284,45 @@ export class firmware_t {
 
         const flash_btn = document.getElementById('fw-btn');
         flash_btn.style.display = 'block';
-        flash_btn.addEventListener('click', this.flash_latest);
+        flash_btn.addEventListener('click', () => { this.flash_latest(fw_info) });
 
         await disable_interaction(false);
     }
 
-    get_latest_firmware_info_loaded(evt) {
-        let firmware_info = evt.target.response;
-        console.log("FIRMWARE INFO: LOADED:", firmware_info);
-        this.create_firmware_table(firmware_info);
+    get_latest_firmware_info() {
+        fetch('../../fw_releases/latest_fw_info.json')
+            .then((resp) => resp.json())
+            .then((json) => {
+                console.log("FIRMWARE INFO: LOADED:", json);
+                this.create_firmware_table(json);
+            })
+            .catch((err) => {
+                console.log("FIRMWARE INFO: ERROR");
+                console.log(err);
+            })
     }
 
-    get_latest_firmware_info_error(evt) {
-        console.log("FIRMWARE INFO: ERROR");
-        console.log(evt);
+    flash_latest(fw_info) {
+        const dev = this.dev;
+        if (confirm("Are you sure you want to update the firmware?")) {
+            console.log("FIRMWARE: CONFIRMED");
+            const fw_path = fw_info.path;
+            fetch(`../../${fw_path}`)
+                .then((r) => r.blob())
+                .then((resp) => {
+                    console.log(resp);
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        const fw_b64 = btoa(e.target.result);
+                        const controller = new flash_controller_t(dev);
+                        controller.flash_firmware(fw_b64);
+                    };
+                    reader.onerror = function (e) {
+                        console.log("FIRMWARE: ERROR");
+                    };
+                    reader.readAsBinaryString(resp);
+                })
+            }
+        }
     }
-
-    async get_latest_firmware_info() {
-        const req = new XMLHttpRequest();
-        req.addEventListener("load", (e) => { this.get_latest_firmware_info_loaded(e) });
-        req.addEventListener("error", (e) => { this.get_latest_firmware_info_error(e) });
-        req.open("GET", "/latest_firmware_info");
-        req.overrideMimeType("application/json");
-        req.send();
-    }
-
-    flash_latest(evt) {
-        const controller = new flash_controller_t(this.dev);
-        controller.flash_firmware();
-    }
-}
 

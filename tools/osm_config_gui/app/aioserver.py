@@ -34,50 +34,6 @@ def exit_handler():
 
 atexit.register(exit_handler)
 
-class base_handler_t(object):
-    def __init__(self, parent):
-        self._parent = parent
-        self._logger = self.parent._logger
-
-    @property
-    def parent(self):
-        return weakref.ref(self._parent)()
-
-    def do_GET(self, received_data: dict) -> tuple:
-        raise NotImplementedError
-
-    def do_POST(self, received_data: dict) -> tuple:
-        raise NotImplementedError
-
-class latest_fw_version(base_handler_t):
-    LATEST_VERSION_INFO_PATH = "version_info.txt"
-
-    def _do_cmd(self, cmd: str) -> str:
-        return subprocess.check_output(cmd, shell=True)
-
-    def _read_info(self):
-        with open(self.LATEST_VERSION_INFO_PATH, "r") as f:
-            info = f.read()
-        self._logger.debug(f"READ INFO: {info}")
-        return json.loads(info)
-
-    def do_GET(self):
-        self._logger.debug("SENDING VERSION")
-        return self._read_info()
-
-class latest_fw_file(base_handler_t):
-    LATEST_FIRMWARE_PATH = "fw_releases/complete.bin"
-
-    def _read_firmware(self):
-        with open(self.LATEST_FIRMWARE_PATH, "rb") as f:
-            bin_data = f.read()
-        return bin_data
-
-    def do_GET(self):
-        self._logger.debug("SENDING BINARY FILE")
-        firmware_bin = self._read_firmware()
-        firmware_b64 = base64.b64encode(firmware_bin)
-        return firmware_b64
 
 class virtual_osm:
     def __init__(self, port):
@@ -161,17 +117,6 @@ class osm_tcp_client:
             now = time.monotonic()
         return msgs.decode()
 
-    def read(self):
-        now = time.monotonic()
-        end_time = now + 1
-        new_msg = None
-        while now < end_time:
-            r = select.select([self.osm], [], [], end_time - now)
-            if not r[0]:
-                print("Lines timeout")
-            new_msg = self.osm.recv(1024).decode()
-            return new_msg
-
     async def do_cmd(self, msg):
         self.write(msg)
         ret = self.readlines()
@@ -200,17 +145,10 @@ class http_server:
     def run_server(self):
         app = web.Application()
         app.add_routes([web.get('/', self.get_index),
-                        web.get('/api', self.spawn_osm),
-                        web.get('/latest_firmware_info', self.do_json_GET),
-                        web.get('/latest_firmware', self.do_bin_GET)
+                        web.get('/api', self.spawn_osm)
                         ])
         app.router.add_static('/', path=('.'),
                       name='app', show_index=True)
-        self._get_handlers = \
-            {
-                "/latest_firmware_info"     : latest_fw_version,
-                "/latest_firmware"          : latest_fw_file,
-            }
         runner = web.AppRunner(app)
         event_loop.run_until_complete(runner.setup())
         site = web.TCPSite(runner, port=self.port)
@@ -262,20 +200,6 @@ class http_server:
 
     async def get_index(self, request):
         return web.FileResponse('./index.html')
-
-    def do_json_GET(self, request):
-        handler = self._get_handlers.get("/latest_firmware_info")
-        if handler is not None:
-            ret = handler(self).do_GET()
-            self._logger.debug(f"SENT: '{ret}'")
-            return web.json_response(ret)
-
-    def do_bin_GET(self, request):
-        handler = self._get_handlers.get("/latest_firmware")
-        if handler is not None:
-            ret = handler(self).do_GET()
-            self._logger.debug(f"SENT BIN DATA: {ret}: SIZ:{len(ret)}")
-            return web.Response(body=ret, content_type='bin')
 
 def main():
     import argparse

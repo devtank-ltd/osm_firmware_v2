@@ -58,7 +58,7 @@ export class home_tab_t {
 
         if (!this.is_virtual) {
             const fw_table = new firmware_t(this.dev);
-            await fw_table.get_latest_firmware_info();
+            fw_table.get_latest_firmware_info();
         }
 
         const comms_type = await this.dev.comms_type();
