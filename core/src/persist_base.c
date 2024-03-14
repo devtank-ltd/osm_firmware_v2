@@ -17,6 +17,12 @@ char * persist_get_serial_number(void)
 }
 
 
+char*    persist_get_model(void)
+{
+    return persist_data.model_name;
+}
+
+
 void persist_set_log_debug_mask(uint32_t mask)
 {
     persist_data.log_debug_mask = mask | DEBUG_SYS;
