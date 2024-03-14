@@ -28,18 +28,7 @@ static command_response_t _cmd_count_cb(char * args)
 
 static command_response_t _cmd_version_cb(char * args)
 {
-    char model_name[MODEL_NAME_LEN+1];
-    if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
-        memcpy(model_name, MODEL_NAME, MODEL_NAME_LEN);
-    else
-        snprintf(model_name, MODEL_NAME_LEN, MODEL_NAME);
-    unsigned len = strnlen(model_name, MODEL_NAME_LEN);
-    model_name[len] = 0;
-
-    for (unsigned i = 0; i < len; i++)
-        model_name[i] = toupper(model_name[i]);
-
-    log_out("Version : %s-%s", model_name, GIT_VERSION);
+    log_out("Version : %s-%s", persist_get_model(), GIT_VERSION);
     return COMMAND_RESP_OK;
 }
 

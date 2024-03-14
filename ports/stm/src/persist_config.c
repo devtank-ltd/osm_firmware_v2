@@ -33,10 +33,10 @@ bool persistent_init(void)
         persist_data.version = PERSIST_VERSION;
         persist_data.log_debug_mask = DEBUG_SYS;
         persist_data.config_count = 0;
-        if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
-            memcpy(&persist_data.model_name[0], MODEL_NAME, MODEL_NAME_LEN);
+        if (strlen(STR(fw_name)) > MODEL_NAME_LEN)
+            memcpy(&persist_data.model_name[0], STR(fw_name), MODEL_NAME_LEN);
         else
-            snprintf(persist_data.model_name, MODEL_NAME_LEN, MODEL_NAME);
+            snprintf(persist_data.model_name, MODEL_NAME_LEN, STR(fw_name));
         model_persist_config_model_init(&persist_data.model_config);
         return false;
     }
