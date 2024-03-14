@@ -163,7 +163,7 @@ export class io_t {
                         this.get_pullup(value.pullup);
                     }
                     break;
-                case 'IO01':
+                case 'IO00':
                     [key] = Object.keys(indexs);
                     value = indexs[key];
                     value.avail_meas.push(meas);
@@ -175,7 +175,7 @@ export class io_t {
                         }
                     }
                     break;
-                case 'IO02':
+                case 'IO01':
                     [, key] = Object.keys(indexs);
                     value = indexs[key];
                     value.avail_meas.push(meas);
@@ -268,8 +268,8 @@ export class io_t {
             if (this.checkboxes.CNT1) {
                 this.checkboxes.CNT1.checked = false;
             }
-            if (this.checkboxes.IO01) {
-                this.checkboxes.IO01.checked = false;
+            if (this.checkboxes.IO00) {
+                this.checkboxes.IO00.checked = false;
             }
             if (this.checkboxes.IO04) {
                 this.checkboxes.IO04.checked = false;
@@ -279,8 +279,8 @@ export class io_t {
             if (this.checkboxes.CNT2) {
                 this.checkboxes.CNT2.checked = false;
             }
-            if (this.checkboxes.IO02) {
-                this.checkboxes.IO02.checked = false;
+            if (this.checkboxes.IO01) {
+                this.checkboxes.IO01.checked = false;
             }
             if (this.checkboxes.IO05) {
                 this.checkboxes.IO05.checked = false;
@@ -290,8 +290,8 @@ export class io_t {
             if (this.checkboxes.TMP2) {
                 this.checkboxes.TMP2.checked = false;
             }
-            if (this.checkboxes.IO01) {
-                this.checkboxes.IO01.checked = false;
+            if (this.checkboxes.IO00) {
+                this.checkboxes.IO00.checked = false;
             }
             if (this.checkboxes.IO04) {
                 this.checkboxes.IO04.checked = false;
@@ -301,14 +301,14 @@ export class io_t {
             if (this.checkboxes.TMP3) {
                 this.checkboxes.TMP3.checked = false;
             }
-            if (this.checkboxes.IO02) {
-                this.checkboxes.IO02.checked = false;
+            if (this.checkboxes.IO01) {
+                this.checkboxes.IO01.checked = false;
             }
             if (this.checkboxes.IO05) {
                 this.checkboxes.IO05.checked = false;
             }
         }
-        if (this.meas === 'IO01' && this.checked === true) {
+        if (this.meas === 'IO00' && this.checked === true) {
             if (this.checkboxes.TMP2) {
                 this.checkboxes.TMP2.checked = false;
             }
@@ -316,7 +316,7 @@ export class io_t {
                 this.checkboxes.CNT1.checked = false;
             }
         }
-        if (this.meas === 'IO02' && this.checked === true) {
+        if (this.meas === 'IO01' && this.checked === true) {
             if (this.checkboxes.CNT2) {
                 this.checkboxes.CNT2.checked = false;
             }
