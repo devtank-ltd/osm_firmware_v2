@@ -136,7 +136,8 @@ export class binding_t {
             if (this.port_type === 'Serial') {
                 this.ll = new low_level_serial_t(this.port, this.timeout);
             } else {
-                this.url = new WebSocket("ws://localhost:8000/api");
+                const mod = this.port.startsWith("https://") ? "wss://" + this.port.substring(8) : "ws://" + this.port.substring(7);
+                this.url = new WebSocket(mod);
                 const opened = await this.connection(this.url);
                 this.url.onopen = async (e) => {
                 };
