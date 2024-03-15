@@ -102,7 +102,7 @@ export class home_tab_t {
     }
 
     async change_serial_num(e) {
-        this.val = e.target.innerHTML;
+        this.val = e.target.value;
         this.dev.serial_number = this.val;
     }
 

@@ -68,7 +68,7 @@ class low_level_serial_t {
     }
 
 
-    async read() {
+    async read(end_line=END_LINE) {
         const decoder = new TextDecoder();
         let msgs = '';
         const start_time = Date.now();
@@ -81,8 +81,8 @@ class low_level_serial_t {
                 }
                 let msg = decoder.decode(value);
                 msgs += msg;
-                if (msgs.includes(END_LINE)) {
-                    msgs = msgs.replace(END_LINE, '');
+                if (msgs.includes(end_line)) {
+                    msgs = msgs.replace(end_line, '');
                     break;
                 }
             }
@@ -247,29 +247,32 @@ export class binding_t {
         let start; let end; let regex; let interval; let interval_mins;
         meas_split.forEach((i, index) => {
             const m = i.split(/[\t]{1,2}/g);
-            if (i.includes('Sample Count')) {
-                start = index;
-                m.push('Last Value');
-                measurements.push(m);
-            } else if (i.includes(END_LINE)) {
-                end = index;
-            } else {
-                try {
-                    const [, interval_str] = m;
-                    regex = /^(\d+)x(\d+(\.\d+)?)mins$/;
-                    if (interval_str) {
-                        const match = interval_str.match(regex);
-                        [, interval, interval_mins] = match;
-                        m[1] = interval;
-                        m.push('');
-                    }
-                } catch (error) {
-                    ;
-                } finally {
+            if (i) {
+                if (i.includes('Sample Count')) {
+                    start = index;
+                    m.push('Last Value');
                     measurements.push(m);
+                } else if (i.includes(END_LINE)) {
+                    end = index;
+                } else {
+                    try {
+                        const [, interval_str] = m;
+                        regex = /^(\d+)x(\d+(\.\d+)?)mins$/;
+                        if (interval_str) {
+                            const match = interval_str.match(regex);
+                            [, interval, interval_mins] = match;
+                            m[1] = interval;
+                            m.push('');
+                        }
+                    } catch (error) {
+                        ;
+                    } finally {
+                        measurements.push(m);
+                    }
                 }
             }
-        });
+
+        })
         const extracted_meas = measurements.slice(start, end);
         if (interval_mins < 1 && interval_mins > 0) {
             interval_mins *= 60;
