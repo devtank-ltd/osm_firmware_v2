@@ -7,11 +7,11 @@ GIT_COMMITS := $(shell git rev-list --count HEAD)
 GIT_COMMIT := $(shell git log -n 1 --format="%h-%f")
 GIT_SHA1 := $(shell printf "%.*s\n" 7 $$(git log -n 1 --format="%H"))
 GIT_SHA1_LEN := $(shell printf '%s' '$(GIT_SHA1)' | wc -c)
-GIT_VERSION ?= $(shell GIT_TAG=$$(git describe --tags --exact-match --abbrev=0 2> /dev/null); \
-  if [ "$$?" -ne 0 ]; then \
+GIT_TAG := $(shell git describe --tags --exact-match --abbrev=0 2> /dev/null)
+GIT_VERSION ?= $(shell if [ -z "$(GIT_TAG)" ]; then \
     echo "[$(GIT_COMMITS)]-$(GIT_COMMIT)"; \
   else \
-    echo "[$(GIT_COMMITS)]-$(GIT_SHA1)-$${GIT_TAG}"; \
+    echo "[$(GIT_COMMITS)]-$(GIT_SHA1)-$(GIT_TAG)"; \
   fi \
   )
 
