@@ -208,7 +208,9 @@ class http_server:
         fw_pid = int(process.pid)
         bash_pid = fw_pid + 1
         os.kill(bash_pid, signal.SIGINT)
-        os.kill(fw_pid, signal.SIGINT)
+        status = os.wait()
+        print(f"Process terminated with pid {status[0]}")
+        return status
 
     async def get_index(self, request):
         return web.FileResponse('./index.html')

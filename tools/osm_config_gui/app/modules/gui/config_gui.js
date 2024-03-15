@@ -101,7 +101,6 @@ class config_gui_t {
                 await this.dev.ll.write('close');
                 await this.dev.ll.url.close();
                 window.location.reload();
-                throw new Error();
             });
 
             const globalbtns = document.getElementById('global-load-save-config-buttons');
