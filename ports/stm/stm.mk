@@ -113,18 +113,18 @@ $(1)_size: $$(BUILD_DIR)/$(1)/complete.bin
 	$$(STM_SIZE) $$(BUILD_DIR)/$(1)/*.elf
 	$$(STM_NM) -S --size-sort $$(shell find $$(BUILD_DIR)/$(1) -name "*.o")
 
-$$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME).tar.gz : $$(BUILD_DIR)/$(1)/complete.bin
+$$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME).tar.gz : $$(BUILD_DIR)/$(1)/complete.bin
 	@if [[ "$(GIT_TAG)" == *"release"* ]]; then \
-	  mkdir -p $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME); \
-	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(JSON_CONV) $$(OSM_DIR)/tools/config_scripts $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME)/; \
-	  cd $$(RELEASE_DIR)/$(1); \
-	  tar -czf $$(RELEASE_NAME).tar.gz $$(RELEASE_NAME); \
-	  rm -r $$(RELEASE_NAME); \
-	  echo "Made release bundle $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME).tar.gz";\
+	  mkdir -p $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME); \
+	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(JSON_CONV) $$(OSM_DIR)/tools/config_scripts $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/; \
+	  cd $$(RELEASE_DIR); \
+	  tar -czf $(1)_$$(RELEASE_NAME).tar.gz $(1)_$$(RELEASE_NAME); \
+	  rm -r $(1)_$$(RELEASE_NAME); \
+	  echo "Made release bundle $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME).tar.gz";\
 	else \
 	  echo "NO RELEASE TAG CHECKED OUT"; \
 	fi
 
-$(1)_release_bundle : $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME).tar.gz
+$(1)_release_bundle : $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME).tar.gz
 
 endef
