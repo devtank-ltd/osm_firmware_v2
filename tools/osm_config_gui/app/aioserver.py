@@ -157,7 +157,7 @@ class http_server:
     def run_server(self):
         app = web.Application()
         app.add_routes([web.get('/', self.get_index),
-                        web.get('/ws', self.spawn_osm)
+                        web.get('/websocket', self.spawn_osm)
                         ])
         app.router.add_static('/', path=('.'),
                       name='app', show_index=True)

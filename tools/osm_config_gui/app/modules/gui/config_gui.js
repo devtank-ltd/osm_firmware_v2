@@ -85,7 +85,7 @@ class config_gui_t {
         await disable_interaction(true);
         const error_div = document.getElementById('error-div');
         const loader = document.getElementById('loader');
-        this.url = window.document.URL + 'ws';
+        this.url = window.document.URL + 'websocket';
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.open("GET", this.url, true);
         this.dev = new binding_t(this.url, "websocket");
