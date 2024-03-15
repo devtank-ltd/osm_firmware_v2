@@ -12,7 +12,6 @@ import signal
 
 from aiohttp import web
 import asyncio
-from websockets.server import serve
 
 event_loop = asyncio.get_event_loop()
 tcpsockets = []
