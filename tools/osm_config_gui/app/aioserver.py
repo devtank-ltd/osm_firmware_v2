@@ -33,8 +33,9 @@ atexit.register(exit_handler)
 
 
 class virtual_osm:
-    def __init__(self, port):
+    def __init__(self, port, logger):
         self.port = port
+        self._logger = logger
 
     def gen_virtual_osm_instance(self):
         rstr = self._random_str()
@@ -51,7 +52,7 @@ class virtual_osm:
             self._spawn_virtual_osm(cmd, self.port)
             time.sleep(2)
         else:
-            print("Virtual OSM could not be generated.")
+            self._logger.debug("Virtual OSM could not be generated.")
 
         return self.port
 
@@ -82,9 +83,10 @@ class virtual_osm:
 
 
 class osm_tcp_client:
-    def __init__(self, port, host):
+    def __init__(self, port, host, logger):
         self.port = port
         self.host = host
+        self._logger = logger
 
     def osm_svr(self):
         self.osm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -106,7 +108,7 @@ class osm_tcp_client:
         while now < end_time:
             new_msg = self.osm.recv(1024)
             if new_msg is None:
-                print("NULL line read, probably closed")
+                self._logger.debug("NULL line read, probably closed")
                 break
             new_msg = new_msg.strip(b"\n\r")
             msgs += [new_msg.decode()]
@@ -136,7 +138,7 @@ class osm_tcp_client:
 
     def close(self):
         self.osm.close()
-        print("TCP socket closed.")
+        self._logger.debug("TCP socket closed.")
 
 class http_server:
     def __init__(self, port, is_verbose, host, logger=None):
@@ -171,13 +173,13 @@ class http_server:
     async def spawn_osm(self, request):
         port = self.gen_random_port()
 
-        vosm = virtual_osm(port)
+        vosm = virtual_osm(port, self._logger)
         osm = vosm.gen_virtual_osm_instance()
 
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
-        tcp_client = osm_tcp_client(osm, self.host)
+        tcp_client = osm_tcp_client(osm, self.host, self._logger)
         svr = tcp_client.osm_svr()
         if not svr:
             return False
@@ -209,7 +211,7 @@ class http_server:
         bash_pid = fw_pid + 1
         os.kill(bash_pid, signal.SIGINT)
         status = os.wait()
-        print(f"Process terminated with pid {status[0]}")
+        self._logger.debug(f"Process terminated with pid {status[0]}")
         return status
 
     async def get_index(self, request):
