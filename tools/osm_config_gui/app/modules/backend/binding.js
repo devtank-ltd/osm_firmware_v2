@@ -1,3 +1,6 @@
+const END_LINE = '}============';
+const START_LINE = '============{';
+
 export async function generate_random(len) {
     const chars = '0123456789ABCDEF';
     const string_length = len;
@@ -26,7 +29,6 @@ class low_level_socket_t {
     async read() {
         await this.wait_for_messages();
         const msg = this.msgs;
-        console.log(msg);
         this.msgs = '';
         return msg;
     }
@@ -40,7 +42,8 @@ class low_level_socket_t {
     async wait_for_messages() {
         return new Promise((resolve) => {
             const check_messages = () => {
-                if (this.msgs.includes('}========')) {
+                if (this.msgs.includes(END_LINE)) {
+                    this.msgs = this.msgs.replace(END_LINE, '');
                     resolve();
                 } else {
                     setTimeout(check_messages, 100);
@@ -64,7 +67,8 @@ class low_level_serial_t {
         writer.releaseLock();
     }
 
-    async read(end_line='}============') {
+
+    async read() {
         const decoder = new TextDecoder();
         let msgs = '';
         const start_time = Date.now();
@@ -75,10 +79,11 @@ class low_level_serial_t {
                 if (done) {
                     break;
                 }
-                const msg = decoder.decode(value);
+                let msg = decoder.decode(value);
                 msgs += msg;
-                if (msgs.includes(end_line)) {
+                if (msgs.includes(END_LINE)) {
                     console.log('Finished reading OSM.');
+                    msgs = msgs.replace(END_LINE, '');
                     break;
                 }
             }
@@ -87,7 +92,6 @@ class low_level_serial_t {
         } finally {
             reader.releaseLock();
         }
-        console.log(`Got ${msgs}`);
         return msgs;
     }
 
@@ -184,26 +188,8 @@ export class binding_t {
     }
 
     async parse_msg(msg) {
-        if (typeof (msg) !== 'string') {
-            console.log(typeof (msg));
-            return '';
-        }
-        this.msgs = '';
-        const spl = msg.split('\n\r');
-        spl.forEach((s, i) => {
-            if (s === '============{') {
-                console.log('Start found');
-            } else if (s.includes('}============')) {
-                console.log('End found');
-            } else if (s.includes('DEBUG') || s.includes('ERROR')) {
-                console.log('Ignoring debug/error msg.');
-            } else {
-                this.msgs += s;
-            }
-        });
-        if (!spl) {
-            return '';
-        }
+        let multi = await this.parse_msg_multi(msg);
+        this.msgs = multi.join('');
         return this.msgs;
     }
 
@@ -215,9 +201,9 @@ export class binding_t {
         this.msgs = [];
         const spl = msg.split('\n\r');
         spl.forEach((s, i) => {
-            if (s === '============{') {
+            if (s === START_LINE) {
                 console.log('Start found');
-            } else if (s === '}============') {
+            } else if (s === END_LINE) {
                 console.log('End found');
             } else if (s.includes('DEBUG') || s.includes('ERROR')) {
                 console.log('Ignoring debug/error msg.');
@@ -254,7 +240,7 @@ export class binding_t {
     async help() {
         this.raw = await this.do_cmd_raw('?');
         [, this.text] = this.raw.split('=============');
-        [this.s] = this.text.split('}============');
+        [this.s] = this.text.split(END_LINE);
         return this.s;
     }
 
@@ -270,7 +256,7 @@ export class binding_t {
                 start = index;
                 m.push('Last Value');
                 measurements.push(m);
-            } else if (i.includes('}============')) {
+            } else if (i.includes(END_LINE)) {
                 end = index;
             } else {
                 try {
@@ -514,8 +500,9 @@ export class binding_t {
             const meas = measurements[i][0];
             this.ftma_types = await this.do_cmd(`get_meas_type ${meas}`);
             const s = this.ftma_types.split(': ');
+            const io = s[0].replace(START_LINE, '');
             if (s[1] === 'IO_READING' || s[1] === 'PULSE_COUNT' || s[1] === 'W1_PROBE') {
-                io_list.push(s[0]);
+                io_list.push(io);
             }
         }
         return io_list;

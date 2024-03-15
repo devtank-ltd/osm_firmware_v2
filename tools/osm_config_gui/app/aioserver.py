@@ -4,17 +4,12 @@ import sys
 import logging
 import time
 import socket
-import select
 import subprocess
 import random
 import string
 import os
 import signal
-import base64
-import json
-import weakref
 
-import aiohttp
 from aiohttp import web
 import asyncio
 from websockets.server import serve
@@ -24,6 +19,9 @@ tcpsockets = []
 all_processes = {}
 
 PATH = os.path.dirname(os.path.abspath(__file__))
+
+_RESPONSE_BEGIN = b"============{"
+_RESPONSE_END = b"}============"
 
 import atexit
 
@@ -101,26 +99,41 @@ class osm_tcp_client:
         self.osm.sendall((f"{msg}\n").encode())
 
     def readlines(self, timeout=1):
-        end_line = "}========"
         now = time.monotonic()
         end_time = now + timeout
         new_msg = None
-        msgs = b""
+        msg_str = b""
+        msgs = []
         while now < end_time:
             new_msg = self.osm.recv(1024)
             if new_msg is None:
-                print("NULL line read.")
-            if new_msg != end_line.encode():
-                msgs += new_msg
-            if end_line.encode() in msgs:
+                print("NULL line read, probably closed")
+                break
+            new_msg = new_msg.strip(b"\n\r")
+            msgs += [new_msg.decode()]
+            msg_str += new_msg
+            if _RESPONSE_END in msg_str:
                 break
             now = time.monotonic()
-        return msgs.decode()
+        return msgs
 
-    async def do_cmd(self, msg):
-        self.write(msg)
+    def do_cmd_multi(self, cmd):
+        self.write(cmd)
         ret = self.readlines()
+        start_pos = None
+        for n in range(0, len(ret)):
+            line = ret[n]
+            if line == _RESPONSE_BEGIN:
+                start_pos = n+1
+        if start_pos is not None:
+            return ret[start_pos:]
         return ret
+
+    def do_cmd(self, cmd):
+        r = self.do_cmd_multi(cmd)
+        if r is None:
+            return ""
+        return "".join([line for line in r])
 
     def close(self):
         self.osm.close()
@@ -179,7 +192,7 @@ class http_server:
                 if msg.data == "close\n":
                     break
                 else:
-                    output = await tcp_client.do_cmd(msg.data)
+                    output = tcp_client.do_cmd(msg.data)
                     await ws.send_str(output)
             elif msg.type == web.WSMsgType.ERROR:
                 self.close_socket(port, tcp_client)
