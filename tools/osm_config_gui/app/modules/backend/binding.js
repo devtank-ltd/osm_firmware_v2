@@ -17,7 +17,7 @@ class low_level_socket_t {
         this.url = url;
         this.msgs = '';
         this.url.onerror = (event) => {
-            console.log('WebSocket error: ', event);
+            ;
         };
         this.on_message();
     }
@@ -82,13 +82,12 @@ class low_level_serial_t {
                 let msg = decoder.decode(value);
                 msgs += msg;
                 if (msgs.includes(END_LINE)) {
-                    console.log('Finished reading OSM.');
                     msgs = msgs.replace(END_LINE, '');
                     break;
                 }
             }
         } catch (error) {
-            console.log(error);
+            ;
         } finally {
             reader.releaseLock();
         }
@@ -140,7 +139,6 @@ export class binding_t {
                 this.url = new WebSocket("ws://localhost:8000/api");
                 const opened = await this.connection(this.url);
                 this.url.onopen = async (e) => {
-                    console.log(`Socket opened on url ${this.url}`);
                 };
                 if (opened) {
                     this.ll = new low_level_socket_t(this.url);
@@ -155,7 +153,6 @@ export class binding_t {
         const is_opened = () => (socket.readyState === WebSocket.OPEN)
 
     if (socket.readyState !== WebSocket.CONNECTING) {
-        console.log("Connecting");
         return is_opened()
     }
     else {
@@ -178,7 +175,6 @@ export class binding_t {
         while (this.queue.length > 0) {
             const msg = this.queue.shift();
             await this.do_cmd(msg);
-            console.log(`Message from queue "${msg}" sent`);
         }
     }
 
@@ -195,18 +191,17 @@ export class binding_t {
 
     async parse_msg_multi(msg) {
         if (typeof (msg) !== 'string') {
-            console.log(typeof (msg));
             return '';
         }
         this.msgs = [];
         const spl = msg.split('\n\r');
         spl.forEach((s, i) => {
             if (s === START_LINE) {
-                console.log('Start found');
+                ;
             } else if (s === END_LINE) {
-                console.log('End found');
+                ;
             } else if (s.includes('DEBUG') || s.includes('ERROR')) {
-                console.log('Ignoring debug/error msg.');
+                ;
             } else {
                 this.msgs.push(s);
             }
@@ -269,7 +264,7 @@ export class binding_t {
                         m.push('');
                     }
                 } catch (error) {
-                    console.log(error);
+                    ;
                 } finally {
                     measurements.push(m);
                 }

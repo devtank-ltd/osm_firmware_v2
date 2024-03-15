@@ -21,14 +21,12 @@ class config_gui_t {
                 this.port.open({
                     baudRate: 115200, databits: 8, stopbits: 1, parity: 'none',
                 });
-                console.log('User connected to device ', this.port);
 
                 navigator.serial.addEventListener('connect', () => {
-                    console.log('USB device available.');
+                    ;
                 });
 
                 this.port.addEventListener('disconnect', () => {
-                    console.log('USB device disconnect detected.');
                     this.port.close();
                     this.disconnect_modal();
                 });
@@ -44,7 +42,6 @@ class config_gui_t {
                     disconnect.addEventListener('click', () => {
                         this.port.close();
                         this.port = null;
-                        console.log('Disconnected');
                         window.location.reload();
                     });
                     const globalbtns = document.getElementById('global-load-save-config-buttons');
@@ -57,7 +54,6 @@ class config_gui_t {
             })
             .catch((e) => {
                 this.disconnect_modal();
-                console.log(e);
             });
     }
 

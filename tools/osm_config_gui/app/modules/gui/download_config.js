@@ -78,7 +78,6 @@ export class save_configuration_t {
         for (let i = 0; i < this.ios.length; i += 1) {
             const m = await this.ios[i].match(ios_regex);
             if (!m) {
-                console.log('Invalid IOS configuration.');
                 break;
             }
             const { io } = await m.groups;

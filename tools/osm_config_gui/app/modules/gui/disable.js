@@ -12,8 +12,6 @@ export async function disable_interaction(bool) {
                 tags[i].style.pointerEvents = 'auto';
             }
         }
-    } else {
-        console.log('Invalid type.');
     }
     return bool;
 }

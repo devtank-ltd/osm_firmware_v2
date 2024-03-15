@@ -29,7 +29,6 @@ export class current_clamp_t {
 
         this.dialog.showModal();
         this.confirm.addEventListener('click', async () => {
-            console.log('Calibrating CC');
             const loader = document.getElementById('loader');
             loader.style.display = 'block';
             await this.dev.cc_cal();

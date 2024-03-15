@@ -586,10 +586,8 @@ export class modbus_t {
                 reader.readAsText(file, 'application/json');
                 reader.onload = (e) => { this.import_template(e.target.result); };
                 reader.onerror = (error) => {
-                    console.log(`Error: ${error}`);
+                    ;
                 };
-            } else {
-                console.log(`Unsupported filetype '${file.type}' selected.`);
             }
         };
         this.import_template_dialog.click();

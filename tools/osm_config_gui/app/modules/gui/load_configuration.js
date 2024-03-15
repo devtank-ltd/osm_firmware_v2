@@ -120,11 +120,8 @@ export class load_configuration_t {
                 reader.readAsText(file, 'application/json');
                 reader.onload = (e) => { this.load_gui_with_config(e.target.result); };
                 reader.onerror = (error) => {
-                console.log(`Error: ${error}`);
               };
-            } else {
-                console.log(`Unsupported filetype '${file.type}' selected.`);
-        }
+            }
       };
         this.load_file_dialog.click();
     }
