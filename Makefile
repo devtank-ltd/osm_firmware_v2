@@ -21,11 +21,15 @@ MODELS_FW = $(MODELS:%=$(BUILD_DIR)/%/.complete)
 MODELS_CPPCHECK = $(MODELS:%=%_cppcheck)
 
 RELEASE_DIR ?= $(BUILD_DIR)/releases
-
-
 RELEASE_NAME := $(GIT_TAG)_release_bundle
 
+REAL_MODELS = $(shell find $(MODEL_DIR)/* -maxdepth 0 -type d ! -name "*penguin*" -printf '%f\n')
+MODELS_RELEASE_BUNDLES =$(REAL_MODELS:%=$(RELEASE_DIR)/%/$(RELEASE_NAME).tar.gz)
+
+
 default: all
+
+release : $(MODELS_RELEASE_BUNDLES)
 
 all: $(MODELS_FW)
 	@if [ $(GIT_SHA1_LEN) != 7 ]; then \

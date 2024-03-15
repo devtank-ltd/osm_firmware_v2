@@ -113,7 +113,7 @@ $(1)_size: $$(BUILD_DIR)/$(1)/complete.bin
 	$$(STM_SIZE) $$(BUILD_DIR)/$(1)/*.elf
 	$$(STM_NM) -S --size-sort $$(shell find $$(BUILD_DIR)/$(1) -name "*.o")
 
-$(1)_release_bundle : $$(BUILD_DIR)/$(1)/complete.bin
+$$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME).tar.gz : $$(BUILD_DIR)/$(1)/complete.bin
 	@if [[ "$(GIT_TAG)" == *"release"* ]]; then \
 	  mkdir -p $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME); \
 	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(JSON_CONV) $$(OSM_DIR)/tools/config_scripts $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME)/; \
@@ -124,4 +124,7 @@ $(1)_release_bundle : $$(BUILD_DIR)/$(1)/complete.bin
 	else \
 	  echo "NO RELEASE TAG CHECKED OUT"; \
 	fi
+
+$(1)_release_bundle : $$(RELEASE_DIR)/$(1)/$$(RELEASE_NAME).tar.gz
+
 endef
