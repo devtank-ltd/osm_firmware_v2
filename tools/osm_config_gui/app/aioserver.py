@@ -99,42 +99,26 @@ class osm_tcp_client:
     def write(self, msg):
         self.osm.sendall((f"{msg}\n").encode())
 
-    def readlines(self, timeout=1):
+    def readlines(self, timeout=8):
         now = time.monotonic()
         end_time = now + timeout
         new_msg = None
-        msg_str = b""
-        msgs = []
+        msgs = b""
         while now < end_time:
             new_msg = self.osm.recv(1024)
             if new_msg is None:
                 self._logger.debug("NULL line read, probably closed")
                 break
-            new_msg = new_msg.strip(b"\n\r")
-            msgs += [new_msg.decode()]
-            msg_str += new_msg
-            if _RESPONSE_END in msg_str:
+            msgs += new_msg
+            if _RESPONSE_END in msgs:
                 break
             now = time.monotonic()
-        return msgs
-
-    def do_cmd_multi(self, cmd):
-        self.write(cmd)
-        ret = self.readlines()
-        start_pos = None
-        for n in range(0, len(ret)):
-            line = ret[n]
-            if line == _RESPONSE_BEGIN:
-                start_pos = n+1
-        if start_pos is not None:
-            return ret[start_pos:]
-        return ret
+        return msgs.decode()
 
     def do_cmd(self, cmd):
-        r = self.do_cmd_multi(cmd)
-        if r is None:
-            return ""
-        return "".join([line for line in r])
+        self.write(cmd)
+        ret = self.readlines()
+        return ret
 
     def close(self):
         self.osm.close()
