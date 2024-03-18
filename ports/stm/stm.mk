@@ -1,6 +1,5 @@
 #Toolchain settings
 STM_TOOLCHAIN := arm-none-eabi
-SHELL := bash
 
 STM_CC = $(STM_TOOLCHAIN)-gcc
 STM_OBJCOPY = $(STM_TOOLCHAIN)-objcopy
@@ -114,7 +113,8 @@ $(1)_size: $$(BUILD_DIR)/$(1)/complete.bin
 	$$(STM_NM) -S --size-sort $$(shell find $$(BUILD_DIR)/$(1) -name "*.o")
 
 $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME).tar.gz : $$(BUILD_DIR)/$(1)/complete.bin
-	@if [[ "$(GIT_TAG)" == *"release"* ]]; then \
+	git_tag=$(GIT_TAG); \
+	if [ "$$$${git_tag#*release}" != "$(GIT_TAG)" ]; then \
 	  mkdir -p $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME); \
 	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(JSON_CONV) $$(OSM_DIR)/tools/config_scripts $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/; \
 	  cd $$(RELEASE_DIR); \
