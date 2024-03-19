@@ -22,3 +22,4 @@ extern bool     model_can_io_be_special(unsigned io, io_special_t special);
 extern void     model_uarts_setup(void);
 extern void     model_setup_pulse_pupd(uint8_t* pupd);
 extern unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr);
+extern void     model_main_loop_iterate(void);

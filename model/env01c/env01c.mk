@@ -17,6 +17,7 @@ env01c_SOURCES := \
            $(OSM_DIR)/core/src/adcs.c \
            $(OSM_DIR)/core/src/common.c \
            $(OSM_DIR)/core/src/platform_common.c \
+           $(OSM_DIR)/ports/stm/src/comms_direct.c \
            $(OSM_DIR)/protocols/src/hexblob.c \
            $(OSM_DIR)/protocols/src/comms_behind.c \
            $(OSM_DIR)/comms/src/common.c \

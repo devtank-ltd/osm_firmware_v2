@@ -1259,6 +1259,15 @@ void platform_tight_loop(void)
 }
 
 
+void __attribute__((weak)) model_main_loop_iterate(void) {}
+
+
+void platform_main_loop_iterate(void)
+{
+    model_main_loop_iterate();
+}
+
+
 uint32_t get_since_boot_ms(void)
 {
     int64_t t = (linux_get_current_us() - _linux_boot_time_us) / 1000;

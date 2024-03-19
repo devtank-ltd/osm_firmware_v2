@@ -509,7 +509,7 @@ class at_wifi_mqtt_t(object):
         self.subscriptions = []
         self._connected = False
         self.state = self.STATES.UNINIT
-        self.client = paho.mqtt.client.Client()
+        self.client = paho.mqtt.client.Client(paho.mqtt.client.CallbackAPIVersion.VERSION1)
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
 

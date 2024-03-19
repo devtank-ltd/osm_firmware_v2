@@ -369,6 +369,15 @@ void platform_hpm_enable(bool enable)
 void platform_tight_loop(void) {}
 
 
+void __attribute__((weak)) model_main_loop_iterate(void) {}
+
+
+void platform_main_loop_iterate(void)
+{
+    model_main_loop_iterate();
+}
+
+
 uint32_t get_since_boot_ms(void)
 {
     return since_boot_ms;

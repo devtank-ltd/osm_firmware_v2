@@ -14,6 +14,7 @@
 #include "log.h"
 #include "cmd.h"
 #include "protocol.h"
+#include "platform.h"
 
 #ifndef DESIG_UNIQUE_ID0
 #define DESIG_UNIQUE_ID0                        0x00C0FFEE
@@ -158,6 +159,8 @@ static struct
         uint64_t ts_unix;
         uint32_t sys;
     } time;
+    port_n_pins_t           reset_pin;
+    port_n_pins_t           boot_pin;
 } _at_wifi_ctx =
 {
     .state                      = AT_WIFI_STATE_OFF,
@@ -171,6 +174,8 @@ static struct
     .mem                        = NULL,
     .publish_packet             = {.message = {0}, .len = 0},
     .time                       = {.ts_unix = 0, .sys = 0},
+    .reset_pin                  = COMMS_RESET_PORT_N_PINS,
+    .boot_pin                   = COMMS_BOOT_PORT_N_PINS,
 };
 
 
@@ -376,6 +381,11 @@ bool at_wifi_send(char* data, uint16_t len)
 
 void at_wifi_init(void)
 {
+    platform_gpio_init(&_at_wifi_ctx.reset_pin);
+    platform_gpio_setup(&_at_wifi_ctx.reset_pin, false, IO_PUPD_UP);
+    platform_gpio_init(&_at_wifi_ctx.boot_pin);
+    platform_gpio_setup(&_at_wifi_ctx.boot_pin, false, IO_PUPD_UP);
+
     _at_wifi_ctx.mem = (at_wifi_config_t*)&persist_data.model_config.comms_config;
     unsigned topic_header_len = snprintf(
         _at_wifi_ctx.topic_header,
@@ -1445,6 +1455,24 @@ static command_response_t _at_wifi_dbg_cb(char* args)
 }
 
 
+static command_response_t _at_wifi_boot_cb(char* args)
+{
+    bool is_out = (bool)strtoul(args, NULL, 10);
+    platform_gpio_set(&_at_wifi_ctx.boot_pin, is_out);
+    log_out("BOOT PIN: %u", is_out ? 1U : 0U);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_reset_cb(char* args)
+{
+    bool is_out = (bool)strtoul(args, NULL, 10);
+    platform_gpio_set(&_at_wifi_ctx.reset_pin, is_out);
+    log_out("RESET PIN: %u", is_out ? 1U : 0U);
+    return COMMAND_RESP_OK;
+}
+
+
 static command_response_t _at_wifi_state_cb(char* args)
 {
     log_out("State: %s(%u)", _at_wifi_get_state_str(_at_wifi_ctx.state), (unsigned)_at_wifi_ctx.state);
@@ -1456,9 +1484,11 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "comms_send"  , "Send at_wifi message"    , _at_wifi_send_cb          , false , NULL },
-        { "comms_dbg"   , "Comms Chip Debug"        , _at_wifi_dbg_cb           , false , NULL },
-        { "comms_state" , "Get Comms state"         , _at_wifi_state_cb         , false , NULL },
+        { "comms_send"  , "Send at_wifi message"        , _at_wifi_send_cb          , false , NULL },
+        { "comms_dbg"   , "Comms Chip Debug"            , _at_wifi_dbg_cb           , false , NULL },
+        { "comms_boot",   "Enable/disable boot line"    , _at_wifi_boot_cb          , false , NULL },
+        { "comms_reset",  "Enable/disable reset line"   , _at_wifi_reset_cb         , false , NULL },
+        { "comms_state" , "Get Comms state"             , _at_wifi_state_cb         , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

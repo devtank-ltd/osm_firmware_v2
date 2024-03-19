@@ -65,6 +65,7 @@ int osm_main(void)
             uart_rings_out_drain();
             measurements_loop_iteration();
             platform_tight_loop();
+            platform_main_loop_iterate();
         }
         protocol_loop_iteration();
         flashing_delay = protocol_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;

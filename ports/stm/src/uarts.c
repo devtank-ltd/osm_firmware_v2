@@ -112,8 +112,8 @@ static void uart_setup(uart_channel_t * channel)
     if (channel->dma_unit)
         rcc_periph_clock_enable(channel->dma_rcc);
 
-    gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->pins );
-    gpio_set_af( channel->gpioport, channel->alt_func_num, channel->pins );
+    gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->tx_pin | channel->rx_pin );
+    gpio_set_af( channel->gpioport, channel->alt_func_num, channel->tx_pin | channel->rx_pin );
 
     usart_set_mode( channel->usart, USART_MODE_TX_RX );
     usart_set_flow_control( channel->usart, USART_FLOWCONTROL_NONE );
@@ -193,6 +193,9 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
     channel->stop = stop;
 
     uart_up(channel);
+
+    gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->tx_pin | channel->rx_pin );
+    gpio_set_af( channel->gpioport, channel->alt_func_num, channel->tx_pin | channel->rx_pin );
 
     uart_debug(uart, "%u %"PRIu8"%c%s",
             (unsigned)channel->baud, channel->databits, osm_uart_parity_as_char(channel->parity), osm_uart_stop_bits_as_str(channel->stop));

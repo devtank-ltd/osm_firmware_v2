@@ -17,7 +17,8 @@ typedef struct
     uint8_t               parity:2 /*osm_uart_parity_t*/;
     uint8_t               stop:2 /*osm_uart_stop_bits_t*/;
     uint32_t              gpioport;
-    uint16_t              pins;
+    uint16_t              tx_pin;
+    uint16_t              rx_pin;
     uint8_t               alt_func_num;
     uint8_t               irqn;
     uint32_t              dma_addr;
