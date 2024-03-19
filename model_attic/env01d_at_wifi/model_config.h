@@ -43,6 +43,7 @@
 #define IOS_COUNT           3
 
 #define ADC_CC_COUNT        3
+#define CC_DEFAULT_TYPE     CC_TYPE_A
 
 #define JSON_BUF_SIZE  1024
 

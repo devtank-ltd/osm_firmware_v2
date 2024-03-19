@@ -31,6 +31,7 @@
 #define IOS_COUNT           10
 #define ADC_CC_COUNT        3
 #define ADC_FTMA_COUNT      4
+#define CC_DEFAULT_TYPE     CC_TYPE_A
 
 typedef struct
 {

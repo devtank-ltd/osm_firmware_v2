@@ -512,6 +512,9 @@ class dev_t(dev_base_t):
     def disable_io(self, pin):
         self.do_cmd(f"io {pin} : I N")
 
+    def cc_type(self):
+        return self.do_cmd_multi("cc_gain")
+
     @property
     def print_cc_gain(self):
         return self.do_cmd_multi("cc_gain")

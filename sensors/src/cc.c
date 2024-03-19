@@ -38,7 +38,7 @@ static uint32_t             _cc_collection_time                 = CC_DEFAULT_COL
 static cc_config_t*         _configs = NULL;
 
 
-static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor)
+static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor, bool is_iv_ct)
 {
     /**
      First must calculate the peak voltage
@@ -47,12 +47,23 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
      Next convert peak voltage to RMS. For DC this is "=" to it. Kind of.
      For AC it can approximated by V_RMS = 1/sqrt(2) * V_peak
 
-     Now converting from a voltage to a current we use our trusty
-     V = I * R      - >     I = V / R
-     The resistor used is 22 Ohms.
+     Unfortunately there are two types of CT clamp, there is Current to
+     Current clamps (i.e. 100A on the main line is 5A on the clamp)
+     which require a load resistor to convert to a voltage to be
+     measured by the ADC, or there are Current to Voltage clamps (i.e.
+     100A on the main line is 1V on the clamp), which basically have the
+     load resistor on the clamp, and so the gain value isn't truely a
+     gain as it isn't unitless, but actually Ohm (or 1 / Ohm depending
+     on your perspective).
 
-     The current is scaled by the current clamp to the effect of
-     I_t = 2000 * I.
+     If we are using a Current to Voltage transformer, we will have to
+     use Ohm's law ourself:
+         Now converting from a voltage to a current we use our trusty
+         V = I * R      - >     I = V / R
+         The resistor used is 22 Ohms.
+
+     The current is scaled by the current clamp gain to the effect of
+     I_t = gain * I.
 
      To retain precision, multiplications should be done first (after casting to
      a uint32_t and then divisions after.
@@ -82,7 +93,10 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
         return false;
     }
     inter_value *= scale_factor;
-    inter_value /= (CC_RESISTOR_OHM * 1000);
+    if (!is_iv_ct)
+    {
+        inter_value /= (CC_RESISTOR_OHM * 1000);
+    }
     *cc_mA = inter_value;
     return true;
 }
@@ -346,6 +360,19 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 
     uint32_t adcs_rms;
     uint32_t midpoint = _configs[index].midpoint;
+    bool is_iv_ct;
+    switch (_configs[index].type)
+    {
+        case CC_TYPE_A:
+            is_iv_ct = false;
+            break;
+        case CC_TYPE_V:
+            is_iv_ct = true;
+            break;
+        default:
+            adc_debug("ADC type is invalid '%c'", _configs[index].type);
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
 
     unsigned cc_len;
 
@@ -381,7 +408,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     uint32_t scale_factor = _configs[index].ext_max_mA / _configs[index].int_max_mV;
-    if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor))
+    if (!_cc_conv(adcs_rms, &cc_mA, midpoint, scale_factor, is_iv_ct))
     {
         adc_debug("Failed to get current clamp");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -661,6 +688,7 @@ void cc_setup_default_mem(cc_config_t* memory, unsigned size)
         memory[i].midpoint      = CC_DEFAULT_MIDPOINT;
         memory[i].ext_max_mA    = CC_DEFAULT_EXT_MAX_MA;
         memory[i].int_max_mV    = CC_DEFAULT_INT_MAX_MV;
+        memory[i].type          = CC_DEFAULT_TYPE;
     }
 }
 
@@ -773,7 +801,7 @@ static command_response_t _cc_gain(char* args)
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
             log_out("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
-            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"V", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000);
+            log_out("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[i].type);
         }
         return COMMAND_RESP_ERR;
     }
@@ -794,7 +822,7 @@ static command_response_t _cc_gain(char* args)
     log_out("Set the CC gain:");
 print_exit:
     log_out("EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
-    log_out("INT max: %"PRIu32".%03"PRIu32"V", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000);
+    log_out("INT max: %"PRIu32".%03"PRIu32"%c", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000, _configs[index].type);
     return COMMAND_RESP_OK;
 syntax_exit:
     log_out("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
@@ -803,11 +831,66 @@ syntax_exit:
 }
 
 
+static command_response_t _cc_type_cb(char* args)
+{
+    if (!_configs)
+    {
+        log_error("No CC calibration");
+        return COMMAND_RESP_ERR;
+    }
+    // <index> <A/V>
+    command_response_t ret = COMMAND_RESP_ERR;
+
+    char* p, * np;
+    np = skip_space(args);
+    uint8_t index = strtoul(args, &p, 10);
+    p = skip_space(p);
+    if (!strlen(p))
+    {
+        /* Print all */
+        ret = COMMAND_RESP_OK;
+        for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+        {
+            log_out("CC%"PRIu8" Type: %c", i+1, _configs[i].type);
+        }
+    }
+    else if (index != 0 && index <= ADC_CC_COUNT && p != np)
+    {
+        /* Set index */
+        index--;
+
+        char new_type = *skip_space(p);
+        switch (new_type)
+        {
+            case CC_TYPE_V:
+                /* fall through */
+            case CC_TYPE_A:
+                _configs[index].type = new_type;
+                ret = COMMAND_RESP_OK;
+                break;
+            default:
+                break;
+        }
+        log_out("CC%"PRIu8" Type: %c", index+1, _configs[index].type);
+    }
+    else
+    {
+        log_out("Syntax: cc_type <channel> <V/A>");
+        log_out("e.g cc_type 3 100 50");
+    }
+    return ret;
+}
+
+
 struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cc",           "CC value",                 _cc_cb                         , false , NULL },
-                                       { "cc_cal",       "Calibrate the cc",         _cc_calibrate_cb               , false , NULL },
-                                       { "cc_mp",        "Set the CC midpoint",      _cc_mp_cb                      , false , NULL },
-                                       { "cc_gain",      "Set the max int and ext",  _cc_gain                       , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "cc"          , "CC value"                , _cc_cb                         , false , NULL },
+        { "cc_cal"      , "Calibrate the cc"        , _cc_calibrate_cb               , false , NULL },
+        { "cc_mp"       , "Set the CC midpoint"     , _cc_mp_cb                      , false , NULL },
+        { "cc_gain"     , "Set the max int and ext" , _cc_gain                       , false , NULL },
+        { "cc_type"     , "Set type of CT"          , _cc_type_cb                    , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
