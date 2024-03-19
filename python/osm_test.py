@@ -21,8 +21,6 @@ import comms_connection as comms
 
 import basetypes
 
-sys.path.append("../tools/config_gui/")
-
 import modbus_db
 
 sys.path.append("../tools/json_config_tool/")
@@ -76,7 +74,7 @@ class test_framework_t(object):
 
         self._done              = False
 
-        self._db                = modbus_db.modb_database_t(modbus_db.find_path() + "/../tools/config_gui/")
+        self._db                = modbus_db.modb_database_t(modbus_db.find_path())
 
     def __enter__(self):
         return self
