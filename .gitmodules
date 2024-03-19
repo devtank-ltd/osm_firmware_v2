@@ -4,3 +4,6 @@
 [submodule "libs/embedded-i2c-sen5x"]
 	path = libs/embedded-i2c-sen5x
 	url = ../embedded-i2c-sen5x
+[submodule "tools/osm_config_gui/app/modules/stm-serial-flasher"]
+	path = tools/osm_config_gui/app/modules/stm-serial-flasher
+	url = ../stm-serial-flasher

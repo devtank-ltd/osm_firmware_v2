@@ -16,6 +16,7 @@ directory.
 There are several dependencies required for OSM to compile successfully,install these on your machine with the following command:
 
     sudo apt install
+        gcc-arm-none-eabi \
         build-essential \
         git \
         pkg-config \
@@ -24,7 +25,7 @@ There are several dependencies required for OSM to compile successfully,install 
         stm32flash \
         valgrind \
         minicom \
-        idle-python3.11 \
+        idle-python3.12 \
         python3-influxdb \
         python3-pil.imagetk \
         python3-pymodbus \
@@ -33,6 +34,8 @@ There are several dependencies required for OSM to compile successfully,install 
         nodejs
 
 Note that if you are running Debian Stable, you may need to install picolibc from source as the version installed on the Debian package manager is too old. You will need version 1.7.4-1 at least.
+
+You may need to change to version of idle-python3.12, do `sudo apt-cache search idle-python` to see which ones are available.
 
 Build
 =====

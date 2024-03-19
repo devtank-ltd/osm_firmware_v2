@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OSM Config GUI</title>
+        <script type="module" async src="./modules/gui/config_gui.js"></script>
+        <link rel="stylesheet" href="styles/styling.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    </head>
+    <fieldset id="global-fieldset" class="global-fieldset">
+
+        <body id="top-level-body">
+            <div id="navbar"></div>
+            <center><div id="loader" class="loader"></div></center>
+            <div id="main-page-body">
+                <h1 class="main-page-title" id="main-page-title">OpenSmartMonitor Configuration</h1>
+                <div class="title-page">
+                    <button id="main-page-connect">Connect via USB</button>
+                    <button id="main-page-websocket-connect">Connect to Virtual OSM</button>
+                </div>
+                <center><div id="error-div" class="error-div"></div></center>
+            </div>
+            <center><img class="gui-img" id="gui-img" src="./imgs/gui.jpg" alt="OpenSmartMonitor GUI Image"></center>
+
+            <dialog id="save-as-dialog">
+                <form method="dialog">
+                    Save as...
+                  <input id="save-as-input" value=".json">
+                  <button id="save-as-confirm" type="submit">Save</button>
+                  <button id="save-as-cancel" type="submit">Cancel</button>
+                </form>
+            </dialog>
+
+            <dialog id="usb-disconnect-dialog">
+                <form method="dialog">
+                    OSM disconnected, return to home page.
+                  <button id="usb-disconnect-confirm" type="submit">Ok</button>
+                </form>
+            </dialog>
+
+        </body>
+    </fieldset>
+
+</html>

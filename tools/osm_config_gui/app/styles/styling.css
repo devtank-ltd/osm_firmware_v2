@@ -1,0 +1,620 @@
+:root {
+  --osmlight: #53aa00;
+  --white: #ffffff;
+  --black: #000000;
+  --osmdark: #0f8353;
+  font-family: "Open Sans", sans-serif;
+}
+
+input[type=number].meas-table-inputs::-webkit-inner-spin-button,
+input[type=number].meas-table-inputs::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+     margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.loader {
+  display: none;
+  margin-top: 20px;
+  border: 8px solid #f3f3f3; /* Light grey */
+  border-top: 8px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+button {
+  color: var(--white);
+  background-color: var(--osmdark);
+  border-radius: 20px; /* changed to pixels to ensure roundness */
+  border: none;
+  font-size: medium;
+  padding: 10px 20px;
+  margin: 5px;
+  cursor: pointer;
+
+}
+
+button:hover {
+  background-color: var(--osmlight);
+  cursor: pointer;
+  transform: scale(1.05);
+
+}
+
+
+thead {
+  background-color : var(--osmdark);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+td {
+  border     : 1px solid var(--osmdark);
+  text-align : center;
+}
+
+.error-div {
+  color: red;
+}
+
+/* Responsive layout */
+@media only screen and (max-width: 600px) {
+    /* Adjust styles for smaller screens */
+    .main-page-title {
+        font-size: 24px;
+    }
+
+    .gui-img {
+        width: 80%;
+    }
+
+    .console-terminal {
+
+    }
+
+    /* Adjust other elements as needed */
+}
+
+/* Title Page */
+
+.title-page {
+  display: flex;
+  justify-content: center;
+  }
+
+.main-page-title {
+  display: flex;
+  justify-content: center;
+}
+
+
+.gui-img {
+  justify-content: center;
+  max-width: 60%;
+  padding-top:30px;
+}
+
+
+/* Navigation Bar */
+
+.topnav {
+  background-color: var(--osmdark);
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.topnav a {
+  float: left;
+  display: block;
+  color: var(--white);
+  padding: 16px;
+  text-decoration: none;
+  font-size: 17px;
+  height: 100%;
+  text-align: center;
+}
+
+.topnav a:hover {
+  background-color: var(--osmlight);
+  color: var(--white);
+  cursor: pointer;
+}
+
+.topnav a.active {
+  background-color: var(--osmlight);
+  color: var(--white);
+}
+
+.nav-links {
+  display: flex;
+}
+
+.nav-links li{
+  width: 100px;
+}
+
+.global-load-save-config-buttons {
+  float: right;
+}
+
+.global-save-config-msg {
+  float: left;
+  padding: 16px;
+  color: var(--white);
+}
+
+.global-load-save-config-buttons button {
+  background-color: var(--white);
+  color: var(--black);
+  margin-right: 0.4em;
+  margin-top: 0.5em;
+  border-radius:20px!important;
+  margin-left:15px
+}
+
+.global-load-save-config-buttons button:hover {
+  background-color: var(--osmlight);
+  color: var(--white);
+}
+
+/* Home Page */
+
+.home-page-div {
+  display: grid;
+}
+
+.home-edit-uplink-field {
+  grid-column-start: 0;
+  grid-column-end: 2;
+  grid-row-start: 2;
+  grid-row-end: 2;
+  border-radius: 10%;
+  margin: auto;
+}
+
+.home-edit-uplink-field input {
+  border-style: solid;
+  color: var(--black);
+  border-color: var(--osmdark);
+  background-color: var(--white);
+  border-radius: 15px; /* changed to pixels to ensure roundness */
+  margin-bottom: 20px;
+}
+
+.home-uplink-submit {
+  cursor: pointer;
+}
+
+.home-serial-firmware-config-div {
+  margin          : 2em 0.5em;
+  grid-column-start: 0;
+  grid-column-end: 2;
+  grid-row-start: 4;
+  grid-row-end: 4;
+}
+
+.home-uplink-error-div {
+  color: red;
+}
+
+.serial-num-input {
+  border-style: solid;
+  border-radius: 15px;
+  width: 40%;
+  border-color: var(--osmdark);
+  grid-column-start: 0;
+  grid-column-end: 0;
+  grid-row-start: 0;
+  grid-row-end: 0;
+}
+
+.icon-row {
+  margin-top: 2em;
+  grid-column-start: 4;
+  grid-column-end: 4;
+  grid-row-start: 1;
+  grid-row-end: 2;
+}
+
+.global-fieldset {
+  border: none;
+}
+
+.osm-sensor {
+  grid-column-start: 4;
+  grid-column-end: 4;
+  grid-row-start: 2;
+  grid-row-end: 4;
+  margin: auto;
+}
+
+/* Measurements Table */
+
+.measurements-table {
+  grid-column-start: 0;
+  grid-column-end: 2;
+  grid-row-start: 0;
+  grid-row-end: 0;
+  overflow:auto;
+  margin: auto;
+  max-width: 450px;
+  height: 400px;
+  margin-top: 2em;
+  border-style: solid;
+  border-radius: 15px;
+  border-color: var(--osmdark);
+}
+
+.measurements-table table {
+  border-collapse : collapse;
+}
+
+.measurements-table td {
+  padding    : .2em .8em;
+}
+.meas-table-inputs {
+  border: none;
+  text-align: center;
+  width: 100%;
+}
+
+
+/* LoRaWAN Configuration Table */
+
+.lora-config-table table {
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  width: 90%;
+  margin: auto;
+  overflow: auto;
+  height:150px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  margin-top: 2em;
+  margin-left: 2em;
+}
+
+
+.lora-config-div .buttons {
+  margin: auto;
+  margin-left: 1em;
+  padding-top: 2em;
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+
+/* WiFi Configuration Table */
+
+.wifi-config-table table {
+  grid-column-start: 2;
+  grid-column-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  height:150px;
+  width: 90%;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  margin-top: 2em;
+  margin-left: 2em;
+}
+
+
+.wifi-config-div .buttons {
+  margin-left: 1em;
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+
+/* Firmware Tool */
+
+
+.home-firmware-div {
+  grid-column-start: 3;
+  grid-column-end: 3;
+  grid-row-start: 2;
+  grid-row-end: 3;
+}
+
+.home-firmware-div table {
+  width: 90%;
+  height:150px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  margin-top: 2em;
+  margin-left: 2em;
+}
+
+.fw-btn {
+  display:flex;
+  justify-content: center;
+}
+
+/* Modbus */
+
+
+.modbus-tab-widgets {
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+}
+
+
+/* Modbus Config Table */
+
+.modbus-template-config table {
+  border-style:solid;
+  border-color: var(--osmdark);
+  width: 100%;
+  border-radius:15px;
+}
+
+/* Modbus Current Settings */
+
+
+.modbus-current-config {
+  overflow:auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+}
+
+.modbus-current-config table {
+  width: 100%;
+}
+
+/* Modbus Add New Template Table */
+
+.modbus-add-new-template-div {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+}
+
+.modbus-add-new-template-div table {
+  width: 100%;
+  height: 100%;
+}
+
+.modbus-add-new-template-div input {
+  text-align: center;
+  border: none;
+  width: 90%;
+}
+
+
+/* Modbus Template Table */
+
+.modbus-template-config {
+  display: flex;
+  justify-content: center;
+}
+
+.selected-cell {
+  background-color: var(--osmdark);
+  color: var(--white)
+}
+
+.modbus-template-config-table-reg-field {
+  white-space: pre-wrap;
+}
+
+
+/* Current Clamp Configuration */
+
+
+.current-clamp-table {
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  width: 100%;
+  margin-right:50px;
+}
+
+
+/* IO Configuration */
+
+.io-table {
+  margin-top: 50px;
+  border-style:solid;
+  border-radius:15px;
+  border-color: var(--osmdark);
+  width: 100%;
+  margin-right:50px;
+
+}
+
+
+/* 4-20mA Configuration */
+
+.ftma-div {
+  margin-top: 50px;
+}
+
+.ftma-table table {
+  border-collapse : collapse;
+  width: 500px;
+  height: 300px;
+
+}
+
+
+/* Console Tab */
+
+.console-grid-container {
+  padding: 2em;;
+}
+
+.console-cmd-field {
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 2;
+  grid-row-end: 2;
+}
+
+.console-cmd-field input {
+  width: 500px;
+  padding: 0.5em;
+}
+
+.console-help {
+  margin-left: 2em;
+  grid-column-start: 2;
+  grid-column-end: 2;
+  grid-row-start: 1;
+  grid-row-end: 2;
+}
+
+.console-terminal {
+  background-color: var(--black);
+  color: var(--osmlight);
+  width: 100%;
+  height: 500px;
+  grid-column-start: 1;
+  grid-column-end: 2;
+  grid-row-start: 1;
+  grid-row-end: 2;
+  overflow:auto;
+  border-radius:15px;
+  text-align: left;
+}
+
+.console-terminal-para {
+  white-space: pre-wrap;
+}
+
+.help-container {
+  white-space: pre-wrap;
+  overflow: auto;
+  height: 500px;
+}
+
+
+/* Advanced Config Tab */
+
+.adv-conf-dropdowns {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, fr);
+  grid-template-rows: repeat(3, 100px);
+  width: 100%;
+  text-align: center;
+}
+
+.adv-conf-dropdowns label {
+  background-color : var(--osmlight);
+  font-weight      : bold;
+  color: var(--white);
+}
+
+.modbus-template-table-top-level{
+  grid-column-start: 1;
+  grid-column-end: 1;
+  grid-row-start: 1;
+  grid-row-end: 1;
+}
+
+.modbus-current-config-top-level {
+  grid-column-start: 1;
+  grid-column-end: 1;
+  grid-row-start: 2;
+  grid-row-end: 2;
+}
+
+.modbus-add-new-template-div {
+  grid-column-start: 1;
+  grid-column-end: 1;
+  grid-row-start: 3;
+  grid-row-end: 3;
+}
+
+.current-clamp-overview {
+  grid-column-start: 3;
+  grid-column-end: 3;
+  grid-row-start: 1;
+  grid-row-end: 1;
+}
+
+.current-clamp-div {
+  display: flex;
+  justify-content: center;
+}
+
+
+.io-div {
+  display: flex;
+  justify-content: center;
+  grid-column-start: 3;
+  grid-column-end: 3;
+  grid-row-start: 3;
+  grid-row-end: 3;
+}
+
+/* Icons */
+
+.icon-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.icon-row a {
+      width: calc(50% - 20px); /* Adjust width to occupy half of the container minus margin */
+}
+
+a {
+  text-decoration: none;
+  color: #333;
+  display: inline-block;
+  text-align: center;
+}
+
+svg {
+  vertical-align: middle;
+  fill: #52b374;
+  width: 40px;
+  height: 40px;
+}
+
+a:hover {
+  color: black;
+}
+
+a:hover svg {
+  fill: var(--osmlight);
+  transform: scale(1.2);
+}
+
+/* Adjustments for small screens */
+@media screen and (max-width: 600px) {
+  .icon-row a {
+    width: 100%; /* Occupy full width on smaller screens */
+    margin-right: 0;
+  }
+}

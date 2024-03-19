@@ -1,0 +1,53 @@
+{
+    "name": "RIF",
+    "desc": "Rayleigh RIF-220",
+    "unit_id": "1",
+    "wordorder": "LSW",
+    "byteorder": "MSB",
+    "bits": 8,
+    "parity": "None",
+    "stopbits": 1,
+    "registers": {
+        "Imp": {
+            "hex": "0x60",
+            "function": 4,
+            "datatype": "F"
+        },
+        "AP1": {
+            "hex": "0x10",
+            "function": 4,
+            "datatype": "F"
+        },
+        "AP2": {
+            "hex": "0x12",
+            "function": 4,
+            "datatype": "F"
+        },
+        "AP3": {
+            "hex": "0x14",
+            "function": 4,
+            "datatype": "F"
+        },
+        "VP1": {
+            "hex": "0x0",
+            "function": 4,
+            "datatype": "F"
+        },
+        "VP2": {
+            "hex": "0x2",
+            "function": 4,
+            "datatype": "F"
+        },
+        "VP3": {
+            "hex": "0x4",
+            "function": 4,
+            "datatype": "F"
+        },
+        "PF": {
+            "hex": "0x36",
+            "function": 4,
+            "datatype": "F"
+        }
+    }
+
+}
