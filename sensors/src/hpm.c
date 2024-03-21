@@ -344,11 +344,8 @@ static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_readin
 
 static measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
 {
-    if (!hpm_is_on)
-    {
-        uart_enable(HPM_UART, true);
-        hpm_enable(true);
-    }
+    uart_enable(HPM_UART, true);
+    hpm_enable(true);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
