@@ -483,6 +483,11 @@ static bool _linux_load_fd_socket_server(char* line, fd_t* fd)
         linux_error("FD missing for \"%s\" (SOCKET SERVER)", fd->name);
         return false;
     }
+    if (type != LINUX_FD_TYPE_SOCKET_SERVER)
+    {
+        linux_error("Bad socket server line");
+        return false;
+    }
     fd->socket_server.client = NULL;
     linux_port_debug("Load \"%s\" SOCKET SERVER (%d) - UART:%u", fd->name, fd->type, fd->socket_server.uart);
     return true;
@@ -496,13 +501,18 @@ static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
         linux_error("Handed NULL pointer");
         return false;
     }
-    fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
+    fd->type = LINUX_FD_TYPE_SOCKET_CLIENT;
     fd->cb = linux_uart_proc;
     char server_name[LINUX_PTY_NAME_SIZE] = {0};
     int type;
     if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_CLIENT, &type, fd->name, &fd->socket_client.fd, server_name) != 4)
     {
         linux_error("Failed to read SOCKET CLIENT saved FD line!");
+        return false;
+    }
+    if (type != LINUX_FD_TYPE_SOCKET_CLIENT)
+    {
+        linux_error("Bad socket client line");
         return false;
     }
     if (!_linux_check_fd_exists(fd->socket_client.fd))
