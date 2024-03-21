@@ -1205,7 +1205,7 @@ void _linux_iterate(void)
                     int r = _named_fd_read(fd, fd_handler->name, buf, sizeof(buf));
                     if (r > 0 && fd_handler->cb)
                     {
-                        int uart = fd_handler->socket_server.uart;
+                        int uart = fd_handler->socket_client.server->socket_server.uart;
                         fd_handler->cb(uart, buf, r);
                     }
                     if (r == 0)
