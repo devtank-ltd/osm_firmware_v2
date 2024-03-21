@@ -982,6 +982,7 @@ void _linux_iterate(void)
                         linux_error("Another socket connection attempted?");
                         break;
                     }
+                    bool client_connected = false;
                     for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
                     {
                         fd_t* tfdh = &fd_list[i];
@@ -1000,11 +1001,15 @@ void _linux_iterate(void)
                             fd_handler->socket_server.client = tfdh;
                             _linux_setup_poll();
                             linux_port_debug("SOCKET CLIENT %s CONNECTED", tfdh->name);
-                            return;
+                            client_connected = true;
+                            break;
                         }
                     }
-                    close(client_sockfd);
-                    linux_error("Client socket connection failed, no spare slot.");
+                    if (!client_connected)
+                    {
+                        close(client_sockfd);
+                        linux_error("Client socket connection failed, no spare slot.");
+                    }
                     break;
                 }
                 case LINUX_FD_TYPE_SOCKET_CLIENT:
