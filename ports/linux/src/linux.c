@@ -908,7 +908,7 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             }
             else
             {
-                snprintf(pos, buf_len + out_buf - pos, "[0x%02"PRIx8"]", buf[i]);
+                snprintf(pos, buf_len - (pos - out_buf), "[0x%02"PRIx8"]", (uint8_t)buf[i]);
                 pos += 6;
             }
         }
