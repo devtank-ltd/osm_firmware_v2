@@ -5,7 +5,8 @@
 
 #define LINUX_FILE_LOC          "/tmp/osm/"
 
-#define LINUX_PTY_NAME_SIZE     16
+#define LINUX_PTY_NAME_STR_SIZE 32
+#define LINUX_PTY_NAME_SIZE     (LINUX_PTY_NAME_STR_SIZE+1)
 #define LOCATION_LEN 100
 
 extern volatile bool linux_threads_deinit;

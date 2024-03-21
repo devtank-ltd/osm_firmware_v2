@@ -36,7 +36,7 @@
 #include "pinmap.h"
 
 #define LINUX_PTY_BUF_SIZ       64
-#define LINUX_LINE_BUF_SIZ      32
+#define LINUX_LINE_BUF_SIZ      1024
 #define LINUX_MAX_NFDS          32
 
 #define LINUX_MASTER_SUFFIX     "_master"
@@ -46,7 +46,13 @@
 #define LINUX_REBOOT_FILE_LOC   "reboot.dat"
 #define LINUX_REBOOT_FILE_TIMEOUT_S 60
 
-#define LINUX_FD_SAVE_FMT "%s %"PRIi32" %"PRIi32" %u\n"
+#define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %u\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_CLIENT                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"STR(LINUX_PTY_NAME_STR_SIZE)"s\n"
+
+#define LINUX_FD_SAVE_PTY(_name, _master_fd, _slave_fd, _uart)          LINUX_FD_SAVE_FMT_PTY           , LINUX_FD_TYPE_PTY, _name, _master_fd, _slave_fd, _uart
+#define LINUX_FD_SAVE_SOCKET_SERVER(_name, _fd, _uart)                  LINUX_FD_SAVE_FMT_SOCKET_SERVER , LINUX_FD_TYPE_SOCKET_SERVER, _name, _fd, _uart
+#define LINUX_FD_SAVE_SOCKET_CLIENT(_name, _fd, _server_name)           LINUX_FD_SAVE_FMT_SOCKET_CLIENT , LINUX_FD_TYPE_SOCKET_CLIENT, _name, _fd, _server_name
 
 #define LINUX_DEFAULT_SOCKET_PORT       10240
 
@@ -391,15 +397,187 @@ static void _linux_save_fd_file(void)
             switch (fd->type)
             {
                 case LINUX_FD_TYPE_PTY:
-                    fprintf(osm_reboot_file, LINUX_FD_SAVE_FMT, fd->name, fd->pty.master_fd, fd->pty.slave_fd, fd->pty.uart);
-                    linux_port_debug("Save FD %i \"%s\" UART:%u", i, fd->name, fd->pty.uart);
+                    fprintf(osm_reboot_file, LINUX_FD_SAVE_PTY(fd->name, fd->pty.master_fd, fd->pty.slave_fd, fd->pty.uart));
+                    linux_port_debug("Save FD %i \"%s\" PTY (%d) - UART:%u", i, fd->name, fd->type, fd->pty.uart);
                     break;
+                case LINUX_FD_TYPE_SOCKET_SERVER:
+                    fprintf(osm_reboot_file, LINUX_FD_SAVE_SOCKET_SERVER(fd->name, fd->socket_server.fd, fd->socket_server.uart));
+                    linux_port_debug("Save FD %i \"%s\" SOCKET SERVER (%d) - UART:%u", i, fd->name, fd->type, fd->socket_server.uart);
+                    break;
+                case LINUX_FD_TYPE_SOCKET_CLIENT:
+                {
+                    char* server_name = fd->socket_client.server->name;
+                    fprintf(osm_reboot_file, LINUX_FD_SAVE_SOCKET_CLIENT(fd->name, fd->socket_client.fd, server_name));
+                    linux_port_debug("Save FD %i \"%s\" SOCKET CLIENT (%d) - SERVER: \"%s\"", i, fd->name, fd->type, server_name);
+                    break;
+                }
                 default:
                     break;
             }
         }
     }
     fclose(osm_reboot_file);
+}
+
+
+static bool _linux_check_fd_exists(int fd)
+{
+    int pid = getpid();
+    unsigned path_len = snprintf(NULL, 0, "/proc/%d/fd/%d", pid, fd);
+    char* path = malloc(path_len+1);
+    snprintf(path, path_len, "/proc/%d/fd/%d", pid, fd);
+    path[path_len] = 0;
+
+    if (access(path, F_OK) != 0)
+    {
+        linux_port_debug("FD %d no longer exists.", fd);
+        return false;
+    }
+    linux_port_debug("FD (%d) exists for this PID (%d)", fd, pid);
+    return true;
+}
+
+
+static bool _linux_load_fd_pty(char* line, fd_t* fd)
+{
+    if (!line || !fd)
+    {
+        linux_error("Handed NULL pointer");
+        return false;
+    }
+    fd->type = LINUX_FD_TYPE_PTY;
+    fd->cb = linux_uart_proc;
+    int type;
+    if (sscanf(line, LINUX_FD_SAVE_FMT_PTY, &type, fd->name, &fd->pty.master_fd, &fd->pty.slave_fd, &fd->pty.uart) != 5)
+    {
+        linux_error("Failed to read PTY saved FD line!");
+        return false;
+    }
+    if (!_linux_check_fd_exists(fd->socket_server.fd))
+    {
+        linux_error("FD missing for \"%s\" (PTY)", fd->name);
+        return false;
+    }
+    linux_port_debug("Load \"%s\" PTY (%d) - UART:%u", fd->name, fd->type, fd->pty.uart);
+    return true;
+}
+
+
+static bool _linux_load_fd_socket_server(char* line, fd_t* fd)
+{
+    if (!line || !fd)
+    {
+        linux_error("Handed NULL pointer");
+        return false;
+    }
+    fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
+    fd->cb = linux_uart_proc;
+    int type;
+    if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_SERVER, &type, fd->name, &fd->socket_server.fd, &fd->socket_server.uart) != 4)
+    {
+        linux_error("Failed to read SOCKET SERVER saved FD line!");
+        return false;
+    }
+    if (!_linux_check_fd_exists(fd->socket_server.fd))
+    {
+        linux_error("FD missing for \"%s\" (SOCKET SERVER)", fd->name);
+        return false;
+    }
+    if (type != LINUX_FD_TYPE_SOCKET_SERVER)
+    {
+        linux_error("Bad socket server line");
+        return false;
+    }
+    fd->socket_server.client = NULL;
+    linux_port_debug("Load \"%s\" SOCKET SERVER (%d) - UART:%u", fd->name, fd->type, fd->socket_server.uart);
+    return true;
+}
+
+
+static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
+{
+    if (!line || !fd)
+    {
+        linux_error("Handed NULL pointer");
+        return false;
+    }
+    fd->type = LINUX_FD_TYPE_SOCKET_CLIENT;
+    fd->cb = linux_uart_proc;
+    char server_name[LINUX_PTY_NAME_SIZE] = {0};
+    int type;
+    if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_CLIENT, &type, fd->name, &fd->socket_client.fd, server_name) != 4)
+    {
+        linux_error("Failed to read SOCKET CLIENT saved FD line!");
+        return false;
+    }
+    if (type != LINUX_FD_TYPE_SOCKET_CLIENT)
+    {
+        linux_error("Bad socket client line");
+        return false;
+    }
+    if (!_linux_check_fd_exists(fd->socket_client.fd))
+    {
+        linux_error("FD missing for \"%s\" (SOCKET CLIENT)", fd->name);
+        return false;
+    }
+    unsigned server_name_len = strnlen(server_name, LINUX_PTY_NAME_SIZE-1);
+    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* fd_n = &fd_list[i];
+        if (!fd_n->name[0] || !isascii(fd_n->name[0]))
+            continue;
+        if (strnlen(fd_n->name, LINUX_PTY_NAME_SIZE-1) != server_name_len)
+            continue;
+        if (strncmp(fd_n->name, server_name, server_name_len) != 0)
+            continue;
+        fd->socket_client.server = fd_n;
+        fd->socket_client.server->socket_server.client = fd;
+        linux_port_debug("Load \"%s\" SOCKET CLIENT (%d) - SERVER: \"%s\"", fd->name, fd->type, server_name);
+        return true;
+    }
+    linux_error("Failed to find server for socket client");
+    return false;
+}
+
+
+static void _linux_insert_fd(fd_t new_fd)
+{
+    unsigned new_fw_name_len = strnlen(new_fd.name, LINUX_PTY_NAME_SIZE-1);
+    bool found = false;
+    int next_slot = -1;
+    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    {
+        fd_t* fd = &fd_list[i];
+        if (!fd->name[0] || !isascii(fd->name[0]))
+        {
+            if (next_slot == -1)
+                next_slot = i;
+            continue;
+        }
+        if (strnlen(fd->name, LINUX_PTY_NAME_SIZE-1) != new_fw_name_len)
+        {
+            continue;
+        }
+        if (strncmp(fd->name, new_fd.name, new_fw_name_len) != 0)
+        {
+            continue;
+        }
+        memcpy(fd, &new_fd, sizeof(fd_t));
+        linux_port_debug("Loaded FD %u \"%s\" T:%d", i, fd->name, fd->type);
+        found = true;
+        return;
+    }
+    if (!found)
+    {
+        if (next_slot != -1)
+        {
+            fd_t* fd = &fd_list[next_slot];
+            memcpy(fd, &new_fd, sizeof(fd_t));
+            linux_port_debug("Loaded (new) FD %d \"%s\" T:%d", next_slot, fd->name, fd->type);
+            return;
+        }
+    }
+    linux_error("Failed to find slot");
 }
 
 
@@ -427,51 +605,57 @@ static void _linux_load_fd_file(void)
     char line[LINUX_LINE_BUF_SIZ];
     while (fgets(line, LINUX_LINE_BUF_SIZ-1, osm_reboot_file))
     {
-        char  name[LINUX_PTY_NAME_SIZE] = {0};
-        int32_t master_fd;
-        int32_t slave_fd;
-        unsigned uart;
-        if (sscanf(line, LINUX_FD_SAVE_FMT, name, &master_fd, &slave_fd, &uart) != 4)
+        char* np;
+        int fd_type = strtoul(line, &np, 10);
+        if (line == np)
         {
-            linux_error("Failed to read saved FD line!");
+            linux_error("Could not read type \"%.*s\"", LINUX_LINE_BUF_SIZ, line);
             continue;
         }
-        unsigned name_len = strnlen(name, LINUX_PTY_NAME_SIZE-1);
-
-        bool found = false;
-        int next_slot = -1;
-        for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+        bool loaded_fd = false;
+        fd_t new_fd;
+        switch (fd_type)
         {
-            fd_t* fd = &fd_list[i];
-            if (!fd->name[0] || !isascii(fd->name[0]))
-            {
-                if (next_slot == -1)
-                    next_slot = i;
+            case LINUX_FD_TYPE_PTY:
+                loaded_fd = _linux_load_fd_pty(line, &new_fd);
+                break;
+            case LINUX_FD_TYPE_SOCKET_SERVER:
+                loaded_fd = _linux_load_fd_socket_server(line, &new_fd);
+                break;
+            case LINUX_FD_TYPE_SOCKET_CLIENT:
+                /* make sure to do clients after server */
                 continue;
-            }
-            if (strnlen(fd->name, LINUX_PTY_NAME_SIZE-1) != name_len)
+            default:
+                linux_error("Unexpected FD type: %d from line: \"%s\"", fd_type, line);
                 continue;
-            if (strncmp(fd->name, name, name_len) != 0)
-                continue;
-            fd->pty.master_fd = master_fd;
-            fd->pty.slave_fd = slave_fd;
-            fd->pty.uart = uart;
-            linux_port_debug("Saved FD %u \"%s\" UART:%u found/restored", i, fd->name, uart);
-            found = true;
         }
-        if (!found)
+        if (!loaded_fd)
         {
-            if (next_slot != -1)
+            linux_error("Failed to load FD");
+            continue;
+        }
+        _linux_insert_fd(new_fd);
+    }
+    fclose(osm_reboot_file);
+    osm_reboot_file = fopen(osm_reboot_loc, "r");
+    while (fgets(line, LINUX_LINE_BUF_SIZ-1, osm_reboot_file))
+    {
+        char* np;
+        int fd_type = strtoul(line, &np, 10);
+        if (line == np)
+        {
+            linux_error("Could not read type \"%.*s\"", LINUX_LINE_BUF_SIZ, line);
+            continue;
+        }
+        fd_t new_fd;
+        if (fd_type == LINUX_FD_TYPE_SOCKET_CLIENT)
+        {
+            if (!_linux_load_fd_socket_client(line, &new_fd))
             {
-                fd_t* fd = &fd_list[next_slot];
-                memcpy(fd->name, name, name_len+1);
-                fd->type = LINUX_FD_TYPE_PTY;
-                fd->cb = linux_uart_proc;
-                fd->pty.uart = uart;
-                fd->pty.master_fd = master_fd;
-                fd->pty.slave_fd = slave_fd;
-                linux_port_debug("Saved FD %d \"%s\" UART:%u restored", next_slot, fd->name, uart);
+                linux_error("Failed to load FD");
+                continue;
             }
+            _linux_insert_fd(new_fd);
         }
     }
     fclose(osm_reboot_file);
@@ -1021,7 +1205,7 @@ void _linux_iterate(void)
                     int r = _named_fd_read(fd, fd_handler->name, buf, sizeof(buf));
                     if (r > 0 && fd_handler->cb)
                     {
-                        int uart = fd_handler->socket_server.uart;
+                        int uart = fd_handler->socket_client.server->socket_server.uart;
                         fd_handler->cb(uart, buf, r);
                     }
                     if (r == 0)
