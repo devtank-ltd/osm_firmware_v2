@@ -890,6 +890,7 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             linux_port_debug("%s << '%c' (0x%02"PRIx8")", name, c, (uint8_t)c);
         else
             linux_port_debug("%s << [0x%02"PRIx8"]", name, (uint8_t)c);
+        buf[0] = c;
         return 1;
     }
     else
