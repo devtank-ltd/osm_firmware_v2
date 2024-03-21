@@ -1337,7 +1337,7 @@ void linux_usleep(unsigned usecs)
         if (!rc || rc == ETIMEDOUT)
             pthread_mutex_unlock(&_sleep_mutex);
     }
-    else printf("FAILED to sleep.\n");
+    else linux_port_debug("FAILED to sleep.\n");
 }
 
 
@@ -1345,10 +1345,11 @@ void linux_awaken(void)
 {
     if (!pthread_mutex_lock(&_sleep_mutex))
     {
+        linux_port_debug("Trigger end of Linux sleep");
         pthread_cond_broadcast(&_sleep_cond);
         pthread_mutex_unlock(&_sleep_mutex);
     }
-    else printf("Sleep Linux not kicked.\n");
+    else linux_port_debug("Sleep Linux not kicked.\n");
 }
 
 
