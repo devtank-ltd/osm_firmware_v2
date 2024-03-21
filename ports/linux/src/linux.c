@@ -556,6 +556,19 @@ static void _linux_setup_socket_server(int* fd)
     addr.sin_addr.s_addr = INADDR_ANY;
     addr.sin_family = AF_INET;
 
+    int enable = 1;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0)
+    {
+        linux_error("Error setting socket reuse.");
+    }
+    struct timeval to;
+    to.tv_sec = 1;
+    to.tv_usec = 0;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to)) < 0)
+    {
+        linux_error("Error setting socket timeout.");
+    }
+
     if(bind(socket_fd, (struct sockaddr *)&addr,sizeof(struct sockaddr_in) ) < 0)
     {
         linux_error("Error binding socket");
@@ -631,17 +644,18 @@ static void _linux_cleanup_fd_handlers(void)
                     linux_error("Fail close EVENT '%s'", fd->name);
                 break;
             case LINUX_FD_TYPE_SOCKET_SERVER:
-                if (fd->socket_server.client &&
-                    close(fd->socket_server.client->socket_client.fd))
-                    linux_error("Fail close SOCKET client '%s'", fd->name);
-                memset(fd->socket_server.client, 0, sizeof(fd_t));
-                fd->socket_server.client = NULL;
+                if (fd->socket_server.client)
+                {
+                    if (!close(fd->socket_server.client->socket_client.fd))
+                        linux_error("Fail close SOCKET client '%s'", fd->name);
+                    memset(fd->socket_server.client, 0, sizeof(fd_t));
+                    fd->socket_server.client = NULL;
+                }
                 if (close(fd->socket_server.fd))
                     linux_error("Fail close SOCKET server '%s'", fd->name);
                 break;
             case LINUX_FD_TYPE_SOCKET_CLIENT:
-                if (close(fd->socket_client.fd))
-                    linux_error("Fail close SOCKET client '%s'", fd->name);
+                // Closed when server socket is closed.
                 break;
             default:
                 linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
@@ -853,13 +867,69 @@ static int _linux_get_fd_peek(int fd)
 }
 
 
+
+static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
+{
+    int len = _linux_get_fd_peek(fd);
+    if (!len)
+        return 0;
+    if (len < 0)
+        return -1;
+    buf_len--; // Leave space for null termination
+    if (len > (int)buf_len)
+        len = buf_len;
+    if (len == 1)
+    {
+        char c;
+        int r = read(fd, &c, len);
+        if (r != len)
+            linux_port_debug("Peak does not equal len");
+        if (r <= 0)
+            return -1;
+        if (isgraph(c))
+            linux_port_debug("%s << '%c' (0x%02"PRIx8")", name, c, (uint8_t)c);
+        else
+            linux_port_debug("%s << [0x%02"PRIx8"]", name, (uint8_t)c);
+        return 1;
+    }
+    else
+    {
+        int r = read(fd, buf, buf_len);
+        if (r != len)
+            linux_port_debug("Peak does not equal len");
+        if (r <= 0)
+            return -1;
+        char out_buf[buf_len+1];
+        char* pos = out_buf;
+        for (int i = 0; i < r; i++)
+        {
+            if ((isgraph(buf[i]) || buf[i] == ' ') && buf[i] != 0)
+            {
+                *pos = buf[i];
+                pos++;
+            }
+            else
+            {
+                snprintf(pos, buf_len - (pos - out_buf), "[0x%02"PRIx8"]", (uint8_t)buf[i]);
+                pos += 6;
+            }
+        }
+        *pos = 0;
+        linux_port_debug("%s << '%s'", name, out_buf);
+        return r;
+    }
+}
+
+
 void _linux_iterate(void)
 {
     int ready = poll(pfds, nfds, 1000);
+    linux_port_debug("Poll complete.");
     if (linux_threads_deinit)
         return;
     if (ready == -1 && _linux_running)
         linux_error("TIMEOUT");
+    char buf[1024];
     for (uint32_t i = 0; i < nfds; i++)
     {
         if (pfds[i].revents == 0)
@@ -876,54 +946,9 @@ void _linux_iterate(void)
             {
                 case LINUX_FD_TYPE_PTY:
                 {
-                    int len = _linux_get_fd_peek(pfds[i].fd);
-                    if (len > 1023)
-                        len = 1023;
-                    if (len <= 0)
-                        break;
-                    if (len == 1)
-                    {
-                        char c;
-                        int r = read(pfds[i].fd, &c, len);
-                        if (r != len)
-                            linux_port_debug("Peak does not equal len");
-                        if (r <= 0)
-                            break;
-                        if (isgraph(c))
-                            linux_port_debug("%s << '%c' (0x%02"PRIx8")", fd_handler->name, c, (uint8_t)c);
-                        else
-                            linux_port_debug("%s << [0x%02"PRIx8"]", fd_handler->name, (uint8_t)c);
-                        if (fd_handler->cb)
-                            fd_handler->cb(fd_handler->pty.uart, &c, 1);
-                    }
-                    else
-                    {
-                        char buf[1024];
-                        int r = read(pfds[i].fd, buf, len);
-                        if (r != len)
-                            linux_port_debug("Peak does not equal len");
-                        if (r <= 0)
-                            break;
-                        if (fd_handler->cb)
-                            fd_handler->cb(fd_handler->pty.uart, buf, r);
-                        char out_buf[1024];
-                        char* pos = out_buf;
-                        for (int i = 0; i < r; i++)
-                        {
-                            if ((isgraph(buf[i]) || buf[i] == ' ') && buf[i] != 0)
-                            {
-                                *pos = buf[i];
-                                pos++;
-                            }
-                            else
-                            {
-                                snprintf(pos, 1023 + out_buf - pos, "[0x%02"PRIu8"]", buf[i]);
-                                pos += 6;
-                            }
-                        }
-                        *pos = 0;
-                        linux_port_debug("%s << '%s'", fd_handler->name, out_buf);
-                    }
+                    int r = _named_fd_read(pfds[i].fd, fd_handler->name, buf, sizeof(buf));
+                    if (r > 0 && fd_handler->cb)
+                        fd_handler->cb(fd_handler->pty.uart, buf, r);
                     break;
                 }
                 case LINUX_FD_TYPE_TIMER:
@@ -959,6 +984,7 @@ void _linux_iterate(void)
                         linux_error("Another socket connection attempted?");
                         break;
                     }
+                    bool slot_found = false;
                     for (unsigned i = 0; i < LINUX_MAX_NFDS; i++)
                     {
                         fd_t* tfdh = &fd_list[i];
@@ -976,41 +1002,28 @@ void _linux_iterate(void)
                             tfdh->cb = linux_uart_proc;
                             fd_handler->socket_server.client = tfdh;
                             _linux_setup_poll();
-                            linux_port_debug("SOCKET CLIENT CONNECTED");
-                            return;
+                            linux_port_debug("SOCKET CLIENT %s CONNECTED", tfdh->name);
+                            slot_found = true;
+                            break;
                         }
                     }
-                    close(client_sockfd);
-                    linux_error("Client socket connection failed, no spare slot.");
+                    if (!slot_found)
+                    {
+                        close(client_sockfd);
+                        linux_error("Client socket connection failed, no spare slot.");
+                    }
                     break;
                 }
                 case LINUX_FD_TYPE_SOCKET_CLIENT:
                 {
-                    int total = 0;
-                    int r = 1;
                     int fd = fd_handler->socket_client.fd;
-                    while (r)
+                    int r = _named_fd_read(fd, fd_handler->name, buf, sizeof(buf));
+                    if (r > 0 && fd_handler->cb)
                     {
-                        char c;
-                        r = read(fd, &c, 1);
-                        if (r == 1)
-                        {
-                            int uart = fd_handler->socket_server.uart;
-                            if (uart != CMD_UART)
-                            {
-                                if (isgraph(c))
-                                    linux_port_debug("%s(%u) << '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
-                                else
-                                    linux_port_debug("%s(%u) << [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
-                            }
-                            if (fd_handler->cb)
-                            {
-                                fd_handler->cb(uart, &c, 1);
-                            }
-                        }
-                        total += r;
+                        int uart = fd_handler->socket_server.uart;
+                        fd_handler->cb(uart, buf, r);
                     }
-                    if (total == 0)
+                    if (r == 0)
                     {
                         close(fd);
                         fd_handler->socket_client.server->socket_server.client = NULL;
@@ -1331,7 +1344,7 @@ void linux_usleep(unsigned usecs)
         if (!rc || rc == ETIMEDOUT)
             pthread_mutex_unlock(&_sleep_mutex);
     }
-    else printf("FAILED to sleep.\n");
+    else linux_port_debug("FAILED to sleep.\n");
 }
 
 
@@ -1339,10 +1352,11 @@ void linux_awaken(void)
 {
     if (!pthread_mutex_lock(&_sleep_mutex))
     {
+        linux_port_debug("Trigger end of Linux sleep");
         pthread_cond_broadcast(&_sleep_cond);
         pthread_mutex_unlock(&_sleep_mutex);
     }
-    else printf("Sleep Linux not kicked.\n");
+    else linux_port_debug("Sleep Linux not kicked.\n");
 }
 
 
