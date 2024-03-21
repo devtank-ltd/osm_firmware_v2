@@ -119,6 +119,13 @@ static void process_part_measure_response(const uint8_t *data)
     pm10_entry.h = data[5];
     pm10_entry.l = data[6];
     _hpm_is_valid();
+    if (hpm_is_on)
+    {
+        uart_enable(HPM_UART, false);
+        hpm_enable(false);
+        uart_rings_in_wipe(HPM_UART);
+        uart_rings_out_wipe(HPM_UART);
+    }
 }
 
 
