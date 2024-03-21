@@ -103,6 +103,8 @@ class property_t(dev_child_t):
     def _update(self, value_str):
         v_str = value_str.replace(self.cmd, "")
         self._value = self.parse_func(v_str)
+        if self._value is False:
+            raise IOError(f"Failed to get value for {self.name}")
         self.type_ = type(self._value)
 
     @property
