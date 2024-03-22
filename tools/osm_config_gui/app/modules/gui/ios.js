@@ -110,108 +110,108 @@ export class io_t {
             let key; let
                 value;
             switch (meas) {
-                case 'TMP2':
-                    [key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    this.edge_cell_input.disabled = true;
-                    if (value.used && value.used === 'W1') {
-                        chk.checked = true;
-                        if (value.edge) {
-                            this.get_edge(value.edge);
-                        }
+            case 'TMP2':
+                [key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                this.edge_cell_input.disabled = true;
+                if (value.used && value.used === 'W1') {
+                    chk.checked = true;
+                    if (value.edge) {
+                        this.get_edge(value.edge);
                     }
-                    break;
-                case 'TMP3':
-                    [, key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    this.edge_cell_input.disabled = true;
-                    if (value.used && value.used === 'W1') {
-                        chk.checked = true;
-                        if (value.edge) {
-                            this.get_edge(value.edge);
-                        }
+                }
+                break;
+            case 'TMP3':
+                [, key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                this.edge_cell_input.disabled = true;
+                if (value.used && value.used === 'W1') {
+                    chk.checked = true;
+                    if (value.edge) {
+                        this.get_edge(value.edge);
                     }
-                    break;
-                case 'CNT1':
-                    [key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    if (value.used && value.used === 'PLSCNT') {
-                        chk.checked = true;
-                        if (value.edge) {
-                            this.get_edge(value.edge);
-                        }
+                }
+                break;
+            case 'CNT1':
+                [key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                if (value.used && value.used === 'PLSCNT') {
+                    chk.checked = true;
+                    if (value.edge) {
+                        this.get_edge(value.edge);
                     }
+                }
+                if (value.pullup) {
+                    this.get_pullup(value.pullup);
+                }
+                break;
+            case 'CNT2':
+                [, key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                if (value.used && value.used === 'PLSCNT') {
+                    chk.checked = true;
+                    if (value.edge) {
+                        this.get_edge(value.edge);
+                    }
+                }
+                if (value.pullup) {
+                    this.get_pullup(value.pullup);
+                }
+                break;
+            case 'IO00':
+                [key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                this.edge_cell_input.disabled = true;
+                if (value.used && value.used === 'WATCH') {
+                    chk.checked = true;
                     if (value.pullup) {
                         this.get_pullup(value.pullup);
                     }
-                    break;
-                case 'CNT2':
-                    [, key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    if (value.used && value.used === 'PLSCNT') {
-                        chk.checked = true;
-                        if (value.edge) {
-                            this.get_edge(value.edge);
-                        }
-                    }
+                }
+                break;
+            case 'IO01':
+                [, key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                this.edge_cell_input.disabled = true;
+                if (value.used && value.used === 'WATCH') {
+                    chk.checked = true;
                     if (value.pullup) {
                         this.get_pullup(value.pullup);
                     }
-                    break;
-                case 'IO00':
-                    [key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    this.edge_cell_input.disabled = true;
-                    if (value.used && value.used === 'WATCH') {
-                        chk.checked = true;
-                        if (value.pullup) {
-                            this.get_pullup(value.pullup);
-                        }
+                }
+                break;
+            case 'IO04':
+                [key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                this.edge_cell_input.disabled = true;
+                if (value.used && value.used === 'WATCH') {
+                    chk.checked = true;
+                    if (value.pullup) {
+                        this.get_pullup(value.pullup);
                     }
-                    break;
-                case 'IO01':
-                    [, key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    this.edge_cell_input.disabled = true;
-                    if (value.used && value.used === 'WATCH') {
-                        chk.checked = true;
-                        if (value.pullup) {
-                            this.get_pullup(value.pullup);
-                        }
+                }
+                break;
+            case 'IO05':
+                [, key] = Object.keys(indexs);
+                value = indexs[key];
+                value.avail_meas.push(meas);
+                this.edge_cell_input.disabled = true;
+                if (value.used && value.used === 'WATCH') {
+                    chk.checked = true;
+                    if (value.pullup) {
+                        this.get_pullup(value.pullup);
                     }
-                    break;
-                case 'IO04':
-                    [key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    this.edge_cell_input.disabled = true;
-                    if (value.used && value.used === 'WATCH') {
-                        chk.checked = true;
-                        if (value.pullup) {
-                            this.get_pullup(value.pullup);
-                        }
-                    }
-                    break;
-                case 'IO05':
-                    [, key] = Object.keys(indexs);
-                    value = indexs[key];
-                    value.avail_meas.push(meas);
-                    this.edge_cell_input.disabled = true;
-                    if (value.used && value.used === 'WATCH') {
-                        chk.checked = true;
-                        if (value.pullup) {
-                            this.get_pullup(value.pullup);
-                        }
-                    }
-                    break;
-                default:
-                    break;
+                }
+                break;
+            default:
+                break;
             }
 
             chk.addEventListener('click', (e) => {

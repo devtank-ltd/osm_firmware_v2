@@ -17,7 +17,7 @@ class low_level_socket_t {
         this.url = url;
         this.msgs = '';
         this.url.onerror = (event) => {
-            ;
+
         };
         this.on_message();
     }
@@ -67,8 +67,7 @@ class low_level_serial_t {
         writer.releaseLock();
     }
 
-
-    async read(end_line=END_LINE) {
+    async read(end_line = END_LINE) {
         const decoder = new TextDecoder();
         let msgs = '';
         const start_time = Date.now();
@@ -79,7 +78,7 @@ class low_level_serial_t {
                 if (done) {
                     break;
                 }
-                let msg = decoder.decode(value);
+                const msg = decoder.decode(value);
                 msgs += msg;
                 if (msgs.includes(end_line)) {
                     msgs = msgs.replace(end_line, '');
@@ -87,13 +86,12 @@ class low_level_serial_t {
                 }
             }
         } catch (error) {
-            ;
+            console.log(error);
         } finally {
             reader.releaseLock();
         }
         return msgs;
     }
-
 }
 
 class modbus_bus_t {
@@ -132,13 +130,13 @@ export class binding_t {
     }
 
     async open_ll_obj() {
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             if (this.port_type === 'Serial') {
                 this.ll = new low_level_serial_t(this.port, this.timeout);
             } else {
-                const mod = this.port.startsWith("https://") ? "wss://" + this.port.substring(8) : "ws://" + this.port.substring(7);
+                const mod = this.port.startsWith('https://') ? `wss://${this.port.substring(8)}` : `ws://${this.port.substring(7)}`;
                 this.url = new WebSocket(mod);
-                const opened = await this.connection(this.url);
+                const opened = this.connection(this.url);
                 this.url.onopen = async (e) => {
                 };
                 if (opened) {
@@ -151,21 +149,20 @@ export class binding_t {
     }
 
     async connection(socket, timeout = 10000) {
-        const is_opened = () => (socket.readyState === WebSocket.OPEN)
+        const is_opened = () => (socket.readyState === WebSocket.OPEN);
 
-    if (socket.readyState !== WebSocket.CONNECTING) {
-        return is_opened()
-    }
-    else {
-        const intrasleep = 100
-        const ttl = timeout / intrasleep
-        let loop = 0
-        while (socket.readyState === WebSocket.CONNECTING && loop < ttl) {
-            await new Promise(resolve => setTimeout(resolve, intrasleep))
-            loop += 1
+        if (socket.readyState !== WebSocket.CONNECTING) {
+            return is_opened();
         }
-        return is_opened()
-    }
+
+        const intrasleep = 100;
+        const ttl = timeout / intrasleep;
+        this.loop = 0;
+        while (socket.readyState === WebSocket.CONNECTING && this.loop < ttl) {
+            await new Promise((resolve) => setTimeout(resolve, intrasleep));
+            this.loop += 1;
+        }
+        return is_opened();
     }
 
     async enqueue_and_process(msg) {
@@ -185,7 +182,7 @@ export class binding_t {
     }
 
     async parse_msg(msg) {
-        let multi = await this.parse_msg_multi(msg);
+        const multi = await this.parse_msg_multi(msg);
         this.msgs = multi.join('');
         return this.msgs;
     }
@@ -198,11 +195,11 @@ export class binding_t {
         const spl = msg.split('\n\r');
         spl.forEach((s, i) => {
             if (s === START_LINE) {
-                ;
+                console.log('Found start line');
             } else if (s === END_LINE) {
-                ;
+                console.log('Found end line');
             } else if (s.includes('DEBUG') || s.includes('ERROR')) {
-                ;
+                console.log('Found debug line');
             } else {
                 this.msgs.push(s);
             }
@@ -266,14 +263,13 @@ export class binding_t {
                             m.push('');
                         }
                     } catch (error) {
-                        ;
+                        console.log(error);
                     } finally {
                         measurements.push(m);
                     }
                 }
             }
-
-        })
+        });
         const extracted_meas = measurements.slice(start, end);
         if (interval_mins < 1 && interval_mins > 0) {
             interval_mins *= 60;
@@ -324,12 +320,12 @@ export class binding_t {
 
     async get_cc_type(phase) {
         this.types = await this.do_cmd('cc_type');
-
         const regex = new RegExp(`CC${phase}\\sType:\\s([AV])`, 'g');
-        let match;
-        while ((match = regex.exec(this.types)) !== null) {
+        const match = this.types.match(regex);
+        if (match) {
             return match[1];
         }
+        return this.types;
     }
 
     async get_cc_gain() {
@@ -481,8 +477,7 @@ export class binding_t {
 
     async wipe() {
         this.wipe_cmd = this.ll.write('wipe');
-        await this.ll.read("Flash successfully written");
-        return;
+        await this.ll.read('Flash successfully written');
     }
 
     async comms_type() {

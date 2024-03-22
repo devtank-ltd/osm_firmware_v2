@@ -67,7 +67,7 @@ export class home_tab_t {
             const lora = new lora_config_t(this.comms);
             await lora.populate_lora_fields();
             await lora.add_listeners();
-            const fw_table = document.getElementById("home-firmware-div");
+            const fw_table = document.getElementById('home-firmware-div');
             fw_table.style.gridColumnStart = 2;
             fw_table.style.gridColumnEnd = 3;
         } else if (comms_type.includes('WIFI')) {
@@ -76,7 +76,6 @@ export class home_tab_t {
             await wifi.populate_wifi_fields();
             await wifi.add_listeners();
         }
-
 
         await this.load_serial_number();
         await this.load_fw_ver();
@@ -124,7 +123,7 @@ export class home_tab_t {
     async save_settings() {
         const savemsg = document.getElementById('global-save-config-msg');
         this.dev.save();
-        savemsg.textContent = 'Saved'
+        savemsg.textContent = 'Saved';
     }
 
     async change_to_adv_conf_tab() {
@@ -142,5 +141,4 @@ export class home_tab_t {
         document.getElementById('home-tab').addEventListener('click', this.return_to_home_tab);
         document.getElementById('adv-conf-tab').addEventListener('click', this.change_to_adv_conf_tab);
     }
-
 }
