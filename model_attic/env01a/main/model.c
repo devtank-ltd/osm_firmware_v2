@@ -107,6 +107,9 @@ void model_persist_config_model_init(persist_model_config_v1_t* model_config)
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
 }
 
+void model_main_loop_iterate(void)
+{
+}
 
 void can_impl_init(void) {}
 void can_impl_send_example(void) {}

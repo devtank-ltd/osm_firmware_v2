@@ -88,6 +88,12 @@ void platform_set_rs485_mode(bool driver_enable)
 }
 
 
+void platform_main_loop_iterate(void)
+{
+    model_main_loop_iterate();
+}
+
+
 void platform_reset_sys(void)
 {
     esp_restart();
