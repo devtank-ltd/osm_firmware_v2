@@ -528,6 +528,14 @@ class dev_t(dev_base_t):
     def set_outer_inner_cc(self, phase, outer, inner):
         self.do_cmd(f"cc_gain {phase} {outer} {inner}")
 
+    def set_cc_type(self, phase, outer):
+        phases = [1,2,3]
+        units = ['A', 'V']
+        if phase not in phases or outer not in units:
+            debug_print('Invalid arguments supplied.')
+            return
+        return self.do_cmd(f"cc_type {phase} {outer}")
+
     def save(self):
         return self.do_cmd("save")
 
