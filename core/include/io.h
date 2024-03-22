@@ -41,8 +41,8 @@ extern bool     io_is_watch_now(unsigned io);
 extern bool     io_is_input(unsigned io);
 extern unsigned io_get_bias(unsigned io);
 extern void     io_on(unsigned io, bool on_off);
-extern void     io_log(unsigned io);
-extern void     ios_log();
+extern void     io_log(unsigned io, cmd_output_t cmd_output);
+extern void     ios_log(cmd_output_t cmd_output);
 
 extern struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail);
 

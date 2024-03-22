@@ -54,7 +54,7 @@ void can_drain_array(void)
 }
 
 
-static command_response_t _can_impl_cb(char* args)
+static command_response_t _can_impl_cb(char* args, cmd_output_t cmd_output)
 {
     can_impl_send_example();
     return COMMAND_RESP_OK;

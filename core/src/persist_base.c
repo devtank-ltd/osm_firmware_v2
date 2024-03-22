@@ -38,7 +38,6 @@ uint32_t persist_get_log_debug_mask(void)
 
 static void _persist_finish_out(void)
 {
-    log_out(LOG_END_SPACER);
     while (uart_rings_out_busy())
     {
         uart_rings_out_drain();
@@ -55,24 +54,26 @@ void persistent_wipe(void)
 }
 
 
-static command_response_t _persist_commit_cb(char* args)
+static command_response_t _persist_commit_cb(char* args, cmd_output_t cmd_output)
 {
     persist_commit();
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _reset_cb(char *args)
+static command_response_t _reset_cb(char *args, cmd_output_t cmd_output)
 {
-    log_out("Resetting...");
+    cmd_output("Resetting...");
+    cmd_output(LOG_END_SPACER);
     _persist_finish_out();
     platform_reset_sys();
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _wipe_cb(char* args)
+static command_response_t _wipe_cb(char* args, cmd_output_t cmd_output)
 {
+    cmd_output(LOG_END_SPACER);
     persistent_wipe();
     return COMMAND_RESP_OK;
 }

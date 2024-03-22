@@ -30,6 +30,6 @@ extern void     rak4270_power_down(void);
 
 extern bool     rak4270_persist_config_cmp(void* d0, void* d1);
 
-extern command_response_t rak4270_cmd_config_cb(char* str);
-extern command_response_t rak4270_cmd_j_cfg_cb(char* str);
-extern command_response_t rak4270_cmd_conn_cb(char* str);
+extern command_response_t rak4270_cmd_config_cb(char* str, cmd_output_t cmd_output);
+extern command_response_t rak4270_cmd_j_cfg_cb(char* str, cmd_output_t cmd_output);
+extern command_response_t rak4270_cmd_conn_cb(char* str, cmd_output_t cmd_output);
