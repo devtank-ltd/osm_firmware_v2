@@ -1,6 +1,5 @@
-import { STMApi } from '../stm-serial-flasher/src/api/STMapi.js'
+import { STMApi } from '../stm-serial-flasher/src/api/STMapi.js';
 import logger from '../stm-serial-flasher/src/api/Logger.js';
-
 
 const PIN_HIGH = false;
 const PIN_LOW = true;
@@ -9,21 +8,17 @@ const SYNCHR = 0x7F;
 const ACK = 0x79;
 const NACK = 0x1F;
 
-
 function u8a(array) {
     return new Uint8Array(array);
 }
 
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const EwrLoadState = Object.freeze({
-    NOT_LOADED: Symbol("not_loaded"),
-    LOADING: Symbol("loading"),
-    LOADED: Symbol("loaded")
+    NOT_LOADED: Symbol('not_loaded'),
+    LOADING: Symbol('loading'),
+    LOADED: Symbol('loaded'),
 });
-
 
 export class osm_flash_api_t extends STMApi {
     /**
@@ -34,7 +29,7 @@ export class osm_flash_api_t extends STMApi {
     async connect(params) {
         this.ewrLoadState = EwrLoadState.NOT_LOADED;
         return new Promise((resolve, reject) => {
-            console.log('Connecting with baudrate ' + params.baudrate + ' and reply mode ' + (params.replyMode ? 'on' : 'off'));
+            console.log(`Connecting with baudrate ${params.baudrate} and reply mode ${params.replyMode ? 'on' : 'off'}`);
             if (this.serial.isOpen()) {
                 reject(new Error('Port already opened'));
                 return;
@@ -42,18 +37,18 @@ export class osm_flash_api_t extends STMApi {
 
             this.replyMode = params.replyMode || false;
 
-            let open_params = {
+            const open_params = {
                 baudRate: parseInt(params.baudrate, 10),
-                parity: this.replyMode ? 'none' : 'even'
-            }
-            let signal = {};
+                parity: this.replyMode ? 'none' : 'even',
+            };
+            const signal = {};
             this.serial.open(open_params)
                 .then(() => {
-                    signal["dataTerminalReady"] = PIN_HIGH;
-                    signal["requestToSend"] = PIN_HIGH;
-                    return this.serial.control(signal)
+                    signal.dataTerminalReady = PIN_HIGH;
+                    signal.requestToSend = PIN_HIGH;
+                    return this.serial.control(signal);
                 })
-                .then(() => console.log("Before BOOTLOADER", Date.now()))
+                .then(() => console.log('Before BOOTLOADER', Date.now()))
                 .then(() => this.activateBootloader())
                 .then(resolve)
                 .catch(reject);
@@ -61,21 +56,21 @@ export class osm_flash_api_t extends STMApi {
     }
 
     /**
-     * Close current connection. Before closing serial connection disable bootloader and reset target
+     * Close current connection. Before closing serial connection
+     * disable bootloader and reset target
      * @returns {Promise}
      */
     async disconnect() {
         return new Promise((resolve, reject) => {
-            let signal = {}
-            signal["dataTerminalReady"] = PIN_HIGH;
-            signal["requestToSend"] = PIN_HIGH;
+            const signal = {};
+            signal.dataTerminalReady = PIN_HIGH;
+            signal.requestToSend = PIN_HIGH;
             this.serial.control(signal)
                 .then(() => this.resetTarget())
                 .then(() => this.serial.close())
                 .then(resolve)
                 .catch(reject);
         });
-
     }
 
     /**
@@ -91,27 +86,26 @@ export class osm_flash_api_t extends STMApi {
                 return;
             }
 
-            let signal = {};
-            signal["dataTerminalReady"] = PIN_LOW;
-            signal["requestToSend"] = PIN_HIGH;
+            const signal = {};
+            signal.dataTerminalReady = PIN_LOW;
+            signal.requestToSend = PIN_HIGH;
             this.serial.control(signal)
                 .then(() => {
-                    signal["dataTerminalReady"] = PIN_LOW;
-                    signal["requestToSend"] = PIN_LOW;
+                    signal.dataTerminalReady = PIN_LOW;
+                    signal.requestToSend = PIN_LOW;
                     this.serial.control(signal);
                 })
                 .then(() => sleep(100)) /* Wait for bootloader to finish booting */
                 .then(() => this.serial.write(u8a([SYNCHR])))
                 .then(() => this.serial.read())
-                .then(response => {
+                .then((response) => {
                     if (response[0] === ACK) {
                         if (this.replyMode) {
                             return this.serial.write(u8a([ACK]));
                         }
                         return Promise.resolve();
-                    } else {
-                        throw new Error('Unexpected response');
                     }
+                        throw new Error('Unexpected response');
                 })
                 .then(() => {
                     console.log('Bootloader is ready for commands');
@@ -129,19 +123,19 @@ export class osm_flash_api_t extends STMApi {
     async resetTarget() {
         return new Promise((resolve, reject) => {
             console.log('Resetting target...');
-            let signal = {};
+            const signal = {};
 
             if (!this.serial.isOpen()) {
                 reject(new Error('Port must be opened for device reset'));
                 return;
             }
 
-            signal["dataTerminalReady"] = PIN_HIGH;
-            signal["requestToSend"] = PIN_LOW;
+            signal.dataTerminalReady = PIN_HIGH;
+            signal.requestToSend = PIN_LOW;
             this.serial.control(signal)
                 .then(() => {
-                    signal["dataTerminalReady"] = PIN_HIGH;
-                    signal["requestToSend"] = PIN_HIGH;
+                    signal.dataTerminalReady = PIN_HIGH;
+                    signal.requestToSend = PIN_HIGH;
                     return this.serial.control(signal);
                 })
                 .then(() => {

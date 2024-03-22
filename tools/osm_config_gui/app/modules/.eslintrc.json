@@ -25,6 +25,9 @@
         "no-promise-executor-return": "off",
         "no-alert": "off",
         "indent": [0, "tab"],
-        "no-tabs": 0
+        "no-tabs": 0,
+        "no-return-assign": "off",
+        "radix": "off",
+        "no-restricted-globals": "off"
     }
 }
