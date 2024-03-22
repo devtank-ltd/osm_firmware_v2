@@ -105,8 +105,8 @@ static void _comms_direct_exit(void)
 {
     uart_channel_t* cmd = &_comms_direct_ctx.prev_cmd_uart;
     uart_channel_t* comms = &_comms_direct_ctx.prev_comms_uart;
-    uart_resetup(CMD_UART, cmd->baud, cmd->databits, cmd->parity, cmd->stop);
-    uart_resetup(COMMS_UART, comms->baud, comms->databits, comms->parity, comms->stop);
+    uart_resetup(CMD_UART, cmd->baud, cmd->databits, cmd->parity, cmd->stop, &uart_cmd_ctx);
+    uart_resetup(COMMS_UART, comms->baud, comms->databits, comms->parity, comms->stop, &uart_cmd_ctx);
     uarts_setup();
     log_out("Exiting COMMS_DIRECT mode");
 }
@@ -185,7 +185,7 @@ static command_response_t _comms_direct_enter_cb(char* args, cmd_ctx_t * ctx)
 {
     if (ctx != &uart_cmd_ctx)
     {
-        cmd_ctx_error("Only works on Command UART.");
+        cmd_ctx_error(ctx, "Only works on Command UART.");
         return COMMAND_RESP_ERR;
     }
     _comms_direct_ctx.begin = true;

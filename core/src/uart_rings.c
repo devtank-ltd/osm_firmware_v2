@@ -33,10 +33,16 @@ static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, ...);
 static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, ...);
 static void _uart_cmd_flush(cmd_ctx_t * ctx);
+static void _null_cmd_out(cmd_ctx_t * ctx, const char * fmt, ...) {}
+static void _null_cmd_flush(cmd_ctx_t * ctx) {}
 
-cmd_ctx_t uart_cmd_ctx = {.output = _uart_cmd_out,
-                          .error = _uart_cmd_error,
-                          .flush = _uart_cmd_flush };
+cmd_ctx_t uart_cmd_ctx = {.output_cb = _uart_cmd_out,
+                          .error_cb = _uart_cmd_error,
+                          .flush_cb = _uart_cmd_flush };
+
+cmd_ctx_t null_cmd_ctx = {.output_cb = _null_cmd_out,
+                          .error_cb = _null_cmd_out,
+                          .flush_cb = _null_cmd_flush };
 
 
 static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, ...)

@@ -498,14 +498,14 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
         {
             comms_debug("Message is command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            cmds_process(_rak3172_ascii_cmd, ascii_len);
+            cmds_process(_rak3172_ascii_cmd, ascii_len, &null_cmd_ctx);
             break;
         }
         case LW_ID_CCMD:
         {
             comms_debug("Message is confirmed command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len);
+            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len, &null_cmd_ctx);
             comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
             break;
         }
@@ -535,7 +535,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
             {
                 uint8_t b = (uint8_t)lw_consume(p, 2);
                 p += 2;
-                if (!fw_ota_add_chunk(&b, 1))
+                if (!fw_ota_add_chunk(&b, 1, &null_cmd_ctx))
                     break;
             }
             break;
@@ -872,7 +872,7 @@ static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
                         _rak3172_ctx.boot_pin.pins);
     }
     _rak3172_boot_enabled = enabled;
-    return _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("", ctx);
 }
 
 
@@ -895,7 +895,7 @@ static command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
         gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
     }
     _rak3172_reset_enabled = enabled;
-    return _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("", ctx);
 }
 
 
@@ -923,7 +923,7 @@ static const char* _rak3172_state_to_str(rak3172_state_t state)
 }
 
 
-static const char* _rak3172_init_count_to_str(uint8_t init_count, cmd_ctx_t * ctx)
+static const char* _rak3172_init_count_to_str(uint8_t init_count)
 {
     static const char none[] = "";
     if (init_count >= ARRAY_SIZE(_rak3172_init_msgs))

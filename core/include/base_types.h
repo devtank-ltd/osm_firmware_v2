@@ -288,14 +288,14 @@ typedef enum
 typedef struct cmd_ctx_t cmd_ctx_t;
 struct cmd_ctx_t
 {
-    void (*output)(cmd_ctx_t * ctx, const char * fmt, ...);
-    void (*error)(cmd_ctx_t * ctx, const char * fmt, ...);
-    void (*flush)(cmd_ctx_t * ctx);
+    void (*output_cb)(cmd_ctx_t * ctx, const char * fmt, ...);
+    void (*error_cb)(cmd_ctx_t * ctx, const char * fmt, ...);
+    void (*flush_cb)(cmd_ctx_t * ctx);
 };
 
-#define cmd_ctx_out(_ctx_, _fmt_...) _ctx_->output(_ctx_, _fmt_)
-#define cmd_ctx_error(_ctx_, _fmt_...) _ctx_->error(_ctx_, _fmt_)
-#define cmd_ctx_flush(_ctx_) _ctx_->flush(_ctx_) 
+#define cmd_ctx_out(_ctx_, _fmt_...) _ctx_->output_cb(_ctx_, _fmt_)
+#define cmd_ctx_error(_ctx_, _fmt_...) _ctx_->error_cb(_ctx_, _fmt_)
+#define cmd_ctx_flush(_ctx_) _ctx_->flush_cb(_ctx_)
 
 struct cmd_link_t
 {
