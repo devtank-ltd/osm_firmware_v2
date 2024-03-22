@@ -1312,11 +1312,11 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
 }
 
 
-static command_response_t _measurements_cb(char *args, cmd_output_t cmd_output)
+static command_response_t _measurements_cb(char *args, cmd_ctx_t * ctx)
 {
     measurements_def_t* measurements_def;
-    cmd_output("Loaded Measurements");
-    cmd_output("Name\tInterval\tSample Count");
+    cmd_ctx_out(ctx,"Loaded Measurements");
+    cmd_ctx_out(ctx,"Name\tInterval\tSample Count");
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def = &_measurements_arr.def[i];
@@ -1324,27 +1324,27 @@ static command_response_t _measurements_cb(char *args, cmd_output_t cmd_output)
         if (!id_start || id_start == 0xFF)
             continue;
         if (transmit_interval % 1000)
-            cmd_output("%s\t%"PRIu8"x%"PRIu32".%03"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, transmit_interval%1000, measurements_def->samplecount);
+            cmd_ctx_out(ctx,"%s\t%"PRIu8"x%"PRIu32".%03"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, transmit_interval%1000, measurements_def->samplecount);
         else
-            cmd_output("%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, measurements_def->samplecount);
+            cmd_ctx_out(ctx,"%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, measurements_def->samplecount);
     }
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _measurements_enable_cb(char *args, cmd_output_t cmd_output)
+static command_response_t _measurements_enable_cb(char *args, cmd_ctx_t * ctx)
 {
     bool was_enabled = measurements_enabled;
     if (args[0])
         measurements_enabled = (args[0] == '1');
     if (!was_enabled && measurements_enabled)
         _last_sent_ms = get_since_boot_ms();
-    cmd_output("measurements_enabled : %c", (measurements_enabled)?'1':'0');
+    cmd_ctx_out(ctx,"measurements_enabled : %c", (measurements_enabled)?'1':'0');
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _measurements_get_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
 {
     char * p = skip_space(args);
     char name[MEASURE_NAME_NULLED_LEN];
@@ -1358,21 +1358,21 @@ static command_response_t _measurements_get_cb(char* args, cmd_output_t cmd_outp
     measurements_value_type_t type;
     if (!measurements_get_reading(name, &reading, &type))
     {
-        cmd_error("Failed to get measurement reading.");
+        cmd_ctx_error(ctx,"Failed to get measurement reading.");
         return COMMAND_RESP_ERR;
     }
     char text[16];
     if (!measurements_reading_to_str(&reading, type, text, 16))
     {
-        cmd_error("Could not convert the reading to a string.");
+        cmd_ctx_error(ctx,"Could not convert the reading to a string.");
         return COMMAND_RESP_ERR;
     }
-    cmd_output("%s: %s", name, text);
+    cmd_ctx_out(ctx,"%s: %s", name, text);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _measurements_get_to_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _measurements_get_to_cb(char* args, cmd_ctx_t * ctx)
 {
     char * p = skip_space(args);
 
@@ -1381,11 +1381,11 @@ static command_response_t _measurements_get_to_cb(char* args, cmd_output_t cmd_o
     if (!measurements_get_measurements_def(p, &def, NULL) ||
         !model_measurements_get_inf(def, NULL, &inf))
     {
-        cmd_error("Failed to get measurement details of \"%s\"", p);
+        cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
         return COMMAND_RESP_ERR;
     }
 
-    cmd_output("%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
+    cmd_ctx_out(ctx,"%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
     return COMMAND_RESP_OK;
 }
 
@@ -1453,7 +1453,7 @@ static const char* measurements_type_to_str(measurements_def_type_t type)
 }
 
 
-static command_response_t _measurements_get_type_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p = skip_space(args);
     char name[MEASURE_NAME_NULLED_LEN];
@@ -1472,21 +1472,21 @@ static command_response_t _measurements_get_type_cb(char* args, cmd_output_t cmd
     measurements_def_t* def;
     if (!measurements_get_measurements_def(name, &def, NULL))
     {
-        cmd_error("Failed to get measurement details of \"%s\"", p);
+        cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
         return COMMAND_RESP_ERR;
     }
     const char* type_str = measurements_type_to_str(def->type);
     if (!type_str)
     {
-        cmd_error("Unknown measurement type for '%s' (%"PRIu8")", name, def->type);
+        cmd_ctx_error(ctx,"Unknown measurement type for '%s' (%"PRIu8")", name, def->type);
         return COMMAND_RESP_ERR;
     }
-    cmd_output("%s: %s", name, type_str);
+    cmd_ctx_out(ctx,"%s: %s", name, type_str);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _measurements_interval_cb(char * args, cmd_output_t cmd_output)
+static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx)
 {
     char* name = args;
     char* p = skip_space(args);
@@ -1502,12 +1502,12 @@ static command_response_t _measurements_interval_cb(char * args, cmd_output_t cm
 
         if (measurements_set_interval(name, new_interval))
         {
-            cmd_output("Changed %s interval to %"PRIu8, name, new_interval);
+            cmd_ctx_out(ctx,"Changed %s interval to %"PRIu8, name, new_interval);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_error("Unknown measurement");
+            cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1516,19 +1516,19 @@ static command_response_t _measurements_interval_cb(char * args, cmd_output_t cm
         uint8_t interval;
         if (measurements_get_interval(name, &interval))
         {
-            cmd_output("Interval of %s = %"PRIu8, name, interval);
+            cmd_ctx_out(ctx,"Interval of %s = %"PRIu8, name, interval);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_error("Unknown measurement");
+            cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
 }
 
 
-static command_response_t _measurements_samplecount_cb(char * args, cmd_output_t cmd_output)
+static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * ctx)
 {
     char* p = skip_space(args);
     char* name = p;
@@ -1544,12 +1544,12 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_output_t
 
         if (measurements_set_samplecount(name, new_samplecount))
         {
-            cmd_output("Changed %s samplecount to %"PRIu8, name, new_samplecount);
+            cmd_ctx_out(ctx,"Changed %s samplecount to %"PRIu8, name, new_samplecount);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_error("Unknown measurement");
+            cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1558,27 +1558,27 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_output_t
         uint8_t samplecount;
         if (measurements_get_samplecount(name, &samplecount))
         {
-            cmd_output("Samplecount of %s = %"PRIu8, name, samplecount);
+            cmd_ctx_out(ctx,"Samplecount of %s = %"PRIu8, name, samplecount);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_error("Unknown measurement");
+            cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
 }
 
 
-static command_response_t _measurements_repop_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _measurements_repop_cb(char* args, cmd_ctx_t * ctx)
 {
     model_measurements_repopulate();
-    cmd_output("Repopulated measurements.");
+    cmd_ctx_out(ctx,"Repopulated measurements.");
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _measurements_interval_mins_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _measurements_interval_mins_cb(char* args, cmd_ctx_t * ctx)
 {
     if (args[0])
     {
@@ -1589,24 +1589,24 @@ static command_response_t _measurements_interval_mins_cb(char* args, cmd_output_
         uint32_t new_interval_mins = (new_interval_mins_f * 1000.);
 
         if (new_interval_mins % 1000)
-            cmd_output("Setting interval minutes to %"PRIu32".%03"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
+            cmd_ctx_out(ctx,"Setting interval minutes to %"PRIu32".%03"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
         else
-            cmd_output("Setting interval minutes to %"PRIu32, new_interval_mins/1000);
+            cmd_ctx_out(ctx,"Setting interval minutes to %"PRIu32, new_interval_mins/1000);
         persist_data.model_config.mins_interval = new_interval_mins;
         transmit_interval = new_interval_mins;
     }
     else
     {
         if (transmit_interval % 1000)
-            cmd_output("Current interval minutes is %"PRIu32".%03"PRIu32, transmit_interval/1000, transmit_interval%1000);
+            cmd_ctx_out(ctx,"Current interval minutes is %"PRIu32".%03"PRIu32, transmit_interval/1000, transmit_interval%1000);
         else
-            cmd_output("Current interval minutes is %"PRIu32, transmit_interval/1000);
+            cmd_ctx_out(ctx,"Current interval minutes is %"PRIu32, transmit_interval/1000);
     }
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _measurements_is_immediate_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _measurements_is_immediate_cb(char* args, cmd_ctx_t * ctx)
 {
     char name[MEASURE_NAME_NULLED_LEN];
     char* p = strchr(args, ' ');
@@ -1620,7 +1620,7 @@ static command_response_t _measurements_is_immediate_cb(char* args, cmd_output_t
     measurements_def_t* def;
     if (!measurements_get_measurements_def(name, &def, NULL))
     {
-        cmd_error("Could not get measurement '%s'", name);
+        cmd_ctx_error(ctx,"Could not get measurement '%s'", name);
         return COMMAND_RESP_ERR;
     }
     if (!p)
@@ -1636,9 +1636,9 @@ static command_response_t _measurements_is_immediate_cb(char* args, cmd_output_t
 
 print_out:
     if (def->is_immediate)
-        cmd_output("%s is immediate", def->name);
+        cmd_ctx_out(ctx,"%s is immediate", def->name);
     else
-        cmd_output("%s is not immediate", def->name);
+        cmd_ctx_out(ctx,"%s is not immediate", def->name);
     return COMMAND_RESP_OK;
 }
 

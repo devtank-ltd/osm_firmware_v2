@@ -342,11 +342,11 @@ static const char* _rak4270_region_name(uint8_t region)
 }
 
 
-static bool _rak4270_load_config(cmd_output_t cmd_output)
+static bool _rak4270_load_config(cmd_ctx_t * ctx)
 {
     if (!lw_persist_data_is_valid())
     {
-        cmd_error("No LoRaWAN Dev EUI and/or App Key.");
+        cmd_ctx_error(ctx,"No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
 
@@ -356,7 +356,7 @@ static bool _rak4270_load_config(cmd_output_t cmd_output)
     const char* region_name = _rak4270_region_name(config->region);
     if (!region_name)
     {
-        cmd_error("Invalid region, setting to EU868.");
+        cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
         region_name = _rak4270_region_name(LW_REGION_EU868);
     }
 
@@ -730,9 +730,9 @@ void rak4270_reset(void)
 }
 
 
-static bool _rak4270_reload_config(cmd_output_t cmd_output)
+static bool _rak4270_reload_config(cmd_ctx_t * ctx)
 {
-    if (!_rak4270_load_config(cmd_output))
+    if (!_rak4270_load_config(ctx))
     {
         return false;
     }
@@ -1096,23 +1096,23 @@ void rak4270_loop_iteration(void)
 }
 
 
-command_response_t rak4270_cmd_conn_cb(char* str, cmd_output_t cmd_output)
+command_response_t rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 {
     if (rak4270_get_connected())
     {
-        cmd_output("1 | Connected");
+        cmd_ctx_out(ctx,"1 | Connected");
         return COMMAND_RESP_OK;
     }
-    cmd_output("0 | Disconnected");
+    cmd_ctx_out(ctx,"0 | Disconnected");
     return COMMAND_RESP_ERR;
 }
 
 
-command_response_t rak4270_cmd_config_cb(char* str, cmd_output_t cmd_output)
+command_response_t rak4270_cmd_config_cb(char* str, cmd_ctx_t * ctx)
 {
-    if (lw_config_setup_str(str, cmd_output))
+    if (lw_config_setup_str(str, ctx))
     {
-        _rak4270_reload_config(cmd_output);
+        _rak4270_reload_config(ctx);
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;

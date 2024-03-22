@@ -54,26 +54,26 @@ void persistent_wipe(void)
 }
 
 
-static command_response_t _persist_commit_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _persist_commit_cb(char* args, cmd_ctx_t * ctx)
 {
     persist_commit();
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _reset_cb(char *args, cmd_output_t cmd_output)
+static command_response_t _reset_cb(char *args, cmd_ctx_t * ctx)
 {
-    cmd_output("Resetting...");
-    cmd_output(LOG_END_SPACER);
+    cmd_ctx_out(ctx,"Resetting...");
+    cmd_ctx_out(ctx,LOG_END_SPACER);
     _persist_finish_out();
     platform_reset_sys();
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _wipe_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _wipe_cb(char* args, cmd_ctx_t * ctx)
 {
-    cmd_output(LOG_END_SPACER);
+    cmd_ctx_out(ctx,LOG_END_SPACER);
     persistent_wipe();
     return COMMAND_RESP_OK;
 }

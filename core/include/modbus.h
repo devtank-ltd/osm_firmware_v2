@@ -20,7 +20,7 @@ extern uint32_t modbus_stop_delay(void);
 extern bool modbus_has_pending(void);
 extern bool modbus_get_reg_set_expected_done(bool * passfail);
 
-extern void modbus_log(cmd_output_t cmd_output);
+extern void modbus_log(cmd_ctx_t * ctx);
 
 extern void modbus_uart_ring_in_process(ring_buf_t * ring);
 extern bool modbus_uart_ring_do_out_drain(ring_buf_t * ring);

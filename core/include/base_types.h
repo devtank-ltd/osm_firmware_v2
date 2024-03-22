@@ -285,15 +285,23 @@ typedef enum
 } command_response_t;
 
 
-typedef void (*cmd_output_t)(const char * fmt, ...);
+typedef struct cmd_ctx_t cmd_ctx_t;
+struct cmd_ctx_t
+{
+    void (*output)(cmd_ctx_t * ctx, const char * fmt, ...);
+    void (*error)(cmd_ctx_t * ctx, const char * fmt, ...);
+    void (*flush)(cmd_ctx_t * ctx);
+};
 
-#define cmd_error(_args_...) cmd_output("ERROR:"_args_)
+#define cmd_ctx_out(_ctx_, _fmt_...) _ctx_->output(_ctx_, _fmt_)
+#define cmd_ctx_error(_ctx_, _fmt_...) _ctx_->error(_ctx_, _fmt_)
+#define cmd_ctx_flush(_ctx_) _ctx_->flush(_ctx_) 
 
 struct cmd_link_t
 {
     const char * key;
     const char * desc;
-    command_response_t (*cb)(char * args, cmd_output_t cmd_output);
+    command_response_t (*cb)(char * args, cmd_ctx_t * ctx);
     bool hidden;
     struct cmd_link_t * next;
 };

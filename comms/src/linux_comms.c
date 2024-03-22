@@ -93,15 +93,15 @@ void linux_comms_loop_iteration(void)
 }
 
 
-void linux_comms_config_setup_str(char * str, cmd_output_t cmd_output)
+void linux_comms_config_setup_str(char * str, cmd_ctx_t * ctx)
 {
     if (strstr(str, "dev-eui"))
     {
-        cmd_output("Dev EUI: "LINUX_COMMS_DEV_EUI);
+        cmd_ctx_out(ctx,"Dev EUI: "LINUX_COMMS_DEV_EUI);
     }
     else if (strstr(str, "app-key"))
     {
-        cmd_output("App Key: LINUX-APP");
+        cmd_ctx_out(ctx,"App Key: LINUX-APP");
     }
 }
 
@@ -113,49 +113,49 @@ bool linux_comms_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _linux_comms_send_cb(char * args, cmd_output_t cmd_output)
+static command_response_t _linux_comms_send_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = skip_space(args);
     return linux_comms_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-command_response_t linux_comms_cmd_config_cb(char * args, cmd_output_t cmd_output)
+command_response_t linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
-    linux_comms_config_setup_str(skip_space(args), cmd_output);
+    linux_comms_config_setup_str(skip_space(args), ctx);
     return COMMAND_RESP_OK;
 }
 
 
-command_response_t linux_comms_cmd_conn_cb(char* args, cmd_output_t cmd_output)
+command_response_t linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 {
     if (linux_comms_get_connected())
     {
-        cmd_output("1 | Connected");
+        cmd_ctx_out(ctx,"1 | Connected");
     }
     else
     {
-        cmd_output("0 | Disconnected");
+        cmd_ctx_out(ctx,"0 | Disconnected");
     }
     return COMMAND_RESP_OK;
 }
 
 
-command_response_t linux_comms_cmd_j_cfg_cb(char* args, cmd_output_t cmd_output)
+command_response_t linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
-    cmd_output(LINUX_COMMS_PRINT_CFG_JSON_HEADER);
-    cmd_output(NULL);
-    cmd_output(LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
-    cmd_output(NULL);
-    cmd_output(LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
-    cmd_output(NULL);
-    cmd_output(LINUX_COMMS_PRINT_CFG_JSON_TAIL);
-    cmd_output(NULL);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_HEADER);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_TAIL);
+    cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _linux_comms_dbg_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
     uart_ring_out(COMMS_UART, args, strlen(args));
     uart_ring_out(COMMS_UART, "\r\n", 2);

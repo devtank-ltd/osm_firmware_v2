@@ -8,9 +8,9 @@ extern void uarts_setup();
 extern void uart_enable(unsigned uart, bool enable);
 extern bool uart_is_enabled(unsigned uart);
 
-extern void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_output_t cmd_output);
+extern void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx);
 extern bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop);
-extern bool uart_resetup_str(unsigned uart, char * str, cmd_output_t cmd_output);
+extern bool uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx);
 
 extern bool uart_is_tx_empty(unsigned uart);
 

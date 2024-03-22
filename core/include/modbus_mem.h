@@ -7,7 +7,7 @@
 
 extern modbus_bus_t * modbus_bus;
 
-extern void           modbus_print(cmd_output_t cmd_output);
+extern void           modbus_print(cmd_ctx_t * ctx);
 
 extern char *         modbus_reg_type_get_str(modbus_reg_type_t type);
 

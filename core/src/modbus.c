@@ -134,7 +134,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_uart_pari
 }
 
 
-bool modbus_setup_from_str(char * str, cmd_output_t cmd_output)
+bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
@@ -157,13 +157,13 @@ bool modbus_setup_from_str(char * str, cmd_output_t cmd_output)
     }
     else
     {
-        cmd_error("Unknown modbus protocol.");
+        cmd_ctx_error(ctx,"Unknown modbus protocol.");
         return false;
     }
 
     pos+=3;
 
-    if (!uart_resetup_str(EXT_UART, skip_space(pos), cmd_output))
+    if (!uart_resetup_str(EXT_UART, skip_space(pos), ctx))
         return false;
 
     unsigned speed;
@@ -1073,7 +1073,7 @@ void modbus_init(void)
                  bus->baudrate,
                  bus->databits,
                  bus->parity,
-                 bus->stopbits, log_out);
+                 bus->stopbits, &uart_cmd_ctx);
 
     modbus_bus->binary_protocol = bus->binary_protocol;
 
@@ -1084,18 +1084,18 @@ void modbus_init(void)
 }
 
 
-static command_response_t _modbus_setup_cb(char *args, cmd_output_t cmd_output)
+static command_response_t _modbus_setup_cb(char *args, cmd_ctx_t * ctx)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
      */
-    return modbus_setup_from_str(args, cmd_output) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return modbus_setup_from_str(args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _modbus_log_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _modbus_log_cb(char* args, cmd_ctx_t * ctx)
 {
-    modbus_print(cmd_output);
+    modbus_print(ctx);
     return COMMAND_RESP_OK;
 }
 

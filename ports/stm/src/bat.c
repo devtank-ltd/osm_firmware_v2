@@ -301,16 +301,16 @@ void                         bat_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _bat_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _bat_cb(char* args, cmd_ctx_t * ctx)
 {
     measurements_reading_t value;
     if (!bat_get_blocking(NULL, &value))
     {
-        cmd_output("Could not get bat value.");
+        cmd_ctx_out(ctx,"Could not get bat value.");
         return COMMAND_RESP_ERR;
     }
 
-    cmd_output("Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
+    cmd_ctx_out(ctx,"Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
     return COMMAND_RESP_OK;
 }
 

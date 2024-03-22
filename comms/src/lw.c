@@ -196,7 +196,7 @@ static bool _lw_region(char* name, unsigned len, lw_region_t* region)
 }
 
 
-bool lw_config_setup_str(char * str, cmd_output_t cmd_output)
+bool lw_config_setup_str(char * str, cmd_ctx_t * ctx)
 {
     // CMD  : "lora_config dev-eui 118f875d6994bbfd"
     // ARGS : "dev-eui 118f875d6994bbfd"
@@ -215,7 +215,7 @@ bool lw_config_setup_str(char * str, cmd_output_t cmd_output)
 
     if (!config)
     {
-        cmd_output("Could not get the LW config.");
+        cmd_ctx_out(ctx,"Could not get the LW config.");
         return false;
     }
 
@@ -229,16 +229,16 @@ bool lw_config_setup_str(char * str, cmd_output_t cmd_output)
             /* View Dev EUI */
             if (!config || !lw_persist_data_is_valid())
             {
-                cmd_error("Could not get Dev EUI");
+                cmd_ctx_error(ctx,"Could not get Dev EUI");
                 return false;
             }
-            cmd_output("Dev EUI: %."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
+            cmd_ctx_out(ctx,"Dev EUI: %."STR(LW_DEV_EUI_LEN)"s", config->dev_eui);
             return false;
         }
         /* Set Dev EUI */
         if (lenrem != LW_DEV_EUI_LEN)
         {
-            cmd_output("Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
+            cmd_ctx_out(ctx,"Dev EUI should be %"PRIu16" characters long. (%"PRIu8")", LW_DEV_EUI_LEN, lenrem);
             return false;
         }
         memcpy(config->dev_eui, p, LW_DEV_EUI_LEN);
@@ -254,16 +254,16 @@ bool lw_config_setup_str(char * str, cmd_output_t cmd_output)
             /* View Dev EUI */
             if (!config || !lw_persist_data_is_valid())
             {
-                cmd_error("Could not get app key.");
+                cmd_ctx_error(ctx,"Could not get app key.");
                 return false;
             }
-            cmd_output("App Key: %."STR(LW_APP_KEY_LEN)"s", config->app_key);
+            cmd_ctx_out(ctx,"App Key: %."STR(LW_APP_KEY_LEN)"s", config->app_key);
             return false;
         }
         /* Set Dev EUI */
         if (lenrem != LW_APP_KEY_LEN)
         {
-            cmd_output("App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
+            cmd_ctx_out(ctx,"App key should be %"PRIu16" characters long. (%"PRIu8")", LW_APP_KEY_LEN, lenrem);
             return false;
         }
         memcpy(config->app_key, p, LW_APP_KEY_LEN);
@@ -279,25 +279,25 @@ bool lw_config_setup_str(char * str, cmd_output_t cmd_output)
             /* View Region */
             if (!config || !lw_persist_data_is_valid())
             {
-                cmd_error("Could not get region.");
+                cmd_ctx_error(ctx,"Could not get region.");
                 return false;
             }
-            cmd_output("Region: %.*s (%"PRIu8")", LW_REGION_LEN, _lw_region_name(config->region), config->region);
+            cmd_ctx_out(ctx,"Region: %.*s (%"PRIu8")", LW_REGION_LEN, _lw_region_name(config->region), config->region);
             return false;
         }
         /* Set Region */
         lw_region_t region;
         if (!_lw_region(p, lenrem, &region))
         {
-            cmd_error("Failed to find a region matching name %*.s", LW_REGION_LEN, p);
+            cmd_ctx_error(ctx,"Failed to find a region matching name %*.s", LW_REGION_LEN, p);
             return false;
         }
         config->region = (uint8_t)region;
-        cmd_output("Set region to %.*s (%"PRIu8")", LW_REGION_LEN, p, config->region);
+        cmd_ctx_out(ctx,"Set region to %.*s (%"PRIu8")", LW_REGION_LEN, p, config->region);
         return true;
     }
 syntax_exit:
-    cmd_output("lora_config dev-eui/app-key/region [EUI/KEY/REG]");
+    cmd_ctx_out(ctx,"lora_config dev-eui/app-key/region [EUI/KEY/REG]");
     return false;
 }
 
@@ -341,15 +341,15 @@ void lw_config_init(comms_config_t* comms_config)
 }
 
 
-void lw_print_config(cmd_output_t cmd_output)
+void lw_print_config(cmd_ctx_t * ctx)
 {
-    cmd_output(LW_PRINT_CFG_JSON_HEADER);
+    cmd_ctx_out(ctx,LW_PRINT_CFG_JSON_HEADER);
     lw_config_t* config = lw_get_config();
-    cmd_output(NULL);
-    cmd_output(LW_PRINT_CFG_JSON_DEV_EUI(config->dev_eui));
-    cmd_output(NULL);
-    cmd_output(LW_PRINT_CFG_JSON_APP_KEY(config->app_key));
-    cmd_output(NULL);
-    cmd_output(LW_PRINT_CFG_JSON_TAIL);
-    cmd_output(NULL);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LW_PRINT_CFG_JSON_DEV_EUI(config->dev_eui));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LW_PRINT_CFG_JSON_APP_KEY(config->app_key));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LW_PRINT_CFG_JSON_TAIL);
+    cmd_ctx_flush(ctx);
 }

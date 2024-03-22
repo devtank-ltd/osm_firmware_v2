@@ -72,4 +72,4 @@ bool            lw_config_setup_str(char * str);
 uint64_t        lw_consume(char *p, unsigned len);
 void            lw_config_init(comms_config_t* config);
 bool            lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1);
-void            lw_print_config(cmd_output_t cmd_output);
+void            lw_print_config(cmd_ctx_t * ctx);

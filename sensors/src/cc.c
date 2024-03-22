@@ -706,11 +706,11 @@ void cc_init(void)
 }
 
 
-static command_response_t _cc_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _cc_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_error("No CC calibration");
+        cmd_ctx_error(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     char* p;
@@ -721,48 +721,48 @@ static command_response_t _cc_cb(char* args, cmd_output_t cmd_output)
         measurements_reading_t value_2, value_3;
         if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
-            cmd_output("Could not get CC values.");
+            cmd_ctx_out(ctx,"Could not get CC values.");
             return COMMAND_RESP_ERR;
         }
-        cmd_output("CC1 = %"PRIi64".%03"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
-        cmd_output("CC2 = %"PRIi64".%03"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
-        cmd_output("CC3 = %"PRIi64".%03"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
+        cmd_ctx_out(ctx,"CC1 = %"PRIi64".%03"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        cmd_ctx_out(ctx,"CC2 = %"PRIi64".%03"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        cmd_ctx_out(ctx,"CC3 = %"PRIi64".%03"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
         return COMMAND_RESP_OK;
     }
     if (cc_num > 3 || cc_num == 0)
     {
-        cmd_output("cc [1/2/3]");
+        cmd_ctx_out(ctx,"cc [1/2/3]");
         return COMMAND_RESP_ERR;
     }
     char name[4];
     snprintf(name, 4, "CC%"PRIu8, cc_num);
     if (!cc_get_blocking(name, &value_1))
     {
-        cmd_output("Could not get adc value.");
+        cmd_ctx_out(ctx,"Could not get adc value.");
         return COMMAND_RESP_ERR;
     }
 
-    cmd_output("CC = %"PRIi64"mA", value_1.v_i64);
+    cmd_ctx_out(ctx,"CC = %"PRIi64"mA", value_1.v_i64);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _cc_calibrate_cb(char *args, cmd_output_t cmd_output)
+static command_response_t _cc_calibrate_cb(char *args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_output("No CC calibration");
+        cmd_ctx_out(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     return _cc_calibrate() ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _cc_mp_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _cc_mp_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_error("No CC calibration");
+        cmd_ctx_error(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     // 2046 CC1
@@ -773,22 +773,22 @@ static command_response_t _cc_mp_cb(char* args, cmd_output_t cmd_output)
     if (p == args)
     {
         if (_cc_get_midpoint(&new_mp32, p))
-            cmd_output("MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
+            cmd_ctx_out(ctx,"MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return COMMAND_RESP_ERR;
     }
     new_mp32 = new_mp * 1000;
     p = skip_space(p);
     if (!_cc_set_midpoint(new_mp32, p))
-        cmd_output("Failed to set the midpoint.");
+        cmd_ctx_out(ctx,"Failed to set the midpoint.");
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _cc_gain(char* args, cmd_output_t cmd_output)
+static command_response_t _cc_gain(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_error("No CC calibration");
+        cmd_ctx_error(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     // <index> <ext_A> <int_mV>
@@ -800,8 +800,8 @@ static command_response_t _cc_gain(char* args, cmd_output_t cmd_output)
     {
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
-            cmd_output("CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
-            cmd_output("CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[i].type);
+            cmd_ctx_out(ctx,"CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
+            cmd_ctx_out(ctx,"CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[i].type);
         }
         return COMMAND_RESP_ERR;
     }
@@ -819,19 +819,19 @@ static command_response_t _cc_gain(char* args, cmd_output_t cmd_output)
         goto syntax_exit;
     _configs[index].ext_max_mA = ext_A * 1000;
     _configs[index].int_max_mV = int_mA;
-    cmd_output("Set the CC gain:");
+    cmd_ctx_out(ctx,"Set the CC gain:");
 print_exit:
-    cmd_output("EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
-    cmd_output("INT max: %"PRIu32".%03"PRIu32"%c", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000, _configs[index].type);
+    cmd_ctx_out(ctx,"EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
+    cmd_ctx_out(ctx,"INT max: %"PRIu32".%03"PRIu32"%c", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000, _configs[index].type);
     return COMMAND_RESP_OK;
 syntax_exit:
-    cmd_output("Syntax: cc_gain <channel> <ext max A> <ext min mV>");
-    cmd_output("e.g cc_gain 3 100 50");
+    cmd_ctx_out(ctx,"Syntax: cc_gain <channel> <ext max A> <ext min mV>");
+    cmd_ctx_out(ctx,"e.g cc_gain 3 100 50");
     return COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _cc_type_cb(char* args, cmd_output_t cmd_output)
+static command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
@@ -851,7 +851,7 @@ static command_response_t _cc_type_cb(char* args, cmd_output_t cmd_output)
         ret = COMMAND_RESP_OK;
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
-            cmd_output("CC%"PRIu8" Type: %c", i+1, _configs[i].type);
+            cmd_ctx_out(ctx,"CC%"PRIu8" Type: %c", i+1, _configs[i].type);
         }
     }
     else if (index != 0 && index <= ADC_CC_COUNT && p != np)
@@ -871,12 +871,12 @@ static command_response_t _cc_type_cb(char* args, cmd_output_t cmd_output)
             default:
                 break;
         }
-        cmd_output("CC%"PRIu8" Type: %c", index+1, _configs[index].type);
+        cmd_ctx_out(ctx,"CC%"PRIu8" Type: %c", index+1, _configs[index].type);
     }
     else
     {
-        cmd_output("Syntax: cc_type <channel> <V/A>");
-        cmd_output("e.g cc_type 3 100 50");
+        cmd_ctx_out(ctx,"Syntax: cc_type <channel> <V/A>");
+        cmd_ctx_out(ctx,"e.g cc_type 3 100 50");
     }
     return ret;
 }

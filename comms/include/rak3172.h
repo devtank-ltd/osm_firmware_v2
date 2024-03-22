@@ -30,6 +30,6 @@ extern void     rak3172_power_down(void);
 
 extern bool     rak3172_persist_config_cmp(void* d0, void* d1);
 
-extern command_response_t rak3172_cmd_config_cb(char* str, cmd_output_t cmd_output);
-extern command_response_t rak3172_cmd_j_cfg_cb(char* str, cmd_output_t cmd_output);
-extern command_response_t rak3172_cmd_conn_cb(char* str, cmd_output_t cmd_output);
+extern command_response_t rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx);
+extern command_response_t rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx);
+extern command_response_t rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx);

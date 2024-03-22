@@ -30,6 +30,38 @@ char line_buffer[CMD_LINELEN];
 
 static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
 
+static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, ...);
+static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, ...);
+static void _uart_cmd_flush(cmd_ctx_t * ctx);
+
+cmd_ctx_t uart_cmd_ctx = {.output = _uart_cmd_out,
+                          .error = _uart_cmd_error,
+                          .flush = _uart_cmd_flush };
+
+
+static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    log_outv(fmt, ap);
+    va_end(ap);
+}
+
+
+static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    log_errorv(fmt, ap);
+    va_end(ap);
+}
+
+
+static void _uart_cmd_flush(cmd_ctx_t * ctx)
+{
+}
+
+
 
 bool uart_ring_out_busy(unsigned uart)
 {
@@ -154,7 +186,7 @@ void uart_ring_in_drain(unsigned uart)
         len = ring_buf_readline(ring, line_buffer, CMD_LINELEN);
 
         if (len)
-            cmds_process(line_buffer, len, log_out);
+            cmds_process(line_buffer, len, &uart_cmd_ctx);
     }
 #ifdef COMMS_UART
     else if (uart == COMMS_UART)

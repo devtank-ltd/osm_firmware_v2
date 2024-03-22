@@ -2,7 +2,7 @@
 
 #include "base_types.h"
 
-extern command_response_t cmds_process(char * command, unsigned len, cmd_output_t cmd_output);
+extern command_response_t cmds_process(char * command, unsigned len, cmd_ctx_t * ctx);
 
 extern void cmds_init(void);
 
