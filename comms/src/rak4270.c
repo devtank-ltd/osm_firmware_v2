@@ -484,7 +484,7 @@ void rak4270_init(void)
         log_error("LoRaWAN chip not in DISCONNECTED state.");
         return;
     }
-    if (!_rak4270_load_config(log_out))
+    if (!_rak4270_load_config(&uart_cmd_ctx))
     {
         log_error("Loading LoRaWAN config failed. Not connecting to network.");
         _rak4270_state_machine.state = RAK4270_STATE_UNCONFIGURED;

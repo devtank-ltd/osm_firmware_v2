@@ -59,6 +59,7 @@ static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, ...)
 
 static void _uart_cmd_flush(cmd_ctx_t * ctx)
 {
+    log_out_drain(1000);
 }
 
 

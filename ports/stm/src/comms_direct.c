@@ -181,8 +181,13 @@ static void _comms_direct_enter(void)
 }
 
 
-static command_response_t _comms_direct_enter_cb(char* args)
+static command_response_t _comms_direct_enter_cb(char* args, cmd_ctx_t * ctx)
 {
+    if (ctx != &uart_cmd_ctx)
+    {
+        cmd_ctx_error("Only works on Command UART.");
+        return COMMAND_RESP_ERR;
+    }
     _comms_direct_ctx.begin = true;
     return COMMAND_RESP_OK;
 }

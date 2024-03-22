@@ -422,7 +422,7 @@ static bool _rak3172_load_config(cmd_ctx_t * ctx)
 
 void rak3172_init(void)
 {
-    _rak3172_ctx.config_is_valid = _rak3172_load_config(log_out);
+    _rak3172_ctx.config_is_valid = _rak3172_load_config(&uart_cmd_ctx);
     if (!_rak3172_ctx.config_is_valid)
     {
         comms_debug("Config is incorrect, not initialising.");
