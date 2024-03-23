@@ -34,6 +34,7 @@
 #include "measurements.h"
 #include "platform_model.h"
 #include "pinmap.h"
+#include "cmd.h"
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_LINE_BUF_SIZ      1024
@@ -47,11 +48,11 @@
 #define LINUX_REBOOT_FILE_TIMEOUT_S 60
 
 #define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
-#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %u\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32"\n"
 #define LINUX_FD_SAVE_FMT_SOCKET_CLIENT                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"STR(LINUX_PTY_NAME_STR_SIZE)"s\n"
 
 #define LINUX_FD_SAVE_PTY(_name, _master_fd, _slave_fd, _uart)          LINUX_FD_SAVE_FMT_PTY           , LINUX_FD_TYPE_PTY, _name, _master_fd, _slave_fd, _uart
-#define LINUX_FD_SAVE_SOCKET_SERVER(_name, _fd, _uart)                  LINUX_FD_SAVE_FMT_SOCKET_SERVER , LINUX_FD_TYPE_SOCKET_SERVER, _name, _fd, _uart
+#define LINUX_FD_SAVE_SOCKET_SERVER(_name, _fd)                  LINUX_FD_SAVE_FMT_SOCKET_SERVER , LINUX_FD_TYPE_SOCKET_SERVER, _name, _fd
 #define LINUX_FD_SAVE_SOCKET_CLIENT(_name, _fd, _server_name)           LINUX_FD_SAVE_FMT_SOCKET_CLIENT , LINUX_FD_TYPE_SOCKET_CLIENT, _name, _fd, _server_name
 
 #define LINUX_DEFAULT_SOCKET_PORT       10240
@@ -94,7 +95,6 @@ struct fd_t
         struct
         {
             int32_t fd;
-            unsigned uart;
             fd_t* client;
         } socket_server;
         struct
@@ -133,7 +133,9 @@ static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
 
 static bool _ios_enabled[IOS_COUNT] = {0};
 
+static char _websock_buf[1024];
 
+static ring_buf_t _websock_in_ring = RING_BUF_INIT(_websock_buf, sizeof(_websock_buf));
 
 static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .name={"UART_DEBUG"},
@@ -265,6 +267,49 @@ int64_t linux_get_current_us(void)
         linux_error("Failed to get the realtime of the clock.");
 
     return (int64_t)(ts.tv_nsec / 1000LL) + (int64_t)(ts.tv_sec * 1000000);
+}
+
+
+typedef struct
+{
+    cmd_ctx_t base;
+    int sock;
+} websock_cmd_ctx_t;
+
+
+static void _websock_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, ...)
+{
+    websock_cmd_ctx_t * websock_cmd_ctx = (websock_cmd_ctx_t*)ctx;
+    va_list ap;
+    va_start(ap, fmt);
+    vdprintf(websock_cmd_ctx->sock, fmt, ap);
+    va_end(ap);
+}
+
+
+static void _websock_cmd_ctx_flush(cmd_ctx_t * ctx)
+{
+}
+
+
+
+static void _linux_websock_client(int sock, char * buf, unsigned len)
+{
+    if (!ring_buf_add_data(&_websock_in_ring, buf, len))
+    {
+        linux_error("Too much websocket!");
+    }
+    char sock_line_buf[CMD_LINELEN];
+    unsigned line_len = ring_buf_readline(&_websock_in_ring, sock_line_buf, CMD_LINELEN);
+    if (line_len)
+    {
+        websock_cmd_ctx_t ctx = {{.output_cb = _websock_cmd_ctx_out,
+                                  .error_cb = _websock_cmd_ctx_out,
+                                  .flush_cb = _websock_cmd_ctx_flush},
+                                 .sock = sock};
+
+        cmds_process(sock_line_buf, line_len, &ctx.base);
+    }
 }
 
 
@@ -401,8 +446,8 @@ static void _linux_save_fd_file(void)
                     linux_port_debug("Save FD %i \"%s\" PTY (%d) - UART:%u", i, fd->name, fd->type, fd->pty.uart);
                     break;
                 case LINUX_FD_TYPE_SOCKET_SERVER:
-                    fprintf(osm_reboot_file, LINUX_FD_SAVE_SOCKET_SERVER(fd->name, fd->socket_server.fd, fd->socket_server.uart));
-                    linux_port_debug("Save FD %i \"%s\" SOCKET SERVER (%d) - UART:%u", i, fd->name, fd->type, fd->socket_server.uart);
+                    fprintf(osm_reboot_file, LINUX_FD_SAVE_SOCKET_SERVER(fd->name, fd->socket_server.fd));
+                    linux_port_debug("Save FD %i \"%s\" SOCKET SERVER (%d)", i, fd->name, fd->type);
                     break;
                 case LINUX_FD_TYPE_SOCKET_CLIENT:
                 {
@@ -473,7 +518,7 @@ static bool _linux_load_fd_socket_server(char* line, fd_t* fd)
     fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
     fd->cb = linux_uart_proc;
     int type;
-    if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_SERVER, &type, fd->name, &fd->socket_server.fd, &fd->socket_server.uart) != 4)
+    if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_SERVER, &type, fd->name, &fd->socket_server.fd) != 3)
     {
         linux_error("Failed to read SOCKET SERVER saved FD line!");
         return false;
@@ -489,7 +534,7 @@ static bool _linux_load_fd_socket_server(char* line, fd_t* fd)
         return false;
     }
     fd->socket_server.client = NULL;
-    linux_port_debug("Load \"%s\" SOCKET SERVER (%d) - UART:%u", fd->name, fd->type, fd->socket_server.uart);
+    linux_port_debug("Load \"%s\" SOCKET SERVER (%d)", fd->name, fd->type);
     return true;
 }
 
@@ -909,8 +954,7 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
         {
             continue;
         }
-        if ((fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart) ||
-            (fd_handler->type == LINUX_FD_TYPE_SOCKET_CLIENT && fd_handler->socket_client.server->socket_server.uart == uart))
+        if (fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart)
         {
             if (uart != CMD_UART)
             {
@@ -1184,7 +1228,7 @@ void _linux_iterate(void)
                             tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
                             tfdh->socket_client.fd = client_sockfd;
                             tfdh->socket_client.server = fd_handler;
-                            tfdh->cb = linux_uart_proc;
+                            tfdh->cb = _linux_websock_client;
                             fd_handler->socket_server.client = tfdh;
                             _linux_setup_poll();
                             linux_port_debug("SOCKET CLIENT %s CONNECTED", tfdh->name);
@@ -1205,8 +1249,7 @@ void _linux_iterate(void)
                     int r = _named_fd_read(fd, fd_handler->name, buf, sizeof(buf));
                     if (r > 0 && fd_handler->cb)
                     {
-                        int uart = fd_handler->socket_client.server->socket_server.uart;
-                        fd_handler->cb(uart, buf, r);
+                        fd_handler->cb(fd, buf, r);
                     }
                     if (r == 0)
                     {
@@ -1271,9 +1314,7 @@ void platform_init(void)
             fd_t* fd = &fd_list[i];
             if (fd->type == LINUX_FD_TYPE_PTY && strcmp(fd->name, "UART_DEBUG") == 0)
             {
-                unsigned uart = fd->pty.uart;
                 fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
-                fd->socket_server.uart = uart;
                 break;
             }
         }
