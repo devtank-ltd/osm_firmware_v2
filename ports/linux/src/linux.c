@@ -284,6 +284,7 @@ static void _websock_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, ...)
     va_start(ap, fmt);
     vdprintf(websock_cmd_ctx->sock, fmt, ap);
     va_end(ap);
+    dprintf(websock_cmd_ctx->sock, "\n\r");
 }
 
 
