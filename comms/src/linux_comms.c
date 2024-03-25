@@ -9,6 +9,7 @@
 #include "log.h"
 #include "common.h"
 #include "protocol.h"
+#include "cmd.h"
 
 
 #define COMMS_DEFAULT_MTU       256
@@ -79,6 +80,8 @@ void linux_comms_reset(void)
 
 void linux_comms_process(char* message)
 {
+    unsigned msg_len = strnlen(message, CMD_LINELEN);
+    cmds_process(message, msg_len, NULL);
 }
 
 
