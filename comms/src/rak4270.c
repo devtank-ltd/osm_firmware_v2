@@ -546,13 +546,13 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
         case LW_ID_CMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
-            cmds_process(_rak4270_cmd_ascii, cmd_len, &null_cmd_ctx);
+            cmds_process(_rak4270_cmd_ascii, cmd_len, NULL);
             break;
         }
         case LW_ID_CCMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
-            _rak4270_error_code.code = cmds_process(_rak4270_cmd_ascii, cmd_len, &null_cmd_ctx); /* command_resp_t */
+            _rak4270_error_code.code = cmds_process(_rak4270_cmd_ascii, cmd_len, NULL); /* command_resp_t */
             _rak4270_error_code.valid = true;
             break;
         }
@@ -581,7 +581,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
             {
                 uint8_t b = (uint8_t)lw_consume(p, 2);
                 p += 2;
-                if (!fw_ota_add_chunk(&b, 1, &null_cmd_ctx))
+                if (!fw_ota_add_chunk(&b, 1, NULL))
                     break;
             }
             break;

@@ -38,10 +38,6 @@ cmd_ctx_t uart_cmd_ctx = {.output_cb = _uart_cmd_out,
                           .error_cb = _uart_cmd_error,
                           .flush_cb = _uart_cmd_flush };
 
-cmd_ctx_t null_cmd_ctx = {.output_cb = NULL,
-                          .error_cb = NULL,
-                          .flush_cb = NULL };
-
 
 static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {

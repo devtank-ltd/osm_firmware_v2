@@ -744,7 +744,7 @@ static void _at_wifi_process_state_mqtt_wait_sub(char* msg, unsigned len)
 
 static void _at_wifi_do_command(char* payload, unsigned payload_len)
 {
-    command_response_t ret_code = cmds_process(payload, payload_len, &null_cmd_ctx);
+    command_response_t ret_code = cmds_process(payload, payload_len, NULL);
     char resp_payload[AT_WIFI_MQTT_RESP_PAYLOAD_LEN + 1];
     unsigned resp_payload_len = snprintf(
         resp_payload,

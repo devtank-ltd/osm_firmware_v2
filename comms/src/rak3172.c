@@ -498,14 +498,14 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
         {
             comms_debug("Message is command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            cmds_process(_rak3172_ascii_cmd, ascii_len, &null_cmd_ctx);
+            cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
             break;
         }
         case LW_ID_CCMD:
         {
             comms_debug("Message is confirmed command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len, &null_cmd_ctx);
+            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
             comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
             break;
         }
@@ -535,7 +535,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
             {
                 uint8_t b = (uint8_t)lw_consume(p, 2);
                 p += 2;
-                if (!fw_ota_add_chunk(&b, 1, &null_cmd_ctx))
+                if (!fw_ota_add_chunk(&b, 1, NULL))
                     break;
             }
             break;

@@ -154,7 +154,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
                 break;
             }
             memset(_cmd, 0, sizeof(_cmd));
-            if (event->data_len < sizeof(_cmd))	
+            if (event->data_len < sizeof(_cmd))
             {
                 memcpy(_cmd, event->data, event->data_len);
                 _cmd_ready = true;
@@ -321,7 +321,7 @@ void esp_comms_loop_iteration(void)
 
     if (!_cmd_ready)
         return;
-    command_response_t resp = cmds_process(_cmd, strlen(_cmd), &null_cmd_ctx);
+    command_response_t resp = cmds_process(_cmd, strlen(_cmd), NULL);
     char topic[64];
     snprintf(topic, sizeof(topic), "/osm/%s/cmd/resp", _mac);
     topic[sizeof(topic)-1]=0;
@@ -434,7 +434,7 @@ static command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
     {
         _prep_config();
         osm_wifi_config_t* osm_config = _wifi_get_config();
- 
+
         char * am = p;
         for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
         {
@@ -447,7 +447,7 @@ static command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
         }
         cmd_ctx_out(ctx, "Unknown authmode: %s", am);
         return COMMAND_RESP_ERR;
- 
+
     }
     return COMMAND_RESP_OK;
 }
