@@ -9,7 +9,6 @@
         <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     </head>
     <fieldset id="global-fieldset" class="global-fieldset">
-
         <body id="top-level-body">
             <div id="navbar"></div>
             <center><div id="loader" class="loader"></div></center>
@@ -21,24 +20,13 @@
                 </div>
                 <center><div id="error-div" class="error-div"></div></center>
             </div>
-            <center><img class="gui-img" id="gui-img" src="./imgs/gui.jpg" alt="OpenSmartMonitor GUI Image"></center>
-
-            <dialog id="save-as-dialog">
-                <form method="dialog">
-                    Save as...
-                  <input id="save-as-input" value=".json">
-                  <button id="save-as-confirm" type="submit">Save</button>
-                  <button id="save-as-cancel" type="submit">Cancel</button>
-                </form>
-            </dialog>
-
-            <dialog id="usb-disconnect-dialog">
+            <dialog id="osm-disconnect-dialog">
                 <form method="dialog">
                     OSM disconnected, return to home page.
-                  <button id="usb-disconnect-confirm" type="submit">Ok</button>
+                  <button id="osm-disconnect-confirm" type="submit">Ok</button>
                 </form>
             </dialog>
-
+            <center><img class="gui-img" id="gui-img" src="./imgs/gui.jpg" alt="OpenSmartMonitor GUI Image"></center>
         </body>
     </fieldset>
 

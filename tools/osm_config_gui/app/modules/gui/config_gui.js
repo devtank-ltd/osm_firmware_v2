@@ -4,6 +4,7 @@ import { disable_interaction } from './disable.js';
 
 class config_gui_t {
     constructor() {
+        this.spin_fake_osm = this.spin_fake_osm.bind(this);
         this.add_event_listeners = this.add_event_listeners.bind(this);
         this.open_serial = this.open_serial.bind(this);
         this.add_event_listeners();
@@ -52,13 +53,13 @@ class config_gui_t {
                 }
             })
             .catch((e) => {
-                this.disconnect_modal();
+                console.log(e);
             });
     }
 
     async disconnect_modal() {
-        this.dialog = document.getElementById('usb-disconnect-dialog');
-        this.confirm = document.getElementById('usb-disconnect-confirm');
+        this.dialog = document.getElementById('osm-disconnect-dialog');
+        this.confirm = document.getElementById('osm-disconnect-confirm');
         this.dialog.showModal();
         const controller = new AbortController();
 
@@ -74,7 +75,7 @@ class config_gui_t {
         if (!navigator.serial) {
             conn.style.backgroundColor = 'grey';
             conn.disabled = true;
-            conn.title = 'This browser does not support USB communications.';
+            conn.title = 'Not supported on this browser yet. Please use Google Chrome to access this feature.';
         }
         conn.addEventListener('click', this.open_serial);
         document.getElementById('main-page-websocket-connect').addEventListener('click', this.spin_fake_osm);

@@ -1,6 +1,19 @@
 const END_LINE = '}============';
 const START_LINE = '============{';
 
+function on_websocket_disconnect() {
+    const dialog = document.getElementById('osm-disconnect-dialog');
+    const confirm = document.getElementById('osm-disconnect-confirm');
+    dialog.showModal();
+    const controller = new AbortController();
+
+    confirm.addEventListener('click', async () => {
+        dialog.close();
+        controller.abort();
+        window.location.reload();
+    });
+}
+
 export async function generate_random(len) {
     const chars = '0123456789ABCDEF';
     const string_length = len;
@@ -17,7 +30,10 @@ class low_level_socket_t {
         this.url = url;
         this.msgs = '';
         this.url.onerror = (event) => {
-
+            console.log(event);
+        };
+        this.url.onclose = () => {
+            on_websocket_disconnect();
         };
         this.on_message();
     }
@@ -141,6 +157,8 @@ export class binding_t {
                 };
                 if (opened) {
                     this.ll = new low_level_socket_t(this.url);
+                } else {
+                    on_websocket_disconnect();
                 }
             }
             resolve(this.ll);
