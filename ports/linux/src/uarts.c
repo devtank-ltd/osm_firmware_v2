@@ -10,6 +10,7 @@
 #include "sleep.h"
 #include "log.h"
 #include "pinmap.h"
+#include "common.h"
 
 static uart_channel_t uart_channels[] = UART_CHANNELS;
 

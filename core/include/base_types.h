@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include "platform_base_types.h"
 #include "config.h"
@@ -288,14 +289,11 @@ typedef enum
 typedef struct cmd_ctx_t cmd_ctx_t;
 struct cmd_ctx_t
 {
-    void (*output_cb)(cmd_ctx_t * ctx, const char * fmt, ...);
-    void (*error_cb)(cmd_ctx_t * ctx, const char * fmt, ...);
+    void (*output_cb)(cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*error_cb)(cmd_ctx_t * ctx, const char * fmt, va_list ap);
     void (*flush_cb)(cmd_ctx_t * ctx);
 };
 
-#define cmd_ctx_out(_ctx_, _fmt_...) _ctx_->output_cb(_ctx_, _fmt_)
-#define cmd_ctx_error(_ctx_, _fmt_...) _ctx_->error_cb(_ctx_, _fmt_)
-#define cmd_ctx_flush(_ctx_) _ctx_->flush_cb(_ctx_)
 
 struct cmd_link_t
 {

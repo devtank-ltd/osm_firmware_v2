@@ -277,13 +277,10 @@ typedef struct
 } websock_cmd_ctx_t;
 
 
-static void _websock_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, ...)
+static void _websock_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
     websock_cmd_ctx_t * websock_cmd_ctx = (websock_cmd_ctx_t*)ctx;
-    va_list ap;
-    va_start(ap, fmt);
     vdprintf(websock_cmd_ctx->sock, fmt, ap);
-    va_end(ap);
     dprintf(websock_cmd_ctx->sock, "\n\r");
 }
 
