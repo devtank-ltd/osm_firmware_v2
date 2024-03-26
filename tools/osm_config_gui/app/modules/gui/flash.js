@@ -12,14 +12,10 @@ class flash_controller_base_t {
         this.flash_firmware = this.flash_firmware.bind(this);
     }
 
-    get_records(data) {
-        throw Error({ name: "NotImplementedError", message: "Not implemented" });
-    }
-
     static write_data(api, records) {
+        // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
-            for (let i = 0; i < records.length; i += 1) {
-                const rec = records[i];
+            for (const rec of records) {
                 await api.write(rec.data, rec.address);
             }
             resolve();
@@ -73,7 +69,7 @@ class flash_controller_base_t {
                     serial.onDisconnect = () => {};
                 })
                 .then(() => { stm_api = new osm_flash_api_t(serial); })
-                .then(() => flash_controller_t.flash_start(stm_api))
+                .then(() => flash_controller_base_t.flash_start(stm_api))
                 .then(() => stm_api.eraseAll())
                 .then(() => {
                     const records = this.get_records(fw_bin);
@@ -94,25 +90,27 @@ class flash_controller_t extends flash_controller_base_t {
         super({
             port,
             api_type: osm_flash_api_t,
-            baudrate: 115200
+            baudrate: 115200,
             });
-        this.PAGE_SIZE          = 0x800;
-        this.SIZE_BOOTLOADER    = 2 * this.PAGE_SIZE;
-        this.SIZE_CONFIG        = 2 * this.PAGE_SIZE;
-        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress);
-        this.ADDRESS_CONFIG     = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER
-        this.ADDRESS_FIRMWARE   = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
+        this.PAGE_SIZE = 0x800;
+        this.SIZE_BOOTLOADER = 2 * this.PAGE_SIZE;
+        this.SIZE_CONFIG = 2 * this.PAGE_SIZE;
+        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress, 16);
+        this.ADDRESS_CONFIG = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER;
+        this.ADDRESS_FIRMWARE = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
     }
 
     get_records(data) {
-        let records = [{
+        const records = [{
                 data: new Uint8Array(data.slice(0, this.SIZE_BOOTLOADER)),
-                address: this.ADDRESS_BOOTLOADER
+                address: this.ADDRESS_BOOTLOADER,
             },
             {
-                data: new Uint8Array(data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1)),
-                address: this.ADDRESS_FIRMWARE
-            }]
+                data: new Uint8Array(
+                    data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1),
+                ),
+                address: this.ADDRESS_FIRMWARE,
+            }];
         return records;
     }
 }
