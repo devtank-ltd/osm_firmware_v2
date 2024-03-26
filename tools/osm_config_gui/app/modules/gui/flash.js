@@ -4,18 +4,29 @@ import settings from '../stm-serial-flasher/src/api/Settings.js';
 import { osm_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
 
-class flash_controller_t {
-    constructor(port) {
-        this.port = port;
-        this.PAGE_SIZE = 0x800;
-        this.SIZE_BOOTLOADER = 2 * this.PAGE_SIZE;
-        this.SIZE_CONFIG = 2 * this.PAGE_SIZE;
-        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress, 16);
-        this.ADDRESS_CONFIG = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER;
-        this.ADDRESS_FIRMWARE = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
+class flash_controller_base_t {
+    constructor(params) {
+        this.port = params.port;
+        this.api_type = params.api_type;
+        this.baudrate = params.baudrate;
+        this.flash_firmware = this.flash_firmware.bind(this);
     }
 
-    static flash_start(osmAPI) {
+    get_records(data) {
+        throw Error({ name: "NotImplementedError", message: "Not implemented" });
+    }
+
+    static write_data(api, records) {
+        return new Promise(async (resolve, reject) => {
+            for (let i = 0; i < records.length; i += 1) {
+                const rec = records[i];
+                await api.write(rec.data, rec.address);
+            }
+            resolve();
+        });
+    }
+
+    static flash_start(stm_api) {
         return new Promise((resolve, reject) => {
             let deviceInfo = {
                 family: '-',
@@ -24,8 +35,8 @@ class flash_controller_t {
                 commands: [],
             };
 
-            osmAPI.connect({ baudrate: 115200, replyMode: false })
-                .then(() => osmAPI.cmdGET())
+            stm_api.connect({ baudrate: 115200, replyMode: false })
+                .then(() => stm_api.cmdGET())
                 .then((info) => {
                     deviceInfo = {
                         bl: info.blVersion,
@@ -36,7 +47,7 @@ class flash_controller_t {
                 .then(() => {
                     let pid;
                     if (deviceInfo.family === 'STM32') {
-                        pid = osmAPI.cmdGID();
+                        pid = stm_api.cmdGID();
                     } else {
                         pid = '-';
                     }
@@ -53,7 +64,7 @@ class flash_controller_t {
         loader.style.display = 'block';
         const disabled = disable_interaction(true);
         if (disabled) {
-            let osmAPI;
+            let stm_api;
             let serial;
             this.port.close()
                 .then(() => {
@@ -61,26 +72,48 @@ class flash_controller_t {
                     serial.onConnect = () => {};
                     serial.onDisconnect = () => {};
                 })
-                .then(() => { osmAPI = new osm_flash_api_t(serial); })
-                .then(() => flash_controller_t.flash_start(osmAPI))
-                .then(() => osmAPI.eraseAll())
+                .then(() => { stm_api = new osm_flash_api_t(serial); })
+                .then(() => flash_controller_t.flash_start(stm_api))
+                .then(() => stm_api.eraseAll())
                 .then(() => {
-                    const data_bootloader = new Uint8Array(fw_bin.slice(0, this.SIZE_BOOTLOADER));
-                    return osmAPI.write(data_bootloader, this.ADDRESS_BOOTLOADER);
+                    const records = this.get_records(fw_bin);
+                    return flash_controller_base_t.write_data(stm_api, records);
                 })
-                .then(() => {
-                    const data_firmware = new Uint8Array(
-                        fw_bin.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1),
-                    );
-                    return osmAPI.write(data_firmware, this.ADDRESS_FIRMWARE);
-                })
-                .then(() => osmAPI.disconnect())
+                .then(() => stm_api.disconnect())
                 .then(() => {
                     this.port.open({ baudRate: 115200 });
                     loader.style.display = 'none';
                     disable_interaction(false);
                 });
         }
+    }
+}
+
+class flash_controller_t extends flash_controller_base_t {
+    constructor(port) {
+        super({
+            port,
+            api_type: osm_flash_api_t,
+            baudrate: 115200
+            });
+        this.PAGE_SIZE          = 0x800;
+        this.SIZE_BOOTLOADER    = 2 * this.PAGE_SIZE;
+        this.SIZE_CONFIG        = 2 * this.PAGE_SIZE;
+        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress);
+        this.ADDRESS_CONFIG     = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER
+        this.ADDRESS_FIRMWARE   = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
+    }
+
+    get_records(data) {
+        let records = [{
+                data: new Uint8Array(data.slice(0, this.SIZE_BOOTLOADER)),
+                address: this.ADDRESS_BOOTLOADER
+            },
+            {
+                data: new Uint8Array(data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1)),
+                address: this.ADDRESS_FIRMWARE
+            }]
+        return records;
     }
 }
 
