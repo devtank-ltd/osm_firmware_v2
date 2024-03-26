@@ -4,20 +4,19 @@ import settings from '../stm-serial-flasher/src/api/Settings.js';
 import { osm_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
 
-
 class flash_controller_t {
-    constructor(dev) {
-        this.dev = dev;
-        this.PAGE_SIZE          = 0x800;
-        this.SIZE_BOOTLOADER    = 2 * this.PAGE_SIZE;
-        this.SIZE_CONFIG        = 2 * this.PAGE_SIZE;
-        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress);
-        this.ADDRESS_CONFIG     = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER
-        this.ADDRESS_FIRMWARE   = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
+    constructor(port) {
+        this.port = port;
+        this.PAGE_SIZE = 0x800;
+        this.SIZE_BOOTLOADER = 2 * this.PAGE_SIZE;
+        this.SIZE_CONFIG = 2 * this.PAGE_SIZE;
+        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress, 16);
+        this.ADDRESS_CONFIG = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER;
+        this.ADDRESS_FIRMWARE = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
     }
 
-    flash_start (osmAPI) {
-        return new Promise( function (resolve, reject) {
+    static flash_start(osmAPI) {
+        return new Promise((resolve, reject) => {
             let deviceInfo = {
                 family: '-',
                 bl: '-',
@@ -25,13 +24,14 @@ class flash_controller_t {
                 commands: [],
             };
 
-            let error = null;
-            osmAPI.connect({baudrate: 115200, replyMode: false})
-                .then(() => {return osmAPI.cmdGET()})
+            osmAPI.connect({ baudrate: 115200, replyMode: false })
+                .then(() => osmAPI.cmdGET())
                 .then((info) => {
-                    deviceInfo.bl = info.blVersion;
-                    deviceInfo.commands = info.commands;
-                    deviceInfo.family = info.getFamily();
+                    deviceInfo = {
+                        bl: info.blVersion,
+                        commands: info.commands,
+                        family: info.getFamily(),
+                    };
                 })
                 .then(() => {
                     let pid;
@@ -45,46 +45,44 @@ class flash_controller_t {
                 })
                 .then(resolve)
                 .catch(reject);
-        })
+        });
     }
 
     flash_firmware(fw_bin) {
         const loader = document.getElementById('loader');
         loader.style.display = 'block';
-        let disabled = disable_interaction(true);
+        const disabled = disable_interaction(true);
         if (disabled) {
             let osmAPI;
             let serial;
-            let start_address = parseInt(settings.startAddress);
-            this.dev.port.close()
+            this.port.close()
                 .then(() => {
-                    serial = new WebSerial(this.dev.port)
+                    serial = new WebSerial(this.port);
                     serial.onConnect = () => {};
                     serial.onDisconnect = () => {};
                 })
-                .then(() => osmAPI = new osm_flash_api_t(serial))
-                .then(() => this.flash_start(osmAPI))
-                .then(() => osmAPI.eraseAll() )
-                .then(async () => {
-                    let data_bootloader = new Uint8Array(fw_bin.slice(0, this.SIZE_BOOTLOADER));
-                    await osmAPI.write(data_bootloader, this.ADDRESS_BOOTLOADER);
-
-                    let data_firmware = new Uint8Array(fw_bin.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1));
-                    await osmAPI.write(data_firmware, this.ADDRESS_FIRMWARE);
+                .then(() => { osmAPI = new osm_flash_api_t(serial); })
+                .then(() => flash_controller_t.flash_start(osmAPI))
+                .then(() => osmAPI.eraseAll())
+                .then(() => {
+                    const data_bootloader = new Uint8Array(fw_bin.slice(0, this.SIZE_BOOTLOADER));
+                    return osmAPI.write(data_bootloader, this.ADDRESS_BOOTLOADER);
                 })
                 .then(() => {
-                    return osmAPI.disconnect();
+                    const data_firmware = new Uint8Array(
+                        fw_bin.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1),
+                    );
+                    return osmAPI.write(data_firmware, this.ADDRESS_FIRMWARE);
                 })
+                .then(() => osmAPI.disconnect())
                 .then(() => {
-                    this.dev.port.open({ "baudRate": 115200 });
+                    this.port.open({ baudRate: 115200 });
                     loader.style.display = 'none';
                     disable_interaction(false);
                 });
         }
     }
-
 }
-
 
 export class firmware_t {
     constructor(dev) {
@@ -108,13 +106,12 @@ export class firmware_t {
 
         for (const [key, value] of Object.entries(json_fw)) {
             if (key !== 'path') {
-                let fw_row = body.insertRow();
-                let keyh = fw_row.insertCell();
+                const fw_row = body.insertRow();
+                const keyh = fw_row.insertCell();
                 let key_f;
                 if (key === 'sha') {
                     key_f = key.toUpperCase();
-                }
-                else {
+                } else {
                     key_f = key.charAt(0).toUpperCase() + key.slice(1);
                 }
                 keyh.textContent = `${key_f}: ${value}`;
@@ -123,7 +120,7 @@ export class firmware_t {
 
         const flash_btn = document.getElementById('fw-btn');
         flash_btn.style.display = 'block';
-        flash_btn.addEventListener('click', () => { this.flash_latest(fw_info) });
+        flash_btn.addEventListener('click', () => { this.flash_latest(fw_info); });
 
         await disable_interaction(false);
     }
@@ -135,29 +132,28 @@ export class firmware_t {
                 this.create_firmware_table(json);
             })
             .catch((err) => {
-                ;
-            })
+                console.log(err);
+            });
     }
 
     flash_latest(fw_info) {
-        const dev = this.dev;
-        if (confirm("Are you sure you want to update the firmware?")) {
+        const { port } = this.dev;
+        if (window.confirm('Are you sure you want to update the firmware?')) {
             const fw_path = fw_info.path;
             fetch(`../../${fw_path}`)
                 .then((r) => r.blob())
                 .then((resp) => {
-                    var reader = new FileReader();
-                    reader.onload = function (e) {
-                        const fw_bin = Uint8Array.from(e.target.result, c => c.charCodeAt(0));
-                        const controller = new flash_controller_t(dev);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const fw_bin = Uint8Array.from(e.target.result, (c) => c.charCodeAt(0));
+                        const controller = new flash_controller_t(port);
                         controller.flash_firmware(fw_bin);
                     };
-                    reader.onerror = function (e) {
-                        ;
+                    reader.onerror = (e) => {
+                        console.log(e);
                     };
                     reader.readAsBinaryString(resp);
-                })
+                });
             }
         }
     }
-
