@@ -48,13 +48,11 @@ class flash_controller_t {
         })
     }
 
-    flash_firmware(fw_b64) {
+    flash_firmware(fw_bin) {
         const loader = document.getElementById('loader');
         loader.style.display = 'block';
         let disabled = disable_interaction(true);
         if (disabled) {
-            let data = Uint8Array.from(atob(fw_b64), c => c.charCodeAt(0))
-
             let osmAPI;
             let serial;
             let start_address = parseInt(settings.startAddress);
@@ -68,10 +66,10 @@ class flash_controller_t {
                 .then(() => this.flash_start(osmAPI))
                 .then(() => osmAPI.eraseAll() )
                 .then(async () => {
-                    let data_bootloader = new Uint8Array(data.slice(0, this.SIZE_BOOTLOADER));
+                    let data_bootloader = new Uint8Array(fw_bin.slice(0, this.SIZE_BOOTLOADER));
                     await osmAPI.write(data_bootloader, this.ADDRESS_BOOTLOADER);
 
-                    let data_firmware = new Uint8Array(data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1));
+                    let data_firmware = new Uint8Array(fw_bin.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1));
                     await osmAPI.write(data_firmware, this.ADDRESS_FIRMWARE);
                 })
                 .then(() => {
@@ -150,9 +148,9 @@ export class firmware_t {
                 .then((resp) => {
                     var reader = new FileReader();
                     reader.onload = function (e) {
-                        const fw_b64 = btoa(e.target.result);
+                        const fw_bin = Uint8Array.from(e.target.result, c => c.charCodeAt(0));
                         const controller = new flash_controller_t(dev);
-                        controller.flash_firmware(fw_b64);
+                        controller.flash_firmware(fw_bin);
                     };
                     reader.onerror = function (e) {
                         ;
