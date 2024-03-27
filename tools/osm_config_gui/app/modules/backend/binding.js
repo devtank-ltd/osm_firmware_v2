@@ -146,22 +146,17 @@ export class binding_t {
     }
 
     async open_ll_obj() {
-        return new Promise((resolve, reject) => {
-            if (this.port_type === 'Serial') {
-                this.ll = new low_level_serial_t(this.port, this.timeout);
-            } else {
-                const mod = this.port.startsWith('https://') ? `wss://${this.port.substring(8)}` : `ws://${this.port.substring(7)}`;
-                this.url = new WebSocket(mod);
-                const opened = this.connection(this.url);
-                this.url.onopen = async (e) => {
-                };
-                if (opened) {
-                    this.ll = new low_level_socket_t(this.url);
-                }
+        if (this.port_type === 'Serial') {
+            this.ll = new low_level_serial_t(this.port, this.timeout);
+        } else {
+            const mod = this.port.startsWith('https://') ? `wss://${this.port.substring(8)}` : `ws://${this.port.substring(7)}`;
+            this.url = new WebSocket(mod);
+            const opened = await this.connection(this.url);
+            if (opened) {
+                this.ll = new low_level_socket_t(this.url);
             }
-            resolve(this.ll);
-            return this.ll;
-        });
+        }
+        return this.ll;
     }
 
     async connection(socket, timeout = 10000) {

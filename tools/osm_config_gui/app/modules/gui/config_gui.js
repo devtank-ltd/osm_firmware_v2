@@ -91,7 +91,7 @@ class config_gui_t {
         this.dev = new binding_t(this.url, 'websocket');
         loader.style.display = 'block';
         this.writer = await this.dev.open_ll_obj();
-        if (this.writer) {
+        if (this.writer.url.readyState === 1) { /* Websocket connection open */
             this.home = new home_tab_t(this.dev, true);
             await this.home.create_navbar();
             await this.home.insert_homepage();
@@ -100,7 +100,6 @@ class config_gui_t {
             disconnect.addEventListener('click', async () => {
                 await this.dev.ll.write('close');
                 await this.dev.ll.url.close();
-                window.location.reload();
             });
 
             const globalbtns = document.getElementById('global-load-save-config-buttons');
