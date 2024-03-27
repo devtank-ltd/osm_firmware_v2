@@ -132,8 +132,6 @@ export class modbus_t {
         if (!this.list_of_current_devs.includes(this.dev_to_remove)) {
             await this.dev.remove_modbus_dev(this.dev_to_remove);
         }
-        this.remove_reg_btn.disabled = true;
-        this.remove_dev_btn.disabled = true;
         await disable_interaction(false);
         loader.style.display = 'none';
     }
@@ -159,8 +157,6 @@ export class modbus_t {
         }
         this.mb_current_config_div.innerHTML = '';
         await this.current_modbus_config_table();
-        this.remove_reg_btn.disabled = true;
-        this.remove_dev_btn.disabled = true;
         await disable_interaction(false);
         loader.style.display = 'none';
     }
