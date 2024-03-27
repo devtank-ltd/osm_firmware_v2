@@ -402,9 +402,10 @@ class dev_t(dev_base_t):
     def send_alive_packet(self):
         return self.do_cmd("connect")
 
-    def reconnect_announce(self, timeout_s:float=10.):
+    def reconnect_announce(self, timeout_s:float=10., type_="lw"):
         self.set_dbg(4)
-        self.do_cmd("comms_restart")
+        if type_ == "lw":
+            self.do_cmd("comms_restart")
         timeout_s = 10
         end_time = time.monotonic() + timeout_s
         connected = self.comms_conn.value
@@ -416,7 +417,8 @@ class dev_t(dev_base_t):
             sleep_time = 0.5 if time_left > 0.5 else time_left
             time.sleep(sleep_time)
             connected = self.comms_conn.value
-        self.send_alive_packet()
+        if type_ == "lw":
+            self.send_alive_packet()
 
     def get_rak_version(self):
         self.set_dbg(4)
