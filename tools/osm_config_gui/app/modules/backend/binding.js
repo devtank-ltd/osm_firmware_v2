@@ -157,8 +157,6 @@ export class binding_t {
                 };
                 if (opened) {
                     this.ll = new low_level_socket_t(this.url);
-                } else {
-                    on_websocket_disconnect();
                 }
             }
             resolve(this.ll);
@@ -365,12 +363,17 @@ export class binding_t {
                 break;
             }
         }
-        const mp_extracted = mp_match[1];
+        let mp_extracted;
+        if (mp_match) {
+            [, mp_extracted] = mp_match;
+        } else {
+            mp_extracted = '';
+        }
         return mp_extracted;
     }
 
     async cc_cal() {
-        await this.do_cmd('cc_cal');
+        this.calibrate = await this.do_cmd('cc_cal');
     }
 
     async extract_interval_mins() {

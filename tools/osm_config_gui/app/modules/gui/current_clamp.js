@@ -5,7 +5,7 @@ export class current_clamp_t {
         this.dev = dev;
         this.create_cc_table = this.create_cc_table.bind(this);
         this.open_cc = this.open_cc.bind(this);
-        this.open_cc_modal = this.open_cc_modal.bind(this);
+        this.calibrate = this.calibrate.bind(this);
         this.set_cc_exterior = this.set_cc_exterior.bind(this);
         this.set_cc_interior = this.set_cc_interior.bind(this);
         this.set_cc_midpoint = this.set_cc_midpoint.bind(this);
@@ -19,25 +19,19 @@ export class current_clamp_t {
     }
 
     async add_event_listeners() {
-        document.getElementById('current-clamp-cal-btn').addEventListener('click', this.open_cc_modal);
+        document.getElementById('current-clamp-cal-btn').addEventListener('click', this.calibrate);
     }
 
-    async open_cc_modal() {
-        this.dialog = document.getElementById('cc-cal-dialog');
-        this.confirm = document.getElementById('cc-modal-confirm');
-        this.cancel = document.getElementById('cc-modal-cancel');
-
-        this.dialog.showModal();
-        this.confirm.addEventListener('click', async () => {
+    async calibrate() {
+        if (confirm('Ensure no live current going through the OSM.')) {
+            await disable_interaction(true);
             const loader = document.getElementById('loader');
             loader.style.display = 'block';
             await this.dev.cc_cal();
             await this.create_cc_table();
             loader.style.display = 'none';
-        });
-        this.cancel.addEventListener('click', () => {
-            this.dialog.close();
-        });
+            await disable_interaction(false);
+        }
     }
 
     async create_cc_table() {
