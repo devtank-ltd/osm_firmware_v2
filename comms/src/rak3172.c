@@ -413,6 +413,11 @@ void rak3172_init(void)
     {
         comms_debug("Config is incorrect, not initialising.");
     }
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
+    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                    GPIO_MODE_INPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.reset_pin.pins);
     _rak3172_ctx.state = RAK3172_STATE_OFF;
 }
 
