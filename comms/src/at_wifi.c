@@ -383,8 +383,11 @@ void at_wifi_init(void)
 {
     platform_gpio_init(&_at_wifi_ctx.reset_pin);
     platform_gpio_setup(&_at_wifi_ctx.reset_pin, false, IO_PUPD_UP);
+    platform_gpio_set(&_at_wifi_ctx.reset_pin, true);
     platform_gpio_init(&_at_wifi_ctx.boot_pin);
     platform_gpio_setup(&_at_wifi_ctx.boot_pin, false, IO_PUPD_UP);
+    platform_gpio_set(&_at_wifi_ctx.boot_pin, true);
+
 
     _at_wifi_ctx.mem = (at_wifi_config_t*)&persist_data.model_config.comms_config;
     unsigned topic_header_len = snprintf(
