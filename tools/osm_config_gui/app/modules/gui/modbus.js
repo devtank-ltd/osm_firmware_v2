@@ -119,6 +119,7 @@ export class modbus_t {
         if (!found) {
             this.modbus_modal('Select a register.');
             await disable_interaction(false);
+            loader.style.display = 'none';
             return;
         }
         this.mb_current_config_div.innerHTML = '';
@@ -153,6 +154,7 @@ export class modbus_t {
         if (!found) {
             this.modbus_modal('Select a register.');
             await disable_interaction(false);
+            loader.style.display = 'none';
             return;
         }
         this.mb_current_config_div.innerHTML = '';
