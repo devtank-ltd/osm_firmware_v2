@@ -1481,6 +1481,11 @@ static command_response_t _at_wifi_state_cb(char* args, cmd_ctx_t * ctx)
     return COMMAND_RESP_OK;
 }
 
+static command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx) {
+    _at_wifi_reset();
+    return COMMAND_RESP_OK;
+}
+
 
 struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
 {
@@ -1491,6 +1496,7 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
         { "comms_boot",   "Enable/disable boot line"    , _at_wifi_boot_cb          , false , NULL },
         { "comms_reset",  "Enable/disable reset line"   , _at_wifi_reset_cb         , false , NULL },
         { "comms_state" , "Get Comms state"             , _at_wifi_state_cb         , false , NULL },
+        { "comms_restart", "Comms restart"              , _at_wifi_restart_cb       , false , NULL }
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
