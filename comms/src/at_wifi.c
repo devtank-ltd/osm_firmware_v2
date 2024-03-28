@@ -1193,7 +1193,7 @@ void at_wifi_loop_iteration(void)
             uint32_t delta = since_boot_delta(now, _at_wifi_ctx.off_since);
             if (delta > AT_WIFI_STILL_OFF_TIMEOUT)
             {
-                _at_wifi_reset();
+                _at_wifi_start();
             }
             break;
         }
