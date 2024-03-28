@@ -1,58 +1,28 @@
 import WebSerial from '../stm-serial-flasher/src/api/WebSerial.js';
 import settings from '../stm-serial-flasher/src/api/Settings.js';
-import { osm_flash_api_t } from './flash_apis.js';
 
+import { osm_flash_api_t } from './flash_apis.js';
+import { disable_interaction } from './disable.js';
 
 class flash_controller_base_t {
     constructor(params) {
-        this.dev            = params.dev;
-        this.get_url        = params.get_url;
-        this.get_info_url   = params.get_info_url;
-        this.api_type       = params.api_type;
-        this.baudrate       = params.baudrate;
-        this.flash_start    = this.flash_start.bind(this);
-        this.get_records    = this.get_records.bind(this);
+        this.port = params.port;
+        this.api_type = params.api_type;
+        this.baudrate = params.baudrate;
+        this.flash_firmware = this.flash_firmware.bind(this);
     }
 
-    get_latest_firmware_info_loaded(evt) {
-        let firmware_info = JSON.parse(evt.target.response);
-        console.log("FIRMWARE INFO: LOADED:", firmware_info);
-    }
-
-    get_latest_firmware_info_error(evt) {
-        console.log("FIRMWARE INFO: ERROR");
-        console.log(evt);
-    }
-
-    async get_latest_firmware_info() {
-        const req = new XMLHttpRequest();
-        req.addEventListener("load", (e) => { this.get_latest_firmware_info_loaded(e) });
-        req.addEventListener("error", (e) => { this.get_latest_firmware_info_error(e) });
-        req.open("GET", "/latest_firmware_info");
-        req.overrideMimeType("application/json");
-        req.send();
-    }
-
-    get_records(data) {
-        throw {name : "NotImplementedError", message : "Not implemented"};
-    }
-
-    async write_data(api, records) {
-        return new Promise( async (resolve, reject) => {
-            for (let i = 0; i < records.length; i++) {
-                let rec = records[i];
-                console.log("ADDRESS: 0x" + rec.address.toString(16));
-                console.log("SIZE = " + rec.data.length);
+    static write_data(api, records) {
+        // eslint-disable-next-line no-async-promise-executor
+        return new Promise(async (resolve, reject) => {
+            for (const rec of records) {
                 await api.write(rec.data, rec.address);
-                console.log("WRITTEN");
             }
-            console.log("FINISHED WRITING");
             resolve();
         });
     }
 
-    flash_start (stm_api) {
-        let baudrate = this.baudrate;
+    static flash_start(stm_api) {
         return new Promise((resolve, reject) => {
             let deviceInfo = {
                 family: '-',
@@ -61,14 +31,14 @@ class flash_controller_base_t {
                 commands: [],
             };
 
-            let error = null;
-            console.log("BAUD:", baudrate);
-            stm_api.connect({baudrate: baudrate, replyMode: false})
-                .then(() => {return stm_api.cmdGET()})
+            stm_api.connect({ baudrate: 115200, replyMode: false })
+                .then(() => stm_api.cmdGET())
                 .then((info) => {
-                    deviceInfo.bl = info.blVersion;
-                    deviceInfo.commands = info.commands;
-                    deviceInfo.family = info.getFamily();
+                    deviceInfo = {
+                        bl: info.blVersion,
+                        commands: info.commands,
+                        family: info.getFamily(),
+                    };
                 })
                 .then(() => {
                     let pid;
@@ -85,104 +55,136 @@ class flash_controller_base_t {
         });
     }
 
-    flash_firmware_loaded(evt) {
-        let port        = this.dev.port;
-        let api_type    = this.api_type;
-        let flash_start = this.flash_start;
-        let get_records = this.get_records;
-        let write_data  = this.write_data;
-        let baudrate    = this.baudrate;
-        return new Promise((resolve, reject) => {
-            console.log("FIRMWARE: LOADED");
-            let fw_b64 = evt.target.response;
-            let data = Uint8Array.from(atob(fw_b64), c => c.charCodeAt(0))
-
+    flash_firmware(fw_bin) {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        const disabled = disable_interaction(true);
+        if (disabled) {
             let stm_api;
             let serial;
-            port.close()
+            this.port.close()
                 .then(() => {
-                    serial = new WebSerial(port)
+                    serial = new WebSerial(this.port);
                     serial.onConnect = () => {};
                     serial.onDisconnect = () => {};
                 })
-                .then(() => {
-                    new Promise((resolve, reject) => {
-                        stm_api = new api_type(serial);
-                        resolve();
-                        });
-                    })
-                .then(() => flash_start(stm_api))
-                .then(() => console.log("FINISHED START"))
+                .then(() => { stm_api = new osm_flash_api_t(serial); })
+                .then(() => flash_controller_base_t.flash_start(stm_api))
                 .then(() => stm_api.eraseAll())
                 .then(() => {
-                    let records = get_records(data);
-                    return write_data(stm_api, records);
+                    const records = this.get_records(fw_bin);
+                    return flash_controller_base_t.write_data(stm_api, records);
                 })
+                .then(() => stm_api.disconnect())
                 .then(() => {
-                    console.log("GONE");
-                    return stm_api.disconnect();
-                })
-                .then(() => port.open({"baudRate": baudrate}))
-                .then(resolve)
-                .catch(reject);
-        });
-    }
-
-    flash_firmware_error(evt) {
-        throw {name : "DownloadError", message : "Firmware failed to download"};
-    }
-
-    async flash_firmware() {
-        if (confirm("Are you sure you want to update the firmware?")) {
-            alert("Do not unplug the device while programming");
-            const req = new XMLHttpRequest();
-            req.addEventListener("load", (e) => { this.flash_firmware_loaded(e) });
-            req.addEventListener("error", (e) => { this.flash_firmware_error(e) });
-            req.open("GET", this.get_url);
-            req.overrideMimeType("application/octet-stream");
-            req.send();
+                    this.port.open({ baudRate: 115200 });
+                    loader.style.display = 'none';
+                    disable_interaction(false);
+                });
         }
     }
 }
 
-
 class flash_controller_t extends flash_controller_base_t {
-    constructor(dev) {
+    constructor(port) {
         super({
-            dev             : dev,
-            get_url         : "/latest_firmware",
-            get_info_url    : "/latest_firmware_info",
-            api_type        : osm_flash_api_t,
-            baudrate        : 115200
+            port,
+            api_type: osm_flash_api_t,
+            baudrate: 115200,
             });
-        this.PAGE_SIZE          = 0x800;
-        this.SIZE_BOOTLOADER    = 2 * this.PAGE_SIZE;
-        this.SIZE_CONFIG        = 2 * this.PAGE_SIZE;
-        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress);
-        this.ADDRESS_CONFIG     = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER
-        this.ADDRESS_FIRMWARE   = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
+        this.PAGE_SIZE = 0x800;
+        this.SIZE_BOOTLOADER = 2 * this.PAGE_SIZE;
+        this.SIZE_CONFIG = 2 * this.PAGE_SIZE;
+        this.ADDRESS_BOOTLOADER = parseInt(settings.startAddress, 16);
+        this.ADDRESS_CONFIG = this.ADDRESS_BOOTLOADER + this.SIZE_BOOTLOADER;
+        this.ADDRESS_FIRMWARE = this.ADDRESS_CONFIG + this.SIZE_CONFIG;
     }
 
     get_records(data) {
-        let records = [{
+        const records = [{
                 data: new Uint8Array(data.slice(0, this.SIZE_BOOTLOADER)),
-                address: this.ADDRESS_BOOTLOADER
+                address: this.ADDRESS_BOOTLOADER,
             },
             {
-                data: new Uint8Array(data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1)),
-                address: this.ADDRESS_FIRMWARE
-            }]
+                data: new Uint8Array(
+                    data.slice(this.ADDRESS_FIRMWARE - this.ADDRESS_BOOTLOADER, -1),
+                ),
+                address: this.ADDRESS_FIRMWARE,
+            }];
         return records;
     }
 }
 
+export class firmware_t {
+    constructor(dev) {
+        this.dev = dev;
+        this.create_firmware_table = this.create_firmware_table.bind(this);
+        this.flash_latest = this.flash_latest.bind(this);
+    }
 
-export function flash_firmware(dev) {
-    return new Promise((resolve, reject) => {
-        let flash_controller = new flash_controller_t(dev);
-        flash_controller.flash_firmware()
-            .then(resolve)
-            .catch(reject);
-    });
-}
+    async create_firmware_table(fw_info) {
+        await disable_interaction(true);
+        const json_fw = fw_info;
+        const tablediv = document.getElementById('home-firmware-table');
 
+        const tbl = tablediv.appendChild(document.createElement('table'));
+        const body = tbl.createTBody();
+        tbl.createTHead();
+
+        const title = tbl.tHead.insertRow();
+        const title_cell = title.insertCell();
+        title_cell.textContent = 'Latest Firmware Available';
+
+        for (const [key, value] of Object.entries(json_fw)) {
+            if (key !== 'path') {
+                const fw_row = body.insertRow();
+                const keyh = fw_row.insertCell();
+                let key_f;
+                if (key === 'sha') {
+                    key_f = key.toUpperCase();
+                } else {
+                    key_f = key.charAt(0).toUpperCase() + key.slice(1);
+                }
+                keyh.textContent = `${key_f}: ${value}`;
+            }
+        }
+
+        const flash_btn = document.getElementById('fw-btn');
+        flash_btn.style.display = 'block';
+        flash_btn.addEventListener('click', () => { this.flash_latest(fw_info); });
+
+        await disable_interaction(false);
+    }
+
+    get_latest_firmware_info() {
+        fetch('../../fw_releases/latest_fw_info.json')
+            .then((resp) => resp.json())
+            .then((json) => {
+                this.create_firmware_table(json);
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    }
+
+    flash_latest(fw_info) {
+        const { port } = this.dev;
+        if (window.confirm('Are you sure you want to update the firmware?')) {
+            const fw_path = fw_info.path;
+            fetch(`../../${fw_path}`)
+                .then((r) => r.blob())
+                .then((resp) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const fw_bin = Uint8Array.from(e.target.result, (c) => c.charCodeAt(0));
+                        const controller = new flash_controller_t(port);
+                        controller.flash_firmware(fw_bin);
+                    };
+                    reader.onerror = (e) => {
+                        console.log(e);
+                    };
+                    reader.readAsBinaryString(resp);
+                });
+            }
+        }
+    }

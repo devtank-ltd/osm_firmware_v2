@@ -19,7 +19,7 @@ export class load_configuration_t {
         const loader = document.getElementById('loader');
         loader.style.display = 'block';
         await this.dev.wipe();
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await sleep(2000);
         this.content = JSON.parse(content);
         this.modbus_setup = this.content.modbus_bus.setup;
@@ -28,22 +28,22 @@ export class load_configuration_t {
             this.modbus_setup[0],
             this.modbus_setup[1],
             this.modbus_setup[2],
-      );
+        );
         this.devs = await this.write_modbus(this.modbus_devices);
 
         this.measurements = this.content.measurements;
         for (const [key, value] of Object.entries(this.measurements)) {
-          await this.dev.change_interval(key, value.interval);
-          await this.dev.change_samplecount(key, value.samplecount);
+            await this.dev.change_interval(key, value.interval);
+            await this.dev.change_samplecount(key, value.samplecount);
         }
 
         this.ios = this.content.ios;
         if (this.ios) {
             for (const [key, value] of Object.entries(this.ios)) {
                 if (value.special) {
-                  await this.dev.activate_io(value.special, key, value.edge, value.pull);
+                    await this.dev.activate_io(value.special, key, value.edge, value.pull);
                 } else {
-                  await this.dev.disable_io(key);
+                    await this.dev.disable_io(key);
                 }
             }
         }
@@ -58,22 +58,22 @@ export class load_configuration_t {
                 await this.dev.do_cmd(`comms_config dev-eui ${this.dev_eui}`);
                 await this.dev.do_cmd(`comms_config region ${this.region}`);
             }
-          } else if (this.comms_type.includes('WIFI')) {
-                this.ssid = this.content.wifi_ssid;
-                this.wifi_pwd = this.content.wifi_pwd;
-                this.mqtt_addr = this.content.mqtt_addr;
-                this.mqtt_user = this.content.mqtt_user;
-                this.mqtt_pwd = this.content.mqtt_pwd;
-                this.mqtt_port = this.content.mqtt_port;
-                if (this.ssid) {
-                    await this.dev.do_cmd(`comms_config wifi_ssid ${this.ssid}`);
-                    await this.dev.do_cmd(`comms_config wifi_pwd ${this.wifi_pwd}`);
-                    await this.dev.do_cmd(`comms_config mqtt_addr ${this.mqtt_addr}`);
-                    await this.dev.do_cmd(`comms_config mqtt_user ${this.mqtt_user}`);
-                    await this.dev.do_cmd(`comms_config mqtt_pwd ${this.mqtt_pwd}`);
-                    await this.dev.do_cmd(`comms_config mqtt_port ${this.mqtt_port}`);
-                }
-          }
+        } else if (this.comms_type.includes('WIFI')) {
+            this.ssid = this.content.wifi_ssid;
+            this.wifi_pwd = this.content.wifi_pwd;
+            this.mqtt_addr = this.content.mqtt_addr;
+            this.mqtt_user = this.content.mqtt_user;
+            this.mqtt_pwd = this.content.mqtt_pwd;
+            this.mqtt_port = this.content.mqtt_port;
+            if (this.ssid) {
+                await this.dev.do_cmd(`comms_config wifi_ssid ${this.ssid}`);
+                await this.dev.do_cmd(`comms_config wifi_pwd ${this.wifi_pwd}`);
+                await this.dev.do_cmd(`comms_config mqtt_addr ${this.mqtt_addr}`);
+                await this.dev.do_cmd(`comms_config mqtt_user ${this.mqtt_user}`);
+                await this.dev.do_cmd(`comms_config mqtt_pwd ${this.mqtt_pwd}`);
+                await this.dev.do_cmd(`comms_config mqtt_port ${this.mqtt_port}`);
+            }
+        }
 
         this.cc_midpoints = this.content.cc_midpoints;
         for (const [key, value] of Object.entries(this.cc_midpoints)) {
@@ -95,7 +95,7 @@ export class load_configuration_t {
                 mb_devs[i].byteorder,
                 mb_devs[i].wordorder,
                 mb_devs[i].name,
-          );
+            );
             const regs = mb_devs[i].registers;
             for (let v = 0; v < regs.length; v += 1) {
                 await this.dev.mb_reg_add(
@@ -104,8 +104,8 @@ export class load_configuration_t {
                     regs[v].function,
                     regs[v].datatype,
                     regs[v].reg,
-            );
-          }
+                );
+            }
         }
     }
 
@@ -120,9 +120,9 @@ export class load_configuration_t {
                 reader.readAsText(file, 'application/json');
                 reader.onload = (e) => { this.load_gui_with_config(e.target.result); };
                 reader.onerror = (error) => {
-              };
+                };
             }
-      };
+        };
         this.load_file_dialog.click();
     }
 }

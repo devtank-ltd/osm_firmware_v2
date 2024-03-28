@@ -36,6 +36,7 @@ export class console_t {
     async send_cmd(e) {
         if (e.key === 'Enter' || e.pointerType === 'mouse' || e.type === 'click') {
             await disable_interaction(true);
+            this.input = e.target;
             this.text = e.target.value;
             this.cmd = document.getElementById('console-cmd-input');
             this.value = this.cmd.value;
@@ -46,6 +47,7 @@ export class console_t {
                 this.cmd.value = '';
             }
             await disable_interaction(false);
+            this.input.focus();
         }
     }
 }

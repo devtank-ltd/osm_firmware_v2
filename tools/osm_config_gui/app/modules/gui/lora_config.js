@@ -108,7 +108,7 @@ export class lora_config_t {
         this.comms.lora_deveui = deveui;
         this.comms.lora_appkey = appkey;
         this.comms.lora_region = reg;
-        loramsg.textContent = 'Configuration sent.'
+        loramsg.textContent = 'Configuration sent.';
         loader.style.display = 'none';
         await disable_interaction(false);
     }

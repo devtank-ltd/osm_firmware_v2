@@ -5,7 +5,7 @@ export class current_clamp_t {
         this.dev = dev;
         this.create_cc_table = this.create_cc_table.bind(this);
         this.open_cc = this.open_cc.bind(this);
-        this.open_cc_modal = this.open_cc_modal.bind(this);
+        this.calibrate = this.calibrate.bind(this);
         this.set_cc_exterior = this.set_cc_exterior.bind(this);
         this.set_cc_interior = this.set_cc_interior.bind(this);
         this.set_cc_midpoint = this.set_cc_midpoint.bind(this);
@@ -19,25 +19,19 @@ export class current_clamp_t {
     }
 
     async add_event_listeners() {
-        document.getElementById('current-clamp-cal-btn').addEventListener('click', this.open_cc_modal);
+        document.getElementById('current-clamp-cal-btn').addEventListener('click', this.calibrate);
     }
 
-    async open_cc_modal() {
-        this.dialog = document.getElementById('cc-cal-dialog');
-        this.confirm = document.getElementById('cc-modal-confirm');
-        this.cancel = document.getElementById('cc-modal-cancel');
-
-        this.dialog.showModal();
-        this.confirm.addEventListener('click', async () => {
+    async calibrate() {
+        if (confirm('Ensure no live current going through the OSM.')) {
+            await disable_interaction(true);
             const loader = document.getElementById('loader');
             loader.style.display = 'block';
             await this.dev.cc_cal();
             await this.create_cc_table();
             loader.style.display = 'none';
-        });
-        this.cancel.addEventListener('click', () => {
-            this.dialog.close();
-        });
+            await disable_interaction(false);
+        }
     }
 
     async create_cc_table() {
@@ -116,11 +110,9 @@ export class current_clamp_t {
             let cc_type;
             if (phase === 1) {
                 cc_type = phase_one_type;
-            }
-            else if (phase === 2) {
+            } else if (phase === 2) {
                 cc_type = phase_two_type;
-            }
-            else if (phase === 3) {
+            } else if (phase === 3) {
                 cc_type = phase_three_type;
             }
             const cc_row = tbody.insertRow();
@@ -177,15 +169,14 @@ export class current_clamp_t {
                 int_cell_sel.add(opt7);
                 int_cell_sel.add(opt8);
                 unit = 'mA';
-            }
-            else {
+            } else {
                 const opt5 = document.createElement('option');
                 opt5.text = 333;
                 const opt6 = document.createElement('option');
                 opt6.text = 1000;
                 int_cell_sel.add(opt5);
                 int_cell_sel.add(opt6);
-                unit = 'mV'
+                unit = 'mV';
             }
 
             int_cell_sel.addEventListener('change', this.set_cc_interior);
@@ -216,17 +207,17 @@ export class current_clamp_t {
         this.extphase = event.target.parentNode.parentNode.cells[0].innerHTML;
         this.ext_val = event.srcElement.value;
         switch (this.extphase) {
-            case 'CC1':
-                this.extphase = 1;
-                break;
-            case 'CC2':
-                this.extphase = 2;
-                break;
-            case 'CC3':
-                this.extphase = 3;
-                break;
-            default:
-                this.extphase = 'undefined';
+        case 'CC1':
+            this.extphase = 1;
+            break;
+        case 'CC2':
+            this.extphase = 2;
+            break;
+        case 'CC3':
+            this.extphase = 3;
+            break;
+        default:
+            this.extphase = 'undefined';
         }
         this.interior = event.target.parentNode.parentNode.cells[2].childNodes[0].value;
         await this.dev.set_cc_gain(this.extphase, this.ext_val, this.interior);
@@ -238,17 +229,17 @@ export class current_clamp_t {
         this.intphase = event.target.parentNode.parentNode.cells[0].innerHTML;
         this.int_val = event.srcElement.value;
         switch (this.intphase) {
-            case 'CC1':
-                this.intphase = 1;
-                break;
-            case 'CC2':
-                this.intphase = 2;
-                break;
-            case 'CC3':
-                this.intphase = 3;
-                break;
-            default:
-                this.intphase = 'undefined';
+        case 'CC1':
+            this.intphase = 1;
+            break;
+        case 'CC2':
+            this.intphase = 2;
+            break;
+        case 'CC3':
+            this.intphase = 3;
+            break;
+        default:
+            this.intphase = 'undefined';
         }
         this.exterior = event.target.parentNode.parentNode.cells[1].childNodes[0].value;
         await this.dev.set_cc_gain(this.intphase, this.exterior, this.int_val);

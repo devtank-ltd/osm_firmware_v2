@@ -7,27 +7,27 @@ export class measurements_table_t {
         this.insert_last_value = this.insert_last_value.bind(this);
         this.change_uplink_time = this.change_uplink_time.bind(this);
         this.desc_map = {
-            "PM1"  : "Air Quality",
-            "PM4"  : "Air Quality",
-            "PM10" : "Air Quality",
-            "PM25" : "Air Quality",
-            "CC1"  : "Phase 1 Current",
-            "CC2"  : "Phase 2 Current",
-            "CC3"  : "Phase 3 Current",
-            "TMP2" : "One Wire Probe Temperature",
-            "TMP3" : "One Wire Probe Temperature",
-            "TMP5" : "Temperature (Particulate Sensor)",
-            "TEMP" : "Temperature",
-            "HUM2" : "Humidity (Particulate Sensor)",
-            "HUMI" : "Humidity",
-            "BAT"  : "Battery",
-            "CNT1" : "Pulsecount",
-            "CNT2" : "Pulsecount",
-            "LGHT" : "Light",
-            "SND"  : "Sound",
-            "IO01" : "Pulsecount",
-            "IO02" : "Pulsecount",
-        }
+            PM1: 'Air Quality',
+            PM4: 'Air Quality',
+            PM10: 'Air Quality',
+            PM25: 'Air Quality',
+            CC1: 'Phase 1 Current',
+            CC2: 'Phase 2 Current',
+            CC3: 'Phase 3 Current',
+            TMP2: 'One Wire Probe Temperature',
+            TMP3: 'One Wire Probe Temperature',
+            TMP5: 'Temperature (Particulate Sensor)',
+            TEMP: 'Temperature',
+            HUM2: 'Humidity (Particulate Sensor)',
+            HUMI: 'Humidity',
+            BAT: 'Battery',
+            CNT1: 'Pulsecount',
+            CNT2: 'Pulsecount',
+            LGHT: 'Light',
+            SND: 'Sound',
+            IO01: 'Pulsecount',
+            IO02: 'Pulsecount',
+        };
     }
 
     async create_measurements_table_gui() {
@@ -103,18 +103,17 @@ export class measurements_table_t {
     }
 
     async get_lowest_multiple(number) {
-        let multiples = [];
-        for (let i = 1; i <= number; i++) {
-                if (number % i === 0) {
-                        multiples.push(i);
-                }
+        this.multiples = [];
+        for (let i = 1; i <= number; i += 1) {
+            if (number % i === 0) {
+                this.multiples.push(i);
+            }
         }
-        if (multiples.length >= 2) {
-            return multiples[1];
-        } else {
-                return 1;
+        if (this.multiples.length >= 2) {
+            return this.multiples[1];
         }
-}
+        return 1;
+    }
 
     async get_minimum_interval(val) {
         const errordiv = document.getElementById('home-uplink-error-div');
@@ -126,9 +125,8 @@ export class measurements_table_t {
             duration *= 60;
         }
         let minimum_val;
-        let multiple;
 
-        multiple = await this.get_lowest_multiple(duration);
+        const multiple = await this.get_lowest_multiple(duration);
         if (parseFloat(val) < duration && parseFloat(val) > 0) {
             errordiv.textContent = `Rounded value entered to the minimum uplink (${duration})`;
             minimum_val = duration;
@@ -164,10 +162,10 @@ export class measurements_table_t {
         let val = val_col.value;
         if (val > 999) {
             val = 999;
-            errordiv.textContent = 'Uplink time cannot be over 999.'
+            errordiv.textContent = 'Uplink time cannot be over 999.';
         } else if (val < 0) {
             val = 0;
-            errordiv.textContent = 'Uplink time cannot be less than zero.'
+            errordiv.textContent = 'Uplink time cannot be less than zero.';
         }
 
         /* Example: interval CNT1 1 */
@@ -201,8 +199,7 @@ export class measurements_table_t {
             const comms_type = await this.dev.comms_type();
             if (comms_type.includes('LW')) {
                 min_uplink = 1;
-            }
-            else {
+            } else {
                 min_uplink = 0;
             }
 
@@ -217,11 +214,11 @@ export class measurements_table_t {
             const uplink_input = document.getElementById('home-uplink-input');
             let mins = uplink_input.value;
             if (mins > 999) {
-                mins = 999
+                mins = 999;
                 errordiv.textContent = 'Max uplink time is 999';
             }
             if (mins < min_uplink) {
-                mins = 1
+                mins = 1;
                 errordiv.textContent = `Uplink cannot be less than ${min_uplink}`;
             }
 

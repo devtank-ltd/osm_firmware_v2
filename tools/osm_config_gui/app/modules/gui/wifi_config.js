@@ -41,50 +41,50 @@ export class wifi_config_t {
             const r = wifi_tBody.insertRow();
             r.insertCell().textContent = i;
             switch (i) {
-                case 'SSID':
-                    const td = r.insertCell();
-                    td.textContent = ssid;
-                    td.id = 'wifi-ssid-value';
-                    td.contentEditable = true;
-                    break;
-                case 'WiFi Password':
-                    const wi = r.insertCell();
-                    wi.textContent = wifi_pwd;
-                    wi.id = 'wifi-pwd-value';
-                    wi.contentEditable = true;
-                    break;
-                case 'MQTT Address':
-                    const mq = r.insertCell();
-                    mq.innerHTML = mqtt_addr;
-                    mq.id = 'wifi-mqtt-addr-value';
-                    mq.contentEditable = true;
-                    break;
-                case 'MQTT User':
-                    const mu = r.insertCell();
-                    mu.innerHTML = mqtt_user;
-                    mu.id = 'wifi-mqtt-user-value';
-                    mu.contentEditable = true;
-                    break;
-                case 'MQTT Password':
-                    const mp = r.insertCell();
-                    mp.innerHTML = mqtt_pwd;
-                    mp.id = 'wifi-mqtt-pwd-value';
-                    mp.contentEditable = true;
-                    break;
-                case 'MQTT Port':
-                    const mport = r.insertCell();
-                    mport.innerHTML = mqtt_port;
-                    mport.id = 'wifi-mqtt-port-value';
-                    mport.contentEditable = true;
-                    break;
-                case 'Status':
-                    const st = r.insertCell();
-                    conn = (conn === '1 | Connected') ? 'Connected' : 'Disconnected';
-                    st.textContent = conn;
-                    st.id = 'wifi-status-value';
-                    break;
-                default:
-                    break;
+            case 'SSID':
+                const td = r.insertCell();
+                td.textContent = ssid;
+                td.id = 'wifi-ssid-value';
+                td.contentEditable = true;
+                break;
+            case 'WiFi Password':
+                const wi = r.insertCell();
+                wi.textContent = wifi_pwd;
+                wi.id = 'wifi-pwd-value';
+                wi.contentEditable = true;
+                break;
+            case 'MQTT Address':
+                const mq = r.insertCell();
+                mq.innerHTML = mqtt_addr;
+                mq.id = 'wifi-mqtt-addr-value';
+                mq.contentEditable = true;
+                break;
+            case 'MQTT User':
+                const mu = r.insertCell();
+                mu.innerHTML = mqtt_user;
+                mu.id = 'wifi-mqtt-user-value';
+                mu.contentEditable = true;
+                break;
+            case 'MQTT Password':
+                const mp = r.insertCell();
+                mp.innerHTML = mqtt_pwd;
+                mp.id = 'wifi-mqtt-pwd-value';
+                mp.contentEditable = true;
+                break;
+            case 'MQTT Port':
+                const mport = r.insertCell();
+                mport.innerHTML = mqtt_port;
+                mport.id = 'wifi-mqtt-port-value';
+                mport.contentEditable = true;
+                break;
+            case 'Status':
+                const st = r.insertCell();
+                conn = (conn === '1 | Connected') ? 'Connected' : 'Disconnected';
+                st.textContent = conn;
+                st.id = 'wifi-status-value';
+                break;
+            default:
+                break;
             }
         });
     }
@@ -106,9 +106,9 @@ export class wifi_config_t {
         this.comms.mqtt_user = mqtt_user;
         this.comms.mqtt_pwd = mqtt_pwd;
         this.comms.mqtt_port = mqtt_port;
-        this.comms.mqtt_ca = 'a';   /* Current firmware doesn't allow CA to be an empty string */
+        this.comms.mqtt_ca = 'a'; /* Current firmware doesn't allow CA to be an empty string */
 
-        wifimsg.textContent = 'Configuration sent.'
+        wifimsg.textContent = 'Configuration sent.';
         await disable_interaction(false);
     }
 }

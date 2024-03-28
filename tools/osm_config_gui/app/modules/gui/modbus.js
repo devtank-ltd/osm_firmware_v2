@@ -79,25 +79,24 @@ export class modbus_t {
     }
 
     async function_code_check(func) {
-        let type;
         switch (func) {
-            case 1:
-                type = 'Coil';
-                break;
-            case 2:
-                type = 'Discrete Input';
-                break;
-            case 3:
-                type = 'Holding Register';
-                break;
-            case 4:
-                type = 'Input Register';
-                break;
-            default:
-                type = 'Unknown';
-                break;
+        case 1:
+            this.type = 'Coil';
+            break;
+        case 2:
+            this.type = 'Discrete Input';
+            break;
+        case 3:
+            this.type = 'Holding Register';
+            break;
+        case 4:
+            this.type = 'Input Register';
+            break;
+        default:
+            this.type = 'Unknown';
+            break;
         }
-        return type;
+        return this.type;
     }
 
     async remove_modbus_register() {
@@ -120,6 +119,7 @@ export class modbus_t {
         if (!found) {
             this.modbus_modal('Select a register.');
             await disable_interaction(false);
+            loader.style.display = 'none';
             return;
         }
         this.mb_current_config_div.innerHTML = '';
@@ -133,8 +133,6 @@ export class modbus_t {
         if (!this.list_of_current_devs.includes(this.dev_to_remove)) {
             await this.dev.remove_modbus_dev(this.dev_to_remove);
         }
-        this.remove_reg_btn.disabled = true;
-        this.remove_dev_btn.disabled = true;
         await disable_interaction(false);
         loader.style.display = 'none';
     }
@@ -156,12 +154,11 @@ export class modbus_t {
         if (!found) {
             this.modbus_modal('Select a register.');
             await disable_interaction(false);
+            loader.style.display = 'none';
             return;
         }
         this.mb_current_config_div.innerHTML = '';
         await this.current_modbus_config_table();
-        this.remove_reg_btn.disabled = true;
-        this.remove_dev_btn.disabled = true;
         await disable_interaction(false);
         loader.style.display = 'none';
     }
@@ -284,9 +281,8 @@ export class modbus_t {
             for (const [key, value] of Object.entries(this.template.registers)) {
                 let datat;
                 if (value.datatype === 'Float') {
-                    datat = 'F'
-                }
-                else {
+                    datat = 'F';
+                } else {
                     datat = value.datatype;
                 }
                 await this.dev.mb_reg_add(
@@ -302,8 +298,7 @@ export class modbus_t {
             await this.current_modbus_config_table();
             await disable_interaction(false);
             loader.style.display = 'none';
-        }
-        else {
+        } else {
             this.modbus_modal('Select a template.');
         }
     }
@@ -439,14 +434,14 @@ export class modbus_t {
             cell = row.insertCell();
             input = document.createElement('input');
             input.placeholder = 'Address';
-            input.title = 'A decimal address will be converted to its corresponding hex address and will automatically select the matching function code.'
+            input.title = 'A decimal address will be converted to its corresponding hex address and will automatically select the matching function code.';
             input.oninput = (e) => { limit_characters(e, 6); };
-            input.addEventListener('focusout', this.convert_hex_addr)
+            input.addEventListener('focusout', this.convert_hex_addr);
             cell.appendChild(input);
 
             cell = row.insertCell();
             input = document.createElement('select');
-            input.title = "Function Code"
+            input.title = 'Function Code';
             const func = document.createElement('option');
             func.text = 'Coil (1)';
             func.value = 1;
@@ -467,7 +462,7 @@ export class modbus_t {
 
             cell = row.insertCell();
             input = document.createElement('select');
-            input.title = "Data Type"
+            input.title = 'Data Type';
             const datatf = document.createElement('option');
             datatf.text = 'Float';
             const datati32 = document.createElement('option');
@@ -541,9 +536,8 @@ export class modbus_t {
             const json_data = JSON.stringify(this.json);
             await this.download_template(json_data, `${name}.json`, 'application/json');
             await this.import_template(json_data);
-        }
-        else {
-            this.modbus_modal('Incomplete template.')
+        } else {
+            this.modbus_modal('Incomplete template.');
             return;
         }
         await this.reload_template_table();
@@ -586,7 +580,7 @@ export class modbus_t {
                 reader.readAsText(file, 'application/json');
                 reader.onload = (e) => { this.import_template(e.target.result); };
                 reader.onerror = (error) => {
-                    ;
+
                 };
             }
         };
@@ -604,9 +598,8 @@ export class modbus_t {
             cell.textContent = this.template_json.desc;
             this.regfield.rowSpan = this.templates.length;
             cell.addEventListener('click', this.select_template);
-        }
-        else {
-            this.modbus_modal('Invalid JSON file.')
+        } else {
+            this.modbus_modal('Invalid JSON file.');
         }
     }
 
@@ -640,57 +633,55 @@ export class modbus_t {
     }
 
     async decimal_to_hex(decimal) {
-        const dec = parseInt(decimal);
-        let hexstr = '0x'
-        return hexstr.concat(dec.toString(16));
+        this.dec = parseInt(decimal, 10);
+        const hexstr = '0x';
+        return hexstr.concat(this.dec.toString(16));
     }
 
     async extract_function_code(decimal) {
-        let dec_str = decimal.toString();
+        this.dec_str = decimal.toString();
         let function_code;
 
-        switch (dec_str[0]) {
-            case '1':
-                function_code = 1;
-                break;
-            case '2':
-                function_code = 2;
-                break;
-            case '3':
-                function_code = 4;
-                break;
-            case '4':
-                function_code = 3;
-                break;
-            default:
-                function_code = false;
-                break;
+        switch (this.dec_str[0]) {
+        case '1':
+            function_code = 1;
+            break;
+        case '2':
+            function_code = 2;
+            break;
+        case '3':
+            function_code = 4;
+            break;
+        case '4':
+            function_code = 3;
+            break;
+        default:
+            function_code = false;
+            break;
         }
         return function_code;
     }
 
     async convert_decimal_to_hex(dec_str) {
-        const hex_str = await this.get_hex(dec_str.substring(1))
+        const hex_str = await this.get_hex(dec_str.substring(1));
         if (hex_str) {
-            let finalstr = await this.decimal_to_hex(hex_str);
+            const finalstr = await this.decimal_to_hex(hex_str);
             return finalstr;
         }
         return false;
     }
 
     async get_hex(stringc) {
-        let extracted = '';
+        this.extracted = '';
         for (let i = 0; i < stringc.length; i += 1) {
             if (stringc[i] !== '0') {
-                    if (extracted) {
-                        extracted += stringc[i];
-                    }
-                    else {
-                        extracted = stringc[i];
-                    }
+                if (this.extracted) {
+                    this.extracted += stringc[i];
+                } else {
+                    this.extracted = stringc[i];
+                }
             }
         }
-        return extracted;
+        return this.extracted;
     }
-
 }

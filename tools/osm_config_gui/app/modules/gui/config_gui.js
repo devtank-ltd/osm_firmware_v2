@@ -4,6 +4,7 @@ import { disable_interaction } from './disable.js';
 
 class config_gui_t {
     constructor() {
+        this.spin_fake_osm = this.spin_fake_osm.bind(this);
         this.add_event_listeners = this.add_event_listeners.bind(this);
         this.open_serial = this.open_serial.bind(this);
         this.add_event_listeners();
@@ -23,7 +24,7 @@ class config_gui_t {
                 });
 
                 navigator.serial.addEventListener('connect', () => {
-                    ;
+
                 });
 
                 this.port.addEventListener('disconnect', () => {
@@ -33,7 +34,7 @@ class config_gui_t {
                 const loader = document.getElementById('loader');
                 loader.style.display = 'block';
                 this.dev = new binding_t(this.port, type);
-                this.writer = await this.dev.open_ll_obj()
+                this.writer = await this.dev.open_ll_obj();
                 if (this.writer) {
                     this.home = new home_tab_t(this.dev, false);
                     await this.home.create_navbar();
@@ -46,20 +47,19 @@ class config_gui_t {
                     });
                     const globalbtns = document.getElementById('global-load-save-config-buttons');
                     globalbtns.style.removeProperty('display');
-                }
-                else {
+                } else {
                     const error_div = document.getElementById('error-div');
                     error_div.textContent = 'Failed to connect, refresh page and try again.';
                 }
             })
             .catch((e) => {
-                this.disconnect_modal();
+                console.log(e);
             });
     }
 
     async disconnect_modal() {
-        this.dialog = document.getElementById('usb-disconnect-dialog');
-        this.confirm = document.getElementById('usb-disconnect-confirm')
+        this.dialog = document.getElementById('osm-disconnect-dialog');
+        this.confirm = document.getElementById('osm-disconnect-confirm');
         this.dialog.showModal();
         const controller = new AbortController();
 
@@ -75,7 +75,7 @@ class config_gui_t {
         if (!navigator.serial) {
             conn.style.backgroundColor = 'grey';
             conn.disabled = true;
-            conn.title = "This browser does not support USB communications."
+            conn.title = 'Not supported on this browser yet. Please use Google Chrome to access this feature.';
         }
         conn.addEventListener('click', this.open_serial);
         document.getElementById('main-page-websocket-connect').addEventListener('click', this.spin_fake_osm);
@@ -85,13 +85,13 @@ class config_gui_t {
         await disable_interaction(true);
         const error_div = document.getElementById('error-div');
         const loader = document.getElementById('loader');
-        this.url = window.document.URL + 'websocket';
-        var xmlHttp = new XMLHttpRequest();
-        xmlHttp.open("GET", this.url, true);
-        this.dev = new binding_t(this.url, "websocket");
+        this.url = `${window.document.URL}websocket`;
+        const xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', this.url, true);
+        this.dev = new binding_t(this.url, 'websocket');
         loader.style.display = 'block';
         this.writer = await this.dev.open_ll_obj();
-        if (this.writer) {
+        if (this.writer.url.readyState === 1) { /* Websocket connection open */
             this.home = new home_tab_t(this.dev, true);
             await this.home.create_navbar();
             await this.home.insert_homepage();
@@ -100,17 +100,15 @@ class config_gui_t {
             disconnect.addEventListener('click', async () => {
                 await this.dev.ll.write('close');
                 await this.dev.ll.url.close();
-                window.location.reload();
             });
 
             const globalbtns = document.getElementById('global-load-save-config-buttons');
             globalbtns.style.removeProperty('display');
-        }
-        else {
+        } else {
             error_div.textContent = 'Failed to connect, refresh page and try again.';
             loader.style.display = 'none';
         }
     }
-};
+}
 
 const gui = new config_gui_t();

@@ -9,6 +9,7 @@ import random
 import string
 import os
 import signal
+import ssl
 
 from aiohttp import web
 import asyncio
@@ -125,9 +126,10 @@ class osm_tcp_client:
         self._logger.debug("TCP socket closed.")
 
 class http_server:
-    def __init__(self, port, is_verbose, host, logger=None):
+    def __init__(self, port, is_verbose, host, ssl_context=None, logger=None):
         self.port = port
         self.host = host
+        self.ssl_context = ssl_context
         if logger is None:
             logger = logging.getLogger(__name__)
             self._logger = logger
@@ -149,7 +151,7 @@ class http_server:
                       name='app', show_index=True)
         runner = web.AppRunner(app)
         event_loop.run_until_complete(runner.setup())
-        site = web.TCPSite(runner, port=self.port)
+        site = web.TCPSite(runner, port=self.port, ssl_context=self.ssl_context)
         event_loop.run_until_complete(site.start())
         event_loop.run_forever()
 
@@ -209,11 +211,18 @@ def main():
         parser.add_argument("-p", "--port"      , help="Serial Port"                    , required=False, type=int                  , default=8000          )
         parser.add_argument("-v", "--verbose"   , help="Verbose messages"               , action="store_true"                                               )
         parser.add_argument("-H", "--host"      , help="Host url"                       , type=str                                  , default='127.0.0.1'   )
-
+        parser.add_argument("-s", "--ssl"       , help="Enable SSL"                     , action="store_true"                                               )
+        parser.add_argument("--key"             , help="SSL Key path"                   , type=str                                  , default="key.pem"     )
+        parser.add_argument("--cert"            , help="SSL Cert path"                  , type=str                                  , default="cert.pem"    )
         return parser.parse_args()
 
     args = get_args()
-    svr = http_server(args.port, args.verbose, args.host)
+    ssl_context = None
+    if args.ssl:
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_context.load_cert_chain(args.cert, args.key)
+
+    svr = http_server(args.port, args.verbose, args.host, ssl_context=ssl_context)
     svr.run_server()
 
     return 0
