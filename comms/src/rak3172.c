@@ -127,26 +127,6 @@ static uint8_t _rak3172_get_port(void)
 }
 
 
-static void _rak3172_chip_on(void)
-{
-    /* Let go of RESET line, hardware brings it high */
-    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
-                    GPIO_MODE_INPUT,
-                    GPIO_PUPD_NONE,
-                    _rak3172_ctx.reset_pin.pins);
-}
-
-
-static void _rak3172_chip_off(void)
-{
-    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
-                    GPIO_MODE_OUTPUT,
-                    GPIO_PUPD_NONE,
-                    _rak3172_ctx.reset_pin.pins);
-    gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
-}
-
-
 static bool _rak3172_write(char* cmd)
 {
     unsigned len = strnlen(cmd, RAK3172_MAX_CMD_LEN);
@@ -169,6 +149,12 @@ static int _rak3172_printf(char* fmt, ...)
     buf[len+1] = '\n';
     buf[len+2] = 0;
     return _rak3172_write(buf) ? len : 0;
+}
+
+
+static void _rak3172_reset_now(void)
+{
+    _rak3172_printf("ATZ");
 }
 
 
@@ -427,16 +413,17 @@ void rak3172_init(void)
     {
         comms_debug("Config is incorrect, not initialising.");
     }
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
-
+    gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                    GPIO_MODE_INPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.reset_pin.pins);
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
+    gpio_mode_setup(_rak3172_ctx.boot_pin.port,
+                    GPIO_MODE_INPUT,
+                    GPIO_PUPD_NONE,
+                    _rak3172_ctx.boot_pin.pins);
     _rak3172_ctx.state = RAK3172_STATE_OFF;
-    if (_rak3172_ctx.config_is_valid)
-    {
-        _rak3172_chip_off();
-        spin_blocking_ms(1);
-        _rak3172_chip_on();
-    }
 }
 
 
@@ -455,7 +442,6 @@ void rak3172_reset(void)
         _rak3172_ctx.reset_count++;
 
     _rak3172_ctx.sleep_from_time = get_since_boot_ms();
-    _rak3172_chip_off();
 }
 
 
@@ -775,7 +761,7 @@ void rak3172_loop_iteration(void)
             if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.sleep_from_time) > sleep_delay)
             {
                 _rak3172_ctx.state = RAK3172_STATE_OFF;
-                _rak3172_chip_on();
+                _rak3172_reset_now();
             }
             break;
         }
@@ -855,6 +841,7 @@ static command_response_t _rak3172_print_boot_reset_cb(char* args)
 
 static command_response_t _rak3172_boot_cb(char* args)
 {
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
     {
@@ -878,6 +865,7 @@ static command_response_t _rak3172_boot_cb(char* args)
 
 static command_response_t _rak3172_reset_cb(char* args)
 {
+    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
     {
@@ -971,9 +959,7 @@ static command_response_t _rak3172_restart_cb(char* args)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
-    _rak3172_chip_off();
-    spin_blocking_ms(1);
-    _rak3172_chip_on();
+    _rak3172_reset_now();
     return COMMAND_RESP_OK;
 }
 
@@ -1089,7 +1075,6 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
 void rak3172_power_down(void)
 {
     _rak3172_ctx.state = RAK3172_STATE_OFF;
-    _rak3172_chip_off();
 }
 
 
