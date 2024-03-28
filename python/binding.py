@@ -406,7 +406,6 @@ class dev_t(dev_base_t):
         self.set_dbg(4)
         if type_ == "lw":
             self.do_cmd("comms_restart")
-        timeout_s = 10
         end_time = time.monotonic() + timeout_s
         connected = self.comms_conn.value
         while not connected:
@@ -509,6 +508,18 @@ class dev_t(dev_base_t):
     @mqtt_addr.setter
     def mqtt_addr(self, addr):
         self.do_cmd_multi(f"comms_config mqtt_addr {addr}")
+
+    @property
+    def mqtt_user(self):
+        user = self.do_cmd_multi("comms_config mqtt_user")
+        pre = "USER: "
+        if user and user[0].startswith(pre):
+            return user[0][len(pre):]
+        return ""
+
+    @mqtt_user.setter
+    def mqtt_user(self, user):
+        self.do_cmd_multi(f"comms_config mqtt_user {user}")
 
     @property
     def mqtt_pwd(self):
