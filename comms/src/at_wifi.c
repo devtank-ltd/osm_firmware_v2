@@ -101,6 +101,8 @@ enum at_wifi_states_t
     AT_WIFI_STATE_MQTT_WAIT_CONF,
     AT_WIFI_STATE_MQTT_CONNECTING,
     AT_WIFI_STATE_MQTT_WAIT_SUB,
+    AT_WIFI_STATE_MQTT_IS_CONNECTED,
+    AT_WIFI_STATE_MQTT_IS_SUBSCRIBED,
     AT_WIFI_STATE_IDLE,
     AT_WIFI_STATE_MQTT_WAIT_PUB,
     AT_WIFI_STATE_MQTT_PUBLISHING,
@@ -287,6 +289,11 @@ static void _at_wifi_start(void)
     }
 }
 
+static void _at_wifi_is_mqtt_connected(void) {
+    _at_wifi_printf("AT+MQTTCONN?");
+    _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_IS_CONNECTED;
+}
+
 
 static void _at_wifi_reset(void)
 {
@@ -447,7 +454,6 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
      */
     const char cwstate_msg[] = "+CWSTATE:";
     unsigned cwstate_msg_len = strlen(cwstate_msg);
-    static bool can_skip = false;
     static enum at_wifi_cw_states_t _wifi_state = AT_WIFI_CW_STATE_NOT_CONN;
     if (_at_wifi_is_str(cwstate_msg, msg, cwstate_msg_len))
     {
@@ -457,60 +463,62 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
         uint8_t state = strtoul(p, &np, 10);
         if (p != np && len_rem && np[0] == ',' && np[1] == '"' && msg[len-1] == '"')
         {
-            _wifi_state = state;
-            if (state == AT_WIFI_CW_STATE_NO_IP ||
-                state == AT_WIFI_CW_STATE_CONNECTED ||
-                state == AT_WIFI_CW_STATE_CONNECTING)
+            switch (state)
             {
-                char* ssid = np + 2;
-                unsigned ssid_len = (msg + len) > (ssid + 1) ? msg + len - ssid - 1 : 0;
-                /* Probably should check if saved has trailing spaces */
-                char* cmp_ssid = _at_wifi_ctx.mem->wifi.ssid;
-                unsigned cmp_ssid_len = strnlen(cmp_ssid, AT_WIFI_MAX_SSID_LEN);
-                can_skip = ssid_len == cmp_ssid_len &&
-                    strncmp(cmp_ssid, ssid, cmp_ssid_len) == 0;
+                case AT_WIFI_CW_STATE_CONNECTED:
+                    /* fall through */
+                case AT_WIFI_CW_STATE_NO_IP:
+                    /* fall through */
+                case AT_WIFI_CW_STATE_CONNECTING:
+                {
+                    char* ssid = np + 2;
+                    unsigned ssid_len = (msg + len) > (ssid + 1) ? msg + len - ssid - 1 : 0;
+                    /* Probably should check if saved has trailing spaces */
+                    char* cmp_ssid = _at_wifi_ctx.mem->wifi.ssid;
+                    unsigned cmp_ssid_len = strnlen(cmp_ssid, AT_WIFI_MAX_SSID_LEN);
+                    if (ssid_len == cmp_ssid_len &&
+                        strncmp(cmp_ssid, ssid, cmp_ssid_len) == 0)
+                    {
+                        _wifi_state = state;
+                    }
+                    break;
+                }
+                case AT_WIFI_CW_STATE_DISCONNECTED:
+                    /* fall through */
+                case AT_WIFI_CW_STATE_NOT_CONN:
+                    _wifi_state = state;
+                    break;
+                default:
+                    comms_debug("Unknown CWSTATE:%"PRIu8, state);
+                    _at_wifi_reset();
+                    break;
             }
         }
     }
     else if (_at_wifi_is_ok(msg, len))
     {
-        if (can_skip)
+        switch (_wifi_state)
         {
-            switch (_wifi_state)
-            {
-                case AT_WIFI_CW_STATE_CONNECTED:
-                    _at_wifi_printf(
-                        "AT+CIPSNTPCFG=1,0,\"%s\",\"%s\",\"%s\"",
-                        AT_WIFI_SNTP_SERVER1,
-                        AT_WIFI_SNTP_SERVER2,
-                        AT_WIFI_SNTP_SERVER3
-                        );
-                    _at_wifi_ctx.state = AT_WIFI_STATE_SNTP_WAIT_SET;
-                    break;
-                case AT_WIFI_CW_STATE_NO_IP:
-                    /* fall through */
-                case AT_WIFI_CW_STATE_CONNECTING:
-                    _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_CONNECTING;
-                    break;
-                case AT_WIFI_CW_STATE_NOT_CONN:
-                    /* fall through */
-                case AT_WIFI_CW_STATE_DISCONNECTED:
-                    /* fall through */
-                default:
-                    _at_wifi_reset();
-                    break;
-            }
+            case AT_WIFI_CW_STATE_CONNECTED:
+                _at_wifi_is_mqtt_connected();
+                break;
+            case AT_WIFI_CW_STATE_NO_IP:
+                /* fall through */
+            case AT_WIFI_CW_STATE_CONNECTING:
+                _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_CONNECTING;
+                break;
+            case AT_WIFI_CW_STATE_NOT_CONN:
+                /* fall through */
+            case AT_WIFI_CW_STATE_DISCONNECTED:
+                /* fall through */
+            default:
+                _at_wifi_reset();
+                break;
         }
-        else
-        {
-            _at_wifi_reset();
-        }
-        can_skip = false;
         _wifi_state = AT_WIFI_CW_STATE_NOT_CONN;
     }
     else if (_at_wifi_is_error(msg, len))
     {
-        can_skip = false;
         _wifi_state = AT_WIFI_CW_STATE_NOT_CONN;
         _at_wifi_reset();
     }
@@ -674,6 +682,18 @@ static void _at_wifi_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
             AT_WIFI_MQTT_LWT_RETAIN
             );
         _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_CONF;
+    }
+    else if (_at_wifi_is_error(msg, len))
+    {
+        _at_wifi_reset();
+    }
+}
+
+static void _at_wifi_process_state_mqtt_is_connected(char* msg, unsigned len)
+{
+    if (_at_wifi_is_ok(msg, len))
+    {
+
     }
     else if (_at_wifi_is_error(msg, len))
     {
@@ -1079,6 +1099,9 @@ void at_wifi_process(char* msg)
             break;
         case AT_WIFI_STATE_SNTP_WAIT_SET:
             _at_wifi_process_state_sntp(msg, len);
+            break;
+        case AT_WIFI_STATE_MQTT_IS_CONNECTED:
+            _at_wifi_process_state_mqtt_is_connected(msg, len);
             break;
         case AT_WIFI_STATE_MQTT_WAIT_USR_CONF:
             _at_wifi_process_state_mqtt_wait_usr_conf(msg, len);
