@@ -10,6 +10,7 @@
 #include "sleep.h"
 #include "log.h"
 #include "pinmap.h"
+#include "common.h"
 
 static uart_channel_t uart_channels[] = UART_CHANNELS;
 
@@ -64,25 +65,25 @@ bool uart_is_enabled(unsigned uart)
 }
 
 
-void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
+void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
     if (databits < 7)
     {
-        log_error("Invalid low UART databits, using 7");
+        cmd_ctx_error(ctx,"Invalid low UART databits, using 7");
         databits = 7;
     }
     else if (databits > 9)
     {
-        log_error("Invalid high UART databits, using 9");
+        cmd_ctx_error(ctx,"Invalid high UART databits, using 9");
         databits = 9;
     }
 
     if (parity && databits == 9)
     {
-        log_error("Invalid UART databits:9 + parity, using 9N");
+        cmd_ctx_error(ctx,"Invalid UART databits:9 + parity, using 9N");
         parity = uart_parity_none;
     }
 
@@ -110,7 +111,7 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uar
 }
 
 
-bool uart_resetup_str(unsigned uart, char * str)
+bool uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
 {
         return true;
     uint32_t         speed;
@@ -127,7 +128,7 @@ bool uart_resetup_str(unsigned uart, char * str)
     if (!osm_decompose_uart_str(str, &speed, &databits, &parity, &stop))
         return false;
 
-    uart_resetup(uart, speed, databits, parity, stop);
+    uart_resetup(uart, speed, databits, parity, stop, ctx);
     return true;
 }
 

@@ -68,8 +68,8 @@ _Static_assert(sizeof(lw_config_t) < sizeof(comms_config_t), "LoRaWAN config too
 bool            lw_get_id(char* str, uint8_t len);
 lw_config_t*    lw_get_config(void);
 bool            lw_persist_data_is_valid(void);
-bool            lw_config_setup_str(char * str);
+bool            lw_config_setup_str(char * str, cmd_ctx_t * ctx);
 uint64_t        lw_consume(char *p, unsigned len);
 void            lw_config_init(comms_config_t* config);
 bool            lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1);
-void            lw_print_config(void);
+void            lw_print_config(cmd_ctx_t * ctx);

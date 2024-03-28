@@ -14,6 +14,7 @@
 #include "mqtt.h"
 #include "esp_comms.h"
 #include "protocol.h"
+#include "uart_rings.h"
 
 #define WIFI_DELAY_MS 1000
 
@@ -153,7 +154,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
                 break;
             }
             memset(_cmd, 0, sizeof(_cmd));
-            if (event->data_len < sizeof(_cmd))	
+            if (event->data_len < sizeof(_cmd))
             {
                 memcpy(_cmd, event->data, event->data_len);
                 _cmd_ready = true;
@@ -320,7 +321,7 @@ void esp_comms_loop_iteration(void)
 
     if (!_cmd_ready)
         return;
-    command_response_t resp = cmds_process(_cmd, strlen(_cmd));
+    command_response_t resp = cmds_process(_cmd, strlen(_cmd), NULL);
     char topic[64];
     snprintf(topic, sizeof(topic), "/osm/%s/cmd/resp", _mac);
     topic[sizeof(topic)-1]=0;
@@ -359,7 +360,7 @@ static void _prep_config(void)
 }
 
 
-static command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len, char * src, char * name, bool show)
+static command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len, char * src, char * name, bool show, cmd_ctx_t * ctx)
 {
     char * p = skip_space(src);
     if (!(*p))
@@ -374,43 +375,43 @@ static command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len, ch
         unsigned len = strlen(p) + 1;
         if (len > dst_len)
         {
-            log_out("Too long.");
+            cmd_ctx_out(ctx, "Too long.");
             return COMMAND_RESP_ERR;
         }
         memcpy(((char*)osm_config) + dst_offset, p, len);
     }
     if (show)
-        log_out("%s: %s", name, p);
+        cmd_ctx_out(ctx, "%s: %s", name, p);
     else if (*p)
-        log_out("%s: is set", name);
+        cmd_ctx_out(ctx, "%s: is set", name);
     else
-        log_out("%s: not set", name);
+        cmd_ctx_out(ctx, "%s: not set", name);
 
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _ssid_cb(char *args)
+static command_response_t _ssid_cb(char *args, cmd_ctx_t * ctx)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, ssid), SSID_LEN, args, "SSID", true);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, ssid), SSID_LEN, args, "SSID", true, ctx);
 }
 
 
-static command_response_t _pw_cb(char *args)
+static command_response_t _pw_cb(char *args, cmd_ctx_t * ctx)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, password), WFPW_LEN, args, "Password", false);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, password), WFPW_LEN, args, "Password", false, ctx);
 }
 
 
-static void _print_ams(void)
+static void _print_ams(cmd_ctx_t * ctx)
 {
-    log_out("Options:");
+    cmd_ctx_out(ctx, "Options:");
     for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
-        log_out("  %s", _authmodes[n].name);
+        cmd_ctx_out(ctx, "  %s", _authmodes[n].name);
 }
 
 
-static command_response_t _am_cb(char *args)
+static command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
 {
     char * p = skip_space(args);
     if (!(*p))
@@ -421,84 +422,84 @@ static command_response_t _am_cb(char *args)
         {
             if (_authmodes[n].authmode == authmode)
             {
-                log_out("authmode: %s", _authmodes[n].name);
-                _print_ams();
+                cmd_ctx_out(ctx, "authmode: %s", _authmodes[n].name);
+                _print_ams(ctx);
                 return COMMAND_RESP_OK;
             }
         }
-        _print_ams();
+        _print_ams(ctx);
         return COMMAND_RESP_ERR;
     }
     else
     {
         _prep_config();
         osm_wifi_config_t* osm_config = _wifi_get_config();
- 
+
         char * am = p;
         for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
         {
             if (!strcmp(_authmodes[n].name, am))
             {
-                log_out("authmode: %s", am);
+                cmd_ctx_out(ctx, "authmode: %s", am);
                 osm_config->authmode = _authmodes[n].authmode;
                 return COMMAND_RESP_OK;
             }
         }
-        log_out("Unknown authmode: %s", am);
+        cmd_ctx_out(ctx, "Unknown authmode: %s", am);
         return COMMAND_RESP_ERR;
- 
+
     }
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _mqtt_svr_cb(char *args)
+static command_response_t _mqtt_svr_cb(char *args, cmd_ctx_t * ctx)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr), SVR_LEN, args, "MQTT Broker", true);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr), SVR_LEN, args, "MQTT Broker", true, ctx);
 }
 
 
-static command_response_t _mqtt_usr_cb(char *args)
+static command_response_t _mqtt_usr_cb(char *args, cmd_ctx_t * ctx)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_user), SVRUSR_LEN, args, "MQTT User", true);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_user), SVRUSR_LEN, args, "MQTT User", true, ctx);
 }
 
 
-static command_response_t _mqtt_pw_cb(char *args)
+static command_response_t _mqtt_pw_cb(char *args, cmd_ctx_t * ctx)
 {
-    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false);
+    return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false, ctx);
 }
 
 
-static command_response_t _auto_start_cb(char *args)
+static command_response_t _auto_start_cb(char *args, cmd_ctx_t * ctx)
 {
     osm_wifi_config_t* osm_config = _wifi_get_config();
     if (*args && osm_config)
         osm_config->autostart = (args[0] == '1') || (tolower(args[0]) == 't');
     if (osm_config)
     {
-        log_out("Autostart : %u", (unsigned)osm_config->autostart);
+        cmd_ctx_out(ctx, "Autostart : %u", (unsigned)osm_config->autostart);
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _fwd_cb(char *args)
+static command_response_t _fwd_cb(char *args, cmd_ctx_t * ctx)
 {
     osm_wifi_config_t* osm_config = _wifi_get_config();
     if (*args && osm_config)
         osm_config->fwd_uart = (args[0] == '1') || (tolower(args[0]) == 't');
     if (osm_config)
     {
-        log_out("MQTT UART forwarding : %u", (unsigned)osm_config->fwd_uart);
+        cmd_ctx_out(ctx, "MQTT UART forwarding : %u", (unsigned)osm_config->fwd_uart);
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _esp_comms_cb(char *args)
+static command_response_t _esp_comms_cb(char *args, cmd_ctx_t * ctx)
 {
     struct cmd_link_t cmds[] =
     {
@@ -525,7 +526,7 @@ static command_response_t _esp_comms_cb(char *args)
         {
             struct cmd_link_t * cmd = &cmds[n];
             if (!strcmp(cmd->key, args))
-                return cmd->cb(next);
+                return cmd->cb(next, ctx);
         }
     }
     else r = COMMAND_RESP_OK;
@@ -533,24 +534,24 @@ static command_response_t _esp_comms_cb(char *args)
     for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
     {
         struct cmd_link_t * cmd = &cmds[n];
-        log_out("%10s : %s", cmd->key, cmd->desc);
+        cmd_ctx_out(ctx, "%10s : %s", cmd->key, cmd->desc);
     }
     return r;
 }
 
 
-static command_response_t _esp_conn_cb(char *args)
+static command_response_t _esp_conn_cb(char *args, cmd_ctx_t * ctx)
 {
     _wifi_start();
     _mqtt_start();
     if (_has_mqtt)
     {
-        log_out("1 | Connected");
+        cmd_ctx_out(ctx, "1 | Connected");
         return COMMAND_RESP_OK;
     }
     else
     {
-        log_out("0 | Disconnected");
+        cmd_ctx_out(ctx, "0 | Disconnected");
         return COMMAND_RESP_ERR;
     }
 }

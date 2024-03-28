@@ -9,6 +9,9 @@
 
 #define MODBUS_MEMORY_SIZE 1024
 
+#define MODBUS_RESP_TIMEOUT_MS 2000
+#define MODBUS_SENT_TIMEOUT_MS 2000
+
 /* On some versions of gcc this header isn't defining it. Quick fix. */
 #ifndef PRIu64
 #define PRIu64 "llu"

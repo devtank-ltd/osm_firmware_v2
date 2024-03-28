@@ -83,22 +83,22 @@ turn_on_sleep:
 }
 
 
-static command_response_t _sleep_cb(char* args)
+static command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t sleep_ms = strtoul(args, &p, 10);
     if (p == args)
     {
-        log_out("<TIME(MS)>");
+        cmd_ctx_out(ctx,"<TIME(MS)>");
         return COMMAND_RESP_ERR;
     }
-    log_out("Sleeping for %"PRIu32"ms.", sleep_ms);
+    cmd_ctx_out(ctx,"Sleeping for %"PRIu32"ms.", sleep_ms);
     sleep_for_ms(sleep_ms);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _sleep_power_mode_cb(char* args)
+static command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
 {
     measurements_power_mode_t mode;
     if (args[0] == 'A')

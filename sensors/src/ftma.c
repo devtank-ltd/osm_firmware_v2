@@ -286,7 +286,7 @@ void ftma_init(void)
 }
 
 
-static command_response_t _ftma_name_cb(char* args)
+static command_response_t _ftma_name_cb(char* args, cmd_ctx_t * ctx)
 {
     /* <original_name> <new_name>
      *      FTA1          TMP9
@@ -294,7 +294,7 @@ static command_response_t _ftma_name_cb(char* args)
     char* new_name = strchr(args, ' ');
     if (!new_name)
     {
-        log_out("No new name given.");
+        cmd_ctx_out(ctx,"No new name given.");
         return COMMAND_RESP_ERR;
     }
     *new_name = '\0';
@@ -304,45 +304,45 @@ static command_response_t _ftma_name_cb(char* args)
     uint8_t index;
     if (!_ftma_get_index_by_name(orig_name, &index))
     {
-        log_out("Failed to get FTMA with name '%s'.", orig_name);
+        cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", orig_name);
         return COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
-        log_out("Index is out of range.");
+        cmd_ctx_out(ctx,"Index is out of range.");
         return COMMAND_RESP_ERR;
     }
     unsigned new_len = strlen(new_name);
     if (new_len > MEASURE_NAME_LEN)
     {
-        log_out("Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
+        cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
         return COMMAND_RESP_ERR;
     }
     if (new_len == 0)
     {
-        log_out("No new name given.");
+        cmd_ctx_out(ctx,"No new name given.");
         return COMMAND_RESP_ERR;
     }
     for (char* c = new_name; *c; c++)
     {
         if (!isascii(*c))
         {
-            log_out("New name '%s' contains none ascii characters.", new_name);
+            cmd_ctx_out(ctx,"New name '%s' contains none ascii characters.", new_name);
             return COMMAND_RESP_ERR;
         }
     }
     if (!measurements_rename(orig_name, new_name))
     {
-        log_out("Failed to rename the measurement.");
+        cmd_ctx_out(ctx,"Failed to rename the measurement.");
         return COMMAND_RESP_ERR;
     }
     strncpy(_ftma_config[index].name, new_name, MEASURE_NAME_LEN);
-    log_out("Measurement '%s' is now called '%s'.", orig_name, new_name);
+    cmd_ctx_out(ctx,"Measurement '%s' is now called '%s'.", orig_name, new_name);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _ftma_coeff_cb(char* args)
+static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
 {
     /* <name>  <A>  <B>    <C>      <D>
      *  FTA3  -2.1  13.2  -0.01  -0.00001
@@ -363,12 +363,12 @@ static command_response_t _ftma_coeff_cb(char* args)
     uint8_t index;
     if (!_ftma_get_index_by_name(args, &index))
     {
-        log_out("Failed to get FTMA with name '%s'.", args);
+        cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", args);
         return COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
-        log_out("Index is out of range.");
+        cmd_ctx_out(ctx,"Index is out of range.");
         return COMMAND_RESP_ERR;
     }
     ftma_config_t* ftma = &_ftma_config[index];
@@ -385,14 +385,14 @@ static command_response_t _ftma_coeff_cb(char* args)
                 ftma->coeffs[i++] = A;
             for (; i < FTMA_NUM_COEFFS; i++)
                 ftma->coeffs[i] = strtod(p, &p);
-            log_out("Set new coefficients for '%s'", args);
+            cmd_ctx_out(ctx,"Set new coefficients for '%s'", args);
         }
     }
 
-    log_out("Coeffients for '%s':", args);
+    cmd_ctx_out(ctx,"Coeffients for '%s':", args);
     for (unsigned i = 0; i < FTMA_NUM_COEFFS; i++)
     {
-        log_out("%c: %.06f", 'A'+i, ftma->coeffs[i]);
+        cmd_ctx_out(ctx,"%c: %.06f", 'A'+i, ftma->coeffs[i]);
     }
     return COMMAND_RESP_OK;
 }

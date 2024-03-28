@@ -212,3 +212,36 @@ bool log_out_drain(uint32_t timeout)
 {
     return main_loop_iterate_for(timeout, _log_out_drain_iteration, NULL);
 }
+
+
+#define __CMD_CTX_PRINT(_cb)                                           \
+    {                                                                  \
+        if (ctx && _cb && fmt)                                         \
+        {                                                              \
+            va_list ap;                                                \
+            va_start(ap, fmt);                                         \
+            _cb(ctx, fmt, ap);                                         \
+            va_end(ap);                                                \
+        }                                                              \
+    }
+
+
+void cmd_ctx_out(cmd_ctx_t* ctx, const char* fmt, ...)
+{
+    __CMD_CTX_PRINT(ctx->output_cb)
+}
+
+
+void cmd_ctx_error(cmd_ctx_t* ctx, const char* fmt, ...)
+{
+    __CMD_CTX_PRINT(ctx->error_cb)
+}
+
+
+void cmd_ctx_flush(cmd_ctx_t* ctx)
+{
+    if (ctx && ctx->flush_cb)
+    {
+        ctx->flush_cb(ctx);
+    }
+}

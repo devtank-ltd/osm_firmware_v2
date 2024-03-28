@@ -640,11 +640,11 @@ static measurements_sensor_state_t _sai_measurements_get(char* name, measurement
 }
 
 
-void sai_print_coeffs(void)
+void sai_print_coeffs(cmd_ctx_t * ctx)
 {
     for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
     {
-        log_out("Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
+        cmd_ctx_out(ctx,"Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
     }
 }
 
@@ -674,47 +674,47 @@ void  sai_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _sound_cal_cb(char* args)
+static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
     if (index < 1 || index > SAI_NUM_CAL_COEFFS)
     {
-        log_out("Index out of range.");
+        cmd_ctx_out(ctx,"Index out of range.");
         return COMMAND_RESP_ERR;
     }
     p = skip_space(p);
     float coeff = strtof(p, NULL);
     if (!sai_set_coeff(index-1, coeff))
     {
-        log_out("Could not set the coefficient.");
+        cmd_ctx_out(ctx,"Could not set the coefficient.");
         return COMMAND_RESP_ERR;
     }
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _sai_set_target_no_buf(char* args)
+static command_response_t _sai_set_target_no_buf(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t no_buf = strtoul(args, &p, 10);
     if (p == args)
     {
-        log_out("Target number of buffers: %"PRIu32, _sai_get_no_buf());
+        cmd_ctx_out(ctx,"Target number of buffers: %"PRIu32, _sai_get_no_buf());
         return COMMAND_RESP_ERR;
     }
     if (no_buf > SAI_MAX_NO_BUF)
     {
-        log_out("Largest target number of buffers is %d", SAI_MAX_NO_BUF);
+        cmd_ctx_out(ctx,"Largest target number of buffers is %d", SAI_MAX_NO_BUF);
         return COMMAND_RESP_ERR;
     }
     if (no_buf <= SAI_MIN_NO_BUF)
     {
-        log_out("Smallest target number of buffers is %d", SAI_MIN_NO_BUF);
+        cmd_ctx_out(ctx,"Smallest target number of buffers is %d", SAI_MIN_NO_BUF);
         return COMMAND_RESP_ERR;
     }
     _sai_set_no_buf(no_buf);
-    log_out("Set target number of buffers: %"PRIu32, _sai_get_no_buf());
+    cmd_ctx_out(ctx,"Set target number of buffers: %"PRIu32, _sai_get_no_buf());
     return COMMAND_RESP_OK;
 }
 

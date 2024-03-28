@@ -342,11 +342,11 @@ static const char* _rak4270_region_name(uint8_t region)
 }
 
 
-static bool _rak4270_load_config(void)
+static bool _rak4270_load_config(cmd_ctx_t * ctx)
 {
     if (!lw_persist_data_is_valid())
     {
-        log_error("No LoRaWAN Dev EUI and/or App Key.");
+        cmd_ctx_error(ctx,"No LoRaWAN Dev EUI and/or App Key.");
         return false;
     }
 
@@ -356,7 +356,7 @@ static bool _rak4270_load_config(void)
     const char* region_name = _rak4270_region_name(config->region);
     if (!region_name)
     {
-        log_error("Invalid region, setting to EU868.");
+        cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
         region_name = _rak4270_region_name(LW_REGION_EU868);
     }
 
@@ -484,7 +484,7 @@ void rak4270_init(void)
         log_error("LoRaWAN chip not in DISCONNECTED state.");
         return;
     }
-    if (!_rak4270_load_config())
+    if (!_rak4270_load_config(&uart_cmd_ctx))
     {
         log_error("Loading LoRaWAN config failed. Not connecting to network.");
         _rak4270_state_machine.state = RAK4270_STATE_UNCONFIGURED;
@@ -546,13 +546,13 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
         case LW_ID_CMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
-            cmds_process(_rak4270_cmd_ascii, cmd_len);
+            cmds_process(_rak4270_cmd_ascii, cmd_len, NULL);
             break;
         }
         case LW_ID_CCMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
-            _rak4270_error_code.code = cmds_process(_rak4270_cmd_ascii, cmd_len); /* command_resp_t */
+            _rak4270_error_code.code = cmds_process(_rak4270_cmd_ascii, cmd_len, NULL); /* command_resp_t */
             _rak4270_error_code.valid = true;
             break;
         }
@@ -581,7 +581,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
             {
                 uint8_t b = (uint8_t)lw_consume(p, 2);
                 p += 2;
-                if (!fw_ota_add_chunk(&b, 1))
+                if (!fw_ota_add_chunk(&b, 1, NULL))
                     break;
             }
             break;
@@ -730,9 +730,9 @@ void rak4270_reset(void)
 }
 
 
-static bool _rak4270_reload_config(void)
+static bool _rak4270_reload_config(cmd_ctx_t * ctx)
 {
-    if (!_rak4270_load_config())
+    if (!_rak4270_load_config(ctx))
     {
         return false;
     }
@@ -1096,23 +1096,23 @@ void rak4270_loop_iteration(void)
 }
 
 
-command_response_t rak4270_cmd_conn_cb(char* str)
+command_response_t rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 {
     if (rak4270_get_connected())
     {
-        comms_debug("1 | Connected");
+        cmd_ctx_out(ctx,"1 | Connected");
         return COMMAND_RESP_OK;
     }
-    comms_debug("0 | Disconnected");
+    cmd_ctx_out(ctx,"0 | Disconnected");
     return COMMAND_RESP_ERR;
 }
 
 
-command_response_t rak4270_cmd_config_cb(char* str)
+command_response_t rak4270_cmd_config_cb(char* str, cmd_ctx_t * ctx)
 {
-    if (lw_config_setup_str(str))
+    if (lw_config_setup_str(str, ctx))
     {
-        _rak4270_reload_config();
+        _rak4270_reload_config(ctx);
         return COMMAND_RESP_OK;
     }
     return COMMAND_RESP_ERR;
@@ -1125,9 +1125,9 @@ bool rak4270_get_id(char* str, uint8_t len)
 }
 
 
-command_response_t rak4270_cmd_j_cfg_cb(char* str)
+command_response_t rak4270_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
 {
-    lw_print_config();
+    lw_print_config(ctx);
     return COMMAND_RESP_OK;
 }
 

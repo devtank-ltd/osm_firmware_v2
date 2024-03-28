@@ -329,23 +329,23 @@ void sen54_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _sen54_pwr_cb(char* args)
+static command_response_t _sen54_pwr_cb(char* args, cmd_ctx_t * ctx)
 {
     uint8_t enable = strtoul(args, NULL, 10);
     platform_hpm_enable(enable);
     if (enable)
     {
-        log_out("SEN54 PWR ENABLED");
+        cmd_ctx_out(ctx,"SEN54 PWR ENABLED");
     }
     else
     {
-        log_out("SEN54 PWR DISABLED");
+        cmd_ctx_out(ctx,"SEN54 PWR DISABLED");
     }
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _sen54_dbg_cb(char* args)
+static command_response_t _sen54_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
     int16_t error = sen5x_start_measurement();
     if (error)
@@ -357,17 +357,17 @@ static command_response_t _sen54_dbg_cb(char* args)
 }
 
 
-static command_response_t _sen54_name_cb(char* args)
+static command_response_t _sen54_name_cb(char* args, cmd_ctx_t * ctx)
 {
     unsigned char product_name[32];
     uint8_t product_name_size = 32;
     int16_t error = sen5x_get_product_name(product_name, product_name_size);
     if (error)
     {
-        log_out("Error executing sen5x_get_product_name(): %"PRIu16, error);
+        cmd_ctx_out(ctx,"Error executing sen5x_get_product_name(): %"PRIu16, error);
         return COMMAND_RESP_ERR;
     }
-    log_out("Product name: %s\n", product_name);
+    cmd_ctx_out(ctx,"Product name: %s\n", product_name);
     return COMMAND_RESP_OK;
 }
 

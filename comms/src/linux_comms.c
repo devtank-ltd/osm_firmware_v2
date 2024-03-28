@@ -9,6 +9,7 @@
 #include "log.h"
 #include "common.h"
 #include "protocol.h"
+#include "cmd.h"
 
 
 #define COMMS_DEFAULT_MTU       256
@@ -79,6 +80,8 @@ void linux_comms_reset(void)
 
 void linux_comms_process(char* message)
 {
+    unsigned msg_len = strnlen(message, CMD_LINELEN);
+    cmds_process(message, msg_len, NULL);
 }
 
 
@@ -93,15 +96,15 @@ void linux_comms_loop_iteration(void)
 }
 
 
-void linux_comms_config_setup_str(char * str)
+void linux_comms_config_setup_str(char * str, cmd_ctx_t * ctx)
 {
     if (strstr(str, "dev-eui"))
     {
-        log_out("Dev EUI: "LINUX_COMMS_DEV_EUI);
+        cmd_ctx_out(ctx,"Dev EUI: "LINUX_COMMS_DEV_EUI);
     }
     else if (strstr(str, "app-key"))
     {
-        log_out("App Key: LINUX-APP");
+        cmd_ctx_out(ctx,"App Key: LINUX-APP");
     }
 }
 
@@ -113,50 +116,49 @@ bool linux_comms_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _linux_comms_send_cb(char * args)
+static command_response_t _linux_comms_send_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = skip_space(args);
     return linux_comms_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-command_response_t linux_comms_cmd_config_cb(char * args)
+command_response_t linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
-    linux_comms_config_setup_str(skip_space(args));
+    linux_comms_config_setup_str(skip_space(args), ctx);
     return COMMAND_RESP_OK;
 }
 
 
-command_response_t linux_comms_cmd_conn_cb(char* args)
+command_response_t linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 {
     if (linux_comms_get_connected())
     {
-        log_out("1 | Connected");
+        cmd_ctx_out(ctx,"1 | Connected");
     }
     else
     {
-        log_out("0 | Disconnected");
+        cmd_ctx_out(ctx,"0 | Disconnected");
     }
     return COMMAND_RESP_OK;
 }
 
 
-command_response_t linux_comms_cmd_j_cfg_cb(char* args)
+command_response_t linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
-    const uint32_t loop_timeout = 10;
-    log_out(LINUX_COMMS_PRINT_CFG_JSON_HEADER);
-    log_out_drain(loop_timeout);
-    log_out(LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
-    log_out_drain(loop_timeout);
-    log_out(LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
-    log_out_drain(loop_timeout);
-    log_out(LINUX_COMMS_PRINT_CFG_JSON_TAIL);
-    log_out_drain(loop_timeout);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_HEADER);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_TAIL);
+    cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _linux_comms_dbg_cb(char* args)
+static command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
     uart_ring_out(COMMS_UART, args, strlen(args));
     uart_ring_out(COMMS_UART, "\r\n", 2);

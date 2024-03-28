@@ -34,3 +34,8 @@ extern int32_t  to_f32_from_double(double in);
 extern bool log_out_drain(uint32_t timeout);
 
 extern struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds);
+
+
+extern void cmd_ctx_out(cmd_ctx_t* ctx, const char* fmt, ...);
+extern void cmd_ctx_error(cmd_ctx_t* ctx, const char* fmt, ...);
+extern void cmd_ctx_flush(cmd_ctx_t* ctx);

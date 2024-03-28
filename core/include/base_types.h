@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include "platform_base_types.h"
 #include "config.h"
@@ -285,11 +286,20 @@ typedef enum
 } command_response_t;
 
 
+typedef struct cmd_ctx_t cmd_ctx_t;
+struct cmd_ctx_t
+{
+    void (*output_cb)(cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*error_cb)(cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*flush_cb)(cmd_ctx_t * ctx);
+};
+
+
 struct cmd_link_t
 {
     const char * key;
     const char * desc;
-    command_response_t (*cb)(char * args);
+    command_response_t (*cb)(char * args, cmd_ctx_t * ctx);
     bool hidden;
     struct cmd_link_t * next;
 };

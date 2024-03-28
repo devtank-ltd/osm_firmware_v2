@@ -51,7 +51,7 @@ void fw_ota_reset(void)
 }
 
 
-bool fw_ota_add_chunk(void * data, unsigned size)
+bool fw_ota_add_chunk(void * data, unsigned size, cmd_ctx_t * ctx)
 {
     if (_fw_ota_pos < 0)
     {
@@ -63,14 +63,14 @@ bool fw_ota_add_chunk(void * data, unsigned size)
 
     if (size > FLASH_PAGE_SIZE)
     {
-        log_error("Firmware chunk too big.");
+        cmd_ctx_error(ctx,"Firmware chunk too big.");
         _fw_ota_pos = -1;
         return false;
     }
 
     if ((_fw_ota_pos + size) > FW_MAX_SIZE)
     {
-        log_error("Firmware update too big.");
+        cmd_ctx_error(ctx,"Firmware update too big.");
         _fw_ota_pos = -1;
         return false;
     }
@@ -124,13 +124,13 @@ bool fw_ota_complete(uint16_t crc)
 }
 
 
-static command_response_t _fw_add(char *args)
+static command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
 {
     args = skip_space(args);
     unsigned len = strlen(args);
     if (len%2)
     {
-        log_error("Invalid fw chunk.");
+        cmd_ctx_out(ctx,"Invalid fw chunk.");
         return COMMAND_RESP_ERR;
     }
     char * end = args + len;
@@ -142,27 +142,27 @@ static command_response_t _fw_add(char *args)
         uint8_t d = strtoul(args, NULL, 16);
         *next=t;
         args=next;
-        if (!fw_ota_add_chunk(&d, 1))
+        if (!fw_ota_add_chunk(&d, 1, ctx))
         {
-            log_error("Invalid fw.");
+            cmd_ctx_out(ctx,"Invalid fw.");
             return COMMAND_RESP_ERR;
         }
     }
-    log_out("FW %u chunk added", len/2);
+    cmd_ctx_out(ctx,"FW %u chunk added", len/2);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _fw_fin(char *args)
+static command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
 {
     args = skip_space(args);
     uint16_t crc = strtoul(args, NULL, 16);
     if (fw_ota_complete(crc))
     {
-        log_out("FW added");
+        cmd_ctx_out(ctx,"FW added");
         return COMMAND_RESP_OK;
     }
-    log_error("FW adding failed.");
+    cmd_ctx_out(ctx,"FW adding failed.");
     return COMMAND_RESP_ERR;
 }
 

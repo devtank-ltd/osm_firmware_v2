@@ -7,9 +7,8 @@
 
 extern modbus_bus_t * modbus_bus;
 
-extern void           modbus_log();
+extern void           modbus_print(cmd_ctx_t * ctx);
 
-extern modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos);
 extern char *         modbus_reg_type_get_str(modbus_reg_type_t type);
 
 extern unsigned       modbus_get_device_count(void);
@@ -42,3 +41,5 @@ extern bool              modbus_reg_get_i32(modbus_reg_t * reg, int32_t * value)
 extern bool              modbus_reg_get_float(modbus_reg_t * reg, float * value);
 
 extern bool             modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1);
+
+extern struct cmd_link_t* modbus_add_mem_commands(struct cmd_link_t* tail);

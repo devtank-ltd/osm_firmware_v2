@@ -17,7 +17,7 @@ bool sai_set_coeff(uint8_t index, float coeff)
 }
 
 
-void sai_print_coeffs(void)
+void sai_print_coeffs(cmd_ctx_t * ctx)
 {
 }
 
@@ -61,20 +61,20 @@ void  sai_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _sound_cal_cb(char* args)
+static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
     if (index < 1 || index > SAI_NUM_CAL_COEFFS)
     {
-        log_out("Index out of range.");
+        cmd_ctx_error(ctx,"Index out of range.");
         return COMMAND_RESP_ERR;
     }
     p = skip_space(p);
     float coeff = strtof(p, NULL);
     if (!sai_set_coeff(index-1, coeff))
     {
-        log_out("Could not set the coefficient.");
+        cmd_ctx_error(ctx,"Could not set the coefficient.");
         return COMMAND_RESP_ERR;
     }
     return COMMAND_RESP_OK;

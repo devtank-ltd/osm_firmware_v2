@@ -122,7 +122,7 @@ static osm_uart_stop_bits_t _osm_uart_stop_bits_get(uart_stop_bits_t stop)
 }
 
 
-void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
+void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
 {
     if (uart >= UART_CHANNELS_COUNT || !uart)
         return;
@@ -131,12 +131,12 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
 
     if (databits < 5)
     {
-        log_error("Invalid low UART databits, using 7");
+        cmd_ctx_error(ctx, "Invalid low UART databits, using 7");
         databits = 5;
     }
     else if (databits > 8)
     {
-        log_error("Invalid high UART databits, using 9");
+        cmd_ctx_error(ctx, "Invalid high UART databits, using 9");
         databits = 8;
     }
     channel->config.baud_rate = speed;
@@ -200,7 +200,7 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uar
 }
 
 
-bool uart_resetup_str(unsigned uart, char * str)
+bool uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
 {
     uint32_t         speed;
     uint8_t          databits;
@@ -209,14 +209,14 @@ bool uart_resetup_str(unsigned uart, char * str)
 
     if (uart >= UART_CHANNELS_COUNT )
     {
-        log_error("INVALID UART GIVEN");
+        cmd_ctx_error(ctx, "INVALID UART GIVEN");
         return false;
     }
 
     if (!osm_decompose_uart_str(str, &speed, &databits, &parity, &stop))
         return false;
 
-    uart_resetup(uart, speed, databits, parity, stop);
+    uart_resetup(uart, speed, databits, parity, stop, ctx);
     return true;
 }
 

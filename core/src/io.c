@@ -385,7 +385,7 @@ void     io_on(unsigned io, bool on_off)
 }
 
 
-void     io_log(unsigned io)
+void     io_log(unsigned io, cmd_ctx_t * ctx)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
@@ -412,15 +412,15 @@ void     io_log(unsigned io)
     {
 
         if (io_state & IO_AS_INPUT)
-            log_out("IO %02u : %s%s%sIN %s = %s",
-                    io, pretype, type, posttype,
-                    io_get_pull_str(io_state),
-                    (platform_gpio_get(gpio_pin))?"ON":"OFF");
+            cmd_ctx_out(ctx,"IO %02u : %s%s%sIN %s = %s",
+                       io, pretype, type, posttype,
+                       io_get_pull_str(io_state),
+                       (platform_gpio_get(gpio_pin))?"ON":"OFF");
         else
-            log_out("IO %02u : %s%s%sOUT %s = %s",
-                    io, pretype, type, posttype,
-                    io_get_pull_str(io_state),
-                    (platform_gpio_get(gpio_pin))?"ON":"OFF");
+            cmd_ctx_out(ctx,"IO %02u : %s%s%sOUT %s = %s",
+                       io, pretype, type, posttype,
+                       io_get_pull_str(io_state),
+                       (platform_gpio_get(gpio_pin))?"ON":"OFF");
     }
     else
     {
@@ -434,26 +434,26 @@ void     io_log(unsigned io)
             pupd_char = 'N';
         else
             pupd_char = ' ';
-        log_out("IO %02u : %s%s%sUSED %s %c", io, pretype, type, posttype, active_type, pupd_char);
+        cmd_ctx_out(ctx,"IO %02u : %s%s%sUSED %s %c", io, pretype, type, posttype, active_type, pupd_char);
     }
 }
 
 
-void     ios_log()
+void     ios_log(cmd_ctx_t * ctx)
 {
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
-        io_log(n);
+        io_log(n, ctx);
 }
 
 
-static command_response_t _io_log_cb(char* args)
+static command_response_t _io_log_cb(char* args, cmd_ctx_t * ctx)
 {
-    ios_log();
+    ios_log(ctx);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _io_cb(char *args)
+static command_response_t _io_cb(char *args, cmd_ctx_t * ctx)
 {
     /* io 0 : OUT = NONE
      * io 1 : IN = DOWN
@@ -481,7 +481,7 @@ static command_response_t _io_cb(char *args)
         }
         else
         {
-            log_error("Malformed gpio type command");
+            cmd_ctx_error(ctx,"Malformed gpio type command");
             return COMMAND_RESP_ERR;
         }
 
@@ -507,7 +507,7 @@ static command_response_t _io_cb(char *args)
             }
             else
             {
-                log_error("Malformed gpio pull command");
+                cmd_ctx_error(ctx,"Malformed gpio pull command");
                 return COMMAND_RESP_ERR;
             }
             pos = skip_space(pos);
@@ -526,9 +526,9 @@ static command_response_t _io_cb(char *args)
             {
                 io_on(io, true);
                 if (!do_read)
-                    log_out("IO %02u = ON", io);
+                    cmd_ctx_out(ctx,"IO %02u = ON", io);
             }
-            else log_error("IO %02u is input but output command.", io);
+            else cmd_ctx_error(ctx,"IO %02u is input but output command.", io);
         }
         else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
         {
@@ -537,25 +537,25 @@ static command_response_t _io_cb(char *args)
             {
                 io_on(io, false);
                 if (!do_read)
-                    log_out("IO %02u = OFF", io);
+                    cmd_ctx_out(ctx,"IO %02u = OFF", io);
             }
-            else log_error("IO %02u is input but output command.", io);
+            else cmd_ctx_error(ctx,"IO %02u is input but output command.", io);
         }
         else
         {
-            log_error("Malformed gpio on/off command");
+            cmd_ctx_error(ctx,"Malformed gpio on/off command");
             return COMMAND_RESP_ERR;
         }
     }
     else do_read = true;
 
     if (do_read)
-        io_log(io);
+        io_log(io, ctx);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _io_cmd_enable_pulsecount_cb(char * args)
+static command_response_t _io_cmd_enable_pulsecount_cb(char * args, cmd_ctx_t * ctx)
 {
     /* <io> <R/F/B> <U/D/N>
      */
@@ -586,33 +586,33 @@ static command_response_t _io_cmd_enable_pulsecount_cb(char * args)
         goto bad_exit;
 
     if (io_enable_pulsecount(io, pupd, edge))
-        log_out("IO %02u pulsecount enabled", io);
+        cmd_ctx_out(ctx,"IO %02u pulsecount enabled", io);
     else
-        log_out("IO %02u has no pulsecount", io);
+        cmd_ctx_out(ctx,"IO %02u has no pulsecount", io);
     return COMMAND_RESP_OK;
 bad_exit:
-    log_out("<io> <R/F/B> <U/D/N>");
+    cmd_ctx_out(ctx,"<io> <R/F/B> <U/D/N>");
     return COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _io_cmd_enable_onewire_cb(char * args)
+static command_response_t _io_cmd_enable_onewire_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
 
     if (io_enable_w1(io))
     {
-        log_out("IO %02u onewire enabled", io);
+        cmd_ctx_out(ctx,"IO %02u onewire enabled", io);
         return COMMAND_RESP_OK;
     }
 
-    log_out("IO %02u has no onewire", io);
+    cmd_ctx_out(ctx,"IO %02u has no onewire", io);
     return COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _io_cmd_enable_watch_cb(char* args)
+static command_response_t _io_cmd_enable_watch_cb(char* args, cmd_ctx_t * ctx)
 {
     /* <io> <U/D/N>
      */
@@ -632,12 +632,12 @@ static command_response_t _io_cmd_enable_watch_cb(char* args)
         goto bad_exit;
 
     if (io_enable_watch(io, pupd))
-        log_out("IO %02u watch enabled", io);
+        cmd_ctx_out(ctx,"IO %02u watch enabled", io);
     else
-        log_out("IO %02u has no watch", io);
+        cmd_ctx_out(ctx,"IO %02u has no watch", io);
     return COMMAND_RESP_OK;
 bad_exit:
-    log_out("<io> <U/D/N>");
+    cmd_ctx_out(ctx,"<io> <U/D/N>");
     return COMMAND_RESP_ERR;
 }
 

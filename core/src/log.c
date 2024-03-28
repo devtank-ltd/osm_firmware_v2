@@ -1,5 +1,4 @@
 #include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <inttypes.h>
 
@@ -80,12 +79,24 @@ void log_bad_error(const char * s, ...)
 }
 
 
+void log_errorv(const char * s, va_list ap)
+{
+    log_msgv(UART_ERR_NU, false, "ERROR:", s, ap);
+}
+
+
 void log_error(const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(UART_ERR_NU, false, "ERROR:", s, ap);
+    log_errorv(s, ap);
     va_end(ap);
+}
+
+
+void log_outv(const char * s, va_list ap)
+{
+    log_msgv(CMD_VUART, false, NULL, s, ap);
 }
 
 
@@ -93,7 +104,7 @@ void log_out(const char * s, ...)
 {
     va_list ap;
     va_start(ap, s);
-    log_msgv(CMD_VUART, false, NULL, s, ap);
+    log_outv(s, ap);
     va_end(ap);
 }
 

@@ -1,12 +1,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
+#include "common.h"
 #include "modbus_mem.h"
 #include "modbus.h"
+#include "modbus_measurements.h"
 #include "log.h"
 #include "persist_config.h"
 #include "pinmap.h"
+
+#define MODBUS_REG_DESC_BUF_LEN             48
 
 
 modbus_bus_t * modbus_bus = NULL;
@@ -95,12 +100,12 @@ static modbus_reg_t * _modbus_get_next_reg(modbus_reg_t * reg)
 }
 
 
-void modbus_log()
+void modbus_print(cmd_ctx_t * ctx)
 {
     if (!modbus_bus)
         return;
 
-    log_out("Modbus @ %s %"PRIu32" %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", modbus_bus->baudrate, modbus_bus->databits, osm_uart_parity_as_char(modbus_bus->parity), osm_uart_stop_bits_as_str(modbus_bus->stopbits));
+    cmd_ctx_out(ctx,"Modbus @ %s %"PRIu32" %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", modbus_bus->baudrate, modbus_bus->databits, osm_uart_parity_as_char(modbus_bus->parity), osm_uart_stop_bits_as_str(modbus_bus->stopbits));
 
     modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
@@ -111,18 +116,18 @@ void modbus_log()
             byte_char = 'L';
         if (dev->word_order == MODBUS_WORD_ORDER_LSW)
             word_char = 'L';
-        log_out("- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->unit_id, dev->name, byte_char, word_char);
+        cmd_ctx_out(ctx,"- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->unit_id, dev->name, byte_char, word_char);
         modbus_reg_t * reg = _modbus_get_first_reg(dev);
         while(reg)
         {
-            log_out("  - Reg - 0x%"PRIx16" (F:%"PRIu8") \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->func, reg->name, modbus_reg_type_get_str(reg->type));
+            cmd_ctx_out(ctx,"  - Reg - 0x%"PRIx16" (F:%"PRIu8") \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->func, reg->name, modbus_reg_type_get_str(reg->type));
             reg = _modbus_get_next_reg(reg);
         }
         dev = _modbus_get_next_dev(dev);
     }
 }
 
-modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos)
+static modbus_reg_type_t _modbus_reg_type_from_str(const char * type, const char ** pos, cmd_ctx_t * ctx)
 {
     if (!type)
         return MODBUS_REG_TYPE_INVALID;
@@ -144,7 +149,7 @@ modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos)
 
     else
     {
-        log_out("Unknown modbus reg type.");
+        cmd_ctx_error(ctx,"Unknown modbus reg type.");
         return MODBUS_REG_TYPE_INVALID;
     }
 
@@ -161,7 +166,7 @@ modbus_reg_type_t modbus_reg_type_from_str(const char * type, const char ** pos)
             *pos = type+3;
         return is_signed ? MODBUS_REG_TYPE_I32 : MODBUS_REG_TYPE_U32;
     }
-    log_out("Unknown modbus reg type.");
+    cmd_ctx_error(ctx,"Unknown modbus reg type.");
     return MODBUS_REG_TYPE_INVALID;
 }
 
@@ -642,4 +647,358 @@ bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
         recursion_count++;
     }
     return recursion_count >= MODBUS_BLOCKS;
+}
+
+
+static bool _modbus_add_dev_from_str(char* str, cmd_ctx_t * ctx)
+{
+    /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
+     * (name can only be 4 char long)
+     * EXAMPLES:
+     * 0x1 MSB MSW TEST
+     */
+    char * pos = skip_space(str);
+
+    uint16_t unit_id = strtoul(pos, &pos, 16);
+    pos = skip_space(pos);
+
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'B'))
+        goto bad_exit;
+    modbus_byte_orders_t byte_order;
+    if (toupper(pos[0]) == 'L')
+        byte_order = MODBUS_BYTE_ORDER_LSB;
+    else if (toupper(pos[0]) == 'M')
+        byte_order = MODBUS_BYTE_ORDER_MSB;
+    else
+        goto bad_exit;
+    pos += 3;
+    pos = skip_space(pos);
+
+    if (!(toupper(pos[1]) == 'S') &&
+        !(toupper(pos[2]) == 'W'))
+        goto bad_exit;
+    modbus_word_orders_t word_order;
+    if (toupper(pos[0]) == 'L')
+        word_order = MODBUS_WORD_ORDER_LSW;
+    else if (toupper(pos[0]) == 'M')
+        word_order = MODBUS_WORD_ORDER_MSW;
+    else
+        goto bad_exit;
+    pos += 3;
+
+    pos = skip_space(pos);
+
+    unsigned len = strnlen(pos, MEASURE_NAME_LEN);
+    char name[MEASURE_NAME_NULLED_LEN];
+    strncpy(name, pos, len+1);
+
+    if (modbus_add_device(unit_id, name, byte_order, word_order))
+        cmd_ctx_out(ctx,"Added modbus device");
+    else
+        cmd_ctx_out(ctx,"Failed to add modbus device.");
+    return true;
+bad_exit:
+    cmd_ctx_error(ctx,"Unknown format.");
+    return false;
+}
+
+
+static command_response_t _modbus_add_dev_cb(char * args, cmd_ctx_t * ctx)
+{
+    /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
+     * (name can only be 4 char long)
+     * EXAMPLES:
+     * 0x1 MSB MSW TEST
+     */
+    if (!_modbus_add_dev_from_str(args, ctx))
+    {
+        cmd_ctx_out(ctx,"<unit_id> <LSB/MSB> <LSW/MSW> <name>");
+        return COMMAND_RESP_ERR;
+    }
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _modbus_add_reg_cb(char * args, cmd_ctx_t * ctx)
+{
+    /*<unit_id> <reg_addr> <modbus_func> <type> <name>
+     * (name can only be 4 char long)
+     * Only Modbus Function 3, Hold Read supported right now.
+     * 0x1 0x16 3 F   T-Hz
+     * 1 22 3 F       T-Hz
+     * 0x2 0x30 3 U16 T-As
+     * 0x2 0x32 3 U32 T-Vs
+     */
+    char * pos = skip_space(args);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t unit_id = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    if (pos[0] == '0' && (pos[1] == 'x' || pos[1] == 'X'))
+        pos += 2;
+
+    uint16_t reg_addr = strtoul(pos, &pos, 16);
+
+    pos = skip_space(pos);
+
+    uint8_t func = strtoul(pos, &pos, 10);
+
+    pos = skip_space(pos);
+
+    modbus_reg_type_t type = _modbus_reg_type_from_str(pos, (const char**)&pos, ctx);
+    if (type == MODBUS_REG_TYPE_INVALID)
+        return COMMAND_RESP_ERR;
+
+    pos = skip_space(pos);
+
+    char * name = pos;
+
+    modbus_dev_t * dev = modbus_get_device_by_id(unit_id);
+    if (!dev)
+    {
+        cmd_ctx_error(ctx,"Unknown modbus device.");
+        return COMMAND_RESP_ERR;
+    }
+
+    if (modbus_dev_add_reg(dev, name, type, func, reg_addr))
+    {
+        cmd_ctx_out(ctx,"Added modbus reg %s", name);
+        if (!modbus_measurement_add(modbus_dev_get_reg_by_name(dev, name)))
+        {
+            cmd_ctx_error(ctx,"Failed to add modbus reg to measurements!");
+            return COMMAND_RESP_ERR;
+        }
+        return COMMAND_RESP_OK;
+    }
+    cmd_ctx_error(ctx,"Failed to add modbus reg.");
+    return COMMAND_RESP_ERR;
+}
+
+
+
+static command_response_t _modbus_measurement_del_reg_cb(char* args, cmd_ctx_t * ctx)
+{
+    return modbus_measurement_del_reg(args) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
+static command_response_t _modbus_measurement_del_dev_cb(char* args, cmd_ctx_t * ctx)
+{
+    return modbus_measurement_del_dev(args) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
+static const char* _modbus_get_type_str(modbus_reg_type_t type)
+{
+    static const char u16_str[]      = "U16";
+    static const char i16_str[]      = "I16";
+    static const char u32_str[]      = "U32";
+    static const char i32_str[]      = "I32";
+    static const char float_str[]    = "FLOAT";
+    static const char unknown_str[]  = "UNKNOWN";
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16:
+            return u16_str;
+        case MODBUS_REG_TYPE_I16:
+            return i16_str;
+        case MODBUS_REG_TYPE_U32:
+            return u32_str;
+        case MODBUS_REG_TYPE_I32:
+            return i32_str;
+        case MODBUS_REG_TYPE_FLOAT:
+            return float_str;
+        default:
+            modbus_debug("Could not get type string.");
+            break;
+    }
+    return unknown_str;
+}
+
+
+static bool _modbus_reg_set_value_is_done(void* userdata)
+{
+    return !modbus_has_pending() && modbus_get_reg_set_expected_done(NULL);
+}
+
+
+static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, modbus_reg_type_t type, float value)
+{
+    uint8_t func;
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16:
+            /* Fall through */
+        case MODBUS_REG_TYPE_I16:
+            func = MODBUS_WRITE_SINGLE_HOLDING_FUNC;
+            break;
+        case MODBUS_REG_TYPE_U32:
+            /* Fall through */
+        case MODBUS_REG_TYPE_I32:
+            /* Fall through */
+        case MODBUS_REG_TYPE_FLOAT:
+            func = MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
+            break;
+        default:
+            modbus_debug("Could not get modbus function from type (%d).", type);
+            return false;
+    }
+    return modbus_set_reg(dev->unit_id, reg_addr, func, type, dev->byte_order, dev->word_order, value);
+}
+
+
+static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
+{
+    /* mb_reg_set <reg_name> <value> */
+    /* mb_reg_set <device_name> <reg_addr> <type> <value> */
+    char * p = skip_space(args);
+    char * np;
+
+    char name[MODBUS_NAME_LEN + 1] = {0};
+    np = strchr(p, ' ');
+    if (!np)
+    {
+        cmd_ctx_error(ctx,"Bad syntax.");
+        return COMMAND_RESP_ERR;
+    }
+    unsigned len = np - p;
+    if (len > MODBUS_NAME_LEN)
+    {
+        cmd_ctx_error(ctx,"Too long name.");
+        return COMMAND_RESP_ERR;
+    }
+    strncpy(name, p, len);
+    p = skip_space(np + 1);
+
+    uint16_t            reg_addr;
+    modbus_reg_type_t   type;
+    modbus_dev_t*       dev;
+    modbus_reg_t*       reg = modbus_get_reg(name);
+    if (reg)
+    {
+        reg_addr    = reg->reg_addr;
+        type        = reg->type;
+        dev         = modbus_reg_get_dev(reg);
+    }
+    else
+    {
+        dev = modbus_get_device_by_name(name);
+        if (!dev)
+        {
+            cmd_ctx_error(ctx,"No device or register with name '%s'", name);
+            return COMMAND_RESP_ERR;
+        }
+        p = skip_space(p);
+
+        if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X'))
+            p += 2;
+
+        reg_addr = strtoul(p, &np, 16);
+        if (p == np)
+        {
+            cmd_ctx_error(ctx,"Not given a register address.");
+            return COMMAND_RESP_ERR;
+        }
+        p = skip_space(np);
+        type = _modbus_reg_type_from_str(p, (const char**)&p, ctx);
+        if (type == MODBUS_REG_TYPE_INVALID)
+        {
+            cmd_ctx_error(ctx,"Given invalid register type.");
+            return COMMAND_RESP_ERR;
+        }
+    }
+
+    float value = strtof(p, &np);
+    if (p == np)
+    {
+        cmd_ctx_error(ctx,"Not given a value.");
+        return COMMAND_RESP_ERR;
+    }
+
+    if (modbus_has_pending())
+    {
+        modbus_debug("Currently undergoing transaction.");
+        return false;
+    }
+
+    if (!_modbus_reg_set_value(dev, reg_addr, type, value))
+    {
+        cmd_ctx_error(ctx,"Failed to set modbus register.");
+        return COMMAND_RESP_ERR;
+    }
+
+    const char* type_str = _modbus_get_type_str(type);
+    char reg_desc[MODBUS_REG_DESC_BUF_LEN];
+    if (reg)
+    {
+        snprintf
+        (
+            reg_desc,
+            MODBUS_REG_DESC_BUF_LEN,
+            "%.*s(0x%"PRIX8"):%.*s(0x%"PRIX8") = %.*s:%f",
+            MODBUS_NAME_LEN,
+            dev->name,
+            dev->unit_id,
+            MODBUS_NAME_LEN,
+            reg->name,
+            reg_addr,
+            3,
+            type_str,
+            value
+        );
+    }
+    else
+    {
+        snprintf
+        (
+            reg_desc,
+            MODBUS_REG_DESC_BUF_LEN,
+            "%.*s(0x%"PRIX8"):0x%"PRIX8" = %.*s:%f",
+            MODBUS_NAME_LEN,
+            dev->name,
+            dev->unit_id,
+            reg_addr,
+            3,
+            type_str,
+            value
+        );
+    }
+    unsigned reg_desc_len = strnlen(reg_desc, MODBUS_REG_DESC_BUF_LEN-1);
+    reg_desc[reg_desc_len] = 0;
+
+    cmd_ctx_out(ctx,"Queued setting %s", reg_desc);
+
+    if (!main_loop_iterate_for(MODBUS_RESP_TIMEOUT_MS, _modbus_reg_set_value_is_done, NULL))
+    {
+        cmd_ctx_error(ctx,"Timed out waiting for acknowledgement.");
+        return COMMAND_RESP_ERR;
+    }
+
+    bool passfail;
+
+    if (modbus_get_reg_set_expected_done(&passfail) && passfail)
+        cmd_ctx_out(ctx,"Successfully set %s", reg_desc);
+    else
+        cmd_ctx_error(ctx,"Failed to set %s", reg_desc);
+
+    return COMMAND_RESP_OK;
+}
+
+
+struct cmd_link_t* modbus_add_mem_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] =
+    {
+        { "mb_dev_add",   "Add modbus dev",           _modbus_add_dev_cb             , false , NULL },
+        { "mb_reg_add",   "Add modbus reg",           _modbus_add_reg_cb             , false , NULL },
+        { "mb_reg_del",   "Delete modbus reg",        _modbus_measurement_del_reg_cb , false , NULL },
+        { "mb_dev_del",   "Delete modbus dev",        _modbus_measurement_del_dev_cb , false , NULL },
+        { "mb_reg_set",   "Set modbus reg",           _modbus_set_reg_cb             , false , NULL },
+    };
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

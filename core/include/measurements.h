@@ -92,8 +92,6 @@ typedef bool (*measurements_for_each_cb_t)(measurements_def_t* def, void * data)
 extern bool     measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
 extern bool     measurements_for_each(measurements_for_each_cb_t cb, void * data);
 
-extern void     measurements_print(void);
-
 extern bool     measurements_add(measurements_def_t* measurement);
 extern bool     measurements_del(char* name);
 

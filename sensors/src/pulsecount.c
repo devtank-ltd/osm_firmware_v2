@@ -295,7 +295,7 @@ void     pulsecount_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _hw_pupd_cb(char* args)
+static command_response_t _hw_pupd_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     unsigned io = strtoul(args, &p, 10);
@@ -304,7 +304,7 @@ static command_response_t _hw_pupd_cb(char* args)
 
     if (io != W1_PULSE_1_IO &&
         io != W1_PULSE_2_IO)
-        log_out("Selected IO is not W1 or pulse IO.");
+        cmd_ctx_out(ctx,"Selected IO is not W1 or pulse IO.");
 
     p = skip_space(p);
 
@@ -317,10 +317,10 @@ static command_response_t _hw_pupd_cb(char* args)
         goto syntax_exit;
 
     model_w1_pulse_enable_pupd(io, enabled);
-    log_out("IO %u: %"PRIu8, io, (uint8_t)(enabled?1:0));
+    cmd_ctx_out(ctx,"IO %u: %"PRIu8, io, (uint8_t)(enabled?1:0));
     return COMMAND_RESP_OK;
 syntax_exit:
-    log_out("<io> <U/D>");
+    cmd_ctx_out(ctx,"<io> <U/D>");
     return COMMAND_RESP_ERR;
 }
 

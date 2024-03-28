@@ -352,7 +352,7 @@ bool rak3172_send_allowed(void)
 }
 
 
-static bool _rak3172_load_config(void)
+static bool _rak3172_load_config(cmd_ctx_t * ctx)
 {
     if (!lw_persist_data_is_valid())
     {
@@ -367,7 +367,7 @@ static bool _rak3172_load_config(void)
     lw_region_t region;
     if (config->region > LW_REGION_MAX)
     {
-        log_error("Invalid region, setting to EU868.");
+        cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
         region = LW_REGION_EU868;
     }
     else
@@ -408,7 +408,7 @@ static bool _rak3172_load_config(void)
 
 void rak3172_init(void)
 {
-    _rak3172_ctx.config_is_valid = _rak3172_load_config();
+    _rak3172_ctx.config_is_valid = _rak3172_load_config(&uart_cmd_ctx);
     if (!_rak3172_ctx.config_is_valid)
     {
         comms_debug("Config is incorrect, not initialising.");
@@ -484,14 +484,14 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
         {
             comms_debug("Message is command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            cmds_process(_rak3172_ascii_cmd, ascii_len);
+            cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
             break;
         }
         case LW_ID_CCMD:
         {
             comms_debug("Message is confirmed command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len);
+            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
             comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
             break;
         }
@@ -521,7 +521,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
             {
                 uint8_t b = (uint8_t)lw_consume(p, 2);
                 p += 2;
-                if (!fw_ota_add_chunk(&b, 1))
+                if (!fw_ota_add_chunk(&b, 1, NULL))
                     break;
             }
             break;
@@ -809,11 +809,11 @@ void _rak3172_send_alive(void)
 }
 
 
-command_response_t rak3172_cmd_config_cb(char* str)
+command_response_t rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx)
 {
-    if (lw_config_setup_str(str))
+    if (lw_config_setup_str(str, ctx))
     {
-        _rak3172_ctx.config_is_valid = _rak3172_load_config();
+        _rak3172_ctx.config_is_valid = _rak3172_load_config(ctx);
         if (_rak3172_ctx.config_is_valid)
         {
             _rak3172_ctx.reset_count = 0;
@@ -831,15 +831,15 @@ bool rak3172_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _rak3172_print_boot_reset_cb(char* args)
+static command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t * ctx)
 {
-    log_out("BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
-    log_out("RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
+    cmd_ctx_out(ctx,"BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
+    cmd_ctx_out(ctx,"RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
     return COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_boot_cb(char* args)
+static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 {
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     bool enabled = strtoul(args, NULL, 10);
@@ -859,11 +859,11 @@ static command_response_t _rak3172_boot_cb(char* args)
                         _rak3172_ctx.boot_pin.pins);
     }
     _rak3172_boot_enabled = enabled;
-    return _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("", ctx);
 }
 
 
-static command_response_t _rak3172_reset_cb(char* args)
+static command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
 {
     rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
     bool enabled = strtoul(args, NULL, 10);
@@ -883,7 +883,7 @@ static command_response_t _rak3172_reset_cb(char* args)
         gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
     }
     _rak3172_reset_enabled = enabled;
-    return _rak3172_print_boot_reset_cb("");
+    return _rak3172_print_boot_reset_cb("", ctx);
 }
 
 
@@ -920,32 +920,32 @@ static const char* _rak3172_init_count_to_str(uint8_t init_count)
 }
 
 
-static command_response_t _rak3172_state_cb(char* args)
+static command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
 {
-    log_out("STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
+    cmd_ctx_out(ctx,"STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
     switch (_rak3172_ctx.state)
     {
         case RAK3172_STATE_INIT_WAIT_OK:
             /* Fall through */
         case RAK3172_STATE_INIT_WAIT_REPLAY:
-            log_out("INIT COUNT         : %"PRIu8,  _rak3172_ctx.init_count);
-            log_out("INIT MESSAGE       : %s",      _rak3172_init_count_to_str(_rak3172_ctx.init_count));
+            cmd_ctx_out(ctx,"INIT COUNT         : %"PRIu8,  _rak3172_ctx.init_count);
+            cmd_ctx_out(ctx,"INIT MESSAGE       : %s",      _rak3172_init_count_to_str(_rak3172_ctx.init_count));
             break;
         case RAK3172_STATE_RESETTING:
         {
             uint32_t now         = get_since_boot_ms();
             uint32_t sleep_delay = _rak3172_ctx.reset_count >= RAK3172_SHORT_RESET_COUNT ? RAK3172_LONG_RESET_TIME_MS : RAK3172_SHORT_RESET_TIME_MS;
-            log_out("SLEEP DELAY        : %"PRIu32" ms", sleep_delay);
-            log_out("SLEEP FROM         : %"PRIu32" ms", _rak3172_ctx.sleep_from_time);
+            cmd_ctx_out(ctx,"SLEEP DELAY        : %"PRIu32" ms", sleep_delay);
+            cmd_ctx_out(ctx,"SLEEP FROM         : %"PRIu32" ms", _rak3172_ctx.sleep_from_time);
             uint32_t sleep_until = _rak3172_ctx.sleep_from_time + sleep_delay;
-            log_out("SLEEP UNTIL        : %"PRIu32" ms", sleep_until);
+            cmd_ctx_out(ctx,"SLEEP UNTIL        : %"PRIu32" ms", sleep_until);
             if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
             {
-                log_out("TIME UNTIL WAKEUP  : IMMINENT");
+                cmd_ctx_out(ctx,"TIME UNTIL WAKEUP  : IMMINENT");
                 break;
             }
             uint32_t wakeup_time = since_boot_delta(sleep_until, now);
-            log_out("TIME UNTIL WAKEUP  : %"PRIu32" ms", wakeup_time);
+            cmd_ctx_out(ctx,"TIME UNTIL WAKEUP  : %"PRIu32" ms", wakeup_time);
             break;
         }
         default:
@@ -955,7 +955,7 @@ static command_response_t _rak3172_state_cb(char* args)
 }
 
 
-static command_response_t _rak3172_restart_cb(char* args)
+static command_response_t _rak3172_restart_cb(char* args, cmd_ctx_t * ctx)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
@@ -964,26 +964,26 @@ static command_response_t _rak3172_restart_cb(char* args)
 }
 
 
-static command_response_t _rak3172_join(char* str)
+static command_response_t _rak3172_join(char* str, cmd_ctx_t * ctx)
 {
     _rak3172_send_alive();
     return COMMAND_RESP_OK;
 }
 
 
-command_response_t rak3172_cmd_conn_cb(char* str)
+command_response_t rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 {
     if (rak3172_get_connected())
     {
-        log_out("1 | Connected");
+        cmd_ctx_out(ctx,"1 | Connected");
         return COMMAND_RESP_OK;
     }
-    log_out("0 | Disconnected");
+    cmd_ctx_out(ctx,"0 | Disconnected");
     return COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _rak3172_tx_power_cb(char* str)
+static command_response_t _rak3172_tx_power_cb(char* str, cmd_ctx_t * ctx)
 {
     char* np;
     unsigned pwr = strtoul(str, &np, 10);
@@ -995,21 +995,21 @@ static command_response_t _rak3172_tx_power_cb(char* str)
     }
     else
     {
-        log_out("Enter a valid number.");
+        cmd_ctx_out(ctx,"Enter a valid number.");
         status = COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-static command_response_t _rak3172_trssi_cb(char* str)
+static command_response_t _rak3172_trssi_cb(char* str, cmd_ctx_t * ctx)
 {
     return _rak3172_printf("AT+TRSSI=?") ? COMMAND_RESP_OK  :
                                            COMMAND_RESP_ERR ;
 }
 
 
-static command_response_t _rak3172_ttx_cb(char* str)
+static command_response_t _rak3172_ttx_cb(char* str, cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
@@ -1021,14 +1021,14 @@ static command_response_t _rak3172_ttx_cb(char* str)
     }
     else
     {
-        log_out("Enter a valid number.");
+        cmd_ctx_out(ctx,"Enter a valid number.");
         status = COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-static command_response_t _rak3172_trx_cb(char* str)
+static command_response_t _rak3172_trx_cb(char* str, cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
@@ -1040,16 +1040,16 @@ static command_response_t _rak3172_trx_cb(char* str)
     }
     else
     {
-        log_out("Enter a valid number.");
+        cmd_ctx_out(ctx,"Enter a valid number.");
         status = COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-command_response_t rak3172_cmd_j_cfg_cb(char* str)
+command_response_t rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
 {
-    lw_print_config();
+    lw_print_config(ctx);
     return COMMAND_RESP_OK;
 }
 

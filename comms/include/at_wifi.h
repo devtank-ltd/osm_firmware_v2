@@ -61,8 +61,8 @@ extern void     at_wifi_power_down(void);
 extern bool     at_wifi_persist_config_cmp(void* d0, void* d1);
 extern void     at_wifi_config_init(comms_config_t* comms_config);
 
-extern command_response_t at_wifi_cmd_config_cb(char * args);
-extern command_response_t at_wifi_cmd_j_cfg_cb(char* args);
-extern command_response_t at_wifi_cmd_conn_cb(char* args);
+extern command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx);
+extern command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
+extern command_response_t at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
 
 extern bool at_wifi_get_unix_time(int64_t * ts);

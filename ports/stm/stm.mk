@@ -13,7 +13,7 @@ STM_CPU_DEFINES = -mthumb -mcpu=cortex-m4 -pedantic -mfloat-abi=hard -mfpu=fpv4-
 
 #Compiler options
 STM_CFLAGS		:= -Os -g -std=gnu11 $(STM_DEFINES)
-STM_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
+STM_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member -Wno-variadic-macros
 STM_CFLAGS		+= -fstack-usage -Wstack-usage=100
 STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
