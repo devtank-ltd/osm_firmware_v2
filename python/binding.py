@@ -404,8 +404,7 @@ class dev_t(dev_base_t):
 
     def reconnect_announce(self, timeout_s:float=10., type_="lw"):
         self.set_dbg(4)
-        if type_ == "lw":
-            self.do_cmd("comms_restart")
+        self.do_cmd("comms_restart")
         end_time = time.monotonic() + timeout_s
         connected = self.comms_conn.value
         while not connected:
