@@ -29,6 +29,7 @@
 #include "w1.h"
 #include "io_watch.h"
 #include "model_config.h"
+#include "comms_direct.h"
 
 
 uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -89,6 +90,7 @@ void model_sensors_init(void)
     modbus_init();
     can_impl_init();
     sen54_init();
+    comms_direct_init();
 }
 
 
@@ -195,6 +197,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
     tail = sen54_add_commands(tail);
+    tail = comms_direct_add_commands(tail);
 }
 
 
@@ -248,6 +251,12 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  1, SOUND           );
     return pos;
+}
+
+
+void model_main_loop_iterate(void)
+{
+    comms_direct_loop_iterate();
 }
 
 
