@@ -472,13 +472,15 @@ class dev_t(dev_base_t):
         else:
             self._log("Value must be an integer between 0 and 7.")
 
+    def _comms_get_param_template(self, pre: str, cmd: str):
+        resp = self.do_cmd_multi(cmd)
+        if resp and resp[0].startswith(pre):
+            return resp[0][len(pre):]
+        return ""
+
     @property
     def wifi_ssid(self):
-        ssid = self.do_cmd_multi("comms_config wifi_ssid")
-        pre = "SSID: "
-        if ssid and ssid[0].startswith(pre):
-            return ssid[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("SSID: ", "comms_config wifi_ssid")
 
     @wifi_ssid.setter
     def wifi_ssid(self, ssid):
@@ -486,11 +488,7 @@ class dev_t(dev_base_t):
 
     @property
     def wifi_pwd(self):
-        pwd = self.do_cmd_multi("comms_config wifi_pwd")
-        pre = "PWD: "
-        if pwd and pwd[0].startswith(pre):
-            return pwd[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("PWD: ", "comms_config wifi_pwd")
 
     @wifi_pwd.setter
     def wifi_pwd(self, pwd):
@@ -498,11 +496,7 @@ class dev_t(dev_base_t):
 
     @property
     def mqtt_addr(self):
-        addr = self.do_cmd_multi("comms_config mqtt_addr")
-        pre = "ADDR: "
-        if addr and addr[0].startswith(pre):
-            return addr[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("ADDR: ", "comms_config mqtt_addr")
 
     @mqtt_addr.setter
     def mqtt_addr(self, addr):
@@ -510,11 +504,7 @@ class dev_t(dev_base_t):
 
     @property
     def mqtt_user(self):
-        user = self.do_cmd_multi("comms_config mqtt_user")
-        pre = "USER: "
-        if user and user[0].startswith(pre):
-            return user[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("USER: ", "comms_config mqtt_user")
 
     @mqtt_user.setter
     def mqtt_user(self, user):
@@ -522,11 +512,7 @@ class dev_t(dev_base_t):
 
     @property
     def mqtt_pwd(self):
-        pwd = self.do_cmd_multi("comms_config mqtt_pwd")
-        pre = "PWD: "
-        if pwd and pwd[0].startswith(pre):
-            return pwd[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("PWD: ", "comms_config mqtt_pwd")
 
     @mqtt_pwd.setter
     def mqtt_pwd(self, pwd):
@@ -534,11 +520,7 @@ class dev_t(dev_base_t):
 
     @property
     def mqtt_ca(self):
-        ca = self.do_cmd_multi("comms_config mqtt_ca")
-        pre = "CA: "
-        if ca and ca[0].startswith(pre):
-            return ca[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("CA: ", "comms_config mqtt_ca")
 
     @mqtt_ca.setter
     def mqtt_ca(self, ca):
@@ -546,11 +528,7 @@ class dev_t(dev_base_t):
 
     @property
     def mqtt_port(self):
-        port = self.do_cmd_multi("comms_config mqtt_port")
-        pre = "PORT: "
-        if port and port[0].startswith(pre):
-            return port[0][len(pre):]
-        return ""
+        return self._comms_get_param_template("PORT: ", "comms_config mqtt_port")
 
     @mqtt_port.setter
     def mqtt_port(self, port):
