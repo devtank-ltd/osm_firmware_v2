@@ -482,7 +482,7 @@ class dev_t(dev_base_t):
         self.do_cmd("comms_restart")
         comms = self._ll.readlines(timeout=1)
         for line in comms:
-            if "Version: RUI_4.0.5_RAK3172-E" in line:
+            if "4.1.0" in line:
                 self.set_dbg()
                 return True
         self.set_dbg()
