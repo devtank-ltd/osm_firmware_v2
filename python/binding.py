@@ -200,6 +200,55 @@ class mb_bus_t(object):
         return f'{self.config}, {self.devices}'
 
 
+class comms_t(object):
+    def __init__(self, parent):
+        self._parent = weakref.ref(parent)
+
+    @property
+    def parent(self):
+        return self._parent()
+
+    def __getattr__(self, __name: str):
+        config = self.COMMS_ATTR_DICT.get(__name)
+        if config:
+            return self._get_config(*config)
+        return super().__getattribute__(__name)
+
+    def __setattr__(self, __name: str, __value):
+        config = self.COMMS_ATTR_DICT.get(__name)
+        if config:
+            self._set_config(config[0], __value)
+            return
+        super().__setattr__(__name, __value)
+
+    def _get_config(self, cmd_name, pre):
+        resp = self.parent.do_cmd_multi(f"comms_config {cmd_name}")
+        if resp and resp[0].startswith(pre):
+            return resp[0][len(pre):]
+        return ""
+
+    def _set_config(self, cmd_name, value):
+        self.parent.do_cmd_multi(f"comms_config {cmd_name} {value}")
+
+class lw_comms_t(comms_t):
+    COMMS_ATTR_DICT = \
+    {
+        "dev_eui"  : ( "dev-eui", "Dev EUI: "  ),
+        "app_key"  : ( "app-key", "App Key: "  )
+    }
+
+class wifi_comms_t(comms_t):
+    COMMS_ATTR_DICT = \
+    {
+        "wifi_ssid" : ( "wifi_ssid", "SSID: " ),
+        "wifi_pwd"  : ( "wifi_pwd",  "PWD: "  ),
+        "mqtt_addr" : ( "mqtt_addr", "ADDR: " ),
+        "mqtt_user" : ( "mqtt_user", "USER: " ),
+        "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "  ),
+        "mqtt_ca"   : ( "mqtt_ca",   "CA: "   ),
+        "mqtt_port" : ( "mqtt_port", "PORT: " )
+    }
+
 class log_t(object):
     def __init__(self, sender, receiver):
         self.sender = sender
@@ -375,6 +424,7 @@ class dev_t(dev_base_t):
         }
         self.update_measurements()
         self.port = port
+        self.comms = self._get_comms()
 
     def create_json_dev(self):
         """ As this is not creating an object on this object, weakref is
@@ -392,6 +442,15 @@ class dev_t(dev_base_t):
 
     def _log(self, msg):
         self._log_obj.emit(msg)
+
+    def _get_comms(self):
+        comms_type = self.do_cmd("j_comms_cfg")
+        loaded = json.loads(comms_type)
+        if "LW" in loaded["type"]:
+            comms = lw_comms_t (self)
+        elif "AT WIFI" in loaded["type"]:
+            comms = wifi_comms_t(self)
+        return comms
 
     def set_serial_num(self, serial_num):
         self.do_cmd("serial_num %s" % serial_num)
@@ -442,97 +501,12 @@ class dev_t(dev_base_t):
     def interval_mins(self, value):
         return self.do_cmd_multi("interval_mins %u" % value)
 
-    @property
-    def app_key(self):
-        ak = self.do_cmd_multi("comms_config app-key")
-        prec = "App Key: "
-        if ak and ak[0].startswith(prec):
-            return ak[0][len(prec):]
-        return ""
-
-    @app_key.setter
-    def app_key(self, key):
-        self.do_cmd_multi(f"comms_config app-key {key}")
-
-    @property
-    def dev_eui(self):
-        de = self.do_cmd_multi("comms_config dev-eui")
-        prec = "Dev EUI: "
-        if de and de[0].startswith(prec):
-            return de[0][len(prec):]
-        return ""
-
-    @dev_eui.setter
-    def dev_eui(self, eui):
-        self.do_cmd_multi(f"comms_config dev-eui {eui}")
-
     def set_tx_power(self, val: int):
         if val >= 0 and val <= 7:
             self.do_cmd(f"comms_txpower {val}")
         else:
             self._log("Value must be an integer between 0 and 7.")
 
-    def _comms_get_param_template(self, pre: str, cmd: str):
-        resp = self.do_cmd_multi(cmd)
-        if resp and resp[0].startswith(pre):
-            return resp[0][len(pre):]
-        return ""
-
-    @property
-    def wifi_ssid(self):
-        return self._comms_get_param_template("SSID: ", "comms_config wifi_ssid")
-
-    @wifi_ssid.setter
-    def wifi_ssid(self, ssid):
-        self.do_cmd_multi(f"comms_config wifi_ssid {ssid}")
-
-    @property
-    def wifi_pwd(self):
-        return self._comms_get_param_template("PWD: ", "comms_config wifi_pwd")
-
-    @wifi_pwd.setter
-    def wifi_pwd(self, pwd):
-        self.do_cmd_multi(f"comms_config wifi_pwd {pwd}")
-
-    @property
-    def mqtt_addr(self):
-        return self._comms_get_param_template("ADDR: ", "comms_config mqtt_addr")
-
-    @mqtt_addr.setter
-    def mqtt_addr(self, addr):
-        self.do_cmd_multi(f"comms_config mqtt_addr {addr}")
-
-    @property
-    def mqtt_user(self):
-        return self._comms_get_param_template("USER: ", "comms_config mqtt_user")
-
-    @mqtt_user.setter
-    def mqtt_user(self, user):
-        self.do_cmd_multi(f"comms_config mqtt_user {user}")
-
-    @property
-    def mqtt_pwd(self):
-        return self._comms_get_param_template("PWD: ", "comms_config mqtt_pwd")
-
-    @mqtt_pwd.setter
-    def mqtt_pwd(self, pwd):
-        self.do_cmd_multi(f"comms_config mqtt_pwd {pwd}")
-
-    @property
-    def mqtt_ca(self):
-        return self._comms_get_param_template("CA: ", "comms_config mqtt_ca")
-
-    @mqtt_ca.setter
-    def mqtt_ca(self, ca):
-        self.do_cmd_multi(f"comms_config mqtt_ca {ca}")
-
-    @property
-    def mqtt_port(self):
-        return self._comms_get_param_template("PORT: ", "comms_config mqtt_port")
-
-    @mqtt_port.setter
-    def mqtt_port(self, port):
-        self.do_cmd_multi(f"comms_config mqtt_port {port}")
 
     def change_samplec(self, meas, val):
         self.do_cmd(f"samplecount {meas} {val}")
