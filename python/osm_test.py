@@ -200,8 +200,8 @@ class test_framework_t(object):
         return self._bool_check("Interval minutes is a valid float and is reading correct value.", float(im) > 0 and float(im) == 1, True)
 
     def _check_lora_config_val(self):
-        appk = self._vosm_conn.app_key
-        deveui = self._vosm_conn.dev_eui
+        appk = self._vosm_conn.comms.app_key
+        deveui = self._vosm_conn.comms.dev_eui
         return  (self._bool_check("Application key is a valid type.",
                                   isinstance(appk, str) and appk=="LINUX-APP", True) and
                  self._bool_check("Device EUI is a valid type.",
