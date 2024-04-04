@@ -11,7 +11,7 @@ class flash_controller_base_t {
         this.api_type = params.api_type;
         this.api_ext_params = params.api_ext_params;
         this.baudrate = params.baudrate;
-        console.log("this.baudrate", this.baudrate);
+        console.log('this.baudrate', this.baudrate);
         this.flash_firmware = this.flash_firmware.bind(this);
     }
 
@@ -90,7 +90,7 @@ class flash_controller_t extends flash_controller_base_t {
             port,
             api_type: osm_flash_api_t,
             api_ext_params: undefined,
-            baudrate: "115200",
+            baudrate: '115200',
         });
         this.PAGE_SIZE = 0x800;
         this.SIZE_BOOTLOADER = 2 * this.PAGE_SIZE;
@@ -117,7 +117,7 @@ class flash_controller_t extends flash_controller_base_t {
 
 class rak3172_flash_controller_t extends flash_controller_base_t {
     constructor(dev) {
-        console.log("dev", dev);
+        console.log('dev', dev);
         super({
             port: dev.port,
             api_type: rak3172_flash_api_t,
@@ -164,8 +164,7 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
         loader.style.display = 'block';
         const disabled = disable_interaction(true);
         if (disabled) {
-            let serial;
-            serial = new WebSerial(this.port)
+            const serial = new WebSerial(this.port);
             serial.onConnect = () => {};
             serial.onDisconnect = () => {};
             const stm_api = new rak3172_flash_api_t(serial, this.api_ext_params);
@@ -271,7 +270,7 @@ class rak3172_firmware_t {
                         const records = tools.parseHex(
                             true,
                             256,
-                            e.target.result
+                            e.target.result,
                         );
                         console.log(records);
                         const rak3172_flash_controller = new rak3172_flash_controller_t(this.dev);

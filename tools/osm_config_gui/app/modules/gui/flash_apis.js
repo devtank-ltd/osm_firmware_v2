@@ -147,7 +147,7 @@ export class rak3172_flash_api_t extends STMApi {
     constructor(port, params) {
         super(port);
         this.dev = params.dev;
-        this.open_params;
+        this.open_params = undefined;
         this.dev_params = {
                 baudRate: 115200, databits: 8, stopbits: 1, parity: 'none',
             };
@@ -178,7 +178,7 @@ export class rak3172_flash_api_t extends STMApi {
      * @returns {Promise}
      */
     async disconnect() {
-        let dev_params = this.dev_params;
+        const { dev_params } = this;
         return new Promise((resolve, reject) => {
             this.serial.close()
                 .then(() => setTimeout(() => {
@@ -198,7 +198,7 @@ export class rak3172_flash_api_t extends STMApi {
      * @returns {Promise}
      */
     async activateBootloader() {
-        let open_params = this.open_params;
+        const { open_params } = this;
         return new Promise((resolve, reject) => {
             this.dev.do_cmd_multi('')
                 .then(() => this.dev.do_cmd_multi('comms_boot 1'))
