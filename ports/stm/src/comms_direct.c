@@ -140,10 +140,7 @@ static void _comms_direct_preamble(void)
     _comms_direct_ctx.last_msg_time = get_since_boot_ms();
 
     log_out("Entering COMMS_DIRECT mode");
-    while (uart_rings_out_busy())
-    {
-        uart_rings_out_drain();
-    }
+    uart_rings_drain_all_out();
 
     /* As we are changing the pins for the UART, need to wait for the
      * DMA to finish writing to the UART, and then the UART to finish

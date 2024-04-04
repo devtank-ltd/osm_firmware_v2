@@ -246,6 +246,15 @@ void uart_rings_out_drain()
 }
 
 
+void uart_rings_drain_all_out(void)
+{
+    while (uart_rings_out_busy())
+    {
+        uart_rings_out_drain();
+    }
+}
+
+
 static void uart_ring_check(ring_buf_t * ring, char * name, unsigned index)
 {
     log_debug(DEBUG_UART(index), "UART %u %s r_pos %u", index, name, ring->r_pos);

@@ -36,20 +36,11 @@ uint32_t persist_get_log_debug_mask(void)
 }
 
 
-static void _persist_finish_out(void)
-{
-    while (uart_rings_out_busy())
-    {
-        uart_rings_out_drain();
-    }
-}
-
-
 void persistent_wipe(void)
 {
     platform_persist_wipe();
     platform_raw_msg("Factory Reset");
-    _persist_finish_out();
+    uart_rings_drain_all_out();
     platform_reset_sys();
 }
 
@@ -65,7 +56,7 @@ static command_response_t _reset_cb(char *args, cmd_ctx_t * ctx)
 {
     cmd_ctx_out(ctx,"Resetting...");
     cmd_ctx_out(ctx,LOG_END_SPACER);
-    _persist_finish_out();
+    uart_rings_drain_all_out();
     platform_reset_sys();
     return COMMAND_RESP_OK;
 }

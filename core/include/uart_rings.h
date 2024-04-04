@@ -16,6 +16,7 @@ extern bool uart_rings_out_busy(void);
 extern void uart_ring_in_drain(unsigned uart);
 extern void uart_rings_in_drain();
 extern void uart_rings_out_drain();
+extern void uart_rings_drain_all_out(void);
 
 extern void uart_rings_check();
 
