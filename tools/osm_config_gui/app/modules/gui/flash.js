@@ -11,7 +11,6 @@ class flash_controller_base_t {
         this.api_type = params.api_type;
         this.api_ext_params = params.api_ext_params;
         this.baudrate = params.baudrate;
-        console.log('this.baudrate', this.baudrate);
         this.flash_firmware = this.flash_firmware.bind(this);
     }
 
@@ -117,7 +116,6 @@ class flash_controller_t extends flash_controller_base_t {
 
 class rak3172_flash_controller_t extends flash_controller_base_t {
     constructor(dev) {
-        console.log('dev', dev);
         super({
             port: dev.port,
             api_type: rak3172_flash_api_t,
@@ -272,7 +270,6 @@ class rak3172_firmware_t {
                             256,
                             e.target.result,
                         );
-                        console.log(records);
                         const rak3172_flash_controller = new rak3172_flash_controller_t(this.dev);
                         rak3172_flash_controller.flash_firmware(records);
                     };
