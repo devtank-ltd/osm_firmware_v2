@@ -44,8 +44,8 @@ class dev_json_t:
         self.ios = self.dev.do_cmd_multi("ios")
         self.fw = self.dev.version.value
         self.serial_num = self.dev.serial_num.value
-        self.dev_eui = self.dev.dev_eui
-        self.app_key = self.dev.app_key
+        self.dev_eui = self.dev.comms.dev_eui
+        self.app_key = self.dev.comms.app_key
         self.cc1_mp = self.dev.get_midpoint("CC1")[0].split()[1]
         self.cc2_mp = self.dev.get_midpoint("CC2")[0].split()[1]
         self.cc3_mp = self.dev.get_midpoint("CC3")[0].split()[1]
@@ -183,10 +183,10 @@ class dev_json_t:
             self.dev.interval_mins = new_int_mins
 
             dev_eui = contents["dev_eui"]
-            self.dev.dev_eui = dev_eui
+            self.dev.comms.dev_eui = dev_eui
 
             app_key = contents["app_key"]
-            self.dev.app_key = app_key
+            self.dev.comms.app_key = app_key
 
             ios = contents["ios"]
             spec = edge = pull = None
