@@ -108,6 +108,21 @@ class low_level_serial_t {
         }
         return msgs;
     }
+
+    async read_raw() {
+        const decoder = new TextDecoder();
+        let reader, msg;
+        try {
+            reader = this.port.readable.getReader();
+            const {value, done} = await reader.read();
+            msg = decoder.decode(value);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            reader.releaseLock();
+        }
+        return msg;
+    }
 }
 
 class modbus_bus_t {

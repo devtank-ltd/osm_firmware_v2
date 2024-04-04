@@ -2,28 +2,26 @@ import WebSerial from '/libs/stm-serial-flasher/api/WebSerial.js';
 import settings from '/libs/stm-serial-flasher/api/Settings.js';
 import tools from '/libs/stm-serial-flasher/tools.js';
 
-import { osm_flash_api_t } from './flash_apis.js';
+import { osm_flash_api_t, rak3172_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
 
 class flash_controller_base_t {
     constructor(params) {
         this.port = params.port;
         this.api_type = params.api_type;
+        this.api_ext_params = params.api_ext_params;
         this.baudrate = params.baudrate;
+        console.log("this.baudrate", this.baudrate);
         this.flash_firmware = this.flash_firmware.bind(this);
     }
 
-    static write_data(api, records) {
-        // eslint-disable-next-line no-async-promise-executor
-        return new Promise(async (resolve, reject) => {
-            for (const rec of records) {
-                await api.write(rec.data, rec.address);
-            }
-            resolve();
-        });
+    static async write_data(api, records) {
+        for (const rec of records) {
+            await api.write(rec.data, rec.address);
+        }
     }
 
-    static flash_start(stm_api) {
+    flash_start(stm_api) {
         return new Promise((resolve, reject) => {
             let deviceInfo = {
                 family: '-',
@@ -32,7 +30,7 @@ class flash_controller_base_t {
                 commands: [],
             };
 
-            stm_api.connect({ baudrate: 115200, replyMode: false })
+            stm_api.connect({ baudrate: this.baudrate, replyMode: false })
                 .then(() => stm_api.cmdGET())
                 .then((info) => {
                     deviceInfo = {
@@ -69,8 +67,8 @@ class flash_controller_base_t {
                     serial.onConnect = () => {};
                     serial.onDisconnect = () => {};
                 })
-                .then(() => { stm_api = new osm_flash_api_t(serial); })
-                .then(() => flash_controller_base_t.flash_start(stm_api))
+                .then(() => { stm_api = new this.api_type(serial, this.api_ext_params); })
+                .then(() => this.flash_start(stm_api))
                 .then(() => stm_api.eraseAll())
                 .then(() => {
                     const records = this.get_records(fw_bin);
@@ -78,7 +76,7 @@ class flash_controller_base_t {
                 })
                 .then(() => stm_api.disconnect())
                 .then(() => {
-                    this.port.open({ baudRate: 115200 });
+                    this.port.open({ baudRate: this.baudrate });
                     loader.style.display = 'none';
                     disable_interaction(false);
                 });
@@ -91,8 +89,9 @@ class flash_controller_t extends flash_controller_base_t {
         super({
             port,
             api_type: osm_flash_api_t,
-            baudrate: 115200,
-            });
+            api_ext_params: undefined,
+            baudrate: "115200",
+        });
         this.PAGE_SIZE = 0x800;
         this.SIZE_BOOTLOADER = 2 * this.PAGE_SIZE;
         this.SIZE_CONFIG = 2 * this.PAGE_SIZE;
@@ -113,6 +112,71 @@ class flash_controller_t extends flash_controller_base_t {
                 address: this.ADDRESS_FIRMWARE,
             }];
         return records;
+    }
+}
+
+export class rak3172_flash_controller_t extends flash_controller_base_t {
+    constructor(dev) {
+        console.log("dev", dev);
+        super({
+            port: dev.port,
+            api_type: rak3172_flash_api_t,
+            api_ext_params: { dev },
+            baudrate: '57600',
+        });
+    }
+
+    flash_start(stm_api) {
+        return new Promise((resolve, reject) => {
+            let deviceInfo = {
+                family: '-',
+                bl: '-',
+                pid: '-',
+                commands: [],
+            };
+
+            stm_api.connect({ baudrate: this.baudrate, replyMode: false })
+                .then(() => stm_api.cmdGET())
+                .then((info) => {
+                    deviceInfo = {
+                        bl: info.blVersion,
+                        commands: info.commands,
+                        family: info.getFamily(),
+                    };
+                })
+                .then(() => {
+                    let pid;
+                    if (deviceInfo.family === 'STM32') {
+                        pid = stm_api.cmdGID();
+                    } else {
+                        pid = '-';
+                    }
+                    deviceInfo.pid = pid;
+                    return pid;
+                })
+                .then(resolve)
+                .catch(reject);
+        });
+    }
+
+    flash_firmware(records) {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        const disabled = disable_interaction(true);
+        if (disabled) {
+            let serial;
+            serial = new WebSerial(this.port)
+            serial.onConnect = () => {};
+            serial.onDisconnect = () => {};
+            const stm_api = new rak3172_flash_api_t(serial, this.api_ext_params);
+            this.flash_start(stm_api)
+                .then(() => stm_api.eraseAll())
+                .then(() => {
+                    return flash_controller_base_t.write_data(stm_api, records);
+                })
+                .then(() => stm_api.disconnect())
+                .then(() => console.log("DONE"));
+        }
     }
 }
 
@@ -191,6 +255,6 @@ export class firmware_t {
                     };
                     reader.readAsBinaryString(resp);
                 });
-            }
         }
     }
+}
