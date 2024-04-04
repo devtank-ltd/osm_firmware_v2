@@ -12,6 +12,7 @@
 #include "common.h"
 #include "log.h"
 #include "platform_model.h"
+#include "uart_rings.h"
 
 #define SERIAL_NUM_COMM_LEN         17
 
@@ -122,7 +123,10 @@ command_response_t cmds_process(char * command, unsigned len, cmd_ctx_t * ctx)
         for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
         {
             if (!cmd->hidden)
+            {
                 cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
+                uart_rings_drain_all_out();
+            }
         }
     }
     cmd_ctx_out(ctx,LOG_END_SPACER);
