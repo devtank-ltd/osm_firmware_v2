@@ -115,7 +115,7 @@ class flash_controller_t extends flash_controller_base_t {
     }
 }
 
-export class rak3172_flash_controller_t extends flash_controller_base_t {
+class rak3172_flash_controller_t extends flash_controller_base_t {
     constructor(dev) {
         console.log("dev", dev);
         super({
@@ -246,6 +246,36 @@ export class firmware_t {
                         const fw_bin = Uint8Array.from(e.target.result, (c) => c.charCodeAt(0));
                         const controller = new flash_controller_t(port);
                         controller.flash_firmware(fw_bin);
+                    };
+                    reader.onerror = (e) => {
+                        console.log(e);
+                    };
+                    reader.readAsBinaryString(resp);
+                });
+        }
+    }
+}
+
+class rak3172_firmware_t {
+    constructor(dev) {
+        this.dev = dev;
+    }
+
+    flash_latest(fw_info) {
+        if (window.confirm('Are you sure you want to update the LoRaWAN Communications firmware?')) {
+            fetch('../../fw_releases/RAK3172-E_latest_final.hex')
+                .then((r) => r.blob())
+                .then((resp) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const records = tools.parseHex(
+                            true,
+                            256,
+                            e.target.result
+                        );
+                        console.log(records);
+                        const rak3172_flash_controller = new rak3172_flash_controller_t(this.dev);
+                        rak3172_flash_controller.flash_firmware(records);
                     };
                     reader.onerror = (e) => {
                         console.log(e);
