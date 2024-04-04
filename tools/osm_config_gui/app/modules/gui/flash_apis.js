@@ -164,7 +164,6 @@ export class rak3172_flash_api_t extends STMApi {
             parity: this.replyMode ? 'none' : 'even',
         };
         this.open_params = open_params;
-        console.log('CONNECT');
         this.ewrLoadState = EwrLoadState.NOT_LOADED;
         return new Promise((resolve, reject) => {
             this.activateBootloader()
@@ -180,17 +179,16 @@ export class rak3172_flash_api_t extends STMApi {
      */
     async disconnect() {
         let dev_params = this.dev_params;
-        console.log('DISCONNECT');
         return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                this.serial.close()
-                    .then(() => this.dev.ll.port.open(dev_params))
+            this.serial.close()
+                .then(() => setTimeout(() => {
+                    this.dev.ll.port.open(dev_params)
                     .then(() => this.dev.do_cmd_multi(''))
                     .then(() => this.dev.do_cmd_multi('comms_boot 0'))
                     .then(() => this.resetTarget())
                     .then(resolve)
                     .catch(reject);
-            }, 4000);
+                }, 4000));
         });
     }
 
@@ -201,42 +199,16 @@ export class rak3172_flash_api_t extends STMApi {
      */
     async activateBootloader() {
         let open_params = this.open_params;
-        console.log("open_params = ", open_params);
-        console.log('BOOTLOADER');
         return new Promise((resolve, reject) => {
             this.dev.do_cmd_multi('')
                 .then(() => this.dev.do_cmd_multi('comms_boot 1'))
-                .then(() => {
-                    console.log('HACK 0');
-                    return this.dev.do_cmd_multi('comms_reset 0');
-                })
-                .then(() => {
-                    console.log('HACK 1');
-                    return this.dev.do_cmd_multi('comms_reset 1');
-                })
-                .then(() => {
-                    console.log('HACK 2');
-                    return this.dev.ll.write('comms_direct\r\n');
-                })
-                .then(() => {
-                    console.log('HACK 2.1');
-                    return this.dev.ll.read_raw();
-                })
-                .then((response) => {
-                    console.log('HACK 2.2');
-                    console.log('response = ', response);
-                })
-                .then(() => {
-                    return this.dev.ll.port.close();
-                })
-                .then(() => {
-                    return this.serial.open(open_params);
-                })
+                .then(() => this.resetTarget())
+                .then(() => this.dev.ll.write('comms_direct\r\n'))
+                .then(() => this.dev.ll.read_raw())
+                .then(() => this.dev.ll.port.close())
+                .then(() => this.serial.open(open_params))
                 .then(() => sleep(100)) /* Wait for bootloader to finish booting */
-                .then(() => {
-                    console.log('HACK 3');
-                    this.serial.write(u8a([SYNCHR]));
-                })
+                .then(() => this.serial.write(u8a([SYNCHR])))
                 .then(() => this.serial.read())
                 .then((response) => {
                     if (response[0] === ACK) {

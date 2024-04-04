@@ -171,11 +171,8 @@ export class rak3172_flash_controller_t extends flash_controller_base_t {
             const stm_api = new rak3172_flash_api_t(serial, this.api_ext_params);
             this.flash_start(stm_api)
                 .then(() => stm_api.eraseAll())
-                .then(() => {
-                    return flash_controller_base_t.write_data(stm_api, records);
-                })
-                .then(() => stm_api.disconnect())
-                .then(() => console.log("DONE"));
+                .then(() => flash_controller_base_t.write_data(stm_api, records))
+                .then(() => stm_api.disconnect());
         }
     }
 }
