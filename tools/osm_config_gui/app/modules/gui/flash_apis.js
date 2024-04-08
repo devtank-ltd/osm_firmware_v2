@@ -1,5 +1,5 @@
-import { STMApi } from '../stm-serial-flasher/src/api/STMapi.js';
-import logger from '../stm-serial-flasher/src/api/Logger.js';
+import { STMApi } from '../../libs/stm-serial-flasher/api/STMapi.js';
+import logger from '../../libs/stm-serial-flasher/api/Logger.js';
 
 const PIN_HIGH = false;
 const PIN_LOW = true;

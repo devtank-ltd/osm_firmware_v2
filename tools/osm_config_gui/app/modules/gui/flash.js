@@ -1,5 +1,6 @@
-import WebSerial from '../stm-serial-flasher/src/api/WebSerial.js';
-import settings from '../stm-serial-flasher/src/api/Settings.js';
+import WebSerial from '../../libs/stm-serial-flasher/api/WebSerial.js';
+import settings from '../../libs/stm-serial-flasher/api/Settings.js';
+import tools from '../../libs/stm-serial-flasher/tools.js';
 
 import { osm_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
