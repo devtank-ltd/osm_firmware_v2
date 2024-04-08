@@ -23,6 +23,8 @@ PATH = os.path.dirname(os.path.abspath(__file__))
 _RESPONSE_BEGIN = b"============{"
 _RESPONSE_END = b"}============"
 
+WEBROOT = "./webroot"
+
 import atexit
 
 def exit_handler():
@@ -147,7 +149,7 @@ class http_server:
         app.add_routes([web.get('/', self.get_index),
                         web.get('/websocket', self.spawn_osm)
                         ])
-        app.router.add_static('/', path=('.'),
+        app.router.add_static('/', path=(WEBROOT),
                       name='app', show_index=True)
         runner = web.AppRunner(app)
         event_loop.run_until_complete(runner.setup())
@@ -201,7 +203,7 @@ class http_server:
         return status
 
     async def get_index(self, request):
-        return web.FileResponse('./index.html')
+        return web.FileResponse(os.path.join(WEBROOT, 'index.html'))
 
 def main():
     import argparse
