@@ -9,7 +9,7 @@ WEBROOT_LIB_BUILD_DIR := $(WEBROOT_BUILD_DIR)/libs
 define WEBSERVE_BUILT_FILES
 $(1)_SRC := $(shell find $(2) -type f)
 $(1) := $$(shell for x in $$($(1)_SRC); do echo $$(WEBROOT_BUILD_DIR)/`realpath --relative-to="$$(WEBSERVE_DIR)" "$$$${x}"`; done)
-$$($(1)): $$($(1)_SRC)
+$(1): $$(WEBROOT_BUILD_DIR)/%: $$($(2))/%
 	@mkdir -p $$(@D)
 	cp $$< $$@
 endef
