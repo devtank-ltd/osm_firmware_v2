@@ -56,9 +56,12 @@ export class home_tab_t {
         await meas_table.create_measurements_table_gui();
         await meas_table.add_uplink_listener();
 
+        await this.load_fw_ver();
+
         if (!this.is_virtual) {
             const fw_table = new firmware_t(this.dev);
-            fw_table.get_latest_firmware_info();
+            const model = this.fw_ver.split('-[')[0];
+            fw_table.get_latest_firmware_info(model);
         }
 
         const comms_type = await this.dev.comms_type();
@@ -78,7 +81,6 @@ export class home_tab_t {
         }
 
         await this.load_serial_number();
-        await this.load_fw_ver();
 
         const load_config = new load_configuration_t(this.dev, this.comms);
         await load_config.add_listener();

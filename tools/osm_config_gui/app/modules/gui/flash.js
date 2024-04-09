@@ -1,6 +1,6 @@
-import WebSerial from '../../libs/stm-serial-flasher/api/WebSerial.js';
-import settings from '../../libs/stm-serial-flasher/api/Settings.js';
-import tools from '../../libs/stm-serial-flasher/tools.js';
+import WebSerial from '/libs/stm-serial-flasher/api/WebSerial.js';
+import settings from '/libs/stm-serial-flasher/api/Settings.js';
+import tools from '/libs/stm-serial-flasher/tools.js';
 
 import { osm_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
@@ -157,11 +157,16 @@ export class firmware_t {
         await disable_interaction(false);
     }
 
-    get_latest_firmware_info() {
+    get_latest_firmware_info(model) {
         fetch('../../fw_releases/latest_fw_info.json')
             .then((resp) => resp.json())
             .then((json) => {
-                this.create_firmware_table(json);
+                const fw_entry = json.find(element => {
+                    return element.path === `${model}_release.bin`;
+                })
+                if (!fw_entry)
+                    return;
+                this.create_firmware_table(fw_entry);
             })
             .catch((err) => {
                 console.log(err);

@@ -15,18 +15,19 @@ $(1): $$(WEBROOT_BUILD_DIR)/%: $$($(2))/%
 endef
 
 $(eval $(call WEBSERVE_BUILT_FILES,WEBSERVE_GUI,$(WEBSERVE_DIR)/modules/gui))
+$(eval $(call WEBSERVE_BUILT_FILES,WEBSERVE_BACKEND,$(WEBSERVE_DIR)/modules/backend))
 $(eval $(call WEBSERVE_BUILT_FILES,WEBSERVE_IMG,$(WEBSERVE_DIR)/imgs))
 $(eval $(call WEBSERVE_BUILT_FILES,WEBSERVE_STYLES,$(WEBSERVE_DIR)/styles))
 
-FW_VERSION_INFO := $(WEBROOT_BUILD_DIR)/fw_releases/version_info.json
+FW_VERSION_INFO := $(WEBROOT_BUILD_DIR)/fw_releases/latest_fw_info.json
 
-webroot: $(WEBROOT_BUILD_DIR)/index.html $(WEBROOT_BUILD_DIR)/favicon.ico $(WEBSERVE_GUI) $(WEBSERVE_IMG) $(WEBSERVE_STYLES) $(BUILD_DIR)/.webroot/libs $(BUILD_DIR)/osm_config_gui/aioserver.py $(BUILD_DIR)/.webroot/fw_releases
+webroot: $(WEBROOT_BUILD_DIR)/index.html $(WEBROOT_BUILD_DIR)/favicon.ico $(WEBSERVE_GUI) $(WEBSERVE_BACKEND) $(WEBSERVE_IMG) $(WEBSERVE_STYLES) $(BUILD_DIR)/.webroot/libs $(BUILD_DIR)/osm_config_gui/aioserver.py $(BUILD_DIR)/.webroot/fw_releases
 
 .PHONY: webhost
 
 webhost: webroot
 	cd $(BUILD_DIR)/osm_config_gui; \
-	$(BUILD_DIR)/osm_config_gui/aioserver.py -v
+	python3 ./aioserver.py -v
 
 $(WEBROOT_BUILD_DIR)/%: $(WEBSERVE_DIR)/%
 	@mkdir -p $(@D)
@@ -36,7 +37,7 @@ $(BUILD_DIR)/osm_config_gui/aioserver.py: $(WEBSERVE_DIR)/aioserver.py
 	@mkdir -p $(@D)
 	cp $< $@
 
-$(BUILD_DIR)/.webroot/libs: $(BUILD_DIR)/.webroot/lib_stm32flash $(BUILD_DIR)/.webroot/fw_releases
+$(BUILD_DIR)/.webroot/libs: $(BUILD_DIR)/.webroot/lib_stm32flash
 	@mkdir -p $(@D)
 	touch $@
 
