@@ -52,7 +52,7 @@ $(BUILD_DIR)/.webroot/fw_releases: $(REAL_MODELS)
 	touch $(FW_VERSION_INFO); \
 	echo "[" > $(FW_VERSION_INFO); \
 	for x in $^; do \
-	    cp $(BUILD_DIR)/$${x}/firmware.bin $(WEBROOT_BUILD_DIR)/fw_releases/$${x}_release.bin; \
+	    cp $(BUILD_DIR)/$${x}/complete.bin $(WEBROOT_BUILD_DIR)/fw_releases/$${x}_release.bin; \
 	    echo "  {\"tag\": \"$(GIT_TAG2)\", \"sha\": \"$(GIT_SHA1)\", \"path\": \"$${x}_release.bin\"}," >> $(FW_VERSION_INFO); \
 	done; \
 	truncate -s -2 $(FW_VERSION_INFO); \
