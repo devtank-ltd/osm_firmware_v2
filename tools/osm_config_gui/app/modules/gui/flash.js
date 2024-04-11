@@ -218,7 +218,7 @@ export class firmware_t {
     }
 
     get_latest_firmware_info(model) {
-        fetch('../../fw_releases/latest_fw_info.json')
+        fetch('./fw_releases/latest_fw_info.json')
             .then((resp) => resp.json())
             .then((json) => {
                 const fw_entry = json.find(element => {
@@ -237,7 +237,7 @@ export class firmware_t {
         const { port } = this.dev;
         if (window.confirm('Are you sure you want to update the firmware?')) {
             const fw_path = fw_info.path;
-            fetch(`../../${fw_path}`)
+            fetch(`./fw_releases/${fw_path}`)
                 .then((r) => r.blob())
                 .then((resp) => {
                     const reader = new FileReader();
@@ -265,7 +265,7 @@ export class rak3172_firmware_t {
     flash_latest() {
         if (window.confirm('Are you sure you want to update the LoRaWAN Communications firmware?')) {
             const loader = document.getElementById('loader');
-            fetch('../../fw_releases/RAK3172-E_latest_final.hex')
+            fetch('./fw_releases/RAK3172-E_latest_final.hex')
                 .then((r) => r.blob())
                 .then((resp) => {
                     const reader = new FileReader();
