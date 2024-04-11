@@ -90,7 +90,13 @@ export class ftma_t {
         this.coeff_b = checkbox.parentNode.parentNode.cells[2].textContent;
         this.coeff_c = checkbox.parentNode.parentNode.cells[3].textContent;
         this.coeff_d = checkbox.parentNode.parentNode.cells[4].textContent;
-        await this.dev.set_ftma_coeffs(meas, this.coeff_a, this.coeff_b, this.coeff_c, this.coeff_d);
+        await this.dev.set_ftma_coeffs(
+            meas,
+            this.coeff_a,
+            this.coeff_b,
+            this.coeff_c,
+            this.coeff_d,
+        );
         await this.draw_ftma_coeff_graph(meas);
         checkbox.checked = false;
         await disable_interaction(false);

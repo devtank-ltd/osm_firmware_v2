@@ -1,6 +1,6 @@
-import WebSerial from '/libs/stm-serial-flasher/api/WebSerial.js';
-import settings from '/libs/stm-serial-flasher/api/Settings.js';
-import tools from '/libs/stm-serial-flasher/tools.js';
+import WebSerial from '../../libs/stm-serial-flasher/api/WebSerial.js';
+import settings from '../../libs/stm-serial-flasher/api/Settings.js';
+import tools from '../../libs/stm-serial-flasher/tools.js';
 
 import { osm_flash_api_t, rak3172_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
@@ -169,7 +169,9 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
             this.flash_start(stm_api)
                 .then(() => stm_api.eraseAll())
                 .then(() => flash_controller_base_t.write_data(stm_api, records))
-                .then(() => stm_api.disconnect());
+                .then(() => stm_api.disconnect())
+                .then(() => disable_interaction(false))
+                .then(() => loader.style.display = 'none');
         }
     }
 }
@@ -253,13 +255,16 @@ export class firmware_t {
     }
 }
 
-class rak3172_firmware_t {
+export class rak3172_firmware_t {
     constructor(dev) {
         this.dev = dev;
+        this.add_comms_btn_listener = this.add_comms_btn_listener.bind(this);
     }
 
-    flash_latest(fw_info) {
+
+    flash_latest() {
         if (window.confirm('Are you sure you want to update the LoRaWAN Communications firmware?')) {
+            const loader = document.getElementById('loader');
             fetch('../../fw_releases/RAK3172-E_latest_final.hex')
                 .then((r) => r.blob())
                 .then((resp) => {
@@ -279,5 +284,13 @@ class rak3172_firmware_t {
                     reader.readAsBinaryString(resp);
                 });
         }
+    }
+
+
+    async add_comms_btn_listener() {
+        const flash_btn = document.getElementById('comms-btn');
+        flash_btn.style.display = 'block';
+        flash_btn.addEventListener('click', () => { this.flash_latest(); });
+
     }
 }

@@ -182,8 +182,8 @@ export class rak3172_flash_api_t extends STMApi {
         return new Promise((resolve, reject) => {
             this.serial.close()
                 .then(() => setTimeout(() => {
-                    this.dev.ll.port.open(dev_params)
-                    .then(() => this.dev.do_cmd_multi(''))
+                    this.dev.port.open(dev_params)
+                    .then(() => this.dev.do_cmd_multi('?'))
                     .then(() => this.dev.do_cmd_multi('comms_boot 0'))
                     .then(() => this.resetTarget())
                     .then(resolve)
@@ -200,8 +200,7 @@ export class rak3172_flash_api_t extends STMApi {
     async activateBootloader() {
         const { open_params } = this;
         return new Promise((resolve, reject) => {
-            this.dev.do_cmd_multi('')
-                .then(() => this.dev.do_cmd_multi('comms_boot 1'))
+            this.dev.do_cmd_multi('comms_boot 1')
                 .then(() => this.resetTarget())
                 .then(() => this.dev.ll.write('comms_direct\r\n'))
                 .then(() => this.dev.ll.read_raw())
