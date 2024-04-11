@@ -81,7 +81,7 @@ class virtual_osm:
 
     @staticmethod
     def _generate_linux_binary():
-        sub = subprocess.run(f"cd {PATH}/../../.. && make penguin && cd -", stdout=subprocess.PIPE, shell=True)
+        sub = subprocess.run(f"cd ../.. && make penguin && cd -", stdout=subprocess.PIPE, shell=True)
         return sub.returncode
 
 
