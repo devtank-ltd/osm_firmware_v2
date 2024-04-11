@@ -48,7 +48,7 @@ uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
 
 void model_persist_config_model_init(persist_model_config_v1_t* model_config)
 {
-    model_config->mins_interval = 5 * 1000 / 60; /* 5 seconds */
+    model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* 5 seconds */
     cc_setup_default_mem(model_config->cc_configs, sizeof(model_config->cc_configs));
     lw_config_init(&model_config->comms_config);
     model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
@@ -162,8 +162,8 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
 
 void model_measurements_repopulate(void)
 {
-    measurements_repop_indiv(MEASUREMENTS_FW_VERSION,         100,  1,  FW_VERSION      );
-    measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,    100,  1,  CONFIG_REVISION );
+    measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
+    measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
     measurements_repop_indiv(MEASUREMENTS_PM1_0_NAME,           0,  5,  SEN54           );
     measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            0,  5,  SEN54           );
     measurements_repop_indiv(MEASUREMENTS_PM4_NAME,             0,  5,  SEN54           );
@@ -172,14 +172,15 @@ void model_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_SEN54_TEMP_NAME,      0,  5,  SEN54           );
     measurements_repop_indiv(MEASUREMENTS_VOC_NAME,             0,  5,  SEN54           );
     measurements_repop_indiv(MEASUREMENTS_NOX_NAME,             0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  CURRENT_CLAMP   );
-    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  CURRENT_CLAMP   );
-    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  CURRENT_CLAMP   );
-    measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  W1_PROBE        );
+    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
+    measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
-    measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  1,  SOUND           );
+    measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
+    measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
 }
 
 
@@ -230,24 +231,25 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,         100,  1, FW_VERSION      );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,    100,  1, CONFIG_REVISION );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM1_0_NAME,           0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM4_NAME,             0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_REL_HUM_NAME,         0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN54_TEMP_NAME,      0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, CURRENT_CLAMP   );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, CURRENT_CLAMP   );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, CURRENT_CLAMP   );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_1,      0,  1, W1_PROBE        );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1, PULSE_COUNT     );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, PULSE_COUNT     );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  1, SOUND           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM1_0_NAME,           0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM4_NAME,             0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_REL_HUM_NAME,         0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN54_TEMP_NAME,      0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             0,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
     return pos;
 }
 
