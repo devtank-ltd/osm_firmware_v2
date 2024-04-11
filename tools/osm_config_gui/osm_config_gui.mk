@@ -1,6 +1,7 @@
 
 GIT_TAG2 := $(shell git describe --tags --abbrev=0 --dirty)
 
+RAK_LATEST := https://downloads.rakwireless.com/RUI/RUI3/Image/RAK3172-E_latest_final.hex
 WEBSERVE_DIR := $(OSM_DIR)/tools/osm_config_gui/app
 
 WEBROOT_BUILD_DIR := $(BUILD_DIR)/osm_config_gui/webroot
@@ -21,7 +22,7 @@ $(eval $(call WEBSERVE_BUILT_FILES,WEBSERVE_STYLES,$(WEBSERVE_DIR)/styles))
 
 FW_VERSION_INFO := $(WEBROOT_BUILD_DIR)/fw_releases/latest_fw_info.json
 
-webroot: $(WEBROOT_BUILD_DIR)/index.html $(WEBROOT_BUILD_DIR)/favicon.ico $(WEBSERVE_GUI) $(WEBSERVE_BACKEND) $(WEBSERVE_IMG) $(WEBSERVE_STYLES) $(BUILD_DIR)/.webroot/libs $(BUILD_DIR)/osm_config_gui/aioserver.py $(BUILD_DIR)/.webroot/fw_releases
+webroot: $(WEBROOT_BUILD_DIR)/index.html $(WEBROOT_BUILD_DIR)/favicon.ico $(WEBSERVE_GUI) $(WEBSERVE_BACKEND) $(WEBSERVE_IMG) $(WEBSERVE_STYLES) $(BUILD_DIR)/.webroot/libs $(BUILD_DIR)/osm_config_gui/aioserver.py $(BUILD_DIR)/.webroot/fw_releases rakfw
 
 .PHONY: webhost
 
@@ -59,3 +60,7 @@ $(BUILD_DIR)/.webroot/fw_releases: $(REAL_MODELS)
 	echo "\n]" >> $(FW_VERSION_INFO);)
 	@mkdir -p $(@D)
 	touch $@
+
+rakfw: $(WEBROOT_BUILD_DIR)/fw_releases
+	$(shell mkdir -p $(WEBROOT_BUILD_DIR)/fw_releases)
+	wget -O $(WEBROOT_BUILD_DIR)/fw_releases/RAK3172-E_latest_final.hex $(RAK_LATEST)
