@@ -83,7 +83,7 @@ class low_level_serial_t {
         writer.releaseLock();
     }
 
-    async read(end_line = END_LINE) {
+    async read(end_line = END_LINE, timeout=this.timeout_ms) {
         const decoder = new TextDecoder();
         let msgs = '';
         const start_time = Date.now();
@@ -116,11 +116,13 @@ class low_level_serial_t {
             reader = this.port.readable.getReader();
             const {value, done} = await reader.read();
             msg = decoder.decode(value);
+            console.log(msg);
         } catch (error) {
             console.log(error);
         } finally {
             reader.releaseLock();
         }
+        console.log(msg);
         return msg;
     }
 }
@@ -243,6 +245,12 @@ export class binding_t {
         return parsed;
     }
 
+    async reset() {
+        await this.ll.write('reset\r\n');
+        let op = await this.ll.read_raw();
+        return op
+    }
+
     async do_cmd_raw(cmd) {
         await this.ll.write(cmd);
         const output = await this.ll.read();
@@ -305,6 +313,13 @@ export class binding_t {
         }
         return extracted_meas;
     }
+
+    async enter_comms_direct() {
+        let cmd = await this.ll.write('comms_direct\r\n');
+        let read_until = await this.ll.read('Exiting COMMS_DIRECT mode', 5000);
+        return;
+    }
+
 
     async change_interval(meas, num) {
         this.int = await this.do_cmd(`interval ${meas} ${num}`);

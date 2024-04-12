@@ -40,8 +40,15 @@ export class console_t {
             this.text = e.target.value;
             this.cmd = document.getElementById('console-cmd-input');
             this.value = this.cmd.value;
+            let output;
             if (this.text || this.value) {
-                const output = await this.dev.do_cmd_raw(this.value);
+                if (this.value === 'reset') {
+                    output = await this.dev.reset();
+                    output += '\nReset';
+                }
+                else {
+                    output = await this.dev.do_cmd_raw(this.value);
+                }
                 this.terminal = document.getElementById('console-terminal-para');
                 this.terminal.textContent = output;
                 this.cmd.value = '';

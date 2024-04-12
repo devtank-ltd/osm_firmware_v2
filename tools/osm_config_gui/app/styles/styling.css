@@ -26,6 +26,28 @@ input[type=number] {
   animation: spin 2s linear infinite;
 }
 
+.progress {
+  margin-top: 20px;
+  width: 50%;
+  background-color: grey;
+  display: none;
+  margin: auto;
+}
+
+.progressbar {
+  width: 1%;
+  height: 30px;
+  background-color: var(--osmdark);
+}
+
+.progresslabel {
+  margin: auto;
+  text-align: center;
+  line-height: 30px;
+  color: black;
+  display: none;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

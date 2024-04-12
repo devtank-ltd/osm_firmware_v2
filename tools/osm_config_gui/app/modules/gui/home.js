@@ -50,6 +50,8 @@ export class home_tab_t {
         const text = await response.text();
         doc.innerHTML = text;
 
+        await this.dev.do_cmd('?');
+
         await this.navbar.change_active_tab('home-tab');
 
         const meas_table = new measurements_table_t(this.dev);

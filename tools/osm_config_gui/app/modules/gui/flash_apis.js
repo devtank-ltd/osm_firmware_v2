@@ -21,6 +21,14 @@ const EwrLoadState = Object.freeze({
 });
 
 export class osm_flash_api_t extends STMApi {
+    constructor(port, params) {
+        super(port);
+        this.dev = params.dev;
+        this.open_params = undefined;
+        this.dev_params = {
+                baudRate: 115200, databits: 8, stopbits: 1, parity: 'none',
+            };
+    }
     /**
      * Connect to the target by resetting it and activating the ROM bootloader
      * @param {object} params
@@ -183,9 +191,9 @@ export class rak3172_flash_api_t extends STMApi {
             this.serial.close()
                 .then(() => setTimeout(() => {
                     this.dev.port.open(dev_params)
-                    .then(() => this.dev.do_cmd_multi('?'))
                     .then(() => this.dev.do_cmd_multi('comms_boot 0'))
                     .then(() => this.resetTarget())
+                    .then(() => this.dev.do_cmd_multi('?'))
                     .then(resolve)
                     .catch(reject);
                 }, 4000));
@@ -202,13 +210,13 @@ export class rak3172_flash_api_t extends STMApi {
         return new Promise((resolve, reject) => {
             this.dev.do_cmd_multi('comms_boot 1')
                 .then(() => this.resetTarget())
-                .then(() => this.dev.ll.write('comms_direct\r\n'))
-                .then(() => this.dev.ll.read_raw())
+                .then(() => this.dev.do_cmd('comms_direct'))
                 .then(() => this.dev.ll.port.close())
                 .then(() => this.serial.open(open_params))
                 .then(() => sleep(100)) /* Wait for bootloader to finish booting */
                 .then(() => this.serial.write(u8a([SYNCHR])))
                 .then(() => this.serial.read())
+
                 .then((response) => {
                     if (response[0] === ACK) {
                         if (this.replyMode) {

@@ -4,6 +4,7 @@ import tools from '../../libs/stm-serial-flasher/tools.js';
 
 import { osm_flash_api_t, rak3172_flash_api_t } from './flash_apis.js';
 import { disable_interaction } from './disable.js';
+import { move_bar } from './progressbar.js';
 
 class flash_controller_base_t {
     constructor(params) {
@@ -28,7 +29,6 @@ class flash_controller_base_t {
                 pid: '-',
                 commands: [],
             };
-
             stm_api.connect({ baudrate: this.baudrate, replyMode: false })
                 .then(() => stm_api.cmdGET())
                 .then((info) => {
@@ -54,8 +54,8 @@ class flash_controller_base_t {
     }
 
     flash_firmware(fw_bin) {
-        const loader = document.getElementById('loader');
-        loader.style.display = 'block';
+        let interval = 150;
+        move_bar(interval, `Writing OSM firmware...`);
         const disabled = disable_interaction(true);
         if (disabled) {
             let stm_api;
@@ -75,8 +75,7 @@ class flash_controller_base_t {
                 })
                 .then(() => stm_api.disconnect())
                 .then(() => {
-                    this.port.open({ baudRate: this.baudrate });
-                    loader.style.display = 'none';
+                    this.port.open({ baudRate: this.baudrate, databits: 8, stopbits: 1, parity: 'none', });
                     disable_interaction(false);
                 });
         }
@@ -84,11 +83,11 @@ class flash_controller_base_t {
 }
 
 class flash_controller_t extends flash_controller_base_t {
-    constructor(port) {
+    constructor(dev) {
         super({
-            port,
+            port: dev.port,
             api_type: osm_flash_api_t,
-            api_ext_params: undefined,
+            api_ext_params: { dev },
             baudrate: '115200',
         });
         this.PAGE_SIZE = 0x800;
@@ -133,46 +132,52 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
                 commands: [],
             };
 
-            stm_api.connect({ baudrate: this.baudrate, replyMode: false })
-                .then(() => stm_api.cmdGET())
-                .then((info) => {
-                    deviceInfo = {
-                        bl: info.blVersion,
-                        commands: info.commands,
-                        family: info.getFamily(),
-                    };
-                })
-                .then(() => {
-                    let pid;
-                    if (deviceInfo.family === 'STM32') {
-                        pid = stm_api.cmdGID();
-                    } else {
-                        pid = '-';
-                    }
-                    deviceInfo.pid = pid;
-                    return pid;
-                })
-                .then(resolve)
-                .catch(reject);
-        });
-    }
+            try {
+                stm_api.connect({ baudrate: this.baudrate, replyMode: false })
+                    .then(() => {
+                        let interval = 550;
+                        move_bar(interval, 'Writing LoRaWAN firmware...');
+                        const disabled = disable_interaction(true);
+                    })
+                    .then(() => stm_api.cmdGET())
+                    .then((info) => {
+                        deviceInfo = {
+                            bl: info.blVersion,
+                            commands: info.commands,
+                            family: info.getFamily(),
+                        };
+                    })
+                    .then(() => {
+                        let pid;
+                        if (deviceInfo.family === 'STM32') {
+                            pid = stm_api.cmdGID();
+                        } else {
+                            pid = '-';
+                        }
+                        deviceInfo.pid = pid;
+                        return pid;
+                    })
+                    .then(resolve)
+                    .catch(reject);
+            }
+            catch(e) {
+                console.log(e);
+                stmapi.disconnect();
+                disable_interaction(false);
+        }
+    });
+}
 
     flash_firmware(records) {
-        const loader = document.getElementById('loader');
-        loader.style.display = 'block';
-        const disabled = disable_interaction(true);
-        if (disabled) {
-            const serial = new WebSerial(this.port);
-            serial.onConnect = () => {};
-            serial.onDisconnect = () => {};
-            const stm_api = new rak3172_flash_api_t(serial, this.api_ext_params);
-            this.flash_start(stm_api)
-                .then(() => stm_api.eraseAll())
-                .then(() => flash_controller_base_t.write_data(stm_api, records))
-                .then(() => stm_api.disconnect())
-                .then(() => disable_interaction(false))
-                .then(() => loader.style.display = 'none');
-        }
+        const serial = new WebSerial(this.port);
+        serial.onConnect = () => {};
+        serial.onDisconnect = () => {};
+        const stm_api = new rak3172_flash_api_t(serial, this.api_ext_params);
+        this.flash_start(stm_api)
+            .then(() => stm_api.eraseAll())
+            .then(() => flash_controller_base_t.write_data(stm_api, records))
+            .then(() => stm_api.disconnect())
+            .then(() => disable_interaction(false))
     }
 }
 
@@ -243,7 +248,7 @@ export class firmware_t {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const fw_bin = Uint8Array.from(e.target.result, (c) => c.charCodeAt(0));
-                        const controller = new flash_controller_t(port);
+                        const controller = new flash_controller_t(this.dev);
                         controller.flash_firmware(fw_bin);
                     };
                     reader.onerror = (e) => {
@@ -264,7 +269,6 @@ export class rak3172_firmware_t {
 
     flash_latest() {
         if (window.confirm('Are you sure you want to update the LoRaWAN Communications firmware?')) {
-            const loader = document.getElementById('loader');
             fetch('./fw_releases/RAK3172-E_latest_final.hex')
                 .then((r) => r.blob())
                 .then((resp) => {
