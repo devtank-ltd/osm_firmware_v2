@@ -152,6 +152,36 @@ static int _rak3172_printf(char* fmt, ...)
 }
 
 
+static void _rak3172_reset_line_set(bool enabled)
+{
+    if (enabled)
+    {
+        gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                        GPIO_MODE_INPUT,
+                        GPIO_PUPD_NONE,
+                        _rak3172_ctx.reset_pin.pins);
+    }
+    else
+    {
+        gpio_mode_setup(_rak3172_ctx.reset_pin.port,
+                        GPIO_MODE_OUTPUT,
+                        GPIO_PUPD_NONE,
+                        _rak3172_ctx.reset_pin.pins);
+        gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
+    }
+    _rak3172_reset_enabled = enabled;
+}
+
+
+static void _rak3172_hard_reset(void)
+{
+    comms_debug("HARD RESET");
+    _rak3172_reset_line_set(false);
+    spin_blocking_ms(1);
+    _rak3172_reset_line_set(true);
+}
+
+
 static void _rak3172_reset_now(void)
 {
     _rak3172_printf("ATZ");
@@ -747,13 +777,17 @@ void rak3172_loop_iteration(void)
     switch(_rak3172_ctx.state)
     {
         case RAK3172_STATE_OFF:
-            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.sleep_from_time) > RAK3172_LONG_RESET_TIME_MS)
+        {
+            uint32_t now = get_since_boot_ms();
+            if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > RAK3172_LONG_RESET_TIME_MS)
             {
                 /* Most likely here from trying to reset, but not
                  * resetting successfully */
-                _rak3172_reset_now();
+                _rak3172_ctx.sleep_from_time = now;
+                _rak3172_hard_reset();
             }
             break;
+        }
         case RAK3172_STATE_IDLE:
             if (_rak3172_ctx.err_code)
             {
@@ -849,7 +883,6 @@ static command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t * c
 
 static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
     {
@@ -873,24 +906,8 @@ static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
     bool enabled = strtoul(args, NULL, 10);
-    if (enabled)
-    {
-        gpio_mode_setup(_rak3172_ctx.reset_pin.port,
-                        GPIO_MODE_INPUT,
-                        GPIO_PUPD_NONE,
-                        _rak3172_ctx.reset_pin.pins);
-    }
-    else
-    {
-        gpio_mode_setup(_rak3172_ctx.reset_pin.port,
-                        GPIO_MODE_OUTPUT,
-                        GPIO_PUPD_NONE,
-                        _rak3172_ctx.reset_pin.pins);
-        gpio_clear(_rak3172_ctx.reset_pin.port, _rak3172_ctx.reset_pin.pins);
-    }
-    _rak3172_reset_enabled = enabled;
+    _rak3172_reset_line_set(enabled);
     return _rak3172_print_boot_reset_cb("", ctx);
 }
 
