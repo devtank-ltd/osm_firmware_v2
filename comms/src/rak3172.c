@@ -747,6 +747,12 @@ void rak3172_loop_iteration(void)
     switch(_rak3172_ctx.state)
     {
         case RAK3172_STATE_OFF:
+            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.sleep_from_time) > RAK3172_LONG_RESET_TIME_MS)
+            {
+                /* Most likely here from trying to reset, but not
+                 * resetting successfully */
+                _rak3172_reset_now();
+            }
             break;
         case RAK3172_STATE_IDLE:
             if (_rak3172_ctx.err_code)
@@ -758,8 +764,10 @@ void rak3172_loop_iteration(void)
         case RAK3172_STATE_RESETTING:
         {
             uint32_t sleep_delay = _rak3172_ctx.reset_count >= RAK3172_SHORT_RESET_COUNT ? RAK3172_LONG_RESET_TIME_MS : RAK3172_SHORT_RESET_TIME_MS;
-            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.sleep_from_time) > sleep_delay)
+            uint32_t now = get_since_boot_ms();
+            if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
             {
+                _rak3172_ctx.sleep_from_time = now;
                 _rak3172_ctx.state = RAK3172_STATE_OFF;
                 _rak3172_reset_now();
             }
