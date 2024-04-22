@@ -32,6 +32,7 @@ typedef struct
         char        user[AT_WIFI_MQTT_USER_MAX_LEN + 1];
         char        pwd[AT_WIFI_MQTT_PWD_MAX_LEN + 1];
         char        ca[AT_WIFI_MQTT_CA_MAX_LEN + 1];
+        uint16_t    scheme; /* at_wifi_mqtt_scheme_t */
         uint16_t    port;
     } mqtt;
 } __attribute__((__packed__)) at_wifi_config_t;

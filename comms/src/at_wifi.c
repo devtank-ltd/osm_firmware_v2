@@ -45,9 +45,17 @@
 
 enum at_wifi_mqtt_scheme_t
 {
-    AT_WIFI_MQTT_SCHEME_BARE               = 1,  /* MQTT over TCP. */
-    AT_WIFI_MQTT_SCHEME_TLS_NO_CERT        = 2,  /* MQTT over TLS (no certificate verify). */
-    AT_WIFI_MQTT_SCHEME_TLS_VERIFY_SERVER  = 3,  /* MQTT over TLS (verify server certificate) */
+    AT_WIFI_MQTT_SCHEME_BARE                                = 1,  /* MQTT over TCP. */
+    AT_WIFI_MQTT_SCHEME_TLS_NO_CERT                         = 2,  /* MQTT over TLS (no certificate verify). */
+    AT_WIFI_MQTT_SCHEME_TLS_VERIFY_SERVER                   = 3,  /* MQTT over TLS (verify server certificate). */
+    AT_WIFI_MQTT_SCHEME_TLS_PROVIDE_CLIENT                  = 4,  /* MQTT over TLS (provide client certificate). */
+    AT_WIFI_MQTT_SCHEME_TLS_VERIFY_SERVER_PROVIDE_CLIENT    = 5,  /* MQTT over TLS (verify server certificate and provide client certificate). */
+    AT_WIFI_MQTT_SCHEME_WS                                  = 6,  /* MQTT over Websocket (TCP) */
+    AT_WIFI_MQTT_SCHEME_WSS_NO_CERT                         = 7,  /* MQTT over Websocket Secure (TLS no certificate verify). */
+    AT_WIFI_MQTT_SCHEME_WSS_VERIFY_SERVER                   = 8,  /* MQTT over Websocket Secure (TLS verify server certificate). */
+    AT_WIFI_MQTT_SCHEME_WSS_PROVIDE_CLIENT                  = 9,  /* MQTT over Websocket Secure (TLS provide client certificate). */
+    AT_WIFI_MQTT_SCHEME_WSS_VERIFY_SERVER_PROVIDE_CLIENT    = 10, /* MQTT over Websocket Secure (TLS verify server certificate and provide client certificate). */
+    AT_WIFI_MQTT_SCHEME_COUNT,
 };
 
 #define AT_WIFI_MQTT_TOPIC_LEN                  63
@@ -72,6 +80,7 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR                "    \"MQTT ADDR\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_USER                "    \"MQTT USER\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_SCHEME              "    \"MQTT SCHEME\": %"PRIu16","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA                  "    \"MQTT CA\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
 
@@ -81,6 +90,7 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_WIFI_MQTT_ADDR_MAX_LEN , _mqtt_addr
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_WIFI_MQTT_USER_MAX_LEN , _mqtt_user
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PWD     , AT_WIFI_MQTT_PWD_MAX_LEN  , _mqtt_pwd
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_SCHEME(_mqtt_scheme)    AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_SCHEME  , _mqtt_scheme
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_CA(_mqtt_ca)            AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA      , AT_WIFI_MQTT_CA_MAX_LEN   , _mqtt_ca
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_PORT(_mqtt_port)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT    , _mqtt_port
 #define AT_WIFI_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
@@ -633,7 +643,13 @@ static void _at_wifi_process_state_wifi_conn(char* msg, unsigned len)
 
 static void _at_wifi_do_mqtt_user_conf(void)
 {
-    enum at_wifi_mqtt_scheme_t mqtt_scheme = AT_WIFI_MQTT_SCHEME_BARE;
+
+    enum at_wifi_mqtt_scheme_t mqtt_scheme = _at_wifi_ctx.mem->mqtt.scheme;
+    if (!_at_wifi_ctx.mem->mqtt.scheme || AT_WIFI_MQTT_SCHEME_COUNT <= _at_wifi_ctx.mem->mqtt.scheme)
+    {
+        comms_debug("Invalid MQTT scheme, assuming bare (unless CA is set)");
+        mqtt_scheme = AT_WIFI_MQTT_SCHEME_BARE;
+    }
 
     const char * ca = _at_wifi_ctx.mem->mqtt.ca;
 
@@ -1438,6 +1454,38 @@ static command_response_t _at_wifi_config_mqtt_pwd_cb(char* args, cmd_ctx_t * ct
 }
 
 
+static bool _at_wifi_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx)
+{
+    bool ret = true;
+    unsigned len = strlen(src);
+    if (len && dest)
+    {
+        char* np, * p = src;
+        uint16_t new_uint16 = strtol(p, &np, 10);
+        if (p != np)
+        {
+            *dest = new_uint16;
+        }
+        else
+        {
+            ret = false;
+        }
+    }
+    /* Get */
+    cmd_ctx_out(ctx,"%s: %"PRIu16, name, *dest);
+    return ret;
+}
+
+
+static command_response_t _at_wifi_config_mqtt_scheme_cb(char* args, cmd_ctx_t * ctx)
+{
+    return _at_wifi_config_get_set_u16(
+        "SCHEME",
+        &_at_wifi_ctx.mem->mqtt.scheme,
+        args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
 static command_response_t _at_wifi_config_mqtt_ca_cb(char* args, cmd_ctx_t * ctx)
 {
     _at_wifi_config_get_set_str(
@@ -1451,25 +1499,10 @@ static command_response_t _at_wifi_config_mqtt_ca_cb(char* args, cmd_ctx_t * ctx
 
 static command_response_t _at_wifi_config_mqtt_port_cb(char* args, cmd_ctx_t * ctx)
 {
-    command_response_t ret = COMMAND_RESP_OK;
-    unsigned argslen = strlen(args);
-    if (argslen)
-    {
-        char* p = args;
-        char* np;
-        uint16_t port = strtol(p, &np, 10);
-        if (p != np)
-        {
-            ret = COMMAND_RESP_OK;
-            _at_wifi_ctx.mem->mqtt.port = port;
-        }
-        else
-        {
-            ret = COMMAND_RESP_ERR;
-        }
-    }
-    cmd_ctx_out(ctx,"PORT: %"PRIu16, _at_wifi_ctx.mem->mqtt.port);
-    return ret;
+    return _at_wifi_config_get_set_u16(
+        "PORT",
+        &_at_wifi_ctx.mem->mqtt.port,
+        args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
@@ -1482,6 +1515,7 @@ static bool _at_wifi_config_setup_str2(char * str, cmd_ctx_t * ctx)
         { "mqtt_addr",      "Set/get MQTT SSID",        _at_wifi_config_mqtt_addr_cb        , false , NULL },
         { "mqtt_user",      "Set/get MQTT user",        _at_wifi_config_mqtt_user_cb        , false , NULL },
         { "mqtt_pwd",       "Set/get MQTT password",    _at_wifi_config_mqtt_pwd_cb         , false , NULL },
+        { "mqtt_sch",       "Set/get MQTT scheme",      _at_wifi_config_mqtt_scheme_cb      , false , NULL },
         { "mqtt_ca",        "Set/get MQTT CA",          _at_wifi_config_mqtt_ca_cb          , false , NULL },
         { "mqtt_port",      "Set/get MQTT port",        _at_wifi_config_mqtt_port_cb        , false , NULL }
     };
@@ -1557,6 +1591,8 @@ command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_USER(_at_wifi_ctx.mem->mqtt.user));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_PWD(_at_wifi_ctx.mem->mqtt.pwd));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_SCHEME(_at_wifi_ctx.mem->mqtt.scheme));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_CA(_at_wifi_ctx.mem->mqtt.ca));
     cmd_ctx_flush(ctx);
@@ -1648,6 +1684,7 @@ bool at_wifi_persist_config_cmp(void* d0, void* d1)
 static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
 {
     memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
+    at_wifi_config->mqtt.scheme = AT_WIFI_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
 }
 
