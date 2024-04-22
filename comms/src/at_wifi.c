@@ -80,6 +80,7 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR                "    \"MQTT ADDR\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_USER                "    \"MQTT USER\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_SCHEME              "    \"MQTT SCHEME\": %"PRIu16","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA                  "    \"MQTT CA\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
 
@@ -89,6 +90,7 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_WIFI_MQTT_ADDR_MAX_LEN , _mqtt_addr
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_WIFI_MQTT_USER_MAX_LEN , _mqtt_user
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PWD     , AT_WIFI_MQTT_PWD_MAX_LEN  , _mqtt_pwd
+#define AT_WIFI_PRINT_CFG_JSON_MQTT_SCHEME(_mqtt_scheme)    AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_SCHEME  , _mqtt_scheme
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_CA(_mqtt_ca)            AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA      , AT_WIFI_MQTT_CA_MAX_LEN   , _mqtt_ca
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_PORT(_mqtt_port)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT    , _mqtt_port
 #define AT_WIFI_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
@@ -1589,6 +1591,8 @@ command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_USER(_at_wifi_ctx.mem->mqtt.user));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_PWD(_at_wifi_ctx.mem->mqtt.pwd));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_SCHEME(_at_wifi_ctx.mem->mqtt.scheme));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_MQTT_CA(_at_wifi_ctx.mem->mqtt.ca));
     cmd_ctx_flush(ctx);
