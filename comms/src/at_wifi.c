@@ -1472,7 +1472,7 @@ static bool _at_wifi_config_get_set_u16(const char* name, uint16_t* dest, char* 
         }
     }
     /* Get */
-    cmd_ctx_out(ctx,"%s: %"PRIu16, name, dest);
+    cmd_ctx_out(ctx,"%s: %"PRIu16, name, *dest);
     return ret;
 }
 
