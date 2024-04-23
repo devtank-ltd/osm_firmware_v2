@@ -116,7 +116,6 @@ class low_level_serial_t {
             reader = this.port.readable.getReader();
             const {value, done} = await reader.read();
             msg = decoder.decode(value);
-            console.log(msg);
         } catch (error) {
             console.log(error);
         } finally {
@@ -437,7 +436,7 @@ export class binding_t {
 
     async get_value(cmd) {
         const res = await this.do_cmd(cmd);
-        if (res === 'Failed to get measurement reading.') {
+        if (!res) {
             return 'n/a';
         }
         if (res.includes(':')) {
