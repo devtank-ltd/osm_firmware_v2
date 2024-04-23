@@ -110,7 +110,7 @@ export class osm_flash_api_t extends STMApi {
                         }
                         return Promise.resolve();
                     }
-                    throw new Error('Unexpected response');
+                    throw new Error(`Unexpected response: ${response}`);
                 })
                 .then(() => {
                     resolve();
@@ -211,12 +211,15 @@ export class rak3172_flash_api_t extends STMApi {
             this.dev.do_cmd_multi('comms_boot 1')
                 .then(() => this.resetTarget())
                 .then(() => this.dev.do_cmd('comms_direct'))
+                .then(() => sleep(3100))
+                .then(() => this.dev.do_cmd_multi('comms_boot 1'))
+                .then(() => this.resetTarget())
+                .then(() => this.dev.do_cmd('comms_direct'))
                 .then(() => this.dev.ll.port.close())
                 .then(() => this.serial.open(open_params))
                 .then(() => sleep(100)) /* Wait for bootloader to finish booting */
                 .then(() => this.serial.write(u8a([SYNCHR])))
                 .then(() => this.serial.read())
-
                 .then((response) => {
                     if (response[0] === ACK) {
                         if (this.replyMode) {
@@ -224,7 +227,7 @@ export class rak3172_flash_api_t extends STMApi {
                         }
                         return Promise.resolve();
                     }
-                    throw new Error('Unexpected response');
+                    throw new Error(`Unexpected Response: ${response}`);
                 })
                 .then(() => {
                     resolve();

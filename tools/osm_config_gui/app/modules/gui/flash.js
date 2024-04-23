@@ -134,11 +134,6 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
 
             try {
                 stm_api.connect({ baudrate: this.baudrate, replyMode: false })
-                    .then(() => {
-                        let interval = 550;
-                        move_bar(interval, 'Writing LoRaWAN firmware...');
-                        const disabled = disable_interaction(true);
-                    })
                     .then(() => stm_api.cmdGET())
                     .then((info) => {
                         deviceInfo = {
@@ -162,7 +157,7 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
             }
             catch(e) {
                 console.log(e);
-                stmapi.disconnect();
+                stm_api.disconnect();
                 disable_interaction(false);
         }
     });
@@ -223,7 +218,7 @@ export class firmware_t {
     }
 
     get_latest_firmware_info(model) {
-        fetch('./fw_releases/latest_fw_info.json')
+        fetch('../../fw_releases/latest_fw_info.json')
             .then((resp) => resp.json())
             .then((json) => {
                 const fw_entry = json.find(element => {
@@ -242,7 +237,7 @@ export class firmware_t {
         const { port } = this.dev;
         if (window.confirm('Are you sure you want to update the firmware?')) {
             const fw_path = fw_info.path;
-            fetch(`./fw_releases/${fw_path}`)
+            fetch(`../../fw_releases/${fw_path}`)
                 .then((r) => r.blob())
                 .then((resp) => {
                     const reader = new FileReader();
@@ -269,7 +264,7 @@ export class rak3172_firmware_t {
 
     flash_latest() {
         if (window.confirm('Are you sure you want to update the LoRaWAN Communications firmware?')) {
-            fetch('./fw_releases/RAK3172-E_latest_final.hex')
+            fetch('../../fw_releases/RAK3172-E_latest_final.hex')
                 .then((r) => r.blob())
                 .then((resp) => {
                     const reader = new FileReader();
@@ -280,6 +275,9 @@ export class rak3172_firmware_t {
                             e.target.result,
                         );
                         const rak3172_flash_controller = new rak3172_flash_controller_t(this.dev);
+                        let interval = 600;
+                        move_bar(interval, 'Writing LoRaWAN firmware...');
+                        const disabled = disable_interaction(true);
                         rak3172_flash_controller.flash_firmware(records);
                     };
                     reader.onerror = (e) => {
