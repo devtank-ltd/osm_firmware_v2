@@ -45,8 +45,7 @@ export class console_t {
                 if (this.value === 'reset') {
                     output = await this.dev.reset();
                     output += '\nReset';
-                }
-                else {
+                } else {
                     output = await this.dev.do_cmd_raw(this.value);
                 }
                 this.terminal = document.getElementById('console-terminal-para');

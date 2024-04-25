@@ -34,6 +34,7 @@ export class osm_flash_api_t extends STMApi {
      * @param {object} params
      * @returns {Promise}
      */
+
     async connect(params) {
         this.ewrLoadState = EwrLoadState.NOT_LOADED;
         return new Promise((resolve, reject) => {

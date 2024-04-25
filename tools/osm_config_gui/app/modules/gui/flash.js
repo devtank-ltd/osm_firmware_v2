@@ -54,8 +54,8 @@ class flash_controller_base_t {
     }
 
     flash_firmware(fw_bin) {
-        let interval = 150;
-        move_bar(interval, `Writing OSM firmware...`);
+        const interval = 150;
+        move_bar(interval, 'Writing OSM firmware...');
         const disabled = disable_interaction(true);
         if (disabled) {
             let stm_api;
@@ -75,7 +75,9 @@ class flash_controller_base_t {
                 })
                 .then(() => stm_api.disconnect())
                 .then(() => {
-                    this.port.open({ baudRate: this.baudrate, databits: 8, stopbits: 1, parity: 'none', });
+                    this.port.open({
+                        baudRate: this.baudrate, databits: 8, stopbits: 1, parity: 'none',
+                    });
                     disable_interaction(false);
                 });
         }
@@ -154,8 +156,7 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
                     })
                     .then(resolve)
                     .catch(reject);
-            }
-            catch(e) {
+            } catch (e) {
                 console.log(e);
                 stm_api.disconnect();
                 disable_interaction(false);
@@ -172,7 +173,7 @@ class rak3172_flash_controller_t extends flash_controller_base_t {
             .then(() => stm_api.eraseAll())
             .then(() => flash_controller_base_t.write_data(stm_api, records))
             .then(() => stm_api.disconnect())
-            .then(() => disable_interaction(false))
+            .then(() => disable_interaction(false));
     }
 }
 
@@ -221,11 +222,8 @@ export class firmware_t {
         fetch('../../fw_releases/latest_fw_info.json')
             .then((resp) => resp.json())
             .then((json) => {
-                const fw_entry = json.find(element => {
-                    return element.path === `${model}_release.bin`;
-                })
-                if (!fw_entry)
-                    return;
+                const fw_entry = json.find((element) => element.path === `${model}_release.bin`);
+                if (!fw_entry) return;
                 this.create_firmware_table(fw_entry);
             })
             .catch((err) => {
@@ -261,7 +259,6 @@ export class rak3172_firmware_t {
         this.add_comms_btn_listener = this.add_comms_btn_listener.bind(this);
     }
 
-
     flash_latest() {
         if (window.confirm('Are you sure you want to update the LoRaWAN Communications firmware?')) {
             fetch('../../fw_releases/RAK3172-E_latest_final.hex')
@@ -275,7 +272,7 @@ export class rak3172_firmware_t {
                             e.target.result,
                         );
                         const rak3172_flash_controller = new rak3172_flash_controller_t(this.dev);
-                        let interval = 600;
+                        const interval = 600;
                         move_bar(interval, 'Writing LoRaWAN firmware...');
                         const disabled = disable_interaction(true);
                         rak3172_flash_controller.flash_firmware(records);
@@ -288,11 +285,9 @@ export class rak3172_firmware_t {
         }
     }
 
-
     async add_comms_btn_listener() {
         const flash_btn = document.getElementById('comms-btn');
         flash_btn.style.display = 'block';
         flash_btn.addEventListener('click', () => { this.flash_latest(); });
-
     }
 }
