@@ -25,6 +25,8 @@ export async function generate_random(len) {
     return key;
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 class low_level_socket_t {
     constructor(url) {
         this.url = url;
@@ -83,13 +85,13 @@ class low_level_serial_t {
         writer.releaseLock();
     }
 
-    async read(end_line = END_LINE, timeout=this.timeout_ms) {
+    async read(end_line = END_LINE, timeout = this.timeout_ms) {
         const decoder = new TextDecoder();
         let msgs = '';
         const start_time = Date.now();
         const reader = this.port.readable.getReader();
         try {
-            while (Date.now() > start_time - this.timeout_ms) {
+            while (Date.now() > start_time - timeout) {
                 const { value, done } = await reader.read();
                 if (done) {
                     break;
@@ -111,10 +113,11 @@ class low_level_serial_t {
 
     async read_raw() {
         const decoder = new TextDecoder();
-        let reader, msg;
+        let reader;
+        let msg;
         try {
             reader = this.port.readable.getReader();
-            const {value, done} = await reader.read();
+            const { value, done } = await reader.read();
             msg = decoder.decode(value);
         } catch (error) {
             console.log(error);
@@ -159,6 +162,7 @@ export class binding_t {
         this.timeout = 1000;
         this.queue = [];
         this.call_queue();
+        this._in_comms_direct = false;
     }
 
     async open_ll_obj() {
@@ -237,7 +241,18 @@ export class binding_t {
         return this.msgs;
     }
 
+    async in_comms_direct_mode() {
+        if (this._in_comms_direct) {
+            console.log('In comms direct mode, cannot write normal command.');
+            return true;
+        }
+        return false;
+    }
+
     async do_cmd(cmd) {
+        if (this.in_comms_direct_mode()) {
+            return '';
+        }
         await this.ll.write(cmd);
         const output = await this.ll.read();
         const parsed = await this.parse_msg(output);
@@ -246,17 +261,23 @@ export class binding_t {
 
     async reset() {
         await this.ll.write('reset\r\n');
-        let op = await this.ll.read_raw();
-        return op
+        const op = await this.ll.read_raw();
+        return op;
     }
 
     async do_cmd_raw(cmd) {
+        if (this.in_comms_direct_mode()) {
+            return '';
+        }
         await this.ll.write(cmd);
         const output = await this.ll.read();
         return output;
     }
 
     async do_cmd_multi(cmd) {
+        if (this.in_comms_direct_mode()) {
+            return [];
+        }
         await this.ll.write(cmd);
         const output = await this.ll.read();
         const parsed = await this.parse_msg_multi(output);
@@ -313,12 +334,16 @@ export class binding_t {
         return extracted_meas;
     }
 
-    async enter_comms_direct() {
-        let cmd = await this.ll.write('comms_direct\r\n');
-        let read_until = await this.ll.read('Exiting COMMS_DIRECT mode', 5000);
-        return;
+    async enter_comms_direct_mode() {
+        await this.ll.write('comms_direct\r\n');
+        await this.ll.read('Entering COMMS_DIRECT mode');
+        this._in_comms_direct = true;
     }
 
+    async exit_comms_direct_mode() {
+        sleep(3100);
+        this._in_comms_direct = false;
+    }
 
     async change_interval(meas, num) {
         this.int = await this.do_cmd(`interval ${meas} ${num}`);
