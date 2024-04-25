@@ -27,6 +27,7 @@
         "indent": [0, "tab"],
         "no-tabs": 0,
         "no-restricted-globals": "off",
-        "import/no-unresolved": "off"
+        "import/no-unresolved": "off",
+        "no-underscore-dangle": "off"
     }
 }
