@@ -202,6 +202,19 @@ export class rak3172_flash_api_t extends STMApi {
         });
     }
 
+    async comms_direct_drain() {
+        return new Promise((resolve, reject) => {
+        this.dev.do_cmd_multi('comms_boot 1')
+            .then(() => this.resetTarget())
+            .then(() => this.dev.enter_comms_direct_mode())
+            .then(() => this.dev.exit_comms_direct_mode())
+            .then(() => {
+                    resolve();
+                })
+                .catch(reject);
+            });
+    }
+
     /**
      * Activate the ROM bootloader
      * @private
@@ -210,9 +223,7 @@ export class rak3172_flash_api_t extends STMApi {
     async activateBootloader() {
         const { open_params } = this;
         return new Promise((resolve, reject) => {
-            this.disconnect()
-                .then(() => this.dev.do_cmd('comms_direct'))
-                .then(() => sleep(this.comms_mode_span))
+            this.comms_direct_drain()
                 .then(() => this.dev.do_cmd_multi('comms_boot 1'))
                 .then(() => this.resetTarget())
                 .then(() => this.dev.do_cmd('comms_direct'))

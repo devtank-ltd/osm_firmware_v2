@@ -124,7 +124,6 @@ class low_level_serial_t {
         } finally {
             reader.releaseLock();
         }
-        console.log(msg);
         return msg;
     }
 }
@@ -250,7 +249,7 @@ export class binding_t {
     }
 
     async do_cmd(cmd) {
-        if (this.in_comms_direct_mode()) {
+        if (this.in_comms_direct_mode() === true) {
             return '';
         }
         await this.ll.write(cmd);
@@ -266,7 +265,7 @@ export class binding_t {
     }
 
     async do_cmd_raw(cmd) {
-        if (this.in_comms_direct_mode()) {
+        if (this.in_comms_direct_mode() === true) {
             return '';
         }
         await this.ll.write(cmd);
@@ -275,7 +274,7 @@ export class binding_t {
     }
 
     async do_cmd_multi(cmd) {
-        if (this.in_comms_direct_mode()) {
+        if (this.in_comms_direct_mode() === true) {
             return [];
         }
         await this.ll.write(cmd);
@@ -338,11 +337,13 @@ export class binding_t {
         await this.ll.write('comms_direct\r\n');
         await this.ll.read('Entering COMMS_DIRECT mode');
         this._in_comms_direct = true;
+        return this._in_comms_direct;
     }
 
     async exit_comms_direct_mode() {
-        sleep(3100);
+        await sleep(3100);
         this._in_comms_direct = false;
+        return this._in_comms_direct;
     }
 
     async change_interval(meas, num) {
