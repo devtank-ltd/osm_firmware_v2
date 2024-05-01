@@ -66,3 +66,5 @@ clean:
 -include $(shell find "$(BUILD_DIR)" -name "*.d")
 
 include $(OSM_DIR)/tests/tests.mk
+
+include $(OSM_DIR)/tools/osm_config_gui/osm_config_gui.mk

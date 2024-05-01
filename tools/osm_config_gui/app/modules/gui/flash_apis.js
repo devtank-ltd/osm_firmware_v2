@@ -1,5 +1,5 @@
-import { STMApi } from '../stm-serial-flasher/src/api/STMapi.js';
-import logger from '../stm-serial-flasher/src/api/Logger.js';
+import { STMApi } from '../../libs/stm-serial-flasher/api/STMapi.js';
+import logger from '../../libs/stm-serial-flasher/api/Logger.js';
 
 const PIN_HIGH = false;
 const PIN_LOW = true;
@@ -21,11 +21,20 @@ const EwrLoadState = Object.freeze({
 });
 
 export class osm_flash_api_t extends STMApi {
+    constructor(port, params) {
+        super(port);
+        this.dev = params.dev;
+        this.open_params = undefined;
+        this.dev_params = {
+                baudRate: 115200, databits: 8, stopbits: 1, parity: 'none',
+            };
+    }
     /**
      * Connect to the target by resetting it and activating the ROM bootloader
      * @param {object} params
      * @returns {Promise}
      */
+
     async connect(params) {
         this.ewrLoadState = EwrLoadState.NOT_LOADED;
         return new Promise((resolve, reject) => {
@@ -102,7 +111,7 @@ export class osm_flash_api_t extends STMApi {
                         }
                         return Promise.resolve();
                     }
-                    throw new Error('Unexpected response');
+                    throw new Error(`Unexpected response: ${response}`);
                 })
                 .then(() => {
                     resolve();
@@ -137,6 +146,119 @@ export class osm_flash_api_t extends STMApi {
                     // wait for device init
                     this.ewrLoadState = EwrLoadState.NOT_LOADED;
                     setTimeout(resolve, 200);
+                })
+                .catch(reject);
+        });
+    }
+}
+
+export class rak3172_flash_api_t extends STMApi {
+    constructor(port, params) {
+        super(port);
+        this.dev = params.dev;
+        this.open_params = undefined;
+        this.dev_params = {
+                baudRate: 115200, databits: 8, stopbits: 1, parity: 'none',
+            };
+        this.comms_mode_span = 3100;
+    }
+
+    /**
+     * Connect to the target by resetting it and activating the ROM bootloader
+     * @param {object} params
+     * @returns {Promise}
+     */
+    async connect(params) {
+        const open_params = {
+            baudRate: parseInt(params.baudrate, 10),
+            parity: this.replyMode ? 'none' : 'even',
+        };
+        this.open_params = open_params;
+        this.ewrLoadState = EwrLoadState.NOT_LOADED;
+        return new Promise((resolve, reject) => {
+            this.activateBootloader()
+                .then(resolve)
+                .catch(reject);
+        });
+    }
+
+    /**
+     * Close current connection. Before closing serial connection
+     * disable bootloader and reset target
+     * @returns {Promise}
+     */
+    async disconnect() {
+        const { dev_params } = this;
+        return new Promise((resolve, reject) => {
+            this.serial.close()
+                .then(() => setTimeout(() => {
+                    this.dev.port.open(dev_params)
+                    .then(() => this.dev.do_cmd_multi('comms_boot 0'))
+                    .then(() => this.resetTarget())
+                    .then(() => this.dev.do_cmd_multi('?'))
+                    .then(resolve)
+                    .catch(reject);
+                }, 4000));
+        });
+    }
+
+    async comms_direct_drain() {
+        return new Promise((resolve, reject) => {
+        this.dev.do_cmd_multi('comms_boot 1')
+            .then(() => this.resetTarget())
+            .then(() => this.dev.enter_comms_direct_mode())
+            .then(() => this.dev.exit_comms_direct_mode())
+            .then(() => {
+                    resolve();
+                })
+                .catch(reject);
+            });
+    }
+
+    /**
+     * Activate the ROM bootloader
+     * @private
+     * @returns {Promise}
+     */
+    async activateBootloader() {
+        const { open_params } = this;
+        return new Promise((resolve, reject) => {
+            this.comms_direct_drain()
+                .then(() => this.dev.do_cmd_multi('comms_boot 1'))
+                .then(() => this.resetTarget())
+                .then(() => this.dev.do_cmd('comms_direct'))
+                .then(() => this.dev.ll.port.close())
+                .then(() => this.serial.open(open_params))
+                .then(() => sleep(100)) /* Wait for bootloader to finish booting */
+                .then(() => this.serial.write(u8a([SYNCHR])))
+                .then(() => this.serial.read())
+                .then((response) => {
+                    if (response[0] === ACK) {
+                        if (this.replyMode) {
+                            return this.serial.write(u8a([ACK]));
+                        }
+                        return Promise.resolve();
+                    }
+                    throw new Error(`Unexpected Response: ${response}`);
+                })
+                .then(() => {
+                    resolve();
+                })
+                .catch(reject);
+        });
+    }
+
+    /**
+     * Resets the target by toggling a control pin defined in RESET_PIN
+     * @private
+     * @returns {Promise}
+     */
+    async resetTarget() {
+        return new Promise((resolve, reject) => {
+            this.dev.do_cmd_multi('comms_reset 0')
+                .then(() => this.dev.do_cmd_multi('comms_reset 1'))
+                .then(() => {
+                    resolve();
                 })
                 .catch(reject);
         });

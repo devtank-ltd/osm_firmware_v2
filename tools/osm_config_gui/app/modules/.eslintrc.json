@@ -26,8 +26,8 @@
         "no-alert": "off",
         "indent": [0, "tab"],
         "no-tabs": 0,
-        "no-return-assign": "off",
-        "radix": "off",
-        "no-restricted-globals": "off"
+        "no-restricted-globals": "off",
+        "import/no-unresolved": "off",
+        "no-underscore-dangle": "off"
     }
 }

@@ -8,7 +8,7 @@ import { wifi_config_t } from './wifi_config.js';
 import { console_t } from './console.js';
 import { adv_config_t } from './adv_conf.js';
 import { disable_interaction, limit_characters } from './disable.js';
-import { firmware_t } from './flash.js';
+import { firmware_t, rak3172_firmware_t } from './flash.js';
 
 export class home_tab_t {
     constructor(dev, is_virtual) {
@@ -50,15 +50,22 @@ export class home_tab_t {
         const text = await response.text();
         doc.innerHTML = text;
 
+        await this.dev.do_cmd('?');
+
         await this.navbar.change_active_tab('home-tab');
 
         const meas_table = new measurements_table_t(this.dev);
         await meas_table.create_measurements_table_gui();
         await meas_table.add_uplink_listener();
 
+        await this.load_fw_ver();
+
         if (!this.is_virtual) {
             const fw_table = new firmware_t(this.dev);
-            fw_table.get_latest_firmware_info();
+            const model = this.fw_ver.split('-[')[0];
+            fw_table.get_latest_firmware_info(model);
+            const comms_fw = new rak3172_firmware_t(this.dev);
+            comms_fw.add_comms_btn_listener();
         }
 
         const comms_type = await this.dev.comms_type();
@@ -78,7 +85,6 @@ export class home_tab_t {
         }
 
         await this.load_serial_number();
-        await this.load_fw_ver();
 
         const load_config = new load_configuration_t(this.dev, this.comms);
         await load_config.add_listener();
