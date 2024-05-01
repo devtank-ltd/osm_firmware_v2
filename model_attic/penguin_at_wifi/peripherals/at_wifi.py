@@ -5,7 +5,8 @@ import sys
 import tty
 import time
 import enum
-import paho.mqtt.client
+import paho.mqtt as paho
+import paho.mqtt.client as mqtt
 import select
 import serial
 import weakref
@@ -509,7 +510,10 @@ class at_wifi_mqtt_t(object):
         self.subscriptions = []
         self._connected = False
         self.state = self.STATES.UNINIT
-        self.client = paho.mqtt.client.Client(paho.mqtt.client.CallbackAPIVersion.VERSION1)
+        if int(paho.__version__.split(".")[0]) > 1:
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        else:
+            self.client = mqtt.Client()
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
 
