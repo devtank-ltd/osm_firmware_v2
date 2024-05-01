@@ -22,7 +22,12 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
 
     unsigned written = uart_ring_in(uart, in, len);
     if (written != len)
-        linux_error("Failed to write all uart:%u len:%u", uart, len);
+    {
+        if (uart)
+            linux_error("Failed to write all uart:%u len:%u", uart, len);
+        else
+            linux_port_debug("Failed to write all to uart:0 len:%u", len);
+    }
 
     if (uart == CMD_UART)
     {
