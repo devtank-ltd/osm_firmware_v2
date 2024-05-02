@@ -5,12 +5,17 @@ import sys
 import tty
 import time
 import enum
+import logging
 import paho.mqtt as paho
 import paho.mqtt.client as mqtt
 import select
 import serial
 import weakref
 import multiprocessing
+
+logging.basicConfig(level=logging.ERROR)
+
+logger = logging.getLogger("at_wifi.py")
 
 
 class base_at_commands_t(object):
@@ -193,7 +198,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
             self.reply_param_error()
             return
         pwd = pwd[1:-1].decode()
-        print(f"Connecting to SSID: {ssid} with PWD: {pwd}")
+        logger.info(f"Connecting to SSID: {ssid} with PWD: {pwd}")
         """ Will now block """
         time.sleep(2)
         self.reply(b"WIFI CONNECTED")
@@ -372,7 +377,7 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
             return
         self.reply_ok()
         self.reply_raw(b">")
-        print("START READ")
+        logger.info("START READ")
         msg = self.device.read_blocking(length, timeout=1)
         """ Do MQTT publish """
         self.reply(b"+MQTTPUB:OK")
@@ -425,9 +430,11 @@ class at_commands_t(object):
             if cb:
                 cb(args)
             else:
+                logger.error(f"Unknown type {type_} for command {command}")
                 self._invalid_type()
         else:
             # Not found in commands
+            logger.error(f"Unknown command {command}")
             self._no_command()
 
 
@@ -532,12 +539,12 @@ class at_wifi_mqtt_t(object):
 
     def connect(self, timeout: float = 2) -> bool:
         if not self._is_valid():
-            print("Not valid")
-            print(f"{self.addr      = }")
-            print(f"{self.client_id = }")
-            print(f"{self.user      = }")
-            print(f"{self.pwd       = }")
-            print(f"{self.ca        = }")
+            logger.info("Not valid")
+            logger.info(f"{self.addr      = }")
+            logger.info(f"{self.client_id = }")
+            logger.info(f"{self.user      = }")
+            logger.info(f"{self.pwd       = }")
+            logger.info(f"{self.ca        = }")
             return False
         self.client.username_pw_set(self.user, password=self.pwd)
         self.client.connect(self.addr, self.port, 60)
@@ -545,11 +552,11 @@ class at_wifi_mqtt_t(object):
         end = time.monotonic() + timeout
         while not isinstance(self._connected, bool) and time.monotonic() < end:
             self.client.loop()
-        print(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
+        logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
         return bool(self._connected)
 
     def _on_connect(self, client, userdata, flags, rc):
-        print(f"ON CONNECT; {rc = }");
+        logger.info(f"ON CONNECT; {rc = }");
         if rc == 0:
             self._connected = True
             self.state = self.STATES.CONN_NO_SUB
@@ -559,7 +566,7 @@ class at_wifi_mqtt_t(object):
     def publish(self, topic, msg) -> bool:
         if not self._connected:
             return False
-        print(f"PUBLISH {topic}#{msg}")
+        logger.info(f"PUBLISH {topic}#{msg}")
         return True
 
     def subscribe(self, topic, timeout=0.5):
@@ -572,14 +579,14 @@ class at_wifi_mqtt_t(object):
         while topic not in self.subscriptions and time.monotonic() < end:
             self.client.loop()
         if topic in self.subscriptions:
-            print(f"SUBSCRIBED {topic}")
+            logger.info(f"SUBSCRIBED {topic}")
             self.state = self.STATES.CONN_WITH_SUB
             self.subscriptions.append(topic)
             return True
         return False
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
-        print(f"ON SUBSCRIBE")
+        logger.info(f"ON SUBSCRIBE")
 
     def loop(self):
         self.client.loop()
@@ -619,7 +626,7 @@ class at_wifi_dev_t(object):
             at_wifi_mqtt_at_commands_t
             ]
         self._command_obj = at_commands_t(self, command_types)
-        print("AT WIFI INITED")
+        logger.info("AT WIFI INITED")
 
     def __enter__(self):
         return self
@@ -636,6 +643,7 @@ class at_wifi_dev_t(object):
             self._serial = None
 
     def send_raw(self, msg:bytes):
+        logger.debug(f">> {msg}")
         return os.write(self._serial.fileno(), msg)
 
     def send(self, msg:bytes):
@@ -658,6 +666,7 @@ class at_wifi_dev_t(object):
             line = self._serial_in[:-len(eol)]
             if line.startswith(b'\n'):
                 line = line[1:]
+            logger.debug(f"<< {line}")
             self._do_command(line)
             self._serial_in = b""
 
@@ -669,6 +678,7 @@ class at_wifi_dev_t(object):
             rlist,wlist,xlist = select.select([fd], [], [], timeout)
             for r in rlist:
                 msg += os.read(fd, 1)
+        logger.debug(f"<< {msg}")
         return msg
 
     def run_forever(self):
@@ -709,18 +719,18 @@ def run_standalone(tty_path):
     if os.path.islink(tty_path):
         a = os.access(tty_path, os.F_OK)
         if a:
-            print("Symlink already exists")
+            logger.error("Symlink already exists")
             return -1
         os.unlink(tty_path)
     master, slave = os.openpty()
     os.symlink(os.ttyname(slave), tty_path)
-    print(f"Connect to: {tty_path}")
+    logger.info(f"Connect to: {tty_path}")
     port = os.ttyname(master)
     dev = at_wifi_dev_t(master)
     try:
         dev.run_forever()
     except KeyboardInterrupt:
-        print("\r", flush=True, file=sys.stderr)
+        logger.error("\r")
     os.unlink(tty_path)
     return 0
 
@@ -729,11 +739,21 @@ def run_dependent(tty_path):
     try:
         dev.run_forever()
     except KeyboardInterrupt:
-        print("\r", flush=True, file=sys.stderr)
+        logger.error("\r")
     return 0
 
 def main():
     import argparse
+
+    is_debug = os.environ.get("DEBUG")
+
+    if is_debug:
+        logger.setLevel(level=logging.DEBUG)
+        logger.debug("Debug enabled")
+        if is_debug == "file":
+            log_file = os.path.join(os.environ.get("LOC", "/tmp/osm"), "at_wifi_py.log")
+            logger.debug(f"Logging to: {log_file}")
+            logger.addHandler(logging.FileHandler(log_file))
 
     def get_args():
         parser = argparse.ArgumentParser(description='Fake AT Wifi Module.' )
