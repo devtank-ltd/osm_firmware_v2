@@ -80,7 +80,7 @@ enum at_wifi_mqtt_scheme_t
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_CA                  "    \"MQTT CA\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
 
-#define AT_WIFI_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT WIFI\",\n\r  \"config\": {"
+#define AT_WIFI_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT "COMMS_ID_STR"\",\n\r  \"config\": {"
 #define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN      ,_wifi_ssid
 #define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN       , _wifi_pwd
 #define AT_WIFI_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_WIFI_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_WIFI_MQTT_ADDR_MAX_LEN , _mqtt_addr

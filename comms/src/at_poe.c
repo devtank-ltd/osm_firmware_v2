@@ -84,7 +84,7 @@ enum at_poe_mqtt_scheme_t
 #define AT_POE_PRINT_CFG_JSON_FMT_MQTT_CA                  "    \"MQTT CA\": \"%.*s\","
 #define AT_POE_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
 
-#define AT_POE_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT WIFI\",\n\r  \"config\": {"
+#define AT_POE_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT "COMMS_ID_STR"\",\n\r  \"config\": {"
 #define AT_POE_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_POE_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_POE_MQTT_ADDR_MAX_LEN , _mqtt_addr
 #define AT_POE_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_POE_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_POE_MQTT_USER_MAX_LEN , _mqtt_user
 #define AT_POE_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          AT_POE_PRINT_CFG_JSON_FMT_MQTT_PWD     , AT_POE_MQTT_PWD_MAX_LEN  , _mqtt_pwd
