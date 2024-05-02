@@ -11,7 +11,7 @@ import paho.mqtt.client as mqtt
 import select
 import serial
 import weakref
-import multiprocessing
+import selectors
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -506,7 +506,7 @@ class at_wifi_mqtt_t(object):
             "CONN_WITH_SUB",
         ])
 
-    def __init__(self):
+    def __init__(self, selector):
         self.scheme = self.SCHEMES.TLS_PROVIDE_CLIENT
         self.addr = None
         self.client_id = None
@@ -517,12 +517,15 @@ class at_wifi_mqtt_t(object):
         self.subscriptions = []
         self._connected = False
         self.state = self.STATES.UNINIT
+        self._selector = selector
         if int(paho.__version__.split(".")[0]) > 1:
             self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         else:
             self.client = mqtt.Client()
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
+        self.client.on_socket_open = self._on_socket_open
+        self.client.on_socket_close = self._on_socket_close
 
     def __del__(self):
         self.close()
@@ -588,8 +591,17 @@ class at_wifi_mqtt_t(object):
     def _on_subscribe(self, client, userdata, mid, granted_qos):
         logger.info(f"ON SUBSCRIBE")
 
-    def loop(self):
+    def _on_socket_open(self, mqttc, userdata, sock):
+        self._selector.register(sock, selectors.EVENT_READ, self.event)
+
+    def _on_socket_close(self, mqttc, userdata, sock):
+        self._selector.unregister(sock)
+
+    def event(self):
         self.client.loop()
+
+    def loop(self):
+        self.client.loop_misc()
 
 
 class at_wifi_dev_t(object):
@@ -602,6 +614,8 @@ class at_wifi_dev_t(object):
 
     def __init__(self, port):
         self.port = port
+
+        self._selector = selectors.PollSelector()
 
         if isinstance(port, int):
             self._serial = os.fdopen(port, "rb", 0)
@@ -617,7 +631,7 @@ class at_wifi_dev_t(object):
         self.is_echo = True
         self.sntp = at_wifi_sntp_info_t()
         self.wifi = at_wifi_info_t()
-        self.mqtt = at_wifi_mqtt_t()
+        self.mqtt = at_wifi_mqtt_t(self._selector)
 
         command_types = [
             at_wifi_basic_at_commands_t,
@@ -627,6 +641,8 @@ class at_wifi_dev_t(object):
             ]
         self._command_obj = at_commands_t(self, command_types)
         logger.info("AT WIFI INITED")
+
+        self._selector.register(self._serial, selectors.EVENT_READ, self._serial_in_event)
 
     def __enter__(self):
         return self
@@ -681,16 +697,15 @@ class at_wifi_dev_t(object):
         logger.debug(f"<< {msg}")
         return msg
 
+    def _serial_in_event(self):
+        self._read_serial(self._serial.fileno())
+
     def run_forever(self):
-        r_fd_cbs = { self._serial.fileno() : self._read_serial }
         while not self.done:
             self.mqtt.loop()
-            rlist,wlist,xlist = select.select(list(r_fd_cbs.keys()), [], [], 0.01)
-            for r in rlist:
-                cb = r_fd_cbs.get(r, None)
-                fd = r if isinstance(r, int) else r.fileno()
-                if cb:
-                    cb(fd)
+            events = self._selector.select(timeout=0.01)
+            for key, mask in events:
+                key.data()
 
     def restart(self):
         """ TODO: Make some kind of restart """
