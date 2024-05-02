@@ -73,6 +73,8 @@ enum at_poe_mqtt_scheme_t
 #define AT_POE_MQTT_FAIL_CONNECT_TIMEOUT_MS         60000
 
 #define AT_POE_STILL_OFF_TIMEOUT                    10000
+#define AT_POE_TIMEOUT                              500
+#define AT_POE_SNTP_TIMEOUT                         10000
 
 
 #define AT_POE_PRINT_CFG_JSON_FMT_MQTT_ADDR                "    \"MQTT ADDR\": \"%.*s\","
@@ -411,7 +413,7 @@ static bool _at_poe_is_error(char* msg, unsigned len)
 
 static void _at_poe_process_state_off(char* msg, unsigned len)
 {
-    const char boot_message[] = "+ETH: GOT IP";
+    const char boot_message[] = "+ETH_GOT_IP:";
     const unsigned boot_message_len = strlen(boot_message);
     if (_at_poe_mem_is_valid() &&
         len >= boot_message_len &&
@@ -1041,16 +1043,24 @@ void at_poe_loop_iteration(void)
             uint32_t delta = since_boot_delta(now, _at_poe_ctx.off_since);
             if (delta > AT_POE_STILL_OFF_TIMEOUT)
             {
+                _at_poe_ctx.off_since = now;
                 _at_poe_start();
             }
             break;
         }
         case AT_POE_STATE_DISABLE_ECHO:
             /* fall through */
-        case AT_POE_STATE_SNTP_WAIT_SET:
-            /* fall through */
         case AT_POE_STATE_MQTT_IS_CONNECTED:
-            _at_poe_reset();
+            if (since_boot_delta(now, _at_poe_ctx.last_sent) > AT_POE_TIMEOUT)
+            {
+                _at_poe_reset();
+            }
+            break;
+        case AT_POE_STATE_SNTP_WAIT_SET:
+            if (since_boot_delta(now, _at_poe_ctx.last_sent) > AT_POE_SNTP_TIMEOUT)
+            {
+                _at_poe_reset();
+            }
             break;
         case AT_POE_STATE_MQTT_WAIT_USR_CONF:
             /* fall through */
