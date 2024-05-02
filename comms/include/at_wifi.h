@@ -11,10 +11,6 @@
 
 #define AT_WIFI_MAX_SSID_LEN                    63
 #define AT_WIFI_MAX_PWD_LEN                     63
-#define AT_WIFI_MQTT_ADDR_MAX_LEN               63
-#define AT_WIFI_MQTT_USER_MAX_LEN               63
-#define AT_WIFI_MQTT_PWD_MAX_LEN                63
-#define AT_WIFI_MQTT_CA_MAX_LEN                 63
 
 
 typedef struct
@@ -26,15 +22,7 @@ typedef struct
         char        ssid[AT_WIFI_MAX_SSID_LEN + 1];
         char        pwd[AT_WIFI_MAX_PWD_LEN + 1];
     } wifi;
-    struct
-    {
-        char        addr[AT_WIFI_MQTT_ADDR_MAX_LEN + 1];
-        char        user[AT_WIFI_MQTT_USER_MAX_LEN + 1];
-        char        pwd[AT_WIFI_MQTT_PWD_MAX_LEN + 1];
-        char        ca[AT_WIFI_MQTT_CA_MAX_LEN + 1];
-        uint16_t    scheme; /* at_wifi_mqtt_scheme_t */
-        uint16_t    port;
-    } mqtt;
+    at_mqtt_config_t mqtt;
 } __attribute__((__packed__)) at_wifi_config_t;
 
 _Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "COMMS config too big.");

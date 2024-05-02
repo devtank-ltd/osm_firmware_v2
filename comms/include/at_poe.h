@@ -2,8 +2,10 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+
 #include "base_types.h"
 #include "measurements.h"
+#include "at_mqtt.h"
 
 #ifndef comms_name
 #define comms_name          at_poe
@@ -19,15 +21,7 @@ typedef struct
 {
     uint8_t     type;
     uint8_t     _[3];
-    struct
-    {
-        char        addr[AT_POE_MQTT_ADDR_MAX_LEN + 1];
-        char        user[AT_POE_MQTT_USER_MAX_LEN + 1];
-        char        pwd[AT_POE_MQTT_PWD_MAX_LEN + 1];
-        char        ca[AT_POE_MQTT_CA_MAX_LEN + 1];
-        uint16_t    scheme; /* at_poe_mqtt_scheme_t */
-        uint16_t    port;
-    } mqtt;
+    at_mqtt_config_t mqtt;
 } __attribute__((__packed__)) at_poe_config_t;
 
 _Static_assert(sizeof(at_poe_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
