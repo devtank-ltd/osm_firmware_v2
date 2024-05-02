@@ -37,7 +37,7 @@ typedef struct
     } mqtt;
 } __attribute__((__packed__)) at_wifi_config_t;
 
-_Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "LoRaWAN config too big.");
+_Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
 
 
 extern uint16_t at_wifi_get_mtu(void);
