@@ -231,7 +231,7 @@ void at_poe_init(void)
 {
     static struct cmd_link_t config_cmds[] =
     {
-        { "_",      "_",     NULL        , false , NULL },
+        { "_",      "_",     NULL        , true , NULL },
     };
     struct cmd_link_t* tail = &config_cmds[ARRAY_SIZE(config_cmds)-1];
     at_mqtt_add_commands(tail);
@@ -759,7 +759,7 @@ void at_poe_loop_iteration(void)
 }
 
 
-static bool _at_poe_config_setup_str2(char * str, cmd_ctx_t * ctx)
+static command_response_t _at_poe_config_setup_str2(char * str, cmd_ctx_t * ctx)
 {
     command_response_t r = COMMAND_RESP_ERR;
     if (str[0])
@@ -773,7 +773,7 @@ static bool _at_poe_config_setup_str2(char * str, cmd_ctx_t * ctx)
         }
         for(struct cmd_link_t * cmd = _at_poe_config_cmds; cmd; cmd = cmd->next)
         {
-            if (!strcmp(cmd->key, str))
+            if (!strcmp(cmd->key, str) && cmd->cb)
                 return cmd->cb(next, ctx);
         }
     }
@@ -781,7 +781,8 @@ static bool _at_poe_config_setup_str2(char * str, cmd_ctx_t * ctx)
 
     for(struct cmd_link_t * cmd = _at_poe_config_cmds; cmd; cmd = cmd->next)
     {
-        cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
+        if (!cmd->hidden)
+            cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
     }
     return r;
 }
@@ -809,7 +810,7 @@ static command_response_t _at_poe_send_cb(char * args, cmd_ctx_t * ctx)
 command_response_t at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
     bool ret = _at_poe_config_setup_str2(skip_space(args), ctx);
-    if (ret && _at_poe_mem_is_valid())
+    if (ret == COMMAND_RESP_NONE && _at_poe_mem_is_valid())
     {
         _at_poe_start();
     }
@@ -881,7 +882,7 @@ struct cmd_link_t* at_poe_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "comms_send"  , "Send at_poe message"        , _at_poe_send_cb          , false , NULL },
+        { "comms_send"  , "Send at_poe message"         , _at_poe_send_cb          , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"            , _at_poe_dbg_cb           , false , NULL },
         { "comms_boot",   "Enable/disable boot line"    , _at_poe_boot_cb          , false , NULL },
         { "comms_reset",  "Enable/disable reset line"   , _at_poe_reset_cb         , false , NULL },
