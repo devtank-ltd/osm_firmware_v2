@@ -28,11 +28,11 @@ typedef struct
     uint32_t        last_sent;
     uint32_t        last_recv;
     uint32_t        off_since;
-    at_esp_cmd_t    last_cmd[AT_ESP_MAX_CMD_LEN];
+    at_esp_cmd_t    last_cmd;
     port_n_pins_t   reset_pin;
     port_n_pins_t   boot_pin;
     at_esp_time_t   time;
-    at_esp_cmd_t    cmd_line[AT_ESP_MAX_CMD_LEN];
+    at_esp_cmd_t    cmd_line;
 } at_esp_ctx_t;
 
 

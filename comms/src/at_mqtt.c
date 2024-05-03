@@ -61,7 +61,7 @@ at_esp_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned me
     at_esp_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = _at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
         char full_topic[AT_MQTT_TOPIC_LEN + 1];
         unsigned full_topic_len = snprintf(
             full_topic,
@@ -120,7 +120,7 @@ at_esp_cmd_t* at_mqtt_get_ntp_cfg(void)
     at_esp_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = _at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
             AT_ESP_MAX_CMD_LEN,
@@ -140,7 +140,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
     at_esp_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = _at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
         enum at_mqtt_scheme_t mqtt_scheme = _at_mqtt_ctx->mem->scheme;
         if (!_at_mqtt_ctx->mem->scheme || AT_MQTT_SCHEME_COUNT <= _at_mqtt_ctx->mem->scheme)
         {
@@ -171,7 +171,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
     at_esp_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = _at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
             AT_ESP_MAX_CMD_LEN,
@@ -191,7 +191,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
     at_esp_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = _at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
             AT_ESP_MAX_CMD_LEN,
@@ -254,7 +254,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_conn(void)
     at_esp_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = _at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
             AT_ESP_MAX_CMD_LEN,

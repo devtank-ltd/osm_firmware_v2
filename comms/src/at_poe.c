@@ -124,7 +124,7 @@ static bool _at_poe_mem_is_valid(void)
 static unsigned _at_poe_printf(const char* fmt, ...)
 {
     comms_debug("Command when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
-    char* buf = _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_cmd->str;
+    char* buf = _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_cmd.str;
     va_list args;
     va_start(args, fmt);
     int len = vsnprintf(buf, AT_ESP_MAX_CMD_LEN - 2, fmt, args);
