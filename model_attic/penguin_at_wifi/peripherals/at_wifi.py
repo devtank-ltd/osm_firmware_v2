@@ -515,6 +515,7 @@ class at_wifi_mqtt_t(object):
         self.ca = None
         self.port = 1883
         self.subscriptions = []
+        self._pending_subscription = None
         self._connected = False
         self.state = self.STATES.UNINIT
         self._selector = selector
@@ -575,21 +576,24 @@ class at_wifi_mqtt_t(object):
     def subscribe(self, topic, timeout=0.5):
         if not self._connected:
             return False
+        if self._pending_subscription:
+            return False
         topic = topic.decode()
         self.client.subscribe(topic)
         subscribed = False
         end = time.monotonic() + timeout
+        self._pending_subscription = topic
         while topic not in self.subscriptions and time.monotonic() < end:
             self.client.loop()
-        if topic in self.subscriptions:
-            logger.info(f"SUBSCRIBED {topic}")
-            self.state = self.STATES.CONN_WITH_SUB
-            self.subscriptions.append(topic)
-            return True
-        return False
+        return topic in self.subscriptions
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
         logger.info(f"ON SUBSCRIBE")
+        if self._pending_subscription:
+            self.subscriptions.append(self._pending_subscription)
+            logger.info(f"SUBSCRIBED {self._pending_subscription}")
+            self.state = self.STATES.CONN_WITH_SUB
+            self._pending_subscription = None
 
     def _on_socket_open(self, mqttc, userdata, sock):
         self._selector.register(sock, selectors.EVENT_READ, self.event)
