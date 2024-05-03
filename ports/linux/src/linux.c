@@ -1128,6 +1128,7 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             return -1;
         char out_buf[buf_len+1];
         char* pos = out_buf;
+        char* end_pos = pos + buf_len+1;
         for (int i = 0; i < r; i++)
         {
             if ((isgraph(buf[i]) || buf[i] == ' ') && buf[i] != 0)
@@ -1137,8 +1138,11 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             }
             else
             {
+                char * next_pos = pos + 6;
+                if (next_pos > end_pos)
+                    break; // Larger than space avaible
                 snprintf(pos, buf_len - (pos - out_buf), "[0x%02"PRIx8"]", (uint8_t)buf[i]);
-                pos += 6;
+                pos = next_pos;
             }
         }
         *pos = 0;
