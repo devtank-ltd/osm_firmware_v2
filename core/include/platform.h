@@ -8,6 +8,7 @@
 
 
 uint32_t platform_get_frequency(void);
+uint32_t platform_get_hw_id(void);
 
 void platform_init(void);
 void platform_start(void);

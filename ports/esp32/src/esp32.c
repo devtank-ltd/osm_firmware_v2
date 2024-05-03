@@ -7,6 +7,7 @@
 #include <driver/gpio.h>
 #include <soc/clk_tree_defs.h>
 #include <esp_task_wdt.h>
+#include <esp_wifi.h>
 
 #include "platform.h"
 
@@ -20,10 +21,28 @@
 
 static bool _led_state = false;
 
+static uint8_t _mac[6];
+
 uint32_t platform_get_frequency(void)
 {
     return SOC_CLK_XTAL32K_FREQ_APPROX;
 }
+
+
+const uint8_t * esp_port_get_mac(void)
+{
+    if (!_mac[0])
+        ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, _mac));
+    return _mac;
+}
+
+
+uint32_t platform_get_hw_id(void)
+{
+    uint8_t * mac = esp_port_get_mac();
+    return (mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5];
+}
+
 
 /* There is an echo on RS485 to remove. */
 extern bool modbus_requires_echo_removal(void)

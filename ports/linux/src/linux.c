@@ -167,6 +167,24 @@ uint32_t platform_get_frequency(void)
 }
 
 
+uint32_t platform_get_hw_id(void)
+{
+    static uint32_t hw_id = 0;
+    if (!hw_id)
+    {
+        char * hw_id_str = getenv("OSM_HW_ID");
+        if (hw_id_str)
+        {
+            if (hw_id_str[0] == '0' && tolower(hw_id_str[1]) == 'x')
+                hw_id_str+=2;
+            hw_id = strtoul(hw_id_str, NULL, 16);
+        }
+        else hw_id = 0x00C0FFEE;
+    }
+    return hw_id;
+}
+
+
 void linux_port_debug(char * fmt, ...)
 {
     if (!_linux_in_debug)
