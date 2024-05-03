@@ -39,7 +39,7 @@ const uint8_t * esp_port_get_mac(void)
 
 uint32_t platform_get_hw_id(void)
 {
-    uint8_t * mac = esp_port_get_mac();
+    const uint8_t * mac = esp_port_get_mac();
     return (mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5];
 }
 

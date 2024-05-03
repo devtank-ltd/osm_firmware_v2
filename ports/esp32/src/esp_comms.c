@@ -15,6 +15,7 @@
 #include "esp_comms.h"
 #include "protocol.h"
 #include "uart_rings.h"
+#include "platform_model.h"
 
 #define WIFI_DELAY_MS 1000
 
@@ -196,7 +197,7 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
             case IP_EVENT_STA_GOT_IP:
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
                 comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
-                uint8_t * mac = esp_port_get_mac();
+                const uint8_t * mac = esp_port_get_mac();
                 snprintf(_mac_str, sizeof(_mac_str), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
                 comms_debug("MAC: %s", _mac_str);
 
