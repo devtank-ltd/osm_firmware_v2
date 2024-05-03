@@ -111,10 +111,10 @@ def main():
 
     ds18b20 = ds18b20_t(args.temperature)
     devs    = [ds18b20]
-    w1_loc = os.getenv("OSM_LOC")
-    if not w1_loc:
-        w1_loc = "/tmp/osm/"
-    path = os.path.join(w1_loc, "w1_socket")
+    osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    path = os.path.join(osm_loc, "w1_socket")
     w1_sock = w1_server_t(path, devs)
     w1_sock.run_forever()
     return 0

@@ -8,21 +8,29 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stdlib.h>
 
-
-#define I2C_SERVER_LOC                          "/tmp/osm/i2c_socket"
+#define I2C_SERVER_NAME                          "i2c_socket"
 
 #define BUF_SIZ                                 64
 
 
 static int _socketfd;
 
+static char* _get_file_location(void)
+{
+    char * loc = getenv("OSM_LOC");
+    if (!loc)
+        return "/tmp/osm/";
+    return loc;
+}
+
 
 static bool _connect(void)
 {
     struct sockaddr_un addr;
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, I2C_SERVER_LOC, sizeof(addr.sun_path));
+    snprintf(addr.sun_path, sizeof(addr.sun_path), "%s/%s", _get_file_location(), I2C_SERVER_NAME);
     _socketfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (connect(_socketfd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
     {

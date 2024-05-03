@@ -374,6 +374,7 @@ static void _linux_remove_symlink(char name[LINUX_PTY_NAME_SIZE])
     char* file_loc = ret_static_file_location();
     unsigned len = strnlen(file_loc, sizeof(pty_buf_t) -1);
     strncpy(buf, file_loc, len + 1);
+    strncat(buf, "/", 2);
     strncat(buf, name, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     strncat(buf, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     if (remove(buf))
@@ -428,7 +429,7 @@ static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd,
     pty_buf_t pty_loc;
     unsigned leng = strnlen(file_loc, sizeof(pty_buf_t) -1);
     strncpy(pty_loc, file_loc, leng + 1);
-
+    strncat(pty_loc, "/", 2);
     strncat(pty_loc, name, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
     strncat(pty_loc, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t)-strnlen(pty_loc, sizeof(pty_buf_t)));
     _linux_pty_symlink(*slave_fd, pty_loc);
@@ -1443,9 +1444,11 @@ void platform_reset_sys(void)
         linux_error("Could not re-exec firmware");
 }
 
-char concat_osm_location(char* new_loc, int loc_len, char* global)
+char concat_osm_location(char* new_loc, unsigned loc_len, char* global)
 {
-    unsigned len = snprintf(new_loc, loc_len - 1, "%s%s", ret_static_file_location(), global);
+    unsigned len = snprintf(new_loc, loc_len - 1, "%s/%s", ret_static_file_location(), global);
+    if (len > loc_len)
+        len = loc_len-1;
     new_loc[len] = '\0';
     return len;
 }

@@ -33,8 +33,10 @@ class comms_dev_t(basetypes.pty_dev_t):
 def main():
 
     import argparse
-
-    DEFAULT_VIRTUAL_COMMS_PATH = "/tmp/osm/UART_COMMS_slave"
+    osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    DEFAULT_VIRTUAL_COMMS_PATH = os.path.join(osm_loc, "UART_COMMS_slave")
     DEFAULT_PROTOCOL_PATH      = "%s/../../lorawan_protocol/debug.js"% os.path.dirname(__file__)
 
     def get_args():

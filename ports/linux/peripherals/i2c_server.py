@@ -151,12 +151,10 @@ def main():
     devs = {veml_dev.addr : veml_dev,
             htu_dev.addr  : htu_dev,
             sen54_dev.addr : sen54_dev}
-    if not os.path.exists("/tmp/osm"):
-        os.mkdir("/tmp/osm")
-    i2c_loc = os.getenv("OSM_LOC")
-    if not i2c_loc:
-        i2c_loc = "/tmp/osm/"
-    path = os.path.join(i2c_loc, "i2c_socket")
+    osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    path = os.path.join(osm_loc, "i2c_socket")
     i2c_sock = i2c_server_t(path, devs)
     i2c_sock.run_forever()
     return 0

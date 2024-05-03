@@ -36,7 +36,11 @@ class i2c_client_t(object):
 
 
 def main():
-    sock_loc = "/tmp/osm/i2c_socket"
+
+    osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    sock_loc = os.path.join(osm_loc, "i2c_socket")
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     client.connect(sock_loc)
     client.send(b"10:1[00]:2")

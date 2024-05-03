@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define LINUX_FILE_LOC          "/tmp/osm/"
-
 #define LINUX_PTY_NAME_STR_SIZE 32
 #define LINUX_PTY_NAME_SIZE     (LINUX_PTY_NAME_STR_SIZE+1)
 #define LOCATION_LEN 100
@@ -43,6 +41,6 @@ void linux_error(char* fmt, ...);
 void linux_error2(int error, char* fmt, ...);
 
 char* ret_static_file_location(void);
-char concat_osm_location(char* new_loc, int loc_len, char* global);
+char concat_osm_location(char* new_loc, unsigned loc_len, char* global);
 
 int64_t linux_get_current_us(void);

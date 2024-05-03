@@ -765,7 +765,10 @@ def run_dependent(tty_path):
 def main():
     import argparse
 
-    osm_dir = os.environ.get("OSM_LOC", "/tmp/osm")
+    osm_loc = os.environ.get("OSM_LOC", "/tmp/osm")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    DEFAULT_VIRTUAL_COMMS_PATH = os.path.join(osm_loc, "UART_COMMS_slave")
 
     is_debug = os.environ.get("DEBUG")
 
@@ -780,19 +783,15 @@ def main():
     def get_args():
         parser = argparse.ArgumentParser(description='Fake AT Wifi Module.' )
         parser.add_argument('-s', '--standalone', help="If this should spin up its own pseudoterminal or use an existing one", action='store_true')
-        parser.add_argument('pseudoterminal', metavar='PTY', type=str, nargs='?', help='The pseudoterminal for the fake AT wifi module', default=None)
+        parser.add_argument('pseudoterminal', metavar='PTY', type=str, nargs='?', help='The pseudoterminal for the fake AT wifi module', default=DEFAULT_VIRTUAL_COMMS_PATH)
         return parser.parse_args()
 
     args = get_args()
 
-    pseudoterminal = args.pseudoterminal
-    if not pseudoterminal:
-        pseudoterminal = os.path.join(osm_dir, "UART_COMMS_slave")
-
     if args.standalone:
-        return run_standalone(pseudoterminal)
+        return run_standalone(args.pseudoterminal)
     else:
-        return run_dependent(pseudoterminal)
+        return run_dependent(args.pseudoterminal)
 
 if __name__ == '__main__':
     sys.exit(main())
