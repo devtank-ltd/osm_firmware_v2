@@ -335,14 +335,8 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
             return
         self.reply_ok()
 
-    def publish(self, args):
-        arg_list = args.split(b",")
-        if len(arg_list) < 4:
-            self.reply_param_error()
-            return
-        _, topic, *data, _, _ = arg_list
-        data = b",".join(data)
-        if not self.device.mqtt.publish(topic.decode(), data.decode()):
+    def publish(self, topic, payload):
+        if not self.device.mqtt.publish(topic, payload):
             self.reply_state_error()
             return
         self.reply_ok()
@@ -384,8 +378,8 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         self.reply_ok()
         self.reply_raw(b">")
         logger.info("START READ")
-        msg = self.device.read_blocking(length, timeout=1)
-        """ Do MQTT publish """
+        payload = self.device.read_blocking(length, timeout=1)
+        self.device.mqtt.publish(topic.decode(), payload)
         self.reply(b"+MQTTPUB:OK")
 
 
@@ -577,6 +571,7 @@ class at_wifi_mqtt_t(object):
         if not self._connected:
             return False
         logger.info(f"PUBLISH {topic}#{msg}")
+        self.client.publish(topic, msg)
         return True
 
     def subscribe(self, topic, timeout=0.5):
