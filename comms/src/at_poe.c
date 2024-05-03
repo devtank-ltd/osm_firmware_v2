@@ -318,8 +318,15 @@ static void _at_poe_sleep(void)
 static void _at_poe_do_mqtt_user_conf(void)
 {
     at_esp_cmd_t* cmd = at_mqtt_get_mqtt_user_cfg();
-    _at_poe_printf(cmd->str);
-    _at_poe_ctx.state = AT_POE_STATE_MQTT_WAIT_USR_CONF;
+    if (!cmd)
+    {
+        comms_debug("Failed to get MQTT user config");
+    }
+    else
+    {
+        _at_poe_printf(cmd->str);
+        _at_poe_ctx.state = AT_POE_STATE_MQTT_WAIT_USR_CONF;
+    }
 }
 
 
@@ -551,30 +558,6 @@ static void _at_poe_retry_command(void)
 }
 
 
-static bool _at_poe_parse_mqtt_conn(char* msg, unsigned len)
-{
-    char* p = msg;
-    char* np;
-    uint8_t link_id = strtoul(p, &np, 10);
-    (void)link_id;
-    if (p == np)
-    {
-        return false;
-    }
-    if (np[0] != ',')
-    {
-        return false;
-    }
-    p = np + 1;
-    uint8_t conn = strtoul(p, &np, 10);
-    if (p == np)
-    {
-        return false;
-    }
-    return conn == AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC;
-}
-
-
 static void _at_poe_process_state_timedout_wait_mqtt_state(char* msg, unsigned len)
 {
     const char mqtt_conn_msg[] = "+MQTTCONN:";
@@ -583,7 +566,7 @@ static void _at_poe_process_state_timedout_wait_mqtt_state(char* msg, unsigned l
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        if (_at_poe_parse_mqtt_conn(conn_msg, conn_msg_len))
+        if (at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len))
         {
             _at_poe_retry_command();
         }
