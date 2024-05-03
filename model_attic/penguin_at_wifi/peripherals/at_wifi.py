@@ -127,6 +127,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
                                         base_at_commands_t.SET:         self.connect_info,
                                         base_at_commands_t.EXECUTE:     self.connect},      # Connect to an AP
             b"AT+CWQAP"             : { base_at_commands_t.EXECUTE:     self.disconnect},   # Disconnect from an AP
+            b"AT+SYSTIMESTAMP"      : { base_at_commands_t.QUERY:       self.systime },     # Get current time
         }
         super().__init__(device, command_controller, commands)
 
@@ -224,6 +225,11 @@ class at_wifi_at_commands_t(base_at_commands_t):
             return
         self.device.wifi_connect(False)
         self.reply_ok()
+
+    def systime(self, args):
+        self.reply(f"+SYSTIMESTAMP:{int(time.time())}".encode())
+        self.reply_ok()
+
 
 
 class at_wifi_cips_at_commands_t(base_at_commands_t):
