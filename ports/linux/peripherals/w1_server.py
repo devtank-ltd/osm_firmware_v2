@@ -111,7 +111,7 @@ def main():
 
     ds18b20 = ds18b20_t(args.temperature)
     devs    = [ds18b20]
-    w1_loc = os.getenv("LOC")
+    w1_loc = os.getenv("OSM_LOC")
     if not w1_loc:
         w1_loc = "/tmp/osm/"
     path = os.path.join(w1_loc, "w1_socket")

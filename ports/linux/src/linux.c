@@ -1298,7 +1298,7 @@ void* thread_proc(void* vargp)
 
 char* ret_static_file_location(void)
 {
-    char * loc = getenv("LOC");
+    char * loc = getenv("OSM_LOC");
     if (!loc)
         return "/tmp/osm/";
     return loc;

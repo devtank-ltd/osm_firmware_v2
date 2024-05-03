@@ -125,7 +125,7 @@ From fake device client:
     }
 }
 """
-loc = os.getenv("LOC")
+loc = os.getenv("OSM_LOC")
 if not loc:
     loc = "/tmp/osm/"
 DEFAULT_COMMAND_PORT    = f"{loc}command_socket"

@@ -58,7 +58,7 @@ class hpm_dev_t(basetypes.pty_dev_t):
 
 def main():
     import argparse
-    hpm_loc = os.getenv("LOC")
+    hpm_loc = os.getenv("OSM_LOC")
     if not hpm_loc:
         hpm_loc = "/tmp/osm/"
     DEFAULT_VIRTUAL_HPM_PATH = os.path.join(hpm_loc, "UART_HPM_slave")

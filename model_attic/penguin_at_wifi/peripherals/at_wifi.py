@@ -765,7 +765,7 @@ def run_dependent(tty_path):
 def main():
     import argparse
 
-    osm_dir = os.environ.get("LOC", "/tmp/osm")
+    osm_dir = os.environ.get("OSM_LOC", "/tmp/osm")
 
     is_debug = os.environ.get("DEBUG")
 

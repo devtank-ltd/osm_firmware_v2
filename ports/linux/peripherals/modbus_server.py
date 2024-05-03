@@ -112,7 +112,7 @@ def main(args):
     if len(args) > 1:
         dev = args[1]
     else:
-        mb_loc = os.getenv("LOC")
+        mb_loc = os.getenv("OSM_LOC")
         if not mb_loc:
             mb_loc = "/tmp/osm/"
         dev = os.path.join(mb_loc, "UART_EXT_slave")
