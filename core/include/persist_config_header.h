@@ -9,6 +9,8 @@
 
 
 #define MODEL_NAME_LEN                      16
+#define HUMAN_NAME_LEN                      15
+#define HUMAN_NAME_LEN_NULLED               (HUMAN_NAME_LEN + 1)
 
 
 typedef struct
@@ -24,6 +26,9 @@ typedef struct
     /* 16 byte boundary ---- */
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
     uint8_t                 ___[16-(SERIAL_NUM_LEN_NULLED%16)];
+    /* 16 byte boundary ---- */
+    char                    human_name[HUMAN_NAME_LEN_NULLED];
+    uint8_t                 ____[16-(HUMAN_NAME_LEN_NULLED%16)];
     /* 16 byte boundary ---- */
     persist_model_config_t  model_config;
     /* 16 byte boundary ---- */

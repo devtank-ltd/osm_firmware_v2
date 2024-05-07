@@ -68,19 +68,36 @@ static command_response_t _cmd_timer_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
+static bool _cmd_get_set_str(const char* name, char* mem, unsigned mem_len, char* arg, cmd_ctx_t * ctx)
+{
+    bool ret = false;
+    if (name && mem && arg)
+    {
+        uint8_t len = strnlen(arg, mem_len);
+        if (len == 0)
+            goto print_exit;
+        cmd_ctx_out(ctx,"Updating %s.", name);
+        strncpy(mem, arg, len);
+        mem[len] = 0;
+print_exit:
+        cmd_ctx_out(ctx,"%s: %s", name, mem);
+        ret = true;
+    }
+    return ret;
+}
+
+
 static command_response_t _cmd_serial_num_cb(char* args, cmd_ctx_t * ctx)
 {
-    char* serial_num = persist_get_serial_number();
-    char* p = skip_space(args);
-    uint8_t len = strnlen(p, SERIAL_NUM_LEN);
-    if (len == 0)
-        goto print_exit;
-    cmd_ctx_out(ctx,"Updating serial number.");
-    strncpy(serial_num, p, len);
-    serial_num[len] = 0;
-print_exit:
-    cmd_ctx_out(ctx,"Serial Number: %s", serial_num);
-    return COMMAND_RESP_OK;
+    return _cmd_get_set_str("Serial Number", persist_get_serial_number(), SERIAL_NUM_LEN, skip_space(args), ctx) ?
+        COMMAND_RESP_OK : COMMAND_RESP_ERR;
+}
+
+
+static command_response_t _cmd_human_name_cb(char* args, cmd_ctx_t * ctx)
+{
+    return _cmd_get_set_str("Name", persist_get_human_name(), HUMAN_NAME_LEN, skip_space(args), ctx) ?
+        COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
@@ -142,6 +159,7 @@ void cmds_init(void)
         { "debug",        "Set hex debug mask",       _cmd_debug_cb                  , false , NULL},
         { "timer",        "Test usecs timer",         _cmd_timer_cb                  , false , NULL},
         { "serial_num",   "Set/get serial number",    _cmd_serial_num_cb             , true  , NULL},
+        { "name",         "Set/get serial number",    _cmd_human_name_cb             , false , NULL},
     };
 
     struct cmd_link_t* tail = &cmds[ARRAY_SIZE(cmds)-1];
