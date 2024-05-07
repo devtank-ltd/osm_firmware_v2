@@ -11,11 +11,6 @@
 #define comms_name          at_poe
 #endif //comms_name
 
-#define AT_POE_MQTT_ADDR_MAX_LEN               63
-#define AT_POE_MQTT_USER_MAX_LEN               63
-#define AT_POE_MQTT_PWD_MAX_LEN                63
-#define AT_POE_MQTT_CA_MAX_LEN                 63
-
 
 typedef struct
 {

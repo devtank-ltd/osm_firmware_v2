@@ -46,3 +46,4 @@ void        at_esp_config_get_set_str(const char* name, char* dest, unsigned max
 bool        at_esp_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx);
 void        at_esp_boot(char* args, cmd_ctx_t * ctx);
 void        at_esp_reset(char* args, cmd_ctx_t * ctx);
+command_response_t at_esp_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);

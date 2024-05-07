@@ -260,7 +260,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_conn(void)
             AT_ESP_MAX_CMD_LEN,
             "AT+MQTTCONN=%u,\"%.*s\",%"PRIu16",%u",
             AT_MQTT_LINK_ID,
-            AT_POE_MQTT_ADDR_MAX_LEN, _at_mqtt_ctx->mem->addr,
+            AT_MQTT_ADDR_MAX_LEN, _at_mqtt_ctx->mem->addr,
             _at_mqtt_ctx->mem->port,
             AT_MQTT_RECONNECT
             );
@@ -455,7 +455,7 @@ static command_response_t _at_mqtt_config_ca_cb(char* args, cmd_ctx_t * ctx)
     at_esp_config_get_set_str(
         "CA",
         _at_mqtt_ctx->mem->ca,
-        AT_POE_MQTT_CA_MAX_LEN,
+        AT_MQTT_CA_MAX_LEN,
         args, ctx);
     return COMMAND_RESP_OK;
 }
@@ -511,7 +511,7 @@ void at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
 
 void at_mqtt_config_init(at_mqtt_config_t* conf)
 {
-    memset(conf, 0, sizeof(at_poe_config_t));
+    memset(conf, 0, sizeof(at_mqtt_config_t));
     conf->scheme = AT_MQTT_SCHEME_WSS_NO_CERT;
     conf->port = 443;
 }

@@ -742,38 +742,9 @@ void at_poe_loop_iteration(void)
 }
 
 
-static command_response_t _at_poe_config_setup_str2(char * str, cmd_ctx_t * ctx)
-{
-    command_response_t r = COMMAND_RESP_ERR;
-    if (str[0])
-    {
-        char * next = skip_to_space(str);
-        if (next[0])
-        {
-            char * t = next;
-            next = skip_space(next);
-            *t = 0;
-        }
-        for(struct cmd_link_t * cmd = _at_poe_config_cmds; cmd; cmd = cmd->next)
-        {
-            if (!strcmp(cmd->key, str) && cmd->cb)
-                return cmd->cb(next, ctx);
-        }
-    }
-    else r = COMMAND_RESP_OK;
-
-    for(struct cmd_link_t * cmd = _at_poe_config_cmds; cmd; cmd = cmd->next)
-    {
-        if (!cmd->hidden)
-            cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
-    }
-    return r;
-}
-
-
 void at_poe_config_setup_str(char * str, cmd_ctx_t * ctx)
 {
-    _at_poe_config_setup_str2(str, ctx);
+    at_esp_config_setup_str(_at_poe_config_cmds, str, ctx);
 }
 
 
@@ -792,7 +763,7 @@ static command_response_t _at_poe_send_cb(char * args, cmd_ctx_t * ctx)
 
 command_response_t at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
-    bool ret = _at_poe_config_setup_str2(skip_space(args), ctx);
+    bool ret = at_esp_config_setup_str(_at_poe_config_cmds, skip_space(args), ctx);
     if (ret == COMMAND_RESP_NONE && _at_poe_mem_is_valid())
     {
         _at_poe_start();

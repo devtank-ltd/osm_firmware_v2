@@ -125,3 +125,32 @@ void at_esp_reset(char* args, cmd_ctx_t * ctx)
     platform_gpio_set(&_at_esp_ctx->reset_pin, is_out);
     cmd_ctx_out(ctx,"RESET PIN: %u", is_out ? 1U : 0U);
 }
+
+
+command_response_t at_esp_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx)
+{
+    command_response_t r = COMMAND_RESP_ERR;
+    if (str[0])
+    {
+        char * next = skip_to_space(str);
+        if (next[0])
+        {
+            char * t = next;
+            next = skip_space(next);
+            *t = 0;
+        }
+        for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
+        {
+            if (!strcmp(cmd->key, str) && cmd->cb)
+                return cmd->cb(next, ctx);
+        }
+    }
+    else r = COMMAND_RESP_OK;
+
+    for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
+    {
+        if (!cmd->hidden)
+            cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
+    }
+    return r;
+}
