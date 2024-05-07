@@ -53,12 +53,12 @@ bool at_mqtt_mem_is_valid(void)
 }
 
 
-at_esp_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len)
+at_base_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len)
 {
-    at_esp_cmd_t* ret = NULL;
+    at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
         char full_topic[AT_MQTT_TOPIC_LEN + 1];
         unsigned full_topic_len = snprintf(
             full_topic,
@@ -70,7 +70,7 @@ at_esp_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned me
         full_topic[full_topic_len] = 0;
         ret->len = snprintf(
             ret->str,
-            AT_ESP_MAX_CMD_LEN,
+            AT_BASE_MAX_CMD_LEN,
             "AT+MQTTPUBRAW=%u,\"%.*s\",%u,%u,%u",
             AT_MQTT_LINK_ID,
             full_topic_len, full_topic,
@@ -95,7 +95,7 @@ void at_mqtt_init(at_mqtt_ctx_t* ctx)
     if (ctx)
     {
         _at_mqtt_ctx = ctx;
-        at_esp_init(&ctx->at_esp_ctx);
+        at_base_init(&ctx->at_base_ctx);
         unsigned topic_header_len = snprintf(
             _at_mqtt_ctx->topic_header,
             AT_MQTT_TOPIC_LEN,
@@ -112,15 +112,15 @@ void at_mqtt_init(at_mqtt_ctx_t* ctx)
 }
 
 
-at_esp_cmd_t* at_mqtt_get_ntp_cfg(void)
+at_base_cmd_t* at_mqtt_get_ntp_cfg(void)
 {
-    at_esp_cmd_t* ret = NULL;
+    at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
-            AT_ESP_MAX_CMD_LEN,
+            AT_BASE_MAX_CMD_LEN,
             "AT+CIPSNTPCFG=1,0,\"%s\",\"%s\",\"%s\"",
             AT_MQTT_SNTP_SERVER1,
             AT_MQTT_SNTP_SERVER2,
@@ -132,12 +132,12 @@ at_esp_cmd_t* at_mqtt_get_ntp_cfg(void)
 }
 
 
-at_esp_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
+at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
 {
-    at_esp_cmd_t* ret = NULL;
+    at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
         enum at_mqtt_scheme_t mqtt_scheme = _at_mqtt_ctx->mem->scheme;
         if (!_at_mqtt_ctx->mem->scheme || AT_MQTT_SCHEME_COUNT <= _at_mqtt_ctx->mem->scheme)
         {
@@ -147,7 +147,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
 
         ret->len = snprintf(
             ret->str,
-            AT_ESP_MAX_CMD_LEN,
+            AT_BASE_MAX_CMD_LEN,
             "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
             AT_MQTT_LINK_ID,
             (unsigned)mqtt_scheme,
@@ -163,15 +163,15 @@ at_esp_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
 }
 
 
-at_esp_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
+at_base_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
 {
-    at_esp_cmd_t* ret = NULL;
+    at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
-            AT_ESP_MAX_CMD_LEN,
+            AT_BASE_MAX_CMD_LEN,
             "AT+MQTTSUB=%u,\"%.*s/"AT_MQTT_TOPIC_COMMAND"\",%u",
             AT_MQTT_LINK_ID,
             AT_MQTT_TOPIC_LEN, _at_mqtt_ctx->topic_header,
@@ -183,15 +183,15 @@ at_esp_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
 }
 
 
-at_esp_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
+at_base_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
 {
-    at_esp_cmd_t* ret = NULL;
+    at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
-            AT_ESP_MAX_CMD_LEN,
+            AT_BASE_MAX_CMD_LEN,
             "AT+MQTTCONNCFG=%u,%u,%u,\"%.*s/%s\",\"%s\",%u,%u",
             AT_MQTT_LINK_ID,
             AT_MQTT_KEEP_ALIVE,
@@ -246,15 +246,15 @@ bool at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned le
 }
 
 
-at_esp_cmd_t* at_mqtt_get_mqtt_conn(void)
+at_base_cmd_t* at_mqtt_get_mqtt_conn(void)
 {
-    at_esp_cmd_t* ret = NULL;
+    at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
     {
-        ret = &_at_mqtt_ctx->at_esp_ctx.cmd_line;
+        ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
         ret->len = snprintf(
             ret->str,
-            AT_ESP_MAX_CMD_LEN,
+            AT_BASE_MAX_CMD_LEN,
             "AT+MQTTCONN=%u,\"%.*s\",%"PRIu16",%u",
             AT_MQTT_LINK_ID,
             AT_MQTT_ADDR_MAX_LEN, _at_mqtt_ctx->mem->addr,
@@ -407,7 +407,7 @@ bool at_mqtt_parse_mqtt_conn(char* msg, unsigned len)
 
 static command_response_t _at_mqtt_config_addr_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_config_get_set_str(
+    at_base_config_get_set_str(
         "ADDR",
         _at_mqtt_ctx->mem->addr,
         AT_MQTT_ADDR_MAX_LEN,
@@ -418,7 +418,7 @@ static command_response_t _at_mqtt_config_addr_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_user_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_config_get_set_str(
+    at_base_config_get_set_str(
         "USER",
         _at_mqtt_ctx->mem->user,
         AT_MQTT_USER_MAX_LEN,
@@ -429,7 +429,7 @@ static command_response_t _at_mqtt_config_user_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_pwd_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_config_get_set_str(
+    at_base_config_get_set_str(
         "PWD",
         _at_mqtt_ctx->mem->pwd,
         AT_MQTT_PWD_MAX_LEN,
@@ -440,7 +440,7 @@ static command_response_t _at_mqtt_config_pwd_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
 {
-    return at_esp_config_get_set_u16(
+    return at_base_config_get_set_u16(
         "SCHEME",
         &_at_mqtt_ctx->mem->scheme,
         args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
@@ -449,7 +449,7 @@ static command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_ca_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_config_get_set_str(
+    at_base_config_get_set_str(
         "CA",
         _at_mqtt_ctx->mem->ca,
         AT_MQTT_CA_MAX_LEN,
@@ -460,7 +460,7 @@ static command_response_t _at_mqtt_config_ca_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_port_cb(char* args, cmd_ctx_t * ctx)
 {
-    return at_esp_config_get_set_u16(
+    return at_base_config_get_set_u16(
         "PORT",
         &_at_mqtt_ctx->mem->port,
         args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;

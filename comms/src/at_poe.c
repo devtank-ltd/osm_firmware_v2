@@ -57,7 +57,7 @@ static struct
 {
     enum at_poe_states_t    state;
     enum at_poe_states_t    before_timedout_state;
-    char                    before_timedout_last_cmd[AT_ESP_MAX_CMD_LEN];
+    char                    before_timedout_last_cmd[AT_BASE_MAX_CMD_LEN];
     at_poe_config_t*        mem;
     uint32_t                ip;
     at_mqtt_ctx_t           mqtt_ctx;
@@ -72,7 +72,7 @@ static struct
         .mem                    = NULL,
         .topic_header               = "osm/unknown",
         .publish_packet         = {.message = {0}, .len = 0},
-        .at_esp_ctx             =
+        .at_base_ctx             =
         {
             .last_sent          = 0,
             .last_recv          = 0,
@@ -124,17 +124,17 @@ static bool _at_poe_mem_is_valid(void)
 static unsigned _at_poe_printf(const char* fmt, ...)
 {
     comms_debug("Command when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
-    char* buf = _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_cmd.str;
+    char* buf = _at_poe_ctx.mqtt_ctx.at_base_ctx.last_cmd.str;
     va_list args;
     va_start(args, fmt);
-    int len = vsnprintf(buf, AT_ESP_MAX_CMD_LEN - 2, fmt, args);
+    int len = vsnprintf(buf, AT_BASE_MAX_CMD_LEN - 2, fmt, args);
     va_end(args);
     buf[len] = 0;
-    _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_sent = get_since_boot_ms();
+    _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent = get_since_boot_ms();
     comms_debug(" << %s", buf);
     buf[len] = '\r';
     buf[len+1] = 0;
-    len = at_esp_raw_send(buf, len+1);
+    len = at_base_raw_send(buf, len+1);
     return len;
 }
 
@@ -157,7 +157,7 @@ static void _at_poe_start(void)
 static void _at_poe_reset(void)
 {
     comms_debug("AT POE reset");
-    _at_poe_ctx.mqtt_ctx.at_esp_ctx.off_since = get_since_boot_ms();
+    _at_poe_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
     _at_poe_printf("AT+RESTORE");
     _at_poe_ctx.state = AT_POE_STATE_OFF;
 }
@@ -171,7 +171,7 @@ static unsigned _at_poe_mqtt_publish(const char* topic, char* message, unsigned 
         case AT_POE_STATE_IDLE:
         {
             message_len = message_len < COMMS_DEFAULT_MTU ? message_len : COMMS_DEFAULT_MTU;
-            at_esp_cmd_t* cmd = at_mqtt_publish_prep(topic, message, message_len);
+            at_base_cmd_t* cmd = at_mqtt_publish_prep(topic, message, message_len);
             if (!cmd)
             {
                 comms_debug("Failed to prep MQTT");
@@ -268,9 +268,9 @@ static void _at_poe_process_state_off(char* msg, unsigned len)
 
 static void _at_poe_process_state_disable_echo(char* msg, unsigned len)
 {
-    if (at_esp_is_ok(msg, len))
+    if (at_base_is_ok(msg, len))
     {
-        at_esp_cmd_t* cmd = at_mqtt_get_ntp_cfg();
+        at_base_cmd_t* cmd = at_mqtt_get_ntp_cfg();
         if (!cmd)
         {
             comms_debug("Failed to get the NTP config");
@@ -281,7 +281,7 @@ static void _at_poe_process_state_disable_echo(char* msg, unsigned len)
             _at_poe_ctx.state = AT_POE_STATE_SNTP_WAIT_SET;
         }
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -296,7 +296,7 @@ static void _at_poe_process_state_sntp(char* msg, unsigned len)
         _at_poe_printf("AT+MQTTCONN?");
         _at_poe_ctx.state = AT_POE_STATE_MQTT_IS_CONNECTED;
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -317,7 +317,7 @@ static void _at_poe_sleep(void)
 
 static void _at_poe_do_mqtt_user_conf(void)
 {
-    at_esp_cmd_t* cmd = at_mqtt_get_mqtt_user_cfg();
+    at_base_cmd_t* cmd = at_mqtt_get_mqtt_user_cfg();
     if (!cmd)
     {
         comms_debug("Failed to get MQTT user config");
@@ -344,7 +344,7 @@ static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
             is_conn = true;
         }
     }
-    else if (at_esp_is_ok(msg, len))
+    else if (at_base_is_ok(msg, len))
     {
         if (is_conn)
         {
@@ -357,7 +357,7 @@ static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
             _at_poe_do_mqtt_user_conf();
         }
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -366,7 +366,7 @@ static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
 
 static void _at_poe_do_mqtt_sub(void)
 {
-    at_esp_cmd_t* cmd = at_mqtt_get_mqtt_sub_cfg();
+    at_base_cmd_t* cmd = at_mqtt_get_mqtt_sub_cfg();
     if (!cmd)
     {
         comms_debug("Failed to get MQTT sub config.");
@@ -381,9 +381,9 @@ static void _at_poe_do_mqtt_sub(void)
 
 static void _at_poe_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
 {
-    if (at_esp_is_ok(msg, len))
+    if (at_base_is_ok(msg, len))
     {
-        at_esp_cmd_t* cmd = at_mqtt_get_mqtt_conn_cfg();
+        at_base_cmd_t* cmd = at_mqtt_get_mqtt_conn_cfg();
         if (!cmd)
         {
             comms_debug("Failed to get MQTT connection config.");
@@ -394,7 +394,7 @@ static void _at_poe_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
             _at_poe_ctx.state = AT_POE_STATE_MQTT_WAIT_CONF;
         }
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -415,7 +415,7 @@ static void _at_poe_process_state_mqtt_is_subscribed(char* msg, unsigned len)
             is_subbed = true;
         }
     }
-    else if (at_esp_is_ok(msg, len))
+    else if (at_base_is_ok(msg, len))
     {
         if (is_subbed)
         {
@@ -427,7 +427,7 @@ static void _at_poe_process_state_mqtt_is_subscribed(char* msg, unsigned len)
             _at_poe_do_mqtt_sub();
         }
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -436,11 +436,11 @@ static void _at_poe_process_state_mqtt_is_subscribed(char* msg, unsigned len)
 
 static void _at_poe_process_state_mqtt_wait_conf(char* msg, unsigned len)
 {
-    if (at_esp_is_ok(msg, len))
+    if (at_base_is_ok(msg, len))
     {
-        at_esp_sleep();
+        at_base_sleep();
 
-        at_esp_cmd_t* cmd = at_mqtt_get_mqtt_conn();
+        at_base_cmd_t* cmd = at_mqtt_get_mqtt_conn();
         if (!cmd)
         {
             comms_debug("Failed to get MQTT connection info.");
@@ -452,7 +452,7 @@ static void _at_poe_process_state_mqtt_wait_conf(char* msg, unsigned len)
         }
 
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -461,12 +461,12 @@ static void _at_poe_process_state_mqtt_wait_conf(char* msg, unsigned len)
 
 static void _at_poe_process_state_mqtt_connecting(char* msg, unsigned len)
 {
-    if (at_esp_is_ok(msg, len))
+    if (at_base_is_ok(msg, len))
     {
         _at_poe_sleep();
         _at_poe_do_mqtt_sub();
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -476,7 +476,7 @@ static void _at_poe_process_state_mqtt_connecting(char* msg, unsigned len)
 static void _at_poe_process_state_mqtt_wait_sub(char* msg, unsigned len)
 {
     const char already_subscribe_str[] = "ALREADY SUBSCRIBE";
-    if (at_esp_is_ok(msg, len))
+    if (at_base_is_ok(msg, len))
     {
         _at_poe_ctx.state = AT_POE_STATE_IDLE;
     }
@@ -485,7 +485,7 @@ static void _at_poe_process_state_mqtt_wait_sub(char* msg, unsigned len)
         /* Already subscribed, assume everything fine */
         _at_poe_ctx.state = AT_POE_STATE_IDLE;
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -508,15 +508,15 @@ static void _at_poe_process_state_idle(char* msg, unsigned len)
 
 static void _at_poe_process_state_mqtt_wait_pub(char* msg, unsigned len)
 {
-    if (at_esp_is_ok(msg, len))
+    if (at_base_is_ok(msg, len))
     {
         _at_poe_ctx.state = AT_POE_STATE_MQTT_PUBLISHING;
-        at_esp_raw_send(
+        at_base_raw_send(
             _at_poe_ctx.mqtt_ctx.publish_packet.message,
             _at_poe_ctx.mqtt_ctx.publish_packet.len
             );
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
     }
@@ -542,7 +542,7 @@ static void _at_poe_process_state_mqtt_publishing(char* msg, unsigned len)
         comms_debug("Successful send, propagating ACK");
         on_protocol_sent_ack(true);
     }
-    else if (at_esp_is_error(msg, len))
+    else if (at_base_is_error(msg, len))
     {
         comms_debug("Failed send (ERROR), propagating NACK");
         on_protocol_sent_ack(false);
@@ -584,10 +584,10 @@ static void _at_poe_process_state_wait_timestamp(char* msg, unsigned len)
     unsigned sys_ts_msg_len = strlen(sys_ts_msg);
     if (is_str(sys_ts_msg, msg, sys_ts_msg_len))
     {
-        _at_poe_ctx.mqtt_ctx.at_esp_ctx.time.ts_unix = strtoull(&msg[sys_ts_msg_len], NULL, 10);
-        _at_poe_ctx.mqtt_ctx.at_esp_ctx.time.sys = get_since_boot_ms();
+        _at_poe_ctx.mqtt_ctx.at_base_ctx.time.ts_unix = strtoull(&msg[sys_ts_msg_len], NULL, 10);
+        _at_poe_ctx.mqtt_ctx.at_base_ctx.time.sys = get_since_boot_ms();
     }
-    else if (at_esp_is_ok(msg, len))
+    else if (at_base_is_ok(msg, len))
     {
         _at_poe_ctx.state = AT_POE_STATE_IDLE;
     }
@@ -598,7 +598,7 @@ void at_poe_process(char* msg)
 {
     unsigned len = strlen(msg);
 
-    _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_recv = get_since_boot_ms();
+    _at_poe_ctx.mqtt_ctx.at_base_ctx.last_recv = get_since_boot_ms();
 
     comms_debug("Message when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
 
@@ -667,7 +667,7 @@ bool at_poe_get_connected(void)
 
 static void _at_poe_check_mqtt_timeout(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_sent) > AT_POE_TIMEOUT_MS_MQTT)
+    if (since_boot_delta(get_since_boot_ms(), _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_POE_TIMEOUT_MS_MQTT)
     {
         if (_at_poe_ctx.state == AT_POE_STATE_MQTT_PUBLISHING)
         {
@@ -682,7 +682,7 @@ static void _at_poe_check_mqtt_timeout(void)
 
 static void _at_poe_mqtt_fail_connect(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_sent) > AT_POE_MQTT_FAIL_CONNECT_TIMEOUT_MS)
+    if (since_boot_delta(get_since_boot_ms(), _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_POE_MQTT_FAIL_CONNECT_TIMEOUT_MS)
     {
         /* restart MQTT config */
         _at_poe_do_mqtt_user_conf();
@@ -699,10 +699,10 @@ void at_poe_loop_iteration(void)
     {
         case AT_POE_STATE_OFF:
         {
-            uint32_t delta = since_boot_delta(now, _at_poe_ctx.mqtt_ctx.at_esp_ctx.off_since);
+            uint32_t delta = since_boot_delta(now, _at_poe_ctx.mqtt_ctx.at_base_ctx.off_since);
             if (delta > AT_POE_STILL_OFF_TIMEOUT)
             {
-                _at_poe_ctx.mqtt_ctx.at_esp_ctx.off_since = now;
+                _at_poe_ctx.mqtt_ctx.at_base_ctx.off_since = now;
                 _at_poe_start();
             }
             break;
@@ -710,13 +710,13 @@ void at_poe_loop_iteration(void)
         case AT_POE_STATE_DISABLE_ECHO:
             /* fall through */
         case AT_POE_STATE_MQTT_IS_CONNECTED:
-            if (since_boot_delta(now, _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_sent) > AT_POE_TIMEOUT)
+            if (since_boot_delta(now, _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_POE_TIMEOUT)
             {
                 _at_poe_reset();
             }
             break;
         case AT_POE_STATE_SNTP_WAIT_SET:
-            if (since_boot_delta(now, _at_poe_ctx.mqtt_ctx.at_esp_ctx.last_sent) > AT_POE_SNTP_TIMEOUT)
+            if (since_boot_delta(now, _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_POE_SNTP_TIMEOUT)
             {
                 _at_poe_reset();
             }
@@ -744,7 +744,7 @@ void at_poe_loop_iteration(void)
 
 void at_poe_config_setup_str(char * str, cmd_ctx_t * ctx)
 {
-    at_esp_config_setup_str(_at_poe_config_cmds, str, ctx);
+    at_base_config_setup_str(_at_poe_config_cmds, str, ctx);
 }
 
 
@@ -757,13 +757,13 @@ bool at_poe_get_id(char* str, uint8_t len)
 static command_response_t _at_poe_send_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = skip_space(args);
-    return at_esp_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return at_base_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
 command_response_t at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
-    bool ret = at_esp_config_setup_str(_at_poe_config_cmds, skip_space(args), ctx);
+    bool ret = at_base_config_setup_str(_at_poe_config_cmds, skip_space(args), ctx);
     if (ret == COMMAND_RESP_NONE && _at_poe_mem_is_valid())
     {
         _at_poe_start();
@@ -774,11 +774,11 @@ command_response_t at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 
 command_response_t at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,AT_ESP_PRINT_CFG_JSON_HEADER);
+    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
     cmd_ctx_flush(ctx);
     at_mqtt_cmd_j_cfg(ctx);
     cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_ESP_PRINT_CFG_JSON_TAIL);
+    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
     cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;
 }
@@ -800,22 +800,22 @@ command_response_t at_poe_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_poe_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_raw_send(args, strlen(args));
-    at_esp_raw_send("\r\n", 2);
+    at_base_raw_send(args, strlen(args));
+    at_base_raw_send("\r\n", 2);
     return COMMAND_RESP_OK;
 }
 
 
 static command_response_t _at_poe_boot_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_boot(args, ctx);
+    at_base_boot(args, ctx);
     return COMMAND_RESP_OK;
 }
 
 
 static command_response_t _at_poe_reset_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_esp_reset(args, ctx);
+    at_base_reset(args, ctx);
     return COMMAND_RESP_OK;
 }
 
@@ -888,7 +888,7 @@ bool at_poe_get_unix_time(int64_t * ts)
         comms_debug("Timed out");
         return false;
     }
-    at_esp_time_t* time = &_at_poe_ctx.mqtt_ctx.at_esp_ctx.time;
+    at_base_time_t* time = &_at_poe_ctx.mqtt_ctx.at_base_ctx.time;
     if (!time->sys ||
         since_boot_delta(get_since_boot_ms(), time->sys) > AT_POE_TS_TIMEOUT)
     {

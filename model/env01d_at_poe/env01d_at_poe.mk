@@ -22,7 +22,7 @@ env01d_at_poe_SOURCES := \
            $(OSM_DIR)/ports/stm/src/comms_direct.c \
            $(OSM_DIR)/protocols/src/jsonblob.c \
            $(OSM_DIR)/protocols/src/comms_behind.c \
-           $(OSM_DIR)/comms/src/at_esp.c \
+           $(OSM_DIR)/comms/src/at_base.c \
            $(OSM_DIR)/comms/src/at_mqtt.c \
            $(OSM_DIR)/comms/src/at_poe.c \
            $(OSM_DIR)/comms/src/common.c \

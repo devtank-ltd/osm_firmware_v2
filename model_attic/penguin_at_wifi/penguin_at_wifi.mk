@@ -42,7 +42,7 @@ penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/sensors/src/fw.c \
     $(MODEL_DIR)/penguin_at_wifi/model.c \
     $(OSM_DIR)/comms/src/common.c \
-    $(OSM_DIR)/comms/src/at_esp.c \
+    $(OSM_DIR)/comms/src/at_base.c \
     $(OSM_DIR)/comms/src/at_mqtt.c \
     $(OSM_DIR)/comms/src/at_wifi.c
 

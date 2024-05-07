@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#include "at_esp.h"
+#include "at_base.h"
 
 #define COMMS_DEFAULT_MTU                                   (1024 + 128)
 
@@ -77,7 +77,7 @@ typedef struct
 
 typedef struct
 {
-    at_esp_ctx_t        at_esp_ctx;
+    at_base_ctx_t        at_base_ctx;
     at_mqtt_config_t*   mem;
     char                topic_header[AT_MQTT_TOPIC_LEN + 1];
     struct
@@ -91,14 +91,14 @@ typedef struct
 
 
 bool                at_mqtt_mem_is_valid(void);
-at_esp_cmd_t*       at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len);
+at_base_cmd_t*       at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len);
 void                at_mqtt_init(at_mqtt_ctx_t* ctx);
-at_esp_cmd_t*       at_mqtt_get_ntp_cfg(void);
-at_esp_cmd_t*       at_mqtt_get_mqtt_user_cfg(void);
-at_esp_cmd_t*       at_mqtt_get_mqtt_sub_cfg(void);
-at_esp_cmd_t*       at_mqtt_get_mqtt_conn_cfg(void);
+at_base_cmd_t*       at_mqtt_get_ntp_cfg(void);
+at_base_cmd_t*       at_mqtt_get_mqtt_user_cfg(void);
+at_base_cmd_t*       at_mqtt_get_mqtt_sub_cfg(void);
+at_base_cmd_t*       at_mqtt_get_mqtt_conn_cfg(void);
 bool                at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len);
-at_esp_cmd_t*       at_mqtt_get_mqtt_conn(void);
+at_base_cmd_t*       at_mqtt_get_mqtt_conn(void);
 int                 at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen);
 bool                at_mqtt_parse_mqtt_conn(char* msg, unsigned len);
 struct cmd_link_t*  at_mqtt_add_commands(struct cmd_link_t* tail);
