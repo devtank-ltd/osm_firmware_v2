@@ -517,7 +517,7 @@ static void _at_wifi_do_mqtt_sub(void)
     else
     {
         _at_wifi_printf(cmd->str);
-        _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_USR_CONF;
+        _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_SUB;
     }
 }
 
