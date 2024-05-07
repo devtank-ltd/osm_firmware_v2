@@ -57,6 +57,17 @@
 
 #define LINUX_DEFAULT_SOCKET_PORT       10240
 
+#define LINUX_DEFAULT_HW_ID             0x00C0FFEE
+#define LINUX_DEFAULT_RUN_LOCATION      "/tmp/osm/"
+
+/* Environment Variables */
+#define LINUX_ENVVAR_HW_ID                  "OSM_HW_ID"       /* By default uses LINUX_DEFAULT_HW_ID */
+#define LINUX_ENVVAR_RUN_LOCATION           "OSM_LOC"         /* By default uses LINUX_DEFAULT_RUN_LOCATION */
+#define LINUX_ENVVAR_PORT                   "USE_PORT"        /* By default undefined, will use pseudoterminals instead of sockets */
+#define LINUX_ENVVAR_DEBUG                  "DEBUG"           /* By default false, non-verbose */
+#define LINUX_ENVVAR_DEBUG_MASK             "DEBUG_MASK"      /* By default 0x1, non-verbose */
+#define LINUX_ENVVAR_MEASUREMENT_INTERVAL   "MEAS_INTERVAL"   /* By default uses default for MODEL, typically 15m */
+#define LINUX_ENVVAR_AUTO_MEAS              "AUTO_MEAS"       /* By default true, automatic measurements enabled */
 
 static int _linux_socket_port = LINUX_DEFAULT_SOCKET_PORT;
 bool linux_has_reset = false;
@@ -172,14 +183,14 @@ uint32_t platform_get_hw_id(void)
     static uint32_t hw_id = 0;
     if (!hw_id)
     {
-        char * hw_id_str = getenv("OSM_HW_ID");
+        char * hw_id_str = getenv(LINUX_ENVVAR_HW_ID);
         if (hw_id_str)
         {
             if (hw_id_str[0] == '0' && tolower(hw_id_str[1]) == 'x')
                 hw_id_str+=2;
             hw_id = strtoul(hw_id_str, NULL, 16);
         }
-        else hw_id = 0x00C0FFEE;
+        else hw_id = LINUX_DEFAULT_HW_ID;
     }
     return hw_id;
 }
@@ -1299,9 +1310,9 @@ void* thread_proc(void* vargp)
 
 char* ret_static_file_location(void)
 {
-    char * loc = getenv("OSM_LOC");
+    char * loc = getenv(LINUX_ENVVAR_RUN_LOCATION);
     if (!loc)
-        return "/tmp/osm/";
+        return LINUX_DEFAULT_RUN_LOCATION;
     return loc;
 }
 
@@ -1312,13 +1323,13 @@ void platform_init(void)
     if (setvbuf(stdout, NULL, _IOLBF, 1024) < 0)
         fprintf(stderr, "ERROR : %s\n", strerror(errno));
 
-    if (getenv("DEBUG"))
+    if (getenv(LINUX_ENVVAR_DEBUG))
     {
         _linux_in_debug = true;
         linux_port_debug("Enabled Linux Debug");
     }
 
-    char* port = getenv("USE_PORT");
+    char* port = getenv(LINUX_ENVVAR_PORT);
     if (port)
     {
         int l_port = strtol(port, NULL, 10);
@@ -1361,7 +1372,7 @@ void platform_init(void)
 
 void platform_start(void)
 {
-    char * overloaded_log_debug_mask = getenv("DEBUG_MASK");
+    char * overloaded_log_debug_mask = getenv(LINUX_ENVVAR_DEBUG_MASK);
     if (overloaded_log_debug_mask)
     {
         linux_port_debug("New debug mask: %s", overloaded_log_debug_mask);
@@ -1369,7 +1380,7 @@ void platform_start(void)
         persist_set_log_debug_mask(log_debug_mask);
         log_debug_mask = log_debug_mask;
     }
-    char * meas_interval = getenv("MEAS_INTERVAL");
+    char * meas_interval = getenv(LINUX_ENVVAR_MEASUREMENT_INTERVAL);
     if (meas_interval)
     {
         unsigned mins = strtoul(meas_interval, NULL, 10);
@@ -1377,7 +1388,7 @@ void platform_start(void)
         persist_data.model_config.mins_interval = mins * 1000;
         transmit_interval = mins;
     }
-    char * auto_meas = getenv("AUTO_MEAS");
+    char * auto_meas = getenv(LINUX_ENVVAR_AUTO_MEAS);
     if (auto_meas)
     {
         unsigned auto_meas_int = strtoul(auto_meas, NULL, 10);
