@@ -7,7 +7,8 @@
 #include "pinmap.h"
 #include "esp_comms.h"
 
-#define PERSIST_VERSION             3
+#define PERSIST_MODEL_VERSION       3
+#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 #define FLASH_PAGE_SIZE             2048
 

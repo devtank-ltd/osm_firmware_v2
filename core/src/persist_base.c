@@ -24,6 +24,12 @@ char*    persist_get_model(void)
 }
 
 
+char* persist_get_human_name(void)
+{
+    return persist_data.human_name;
+}
+
+
 void persist_set_log_debug_mask(uint32_t mask)
 {
     persist_data.log_debug_mask = mask | DEBUG_SYS;

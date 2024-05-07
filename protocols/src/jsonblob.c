@@ -9,6 +9,7 @@
 #include "log.h"
 #include "measurements.h"
 #include "comms.h"
+#include "persist_config.h"
 
 
 #define JSON_CLOSE_SIZE 2
@@ -161,5 +162,5 @@ bool protocol_init(void)
 
     _json_buf_pos = 0;
 
-    return _protocol_append("{\"UNIX\":%"PRIi64",\"VALUES\":{", ts);
+    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, HUMAN_NAME_LEN, persist_get_human_name());
 }

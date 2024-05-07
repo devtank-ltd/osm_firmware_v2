@@ -6,6 +6,10 @@
 #include "persist_config_header.h"
 
 
+#define PERSIST_BASE_VERSION           4
+#define PERSIST_VERSION_SET(_x)        ((PERSIST_BASE_VERSION << 8) | _x)
+
+
 extern persist_storage_t               persist_data __attribute__((aligned (16)));
 extern persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));
 
@@ -19,6 +23,7 @@ extern void     persist_set_log_debug_mask(uint32_t mask);
 extern uint32_t persist_get_log_debug_mask(void);
 extern char*    persist_get_serial_number(void);
 extern char*    persist_get_model(void);
+extern char*    persist_get_human_name(void);
 
 extern struct cmd_link_t* persist_config_add_commands(struct cmd_link_t* tail);
 extern void persist_config_inf_init(measurements_inf_t* inf);
