@@ -11,10 +11,7 @@
 #include "common.h"
 #include "log.h"
 #include "cmd.h"
-
-#ifndef DESIG_UNIQUE_ID0
-#define DESIG_UNIQUE_ID0                        0x00C0FFEE
-#endif // DESIG_UNIQUE_ID0
+#include "platform.h"
 
 #define AT_MQTT_MAX_CMD_LEN                      (1024 + 128)
 
@@ -103,7 +100,7 @@ void at_mqtt_init(at_mqtt_ctx_t* ctx)
             _at_mqtt_ctx->topic_header,
             AT_MQTT_TOPIC_LEN,
             "osm/%08"PRIX32,
-            DESIG_UNIQUE_ID0
+            platform_get_hw_id()
             );
         _at_mqtt_ctx->topic_header[topic_header_len] = 0;
         comms_debug("MQTT Topic : %s", _at_mqtt_ctx->topic_header);
@@ -154,7 +151,7 @@ at_esp_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
             "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
             AT_MQTT_LINK_ID,
             (unsigned)mqtt_scheme,
-            (uint32_t)DESIG_UNIQUE_ID0,
+            platform_get_hw_id(),
             AT_MQTT_USER_MAX_LEN,      _at_mqtt_ctx->mem->user,
             AT_MQTT_PWD_MAX_LEN,       _at_mqtt_ctx->mem->pwd,
             AT_MQTT_CERT_KEY_ID,
