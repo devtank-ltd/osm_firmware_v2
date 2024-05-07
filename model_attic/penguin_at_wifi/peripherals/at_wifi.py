@@ -5,11 +5,17 @@ import sys
 import tty
 import time
 import enum
-import paho.mqtt.client
+import logging
+import paho.mqtt as paho
+import paho.mqtt.client as mqtt
 import select
 import serial
 import weakref
-import multiprocessing
+import selectors
+
+logging.basicConfig(level=logging.ERROR)
+
+logger = logging.getLogger("at_wifi.py")
 
 
 class base_at_commands_t(object):
@@ -121,6 +127,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
                                         base_at_commands_t.SET:         self.connect_info,
                                         base_at_commands_t.EXECUTE:     self.connect},      # Connect to an AP
             b"AT+CWQAP"             : { base_at_commands_t.EXECUTE:     self.disconnect},   # Disconnect from an AP
+            b"AT+SYSTIMESTAMP"      : { base_at_commands_t.QUERY:       self.systime },     # Get current time
         }
         super().__init__(device, command_controller, commands)
 
@@ -192,7 +199,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
             self.reply_param_error()
             return
         pwd = pwd[1:-1].decode()
-        print(f"Connecting to SSID: {ssid} with PWD: {pwd}")
+        logger.info(f"Connecting to SSID: {ssid} with PWD: {pwd}")
         """ Will now block """
         time.sleep(2)
         self.reply(b"WIFI CONNECTED")
@@ -218,6 +225,11 @@ class at_wifi_at_commands_t(base_at_commands_t):
             return
         self.device.wifi_connect(False)
         self.reply_ok()
+
+    def systime(self, args):
+        self.reply(f"+SYSTIMESTAMP:{int(time.time())}".encode())
+        self.reply_ok()
+
 
 
 class at_wifi_cips_at_commands_t(base_at_commands_t):
@@ -323,14 +335,8 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
             return
         self.reply_ok()
 
-    def publish(self, args):
-        arg_list = args.split(b",")
-        if len(arg_list) < 4:
-            self.reply_param_error()
-            return
-        _, topic, *data, _, _ = arg_list
-        data = b",".join(data)
-        if not self.device.mqtt.publish(topic.decode(), data.decode()):
+    def publish(self, topic, payload):
+        if not self.device.mqtt.publish(topic, payload):
             self.reply_state_error()
             return
         self.reply_ok()
@@ -371,9 +377,9 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
             return
         self.reply_ok()
         self.reply_raw(b">")
-        print("START READ")
-        msg = self.device.read_blocking(length, timeout=1)
-        """ Do MQTT publish """
+        logger.info("START READ")
+        payload = self.device.read_blocking(length, timeout=1)
+        self.device.mqtt.publish(topic.decode(), payload)
         self.reply(b"+MQTTPUB:OK")
 
 
@@ -424,9 +430,11 @@ class at_commands_t(object):
             if cb:
                 cb(args)
             else:
+                logger.error(f"Unknown type {type_} for command {command}")
                 self._invalid_type()
         else:
             # Not found in commands
+            logger.error(f"Unknown command {command}")
             self._no_command()
 
 
@@ -498,7 +506,7 @@ class at_wifi_mqtt_t(object):
             "CONN_WITH_SUB",
         ])
 
-    def __init__(self):
+    def __init__(self, selector):
         self.scheme = self.SCHEMES.TLS_PROVIDE_CLIENT
         self.addr = None
         self.client_id = None
@@ -507,11 +515,18 @@ class at_wifi_mqtt_t(object):
         self.ca = None
         self.port = 1883
         self.subscriptions = []
+        self._pending_subscription = None
         self._connected = False
         self.state = self.STATES.UNINIT
-        self.client = paho.mqtt.client.Client(paho.mqtt.client.CallbackAPIVersion.VERSION1)
+        self._selector = selector
+        if int(paho.__version__.split(".")[0]) > 1:
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        else:
+            self.client = mqtt.Client()
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
+        self.client.on_socket_open = self._on_socket_open
+        self.client.on_socket_close = self._on_socket_close
 
     def __del__(self):
         self.close()
@@ -528,12 +543,12 @@ class at_wifi_mqtt_t(object):
 
     def connect(self, timeout: float = 2) -> bool:
         if not self._is_valid():
-            print("Not valid")
-            print(f"{self.addr      = }")
-            print(f"{self.client_id = }")
-            print(f"{self.user      = }")
-            print(f"{self.pwd       = }")
-            print(f"{self.ca        = }")
+            logger.info("Not valid")
+            logger.info(f"{self.addr      = }")
+            logger.info(f"{self.client_id = }")
+            logger.info(f"{self.user      = }")
+            logger.info(f"{self.pwd       = }")
+            logger.info(f"{self.ca        = }")
             return False
         self.client.username_pw_set(self.user, password=self.pwd)
         self.client.connect(self.addr, self.port, 60)
@@ -541,11 +556,11 @@ class at_wifi_mqtt_t(object):
         end = time.monotonic() + timeout
         while not isinstance(self._connected, bool) and time.monotonic() < end:
             self.client.loop()
-        print(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
+        logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
         return bool(self._connected)
 
     def _on_connect(self, client, userdata, flags, rc):
-        print(f"ON CONNECT; {rc = }");
+        logger.info(f"ON CONNECT; {rc = }");
         if rc == 0:
             self._connected = True
             self.state = self.STATES.CONN_NO_SUB
@@ -555,30 +570,43 @@ class at_wifi_mqtt_t(object):
     def publish(self, topic, msg) -> bool:
         if not self._connected:
             return False
-        print(f"PUBLISH {topic}#{msg}")
+        logger.info(f"PUBLISH {topic}#{msg}")
+        self.client.publish(topic, msg)
         return True
 
     def subscribe(self, topic, timeout=0.5):
         if not self._connected:
             return False
+        if self._pending_subscription:
+            return False
         topic = topic.decode()
         self.client.subscribe(topic)
         subscribed = False
         end = time.monotonic() + timeout
+        self._pending_subscription = topic
         while topic not in self.subscriptions and time.monotonic() < end:
             self.client.loop()
-        if topic in self.subscriptions:
-            print(f"SUBSCRIBED {topic}")
-            self.state = self.STATES.CONN_WITH_SUB
-            self.subscriptions.append(topic)
-            return True
-        return False
+        return topic in self.subscriptions
 
     def _on_subscribe(self, client, userdata, mid, granted_qos):
-        print(f"ON SUBSCRIBE")
+        logger.info(f"ON SUBSCRIBE")
+        if self._pending_subscription:
+            self.subscriptions.append(self._pending_subscription)
+            logger.info(f"SUBSCRIBED {self._pending_subscription}")
+            self.state = self.STATES.CONN_WITH_SUB
+            self._pending_subscription = None
+
+    def _on_socket_open(self, mqttc, userdata, sock):
+        self._selector.register(sock, selectors.EVENT_READ, self.event)
+
+    def _on_socket_close(self, mqttc, userdata, sock):
+        self._selector.unregister(sock)
+
+    def event(self):
+        self.client.loop()
 
     def loop(self):
-        self.client.loop()
+        self.client.loop_misc()
 
 
 class at_wifi_dev_t(object):
@@ -591,6 +619,8 @@ class at_wifi_dev_t(object):
 
     def __init__(self, port):
         self.port = port
+
+        self._selector = selectors.PollSelector()
 
         if isinstance(port, int):
             self._serial = os.fdopen(port, "rb", 0)
@@ -606,7 +636,7 @@ class at_wifi_dev_t(object):
         self.is_echo = True
         self.sntp = at_wifi_sntp_info_t()
         self.wifi = at_wifi_info_t()
-        self.mqtt = at_wifi_mqtt_t()
+        self.mqtt = at_wifi_mqtt_t(self._selector)
 
         command_types = [
             at_wifi_basic_at_commands_t,
@@ -615,7 +645,9 @@ class at_wifi_dev_t(object):
             at_wifi_mqtt_at_commands_t
             ]
         self._command_obj = at_commands_t(self, command_types)
-        print("AT WIFI INITED")
+        logger.info("AT WIFI INITED")
+
+        self._selector.register(self._serial, selectors.EVENT_READ, self._serial_in_event)
 
     def __enter__(self):
         return self
@@ -632,6 +664,7 @@ class at_wifi_dev_t(object):
             self._serial = None
 
     def send_raw(self, msg:bytes):
+        logger.debug(f">> {msg}")
         return os.write(self._serial.fileno(), msg)
 
     def send(self, msg:bytes):
@@ -654,6 +687,7 @@ class at_wifi_dev_t(object):
             line = self._serial_in[:-len(eol)]
             if line.startswith(b'\n'):
                 line = line[1:]
+            logger.debug(f"<< {line}")
             self._do_command(line)
             self._serial_in = b""
 
@@ -665,18 +699,18 @@ class at_wifi_dev_t(object):
             rlist,wlist,xlist = select.select([fd], [], [], timeout)
             for r in rlist:
                 msg += os.read(fd, 1)
+        logger.debug(f"<< {msg}")
         return msg
 
+    def _serial_in_event(self):
+        self._read_serial(self._serial.fileno())
+
     def run_forever(self):
-        r_fd_cbs = { self._serial.fileno() : self._read_serial }
         while not self.done:
             self.mqtt.loop()
-            rlist,wlist,xlist = select.select(list(r_fd_cbs.keys()), [], [], 0.01)
-            for r in rlist:
-                cb = r_fd_cbs.get(r, None)
-                fd = r if isinstance(r, int) else r.fileno()
-                if cb:
-                    cb(fd)
+            events = self._selector.select(timeout=0.01)
+            for key, mask in events:
+                key.data()
 
     def restart(self):
         """ TODO: Make some kind of restart """
@@ -705,18 +739,18 @@ def run_standalone(tty_path):
     if os.path.islink(tty_path):
         a = os.access(tty_path, os.F_OK)
         if a:
-            print("Symlink already exists")
+            logger.error("Symlink already exists")
             return -1
         os.unlink(tty_path)
     master, slave = os.openpty()
     os.symlink(os.ttyname(slave), tty_path)
-    print(f"Connect to: {tty_path}")
+    logger.info(f"Connect to: {tty_path}")
     port = os.ttyname(master)
     dev = at_wifi_dev_t(master)
     try:
         dev.run_forever()
     except KeyboardInterrupt:
-        print("\r", flush=True, file=sys.stderr)
+        logger.error("\r")
     os.unlink(tty_path)
     return 0
 
@@ -725,16 +759,31 @@ def run_dependent(tty_path):
     try:
         dev.run_forever()
     except KeyboardInterrupt:
-        print("\r", flush=True, file=sys.stderr)
+        logger.error("\r")
     return 0
 
 def main():
     import argparse
 
+    osm_loc = os.environ.get("OSM_LOC", "/tmp/osm")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    DEFAULT_VIRTUAL_COMMS_PATH = os.path.join(osm_loc, "UART_COMMS_slave")
+
+    is_debug = os.environ.get("DEBUG")
+
+    if is_debug:
+        logger.setLevel(level=logging.DEBUG)
+        logger.debug("Debug enabled")
+        if is_debug == "file":
+            log_file = os.path.join(osm_dir, "at_wifi_py.log")
+            logger.debug(f"Logging to: {log_file}")
+            logger.addHandler(logging.FileHandler(log_file))
+
     def get_args():
         parser = argparse.ArgumentParser(description='Fake AT Wifi Module.' )
         parser.add_argument('-s', '--standalone', help="If this should spin up its own pseudoterminal or use an existing one", action='store_true')
-        parser.add_argument('pseudoterminal', metavar='PTY', type=str, nargs='?', help='The pseudoterminal for the fake AT wifi module', default="/tmp/osm/UART_COMMS_slave")
+        parser.add_argument('pseudoterminal', metavar='PTY', type=str, nargs='?', help='The pseudoterminal for the fake AT wifi module', default=DEFAULT_VIRTUAL_COMMS_PATH)
         return parser.parse_args()
 
     args = get_args()

@@ -15,6 +15,7 @@
 #include "esp_comms.h"
 #include "protocol.h"
 #include "uart_rings.h"
+#include "platform_model.h"
 
 #define WIFI_DELAY_MS 1000
 
@@ -24,8 +25,7 @@
 #define SVRUSR_LEN 12
 #define SVRPW_LEN  32
 
-
-static char _mac[16] = {0};
+static char _mac_str[16];
 
 static volatile bool _has_ip_addr = false;
 static volatile bool _has_mqtt = false;
@@ -96,7 +96,7 @@ static bool _mqtt_send(const char * topic, const char * value, unsigned len)
 bool esp_comms_send(char * data, uint16_t len)
 {
     char topic[64];
-    snprintf(topic, sizeof(topic), "osm/%s/measurements", _mac);
+    snprintf(topic, sizeof(topic), "osm/%s/measurements", _mac_str);
     topic[sizeof(topic)-1] = 0;
     bool r = _mqtt_send(topic, data, len);
     vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -122,7 +122,7 @@ void mqtt_uart_forward(const char * data, unsigned size)
     if (!osm_config || !_has_mqtt || !osm_config->fwd_uart)
         return;
     char topic[64];
-    snprintf(topic, sizeof(topic), "osm/%s/fwd", _mac);
+    snprintf(topic, sizeof(topic), "osm/%s/fwd", _mac_str);
     topic[sizeof(topic)-1] = 0;
     _mqtt_send(topic, data, size);
 }
@@ -138,7 +138,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             _has_mqtt = true;
             comms_debug("MQTT connected.");
             char topic[32];
-            snprintf(topic, sizeof(topic), "osm/%s/cmd", _mac);
+            snprintf(topic, sizeof(topic), "osm/%s/cmd", _mac_str);
             topic[sizeof(topic)-1] = 0;
             esp_mqtt_client_subscribe(client, topic, 0);
             break;
@@ -197,10 +197,9 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
             case IP_EVENT_STA_GOT_IP:
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
                 comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
-                uint8_t mac[8];
-                ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, mac));
-                snprintf(_mac, sizeof(_mac), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-                comms_debug("MAC: %s", _mac);
+                const uint8_t * mac = esp_port_get_mac();
+                snprintf(_mac_str, sizeof(_mac_str), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+                comms_debug("MAC: %s", _mac_str);
 
                 _has_ip_addr = true;
                 break;
@@ -323,7 +322,7 @@ void esp_comms_loop_iteration(void)
         return;
     command_response_t resp = cmds_process(_cmd, strlen(_cmd), NULL);
     char topic[64];
-    snprintf(topic, sizeof(topic), "/osm/%s/cmd/resp", _mac);
+    snprintf(topic, sizeof(topic), "/osm/%s/cmd/resp", _mac_str);
     topic[sizeof(topic)-1]=0;
     char * value = (resp == COMMAND_RESP_OK)?"ok":"error";
 

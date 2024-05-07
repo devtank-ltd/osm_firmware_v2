@@ -76,9 +76,14 @@ class at_wifi_bridge_t(object):
 def main():
     import argparse
 
+    osm_loc = os.environ.get("OSM_LOC", "/tmp/osm")
+    if not os.path.exists(osm_loc):
+        os.mkdir(osm_loc)
+    DEFAULT_VIRTUAL_COMMS_PATH = os.path.join(osm_loc, "UART_COMMS_slave")
+
     def get_args():
         parser = argparse.ArgumentParser(description='AT Wifi Bridge.')
-        parser.add_argument('port_A', metavar='PA', type=str, nargs='?', help='Port A of the bridge', default="/tmp/osm/UART_COMMS_slave")
+        parser.add_argument('port_A', metavar='PA', type=str, nargs='?', help='Port A of the bridge', default=DEFAULT_VIRTUAL_COMMS_PATH)
         parser.add_argument('port_B', metavar='PB', type=str, nargs='?', help='Port B of the bridge', default="/dev/ttyUSB1")
         return parser.parse_args()
 

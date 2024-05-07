@@ -16,10 +16,6 @@
 #include "protocol.h"
 #include "platform.h"
 
-#ifndef DESIG_UNIQUE_ID0
-#define DESIG_UNIQUE_ID0                        0x00C0FFEE
-#endif // DESIG_UNIQUE_ID0
-
 
 #define COMMS_DEFAULT_MTU                       (1024 + 128)
 #define COMMS_ID_STR                            "WIFI"
@@ -417,7 +413,7 @@ void at_wifi_init(void)
         _at_wifi_ctx.topic_header,
         AT_WIFI_MQTT_TOPIC_LEN,
         "osm/%08"PRIX32,
-        DESIG_UNIQUE_ID0
+        platform_get_hw_id()
         );
     _at_wifi_ctx.topic_header[topic_header_len] = 0;
     comms_debug("MQTT Topic : %s", _at_wifi_ctx.topic_header);
@@ -660,10 +656,10 @@ static void _at_wifi_do_mqtt_user_conf(void)
     }
 
     _at_wifi_printf(
-        "AT+MQTTUSERCFG=%u,%u,\"osm-0x%X\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
+        "AT+MQTTUSERCFG=%u,%u,\"osm-0x%X\",\"%.*s\",\"%.*s\",%u,%"PRIu32",\"\"",
         AT_WIFI_MQTT_LINK_ID,
         (unsigned)mqtt_scheme,
-        DESIG_UNIQUE_ID0,
+        platform_get_hw_id(),
         AT_WIFI_MQTT_USER_MAX_LEN,      _at_wifi_ctx.mem->mqtt.user,
         AT_WIFI_MQTT_PWD_MAX_LEN,       _at_wifi_ctx.mem->mqtt.pwd,
         AT_WIFI_MQTT_CERT_KEY_ID,

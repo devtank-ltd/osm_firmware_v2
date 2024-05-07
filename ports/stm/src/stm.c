@@ -132,6 +132,11 @@ uint32_t platform_get_frequency(void)
     return rcc_ahb_frequency;
 }
 
+uint32_t platform_get_hw_id(void)
+{
+    return DESIG_UNIQUE_ID0;
+}
+
 
 void platform_blink_led_init(void)
 {

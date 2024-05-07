@@ -14,7 +14,7 @@
 #include "sleep.h"
 #include "platform_model.h"
 #include "mqtt.h"
-
+#include "common.h"
 
 static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 
