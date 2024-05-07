@@ -1458,7 +1458,9 @@ void platform_reset_sys(void)
 char concat_osm_location(char* new_loc, unsigned loc_len, char* global)
 {
     unsigned len = snprintf(new_loc, loc_len - 1, "%s/%s", ret_static_file_location(), global);
-    if (len > loc_len)
+    if (!loc_len)
+        len = 0;
+    else if (len > loc_len)
         len = loc_len-1;
     new_loc[len] = '\0';
     return len;
