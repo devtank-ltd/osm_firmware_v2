@@ -63,6 +63,9 @@ static bool _persist_data_cmp(void)
         memcmp(persist_data.serial_number,
             persist_data_raw->serial_number,
             sizeof(char) * SERIAL_NUM_LEN_NULLED) == 0                  &&
+        memcmp(persist_data.human_name,
+            persist_data_raw->human_name,
+            sizeof(char) * HUMAN_NAME_LEN_NULLED) == 0                  &&
         !model_persist_config_cmp(
             &persist_data.model_config,
             &persist_data_raw->model_config)                            &&
