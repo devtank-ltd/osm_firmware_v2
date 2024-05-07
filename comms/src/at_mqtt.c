@@ -49,7 +49,7 @@ bool at_mqtt_mem_is_valid(void)
     return (str_is_valid_ascii(_at_mqtt_ctx->mem->addr  , AT_MQTT_ADDR_MAX_LEN       , true  ) &&
             str_is_valid_ascii(_at_mqtt_ctx->mem->user  , AT_MQTT_USER_MAX_LEN       , true  ) &&
             str_is_valid_ascii(_at_mqtt_ctx->mem->pwd   , AT_MQTT_PWD_MAX_LEN        , true  ) &&
-            str_is_valid_ascii(_at_mqtt_ctx->mem->ca    , AT_MQTT_CA_MAX_LEN         , true  ) );
+            str_is_valid_ascii(_at_mqtt_ctx->mem->path  , AT_MQTT_PATH_MAX_LEN       , true  ) );
 }
 
 
@@ -148,14 +148,15 @@ at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
         ret->len = snprintf(
             ret->str,
             AT_BASE_MAX_CMD_LEN,
-            "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%.*s\",\"%.*s\",%u,%u,\"\"",
+            "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%.*s\",\"%.*s\",%u,%u,\"%.*s\"",
             AT_MQTT_LINK_ID,
             (unsigned)mqtt_scheme,
             platform_get_hw_id(),
             AT_MQTT_USER_MAX_LEN,      _at_mqtt_ctx->mem->user,
             AT_MQTT_PWD_MAX_LEN,       _at_mqtt_ctx->mem->pwd,
             AT_MQTT_CERT_KEY_ID,
-            AT_MQTT_CA_ID
+            AT_MQTT_CA_ID,
+            AT_MQTT_PATH_MAX_LEN,      _at_mqtt_ctx->mem->path
             );
         ret->str[ret->len] = 0;
     }
@@ -456,12 +457,12 @@ static command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static command_response_t _at_mqtt_config_ca_cb(char* args, cmd_ctx_t * ctx)
+static command_response_t _at_mqtt_config_path_cb(char* args, cmd_ctx_t * ctx)
 {
     at_base_config_get_set_str(
-        "CA",
-        _at_mqtt_ctx->mem->ca,
-        AT_MQTT_CA_MAX_LEN,
+        "PATH",
+        _at_mqtt_ctx->mem->path,
+        AT_MQTT_PATH_MAX_LEN,
         args, ctx);
     return COMMAND_RESP_OK;
 }
@@ -484,7 +485,7 @@ struct cmd_link_t* at_mqtt_add_commands(struct cmd_link_t* tail)
         { "mqtt_user",      "Set/get MQTT user",        _at_mqtt_config_user_cb        , false , NULL },
         { "mqtt_pwd",       "Set/get MQTT password",    _at_mqtt_config_pwd_cb         , false , NULL },
         { "mqtt_sch",       "Set/get MQTT scheme",      _at_mqtt_config_scheme_cb      , false , NULL },
-        { "mqtt_ca",        "Set/get MQTT CA",          _at_mqtt_config_ca_cb          , false , NULL },
+        { "mqtt_path",      "Set/get MQTT PATH",        _at_mqtt_config_path_cb        , false , NULL },
         { "mqtt_port",      "Set/get MQTT port",        _at_mqtt_config_port_cb        , false , NULL }
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
@@ -508,7 +509,7 @@ void at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME(_at_mqtt_ctx->mem->scheme));
     cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_CA(_at_mqtt_ctx->mem->ca));
+    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PATH(_at_mqtt_ctx->mem->path));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PORT(_at_mqtt_ctx->mem->port));
     cmd_ctx_flush(ctx);

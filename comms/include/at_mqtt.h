@@ -10,7 +10,7 @@
 #define AT_MQTT_ADDR_MAX_LEN                                63
 #define AT_MQTT_USER_MAX_LEN                                63
 #define AT_MQTT_PWD_MAX_LEN                                 63
-#define AT_MQTT_CA_MAX_LEN                                  63
+#define AT_MQTT_PATH_MAX_LEN                                63
 #define AT_MQTT_TOPIC_LEN                                   63
 #define AT_MQTT_RESP_PAYLOAD_LEN                            63
 
@@ -18,14 +18,14 @@
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER                "    \"MQTT USER\": \"%.*s\","
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME              "    \"MQTT SCHEME\": %"PRIu16","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_CA                  "    \"MQTT CA\": \"%.*s\","
+#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH                "    \"MQTT PATH\": \"%.*s\","
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
 
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_MQTT_ADDR_MAX_LEN , _mqtt_addr
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_MQTT_USER_MAX_LEN , _mqtt_user
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD     , AT_MQTT_PWD_MAX_LEN  , _mqtt_pwd
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME(_mqtt_scheme)    AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME  , _mqtt_scheme
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_CA(_mqtt_ca)            AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_CA      , AT_MQTT_CA_MAX_LEN   , _mqtt_ca
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_PATH(_mqtt_path)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH    , AT_MQTT_PATH_MAX_LEN , _mqtt_path
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_PORT(_mqtt_port)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT    , _mqtt_port
 
 #define AT_MQTT_TOPIC_MEASUREMENTS                          "measurements"
@@ -73,7 +73,7 @@ typedef struct
     /* 16 byte boundary ---- */
     char        pwd[AT_MQTT_PWD_MAX_LEN + 1];
     /* 16 byte boundary ---- */
-    char        ca[AT_MQTT_CA_MAX_LEN + 1];
+    char        path[AT_MQTT_PATH_MAX_LEN + 1];
     /* 16 byte boundary ---- */
     uint16_t    scheme; /* at_wifi_mqtt_scheme_t */
     uint16_t    port;
