@@ -8,7 +8,8 @@
 #include "ftma.h"
 #include "at_wifi.h"
 
-#define PERSIST_VERSION  1
+#define PERSIST_MODEL_VERSION       1
+#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 #define FLASH_PAGE_SIZE 2048
 #define FW_MAX_SIZE (1024*100)
 #define NEW_FW_ADDR 0x800000
