@@ -336,7 +336,7 @@ class test_framework_t(object):
         return True
 
     def _check_json_config_tool(self):
-        json_obj = self._vosm_conn.create_json_dev()
+        json_obj = json_config.create_json_dev(self._vosm_conn)
         json_obj.get_config()
         json_obj.save_config(self.JSON_MEMORY_PATH)
 

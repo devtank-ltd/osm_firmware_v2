@@ -249,9 +249,13 @@ class dev_json_t:
             self.dev.drain()
 
 
+def create_json_dev(dev):
+    return dev_json_t(dev)
+
+
 def main(args):
     dev = binding.dev_t(args.device)
-    json_conv = dev_json_t(dev)
+    json_conv = create_json_dev(dev)
     ret = 0
     if sys.stdin.isatty():
         json_conv.get_config()
