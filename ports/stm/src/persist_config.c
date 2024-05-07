@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "config.h"
 #include "log.h"
@@ -37,6 +38,8 @@ bool persistent_init(void)
             memcpy(&persist_data.model_name[0], STR(fw_name), MODEL_NAME_LEN);
         else
             snprintf(persist_data.model_name, MODEL_NAME_LEN, STR(fw_name));
+        unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, platform_get_hw_id());
+        persist_data.human_name[human_name_len] = 0;
         model_persist_config_model_init(&persist_data.model_config);
         return false;
     }
