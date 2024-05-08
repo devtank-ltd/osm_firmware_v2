@@ -282,7 +282,7 @@ static uint16_t _veml7700_get_resolution(void)
 static uint32_t _veml7700_get_wait_time(void)
 {
     uint32_t wait_time = _veml7700_integration_times[_veml7700_ctx.int_index].wait_time;
-    wait_time *= 1.1;
+    wait_time *= 2;
     return wait_time;
 }
 
