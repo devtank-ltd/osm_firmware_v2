@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <math.h>
-
+#include <ctype.h>
 
 #include "config.h"
 #include "common.h"
@@ -244,4 +244,28 @@ void cmd_ctx_flush(cmd_ctx_t* ctx)
     {
         ctx->flush_cb(ctx);
     }
+}
+
+
+bool str_is_valid_ascii(char* str, unsigned max_len, bool required)
+{
+    unsigned len = strnlen(str, max_len);
+    if (required && !len)
+    {
+        return false;
+    }
+    for (unsigned i = 0; i < len; i++)
+    {
+        if (!isascii(str[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool is_str(const char* ref, char* cmp, unsigned cmplen)
+{
+    const unsigned reflen = strlen(ref);
+    return (reflen == cmplen && strncmp(ref, cmp, reflen) == 0);
 }

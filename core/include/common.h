@@ -39,3 +39,6 @@ extern struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_
 extern void cmd_ctx_out(cmd_ctx_t* ctx, const char* fmt, ...);
 extern void cmd_ctx_error(cmd_ctx_t* ctx, const char* fmt, ...);
 extern void cmd_ctx_flush(cmd_ctx_t* ctx);
+
+bool str_is_valid_ascii(char* str, unsigned max_len, bool required);
+bool is_str(const char* ref, char* cmp, unsigned cmplen);
