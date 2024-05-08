@@ -3,6 +3,7 @@
 import os
 import sys
 import tty
+import ssl
 import time
 import enum
 import logging
@@ -508,7 +509,7 @@ class at_wifi_mqtt_t(object):
         ])
 
     def __init__(self, selector):
-        self.scheme = self.SCHEMES.TLS_PROVIDE_CLIENT
+        self.scheme = self.SCHEMES.TCP
         self.addr = None
         self.client_id = None
         self.user = None
@@ -523,18 +524,36 @@ class at_wifi_mqtt_t(object):
         self.reinit_client()
 
     def reinit_client(self):
-        if self._connected:
+        was_connected = self._connected
+        self._connected = False
+        if was_connected:
             self.client.disconnect()
+            self.state = self.STATES.UNINIT
+
         if int(paho.__version__.split(".")[0]) > 1:
             self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         else:
             self.client = mqtt.Client()
+        self.client.transport = "websockets" if self.scheme in [
+            self.SCHEMES.WS,
+            self.SCHEMES.WSS_NO_CERT,
+            self.SCHEMES.WSS_VERIFY_SERVER,
+            self.SCHEMES.WSS_PROVIDE_CLIENT,
+            self.SCHEMES.WSS_BOTH ]  else "tcp"
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
-        if self._connected:
-            self._connected = False
+
+        if self.scheme in [self.SCHEMES.TLS_VERIFY_SERVER,
+                           self.SCHEMES.WSS_VERIFY_SERVER]:
+            self.client.tls_set(ca_certs=self.ca)
+        elif self.scheme in [self.SCHEMES.TLS_NO_CERT,
+                             self.SCHEMES.WSS_NO_CERT]:
+            self.client.tls_set(cert_reqs=ssl.CERT_NONE)
+            self.client.tls_insecure_set(True)
+
+        if was_connected:
             self.connect()
 
     def __del__(self):
@@ -559,6 +578,15 @@ class at_wifi_mqtt_t(object):
             logger.info(f"{self.pwd       = }")
             logger.info(f"{self.ca        = }")
             return False
+
+        if self.scheme not in [self.SCHEMES.TCP,
+                               self.SCHEMES.TLS_NO_CERT,
+                               self.SCHEMES.TLS_VERIFY_SERVER,
+                               self.SCHEMES.WSS_VERIFY_SERVER,
+                               self.SCHEMES.WSS_NO_CERT]:
+            logger.info("Scheme current unsupported.")
+            return False
+
         self.client.username_pw_set(self.user, password=self.pwd)
         self.client.connect(self.addr, self.port, 60)
         self._connected = None
