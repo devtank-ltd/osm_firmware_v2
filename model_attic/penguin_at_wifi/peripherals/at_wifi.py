@@ -785,7 +785,7 @@ def main():
         logger.setLevel(level=logging.DEBUG)
         logger.debug("Debug enabled")
         if is_debug == "file":
-            log_file = os.path.join(osm_dir, "at_wifi_py.log")
+            log_file = os.path.join(osm_loc, "at_wifi_py.log")
             logger.debug(f"Logging to: {log_file}")
             logger.addHandler(logging.FileHandler(log_file))
 
