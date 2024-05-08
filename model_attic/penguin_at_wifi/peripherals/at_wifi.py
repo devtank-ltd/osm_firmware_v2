@@ -300,6 +300,7 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         mqtt_obj.user = username.decode()[1:-1]
         mqtt_obj.pwd = password.decode()[1:-1]
         mqtt_obj.ca = ca_path.decode()
+        mqtt_obj.reinit_client()
         self.reply_ok()
 
     def conn_config(self, args):
@@ -519,6 +520,11 @@ class at_wifi_mqtt_t(object):
         self._connected = False
         self.state = self.STATES.UNINIT
         self._selector = selector
+        self.reinit_client()
+
+    def reinit_client(self):
+        if self._connected:
+            self.client.disconnect()
         if int(paho.__version__.split(".")[0]) > 1:
             self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         else:
@@ -527,6 +533,9 @@ class at_wifi_mqtt_t(object):
         self.client.on_subscribe = self._on_subscribe
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
+        if self._connected:
+            self._connected = False
+            self.connect()
 
     def __del__(self):
         self.close()
