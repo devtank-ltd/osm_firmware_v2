@@ -641,11 +641,17 @@ class at_wifi_mqtt_t(object):
         if len(args):
             properties = args[0]
         logger.info(f"ON SUBSCRIBE")
-        if self._pending_subscription:
-            self.subscriptions.append(self._pending_subscription)
-            logger.info(f"SUBSCRIBED {self._pending_subscription}")
-            self.state = self.STATES.CONN_WITH_SUB
-            self._pending_subscription = None
+
+        for sub_result in rc:
+            # Any reason code >= 128 is a failure.
+            if sub_result >= 128:
+                logger.info(f"FAILED SUBSCRIBE {sub_result = }")
+            else:
+                if self._pending_subscription:
+                    self.subscriptions.append(self._pending_subscription)
+                    logger.info(f"SUBSCRIBED {self._pending_subscription}")
+                    self.state = self.STATES.CONN_WITH_SUB
+                    self._pending_subscription = None
 
     def _on_socket_open(self, mqttc, userdata, sock):
         self._selector.register(sock, selectors.EVENT_READ, self.event)
