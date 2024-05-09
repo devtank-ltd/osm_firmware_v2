@@ -531,7 +531,7 @@ class at_wifi_mqtt_t(object):
             self.state = self.STATES.UNINIT
 
         if int(paho.__version__.split(".")[0]) > 1:
-            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         else:
             self.client = mqtt.Client()
         logger.info(f"MQTT Scheme: {self.scheme}")
@@ -602,7 +602,11 @@ class at_wifi_mqtt_t(object):
         logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port} : {bool(self._connected)}")
         return bool(self._connected)
 
-    def _on_connect(self, client, userdata, flags, rc):
+    def _on_connect(self, client, userdata, flags, rc, *args):
+        # Not really sure what type of object properties should be
+        properties = []
+        if len(args):
+            properties = args[0]
         logger.info(f"ON CONNECT; {rc = }");
         if rc == 0:
             self._connected = True
@@ -631,7 +635,11 @@ class at_wifi_mqtt_t(object):
             self.client.loop()
         return topic in self.subscriptions
 
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
+    def _on_subscribe(self, client, userdata, mid, rc, *args):
+        # Not really sure what type of object properties should be
+        properties = []
+        if len(args):
+            properties = args[0]
         logger.info(f"ON SUBSCRIBE")
         if self._pending_subscription:
             self.subscriptions.append(self._pending_subscription)
