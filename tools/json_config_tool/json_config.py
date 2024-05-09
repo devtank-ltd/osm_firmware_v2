@@ -95,6 +95,8 @@ class dev_json_t:
             "measurements":{}
         }
 
+        json_ios = json_pop["ios"]
+
         for i, v in enumerate(self.ios):
             m = re.match(IOS_PATTERN, v)
             if not m:
@@ -103,13 +105,13 @@ class dev_json_t:
             re_dict = m.groupdict()
             spec = re_dict.get("special_used")
             if spec:
-                json_pop["ios"].update({i:{"special": spec}})
+                json_ios.update({i:{"special": spec}})
             else:
-                json_pop["ios"].update({i:{}})
+                json_ios.update({i:{}})
 
             edge = re_dict.get("edge")
             if edge:
-                json_pop["ios"][i].update({"edge": edge})
+                json_ios[i].update({"edge": edge})
 
             pupd = re_dict.get("pupd")
             if pupd == "D":
@@ -119,17 +121,17 @@ class dev_json_t:
             elif pupd == "N":
                 pupd = "NONE"
             if pupd:
-                json_pop["ios"][i].update({"pull": pupd})
+                json_ios[i].update({"pull": pupd})
 
             direction = re_dict.get("dir")
             if direction:
-                json_pop["ios"][i].update({"direction": direction})
+                json_ios[i].update({"direction": direction})
             elif not direction and not spec:
-                json_pop["ios"][i].update({"direction": "IN"})
+                json_ios[i].update({"direction": "IN"})
 
         if self.mb_config:
-            json_pop["modbus_bus"]["setup"] = self.mb_config
-            json_pop["modbus_bus"]["modbus_devices"] = self.modbus_devs
+            json_pop["modbus_bus"] = { "setup" : self.mb_config
+                                       "modbus_devices" : self.modbus_devs }
         for i in self.meas_formatted:
             json_pop["measurements"].update({
                 i[0]:{
@@ -207,15 +209,17 @@ class dev_json_t:
             for cc, value in cc_midpoints.items():
                 self.dev.update_midpoint(value, cc)
 
-            mb_setup = contents["modbus_bus"]["setup"]
-            if mb_setup:
-                protocol = mb_setup[0]
-                baud = mb_setup[1]
-                bit_par_stp = mb_setup[2]
-                self.dev.do_cmd(f"mb_setup {protocol} {baud} {bit_par_stp}")
+            mb_contents = contents.get("modbus_bus")
 
-            mb_devices = contents["modbus_bus"]["modbus_devices"]
-            if mb_devices:
+            if mb_contents:
+                mb_setup = mb_contents["setup"]
+                if mb_setup:
+                    protocol = mb_setup[0]
+                    baud = mb_setup[1]
+                    bit_par_stp = mb_setup[2]
+                    self.dev.do_cmd(f"mb_setup {protocol} {baud} {bit_par_stp}")
+
+                mb_devices = mb_contents["modbus_devices"]
                 for dev in mb_devices:
                     name = dev["name"]
                     byteorder = dev["byteorder"]
