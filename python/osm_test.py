@@ -351,7 +351,7 @@ class test_framework_t(object):
         with open(self.JSON_MEMORY_PATH, "w") as json_file:
             json.dump(mem, json_file)
 
-        json_obj.verify_file(self.JSON_MEMORY_PATH)
+        json_obj.load_config(self.JSON_MEMORY_PATH)
 
         with open(self.JSON_MEMORY_PATH, "r") as json_file:
             mem = json.load(json_file)

@@ -150,7 +150,7 @@ class dev_json_t:
         log(f"Config file saved in {filepath}")
         return filepath
 
-    def verify_file(self, filename):
+    def load_config(self, filename):
         with open(filename, 'r') if filename is not sys.stdin else sys.stdin as f:
             contents = f.read()
 
@@ -251,7 +251,7 @@ def main(args):
         json_conv.get_config()
         json_conv.save_config(sys.stdout)
     else:
-        ret = 0 if json_conv.verify_file(sys.stdin) else -1
+        ret = 0 if json_conv.load_config(sys.stdin) else -1
     return ret
 
 if __name__ == '__main__':
