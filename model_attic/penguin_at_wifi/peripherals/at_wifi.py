@@ -534,12 +534,14 @@ class at_wifi_mqtt_t(object):
             self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         else:
             self.client = mqtt.Client()
+        logger.info(f"MQTT Scheme: {self.scheme}")
         self.client.transport = "websockets" if self.scheme in [
             self.SCHEMES.WS,
             self.SCHEMES.WSS_NO_CERT,
             self.SCHEMES.WSS_VERIFY_SERVER,
             self.SCHEMES.WSS_PROVIDE_CLIENT,
             self.SCHEMES.WSS_BOTH ]  else "tcp"
+        logger.info(f"MQTT transport: {self.client.transport}")
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
         self.client.on_socket_open = self._on_socket_open
@@ -548,10 +550,14 @@ class at_wifi_mqtt_t(object):
         if self.scheme in [self.SCHEMES.TLS_VERIFY_SERVER,
                            self.SCHEMES.WSS_VERIFY_SERVER]:
             self.client.tls_set(ca_certs=self.ca)
+            logger.info("Enable SSL for connection with CA.")
         elif self.scheme in [self.SCHEMES.TLS_NO_CERT,
                              self.SCHEMES.WSS_NO_CERT]:
+            logger.info("Enable SSL for connection with no CA.")
             self.client.tls_set(cert_reqs=ssl.CERT_NONE)
             self.client.tls_insecure_set(True)
+        else:
+            logger.info("Disable SSL for connection.")
 
         if was_connected:
             self.connect()
@@ -593,7 +599,7 @@ class at_wifi_mqtt_t(object):
         end = time.monotonic() + timeout
         while not isinstance(self._connected, bool) and time.monotonic() < end:
             self.client.loop()
-        logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
+        logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port} : {bool(self._connected)}")
         return bool(self._connected)
 
     def _on_connect(self, client, userdata, flags, rc):
