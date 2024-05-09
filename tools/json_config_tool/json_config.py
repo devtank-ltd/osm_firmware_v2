@@ -130,7 +130,7 @@ class dev_json_t:
                 json_ios[i].update({"direction": "IN"})
 
         if self.mb_config:
-            json_pop["modbus_bus"] = { "setup" : self.mb_config
+            json_pop["modbus_bus"] = { "setup" : self.mb_config,
                                        "modbus_devices" : self.modbus_devs }
         for i in self.meas_formatted:
             json_pop["measurements"].update({
