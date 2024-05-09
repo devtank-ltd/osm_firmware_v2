@@ -44,8 +44,7 @@ class dev_json_t:
         self.ios = self.dev.do_cmd_multi("ios")
         self.fw = self.dev.version.value
         self.serial_num = self.dev.serial_num.value
-        self.dev_eui = self.dev.comms.dev_eui
-        self.app_key = self.dev.comms.app_key
+        self.comms = self.dev.comms.get_dict()
         self.cc1_mp = self.dev.get_midpoint("CC1")[0].split()[1]
         self.cc2_mp = self.dev.get_midpoint("CC2")[0].split()[1]
         self.cc3_mp = self.dev.get_midpoint("CC3")[0].split()[1]
@@ -79,16 +78,15 @@ class dev_json_t:
 
     def save_config(self, filepath:str):
         json_pop = {
-            "version": None,
-            "serial_num": None,
-            "interval_mins":None,
-            "dev_eui": None,
-            "app_key": None,
+            "version": self.fw,
+            "serial_num": self.serial_num,
+            "interval_mins":self.interval_mins,
+            "comms": self.comms,
             "ios": {},
             "cc_midpoints": {
-                "CC1":None,
-                "CC2":None,
-                "CC3":None
+                "CC1":self.cc1_mp,
+                "CC2":self.cc2_mp,
+                "CC3":self.cc3_mp
             },
             "modbus_bus": {
                 "setup": None,
@@ -96,14 +94,6 @@ class dev_json_t:
             },
             "measurements":{}
         }
-        json_pop["serial_num"] = self.serial_num
-        json_pop["version"] = self.fw
-        json_pop["interval_mins"] = self.interval_mins
-        json_pop["dev_eui"] = self.dev_eui
-        json_pop["app_key"] = self.app_key
-        json_pop["cc_midpoints"]["CC1"] = self.cc1_mp
-        json_pop["cc_midpoints"]["CC2"] = self.cc2_mp
-        json_pop["cc_midpoints"]["CC3"] = self.cc3_mp
 
         for i, v in enumerate(self.ios):
             m = re.match(IOS_PATTERN, v)
@@ -182,11 +172,7 @@ class dev_json_t:
             new_int_mins = contents["interval_mins"]
             self.dev.interval_mins = new_int_mins
 
-            dev_eui = contents["dev_eui"]
-            self.dev.comms.dev_eui = dev_eui
-
-            app_key = contents["app_key"]
-            self.dev.comms.app_key = app_key
+            self.dev.comms.from_dict(contents["comms"])
 
             ios = contents["ios"]
             spec = edge = pull = None

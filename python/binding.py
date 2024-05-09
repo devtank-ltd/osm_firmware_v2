@@ -219,6 +219,17 @@ class comms_t(object):
             return
         super().__setattr__(__name, __value)
 
+    def get_dict(self):
+        return dict([ (name, self._get_config(*config))
+                      for name, config in self.COMMS_ATTR_DICT.items() ])
+
+    def from_dict(self, config_dict):
+        for name, value in config_dict:
+            config = self.COMMS_ATTR_DICT.get(name)
+            if not config:
+                raise IOError(f"No comms attribute {name}")
+            self._set_config(config[0], __value)
+
     def _get_config(self, cmd_name, pre):
         resp = self.parent.do_cmd_multi(f"comms_config {cmd_name}")
         if resp and resp[0].startswith(pre):
