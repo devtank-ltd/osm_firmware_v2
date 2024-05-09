@@ -552,16 +552,16 @@ class dev_t(dev_base_t):
     def update_midpoint(self, value, phase):
         return self.do_cmd_multi(f"cc_mp {value} {phase}")
 
-    def set_outer_inner_cc(self, phase, outer, inner):
-        self.do_cmd(f"cc_gain {phase} {outer} {inner}")
+    def set_input_output_cc(self, phase, input, output):
+        self.do_cmd(f"cc_gain {phase} {input} {output}")
 
-    def set_cc_type(self, phase, outer):
+    def set_cc_type(self, phase, ctype):
         phases = [1,2,3]
         units = ['A', 'V']
-        if phase not in phases or outer not in units:
+        if phase not in phases or ctype not in units:
             debug_print('Invalid arguments supplied.')
             return
-        return self.do_cmd(f"cc_type {phase} {outer}")
+        return self.do_cmd(f"cc_type {phase} {ctype}")
 
     def save(self):
         return self.do_cmd("save")
