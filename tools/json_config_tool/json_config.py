@@ -76,7 +76,7 @@ class dev_json_t:
                         })
                 self.modbus_devs.append(dict)
 
-    def save_config(self, filepath:str):
+    def get_dict(self):
         json_pop = {
             "version": self.fw,
             "serial_num": self.serial_num,
@@ -137,6 +137,10 @@ class dev_json_t:
                     "samplecount": i[2]
                     }
                 })
+        return json_pop
+
+    def save_config(self, filepath:str):
+        json_pop = self.get_dict()
 
         json_data = json.dumps(json_pop, indent=2)
 
@@ -155,7 +159,7 @@ class dev_json_t:
             int_mins = parsed["interval_mins"]
             if int_mins:
                 log("File verified, writing to osm.")
-                self.load_json_to_osm(parsed)
+                self.from_dict(parsed)
             else:
                 log("Invalid fields in file.")
                 return False
@@ -163,7 +167,7 @@ class dev_json_t:
             log("Invalid json.")
             return False
 
-    def load_json_to_osm(self, contents):
+    def from_dict(self, contents):
         self.dev.do_cmd("wipe")
         time.sleep(2)
         if contents:
