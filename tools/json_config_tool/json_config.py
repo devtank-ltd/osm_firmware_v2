@@ -203,9 +203,9 @@ class dev_json_t:
                 else:
                     self.dev.disable_io(i)
 
-            self.dev.update_midpoint(contents["cc_midpoints"]["CC1"], "CC1")
-            self.dev.update_midpoint(contents["cc_midpoints"]["CC2"], "CC2")
-            self.dev.update_midpoint(contents["cc_midpoints"]["CC3"], "CC3")
+            cc_midpoints = contents["cc_midpoints"]
+            for cc, value in cc_midpoints.items():
+                self.dev.update_midpoint(value, cc)
 
             mb_setup = contents["modbus_bus"]["setup"]
             if mb_setup:
