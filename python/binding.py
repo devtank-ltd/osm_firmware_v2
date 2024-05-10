@@ -64,7 +64,7 @@ def parse_float(r_str: str):
     return False
 
 
-def parse_lora_comms(r_str: str):
+def parse_osm_comms(r_str: str):
     return "Connected" in r_str
 
 
@@ -427,7 +427,7 @@ class dev_t(dev_base_t):
             raise IndexError("Cannot query OSM, is it turned on?")
         self._children = {
             "ios"       : ios_t(self, self._io_count),
-            "comms_conn": property_t(self,    "LoRa Comms"         , bool  , "comms_conn"     , parse_lora_comms ),
+            "comms_conn": property_t(self,    "OSM Comms"         , bool  , "comms_conn"     , parse_osm_comms ),
             "version"   : property_t(self,    "FW Version"         , str   , "version"   , lambda s : parse_word(2, s) ),
             "serial_num": property_t(self,    "Serial Number"      , str   , "serial_num", lambda s : parse_word(2, s) ),
         }
