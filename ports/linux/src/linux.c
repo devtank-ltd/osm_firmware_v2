@@ -1090,9 +1090,12 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
                 }
 
                 char tty_path[128];
-                strcpy(tty_path, ret_static_file_location());
-                strcat(tty_path, pty_name);
-                strcat(tty_path, LINUX_SLAVE_SUFFIX);
+                unsigned tty_path_len = snprintf(tty_path, 128, "%s/%s"LINUX_SLAVE_SUFFIX, ret_static_file_location(), pty_name);
+                if (tty_path_len >= sizeof(tty_path))
+                {
+                    linux_error("Final tty name for %s too long.", pty_name);
+                    return false;
+                }
                 if (access(tty_path, F_OK) == 0)
                 {
                     return true;
