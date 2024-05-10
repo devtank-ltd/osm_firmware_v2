@@ -44,7 +44,7 @@ class dev_json_t:
         self.ios = self.dev.do_cmd_multi("ios")
         self.fw = self.dev.version.value
         self.serial_num = self.dev.serial_num.value
-        self.comms = self.dev.comms.get_dict()
+        self.comms = self.dev.comms.as_dict()
         self.cc1_mp = self.dev.get_midpoint("CC1")[0].split()[1]
         self.cc2_mp = self.dev.get_midpoint("CC2")[0].split()[1]
         self.cc3_mp = self.dev.get_midpoint("CC3")[0].split()[1]
@@ -76,7 +76,7 @@ class dev_json_t:
                         })
                 self.modbus_devs.append(dict)
 
-    def get_dict(self):
+    def as_dict(self):
         json_pop = {
             "version": self.fw,
             "serial_num": self.serial_num,
@@ -142,7 +142,7 @@ class dev_json_t:
         return json_pop
 
     def save_config(self, filepath:str):
-        json_pop = self.get_dict()
+        json_pop = self.as_dict()
 
         json_data = json.dumps(json_pop, indent=2)
 

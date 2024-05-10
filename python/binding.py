@@ -219,7 +219,7 @@ class comms_t(object):
             return
         super().__setattr__(__name, __value)
 
-    def get_dict(self):
+    def as_dict(self):
         return dict([ (name, self._get_config(*config))
                       for name, config in self.COMMS_ATTR_DICT.items() ])
 
