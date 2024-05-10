@@ -51,7 +51,7 @@ class virtual_osm:
             linux_osm = self._generate_linux_binary()
 
         if linux_osm == 0:
-            cmd = [f"DEBUG=1 LOC={self.loc} USE_PORT={self.port} ../penguin/firmware.elf"]
+            cmd = [f"DEBUG=1 OSM_LOC={self.loc} USE_PORT={self.port} ../penguin/firmware.elf"]
             self._spawn_virtual_osm(cmd, self.port)
             time.sleep(2)
         else:

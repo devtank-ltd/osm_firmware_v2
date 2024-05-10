@@ -1,6 +1,6 @@
 #pragma once
 
-#define LOG_LINELEN 64
+#define LOG_LINELEN 128
 
 #define MEASURE_NAME_LEN            4
 #define MEASURE_NAME_NULLED_LEN     (MEASURE_NAME_LEN+1)
