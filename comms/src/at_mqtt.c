@@ -273,7 +273,7 @@ static int _at_mqtt_do_command(char* payload, unsigned payload_len, char* resp_b
     int resp_payload_len = snprintf(
         resp_buf,
         resp_buflen,
-        "{\"ret_code\":0x%"PRIX8"}",
+        "{\"ret_code\":\"0x%"PRIX8"\"}",
         (uint8_t)ret_code
         );
     resp_buf[resp_payload_len] = 0;
