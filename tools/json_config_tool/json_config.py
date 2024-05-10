@@ -26,6 +26,7 @@ class dev_json_t:
 
     def get_config(self):
         modbus = self.dev.get_modbus()
+        self.name = self.dev.name
         self.mb_config = modbus.config
         self.modbus_devices = modbus.devices
         self.interval_mins = self.dev.interval_mins
@@ -79,6 +80,7 @@ class dev_json_t:
     def as_dict(self):
         json_pop = {
             "version": self.fw,
+            "name": self.name,
             "serial_num": self.serial_num,
             "interval_mins":self.interval_mins,
             "comms": self.comms,
@@ -174,6 +176,7 @@ class dev_json_t:
         time.sleep(2)
         if contents:
             self.dev.set_serial_num(contents["serial_num"])
+            self.dev.set_name(contents["name"])
 
             new_int_mins = contents["interval_mins"]
             self.dev.interval_mins = new_int_mins

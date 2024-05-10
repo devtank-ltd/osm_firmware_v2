@@ -454,6 +454,17 @@ class dev_t(dev_base_t):
             comms = wifi_comms_t(self)
         return comms
 
+    @property
+    def name(self):
+        r_str = self.do_cmd("name")
+        m = re.match("Name: (?P<osm_name>.*)$", r_str)
+        if not m:
+            raise IOError(f"Unexpected name response")
+        return m.groupdict()["osm_name"]
+
+    def set_name(self, new_name):
+        return self.do_cmd(f"name {new_name}")
+
     def set_serial_num(self, serial_num):
         self.do_cmd("serial_num %s" % serial_num)
 
