@@ -22,6 +22,7 @@
 
 #define AT_WIFI_TIMEOUT_MS_WIFI                 30000
 #define AT_WIFI_TIMEOUT_MS_MQTT                 30000
+#define AT_WIFI_TIMEOUT_MS_DEFAULT              30000
 
 #define AT_WIFI_WIFI_FAIL_CONNECT_TIMEOUT_MS    60000
 #define AT_WIFI_MQTT_FAIL_CONNECT_TIMEOUT_MS    60000
@@ -973,22 +974,28 @@ static void _at_wifi_check_mqtt_timeout(void)
 }
 
 
+#define __AT_WIFI_TIMEOUT_TEMPLATE(_timeout, _cb)                      \
+    if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > _timeout) \
+    {                                                                  \
+        _cb();                                                         \
+    }
+
+
 static void _at_wifi_wifi_fail_connect(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_WIFI_WIFI_FAIL_CONNECT_TIMEOUT_MS)
-    {
-        _at_wifi_reset();
-    }
+    __AT_WIFI_TIMEOUT_TEMPLATE(AT_WIFI_WIFI_FAIL_CONNECT_TIMEOUT_MS, _at_wifi_reset);
 }
 
 
 static void _at_wifi_mqtt_fail_connect(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_WIFI_MQTT_FAIL_CONNECT_TIMEOUT_MS)
-    {
-        /* restart MQTT config */
-        _at_wifi_do_mqtt_user_conf();
-    }
+    __AT_WIFI_TIMEOUT_TEMPLATE(AT_WIFI_MQTT_FAIL_CONNECT_TIMEOUT_MS, _at_wifi_do_mqtt_user_conf);
+}
+
+
+static void _at_wifi_check_default_timeout(void)
+{
+    __AT_WIFI_TIMEOUT_TEMPLATE(AT_WIFI_TIMEOUT_MS_DEFAULT, _at_wifi_start)
 }
 
 
@@ -1041,7 +1048,9 @@ void at_wifi_loop_iteration(void)
             break;
         case AT_WIFI_STATE_MQTT_FAIL_CONNECT:
             _at_wifi_mqtt_fail_connect();
+            break;
         default:
+            _at_wifi_check_default_timeout();
             break;
     }
 }
