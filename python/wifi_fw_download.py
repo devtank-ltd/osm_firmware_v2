@@ -10,6 +10,7 @@ import random
 import struct
 import logging
 import datetime
+import traceback
 
 import paho.mqtt.client as mqtt
 
@@ -25,7 +26,11 @@ class wifi_fw_dl_t(object):
     COMMAND_RESP_OK     = 0x01
     COMMAND_RESP_ERR    = 0x02
 
-    MAX_LINE_LEN        = 128
+    MAX_LINE_LEN        = 256
+
+    EOL                 = "\r\n"
+
+
 
     def __init__(self, address, port, firmware_file, hwid, user=None, password=None, ca=None, websockets=False, use_ssl=False, insecure=False, verbose=False):
 
@@ -53,8 +58,9 @@ class wifi_fw_dl_t(object):
 
         firmware = firmware_file.read()
 
-        # Using MTU as Max line length - command length -1 for null termination
-        self.MTU = self.MAX_LINE_LEN - len("fw+ ") - 1
+        at_preamble = f"+MQTTSUBRECV:0,\"{self.pub_topic}\",{self.MAX_LINE_LEN},"
+        # Using MTU as Max line length - overhead for AT MQTT messages - command length - line ending length -1 for null termination
+        self.MTU = self.MAX_LINE_LEN - len(at_preamble) - len("fw+ ") - len(self.EOL) - 1
         # If MTU is odd, make even my -1
         if self.MTU % 2:
             self.MTU -= 1
@@ -63,7 +69,7 @@ class wifi_fw_dl_t(object):
         bin_mtu = math.floor(self.MTU/2)
         chunks = []
         for i in range(0, len(firmware), bin_mtu):
-            chunk = firmware[i:i+bin_mtu].hex().rjust(self.MTU, "0")
+            chunk = firmware[i:i+bin_mtu].hex()
             chunks.append(chunk)
 
         crc = hex(CrcModbus.calc(firmware))[2:].rjust(4,"0")
@@ -129,9 +135,9 @@ class wifi_fw_dl_t(object):
         self._logger.debug(f"PUBLISHING {self.command_index}/{len(self.commands)}")
         self._logger.info(f"{100. * self.command_index/len(self.commands): .02f} %")
         cmd = self.commands[self.command_index]
-        client.publish(userdata["pub_topic"], cmd)
-        self._logger.info(f"CMD: {cmd}")
         time.sleep(0.25)
+        client.publish(userdata["pub_topic"], cmd)
+        self._logger.debug(f"CMD: {cmd}")
         self.command_index += 1
         if self.command_index > 1:
             self._is_measuring = False
@@ -174,9 +180,19 @@ class wifi_fw_dl_t(object):
 
 
 def main(args):
+    return_val = 0
+    start_time = time.monotonic()
     with wifi_fw_dl_t(args.address, args.port, args.firmware, args.hwid, user=args.user, password=args.password, ca=args.ca, websockets=args.websockets, use_ssl=args.ssl, insecure=args.insecure, verbose=args.verbose) as wifi_fw_dl:
-        wifi_fw_dl.run()
-    return 0
+        try:
+            wifi_fw_dl.run()
+        except KeyboardInterrupt:
+            return_val = 1
+            print("Caught keyboard interrupt", file=sys.stderr, flush=True)
+        except:
+            return_val = -1
+            traceback.print_exc()
+    print(f"Time taken = {time.monotonic() - start_time: .03f}s")
+    return return_val
 
 
 if __name__ == '__main__':
