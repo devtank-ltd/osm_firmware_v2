@@ -25,7 +25,10 @@ class wifi_fw_dl_t(object):
     COMMAND_RESP_OK     = 0x01
     COMMAND_RESP_ERR    = 0x02
 
+    MAX_LINE_LEN        = 128
+
     def __init__(self, address, port, firmware_file, hwid, user=None, password=None, ca=None, websockets=False, use_ssl=False, insecure=False, verbose=False):
+
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         self._logger = logging.getLogger(__name__)
         self.client.enable_logger(self._logger)
@@ -46,23 +49,31 @@ class wifi_fw_dl_t(object):
         self.hwid = hwid
 
         sub_topic = f"osm/{hwid}/cmd/resp"
-        pub_topic = f"osm/{hwid}/cmd"
+        self.pub_topic = f"osm/{hwid}/cmd"
 
         firmware = firmware_file.read()
 
+        # Using MTU as Max line length - command length -1 for null termination
+        self.MTU = self.MAX_LINE_LEN - len("fw+ ") - 1
+        # If MTU is odd, make even my -1
+        if self.MTU % 2:
+            self.MTU -= 1
+        self._logger.debug(f"USING MTU = {self.MTU}")
+
         chunks = [ firmware[int(self.MTU * i / 2): int(self.MTU * (i + 1) / 2)].hex().rjust(self.MTU, "0") for i in range(int(len(firmware)/2)) ]
+
+        crc = hex(CrcModbus.calc(firmware))[2:].rjust(4,"0")
 
         self.commands = ["meas_enable 0"]
         self.commands += [f"fw+ {chunk}" for chunk in chunks]
-        self.commands += [f"fw@"]
+        self.commands += [f"fw@ {crc}"]
         self.command_index = 0
 
         self.client.user_data_set({
             "sub_topic": sub_topic,
-            "pub_topic": pub_topic,
+            "pub_topic": self.pub_topic,
             "firmware": firmware,
             "pos": 0,
-            "crc": CrcModbus.calc(firmware),
             "mtu": 32,
         })
 
@@ -87,8 +98,13 @@ class wifi_fw_dl_t(object):
         self.client.connect(address, port)
         self.done = False
 
+        self._is_measuring = True
+
     def close(self):
         if self.client:
+            if not self._is_measuring:
+                self.client.publish(self.pub_topic, "meas_enable 1")
+                time.sleep(0.3)
             self.client.disconnect()
             self.client = None
 
@@ -101,16 +117,20 @@ class wifi_fw_dl_t(object):
     def __del__(self):
         self.close()
 
-    def _make_payload(self, cmd):
-        return json.dumps({"CCMD": cmd})
-
     def _send_packet(self, client, userdata):
         if self.command_index >= len(self.commands):
             self._logger.info("NO MORE TO SEND")
             self.done = True
             return
-        client.publish(userdata["pub_topic"], self.commands[self.command_index])
+        self._logger.debug(f"PUBLISHING {self.command_index}/{len(self.commands)}")
+        self._logger.info(f"{100. * self.command_index/len(self.commands): .02f} %")
+        cmd = self.commands[self.command_index]
+        client.publish(userdata["pub_topic"], cmd)
+        self._logger.info(f"CMD: {cmd}")
+        time.sleep(0.25)
         self.command_index += 1
+        if self.command_index > 1:
+            self._is_measuring = False
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code ==0:
@@ -135,14 +155,10 @@ class wifi_fw_dl_t(object):
     def _on_message(self, client, userdata, message):
         self._logger.info(f"RECEIVED MESSAGE << '{message.topic}':{message.payload}")
         data = json.loads(message.payload.decode())
-        print(data)
         ret_code_str = data.get("ret_code")
         if ret_code_str:
             ret_code = int(ret_code_str[2:], 16)
-            print(f"{ret_code = }")
-            print(f"{type(ret_code) = }")
             if ret_code == self.COMMAND_RESP_OK:
-                time.sleep(0.3)
                 self._send_packet(client, userdata)
             else:
                 self._logger.error(f"UNEXPECTED RETURN CODE: {ret_code}")
