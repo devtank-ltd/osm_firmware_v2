@@ -60,7 +60,11 @@ class wifi_fw_dl_t(object):
             self.MTU -= 1
         self._logger.debug(f"USING MTU = {self.MTU}")
 
-        chunks = [ firmware[int(self.MTU * i / 2): int(self.MTU * (i + 1) / 2)].hex().rjust(self.MTU, "0") for i in range(int(len(firmware)/2)) ]
+        bin_mtu = math.floor(self.MTU/2)
+        chunks = []
+        for i in range(0, len(firmware), bin_mtu):
+            chunk = firmware[i:i+bin_mtu].hex().rjust(self.MTU, "0")
+            chunks.append(chunk)
 
         crc = hex(CrcModbus.calc(firmware))[2:].rjust(4,"0")
 
