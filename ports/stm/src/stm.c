@@ -223,6 +223,12 @@ void platform_reset_sys(void)
 }
 
 
+void platform_hard_reset_sys(void)
+{
+    scb_reset_system();
+}
+
+
 persist_storage_t* platform_get_raw_persist(void)
 {
     return (persist_storage_t*)PERSIST_RAW_DATA;

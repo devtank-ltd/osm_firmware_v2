@@ -76,7 +76,7 @@ class wifi_fw_dl_t(object):
 
         self.commands = ["meas_enable 0"]
         self.commands += [f"fw+ {chunk}" for chunk in chunks]
-        self.commands += [f"fw@ {crc}"]
+        self.commands += [f"fw@ {crc}", "fw_reset"]
         self.command_index = 0
 
         self.client.user_data_set({
@@ -127,18 +127,27 @@ class wifi_fw_dl_t(object):
     def __del__(self):
         self.close()
 
+    def _publish(self, cmd):
+        time.sleep(0.25)
+        self.client.publish(self.pub_topic, cmd)
+        self._logger.debug(f"CMD: {cmd}")
+
+    def _publish_command(self):
+        self._logger.debug(f"PUBLISHING {self.command_index}/{len(self.commands)}")
+        self._logger.info(f"{100. * self.command_index/len(self.commands): .02f} %")
+        self._publish(self.commands[self.command_index])
+        self.command_index += 1
+
     def _send_packet(self, client, userdata):
+        if self.commands[self.command_index] == "fw_reset":
+            # Dont expect reply and give a timeout for before sending next
+            self._publish_command()
+            time.sleep(2)
         if self.command_index >= len(self.commands):
             self._logger.info("NO MORE TO SEND")
             self.done = True
             return
-        self._logger.debug(f"PUBLISHING {self.command_index}/{len(self.commands)}")
-        self._logger.info(f"{100. * self.command_index/len(self.commands): .02f} %")
-        cmd = self.commands[self.command_index]
-        time.sleep(0.25)
-        client.publish(userdata["pub_topic"], cmd)
-        self._logger.debug(f"CMD: {cmd}")
-        self.command_index += 1
+        self._publish_command()
         if self.command_index > 1:
             self._is_measuring = False
 

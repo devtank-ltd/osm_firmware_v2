@@ -18,6 +18,7 @@ void platform_blink_led_init(void);
 void platform_blink_led_toggle(void);
 void platform_set_rs485_mode(bool driver_enable);
 void platform_reset_sys(void);
+void platform_hard_reset_sys(void);
 persist_storage_t* platform_get_raw_persist(void);
 persist_measurements_storage_t* platform_get_measurements_raw_persist(void);
 bool platform_persist_commit(persist_storage_t * persist_data, persist_measurements_storage_t* persist_measurements);

@@ -167,9 +167,18 @@ static command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
 }
 
 
+static command_response_t _fw_reset(char *args, cmd_ctx_t * ctx)
+{
+    persist_commit();
+    platform_hard_reset_sys();
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* update_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     _fw_add                       , false , NULL },
-                                       { "fw@",          "Finishing crc of new fw.", _fw_fin                       , false , NULL }};
+                                       { "fw@",          "Finishing crc of new fw.", _fw_fin                       , false , NULL },
+                                       { "fw_reset",     "Reset into new firmware.", _fw_reset                     , false , NULL }};
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
