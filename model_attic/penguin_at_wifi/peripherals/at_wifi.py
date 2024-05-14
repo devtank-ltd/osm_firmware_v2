@@ -3,6 +3,7 @@
 import os
 import sys
 import tty
+import ssl
 import time
 import enum
 import logging
@@ -300,6 +301,7 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         mqtt_obj.user = username.decode()[1:-1]
         mqtt_obj.pwd = password.decode()[1:-1]
         mqtt_obj.ca = ca_path.decode()
+        mqtt_obj.reinit_client()
         self.reply_ok()
 
     def conn_config(self, args):
@@ -507,7 +509,7 @@ class at_wifi_mqtt_t(object):
         ])
 
     def __init__(self, selector):
-        self.scheme = self.SCHEMES.TLS_PROVIDE_CLIENT
+        self.scheme = self.SCHEMES.TCP
         self.addr = None
         self.client_id = None
         self.user = None
@@ -519,14 +521,46 @@ class at_wifi_mqtt_t(object):
         self._connected = False
         self.state = self.STATES.UNINIT
         self._selector = selector
+        self.reinit_client()
+
+    def reinit_client(self):
+        was_connected = self._connected
+        self._connected = False
+        if was_connected:
+            self.client.disconnect()
+            self.state = self.STATES.UNINIT
+
         if int(paho.__version__.split(".")[0]) > 1:
-            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         else:
             self.client = mqtt.Client()
+        logger.info(f"MQTT Scheme: {self.scheme}")
+        self.client.transport = "websockets" if self.scheme in [
+            self.SCHEMES.WS,
+            self.SCHEMES.WSS_NO_CERT,
+            self.SCHEMES.WSS_VERIFY_SERVER,
+            self.SCHEMES.WSS_PROVIDE_CLIENT,
+            self.SCHEMES.WSS_BOTH ]  else "tcp"
+        logger.info(f"MQTT transport: {self.client.transport}")
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
+
+        if self.scheme in [self.SCHEMES.TLS_VERIFY_SERVER,
+                           self.SCHEMES.WSS_VERIFY_SERVER]:
+            self.client.tls_set(ca_certs=self.ca)
+            logger.info("Enable SSL for connection with CA.")
+        elif self.scheme in [self.SCHEMES.TLS_NO_CERT,
+                             self.SCHEMES.WSS_NO_CERT]:
+            logger.info("Enable SSL for connection with no CA.")
+            self.client.tls_set(cert_reqs=ssl.CERT_NONE)
+            self.client.tls_insecure_set(True)
+        else:
+            logger.info("Disable SSL for connection.")
+
+        if was_connected:
+            self.connect()
 
     def __del__(self):
         self.close()
@@ -550,16 +584,34 @@ class at_wifi_mqtt_t(object):
             logger.info(f"{self.pwd       = }")
             logger.info(f"{self.ca        = }")
             return False
+
+        if self.scheme not in [self.SCHEMES.TCP,
+                               self.SCHEMES.TLS_NO_CERT,
+                               self.SCHEMES.TLS_VERIFY_SERVER,
+                               self.SCHEMES.WSS_VERIFY_SERVER,
+                               self.SCHEMES.WSS_NO_CERT]:
+            logger.info("Scheme current unsupported.")
+            return False
+
         self.client.username_pw_set(self.user, password=self.pwd)
-        self.client.connect(self.addr, self.port, 60)
+        try:
+            self.client.connect(self.addr, self.port, 60)
+        except ConnectionResetError as e:
+            logger.error(f"Connection Failed: {e}")
+            return False
+
         self._connected = None
         end = time.monotonic() + timeout
         while not isinstance(self._connected, bool) and time.monotonic() < end:
             self.client.loop()
-        logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port}")
+        logger.info(f"CONNECTED TO {self.user}:{self.pwd}@{self.addr}:{self.port} : {bool(self._connected)}")
         return bool(self._connected)
 
-    def _on_connect(self, client, userdata, flags, rc):
+    def _on_connect(self, client, userdata, flags, rc, *args):
+        # Not really sure what type of object properties should be
+        properties = []
+        if len(args):
+            properties = args[0]
         logger.info(f"ON CONNECT; {rc = }");
         if rc == 0:
             self._connected = True
@@ -588,13 +640,23 @@ class at_wifi_mqtt_t(object):
             self.client.loop()
         return topic in self.subscriptions
 
-    def _on_subscribe(self, client, userdata, mid, granted_qos):
+    def _on_subscribe(self, client, userdata, mid, rc, *args):
+        # Not really sure what type of object properties should be
+        properties = []
+        if len(args):
+            properties = args[0]
         logger.info(f"ON SUBSCRIBE")
-        if self._pending_subscription:
-            self.subscriptions.append(self._pending_subscription)
-            logger.info(f"SUBSCRIBED {self._pending_subscription}")
-            self.state = self.STATES.CONN_WITH_SUB
-            self._pending_subscription = None
+
+        for sub_result in rc:
+            # Any reason code >= 128 is a failure.
+            if sub_result >= 128:
+                logger.info(f"FAILED SUBSCRIBE {sub_result = }")
+            else:
+                if self._pending_subscription:
+                    self.subscriptions.append(self._pending_subscription)
+                    logger.info(f"SUBSCRIBED {self._pending_subscription}")
+                    self.state = self.STATES.CONN_WITH_SUB
+                    self._pending_subscription = None
 
     def _on_socket_open(self, mqttc, userdata, sock):
         self._selector.register(sock, selectors.EVENT_READ, self.event)
@@ -776,7 +838,7 @@ def main():
         logger.setLevel(level=logging.DEBUG)
         logger.debug("Debug enabled")
         if is_debug == "file":
-            log_file = os.path.join(osm_dir, "at_wifi_py.log")
+            log_file = os.path.join(osm_loc, "at_wifi_py.log")
             logger.debug(f"Logging to: {log_file}")
             logger.addHandler(logging.FileHandler(log_file))
 
