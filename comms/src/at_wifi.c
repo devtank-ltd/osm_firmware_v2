@@ -1116,12 +1116,12 @@ static command_response_t _at_wifi_send_cb(char * args, cmd_ctx_t * ctx)
 
 command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
-    bool ret = at_base_config_setup_str(_at_wifi_config_cmds, skip_space(args), ctx);
-    if (ret == COMMAND_RESP_NONE && _at_wifi_mem_is_valid())
+    command_response_t ret = at_base_config_setup_str(_at_wifi_config_cmds, skip_space(args), ctx);
+    if (ret == COMMAND_RESP_OK && _at_wifi_mem_is_valid())
     {
         _at_wifi_start();
     }
-    return ret ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return ret;
 }
 
 
