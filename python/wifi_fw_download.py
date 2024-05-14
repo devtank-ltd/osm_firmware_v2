@@ -142,7 +142,8 @@ class wifi_fw_dl_t(object):
         if self.commands[self.command_index] == "fw_reset":
             # Dont expect reply and give a timeout for before sending next
             self._publish_command()
-            time.sleep(2)
+            self._is_measuring = True
+            time.sleep(5)
         if self.command_index >= len(self.commands):
             self._logger.info("NO MORE TO SEND")
             self.done = True
