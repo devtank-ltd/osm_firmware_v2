@@ -32,9 +32,15 @@
 
 #define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID                "    \"WIFI SSID\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD                 "    \"WIFI PWD\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE             "    \"COUNTRY CODE\": \"%.*s\","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START            "    \"CHANNEL START\": %"PRIu16""
+#define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT            "    \"CHANNEL COUNT\": %"PRIu16""
 
-#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN      ,_wifi_ssid
-#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN       , _wifi_pwd
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN          ,_wifi_ssid
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN           , _wifi_pwd
+#define AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_country_code)  AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE , AT_WIFI_MAX_COUNTRY_CODE_LEN  , _country_code
+#define AT_WIFI_PRINT_CFG_JSON_CHANNEL_START(_schan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START, _schan
+#define AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT(_nchan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT, _nchan
 
 
 enum at_wifi_states_t
@@ -43,6 +49,7 @@ enum at_wifi_states_t
     AT_WIFI_STATE_IS_CONNECTED,
     AT_WIFI_STATE_RESTORE,
     AT_WIFI_STATE_DISABLE_ECHO,
+    AT_WIFI_STATE_RF_REGION,
     AT_WIFI_STATE_WIFI_INIT,
     AT_WIFI_STATE_WIFI_SETTING_MODE,
     AT_WIFI_STATE_WIFI_CONNECTING,
@@ -121,6 +128,7 @@ static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
         "IS_CONNECTED"                                  ,
         "RESTORE"                                       ,
         "DISABLE_ECHO"                                  ,
+        "RF_REGION"                                     ,
         "WIFI_INIT"                                     ,
         "WIFI_SETTING_MODE"                             ,
         "WIFI_CONNECTING"                               ,
@@ -190,8 +198,15 @@ static void _at_wifi_start(void)
     else
     {
         /* Mem is valid */
-        _at_wifi_printf("AT+CWSTATE?");
-        _at_wifi_ctx.state = AT_WIFI_STATE_IS_CONNECTED;
+        if (AT_WIFI_STATE_RESTORE == _at_wifi_ctx.state)
+        {
+            comms_debug("Already resetting, nop");
+        }
+        else
+        {
+            _at_wifi_printf("AT+CWSTATE?");
+            _at_wifi_ctx.state = AT_WIFI_STATE_IS_CONNECTED;
+        }
     }
 }
 
@@ -281,14 +296,20 @@ bool at_wifi_send(char* data, uint16_t len)
 
 static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx);
 static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx);
+static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx);
+static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx);
+static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx);
 
 
 void at_wifi_init(void)
 {
     static struct cmd_link_t config_cmds[] =
     {
-        { "wifi_ssid",      "Set/get SSID",             _at_wifi_config_wifi_ssid_cb        , false , NULL },
-        { "wifi_pwd",       "Set/get password",         _at_wifi_config_wifi_pwd_cb         , false , NULL },
+        { "wifi_ssid",      "Set/get SSID",                 _at_wifi_config_wifi_ssid_cb        , false , NULL },
+        { "wifi_pwd",       "Set/get password",             _at_wifi_config_wifi_pwd_cb         , false , NULL },
+        { "country",        "Set/get country",              _at_wifi_config_country_cb          , false , NULL },
+        { "schan",          "Set/get start channel",        _at_wifi_config_channel_start_cb    , false , NULL },
+        { "nchan",          "Set/get number of channels",   _at_wifi_config_channel_count_cb    , false , NULL },
     };
 
     struct cmd_link_t* tail = &config_cmds[ARRAY_SIZE(config_cmds)-1];
@@ -419,6 +440,25 @@ static void _at_wifi_process_state_restore(char* msg, unsigned len)
 
 
 static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
+{
+    if (at_base_is_ok(msg, len))
+    {
+        _at_wifi_printf(
+            "AT+CWCOUNTRY=0,\"%.*s\",%"PRIu16",%"PRIu16,
+            AT_WIFI_MAX_COUNTRY_CODE_LEN, _at_wifi_ctx.mem->country_code,
+            _at_wifi_ctx.mem->channel_start,
+            _at_wifi_ctx.mem->channel_count
+            );
+        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
+    }
+    else if (at_base_is_error(msg, len))
+    {
+        _at_wifi_reset();
+    }
+}
+
+
+static void _at_wifi_process_state_rf_region(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
@@ -876,6 +916,9 @@ void at_wifi_process(char* msg)
         case AT_WIFI_STATE_DISABLE_ECHO:
             _at_wifi_process_state_disable_echo(msg, len);
             break;
+        case AT_WIFI_STATE_RF_REGION:
+            _at_wifi_process_state_rf_region(msg, len);
+            break;
         case AT_WIFI_STATE_WIFI_INIT:
             _at_wifi_process_state_wifi_init(msg, len);
             break;
@@ -1017,10 +1060,6 @@ void at_wifi_loop_iteration(void)
             }
             break;
         }
-        case AT_WIFI_STATE_IS_CONNECTED:
-            /* fall through */
-        case AT_WIFI_STATE_DISABLE_ECHO:
-            break;
         case AT_WIFI_STATE_WIFI_INIT:
             /* fall through */
         case AT_WIFI_STATE_WIFI_SETTING_MODE:
@@ -1094,6 +1133,37 @@ static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ct
 }
 
 
+static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx)
+{
+    _at_wifi_config_get_set_str(
+        "COUNTRY",
+        _at_wifi_ctx.mem->country_code,
+        AT_WIFI_MAX_COUNTRY_CODE_LEN,
+        args, ctx);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx)
+{
+    at_base_config_get_set_u16(
+        "SCHAN",
+        &_at_wifi_ctx.mem->channel_start,
+        args, ctx);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx)
+{
+    at_base_config_get_set_u16(
+        "NCHAN",
+        &_at_wifi_ctx.mem->channel_count,
+        args, ctx);
+    return COMMAND_RESP_OK;
+}
+
+
 void at_wifi_config_setup_str(char * str, cmd_ctx_t * ctx)
 {
     at_base_config_setup_str(_at_wifi_config_cmds, str, ctx);
@@ -1132,6 +1202,12 @@ command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_at_wifi_ctx.mem->wifi.ssid));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_at_wifi_ctx.mem->wifi.pwd));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_at_wifi_ctx.mem->country_code));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_CHANNEL_START(_at_wifi_ctx.mem->channel_start));
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT(_at_wifi_ctx.mem->channel_count));
     cmd_ctx_flush(ctx);
     at_mqtt_cmd_j_cfg(ctx);
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
@@ -1218,6 +1294,10 @@ static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
     memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
     at_wifi_config->mqtt.scheme = AT_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
+    strncpy(at_wifi_config->country_code, "GB", AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
+    at_wifi_config->country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN] = 0;
+    at_wifi_config->channel_start = 1;
+    at_wifi_config->channel_count = 13;
 }
 
 
