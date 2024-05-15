@@ -31,7 +31,7 @@ typedef struct
     } wifi;
     /* 16 byte boundary ---- */
     char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
-    uint8_t     __[5];
+    uint8_t     __[13];
     /* 16 byte boundary ---- */
 } __attribute__((__packed__)) at_wifi_config_t;
 
