@@ -12,7 +12,7 @@
 
 #define AT_WIFI_MAX_SSID_LEN                    63
 #define AT_WIFI_MAX_PWD_LEN                     63
-#define AT_WIFI_MAX_COUNTRY_CODE_LEN            3
+#define AT_WIFI_MAX_COUNTRY_CODE_LEN            2
 
 typedef struct
 {
@@ -24,7 +24,7 @@ typedef struct
         char        pwd[AT_WIFI_MAX_PWD_LEN + 1];
     } wifi;
     at_mqtt_config_t mqtt;
-    char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN];
+    char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
     uint16_t     channel_start;
     uint16_t     channel_count;
 } __attribute__((__packed__)) at_wifi_config_t;
