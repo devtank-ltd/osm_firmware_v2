@@ -61,6 +61,7 @@ enum at_mqtt_conn_states_t
     AT_MQTT_CONN_STATE_CONN_EST             = 4,
     AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC    = 5,
     AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC  = 6,
+    AT_MQTT_CONN_STATE_COUNT,
 };
 
 
@@ -111,7 +112,7 @@ at_base_cmd_t*       at_mqtt_get_mqtt_conn_cfg(void);
 bool                at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len);
 at_base_cmd_t*       at_mqtt_get_mqtt_conn(void);
 int                 at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen);
-bool                at_mqtt_parse_mqtt_conn(char* msg, unsigned len);
+bool                at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn);
 struct cmd_link_t*  at_mqtt_add_commands(struct cmd_link_t* tail);
 bool                at_mqtt_get_id(char* str, uint8_t len);
 void                at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx);

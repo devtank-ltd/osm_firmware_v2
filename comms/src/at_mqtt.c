@@ -381,8 +381,12 @@ int at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp
 }
 
 
-bool at_mqtt_parse_mqtt_conn(char* msg, unsigned len)
+bool at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn)
 {
+    if (!msg || !conn)
+    {
+        return false;
+    }
     char* p = msg;
     char* np;
     uint8_t link_id = strtoul(p, &np, 10);
@@ -396,12 +400,17 @@ bool at_mqtt_parse_mqtt_conn(char* msg, unsigned len)
         return false;
     }
     p = np + 1;
-    uint8_t conn = strtoul(p, &np, 10);
+    uint8_t conn8 = strtoul(p, &np, 10);
     if (p == np)
     {
         return false;
     }
-    return conn == AT_MQTT_CONN_STATE_CONN_EST;
+    if (conn8 >= AT_MQTT_CONN_STATE_COUNT)
+    {
+        return false;
+    }
+    *conn = conn8;
+    return true;
 }
 
 

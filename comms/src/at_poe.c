@@ -332,30 +332,35 @@ static void _at_poe_do_mqtt_user_conf(void)
 
 static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
 {
-    static bool is_conn = false;
+    static enum at_mqtt_conn_states_t conn = AT_MQTT_CONN_STATE_NOT_INIT;
     const char mqtt_conn_msg[] = "+MQTTCONN:";
     unsigned mqtt_conn_msg_len = strlen(mqtt_conn_msg);
     if (is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        if (at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len))
+        if (!at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn))
         {
-            is_conn = true;
+            conn = AT_MQTT_CONN_STATE_NOT_INIT;
         }
     }
     else if (at_base_is_ok(msg, len))
     {
-        if (is_conn)
+        switch (conn)
         {
-            is_conn = false;
-            _at_poe_printf("AT+MQTTSUB?");
-            _at_poe_ctx.state = AT_POE_STATE_MQTT_IS_SUBSCRIBED;
+            case AT_MQTT_CONN_STATE_CONN_EST:
+                /* fall through */
+            case AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
+                /* fall through */
+            case AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
+                _at_poe_printf("AT+MQTTSUB?");
+                _at_poe_ctx.state = AT_POE_STATE_MQTT_IS_SUBSCRIBED;
+                break;
+            default:
+                _at_poe_do_mqtt_user_conf();
+                break;
         }
-        else
-        {
-            _at_poe_do_mqtt_user_conf();
-        }
+        conn = AT_MQTT_CONN_STATE_NOT_INIT;
     }
     else if (at_base_is_error(msg, len))
     {
@@ -566,7 +571,9 @@ static void _at_poe_process_state_timedout_wait_mqtt_state(char* msg, unsigned l
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        if (at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len))
+        enum at_mqtt_conn_states_t conn;
+        if (at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn) &&
+            conn >= AT_MQTT_CONN_STATE_CONN_EST && conn < AT_MQTT_CONN_STATE_COUNT)
         {
             _at_poe_retry_command();
         }
