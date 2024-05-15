@@ -43,6 +43,7 @@ enum at_wifi_states_t
     AT_WIFI_STATE_IS_CONNECTED,
     AT_WIFI_STATE_RESTORE,
     AT_WIFI_STATE_DISABLE_ECHO,
+    AT_WIFI_STATE_RF_REGION,
     AT_WIFI_STATE_WIFI_INIT,
     AT_WIFI_STATE_WIFI_SETTING_MODE,
     AT_WIFI_STATE_WIFI_CONNECTING,
@@ -121,6 +122,7 @@ static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
         "IS_CONNECTED"                                  ,
         "RESTORE"                                       ,
         "DISABLE_ECHO"                                  ,
+        "RF_REGION"                                     ,
         "WIFI_INIT"                                     ,
         "WIFI_SETTING_MODE"                             ,
         "WIFI_CONNECTING"                               ,
@@ -419,6 +421,25 @@ static void _at_wifi_process_state_restore(char* msg, unsigned len)
 
 
 static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
+{
+    if (at_base_is_ok(msg, len))
+    {
+        _at_wifi_printf(
+            "AT+CWCOUNTRY=0,\"%.*s\",%"PRIu8",%"PRIu8,
+            AT_WIFI_MAX_COUNTRY_CODE_LEN, _at_wifi_ctx.mem->country_code,
+            _at_wifi_ctx.mem->channel_start,
+            _at_wifi_ctx.mem->channel_count
+            );
+        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
+    }
+    else if (at_base_is_error(msg, len))
+    {
+        _at_wifi_reset();
+    }
+}
+
+
+static void _at_wifi_process_state_rf_region(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
@@ -876,6 +897,9 @@ void at_wifi_process(char* msg)
         case AT_WIFI_STATE_DISABLE_ECHO:
             _at_wifi_process_state_disable_echo(msg, len);
             break;
+        case AT_WIFI_STATE_RF_REGION:
+            _at_wifi_process_state_rf_region(msg, len);
+            break;
         case AT_WIFI_STATE_WIFI_INIT:
             _at_wifi_process_state_wifi_init(msg, len);
             break;
@@ -1017,10 +1041,6 @@ void at_wifi_loop_iteration(void)
             }
             break;
         }
-        case AT_WIFI_STATE_IS_CONNECTED:
-            /* fall through */
-        case AT_WIFI_STATE_DISABLE_ECHO:
-            break;
         case AT_WIFI_STATE_WIFI_INIT:
             /* fall through */
         case AT_WIFI_STATE_WIFI_SETTING_MODE:
@@ -1218,6 +1238,9 @@ static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
     memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
     at_wifi_config->mqtt.scheme = AT_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
+    strncpy(at_wifi_config->country_code, "GB", AT_WIFI_MAX_COUNTRY_CODE_LEN);
+    at_wifi_config->channel_start = 1;
+    at_wifi_config->channel_count = 13;
 }
 
 
