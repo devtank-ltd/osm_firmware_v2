@@ -17,17 +17,22 @@
 typedef struct
 {
     uint8_t     type;
-    uint8_t     _[3];
+    uint16_t    channel_start;
+    uint16_t    channel_count;
+    uint8_t     _[11];
+    /* 16 byte boundary ---- */
+    at_mqtt_config_t mqtt;
+    /* 16 byte boundary ---- */
     struct
     {
         char        ssid[AT_WIFI_MAX_SSID_LEN + 1];
+        /* 16 byte boundary ---- */
         char        pwd[AT_WIFI_MAX_PWD_LEN + 1];
     } wifi;
-    at_mqtt_config_t mqtt;
+    /* 16 byte boundary ---- */
     char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
-    uint8_t     __[16-((AT_WIFI_MAX_COUNTRY_CODE_LEN+1)%16)];
-    uint16_t    channel_start;
-    uint16_t    channel_count;
+    uint8_t     __[5];
+    /* 16 byte boundary ---- */
 } __attribute__((__packed__)) at_wifi_config_t;
 
 _Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
