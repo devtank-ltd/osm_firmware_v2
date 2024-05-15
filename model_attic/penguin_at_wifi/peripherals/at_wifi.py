@@ -128,6 +128,8 @@ class at_wifi_at_commands_t(base_at_commands_t):
                                         base_at_commands_t.SET:         self.connect_info,
                                         base_at_commands_t.EXECUTE:     self.connect},      # Connect to an AP
             b"AT+CWQAP"             : { base_at_commands_t.EXECUTE:     self.disconnect},   # Disconnect from an AP
+            b"AT+CWCOUNTRY"         : { base_at_commands_t.QUERY:       self.get_country,
+                                        base_at_commands_t.SET:         self.set_country},
             b"AT+SYSTIMESTAMP"      : { base_at_commands_t.QUERY:       self.systime },     # Get current time
         }
         super().__init__(device, command_controller, commands)
@@ -226,6 +228,72 @@ class at_wifi_at_commands_t(base_at_commands_t):
             return
         self.device.wifi_connect(False)
         self.reply_ok()
+
+    def get_country(self, args):
+        wifi = self.device.wifi
+        info = f"+CWCOUNTRY:{wifi.country_policy},{wifi.country_code},{wifi.start_channel},{wifi.total_channel_count}"
+        self.reply(info.encode())
+        self.reply_ok()
+
+    def set_country(self, args):
+        list_args = args.split(b",")
+        logger.info(f"{list_args = }")
+        if len(list_args) != 4:
+            self.reply_param_error()
+            logger.info(f"Wrong argument count to set country {list_args}")
+            return
+        wifi = self.device.wifi
+        country_policy, country_code, start_channel, total_channel_count = list_args
+        try:
+            country_policy = int(country_policy)
+        except ValueError:
+            logger.info(f"Country Policy is not an integer '{country_policy}'")
+            self.reply_param_error()
+            return
+        if country_policy not in [0, 1]:
+            logger.info(f"Country Policy is invalid '{country_policy}'")
+            self.reply_param_error()
+            return
+        country_code = country_code.decode()
+        if country_code not in wifi.COUNTRY_CODES:
+            logger.info(f"Country Code is invalid '{country_code}'")
+            self.reply_param_error()
+            return
+        try:
+            start_channel = int(start_channel)
+        except ValueError:
+            logger.info(f"Start channel is not an integer '{start_channel}'")
+            self.reply_param_error()
+            return
+        if start_channel < wifi.MIN_CHANNEL:
+            logger.info(f"Start channel is lower than minimum channel {start_channel} < {wifi.MIN_CHANNEL}")
+            self.reply_param_error()
+            return
+        elif start_channel > wifi.MAX_CHANNEL:
+            logger.info(f"Start channel is higher than minimum channel {start_channel} > {wifi.MAX_CHANNEL}")
+            self.reply_param_error()
+            return
+        try:
+            total_channel_count = int(total_channel_count)
+        except ValueError:
+            logger.info(f"Channel count is not an integer '{total_channel_count}'")
+            self.reply_param_error()
+            return
+        if total_channel_count < 1:
+            logger.info(f"Channel count is not a positive integer '{total_channel_count}'")
+            self.reply_param_error()
+            return
+        maximum_channel = start_channel + total_channel_count
+        if maximum_channel > wifi.MAX_CHANNEL:
+            logger.info(f"Maximum channel is higher than minimum channel {start_channel} {total_channel_count} = {maximum_channel} > {wifi.MAX_CHANNEL}")
+            self.reply_param_error()
+            return
+        wifi.country_policy = country_policy
+        wifi.country_code = country_code
+        wifi.start_channel = start_channel
+        wifi.total_channel_count = total_channel_count
+        self.reply_ok()
+
 
     def systime(self, args):
         self.reply(f"+SYSTIMESTAMP:{int(time.time())}".encode())
@@ -458,6 +526,37 @@ class at_wifi_info_t(object):
             "SoftAP_Station",
         ])
 
+    COUNTRY_CODES = [
+        "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR",
+        "AS", "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE",
+        "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ",
+        "BR", "BS", "BT", "BV", "BW", "BY", "BZ", "CA", "CC", "CD",
+        "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR",
+        "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM",
+        "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI",
+        "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF",
+        "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS",
+        "GT", "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU",
+        "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT",
+        "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN",
+        "KP", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK",
+        "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME",
+        "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ",
+        "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA",
+        "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU",
+        "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM",
+        "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS",
+        "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI",
+        "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV",
+        "SX", "SY", "SZ", "TC", "TD", "TF", "TG", "TH", "TJ", "TK",
+        "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA",
+        "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI",
+        "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW",
+    ]
+
+    MIN_CHANNEL = 1
+    MAX_CHANNEL = 14
+
     def __init__(self):
         self.init               = False
         self.mode               = 3 # Auto
@@ -472,6 +571,9 @@ class at_wifi_info_t(object):
         self.pmf                = 1
         self.state              = self.STATES.NOT_CONN
         self.mode               = self.MODES.SoftAP
+        self.country_code       = "GB"
+        self.start_channel      = 1
+        self.total_channel_count = 13
 
 
 class at_wifi_sntp_info_t(object):
