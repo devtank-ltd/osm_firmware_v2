@@ -255,6 +255,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
             self.reply_param_error()
             return
         country_code = country_code.decode()
+        country_code = country_code.replace('"','')
         if country_code not in wifi.COUNTRY_CODES:
             logger.info(f"Country Code is invalid '{country_code}'")
             self.reply_param_error()
