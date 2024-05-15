@@ -83,7 +83,8 @@ def main(args):
         config_file = os.path.join(os.path.dirname(network_config_path), fake_osm_config['config_file'])
         with open(config_file) as f:
             fake_osm_config_data = json.loads(f.read())
-        overloads = fake_osm_config.get('overloads')
+        overloads = fake_osm_config.get('overloads', {})
+        overloads.update({"name": fake_osm_name})
         if overloads:
             for key, value in overloads.items():
                 fake_osm_config_data[key] = value
