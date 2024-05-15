@@ -25,8 +25,8 @@ typedef struct
     } wifi;
     at_mqtt_config_t mqtt;
     char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN];
-    uint8_t     channel_start;
-    uint8_t     channel_count;
+    uint16_t     channel_start;
+    uint16_t     channel_count;
 } __attribute__((__packed__)) at_wifi_config_t;
 
 _Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "COMMS config too big.");

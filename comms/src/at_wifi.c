@@ -283,14 +283,20 @@ bool at_wifi_send(char* data, uint16_t len)
 
 static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx);
 static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx);
+static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx);
+static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx);
+static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx);
 
 
 void at_wifi_init(void)
 {
     static struct cmd_link_t config_cmds[] =
     {
-        { "wifi_ssid",      "Set/get SSID",             _at_wifi_config_wifi_ssid_cb        , false , NULL },
-        { "wifi_pwd",       "Set/get password",         _at_wifi_config_wifi_pwd_cb         , false , NULL },
+        { "wifi_ssid",      "Set/get SSID",                 _at_wifi_config_wifi_ssid_cb        , false , NULL },
+        { "wifi_pwd",       "Set/get password",             _at_wifi_config_wifi_pwd_cb         , false , NULL },
+        { "country",        "Set/get country",              _at_wifi_config_country_cb          , false , NULL },
+        { "schan",          "Set/get start channel",        _at_wifi_config_channel_start_cb    , false , NULL },
+        { "nchan",          "Set/get number of channels",   _at_wifi_config_channel_count_cb    , false , NULL },
     };
 
     struct cmd_link_t* tail = &config_cmds[ARRAY_SIZE(config_cmds)-1];
@@ -425,7 +431,7 @@ static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
     if (at_base_is_ok(msg, len))
     {
         _at_wifi_printf(
-            "AT+CWCOUNTRY=0,\"%.*s\",%"PRIu8",%"PRIu8,
+            "AT+CWCOUNTRY=0,\"%.*s\",%"PRIu16",%"PRIu16,
             AT_WIFI_MAX_COUNTRY_CODE_LEN, _at_wifi_ctx.mem->country_code,
             _at_wifi_ctx.mem->channel_start,
             _at_wifi_ctx.mem->channel_count
@@ -1109,6 +1115,37 @@ static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ct
         "PWD",
         _at_wifi_ctx.mem->wifi.pwd,
         AT_WIFI_MAX_PWD_LEN,
+        args, ctx);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx)
+{
+    _at_wifi_config_get_set_str(
+        "COUNTRY",
+        _at_wifi_ctx.mem->country_code,
+        AT_WIFI_MAX_COUNTRY_CODE_LEN,
+        args, ctx);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx)
+{
+    at_base_config_get_set_u16(
+        "SCHAN",
+        &_at_wifi_ctx.mem->channel_start,
+        args, ctx);
+    return COMMAND_RESP_OK;
+}
+
+
+static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx)
+{
+    at_base_config_get_set_u16(
+        "NCHAN",
+        &_at_wifi_ctx.mem->channel_count,
         args, ctx);
     return COMMAND_RESP_OK;
 }
