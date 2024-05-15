@@ -1186,10 +1186,12 @@ static command_response_t _at_wifi_send_cb(char * args, cmd_ctx_t * ctx)
 
 command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
+    at_wifi_config_t before_config;
+    memcpy(&before_config, _at_wifi_ctx.mem, sizeof(at_wifi_config_t));
     command_response_t ret = at_base_config_setup_str(_at_wifi_config_cmds, skip_space(args), ctx);
-    if (ret == COMMAND_RESP_OK && _at_wifi_mem_is_valid())
+    if (_at_wifi_mem_is_valid() && at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
     {
-        _at_wifi_start();
+        _at_wifi_reset();
     }
     return ret;
 }
