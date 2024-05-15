@@ -67,12 +67,18 @@ enum at_mqtt_conn_states_t
 typedef struct
 {
     char        addr[AT_MQTT_ADDR_MAX_LEN + 1];
+    /* 16 byte boundary ---- */
     char        user[AT_MQTT_USER_MAX_LEN + 1];
+    /* 16 byte boundary ---- */
     char        pwd[AT_MQTT_PWD_MAX_LEN + 1];
+    /* 16 byte boundary ---- */
     char        ca[AT_MQTT_CA_MAX_LEN + 1];
+    /* 16 byte boundary ---- */
     uint16_t    scheme; /* at_wifi_mqtt_scheme_t */
     uint16_t    port;
-} at_mqtt_config_t;
+    uint8_t     _[12];
+    /* 16 byte boundary ---- */
+} __attribute__((__packed__)) at_mqtt_config_t; /* 5 x 16 bytes = 80 bytes */
 
 
 typedef struct

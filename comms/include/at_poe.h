@@ -15,8 +15,10 @@
 typedef struct
 {
     uint8_t     type;
-    uint8_t     _[3];
+    uint8_t     _[15];
+    /* 16 byte boundary ---- */
     at_mqtt_config_t mqtt;
+    /* 16 byte boundary ---- */
 } __attribute__((__packed__)) at_poe_config_t;
 
 _Static_assert(sizeof(at_poe_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
