@@ -33,8 +33,8 @@
 #define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID                "    \"WIFI SSID\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD                 "    \"WIFI PWD\": \"%.*s\","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE             "    \"COUNTRY CODE\": \"%.*s\","
-#define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START            "    \"CHANNEL START\": %"PRIu16""
-#define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT            "    \"CHANNEL COUNT\": %"PRIu16""
+#define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START            "    \"CHANNEL START\": %"PRIu16","
+#define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT            "    \"CHANNEL COUNT\": %"PRIu16","
 
 #define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN          ,_wifi_ssid
 #define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN           , _wifi_pwd
