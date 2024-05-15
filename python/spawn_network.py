@@ -11,7 +11,7 @@ from binding import dev_t
 
 import json
 
-sys.path.append("../tools/json_config_tool/")
+sys.path.append(os.path.join(os.path.dirname(__file__), "../tools/json_config_tool/"))
 
 import json_config
 
@@ -62,10 +62,11 @@ def main(args):
 
     logger.debug(f'Spawning network from config "{args.config}"')
 
-    with open(args.config) as f:
+    network_config_path = args.config
+    with open(network_config_path) as f:
         config = json.loads(f.read())
 
-    base_dir = config['base_dir']
+    base_dir = os.path.join(os.path.dirname(network_config_path), config['base_dir'])
     if not os.path.exists(base_dir):
         os.mkdir(base_dir)
 
@@ -73,12 +74,14 @@ def main(args):
     fake_osms = {}
     logger.debug(f'Starting OSM fakes')
     for fake_osm_name, fake_osm_config in fake_osm_configs.items():
-        fake_osm = virtual_osm(logger, base_dir, fake_osm_name, fake_osm_config['firmware'])
+        firmware_path = os.path.join(os.path.dirname(network_config_path), fake_osm_config['firmware'])
+        fake_osm = virtual_osm(logger, base_dir, fake_osm_name, firmware_path)
         fake_osms[fake_osm_name] = fake_osm
         while not fake_osm.get_binding():
             logger.debug("Waiting on Virtual OSM...")
             time.sleep(0.1)
-        with open(fake_osm_config['config_file']) as f:
+        config_file = os.path.join(os.path.dirname(network_config_path), fake_osm_config['config_file'])
+        with open(config_file) as f:
             fake_osm_config_data = json.loads(f.read())
         overloads = fake_osm_config.get('overloads')
         if overloads:
@@ -86,7 +89,7 @@ def main(args):
                 fake_osm_config_data[key] = value
         fake_osm.load_config(fake_osm_config_data)
 
-    os.waitid(os.P_ALL, 0) 
+    os.waitid(os.P_ALL, 0)
 
 
 if __name__ == '__main__':
