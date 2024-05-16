@@ -718,7 +718,7 @@ class at_wifi_mqtt_t(object):
         self.client.username_pw_set(self.user, password=self.pwd)
         try:
             self.client.connect(self.addr, self.port, 60)
-        except ConnectionResetError as e:
+        except (ConnectionResetError, ConnectionRefusedError, OSError)  as e:
             logger.error(f"Connection Failed: {e}")
             return False
         except ConnectionRefusedError as e:
