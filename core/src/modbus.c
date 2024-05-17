@@ -992,7 +992,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
 {
     if (size != 4)
         return;
-    uint32_t v;
+    uint32_t v=0;
     if (!_modbus_data_to_u32(&v, data, size, byte_order, word_order))
         return;
     #pragma GCC diagnostic push

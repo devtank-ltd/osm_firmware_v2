@@ -4,13 +4,15 @@ LINUXDIR := $(OSM_DIR)/ports/linux
 
 OSM_LOC ?= /tmp/osm/
 
-LINUX_CC = gcc
+LINUX_CC ?= gcc
+LINUX_OBJCPY ?= objcopy
+LINUX_STRIP ?= strip
 
 
 #Compiler options
 LINUX_DEFINES := -D_GNU_SOURCE
 
-LINUX_CFLAGS		+= -O0 -g -std=gnu11 -pedantic $(LINUX_DEFINES) -Wno-variadic-macros
+LINUX_CFLAGS		+= -Os -g -std=gnu11 -pedantic $(LINUX_DEFINES) -Wno-variadic-macros
 LINUX_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 LINUX_CFLAGS		+= -fstack-usage
 LINUX_CFLAGS		+= -MMD -MP
@@ -75,7 +77,10 @@ $$($(1)_MODEL_PERIPHERALS_DST): $$(BUILD_DIR)/$(1)/% : $$(MODEL_DIR)/$(1)/% $$(B
 $$($(1)_OBJS) : $$(BUILD_DIR)/.linux_build_env
 
 $$(BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_PERIPHERALS_DST) $$($(1)_MODEL_PERIPHERALS_DST)
-	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o $$@
+	$$(LINUX_CC) $$($(1)_OBJS) $$(LINUX_LDFLAGS) -o "$$@"
+	$$(LINUX_OBJCPY) --only-keep-debug "$$@" "$$@.debug"
+	$$(LINUX_STRIP) -s "$$@"
+	$$(LINUX_OBJCPY) --add-gnu-debuglink="$$@.debug" "$$@"
 
 $$(BUILD_DIR)/$(1)/.complete: $$(BUILD_DIR)/$(1)/firmware.elf
 	touch $$@
