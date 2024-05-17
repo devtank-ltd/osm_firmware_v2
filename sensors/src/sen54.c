@@ -35,6 +35,15 @@
 
 #define SEN54_FAN_INTERVAL_S                            60
 
+typedef enum
+{
+    SEN54_MODEL_NONE,
+    SEN54_MODEL_SEN50,
+    SEN54_MODEL_SEN54,
+    SEN54_MODEL_SEN55,
+} sen54_model_t;
+
+
 
 typedef enum
 {
@@ -69,6 +78,7 @@ static struct
     bool                is_reading[SEN54_MEASUREMENT_LEN];
     bool                active;
     sen54_readings_t    last_reading;
+    sen54_model_t       model;
 } _sen54_ctx =
 {
     .is_reading     = {false},
@@ -85,6 +95,7 @@ static struct
         .nox_index                  = 0,
         .time                       = 0,
     },
+    .model          = SEN54_MODEL_SEN54, /* Default model currently used */
 };
 
 
@@ -141,6 +152,10 @@ static bool _sen54_get_meas_from_name(char* name, sen54_measurement_t* meas)
 
 static bool _sen54_get_val(sen54_measurement_t meas, float* val)
 {
+    if (!val)
+    {
+        return false;
+    }
     sen54_readings_t* r = &_sen54_ctx.last_reading;
     switch (meas)
     {
@@ -157,15 +172,35 @@ static bool _sen54_get_val(sen54_measurement_t meas, float* val)
             *val = (float)r->mass_concentration_pm10p0 / SEN54_MEASUREMENT_SCALE_FACTOR_PM10;
             break;
         case SEN54_MEASUREMENT_REL_HUM:
+            if (SEN54_MODEL_SEN54 != _sen54_ctx.model && SEN54_MODEL_SEN55 != _sen54_ctx.model)
+            {
+                particulate_debug("Not relevant for this sensor.");
+                return false;
+            }
             *val = (float)r->ambient_humidity / SEN54_MEASUREMENT_SCALE_FACTOR_REL_HUM;
             break;
         case SEN54_MEASUREMENT_TEMP:
+            if (SEN54_MODEL_SEN54 != _sen54_ctx.model && SEN54_MODEL_SEN55 != _sen54_ctx.model)
+            {
+                particulate_debug("Not relevant for this sensor.");
+                return false;
+            }
             *val = (float)r->ambient_temperature / SEN54_MEASUREMENT_SCALE_FACTOR_TEMP;
             break;
         case SEN54_MEASUREMENT_VOC:
+            if (SEN54_MODEL_SEN54 != _sen54_ctx.model && SEN54_MODEL_SEN55 != _sen54_ctx.model)
+            {
+                particulate_debug("Not relevant for this sensor.");
+                return false;
+            }
             *val = (float)r->voc_index / SEN54_MEASUREMENT_SCALE_FACTOR_VOC;
             break;
         case SEN54_MEASUREMENT_NOX:
+            if (SEN54_MODEL_SEN55 != _sen54_ctx.model)
+            {
+                particulate_debug("Not relevant for this sensor.");
+                return false;
+            }
             *val = (float)r->nox_index / SEN54_MEASUREMENT_SCALE_FACTOR_NOX;
             break;
         default:
@@ -184,15 +219,48 @@ void sen54_init(void)
         particulate_debug("Error executing sen5x_device_reset(): %"PRIi16, error);
         return;
     }
-    unsigned char serial_number[32];
-    uint8_t serial_number_size = 32;
-    error = sen5x_get_serial_number(serial_number, serial_number_size);
+    unsigned char buf[32];
+    uint8_t buf_size = 32;
+    error = sen5x_get_serial_number(buf, buf_size);
     if (error)
     {
         particulate_debug("Error executing sen5x_get_serial_number(): %"PRIi16, error);
         return;
     }
-    particulate_debug("Serial number: %s", serial_number);
+    particulate_debug("Serial number: %s", buf);
+
+    error = sen5x_get_product_name(buf, buf_size);
+    if (error)
+    {
+        particulate_debug("Error executing sen5x_get_product_name(): %"PRIu16, error);
+        return;
+    }
+    particulate_debug("Product name: %s", buf);
+    if ('S' != buf[0] || 'E' != buf[1] || 'N' != buf[2])
+    {
+        particulate_debug("Could not parse product name");
+        return;
+    }
+
+    char model_number_str[3];
+    memcpy(model_number_str, &buf[3], 2);
+    model_number_str[2] = 0;
+    uint8_t model_number = strtoul(model_number_str, NULL, 10);
+    switch (model_number)
+    {
+        case 50:
+            _sen54_ctx.model = SEN54_MODEL_SEN50;
+            break;
+        case 54:
+            _sen54_ctx.model = SEN54_MODEL_SEN54;
+            break;
+        case 55:
+            _sen54_ctx.model = SEN54_MODEL_SEN55;
+            break;
+        default:
+            particulate_debug("Could not parse model number: '%.2s'", model_number_str);
+            break;
+    }
 
     particulate_debug("Setting the fan interval");
     error = sen5x_set_fan_auto_cleaning_interval(SEN54_FAN_INTERVAL_S);
