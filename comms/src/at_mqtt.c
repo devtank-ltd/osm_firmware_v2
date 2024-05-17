@@ -283,7 +283,7 @@ static int _at_mqtt_do_command(char* payload, unsigned payload_len, char* resp_b
 
 static int _at_mqtt_parse_payload(char* topic, unsigned topic_len, char* payload, unsigned payload_len, char* resp_buf, unsigned resp_buflen)
 {
-    unsigned len;
+    unsigned len = 0;
     /* Check for this sensor */
     unsigned own_topic_header_len = strnlen(_at_mqtt_ctx->topic_header, AT_MQTT_TOPIC_LEN);
     if (topic_len >= own_topic_header_len &&
