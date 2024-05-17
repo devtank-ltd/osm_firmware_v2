@@ -699,7 +699,7 @@ bool     measurements_for_each(measurements_for_each_cb_t cb, void * data)
 bool measurements_add(measurements_def_t* measurements_def)
 {
     bool                    found_space = false;
-    unsigned                space;
+    unsigned                space = MEASUREMENTS_MAX_NUMBER - 1;
     measurements_def_t*     def;
     measurements_data_t*    data;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
