@@ -12,7 +12,7 @@ LINUX_STRIP ?= strip
 #Compiler options
 LINUX_DEFINES := -D_GNU_SOURCE
 
-LINUX_CFLAGS		+= -O0 -g -std=gnu11 -pedantic $(LINUX_DEFINES) -Wno-variadic-macros
+LINUX_CFLAGS		+= -Os -g -std=gnu11 -pedantic $(LINUX_DEFINES) -Wno-variadic-macros
 LINUX_CFLAGS		+= -Wall -Wextra -Werror -Wno-unused-parameter -Wno-address-of-packed-member
 LINUX_CFLAGS		+= -fstack-usage
 LINUX_CFLAGS		+= -MMD -MP
