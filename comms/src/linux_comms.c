@@ -68,6 +68,19 @@ bool linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
 }
 
 
+
+void     linux_comms_config_init(comms_config_t* config)
+{
+    config->type = COMMS_BUILD_TYPE;
+}
+
+
+bool     linux_comms_persist_config_cmp(comms_config_t* d0, comms_config_t* d1)
+{
+    return (d0->type == d1->type);
+}
+
+
 void linux_comms_init(void)
 {
 }

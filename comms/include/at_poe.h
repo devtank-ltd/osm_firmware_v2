@@ -11,6 +11,7 @@
 #define comms_name          at_poe
 #endif //comms_name
 
+#define COMMS_BUILD_TYPE    COMMS_TYPE_POE
 
 typedef struct
 {
