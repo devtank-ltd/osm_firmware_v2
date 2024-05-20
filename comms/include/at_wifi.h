@@ -10,6 +10,8 @@
 #define comms_name          at_wifi
 #endif //comms_name
 
+#define COMMS_BUILD_TYPE    COMMS_TYPE_WIFI
+
 #define AT_WIFI_MAX_SSID_LEN                    63
 #define AT_WIFI_MAX_PWD_LEN                     63
 #define AT_WIFI_MAX_COUNTRY_CODE_LEN            2

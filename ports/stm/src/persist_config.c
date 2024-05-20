@@ -26,9 +26,33 @@ bool persistent_init(void)
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
     persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
 
-    if (!persist_data_raw || !persist_measurements_raw || persist_data_raw->version != PERSIST_VERSION)
+    bool wipe = false;
+
+    if (!persist_data_raw ||
+        !persist_measurements_raw)
     {
-        log_error("Persistent data version unknown.");
+        log_error("Unable to load persistent data.");
+        wipe = true;
+    }
+    else if (persist_data_raw->version != PERSIST_VERSION)
+    {
+        log_error("Persistent data version doesn't match.");
+        wipe = true;
+    }
+    else if (strncmp(persist_data_raw->model_name, STR(fw_name), MODEL_NAME_LEN))
+    {
+        log_error("Persistent model name doesn't match.");
+        wipe = true;
+    }
+    else if (persist_data_raw->model_config.comms_config.type != COMMS_BUILD_TYPE)
+    {
+        log_error("Persistent comms type doesn't match.");
+        wipe = true;
+    }
+
+    if (wipe)
+    {
+        log_error("Setting persistent data.");
         memset(&persist_data, 0, sizeof(persist_data));
         memset(&persist_measurements, 0, sizeof(persist_measurements));
         persist_data.version = PERSIST_VERSION;

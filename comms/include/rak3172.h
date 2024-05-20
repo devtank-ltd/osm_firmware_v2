@@ -9,6 +9,8 @@
 #define comms_name          rak3172
 #endif //comms_name
 
+#define COMMS_BUILD_TYPE    COMMS_TYPE_LW
+
 extern uint16_t rak3172_get_mtu(void);
 
 extern bool     rak3172_send_ready(void);
