@@ -283,7 +283,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
-        time.sleep(0.2)
+        time.sleep(0.05)
 
     def read(self):
         try:
@@ -446,12 +446,12 @@ class dev_t(dev_base_t):
         self._log_obj.emit(msg)
 
     def _get_comms(self):
+        comms_type = self.do_cmd("j_comms_cfg")
         try:
-            comms_type = self.do_cmd("j_comms_cfg")
+            loaded = json.loads(comms_type)
         except Exception as e:
             self._log("Could not get comms config.")
             return None
-        loaded = json.loads(comms_type)
         if "LW" in loaded["type"]:
             comms = lw_comms_t (self)
         elif "AT WIFI" in loaded["type"]:
