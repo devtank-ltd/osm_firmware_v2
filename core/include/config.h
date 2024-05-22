@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stddef.h>
+
 #define LOG_LINELEN 128
 
 #define MEASURE_NAME_LEN            4
@@ -70,6 +72,8 @@
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
 #define STRLEN(x) (sizeof(x) / sizeof(char) - 1)
+
+#define STATIC_ASSERT_16BYTE_ALIGNED(_type_, _member_)  _Static_assert((offsetof(_type_, _member_) % 16) == 0, STR(_type_)"->"STR(_member_)" not on 16 byte boundary")
 
 #define VEML7700_DEVTANK_CORRECTED 1
 

@@ -22,6 +22,8 @@ typedef struct
     /* 16 byte boundary ---- */
 } __attribute__((__packed__)) at_poe_config_t;
 
+STATIC_ASSERT_16BYTE_ALIGNED(at_poe_config_t, mqtt);
+
 _Static_assert(sizeof(at_poe_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
 
 

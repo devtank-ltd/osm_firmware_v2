@@ -5,7 +5,7 @@
 #include "base_types.h"
 
 #define LW_UNSOL_VERSION                    0x01
-#define LW_CONFIG_VERSION                   0x01
+#define LW_CONFIG_VERSION                   0x02
 
 #define LW_ID_CMD_LEN                       4
 #define LW_ID_CMD                           0x434d4400 /* CMD  */
@@ -55,12 +55,15 @@ typedef enum
 typedef struct
 {
     uint8_t type;
-    uint8_t _[3];
+    uint8_t _[15];
     char    dev_eui[LW_DEV_EUI_LEN];
     char    app_key[LW_APP_KEY_LEN];
     uint8_t region; /* lw_region_t */
     uint8_t version;
 } __attribute__((__packed__)) lw_config_t;
+
+STATIC_ASSERT_16BYTE_ALIGNED(lw_config_t, dev_eui);
+STATIC_ASSERT_16BYTE_ALIGNED(lw_config_t, app_key);
 
 _Static_assert(sizeof(lw_config_t) < sizeof(comms_config_t), "LoRaWAN config too big.");
 
