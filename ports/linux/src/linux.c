@@ -170,7 +170,7 @@ uint32_t platform_get_frequency(void)
         FILE * f = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
         if (f)
         {
-            int i = fscanf(f, PRIu32, &freq);
+            int i = fscanf(f, "%"PRIu32, &freq);
             fclose(f);
             if (i != 1)
             {
