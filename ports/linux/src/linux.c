@@ -170,8 +170,12 @@ uint32_t platform_get_frequency(void)
         FILE * f = fopen("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
         if (f)
         {
-            fscanf(f, PRIu32, &freq);
+            int i = fscanf(f, "%"PRIu32, &freq);
             fclose(f);
+            if (i != 1)
+            {
+                linux_error("Did not match frequency.");
+            }
         }
     }
     return freq;
@@ -764,7 +768,10 @@ static void _linux_setup_systick(int32_t* fd)
 static void _linux_kick_event(int fd)
 {
     uint64_t v = 0xC0FFEE;
-    write(fd, &v, sizeof(uint64_t));
+    if (write(fd, &v, sizeof(uint64_t)) < 0)
+    {
+        linux_error("Failed to write fd for kick event.");
+    }
     linux_port_debug("Requested ADCs.");
 }
 
@@ -1218,7 +1225,10 @@ void _linux_iterate(void)
                 case LINUX_FD_TYPE_TIMER:
                 {
                     char buf[64];
-                    read(fd_handler->timer.fd, buf, 64);
+                    if (read(fd_handler->timer.fd, buf, 64) < 0)
+                    {
+                        linux_error("Failed to read timer fd.");
+                    }
                     if (fd_handler->cb)
                         fd_handler->cb();
                     break;
@@ -1226,7 +1236,10 @@ void _linux_iterate(void)
                 case LINUX_FD_TYPE_EVENT:
                 {
                     uint64_t v;
-                    read(fd_handler->event.fd, &v, sizeof(uint64_t));
+                    if (read(fd_handler->event.fd, &v, sizeof(uint64_t)) < 0)
+                    {
+                        linux_error("Failed to read event fd.");
+                    }
                     linux_port_debug("Received request ADCs.");
                     if (fd_handler->cb)
                         fd_handler->cb(fd_handler->event.fd);
