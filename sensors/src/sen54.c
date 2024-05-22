@@ -33,6 +33,7 @@
 #define SEN54_NAME_BUF_SIZ                              ((SEN54_NAME_RAW_BUF_SIZ * 2) / 3 + 1)
 #define SEN54_WAIT_DELAY                                1000
 
+#define SEN54_FAN_INTERVAL_S                            60
 
 
 typedef enum
@@ -189,11 +190,18 @@ void sen54_init(void)
     if (error)
     {
         particulate_debug("Error executing sen5x_get_serial_number(): %"PRIi16, error);
+        return;
     }
-    else
+    particulate_debug("Serial number: %s", serial_number);
+
+    particulate_debug("Setting the fan interval");
+    error = sen5x_set_fan_auto_cleaning_interval(SEN54_FAN_INTERVAL_S);
+    if (error)
     {
-        particulate_debug("Serial number: %s", serial_number);
+        particulate_debug("Error executing sen5x_set_fan_auto_cleaning_interval(): %"PRIi16, error);
+        return;
     }
+
     particulate_debug("Starting measurement");
     error = sen5x_start_measurement();
     if (error)
@@ -213,15 +221,7 @@ void sen54_iterate(void)
         int16_t error;
         if (!_sen54_ctx.active)
         {
-            particulate_debug("Starting measurement");
-            error = sen5x_start_measurement();
-            _sen54_ctx.last_reading.time = now;
-            if (error)
-            {
-                particulate_debug("Error executing sen5x_start_measurement(): %"PRIi16, error);
-                return;
-            }
-            _sen54_ctx.active = true;
+            sen54_init();
         }
         else
         {
