@@ -251,6 +251,12 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 }
 
 
+void model_main_loop_iterate(void)
+{
+    sen54_iterate();
+}
+
+
 bool __attribute__((weak)) bat_on_battery(bool* on_battery)
 {
     /* No battery fitted */
