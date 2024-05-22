@@ -1292,6 +1292,7 @@ bool at_wifi_persist_config_cmp(void* d0, void* d1)
 static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
 {
     memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
+    at_wifi_config->type = COMMS_TYPE_WIFI;
     at_wifi_config->mqtt.scheme = AT_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
     strncpy(at_wifi_config->country_code, "GB", AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
@@ -1303,7 +1304,6 @@ static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
 
 void at_wifi_config_init(comms_config_t* comms_config)
 {
-    comms_config->type = COMMS_TYPE_WIFI;
     _at_wifi_config_init2((at_wifi_config_t*)comms_config);
 }
 
