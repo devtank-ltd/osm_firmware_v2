@@ -271,3 +271,9 @@ void model_linux_close_fakes(void)
     }
 }
 
+
+void model_main_loop_iterate(void)
+{
+    sen54_iterate();
+}
+
