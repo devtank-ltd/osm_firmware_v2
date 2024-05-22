@@ -240,6 +240,7 @@ void sen54_iterate(void)
             if (error)
             {
                 particulate_debug("Error executing sen5x_read_measured_values(): %"PRIi16, error);
+                _sen54_ctx.active = false;
             }
         }
     }
@@ -258,6 +259,12 @@ static measurements_sensor_state_t _sen54_collect(char* name, measurements_readi
     if (!_sen54_get_meas_from_name(name, &meas))
     {
         particulate_debug("Couldn't get measurement name from '%s'", name);
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+
+    if (!_sen54_ctx.active)
+    {
+        particulate_debug("SEN54 not active");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
