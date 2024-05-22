@@ -62,6 +62,9 @@ typedef struct
     uint8_t version;
 } __attribute__((__packed__)) lw_config_t;
 
+STATIC_ASSERT_16BYTE_ALIGNED(lw_config_t, dev_eui);
+STATIC_ASSERT_16BYTE_ALIGNED(lw_config_t, app_key);
+
 _Static_assert(sizeof(lw_config_t) < sizeof(comms_config_t), "LoRaWAN config too big.");
 
 

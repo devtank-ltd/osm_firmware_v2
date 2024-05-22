@@ -71,4 +71,10 @@ typedef struct
     /* 7 x 16 bytes          */
 } persist_model_config_v1_t;
 
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, modbus_bus);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, comms_config);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, cc_configs);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ios_state);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, sai_cal_coeffs);
+
 #define persist_model_config_t        persist_model_config_v1_t

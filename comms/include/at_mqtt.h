@@ -80,6 +80,11 @@ typedef struct
     /* 16 byte boundary ---- */
 } __attribute__((__packed__)) at_mqtt_config_t; /* 5 x 16 bytes = 80 bytes */
 
+STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, addr);
+STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, user);
+STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, pwd);
+STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, ca);
+
 
 typedef struct
 {
