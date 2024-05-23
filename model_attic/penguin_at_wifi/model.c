@@ -18,6 +18,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "htu21d.h"
 #include "pulsecount.h"
 #include "veml7700.h"
+#include "sen54.h"
 #include "sai.h"
 #include "fw.h"
 #include "persist_config.h"
@@ -270,4 +271,3 @@ void model_main_loop_iterate(void)
 {
     sen54_iterate();
 }
-
