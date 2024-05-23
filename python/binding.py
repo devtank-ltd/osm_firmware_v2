@@ -99,7 +99,7 @@ class property_t(dev_child_t):
     def _update(self, value_str):
         v_str = value_str.replace(self.cmd, "")
         self._value = self.parse_func(v_str)
-        if self._value is False:
+        if self._value is False and self.type_ != bool:
             raise IOError(f"Failed to get value for {self.name}")
         self.type_ = type(self._value)
 
@@ -283,7 +283,7 @@ class low_level_dev_t(object):
     def write(self, msg):
         self._log_obj.send(msg)
         self._serial.write(("%s\n" % msg).encode())
-        time.sleep(0.2)
+        time.sleep(0.05)
 
     def read(self):
         try:
@@ -447,7 +447,11 @@ class dev_t(dev_base_t):
 
     def _get_comms(self):
         comms_type = self.do_cmd("j_comms_cfg")
-        loaded = json.loads(comms_type)
+        try:
+            loaded = json.loads(comms_type)
+        except Exception as e:
+            self._log("Could not get comms config.")
+            return None
         if "LW" in loaded["type"]:
             comms = lw_comms_t (self)
         elif "AT WIFI" in loaded["type"]:
@@ -474,7 +478,7 @@ class dev_t(dev_base_t):
     def send_alive_packet(self):
         return self.do_cmd("connect")
 
-    def reconnect_announce(self, timeout_s:float=10., type_="lw"):
+    def reconnect_announce(self, timeout_s:float=30., type_="lw"):
         self.set_dbg(4)
         self.do_cmd("comms_restart")
         end_time = time.monotonic() + timeout_s
