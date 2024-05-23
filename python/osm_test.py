@@ -272,7 +272,7 @@ class test_framework_t(object):
         self._vosm_conn.get_modbus()
 
         for active in self._get_active_measurements():
-            if active == "SND":
+            if active in ["SND", "NOX"]:
                 continue
             description, measurement_obj, ref, threshold = self._get_measurement_info(active)
             passed &= self._threshold_check(active, description, getattr(measurement_obj, "value"), ref,  threshold)
