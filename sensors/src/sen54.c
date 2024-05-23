@@ -286,6 +286,7 @@ void sen54_iterate(void)
     uint32_t now = get_since_boot_ms();
     if (since_boot_delta(now, _sen54_ctx.last_reading.time) >= SEN54_WAIT_DELAY)
     {
+        _sen54_ctx.last_reading.time = now;
         int16_t error;
         if (!_sen54_ctx.active)
         {
@@ -303,7 +304,6 @@ void sen54_iterate(void)
                 &_sen54_ctx.last_reading.voc_index,
                 &_sen54_ctx.last_reading.nox_index
                 );
-            _sen54_ctx.last_reading.time = now;
 
             if (error)
             {
