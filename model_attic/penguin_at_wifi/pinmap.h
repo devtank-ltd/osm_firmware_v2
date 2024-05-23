@@ -137,3 +137,4 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 9600
 
+#define SEN54_I2C                           0

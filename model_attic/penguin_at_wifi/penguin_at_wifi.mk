@@ -1,3 +1,5 @@
+LINUX_INCLUDE_PATHS += -I$(LIB_DIR)/embedded-i2c-sen5x
+
 penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/ports/linux/src/uarts.c \
     $(OSM_DIR)/ports/linux/src/linux_adc.c \
@@ -36,6 +38,11 @@ penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/sensors/src/ds18b20.c \
     $(OSM_DIR)/sensors/src/veml7700.c \
     $(OSM_DIR)/sensors/src/ftma.c \
+    $(OSM_DIR)/sensors/src/sen54.c \
+    $(OSM_DIR)/sensors/src/sensirion_i2c_hal.c \
+    $(LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
+    $(LIB_DIR)/embedded-i2c-sen5x/sensirion_i2c.c \
+    $(LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
     $(OSM_DIR)/ports/linux/src/bat.c \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \

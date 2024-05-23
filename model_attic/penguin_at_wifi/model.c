@@ -18,6 +18,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "htu21d.h"
 #include "pulsecount.h"
 #include "veml7700.h"
+#include "sen54.h"
 #include "sai.h"
 #include "fw.h"
 #include "persist_config.h"
@@ -74,6 +75,7 @@ void model_sensors_init(void)
     modbus_init();
     can_impl_init();
     ftma_init();
+    sen54_init();
 }
 
 
@@ -135,6 +137,7 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case SOUND:         sai_inf_init(inf);         break;
         case FTMA:          ftma_inf_init(inf);        break;
         case IO_READING:    ios_inf_init(inf);         break;
+        case SEN54:         sen54_inf_init(inf);       break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -185,6 +188,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
     tail = ftma_add_commands(tail);
+    tail = sen54_add_commands(tail);
 }
 
 
@@ -270,4 +274,3 @@ void model_main_loop_iterate(void)
 {
     sen54_iterate();
 }
-
