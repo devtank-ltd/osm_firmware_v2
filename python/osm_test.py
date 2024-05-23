@@ -236,7 +236,7 @@ class test_framework_t(object):
         passed = True
         for p in range(1,4):
             self._vosm_conn.update_midpoint(2048, f"CC{p}")
-            self._vosm_conn.set_outer_inner_cc(p, 100, 50)
+            self._vosm_conn.set_input_output_cc(p, 100, 50)
         self._vosm_conn.interval_mins = 1
         passed &= self._check_interval_mins_val()
         passed &= self._check_lora_config_val()
