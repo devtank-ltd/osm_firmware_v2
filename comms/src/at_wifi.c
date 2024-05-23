@@ -1095,6 +1095,9 @@ void at_wifi_loop_iteration(void)
         case AT_WIFI_STATE_MQTT_FAIL_CONNECT:
             _at_wifi_mqtt_fail_connect();
             break;
+        case AT_WIFI_STATE_IDLE:
+            /* Do nothing */
+            break;
         default:
             _at_wifi_check_default_timeout();
             break;

@@ -260,6 +260,7 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 void model_main_loop_iterate(void)
 {
     comms_direct_loop_iterate();
+    sen54_iterate();
 }
 
 

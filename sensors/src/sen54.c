@@ -19,7 +19,6 @@
 
 #define I2C_SEN54_ADDR                                  0x69
 #define SEN54_I2C_TIMEOUT_MS                            10
-#define SEN54_DEFAULT_COLLECTION_TIME_MS                1000
 
 #define SEN54_MEASUREMENT_SCALE_FACTOR_PM1_0            10
 #define SEN54_MEASUREMENT_SCALE_FACTOR_PM2_5            10
@@ -32,7 +31,9 @@
 
 #define SEN54_NAME_RAW_BUF_SIZ                          48
 #define SEN54_NAME_BUF_SIZ                              ((SEN54_NAME_RAW_BUF_SIZ * 2) / 3 + 1)
+#define SEN54_WAIT_DELAY                                1000
 
+#define SEN54_FAN_INTERVAL_S                            60
 
 
 typedef enum
@@ -59,6 +60,7 @@ typedef struct
     int16_t     ambient_temperature;
     int16_t     voc_index;
     int16_t     nox_index;
+    uint32_t    time;
 } sen54_readings_t;
 
 
@@ -81,6 +83,7 @@ static struct
         .ambient_temperature        = 0,
         .voc_index                  = 0,
         .nox_index                  = 0,
+        .time                       = 0,
     },
 };
 
@@ -187,60 +190,60 @@ void sen54_init(void)
     if (error)
     {
         particulate_debug("Error executing sen5x_get_serial_number(): %"PRIi16, error);
+        return;
     }
-    else
+    particulate_debug("Serial number: %s", serial_number);
+
+    particulate_debug("Setting the fan interval");
+    error = sen5x_set_fan_auto_cleaning_interval(SEN54_FAN_INTERVAL_S);
+    if (error)
     {
-        particulate_debug("Serial number: %s", serial_number);
-    }
-}
-
-
-static measurements_sensor_state_t _sen54_collection_time(char* name, uint32_t* collection_time)
-{
-    if (!collection_time)
-    {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
-    *collection_time = SEN54_DEFAULT_COLLECTION_TIME_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-}
-
-
-static measurements_sensor_state_t _sen54_begin(char* name, bool in_isolation)
-{
-    if (!name)
-    {
-        particulate_debug("Handed NULL pointer.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        particulate_debug("Error executing sen5x_set_fan_auto_cleaning_interval(): %"PRIi16, error);
+        return;
     }
 
-    sen54_measurement_t meas;
-    if (!_sen54_get_meas_from_name(name, &meas))
-    {
-        particulate_debug("Couldn't get measurement name from '%s'", name);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
-
-    if (_sen54_ctx.is_reading[meas])
-    {
-        particulate_debug("Already reading %s", name);
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
-    }
-
-    _sen54_ctx.is_reading[meas] = true;
-    if (_sen54_ctx.active)
-        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
-
-    _sen54_ctx.active = true;
     particulate_debug("Starting measurement");
-    int16_t error = sen5x_start_measurement();
+    error = sen5x_start_measurement();
     if (error)
     {
         particulate_debug("Error executing sen5x_start_measurement(): %"PRIi16, error);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return;
     }
+    _sen54_ctx.active = true;
+}
 
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+
+void sen54_iterate(void)
+{
+    uint32_t now = get_since_boot_ms();
+    if (since_boot_delta(now, _sen54_ctx.last_reading.time) >= SEN54_WAIT_DELAY)
+    {
+        int16_t error;
+        if (!_sen54_ctx.active)
+        {
+            sen54_init();
+        }
+        else
+        {
+            error = sen5x_read_measured_values(
+                &_sen54_ctx.last_reading.mass_concentration_pm1p0,
+                &_sen54_ctx.last_reading.mass_concentration_pm2p5,
+                &_sen54_ctx.last_reading.mass_concentration_pm4p0,
+                &_sen54_ctx.last_reading.mass_concentration_pm10p0,
+                &_sen54_ctx.last_reading.ambient_humidity,
+                &_sen54_ctx.last_reading.ambient_temperature,
+                &_sen54_ctx.last_reading.voc_index,
+                &_sen54_ctx.last_reading.nox_index
+                );
+            _sen54_ctx.last_reading.time = now;
+
+            if (error)
+            {
+                particulate_debug("Error executing sen5x_read_measured_values(): %"PRIi16, error);
+                _sen54_ctx.active = false;
+            }
+        }
+    }
 }
 
 
@@ -259,49 +262,12 @@ static measurements_sensor_state_t _sen54_collect(char* name, measurements_readi
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    if (!_sen54_ctx.is_reading[meas])
+    if (!_sen54_ctx.active)
     {
-        particulate_debug("Not reading %s.", name);
+        particulate_debug("SEN54 not active");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    if (_sen54_ctx.active)
-    {
-        bool is_ready = false;
-        int16_t error = sen5x_read_data_ready(&is_ready);
-        if (error != NO_ERROR)
-        {
-            particulate_debug("Error executing sen5x_read_data_ready(): %"PRIi16, error);
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
-        }
-        if (!is_ready)
-        {
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
-        }
-    }
-
-    _sen54_ctx.is_reading[meas] = false;
-
-    if (_sen54_ctx.active)
-    {
-        _sen54_ctx.active = false;
-        particulate_debug("Stopping measurement");
-        int16_t error = sen5x_read_measured_values(
-            &_sen54_ctx.last_reading.mass_concentration_pm1p0,
-            &_sen54_ctx.last_reading.mass_concentration_pm2p5,
-            &_sen54_ctx.last_reading.mass_concentration_pm4p0,
-            &_sen54_ctx.last_reading.mass_concentration_pm10p0,
-            &_sen54_ctx.last_reading.ambient_humidity,
-            &_sen54_ctx.last_reading.ambient_temperature,
-            &_sen54_ctx.last_reading.voc_index,
-            &_sen54_ctx.last_reading.nox_index
-            );
-        error = sen5x_stop_measurement();
-        if (error)
-        {
-            particulate_debug("Error executing sen5x_stop_measurement(): %"PRIi16, error);
-        }
-    }
     float val_f;
     if (!_sen54_get_val(meas, &val_f))
     {
@@ -322,8 +288,6 @@ static measurements_value_type_t _sen54_value_type(char* name)
 
 void sen54_inf_init(measurements_inf_t* inf)
 {
-    inf->collection_time_cb = _sen54_collection_time;
-    inf->init_cb            = _sen54_begin;
     inf->get_cb             = _sen54_collect;
     inf->value_type_cb      = _sen54_value_type;
 }
