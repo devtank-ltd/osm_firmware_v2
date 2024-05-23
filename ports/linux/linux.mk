@@ -98,8 +98,8 @@ $(1)_coverage: $$(BUILD_DIR)/.linux_coverage $$(BUILD_DIR)/$(1)/firmware.elf
 	lcov --capture --initial -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p $(OSM_LOC)
 	cd $$(OSM_DIR)/python;\
-	python3-coverage run -a ./osm_test.py;\
-	python3-coverage combine;\
+	python3-coverage run -a ./osm_test.py &&\
+	python3-coverage combine &&\
 	python3-coverage html
 	lcov --capture -d $$(BUILD_DIR)/$(1)/ --output-file $$(BUILD_DIR)/$(1)/coverage.info
 	mkdir -p $$(BUILD_DIR)/$(1)/coverage
