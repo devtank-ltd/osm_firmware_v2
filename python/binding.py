@@ -249,13 +249,17 @@ class lw_comms_t(comms_t):
 class wifi_comms_t(comms_t):
     COMMS_ATTR_DICT = \
     {
-        "wifi_ssid" : ( "wifi_ssid", "SSID: " ),
-        "wifi_pwd"  : ( "wifi_pwd",  "PWD: "  ),
-        "mqtt_addr" : ( "mqtt_addr", "ADDR: " ),
-        "mqtt_user" : ( "mqtt_user", "USER: " ),
-        "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "  ),
-        "mqtt_ca"   : ( "mqtt_ca",   "CA: "   ),
-        "mqtt_port" : ( "mqtt_port", "PORT: " )
+        "wifi_ssid" : ( "wifi_ssid", "SSID: "    ),
+        "wifi_pwd"  : ( "wifi_pwd",  "PWD: "     ),
+        "mqtt_addr" : ( "mqtt_addr", "ADDR: "    ),
+        "mqtt_user" : ( "mqtt_user", "USER: "    ),
+        "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "     ),
+        "mqtt_ca"   : ( "mqtt_ca",   "CA: "      ),
+        "mqtt_port" : ( "mqtt_port", "PORT: "    ),
+        "mqtt_sch"  : ( "mqtt_sch",  "SCHEME: "  ),
+        "schan"     : ( "schan",     "SCHAN: "   ),
+        "nchan"     : ( "nchan",     "NCHAN: "   ),
+        "country"   : ( "country",   "COUNTRY: " ),
     }
 
 class log_t(object):
