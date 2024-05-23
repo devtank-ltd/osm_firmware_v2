@@ -21,7 +21,7 @@
 #define AT_MQTT_LINK_ID                             0
 #define AT_MQTT_CERT_KEY_ID                         0
 #define AT_MQTT_CA_ID                               0
-#define AT_MQTT_KEEP_ALIVE                          120 /* seconds */
+#define AT_MQTT_KEEP_ALIVE                          10  /* seconds */
 #define AT_MQTT_CLEAN_SESSION                       0   /* enabled */
 #define AT_MQTT_LWT_MSG                             "{\\\"connection\\\": \\\"lost\\\"}"
 #define AT_MQTT_LWT_QOS                             0
