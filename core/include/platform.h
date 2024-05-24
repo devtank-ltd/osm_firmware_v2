@@ -24,6 +24,8 @@ persist_measurements_storage_t* platform_get_measurements_raw_persist(void);
 bool platform_persist_commit(persist_storage_t * persist_data, persist_measurements_storage_t* persist_measurements);
 void platform_persist_wipe(void);
 bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page);
+uintptr_t platform_get_fw_addr(unsigned fw_page_index);
+void platform_finish_fw(void);
 void platform_clear_flash_flags(void);
 
 bool platform_running(void);

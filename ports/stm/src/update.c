@@ -17,7 +17,8 @@ static int _fw_ota_pos =-1;
 static bool _fw_ota_flush_page(unsigned fw_page_index)
 {
     unsigned abs_page = NEW_FW_PAGE + fw_page_index;
-    uintptr_t dst = NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE);
+    //uintptr_t dst = NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE);
+    uintptr_t dst = platform_get_fw_addr(fw_page_index);
 
     fw_debug("Writing page %u (%p) pos:%u", abs_page, (void*)dst, _fw_ota_pos);
 
@@ -29,6 +30,7 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
         if (platform_overwrite_fw_page(dst, abs_page, _fw_page))
         {
             fw_debug("Written page");
+            memset(_fw_page, 0, FLASH_PAGE_SIZE);
             return true;
         }
 
@@ -110,13 +112,14 @@ bool fw_ota_complete(uint16_t crc)
         fw_debug("Unwritten:%u", cur_page_pos);
         _fw_ota_flush_page(pages);
     }
-    uint16_t data_crc = modbus_crc((uint8_t*)NEW_FW_ADDR, _fw_ota_pos);
+    uint16_t data_crc = modbus_crc((uint8_t*)platform_get_fw_addr(0), _fw_ota_pos);
     fw_debug("CRC:0x%04x", data_crc);
     if (data_crc != crc)
     {
         _fw_ota_pos = -1;
         return false;
     }
+    platform_finish_fw();
     persist_set_fw_ready(_fw_ota_pos);
     _fw_ota_pos = -1;
     fw_debug("New FW ready.");

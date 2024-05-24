@@ -280,6 +280,17 @@ bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_pa
 }
 
 
+uintptr_t platform_get_fw_addr(unsigned fw_page_index)
+{
+    return (uintptr_t)(NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE));
+}
+
+
+void platform_finish_fw(void)
+{
+}
+
+
 void platform_clear_flash_flags(void)
 {
     flash_clear_status_flags();

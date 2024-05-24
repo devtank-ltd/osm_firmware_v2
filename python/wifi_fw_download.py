@@ -22,11 +22,10 @@ logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%dT%H:%M:%S", format="[%(
 
 class wifi_fw_dl_t(object):
     MTU                 = 90
-    COMMAND_RESP_NONE   = 0x00
-    COMMAND_RESP_OK     = 0x01
-    COMMAND_RESP_ERR    = 0x02
+    COMMAND_RESP_OK     = 0x00
+    COMMAND_RESP_ERR    = 0x01
 
-    MAX_LINE_LEN        = 256
+    MAX_LINE_LEN        = 2048
 
     EOL                 = "\r\n"
 
@@ -128,7 +127,7 @@ class wifi_fw_dl_t(object):
         self.close()
 
     def _publish(self, cmd):
-        time.sleep(0.25)
+        time.sleep(0.2)
         self.client.publish(self.pub_topic, cmd)
         self._logger.debug(f"CMD: {cmd}")
 
@@ -157,6 +156,7 @@ class wifi_fw_dl_t(object):
             self._logger.info("CONNECTED")
             self._logger.info(f"SUBSCRIBING TO '{userdata['sub_topic']}'")
             client.subscribe(userdata["sub_topic"])
+            #client.subscribe("#")
         if reason_code > 0:
             self._logger.error(f"FAILED TO CONNECT: '{reason_code}'")
 
@@ -174,7 +174,10 @@ class wifi_fw_dl_t(object):
 
     def _on_message(self, client, userdata, message):
         self._logger.info(f"RECEIVED MESSAGE << '{message.topic}':{message.payload}")
-        data = json.loads(message.payload.decode())
+        try:
+            data = json.loads(message.payload.decode())
+        except json.JSONDecodeError:
+            return
         ret_code_str = data.get("ret_code")
         if ret_code_str:
             ret_code = int(ret_code_str[2:], 16)
