@@ -16,8 +16,6 @@ import paho.mqtt.client as mqtt
 
 protocol_version = b'\x01'
 
-logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%dT%H:%M:%S", format="[%(asctime)s.%(msecs)03d] %(filename)s:%(funcName)s [%(levelname)s]: %(message)s")
-
 
 
 class wifi_fw_dl_t(object):
@@ -25,16 +23,19 @@ class wifi_fw_dl_t(object):
     COMMAND_RESP_OK     = 0x00
     COMMAND_RESP_ERR    = 0x01
 
-    MAX_LINE_LEN        = 2048
+    MAX_LINE_LEN        = 256
 
     EOL                 = "\r\n"
 
+    SEND_TIMEOUT        = 0.2
 
-
-    def __init__(self, address, port, firmware_file, hwid, user=None, password=None, ca=None, websockets=False, use_ssl=False, insecure=False, verbose=False):
+    def __init__(self, address, port, firmware_file, hwid, user=None, password=None, ca=None, websockets=False, use_ssl=False, insecure=False, verbose=False, logger=None):
 
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-        self._logger = logging.getLogger(__name__)
+        if logger is None:
+            logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%dT%H:%M:%S", format="[%(asctime)s.%(msecs)03d] %(filename)s:%(funcName)s [%(levelname)s]: %(message)s")
+            logger = logging.getLogger(__name__)
+        self._logger = logger
         self.client.enable_logger(self._logger)
         if verbose:
             self._logger.info("ENABLED DEBUG")
@@ -127,7 +128,7 @@ class wifi_fw_dl_t(object):
         self.close()
 
     def _publish(self, cmd):
-        time.sleep(0.2)
+        time.sleep(self.SEND_TIMEOUT)
         self.client.publish(self.pub_topic, cmd)
         self._logger.debug(f"CMD: {cmd}")
 
@@ -156,7 +157,6 @@ class wifi_fw_dl_t(object):
             self._logger.info("CONNECTED")
             self._logger.info(f"SUBSCRIBING TO '{userdata['sub_topic']}'")
             client.subscribe(userdata["sub_topic"])
-            #client.subscribe("#")
         if reason_code > 0:
             self._logger.error(f"FAILED TO CONNECT: '{reason_code}'")
 
@@ -187,9 +187,11 @@ class wifi_fw_dl_t(object):
                 self._logger.error(f"UNEXPECTED RETURN CODE: {ret_code}")
                 self.done = True
 
-    def run(self):
+    def run(self, loop_cb = None, args=(), kwargs={}):
         while not self.done:
             self.client.loop()
+            if loop_cb is not None:
+                loop_cb(*args, **kwargs)
 
 
 def main(args):
