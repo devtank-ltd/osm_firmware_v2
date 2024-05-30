@@ -254,6 +254,7 @@ class wifi_comms_t(comms_t):
         "mqtt_addr" : ( "mqtt_addr", "ADDR: " ),
         "mqtt_user" : ( "mqtt_user", "USER: " ),
         "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "  ),
+        "mqtt_sch"  : ( "mqtt_sch",  "SCHEME: "),
         "mqtt_ca"   : ( "mqtt_ca",   "CA: "   ),
         "mqtt_port" : ( "mqtt_port", "PORT: " )
     }
@@ -516,7 +517,7 @@ class dev_t(dev_base_t):
 
     @interval_mins.setter
     def interval_mins(self, value):
-        return self.do_cmd_multi("interval_mins %u" % value)
+        return self.do_cmd_multi("interval_mins %f" % value)
 
     def set_tx_power(self, val: int):
         if val >= 0 and val <= 7:
