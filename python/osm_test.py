@@ -13,7 +13,7 @@ import serial
 import select
 import yaml
 import json
-from binding import modbus_reg_t, dev_t, set_debug_print
+from binding import modbus_reg_t, dev_t, set_debug_print, lw_comms_t, wifi_comms_t
 
 sys.path.append("../ports/linux/peripherals/")
 
@@ -39,8 +39,6 @@ class test_framework_t(object):
     DEFAULT_VALGRIND        = "valgrind"
     DEFAULT_VALGRIND_FLAGS  = "--leak-check=full"
     DEFAULT_PROTOCOL_PATH   = "%s/../lorawan_protocol/debug.js"% os.path.dirname(__file__)
-
-    DEFAULT_OTA_FIRMWARE_PATH = "%s/../build/penguin_at_wifi/firmware.elf"% os.path.dirname(__file__)
 
     JSON_MEMORY_PATH        = DEFAULT_OSM_BASE + "osm.json"
 
@@ -247,6 +245,14 @@ class test_framework_t(object):
             self._vosm_conn.set_input_output_cc(p, 100, 50)
         self._vosm_conn.interval_mins = self.INTERVAL_MINS
         passed &= self._check_interval_mins_val()
+        if isinstance(self._vosm_conn.comms, lw_comms_t):
+            # If LW comms, check LW config
+            passed &= self._check_lora_config_val()
+        elif isinstance(self._vosm_conn.comms, wifi_comms_t):
+            pass # TODO: Check wifi config
+        else:
+            self._logger.error("Unknown comms config")
+            passed = False
         passed &= self._check_cc_val()
         self._vosm_conn.measurements_enable(False)
         self._vosm_conn.PM10.interval = 1
@@ -304,11 +310,26 @@ class test_framework_t(object):
             if not sample.endswith("_min") and not sample.endswith("_max"):
                 self._vosm_conn.change_interval(sample, 1)
         self._vosm_conn.measurements_enable(True)
-        passed &= self._check_cmd_serial_comms()
+
+        if isinstance(self._vosm_conn.comms, lw_comms_t):
+            passed &= self._check_cmd_serial_comms()
+        elif isinstance(self._vosm_conn.comms, wifi_comms_t):
+            pass # TODO: check wifi comms
+        else:
+            self._logger.error("Unknown comms config")
+            passed = False
+
         passed &= self._check_json_config_tool()
         self._vosm_conn.measurements_enable(False)
         if self.mqtt_info:
-            passed &= self._check_ota_update()
+            if isinstance(self._vosm_conn.comms, lw_comms_t):
+                # TODO: If LW comms, LW OTA update
+                pass
+            elif isinstance(self._vosm_conn.comms, wifi_comms_t):
+                passed &= self._check_wifi_ota_update()
+            else:
+                self._logger.error("Unknown comms config")
+                passed = False
         return passed
 
     def _check_set_reg(self):
@@ -381,7 +402,7 @@ class test_framework_t(object):
         self._bool_check(f"JSON sample count set test", True, True)
         return True
 
-    def _check_ota_update(self):
+    def _check_wifi_ota_update(self):
         self._vosm_conn.comms.wifi_ssid     = "none"
         self._vosm_conn.comms.wifi_pwd      = "none"
         self._vosm_conn.comms.mqtt_addr     = self.mqtt_info["address"]
@@ -408,9 +429,10 @@ class test_framework_t(object):
                 return False
             connected = self._vosm_conn.comms_conn.value
 
-        firmware_filename = self.DEFAULT_OTA_FIRMWARE_PATH
+        firmware_filename = self._vosm_path
         firmware_filename_comp = f"{firmware_filename}.xz"
         if not os.path.exists(firmware_filename):
+            self._logger.error(f"Firmware path doesnt exist: {firmware_filename}")
             return False
         os.unlink(firmware_filename_comp)
         subprocess.check_output(f"xz -k -9 {firmware_filename}", shell=True)
@@ -433,12 +455,10 @@ class test_framework_t(object):
                 args=(0.,)
                 )
         r = self._vosm_conn._ll.readlines(end_line="----start----", timeout=10)
-        print(self._vosm_conn.version.value)
+        self._bool_check("Rebooted", bool(self._vosm_conn.version.value), True)
         new_fw_path = os.path.join(self.DEFAULT_OSM_BASE, "new_firmware.elf")
         diff = subprocess.run(f"diff {firmware_filename} {new_fw_path}", shell=True)
-        if diff.returncode:
-            print(f"Different firmware sent to loaded: {diff.returncode}")
-            return False
+        self._bool_check("OTA Update", not bool(diff.returncode), True)
         return True
 
     def _check_cmd_serial_comms(self):
@@ -462,12 +482,10 @@ class test_framework_t(object):
                     resp_dict = comms_conn.read_dict()
                     final_dict.update(resp_dict)
             now = time.time()
-        if count:
-            r = self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict)
-        else:
-            r = False
-        self._logger.info("Measurement loop test comlete.")
-        return r
+        ret = self._bool_check("Comms message count", count > 0, True)
+        ret &= self._bool_check("Comms message matched", self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict), True)
+        self._logger.info("Measurement loop test complete.")
+        return ret
 
     def _comms_match_cb(self, ref:dict, dict_:dict)->bool:
         passed = True
@@ -570,14 +588,10 @@ class test_framework_t(object):
 def main():
     import argparse
 
-    DEFAULT_FAKE_OSM_PATH = "%s/../build/penguin_at_wifi/firmware.elf"% os.path.dirname(__file__)
-
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )
-        parser.add_argument("-f", "--fake_osm"  , metavar="OSM"     , help='Fake OSM', type=str, default=DEFAULT_FAKE_OSM_PATH)
         parser.add_argument("-l", "--log_file"  , metavar="LOG"     , help='Log file', default=None)
         parser.add_argument("-r", "--run"                           , help='Do not test, just run.', action='store_true')
-        parser.add_argument("-o", "--ota"                           , help="Do over the air update test", action="store_true")
         parser.add_argument("-w", "--websockets"                    , help="Use websockets"     , action="store_true"   )
         parser.add_argument("-s", "--ssl"                           , help="Use SSL"            , action="store_true"   )
         parser.add_argument("-i", "--insecure"                      , help="Don't verify SSL"   , action="store_true"   )
@@ -586,12 +600,14 @@ def main():
         parser.add_argument("-u", "--user"      , metavar="USER"    , type=str  , help="Username for MQTT"          , default=None          )
         parser.add_argument("-P", "--password"  , metavar="PWD"     , type=str  , help="Password for MQTT USER"     , default=None          )
         parser.add_argument("-c", "--ca"        , metavar="CA"      , type=str  , help="Central Authority"          , default=None          )
+        parser.add_argument("firmware"          , metavar="FW"      , type=str  , help="Firmware"                                           )
         return parser.parse_args()
 
     args = get_args()
 
+    skip_ota = os.environ.get("SKIP_OTA")
     mqtt_info = None
-    if args.ota:
+    if not skip_ota:
         mqtt_info = {
             "websockets": args.websockets,
             "use_ssl": args.ssl,
@@ -604,7 +620,7 @@ def main():
         }
 
     passed = False
-    with test_framework_t(args.fake_osm, args.log_file, mqtt_info=mqtt_info) as tf:
+    with test_framework_t(args.firmware, args.log_file, mqtt_info=mqtt_info) as tf:
         if args.run:
             passed = tf.run()
         else:
