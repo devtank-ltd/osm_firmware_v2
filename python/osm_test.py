@@ -67,7 +67,25 @@ class test_framework_t(object):
         self._logger = basetypes.get_logger(log_file)
         self._log_file = log_file
 
-        self.mqtt_info = mqtt_info
+        mqtt_sch = 1
+        if mqtt_info.get("use_ssl", True):
+            mqtt_sch += 2
+            if mqtt_info.get("insecure", True):
+                mqtt_sch -= 1
+        if mqtt_info.get("websockets", True):
+            mqtt_sch += 5
+        self._logger.debug(f"USING SCHEME: {mqtt_sch}")
+
+        self._wifi_conf = {
+            "wifi_ssid" : "none",
+            "wifi_pwd"  : "none",
+            "mqtt_addr" : mqtt_info.get("address", "localhost"),
+            "mqtt_user" : mqtt_info.get("user", "mqtt_user"),
+            "mqtt_pwd"  : mqtt_info.get("password", "mqtt_password"),
+            "mqtt_sch"  : mqtt_info.get("scheme", mqtt_sch),
+            "mqtt_port" : mqtt_info.get("port", 9001),
+            "mqtt_ca"   : mqtt_info.get("ca", "none"),
+        }
 
         if not os.path.exists(osm_path):
             self._logger.error("Cannot find fake OSM.")
@@ -213,6 +231,30 @@ class test_framework_t(object):
                  self._bool_check("Device EUI is a valid type.",
                                   isinstance(deveui, str) and deveui=="LINUX-DEV", True))
 
+    def _check_wifi_config_val(self):
+        self._wifi_set_conf()
+        ret = True
+        for name, conf, ref in [
+            ("WiFi SSID"        , self._vosm_conn.comms.wifi_ssid   , self._wifi_conf["wifi_ssid"]  ),
+            ("WiFi Password"    , self._vosm_conn.comms.wifi_pwd    , self._wifi_conf["wifi_pwd"]   ),
+            ("MQTT Address"     , self._vosm_conn.comms.mqtt_addr   , self._wifi_conf["mqtt_addr"]  ),
+            ("MQTT User"        , self._vosm_conn.comms.mqtt_user   , self._wifi_conf["mqtt_user"]  ),
+            ("MQTT Password"    , self._vosm_conn.comms.mqtt_pwd    , self._wifi_conf["mqtt_pwd"]   ),
+            ("MQTT CA"          , self._vosm_conn.comms.mqtt_ca     , self._wifi_conf["mqtt_ca"]    ),
+            ]:
+            ret &= self._str_check(f"{name}", conf, ref)
+        for name, conf, ref in [
+            ("MQTT Scheme"      , self._vosm_conn.comms.mqtt_sch    , self._wifi_conf["mqtt_sch"]   ),
+            ("MQTT Port"        , self._vosm_conn.comms.mqtt_port   , self._wifi_conf["mqtt_port"]  ),
+            ]:
+            try:
+                conf_int = int(conf)
+            except ValueError:
+                ret &= self._bool_check(f"{name} cannot be integer", isinstance(conf, int), True)
+            else:
+                ret &= self._threshold_check(name, f"{name} setting", conf_int, int(ref), 0.)
+        return ret
+
     def _check_cc_val(self):
         passed = True
         types_ = self._vosm_conn.cc_type()
@@ -249,7 +291,8 @@ class test_framework_t(object):
             # If LW comms, check LW config
             passed &= self._check_lora_config_val()
         elif isinstance(self._vosm_conn.comms, wifi_comms_t):
-            pass # TODO: Check wifi config
+            # If WiFi, check wifi config
+            passed &= self._check_wifi_config_val()
         else:
             self._logger.error("Unknown comms config")
             passed = False
@@ -321,7 +364,7 @@ class test_framework_t(object):
 
         passed &= self._check_json_config_tool()
         self._vosm_conn.measurements_enable(False)
-        if self.mqtt_info:
+        if not os.environ.get("SKIP_OTA"):
             if isinstance(self._vosm_conn.comms, lw_comms_t):
                 # TODO: If LW comms, LW OTA update
                 pass
@@ -402,24 +445,18 @@ class test_framework_t(object):
         self._bool_check(f"JSON sample count set test", True, True)
         return True
 
-    def _check_wifi_ota_update(self):
-        self._vosm_conn.comms.wifi_ssid     = "none"
-        self._vosm_conn.comms.wifi_pwd      = "none"
-        self._vosm_conn.comms.mqtt_addr     = self.mqtt_info["address"]
-        self._vosm_conn.comms.mqtt_user     = self.mqtt_info["user"]
-        self._vosm_conn.comms.mqtt_pwd      = self.mqtt_info["password"]
-        mqtt_sch = 1
-        if self.mqtt_info["use_ssl"]:
-            mqtt_sch += 2
-            if self.mqtt_info["insecure"]:
-                mqtt_sch -= 1
-        if self.mqtt_info["websockets"]:
-            mqtt_sch += 5
-        self._logger.debug(f"USING SCHEME: {mqtt_sch}")
-        self._vosm_conn.comms.mqtt_sch      = mqtt_sch
-        self._vosm_conn.comms.mqtt_port     = self.mqtt_info["port"]
-        self._vosm_conn.comms.mqtt_ca       = "none"
+    def _wifi_set_conf(self):
+        self._vosm_conn.comms.wifi_ssid     = self._wifi_conf["wifi_ssid"]
+        self._vosm_conn.comms.wifi_pwd      = self._wifi_conf["wifi_pwd"]
+        self._vosm_conn.comms.mqtt_addr     = self._wifi_conf["mqtt_addr"]
+        self._vosm_conn.comms.mqtt_user     = self._wifi_conf["mqtt_user"]
+        self._vosm_conn.comms.mqtt_pwd      = self._wifi_conf["mqtt_pwd"]
+        self._vosm_conn.comms.mqtt_sch      = self._wifi_conf["mqtt_sch"]
+        self._vosm_conn.comms.mqtt_port     = self._wifi_conf["mqtt_port"]
+        self._vosm_conn.comms.mqtt_ca       = self._wifi_conf["mqtt_ca"]
 
+    def _check_wifi_ota_update(self):
+        self._wifi_set_conf()
         timeout = time.monotonic() + 25.
         connected = self._vosm_conn.comms_conn.value
         while not connected:
@@ -437,17 +474,20 @@ class test_framework_t(object):
         os.unlink(firmware_filename_comp)
         subprocess.check_output(f"xz -k -9 {firmware_filename}", shell=True)
         firmware = open(firmware_filename_comp, "rb")
+        use_websockets = self._wifi_conf["mqtt_sch"] > 5
+        use_ssl = self._wifi_conf["mqtt_sch"] % 5 > 1
+        insecure = self._wifi_conf["mqtt_sch"] % 5 < 3
         with wifi_fw_download.wifi_fw_dl_t(
-            address=self.mqtt_info["address"],
-            port=self.mqtt_info["port"],
+            address=self._wifi_conf["mqtt_addr"],
+            port=self._wifi_conf["mqtt_port"],
             firmware_file=firmware,
             hwid="00C0FFEE",
-            user=self.mqtt_info["user"],
-            password=self.mqtt_info["password"],
-            ca=self.mqtt_info["ca"],
-            websockets=self.mqtt_info["websockets"],
-            use_ssl=self.mqtt_info["use_ssl"],
-            insecure=self.mqtt_info["insecure"],
+            user=self._wifi_conf["mqtt_user"],
+            password=self._wifi_conf["mqtt_pwd"],
+            ca=self._wifi_conf["mqtt_ca"],
+            websockets=use_websockets,
+            use_ssl=use_ssl,
+            insecure=insecure,
             verbose="DEBUG" in os.environ,
             logger=self._logger) as wifi_fw_dl:
             wifi_fw_dl.run(
@@ -591,12 +631,12 @@ def main():
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )
         parser.add_argument("-l", "--log_file"  , metavar="LOG"     , help='Log file', default=None)
-        parser.add_argument("-r", "--run"                           , help='Do not test, just run.', action='store_true')
-        parser.add_argument("-w", "--websockets"                    , help="Use websockets"     , action="store_true"   )
-        parser.add_argument("-s", "--ssl"                           , help="Use SSL"            , action="store_true"   )
-        parser.add_argument("-i", "--insecure"                      , help="Don't verify SSL"   , action="store_true"   )
-        parser.add_argument("-a", "--address"   , metavar="HOST"    , type=str  , help="Address to the MQTT broker" , default="localhost"   )
-        parser.add_argument("-p", "--port"      , metavar="PORT"    , type=int  , help="Port of the MQTT broker"    , default=1883          )
+        parser.add_argument("-r", "--run"                           , help='Do not test, just run.', action='store_true'   )
+        parser.add_argument(      "--plain"                         , help="Don't use websockets"  , action="store_true"   )
+        parser.add_argument("-t", "--tcp"                           , help="Use TCP/SSL"           , action="store_true"   )
+        parser.add_argument("-s", "--secure"                        , help="Verify SSL"            , action="store_true"   )
+        parser.add_argument("-a", "--address"   , metavar="HOST"    , type=str  , help="Address to the MQTT broker" , default=None          )
+        parser.add_argument("-p", "--port"      , metavar="PORT"    , type=int  , help="Port of the MQTT broker"    , default=None          )
         parser.add_argument("-u", "--user"      , metavar="USER"    , type=str  , help="Username for MQTT"          , default=None          )
         parser.add_argument("-P", "--password"  , metavar="PWD"     , type=str  , help="Password for MQTT USER"     , default=None          )
         parser.add_argument("-c", "--ca"        , metavar="CA"      , type=str  , help="Central Authority"          , default=None          )
@@ -605,19 +645,17 @@ def main():
 
     args = get_args()
 
-    skip_ota = os.environ.get("SKIP_OTA")
-    mqtt_info = None
-    if not skip_ota:
-        mqtt_info = {
-            "websockets": args.websockets,
-            "use_ssl": args.ssl,
-            "insecure": args.insecure,
-            "address": args.address,
-            "port": args.port,
-            "user": args.user,
-            "password": args.password,
-            "ca": args.ca,
-        }
+    mqtt_info = {
+        "websockets": not args.plain,
+        "use_ssl": not args.tcp,
+        "insecure": not args.secure,
+    }
+    _set = lambda _d, _n, _x: [_d.update({_n: _x}) if _x is not None else None]
+    _set(mqtt_info, "address", args.address)
+    _set(mqtt_info, "port", args.port)
+    _set(mqtt_info, "user", args.user)
+    _set(mqtt_info, "password", args.password)
+    _set(mqtt_info, "ca", args.ca)
 
     passed = False
     with test_framework_t(args.firmware, args.log_file, mqtt_info=mqtt_info) as tf:
