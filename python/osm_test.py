@@ -13,6 +13,8 @@ import serial
 import select
 import yaml
 import json
+import ssl
+import paho.mqtt.client as mqtt
 from binding import modbus_reg_t, dev_t, set_debug_print, lw_comms_t, wifi_comms_t
 
 sys.path.append("../ports/linux/peripherals/")
@@ -355,9 +357,10 @@ class test_framework_t(object):
         self._vosm_conn.measurements_enable(True)
 
         if isinstance(self._vosm_conn.comms, lw_comms_t):
-            passed &= self._check_cmd_serial_comms()
+            passed &= self._check_lw_serial_comms()
         elif isinstance(self._vosm_conn.comms, wifi_comms_t):
-            pass # TODO: check wifi comms
+            if not os.environ.get("SKIP_OTA"):
+                passed &= self._check_wifi_serial_comms()
         else:
             self._logger.error("Unknown comms config")
             passed = False
@@ -501,7 +504,7 @@ class test_framework_t(object):
         self._bool_check("OTA Update", not bool(diff.returncode), True)
         return True
 
-    def _check_cmd_serial_comms(self):
+    def _check_lw_serial_comms(self):
         comms_conn = comms.comms_dev_t(self.DEFAULT_COMMS_PTY_PATH,
                                        self.DEFAULT_PROTOCOL_PATH,
                                        logger=self._logger,
@@ -524,6 +527,64 @@ class test_framework_t(object):
             now = time.time()
         ret = self._bool_check("Comms message count", count > 0, True)
         ret &= self._bool_check("Comms message matched", self._comms_match_cb(self.DEFAULT_COMMS_MATCH_DICT, final_dict), True)
+        self._logger.info("Measurement loop test complete.")
+        return ret
+
+    def _check_wifi_serial_comms(self):
+        mqtt_conn = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        mqtt_conn.enable_logger(self._logger)
+        messages = []
+        mqtt_conn.on_message = lambda client, userdata, message: messages.append(message)
+        mqtt_conn.on_connect = lambda client, userdata, flags, reason_code, properties: client.subscribe("osm/00C0FFEE/measurements")
+
+        mqtt_sch = self._wifi_conf["mqtt_sch"]
+        use_websockets = mqtt_sch > 5
+        use_ssl = mqtt_sch % 5 > 1
+        insecure = mqtt_sch % 5 < 3
+
+        if use_websockets:
+            mqtt_conn.transport = "websockets"
+            self._logger.debug("USING WEBSOCKETS")
+
+        if use_ssl:
+            if insecure:
+                self._logger.debug("USING SSL NO VERIFY")
+                mqtt_conn.tls_set(cert_reqs=ssl.CERT_NONE)
+                mqtt_conn.tls_insecure_set(True)
+            else:
+                self._logger.debug(f"USING SSL WITH CA: {self._wifi_conf['ca']}")
+                mqtt_conn.tls_set(ca_certs=self._wifi_conf["ca"])
+
+        mqtt_conn.username_pw_set(self._wifi_conf["mqtt_user"], password=self._wifi_conf["mqtt_pwd"])
+
+        mqtt_conn.connect(self._wifi_conf["mqtt_addr"], self._wifi_conf["mqtt_port"])
+        now = time.monotonic()
+        start_time = now
+        end_time = start_time + (self._vosm_conn.interval_mins * 60) + 3
+        final_dict = {}
+        msg = b""
+        while now < end_time:
+            self._vosm_conn.drain(0)
+            mqtt_conn.loop()
+            now = time.monotonic()
+        mqtt_conn.disconnect()
+        mqtt_conn.loop()
+        count = len(messages)
+        self._logger.debug(f"Messages: = {messages}")
+        for m in messages:
+            self._logger.debug(f"{m.payload = }")
+            self._logger.debug(f"{json.loads(m.payload) = }")
+            final_dict.update(json.loads(m.payload)["VALUES"])
+        self._logger.debug(f"{final_dict = }")
+        ret = self._bool_check("Comms message count", count > 0, True)
+        ref_dict = self.DEFAULT_COMMS_MATCH_DICT
+        ref_dict.update({
+            "HUMI"    : 50.18,
+            "HUMI_min": 50.18,
+            "HUMI_max": 50.18,
+            "PF"      : 1002,
+        })
+        ret &= self._bool_check("Comms message matched", self._comms_match_cb(ref_dict, final_dict), True)
         self._logger.info("Measurement loop test complete.")
         return ret
 
