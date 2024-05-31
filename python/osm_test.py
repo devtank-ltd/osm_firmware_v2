@@ -65,9 +65,11 @@ class test_framework_t(object):
           "PF"      : 1023,
         }
 
-    def __init__(self, osm_path, log_file=None, mqtt_info=None):
+    def __init__(self, osm_path, log_file=None, mqtt_info=None, do_ota=False):
         self._logger = basetypes.get_logger(log_file)
         self._log_file = log_file
+
+        self.do_ota = do_ota
 
         mqtt_sch = 1
         if mqtt_info.get("use_ssl", True):
@@ -359,7 +361,7 @@ class test_framework_t(object):
         if isinstance(self._vosm_conn.comms, lw_comms_t):
             passed &= self._check_lw_serial_comms()
         elif isinstance(self._vosm_conn.comms, wifi_comms_t):
-            if not os.environ.get("SKIP_OTA"):
+            if self.do_ota:
                 passed &= self._check_wifi_serial_comms()
         else:
             self._logger.error("Unknown comms config")
@@ -367,7 +369,7 @@ class test_framework_t(object):
 
         passed &= self._check_json_config_tool()
         self._vosm_conn.measurements_enable(False)
-        if not os.environ.get("SKIP_OTA"):
+        if self.do_ota:
             if isinstance(self._vosm_conn.comms, lw_comms_t):
                 # TODO: If LW comms, LW OTA update
                 pass
@@ -691,35 +693,34 @@ def main():
 
     def get_args():
         parser = argparse.ArgumentParser(description='Fake OSM test file.' )
-        parser.add_argument("-l", "--log_file"  , metavar="LOG"     , help='Log file', default=None)
-        parser.add_argument("-r", "--run"                           , help='Do not test, just run.', action='store_true'   )
-        parser.add_argument(      "--plain"                         , help="Don't use websockets"  , action="store_true"   )
-        parser.add_argument("-t", "--tcp"                           , help="Use TCP/SSL"           , action="store_true"   )
-        parser.add_argument("-s", "--secure"                        , help="Verify SSL"            , action="store_true"   )
-        parser.add_argument("-a", "--address"   , metavar="HOST"    , type=str  , help="Address to the MQTT broker" , default=None          )
-        parser.add_argument("-p", "--port"      , metavar="PORT"    , type=int  , help="Port of the MQTT broker"    , default=None          )
-        parser.add_argument("-u", "--user"      , metavar="USER"    , type=str  , help="Username for MQTT"          , default=None          )
-        parser.add_argument("-P", "--password"  , metavar="PWD"     , type=str  , help="Password for MQTT USER"     , default=None          )
-        parser.add_argument("-c", "--ca"        , metavar="CA"      , type=str  , help="Central Authority"          , default=None          )
-        parser.add_argument("firmware"          , metavar="FW"      , type=str  , help="Firmware"                                           )
+        parser.add_argument("-r", "--run", help='Do not test, just run.', action='store_true'   )
+        parser.add_argument("firmware"  , metavar="FW"      , type=str  , help="Firmware"       )
+        parser.add_argument("config"    , metavar="CONF"    , type=str  , help="Config file"    )
         return parser.parse_args()
 
     args = get_args()
 
+    if not os.path.exists(args.config):
+        print("Config file does not exist", file=sys.stderr, flush=True)
+        return -1
+    with open(args.config, "r") as f:
+        config = json.load(f)
+
     mqtt_info = {
-        "websockets": not args.plain,
-        "use_ssl": not args.tcp,
-        "insecure": not args.secure,
+        "websockets": config["websockets"],
+        "use_ssl": config["ssl"],
+        "insecure": config["insecure"],
     }
+    mqtt_config = config["mqtt"]
     _set = lambda _d, _n, _x: [_d.update({_n: _x}) if _x is not None else None]
-    _set(mqtt_info, "address", args.address)
-    _set(mqtt_info, "port", args.port)
-    _set(mqtt_info, "user", args.user)
-    _set(mqtt_info, "password", args.password)
-    _set(mqtt_info, "ca", args.ca)
+    _set(mqtt_info, "address", mqtt_config["address"])
+    _set(mqtt_info, "port", mqtt_config["port"])
+    _set(mqtt_info, "user", mqtt_config["user"])
+    _set(mqtt_info, "password", mqtt_config["password"])
+    _set(mqtt_info, "ca", mqtt_config["ca"])
 
     passed = False
-    with test_framework_t(args.firmware, args.log_file, mqtt_info=mqtt_info) as tf:
+    with test_framework_t(args.firmware, config["log_file"], mqtt_info=mqtt_info, do_ota=config["ota"]) as tf:
         if args.run:
             passed = tf.run()
         else:
