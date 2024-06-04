@@ -463,7 +463,8 @@ class dev_t(dev_base_t):
         r_str = self.do_cmd("name")
         m = re.match("Name: (?P<osm_name>.*)$", r_str)
         if not m:
-            raise IOError(f"Unexpected name response")
+            # Fallback to random name and saved config can be updated later.
+            return "random-" + app_key_generator(8)
         return m.groupdict()["osm_name"]
 
     def set_name(self, new_name):
