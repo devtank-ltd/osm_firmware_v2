@@ -12,7 +12,7 @@
 #include "persist_config.h"
 
 
-#define JSON_CLOSE_SIZE 2
+#define JSON_CLOSE_SIZE 3
 
 
 static char _json_buf[JSON_BUF_SIZE];
@@ -142,8 +142,18 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 
 bool protocol_send(void)
 {
-    if (!_protocol_append("}}"))
+    unsigned available = JSON_BUF_SIZE - _json_buf_pos;
+    
+    if (available < JSON_CLOSE_SIZE)
+    {
+        comms_debug("Space error");
         return false;
+    }
+    
+    unsigned r = snprintf(_json_buf + _json_buf_pos, available, "}}");
+
+    _json_buf_pos += r;
+
     if (!comms_send(_json_buf, _json_buf_pos))
     {
         return false;
