@@ -230,6 +230,18 @@ static void _at_wifi_reset(void)
 }
 
 
+static void _at_wifi_hw_reset(void)
+{
+    comms_debug("AT wifi HW reset");
+    at_base_ctx_t* base_ctx = &_at_wifi_ctx.mqtt_ctx.at_base_ctx;
+    base_ctx->off_since = get_since_boot_ms();
+    platform_gpio_set(&base_ctx->reset_pin, false);
+    spin_blocking_ms(1);
+    platform_gpio_set(&base_ctx->reset_pin, true);
+    _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
+}
+
+
 static unsigned _at_wifi_mqtt_publish(const char* topic, char* message, unsigned message_len)
 {
     unsigned ret_len = 0;
@@ -1063,7 +1075,7 @@ void at_wifi_loop_iteration(void)
             uint32_t delta = since_boot_delta(now, _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since);
             if (delta > AT_WIFI_STILL_OFF_TIMEOUT)
             {
-                _at_wifi_start();
+                _at_wifi_hw_reset();
             }
             break;
         }
