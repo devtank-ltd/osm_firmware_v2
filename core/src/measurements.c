@@ -674,10 +674,7 @@ static void _measurements_sample(void)
         {
             _check_time.wait_time = wait_time;
         }
-        while (uart_rings_out_busy())
-        {
-            uart_rings_out_drain();
-        }
+        uart_rings_out_drain();
     }
     if (_check_time.wait_time == UINT32_MAX)
         _check_time.wait_time = 0;
