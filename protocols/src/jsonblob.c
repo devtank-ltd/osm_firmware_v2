@@ -75,7 +75,6 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     if (data->num_samples == 1)
         return _protocol_append_data_type_float(name, data->value.value_f.sum);
     bool r = true;
-    unsigned init_pos = _json_buf_pos;
     int32_t mean = data->value.value_f.sum / data->num_samples;
     char tmp[MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_float(name, mean);
@@ -83,11 +82,6 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.max);
-    if (!r)
-    {
-        _json_buf_pos = init_pos;
-        return false;
-    }
     return true;
 }
 
@@ -97,7 +91,6 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
     if (data->num_samples == 1)
         return _protocol_append_data_type_i64(name, data->value.value_f.sum);
     bool r = true;
-    unsigned init_pos = _json_buf_pos;
     int64_t mean = data->value.value_64.sum / data->num_samples;
     char tmp[MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_i64(name, mean);
@@ -105,11 +98,6 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.max);
-    if (!r)
-    {
-        _json_buf_pos = init_pos;
-        return false;
-    }
     return r;
 }
 
