@@ -12,7 +12,7 @@
 #include "persist_config.h"
 
 
-#define JSON_CLOSE_SIZE 2
+#define JSON_CLOSE_SIZE 3
 
 
 static char _json_buf[JSON_BUF_SIZE];
@@ -75,7 +75,6 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     if (data->num_samples == 1)
         return _protocol_append_data_type_float(name, data->value.value_f.sum);
     bool r = true;
-    unsigned init_pos = _json_buf_pos;
     int32_t mean = data->value.value_f.sum / data->num_samples;
     char tmp[MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_float(name, mean);
@@ -83,12 +82,7 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.max);
-    if (!r)
-    {
-        _json_buf_pos = init_pos;
-        return false;
-    }
-    return true;
+    return r;
 }
 
 
@@ -97,7 +91,6 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
     if (data->num_samples == 1)
         return _protocol_append_data_type_i64(name, data->value.value_f.sum);
     bool r = true;
-    unsigned init_pos = _json_buf_pos;
     int64_t mean = data->value.value_64.sum / data->num_samples;
     char tmp[MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_i64(name, mean);
@@ -105,11 +98,6 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.max);
-    if (!r)
-    {
-        _json_buf_pos = init_pos;
-        return false;
-    }
     return r;
 }
 
@@ -124,26 +112,45 @@ static bool _protocol_append_value_type_str(const char * name, measurements_data
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
 {
     char * name = def->name;
-
+    unsigned before_pos = _json_buf_pos;
+    bool ret = false;
     switch(data->value_type)
     {
         case MEASUREMENTS_VALUE_TYPE_I64:
-            return _protocol_append_value_type_i64(name, data);
+            ret = _protocol_append_value_type_i64(name, data);
+            break;
         case MEASUREMENTS_VALUE_TYPE_STR:
-            return _protocol_append_value_type_str(name, data);
+            ret = _protocol_append_value_type_str(name, data);
+            break;
         case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            return _protocol_append_value_type_float(name, data );
+            ret = _protocol_append_value_type_float(name, data );
+            break;
         default:
             log_error("Unknown type '%"PRIu8"'.", data->value_type);
+            break;
     }
-    return false;
+    if (!ret)
+    {
+        _json_buf_pos = before_pos;
+    }
+    return ret;
 }
 
 
 bool protocol_send(void)
 {
-    if (!_protocol_append("}}"))
+    unsigned available = JSON_BUF_SIZE - _json_buf_pos;
+    
+    if (available < JSON_CLOSE_SIZE)
+    {
+        comms_debug("Space error");
         return false;
+    }
+    
+    unsigned r = snprintf(_json_buf + _json_buf_pos, available, "}}");
+
+    _json_buf_pos += r;
+
     if (!comms_send(_json_buf, _json_buf_pos))
     {
         return false;

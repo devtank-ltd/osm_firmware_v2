@@ -223,6 +223,7 @@ static void _at_wifi_is_mqtt_subscribed(void) {
 
 static void _at_wifi_reset(void)
 {
+    comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
     comms_debug("AT wifi reset");
     _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
     _at_wifi_printf("AT+RESTORE");
@@ -845,6 +846,7 @@ static void _at_wifi_process_state_timedout_wifi_wait_state(char* msg, unsigned 
         }
         else
         {
+            comms_debug("Failed CW state (wifi)");
             _at_wifi_reset();
         }
     }
@@ -864,6 +866,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_wifi_state(char* msg, unsi
         }
         else
         {
+            comms_debug("Failed CW state (mqtt)");
             _at_wifi_reset();
         }
     }
@@ -886,6 +889,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
         }
         else
         {
+            comms_debug("Failed MQTT state (mqtt)");
             _at_wifi_reset();
         }
     }
@@ -999,6 +1003,7 @@ bool at_wifi_get_connected(void)
 {
     return _at_wifi_ctx.state == AT_WIFI_STATE_IDLE ||
            _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_WAIT_PUB ||
+           _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_PUBLISHING ||
            _at_wifi_ctx.state == AT_WIFI_STATE_WAIT_TIMESTAMP;
 }
 
