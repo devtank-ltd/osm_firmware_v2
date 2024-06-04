@@ -124,19 +124,28 @@ static bool _protocol_append_value_type_str(const char * name, measurements_data
 bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
 {
     char * name = def->name;
-
+    unsigned before_pos = _json_buf_pos;
+    bool ret = false;
     switch(data->value_type)
     {
         case MEASUREMENTS_VALUE_TYPE_I64:
-            return _protocol_append_value_type_i64(name, data);
+            ret = _protocol_append_value_type_i64(name, data);
+            break;
         case MEASUREMENTS_VALUE_TYPE_STR:
-            return _protocol_append_value_type_str(name, data);
+            ret = _protocol_append_value_type_str(name, data);
+            break;
         case MEASUREMENTS_VALUE_TYPE_FLOAT:
-            return _protocol_append_value_type_float(name, data );
+            ret = _protocol_append_value_type_float(name, data );
+            break;
         default:
             log_error("Unknown type '%"PRIu8"'.", data->value_type);
+            break;
     }
-    return false;
+    if (!ret)
+    {
+        _json_buf_pos = before_pos;
+    }
+    return ret;
 }
 
 
