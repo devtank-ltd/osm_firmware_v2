@@ -82,7 +82,7 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
     snprintf(tmp, sizeof(tmp), "%s_max", name);
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.max);
-    return true;
+    return r;
 }
 
 
