@@ -223,6 +223,7 @@ static void _at_wifi_is_mqtt_subscribed(void) {
 
 static void _at_wifi_reset(void)
 {
+    comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
     comms_debug("AT wifi reset");
     _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
     _at_wifi_printf("AT+RESTORE");
