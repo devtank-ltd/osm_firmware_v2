@@ -845,6 +845,7 @@ static void _at_wifi_process_state_timedout_wifi_wait_state(char* msg, unsigned 
         }
         else
         {
+            comms_debug("Failed CW state (wifi)");
             _at_wifi_reset();
         }
     }
@@ -864,6 +865,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_wifi_state(char* msg, unsi
         }
         else
         {
+            comms_debug("Failed CW state (mqtt)");
             _at_wifi_reset();
         }
     }
@@ -886,6 +888,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
         }
         else
         {
+            comms_debug("Failed MQTT state (mqtt)");
             _at_wifi_reset();
         }
     }
