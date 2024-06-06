@@ -254,7 +254,7 @@ class wifi_comms_t(comms_t):
         "mqtt_addr" : ( "mqtt_addr", "ADDR: " ),
         "mqtt_user" : ( "mqtt_user", "USER: " ),
         "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "  ),
-        "mqtt_ca"   : ( "mqtt_ca",   "CA: "   ),
+        "mqtt_path" : ( "mqtt_path", "PATH: " ),
         "mqtt_port" : ( "mqtt_port", "PORT: " )
     }
 
