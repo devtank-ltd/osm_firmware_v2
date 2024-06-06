@@ -84,7 +84,7 @@ typedef struct
 STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, addr);
 STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, user);
 STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, pwd);
-STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, ca);
+STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, path);
 
 
 typedef struct
