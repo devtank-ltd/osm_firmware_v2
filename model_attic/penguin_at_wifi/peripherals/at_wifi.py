@@ -726,7 +726,7 @@ class at_wifi_mqtt_t(object):
         properties = []
         if len(args):
             properties = args[0]
-        logger.info(f"ON CONNECT; {rc = }");
+        logger.info(f"ON CONNECT; {rc = }")
         if rc == 0:
             self._connected = True
             self.state = self.STATES.CONN_NO_SUB
