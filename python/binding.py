@@ -1,4 +1,4 @@
-from imp import reload
+from importlib import reload
 import serial
 import select
 import datetime
