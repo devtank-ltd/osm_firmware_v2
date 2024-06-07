@@ -72,7 +72,7 @@ bool fw_ota_add_chunk(void * data, unsigned size, cmd_ctx_t * ctx)
 
     if ((_fw_ota_pos + size) > FW_MAX_SIZE)
     {
-        cmd_ctx_error(ctx,"Firmware update too big.");
+        cmd_ctx_error(ctx,"Firmware update too big (%u > %u)", _fw_ota_pos + size, FW_MAX_SIZE);
         _fw_ota_pos = -1;
         return false;
     }
@@ -116,6 +116,7 @@ bool fw_ota_complete(uint16_t crc)
     fw_debug("CRC:0x%04x", data_crc);
     if (data_crc != crc)
     {
+        fw_debug("CRC should have been 0x%04x", crc);
         _fw_ota_pos = -1;
         return false;
     }
