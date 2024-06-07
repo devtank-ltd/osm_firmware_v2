@@ -1151,10 +1151,13 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
     {
         char c;
         int r = read(fd, &c, len);
-        if (r != len)
-            linux_port_debug("Peak does not equal len");
         if (r <= 0)
+        {
+            linux_port_debug("Read of 1 failed");
             return -1;
+        }
+        if (r != len)
+            linux_port_debug("In Len 1 Peak does not equal len");
         if (isgraph(c))
             linux_port_debug("%s << '%c' (0x%02"PRIx8")", name, c, (uint8_t)c);
         else
@@ -1168,11 +1171,16 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
         if (r != len)
             linux_port_debug("Peak does not equal len");
         if (r <= 0)
+        {
+            linux_port_debug("Read of %u failed", buf_len);
             return -1;
-        char out_buf[buf_len+1];
+        }
+        if (r != len)
+            linux_port_debug("Peak does not equal len");
+        char out_buf[1024]; // Max line displayed
         char* pos = out_buf;
-        char* end_pos = pos + buf_len+1;
-        for (int i = 0; i < r; i++)
+        char* end_pos = (((unsigned)r + 1) < sizeof(out_buf))?(pos + r+1):pos + (sizeof(out_buf)-1);
+        for (int i = 0; (i < r) && (pos < end_pos) ; i++)
         {
             if ((isgraph(buf[i]) || buf[i] == ' ') && buf[i] != 0)
             {
@@ -1182,7 +1190,7 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             else
             {
                 char * next_pos = pos + 6;
-                if (next_pos > end_pos)
+                if (next_pos >= end_pos)
                     break; // Larger than space avaible
                 snprintf(pos, buf_len - (pos - out_buf), "[0x%02"PRIx8"]", (uint8_t)buf[i]);
                 pos = next_pos;
@@ -1575,7 +1583,11 @@ void platform_hard_reset_sys(void)
         char* cmd = malloc(len + 2);
 
         snprintf(cmd, len+1, "cp -r %s/peripherals/ %s", exec_dir, dir);
-        system(cmd);
+        int sysret = system(cmd);
+        if (sysret < 0)
+        {
+            linux_error("Shell cmd error");
+        }
         _linux_reset_sys(fw_path);
     }
     linux_error("Error (%d): %s", errno, strerror(errno));
@@ -1625,7 +1637,12 @@ void platform_finish_fw(void)
             break;
         }
     }
-    write(fd, _linux_new_fw, size);
+    int w = write(fd, _linux_new_fw, size);
+    if (w != size)
+    {
+        linux_error("Failed to write new fw");
+        return;
+    }
     close(fd);
 #define __LINUX_XZ_CMD_FMT              "xz -d %s%s.xz"
     unsigned cmdlen = snprintf(NULL, 0, __LINUX_XZ_CMD_FMT, dir, LINUX_NEW_FW_LOC);
@@ -1638,7 +1655,11 @@ void platform_finish_fw(void)
     }
     snprintf(cmd, cmdlen + 1, __LINUX_XZ_CMD_FMT, dir, LINUX_NEW_FW_LOC);
     linux_port_debug(cmd);
-    system(cmd);
+    int cmdret = system(cmd);
+    if (cmdret < 0)
+    {
+        linux_error("Shell cmd error");
+    }
     free(cmd);
 }
 
