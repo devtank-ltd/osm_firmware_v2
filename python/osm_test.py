@@ -476,7 +476,8 @@ class test_framework_t(object):
         if not os.path.exists(firmware_filename):
             self._logger.error(f"Firmware path doesnt exist: {firmware_filename}")
             return False
-        os.unlink(firmware_filename_comp)
+        if os.path.exists(firmware_filename_comp):
+            os.unlink(firmware_filename_comp)
         subprocess.check_output(f"xz -k -9 {firmware_filename}", shell=True)
         firmware = open(firmware_filename_comp, "rb")
         use_websockets = self._wifi_conf["mqtt_sch"] > 5
