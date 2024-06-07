@@ -14,6 +14,7 @@ import select
 import yaml
 import json
 import ssl
+import paho.mqtt as paho
 import paho.mqtt.client as mqtt
 from binding import modbus_reg_t, dev_t, set_debug_print, lw_comms_t, wifi_comms_t
 
@@ -535,10 +536,14 @@ class test_framework_t(object):
 
     def _check_wifi_serial_comms(self):
         mqtt_conn = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        if int(paho.__version__.split(".")[0]) > 1:
+            mqtt_conn = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        else:
+            mqtt_conn = mqtt.Client()
         mqtt_conn.enable_logger(self._logger)
         messages = []
         mqtt_conn.on_message = lambda client, userdata, message: messages.append(message)
-        mqtt_conn.on_connect = lambda client, userdata, flags, reason_code, properties: client.subscribe("osm/00C0FFEE/measurements")
+        mqtt_conn.on_connect = lambda client, userdata, flags, reason_code, *args: client.subscribe("osm/00C0FFEE/measurements")
 
         mqtt_sch = self._wifi_conf["mqtt_sch"]
         use_websockets = mqtt_sch > 5
