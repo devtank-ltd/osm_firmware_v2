@@ -267,9 +267,23 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn(void)
 }
 
 
+static void _debug_cmd_ctx_output(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    log_debugv(DEBUG_COMMS, fmt, ap);
+}
+
+static void _debug_cmd_ctx_error(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    log_debug(DEBUG_COMMS, "Command error:");
+    log_debugv(DEBUG_COMMS, fmt, ap);
+}
+
+
 static int _at_mqtt_do_command(char* payload, unsigned payload_len, char* resp_buf, unsigned resp_buflen)
 {
-    command_response_t ret_code = cmds_process(payload, payload_len, NULL);
+    cmd_ctx_t debug_cmd_ctx = { .output_cb = _debug_cmd_ctx_output, .error_cb = _debug_cmd_ctx_error };
+    log_debug(DEBUG_COMMS, "Command output:");
+    command_response_t ret_code = cmds_process(payload, payload_len, &debug_cmd_ctx);
     int resp_payload_len = snprintf(
         resp_buf,
         resp_buflen,

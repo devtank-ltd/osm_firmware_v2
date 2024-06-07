@@ -10,6 +10,7 @@ extern uint32_t log_debug_mask;
 
 extern void platform_raw_msg(const char * s);
 
+extern void log_debugv(uint32_t flag, const char * s,va_list ap);
 extern void log_debug(uint32_t flag, const char * s, ...) PRINTF_FMT_CHECK( 2, 3);
 
 extern void log_bad_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
