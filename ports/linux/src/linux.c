@@ -1620,9 +1620,10 @@ void platform_finish_fw(void)
     }
     snprintf(new_fw_loc, len + 1, "%s%s.xz", dir, LINUX_NEW_FW_LOC);
     int fd = open(new_fw_loc, O_WRONLY | O_CREAT, 0777);
-    free(new_fw_loc);
+    snprintf(new_fw_loc, len + 1, "%s%s", dir, LINUX_NEW_FW_LOC);
     if (0 >= fd)
     {
+        free(new_fw_loc);
         linux_error("Failed to open new fw file");
         /* will exit here */
         return;
@@ -1640,6 +1641,7 @@ void platform_finish_fw(void)
     int w = write(fd, _linux_new_fw, size);
     if (w != size)
     {
+        free(new_fw_loc);
         linux_error("Failed to write new fw");
         return;
     }
@@ -1649,12 +1651,18 @@ void platform_finish_fw(void)
     char* cmd = malloc(cmdlen + 2);
     if (!cmd)
     {
+        free(new_fw_loc);
         linux_error("Failed to malloc command for updating firmware");
         /* will exit here */
         return;
     }
     snprintf(cmd, cmdlen + 1, __LINUX_XZ_CMD_FMT, dir, LINUX_NEW_FW_LOC);
     linux_port_debug(cmd);
+    if (access(new_fw_loc, F_OK) == 0)
+    {
+        unlink(new_fw_loc);
+    }
+    free(new_fw_loc);
     int cmdret = system(cmd);
     if (cmdret < 0)
     {
