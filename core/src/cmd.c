@@ -155,6 +155,7 @@ command_response_t cmds_process(char * command, unsigned len, cmd_ctx_t * ctx)
         }
     }
     cmd_ctx_out(ctx,LOG_END_SPACER);
+    log_sys_debug("Command Response Code:%d", (int)resp);
     return resp;
 }
 

@@ -223,6 +223,12 @@ void platform_reset_sys(void)
 }
 
 
+void platform_hard_reset_sys(void)
+{
+    scb_reset_system();
+}
+
+
 persist_storage_t* platform_get_raw_persist(void)
 {
     return (persist_storage_t*)PERSIST_RAW_DATA;
@@ -271,6 +277,17 @@ bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_pa
     }
 
     return false;
+}
+
+
+uintptr_t platform_get_fw_addr(unsigned fw_page_index)
+{
+    return (uintptr_t)(NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE));
+}
+
+
+void platform_finish_fw(void)
+{
 }
 
 

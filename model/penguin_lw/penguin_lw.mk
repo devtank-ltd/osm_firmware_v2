@@ -1,6 +1,6 @@
 LINUX_INCLUDE_PATHS += -I$(LIB_DIR)/embedded-i2c-sen5x
 
-penguin_SOURCES := \
+penguin_lw_SOURCES := \
     $(OSM_DIR)/ports/linux/src/uarts.c \
     $(OSM_DIR)/ports/linux/src/linux_adc.c \
     $(OSM_DIR)/ports/linux/src/sleep.c \
@@ -47,8 +47,8 @@ penguin_SOURCES := \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
-    $(MODEL_DIR)/penguin/model.c \
+    $(MODEL_DIR)/penguin_lw/model.c \
     $(OSM_DIR)/comms/src/common.c \
     $(OSM_DIR)/comms/src/linux_comms.c
 
-$(eval $(call LINUX_FIRMWARE,penguin))
+$(eval $(call LINUX_FIRMWARE,penguin_lw))

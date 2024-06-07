@@ -45,6 +45,8 @@
 
 #define LINUX_PERSIST_FILE_LOC  "osm.img"
 #define LINUX_REBOOT_FILE_LOC   "reboot.dat"
+#define LINUX_NEW_FW_LOC        "new_firmware.elf"
+#define LINUX_NEW_FW_LOC_BUF_SIZ                128
 #define LINUX_REBOOT_FILE_TIMEOUT_S 60
 
 #define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
@@ -138,6 +140,7 @@ static volatile bool    _linux_running              = true;
 static bool             _linux_in_debug             = false;
 volatile bool           linux_threads_deinit        = false;
 static int64_t          _linux_boot_time_us         = 0;
+static uint8_t          _linux_new_fw[FW_MAX_SIZE]  = {0};
 
 static pthread_cond_t  _sleep_cond  =  PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
@@ -1148,10 +1151,13 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
     {
         char c;
         int r = read(fd, &c, len);
-        if (r != len)
-            linux_port_debug("Peak does not equal len");
         if (r <= 0)
+        {
+            linux_port_debug("Read of 1 failed");
             return -1;
+        }
+        if (r != len)
+            linux_port_debug("In Len 1 Peak does not equal len");
         if (isgraph(c))
             linux_port_debug("%s << '%c' (0x%02"PRIx8")", name, c, (uint8_t)c);
         else
@@ -1165,11 +1171,16 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
         if (r != len)
             linux_port_debug("Peak does not equal len");
         if (r <= 0)
+        {
+            linux_port_debug("Read of %u failed", buf_len);
             return -1;
-        char out_buf[buf_len+1];
+        }
+        if (r != len)
+            linux_port_debug("Peak does not equal len");
+        char out_buf[1024]; // Max line displayed
         char* pos = out_buf;
-        char* end_pos = pos + buf_len+1;
-        for (int i = 0; i < r; i++)
+        char* end_pos = (((unsigned)r + 1) < sizeof(out_buf))?(pos + r+1):pos + (sizeof(out_buf)-1);
+        for (int i = 0; (i < r) && (pos < end_pos) ; i++)
         {
             if ((isgraph(buf[i]) || buf[i] == ' ') && buf[i] != 0)
             {
@@ -1179,7 +1190,7 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             else
             {
                 char * next_pos = pos + 6;
-                if (next_pos > end_pos)
+                if (next_pos >= end_pos)
                     break; // Larger than space avaible
                 snprintf(pos, buf_len - (pos - out_buf), "[0x%02"PRIx8"]", (uint8_t)buf[i]);
                 pos = next_pos;
@@ -1334,6 +1345,7 @@ char* ret_static_file_location(void)
 
 void platform_init(void)
 {
+    memset(_linux_new_fw, 0, sizeof(_linux_new_fw));
     _linux_boot_time_us = linux_get_current_us();
 
     if (setvbuf(stdout, NULL, _IOLBF, 1024) < 0)
@@ -1449,7 +1461,7 @@ void platform_set_rs485_mode(bool driver_enable)
 }
 
 
-void platform_reset_sys(void)
+static void _linux_reset_sys(char* link_addr)
 {
     _linux_save_fd_file();
 
@@ -1461,15 +1473,22 @@ void platform_reset_sys(void)
     w1_linux_deinit();
     model_linux_close_fakes();
 
+    char *const __argv[1] = {0};
+    if (execv(link_addr, __argv))
+        linux_error("Could not re-exec firmware");
+}
+
+
+void platform_reset_sys(void)
+{
     char link_addr[128];
     char proc_ln[64];
     snprintf(proc_ln, 63, "/proc/%"PRIi32"/exe", getpid());
     ssize_t len = readlink(proc_ln, link_addr, 127);
     link_addr[len] = 0;
-    char *const __argv[1] = {0};
-    if (execv(link_addr, __argv))
-        linux_error("Could not re-exec firmware");
+    _linux_reset_sys(link_addr);
 }
+
 
 char concat_osm_location(char* new_loc, unsigned loc_len, char* global)
 {
@@ -1541,9 +1560,115 @@ void platform_persist_wipe(void)
 }
 
 
+void platform_hard_reset_sys(void)
+{
+    char* dir = ret_static_file_location();
+    /* Dont think malloc would be okay as it can't be free'd */
+    char fw_path[LINUX_NEW_FW_LOC_BUF_SIZ];
+    snprintf(fw_path, LINUX_NEW_FW_LOC_BUF_SIZ, "%s%s", dir, LINUX_NEW_FW_LOC);
+    fw_path[LINUX_NEW_FW_LOC_BUF_SIZ-1] = 0;
+    linux_port_debug("fw_path = %s", fw_path);
+    if (access(fw_path, F_OK) == 0)
+    {
+        linux_port_debug("Booting into new firmware");
+        static char proc_path[PATH_MAX];
+        memset(proc_path, 0, PATH_MAX);
+        if (readlink("/proc/self/exe", proc_path, PATH_MAX) < 0)
+        {
+            linux_error("Failed copy : %s", proc_path);
+            return;
+        }
+        const char *exec_dir = dirname(proc_path);
+        unsigned len = snprintf(NULL, 0, "cp -r %s/peripherals/ %s", exec_dir, dir);
+        char* cmd = malloc(len + 2);
+
+        snprintf(cmd, len+1, "cp -r %s/peripherals/ %s", exec_dir, dir);
+        int sysret = system(cmd);
+        if (sysret < 0)
+        {
+            linux_error("Shell cmd error");
+        }
+        _linux_reset_sys(fw_path);
+    }
+    linux_error("Error (%d): %s", errno, strerror(errno));
+}
+
+
 bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {
-    return false;
+    memcpy((void*)dst, fw_page, FLASH_PAGE_SIZE);
+    return true;
+}
+
+
+uintptr_t platform_get_fw_addr(unsigned fw_page_index)
+{
+    return (uintptr_t)(_linux_new_fw + (fw_page_index * FLASH_PAGE_SIZE));
+}
+
+
+void platform_finish_fw(void)
+{
+    char* dir = ret_static_file_location();
+    unsigned len = snprintf(NULL, 0, "%s%s.xz", dir, LINUX_NEW_FW_LOC);
+    char* new_fw_loc = malloc(len + 2);
+    if (!new_fw_loc)
+    {
+        linux_error("Failed to malloc new fw loc.");
+        /* will exit here */
+        return;
+    }
+    snprintf(new_fw_loc, len + 1, "%s%s.xz", dir, LINUX_NEW_FW_LOC);
+    int fd = open(new_fw_loc, O_WRONLY | O_CREAT, 0777);
+    snprintf(new_fw_loc, len + 1, "%s%s", dir, LINUX_NEW_FW_LOC);
+    if (0 >= fd)
+    {
+        free(new_fw_loc);
+        linux_error("Failed to open new fw file");
+        /* will exit here */
+        return;
+    }
+    ssize_t size = 0;
+    for (size = FW_MAX_SIZE; 0 < size; size--)
+    {
+        uint8_t dat = _linux_new_fw[size - 1];
+        if (0x00 != dat && 0xFF != dat)
+        {
+            linux_port_debug("Early exit on %"PRIu8", size: %d", dat, size);
+            break;
+        }
+    }
+    int w = write(fd, _linux_new_fw, size);
+    if (w != size)
+    {
+        free(new_fw_loc);
+        linux_error("Failed to write new fw");
+        return;
+    }
+    close(fd);
+#define __LINUX_XZ_CMD_FMT              "xz -d %s%s.xz"
+    unsigned cmdlen = snprintf(NULL, 0, __LINUX_XZ_CMD_FMT, dir, LINUX_NEW_FW_LOC);
+    char* cmd = malloc(cmdlen + 2);
+    if (!cmd)
+    {
+        free(new_fw_loc);
+        linux_error("Failed to malloc command for updating firmware");
+        /* will exit here */
+        return;
+    }
+    snprintf(cmd, cmdlen + 1, __LINUX_XZ_CMD_FMT, dir, LINUX_NEW_FW_LOC);
+    linux_port_debug(cmd);
+    if (access(new_fw_loc, F_OK) == 0)
+    {
+        unlink(new_fw_loc);
+    }
+    free(new_fw_loc);
+    int cmdret = system(cmd);
+    if (cmdret < 0)
+    {
+        linux_error("Shell cmd error");
+    }
+    free(cmd);
 }
 
 

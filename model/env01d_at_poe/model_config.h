@@ -14,9 +14,9 @@
 #define FLASH_CONFIG_PAGE           2
 #define FLASH_MEASUREMENTS_PAGE     3
 #define FW_PAGE                     4
-#define NEW_FW_PAGE                 120
+#define NEW_FW_PAGE                 66
 
-#define FW_PAGES                    100
+#define FW_PAGES                    62
 #define FW_MAX_SIZE                 (FW_PAGES * FLASH_PAGE_SIZE)
 #define PAGE2ADDR(_page_)           (FLASH_ADDRESS + (FLASH_PAGE_SIZE * _page_))
 #define FW_ADDR                     PAGE2ADDR(FW_PAGE)
@@ -24,9 +24,10 @@
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define PERSIST_VERSION             3
+#define PERSIST_MODEL_VERSION       3
+#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
-#define CMD_LINELEN 128
+#define CMD_LINELEN 256
 
 #define UART_0_IN_BUF_SIZE  CMD_LINELEN
 #define UART_0_OUT_BUF_SIZE 2048

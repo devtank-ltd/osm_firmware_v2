@@ -90,7 +90,7 @@ $(1): $$(BUILD_DIR)/$(1)/.complete
 
 $(1)_test: $$(BUILD_DIR)/$(1)/firmware.elf
 	mkdir -p $(OSM_LOC)
-	cd $$(OSM_DIR)/python/; ./osm_test.py
+	cd $$(OSM_DIR)/python/; ./osm_test.py ../$$(BUILD_DIR)/$(1)/firmware.elf ./osm_test_config.json
 
 $(1)_coverage: $$(BUILD_DIR)/.linux_coverage $$(BUILD_DIR)/$(1)/firmware.elf
 	python3-coverage erase

@@ -1,0 +1,14 @@
+{
+  "log_file": null,
+  "websockets": true,
+  "ssl": true,
+  "insecure": true,
+  "mqtt": {
+    "address": "localhost",
+    "port": 9001,
+    "user": "mqtt_user",
+    "password": "mqtt_password",
+    "ca": null
+  },
+  "ota": false
+}

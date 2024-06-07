@@ -450,7 +450,12 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         self.reply_raw(b">")
         logger.info("START READ")
         payload = self.device.read_blocking(length, timeout=1)
-        self.device.mqtt.publish(topic.decode(), payload)
+        topic = topic.decode()
+        if topic.startswith("\""):
+            topic = topic[1:]
+        if topic.endswith("\""):
+            topic = topic[:-1]
+        self.device.mqtt.publish(topic, payload)
         self.reply(b"+MQTTPUB:OK")
 
 
@@ -611,7 +616,8 @@ class at_wifi_mqtt_t(object):
             "CONN_WITH_SUB",
         ])
 
-    def __init__(self, selector):
+    def __init__(self, device, selector):
+        self._device = weakref.ref(device)
         self.scheme = self.SCHEMES.TCP
         self.addr = None
         self.client_id = None
@@ -625,6 +631,10 @@ class at_wifi_mqtt_t(object):
         self.state = self.STATES.UNINIT
         self._selector = selector
         self.reinit_client()
+
+    @property
+    def device(self):
+        return self._device()
 
     def reinit_client(self):
         was_connected = self._connected
@@ -647,6 +657,7 @@ class at_wifi_mqtt_t(object):
         logger.info(f"MQTT transport: {self.client.transport}")
         self.client.on_connect = self._on_connect
         self.client.on_subscribe = self._on_subscribe
+        self.client.on_message = self._on_message
         self.client.on_socket_open = self._on_socket_open
         self.client.on_socket_close = self._on_socket_close
 
@@ -715,7 +726,7 @@ class at_wifi_mqtt_t(object):
         properties = []
         if len(args):
             properties = args[0]
-        logger.info(f"ON CONNECT; {rc = }");
+        logger.info(f"ON CONNECT; {rc = }")
         if rc == 0:
             self._connected = True
             self.state = self.STATES.CONN_NO_SUB
@@ -761,6 +772,13 @@ class at_wifi_mqtt_t(object):
                     self.state = self.STATES.CONN_WITH_SUB
                     self._pending_subscription = None
 
+    def _on_message(self, client, userdata, message):
+        topic = message.topic
+        payload = message.payload.decode()
+        logger.info(f"ON MESSAGE: '{topic}':'{payload}'")
+        msg = f"+MQTTSUBRECV:0,\"{topic}\",{len(payload)},{payload}"
+        self.device.send(msg)
+
     def _on_socket_open(self, mqttc, userdata, sock):
         self._selector.register(sock, selectors.EVENT_READ, self.event)
 
@@ -801,7 +819,7 @@ class at_wifi_dev_t(object):
         self.is_echo = True
         self.sntp = at_wifi_sntp_info_t()
         self.wifi = at_wifi_info_t()
-        self.mqtt = at_wifi_mqtt_t(self._selector)
+        self.mqtt = at_wifi_mqtt_t(self, self._selector)
 
         command_types = [
             at_wifi_basic_at_commands_t,

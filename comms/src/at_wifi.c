@@ -758,6 +758,7 @@ static void _at_wifi_process_state_mqtt_wait_pub(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
+        comms_debug("Sending pub data %.*s", _at_wifi_ctx.mqtt_ctx.publish_packet.len,  _at_wifi_ctx.mqtt_ctx.publish_packet.message);
         _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_PUBLISHING;
         at_base_raw_send(
             _at_wifi_ctx.mqtt_ctx.publish_packet.message,

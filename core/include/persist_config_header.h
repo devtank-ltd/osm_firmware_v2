@@ -17,9 +17,8 @@ typedef struct
 {
     uint16_t                version;
     uint32_t                log_debug_mask;
-    uint16_t                pending_fw:1;
-    uint16_t                _reserved:15;
-    uint8_t                 _[8];
+    uint32_t                pending_fw;
+    uint8_t                 _[6];
     /* 16 byte boundary ---- */
     char                    model_name[MODEL_NAME_LEN];
     uint8_t                 __[16-(MODEL_NAME_LEN%16)];
