@@ -535,7 +535,6 @@ class test_framework_t(object):
         return ret
 
     def _check_wifi_serial_comms(self):
-        mqtt_conn = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         if int(paho.__version__.split(".")[0]) > 1:
             mqtt_conn = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
         else:
