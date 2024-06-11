@@ -131,7 +131,7 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
     }
     if (!ret)
     {
-        log_sys_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
+        comms_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
         _json_buf_pos = before_pos;
     }
     return ret;
@@ -147,14 +147,12 @@ bool protocol_send(void)
         comms_debug("Space error");
         return false;
     }
-    log_sys_debug("_json_buf_pos = %u", _json_buf_pos);
-    log_sys_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
 
     unsigned r = snprintf(_json_buf + _json_buf_pos, available, "}}");
 
     _json_buf_pos += r;
 
-    log_sys_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
+    comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
 
     if (!comms_send(_json_buf, _json_buf_pos))
     {
