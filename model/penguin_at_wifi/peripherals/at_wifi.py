@@ -23,8 +23,8 @@ logger = logging.getLogger("at_wifi.py")
 
 class base_at_commands_t(object):
     OK          = "OK"
-    PARAM_ERROR = "AT+ERROR: PARAM"
-    STATE_ERROR = "AT+ERROR: STATE"
+    PARAM_ERROR = "ERROR: PARAM"
+    STATE_ERROR = "ERROR: STATE"
 
     TEST    = "TEST"
     QUERY   = "QUERY"
