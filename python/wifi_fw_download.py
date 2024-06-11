@@ -157,7 +157,7 @@ class wifi_fw_dl_t(object):
         if self.command_index > 1:
             self._is_measuring = False
 
-    def _on_connect(self, client, userdata, flags, reason_code, properties):
+    def _on_connect(self, client, userdata, flags, reason_code, *properties):
         if reason_code ==0:
             self._logger.info("CONNECTED")
             self._logger.info(f"SUBSCRIBING TO '{userdata['sub_topic']}'")
@@ -165,10 +165,10 @@ class wifi_fw_dl_t(object):
         if reason_code > 0:
             self._logger.error(f"FAILED TO CONNECT: '{reason_code}'")
 
-    def _on_disconnect(self, client, userdata, disconnect_flags, reason_code, properties):
+    def _on_disconnect(self, client, userdata, disconnect_flags, *reason_code):
         self._logger.info(f"DISCONNECTED: '{reason_code}'")
 
-    def _on_subscribe(self, client, userdata, mid, reason_code_list, properties):
+    def _on_subscribe(self, client, userdata, mid, reason_code_list, *properties):
         for reason_code in reason_code_list:
             if reason_code < 128:
                 self._logger.info("SUBSCRIBED")
