@@ -223,11 +223,18 @@ static void _at_wifi_is_mqtt_subscribed(void) {
 
 static void _at_wifi_reset(void)
 {
-    comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
-    comms_debug("AT wifi reset");
-    _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
-    _at_wifi_printf("AT+RESTORE");
-    _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
+    if (!_at_wifi_mem_is_valid())
+    {
+        comms_debug("Invalid memory");
+    }
+    else
+    {
+        comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+        comms_debug("AT wifi reset");
+        _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
+        _at_wifi_printf("AT+RESTORE");
+        _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
+    }
 }
 
 
@@ -402,7 +409,14 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
                     break;
                 default:
                     comms_debug("Unknown CWSTATE:%"PRIu8, state);
-                    _at_wifi_reset();
+                    if (!_at_wifi_mem_is_valid())
+                    {
+                        comms_debug("Invalid memory");
+                    }
+                    else
+                    {
+                        _at_wifi_reset();
+                    }
                     break;
             }
         }
@@ -848,7 +862,7 @@ static void _at_wifi_process_state_timedout_wifi_wait_state(char* msg, unsigned 
         else
         {
             comms_debug("Failed CW state (wifi)");
-            _at_wifi_reset();
+            _at_wifi_hw_reset();
         }
     }
 }
@@ -868,7 +882,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_wifi_state(char* msg, unsi
         else
         {
             comms_debug("Failed CW state (mqtt)");
-            _at_wifi_reset();
+            _at_wifi_hw_reset();
         }
     }
 }
@@ -1063,7 +1077,7 @@ static void _at_wifi_mqtt_fail_connect(void)
 
 static void _at_wifi_check_default_timeout(void)
 {
-    __AT_WIFI_TIMEOUT_TEMPLATE(AT_WIFI_TIMEOUT_MS_DEFAULT, _at_wifi_start)
+    __AT_WIFI_TIMEOUT_TEMPLATE(AT_WIFI_TIMEOUT_MS_DEFAULT, _at_wifi_hw_reset)
 }
 
 
@@ -1288,7 +1302,8 @@ static command_response_t _at_wifi_state_cb(char* args, cmd_ctx_t * ctx)
     return COMMAND_RESP_OK;
 }
 
-static command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx) {
+static command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx)
+{
     _at_wifi_reset();
     return COMMAND_RESP_OK;
 }

@@ -60,13 +60,13 @@ static bool _protocol_append_meas(char * fmt, ...)
 
 static bool _protocol_append_data_type_float(const char * name, int32_t value)
 {
-    return _protocol_append_meas("\"%s\" : %"PRId32".%03ld", name, value/1000, labs(value%1000));
+    return _protocol_append_meas("\"%s\":%"PRId32".%03ld", name, value/1000, labs(value%1000));
 }
 
 
 static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 {
-    return _protocol_append_meas("\"%s\" : %"PRId64, name, value);
+    return _protocol_append_meas("\"%s\":%"PRId64, name, value);
 }
 
 
@@ -105,7 +105,7 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
 
 static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
 {
-    return _protocol_append_meas("\"%s\" : \"%s\"", name, data->value.value_s.str);
+    return _protocol_append_meas("\"%s\":\"%s\"", name, data->value.value_s.str);
 }
 
 
@@ -131,6 +131,7 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
     }
     if (!ret)
     {
+        comms_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
         _json_buf_pos = before_pos;
     }
     return ret;
@@ -140,16 +141,18 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 bool protocol_send(void)
 {
     unsigned available = JSON_BUF_SIZE - _json_buf_pos;
-    
+
     if (available < JSON_CLOSE_SIZE)
     {
         comms_debug("Space error");
         return false;
     }
-    
+
     unsigned r = snprintf(_json_buf + _json_buf_pos, available, "}}");
 
     _json_buf_pos += r;
+
+    comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
 
     if (!comms_send(_json_buf, _json_buf_pos))
     {

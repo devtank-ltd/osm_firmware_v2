@@ -1776,6 +1776,26 @@ void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t
 void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 {
     _ios_enabled[gpio_pin->index] = is_on;
+
+    char* dir = ret_static_file_location();
+
+    unsigned mem_size = snprintf(NULL, 0, "%s/gpios/gpio_%u", dir, gpio_pin->index) + 1;
+    char* mem = malloc(mem_size);
+    snprintf(mem, mem_size, "%s/gpios", dir);
+
+    mkdir(mem, 0755);
+    struct stat statbuf;
+    if (stat(mem, &statbuf) == 0)
+    {
+        snprintf(mem, mem_size, "%s/gpios/gpio_%u", dir, gpio_pin->index);
+        int fd = open(mem, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        if (fd > 0)
+        {
+            dprintf(fd, (is_on)?"1":"0");
+            close(fd);
+        }
+    }
+    free(mem);
 }
 
 

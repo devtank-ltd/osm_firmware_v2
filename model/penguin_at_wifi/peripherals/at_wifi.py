@@ -14,6 +14,8 @@ import serial
 import weakref
 import selectors
 
+import timerfd
+
 logging.basicConfig(level=logging.ERROR)
 
 logger = logging.getLogger("at_wifi.py")
@@ -21,8 +23,8 @@ logger = logging.getLogger("at_wifi.py")
 
 class base_at_commands_t(object):
     OK          = "OK"
-    PARAM_ERROR = "AT+ERROR: PARAM"
-    STATE_ERROR = "AT+ERROR: STATE"
+    PARAM_ERROR = "ERROR: PARAM"
+    STATE_ERROR = "ERROR: STATE"
 
     TEST    = "TEST"
     QUERY   = "QUERY"
@@ -401,7 +403,13 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         mqtt_obj = self.device.mqtt
         mqtt_obj.addr = addr.decode()[1:-1]
         mqtt_obj.port = port
-        if not mqtt_obj.connect():
+        try:
+            r = mqtt_obj.connect()
+        except ValueError as e:
+            logger.error(e)
+            self.reply_param_error()
+            return
+        if not r:
             self.reply_param_error()
             return
         self.reply_ok()
@@ -799,11 +807,21 @@ class at_wifi_dev_t(object):
     SDK_VERSION     = "v4.0.1 (FAKE)"
     COMPILE_TIME    = "compile time:Oct 16 2023 12:18:22"
     BIN_VERSION     = "2.1.0 (FAKE)"
+    BOOTTIME        = 2.
+    RESET_PIN_POLL  = 0.0005
 
-    def __init__(self, port):
+    def __init__(self, port, reset_pin_path):
         self.port = port
 
         self._selector = selectors.PollSelector()
+
+        self._reset = False
+
+        self._reset_pin_path = reset_pin_path
+
+        self._reset_pin_poll_fd = timerfd.timerfd_t(self.RESET_PIN_POLL)
+        self._reset_pin_poll_fd.start()
+        self._selector.register(self._reset_pin_poll_fd, selectors.EVENT_READ, self._reset_pin_event)
 
         if isinstance(port, int):
             self._serial = os.fdopen(port, "rb", 0)
@@ -842,6 +860,9 @@ class at_wifi_dev_t(object):
         self.close()
 
     def close(self):
+        if self._reset_pin_poll_fd:
+            self._reset_pin_poll_fd.stop()
+            self._reset_pin_poll_fd = None
         if self._serial:
             self._serial.close()
             self._serial = None
@@ -885,11 +906,36 @@ class at_wifi_dev_t(object):
         logger.debug(f"<< {msg}")
         return msg
 
+    def _reset_pin_event(self):
+        self._reset_pin_poll_fd.reset()
+        if os.path.exists(self._reset_pin_path):
+            with open(self._reset_pin_path) as rs:
+                v = rs.read()
+            try:
+                w = bool(int(v))
+            except ValueError:
+                w = False
+            if w and self._reset is False:
+                self._reset = time.monotonic()
+            elif not w and self.reset_pin:
+                self._reset = False
+
+    @property
+    def reset_pin(self):
+        return self._reset is None or bool(self._reset)
+
+    def loop_rest_pin(self):
+        if self._reset and time.monotonic() > self._reset + self.BOOTTIME:
+            self._reset = None
+            self.restore()
+            self.send(b"ready")
+
     def _serial_in_event(self):
         self._read_serial(self._serial.fileno())
 
     def run_forever(self):
         while not self.done:
+            self.loop_rest_pin()
             self.mqtt.loop()
             events = self._selector.select(timeout=0.01)
             for key, mask in events:
@@ -915,8 +961,8 @@ class at_wifi_dev_t(object):
         self.wifi.state = wifi.CONNECTED if connect else wifi.DISCONNECTED
 
 
-def run_standalone(tty_path):
-    directory = os.path.dirname(tty_path)
+def run_standalone(tty_path, resetpin):
+    directory = os.path.dirname(tty_path, resetpin)
     if not os.path.exists(directory):
         os.mkdir(directory)
     if os.path.islink(tty_path):
@@ -937,8 +983,8 @@ def run_standalone(tty_path):
     os.unlink(tty_path)
     return 0
 
-def run_dependent(tty_path):
-    dev = at_wifi_dev_t(tty_path)
+def run_dependent(tty_path, resetpin):
+    dev = at_wifi_dev_t(tty_path, resetpin)
     try:
         dev.run_forever()
     except KeyboardInterrupt:
@@ -953,6 +999,10 @@ def main():
         os.mkdir(osm_loc)
     DEFAULT_VIRTUAL_COMMS_PATH = os.path.join(osm_loc, "UART_COMMS_slave")
 
+    RESET_PIN = 10
+
+    DEFAULT_RESET_PIN_PATH = os.path.join(osm_loc, "gpios", f"gpio_{RESET_PIN}")
+
     is_debug = os.environ.get("DEBUG")
 
     if is_debug:
@@ -966,15 +1016,16 @@ def main():
     def get_args():
         parser = argparse.ArgumentParser(description='Fake AT Wifi Module.' )
         parser.add_argument('-s', '--standalone', help="If this should spin up its own pseudoterminal or use an existing one", action='store_true')
+        parser.add_argument('-r', '--resetpin', metavar='RST', type=str, nargs=1, help='The reset pin path for this device', default=DEFAULT_RESET_PIN_PATH)
         parser.add_argument('pseudoterminal', metavar='PTY', type=str, nargs='?', help='The pseudoterminal for the fake AT wifi module', default=DEFAULT_VIRTUAL_COMMS_PATH)
         return parser.parse_args()
 
     args = get_args()
 
     if args.standalone:
-        return run_standalone(args.pseudoterminal)
+        return run_standalone(args.pseudoterminal, args.resetpin)
     else:
-        return run_dependent(args.pseudoterminal)
+        return run_dependent(args.pseudoterminal, args.resetpin)
 
 if __name__ == '__main__':
     sys.exit(main())
