@@ -49,7 +49,7 @@ bool at_mqtt_mem_is_valid(void)
     return (str_is_valid_ascii(_at_mqtt_ctx->mem->addr  , AT_MQTT_ADDR_MAX_LEN       , true  ) &&
             str_is_valid_ascii(_at_mqtt_ctx->mem->user  , AT_MQTT_USER_MAX_LEN       , true  ) &&
             str_is_valid_ascii(_at_mqtt_ctx->mem->pwd   , AT_MQTT_PWD_MAX_LEN        , true  ) &&
-            str_is_valid_ascii(_at_mqtt_ctx->mem->path  , AT_MQTT_PATH_MAX_LEN       , true  ) );
+            str_is_valid_ascii(_at_mqtt_ctx->mem->path  , AT_MQTT_PATH_MAX_LEN       , false ) );
 }
 
 

@@ -245,7 +245,6 @@ class test_framework_t(object):
             ("MQTT Address"     , self._vosm_conn.comms.mqtt_addr   , self._wifi_conf["mqtt_addr"]  ),
             ("MQTT User"        , self._vosm_conn.comms.mqtt_user   , self._wifi_conf["mqtt_user"]  ),
             ("MQTT Password"    , self._vosm_conn.comms.mqtt_pwd    , self._wifi_conf["mqtt_pwd"]   ),
-            ("MQTT CA"          , self._vosm_conn.comms.mqtt_ca     , self._wifi_conf["mqtt_ca"]    ),
             ]:
             ret &= self._str_check(f"{name}", conf, ref)
         for name, conf, ref in [
@@ -722,7 +721,7 @@ def main():
     _set(mqtt_info, "port", mqtt_config["port"])
     _set(mqtt_info, "user", mqtt_config["user"])
     _set(mqtt_info, "password", mqtt_config["password"])
-    _set(mqtt_info, "ca", mqtt_config["ca"])
+    _set(mqtt_info, "path", mqtt_config["path"])
 
     passed = False
     with test_framework_t(args.firmware, config["log_file"], mqtt_info=mqtt_info, do_ota=config["ota"]) as tf:
