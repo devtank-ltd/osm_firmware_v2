@@ -12,6 +12,7 @@ import logging
 import datetime
 import traceback
 
+import paho.mqtt as paho
 import paho.mqtt.client as mqtt
 
 protocol_version = b'\x01'
@@ -31,7 +32,11 @@ class wifi_fw_dl_t(object):
 
     def __init__(self, address, port, firmware_file, hwid, user=None, password=None, ca=None, websockets=False, use_ssl=False, insecure=False, verbose=False, logger=None):
 
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        if int(paho.__version__.split(".")[0]) > 1:
+            self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+        else:
+            self.client = mqtt.Client()
+
         if logger is None:
             logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%dT%H:%M:%S", format="[%(asctime)s.%(msecs)03d] %(filename)s:%(funcName)s [%(levelname)s]: %(message)s")
             logger = logging.getLogger(__name__)
