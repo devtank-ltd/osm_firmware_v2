@@ -476,7 +476,7 @@ static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
             _at_wifi_ctx.mem->channel_start,
             _at_wifi_ctx.mem->channel_count
             );
-        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
+        _at_wifi_ctx.state = AT_WIFI_STATE_RF_REGION;
     }
     else if (at_base_is_error(msg, len))
     {
