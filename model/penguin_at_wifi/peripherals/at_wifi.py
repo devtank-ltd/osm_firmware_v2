@@ -721,6 +721,9 @@ class at_wifi_mqtt_t(object):
         except ConnectionResetError as e:
             logger.error(f"Connection Failed: {e}")
             return False
+        except ConnectionRefusedError as e:
+            logger.error(f"Connection Failed: {e}")
+            return False
 
         self._connected = None
         end = time.monotonic() + timeout
@@ -979,7 +982,7 @@ def run_standalone(tty_path, resetpin):
     try:
         dev.run_forever()
     except KeyboardInterrupt:
-        logger.error("\r")
+        print("at_wifi_dev_t : Caught keyboard interrupt, exiting")
     os.unlink(tty_path)
     return 0
 
@@ -988,7 +991,7 @@ def run_dependent(tty_path, resetpin):
     try:
         dev.run_forever()
     except KeyboardInterrupt:
-        logger.error("\r")
+        print("at_wifi_dev_t : Caught keyboard interrupt, exiting")
     return 0
 
 def main():

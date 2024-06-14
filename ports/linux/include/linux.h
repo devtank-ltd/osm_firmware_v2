@@ -44,3 +44,5 @@ char* ret_static_file_location(void);
 char concat_osm_location(char* new_loc, unsigned loc_len, char* global);
 
 int64_t linux_get_current_us(void);
+
+struct cmd_link_t* linux_add_commands(struct cmd_link_t* tail);
