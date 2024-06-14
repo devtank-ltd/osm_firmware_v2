@@ -1473,7 +1473,7 @@ static void _linux_reset_sys(char* link_addr)
     w1_linux_deinit();
     model_linux_close_fakes();
 
-    char *const __argv[1] = {0};
+    char *const __argv[2] = {link_addr, 0};
     if (execv(link_addr, __argv))
         linux_error("Could not re-exec firmware");
 }
