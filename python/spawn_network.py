@@ -27,6 +27,16 @@ class virtual_osm:
         self._vosm_subp = subprocess.Popen(cmd, shell=True)
         self._binding = None
 
+    def pid(self):
+        return self._vosm_subp.pid
+
+    def is_alive(self):
+        return self._vosm_subp.poll() is None
+
+    def close(self):
+        if self.is_alive():
+            self._vosm_subp.terminate()
+
     def get_tty(self):
         return f"{self._loc}/UART_DEBUG_slave"
 
@@ -74,23 +84,45 @@ def main(args):
     fake_osms = {}
     logger.debug(f'Starting OSM fakes')
     for fake_osm_name, fake_osm_config in fake_osm_configs.items():
+        logger.debug("="*72)
         firmware_path = os.path.join(os.path.dirname(network_config_path), fake_osm_config['firmware'])
         fake_osm = virtual_osm(logger, base_dir, fake_osm_name, firmware_path)
-        fake_osms[fake_osm_name] = fake_osm
-        while not fake_osm.get_binding():
-            logger.debug("Waiting on Virtual OSM...")
-            time.sleep(0.1)
-        config_file = os.path.join(os.path.dirname(network_config_path), fake_osm_config['config_file'])
-        with open(config_file) as f:
-            fake_osm_config_data = json.loads(f.read())
-        overloads = fake_osm_config.get('overloads', {})
-        overloads.update({"name": fake_osm_name})
-        if overloads:
-            for key, value in overloads.items():
-                fake_osm_config_data[key] = value
-        fake_osm.load_config(fake_osm_config_data)
+        dev_binding = None
+        while not dev_binding:
+            try:
+                dev_binding = fake_osm.get_binding()
+                if not dev_binding and not fake_osm.is_alive():
+                    logger.error(f"Virtual OSM {fake_osm_name} died.")
+                    break
+            except Exception as e:
+                if fake_osm.is_alive():
+                    logger.debug(f"Waiting on Virtual OSM...(PID:{fake_osm.pid})")
+                    time.sleep(0.25)
+                else:
+                    logger.error(f"Virtual OSM {fake_osm_name} died.")
+                    break
+        if fake_osm.is_alive():
+            config_file = os.path.join(os.path.dirname(network_config_path), fake_osm_config['config_file'])
+            with open(config_file) as f:
+                fake_osm_config_data = json.loads(f.read())
+            overloads = fake_osm_config.get('overloads', {})
+            overloads.update({"name": fake_osm_name})
+            if overloads:
+                for key, value in overloads.items():
+                    fake_osm_config_data[key] = value
+            fake_osm.load_config(fake_osm_config_data)
+            fake_osms[fake_osm_name] = fake_osm
 
-    os.waitid(os.P_ALL, 0)
+    logger.debug("="*72)
+    if len(fake_osms) == len(fake_osm_configs):
+        logger.debug("Waiting for OSMs to exit")
+    else:
+        logger.error("Unable to start OSM network.")
+        logger.debug("Closing")
+        for fake_osm in fake_osms.values():
+            fake_osm.close()
+    if len(fake_osms):
+        os.waitid(os.P_ALL, 0, os.WEXITED)
 
 
 if __name__ == '__main__':
