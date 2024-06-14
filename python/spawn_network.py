@@ -122,8 +122,15 @@ def main(args):
         logger.debug("Closing")
         for fake_osm in fake_osms.values():
             fake_osm.close()
-    if len(fake_osms):
-        os.waitid(os.P_ALL, 0, os.WEXITED)
+    while True:
+        try:
+            os.waitid(os.P_ALL, 0, os.WEXITED)
+            break
+        except KeyboardInterrupt:
+            logger.error("Keyboard interrupt.")
+        except ChildProcessError:
+            break
+    logger.debug("All OSMs closed.")
 
 
 if __name__ == '__main__':
