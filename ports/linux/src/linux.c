@@ -1826,3 +1826,18 @@ bool socket_connect(char* path, int* _socketfd)
     }
     return true;
 }
+
+
+static command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
+{
+    cmd_ctx_out(ctx,"Starting Linux OSM exit.");
+    _linux_running = false;
+    return COMMAND_RESP_OK;
+}
+
+
+struct cmd_link_t* linux_add_commands(struct cmd_link_t* tail)
+{
+    static struct cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
+    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+}

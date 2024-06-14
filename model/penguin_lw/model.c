@@ -195,6 +195,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = comms_add_commands(tail);
     tail = ftma_add_commands(tail);
     tail = sen54_add_commands(tail);
+    tail = linux_add_commands(tail);
 }
 
 
