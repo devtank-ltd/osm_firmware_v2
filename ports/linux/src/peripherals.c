@@ -3,6 +3,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <linux/limits.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include "linux.h"
 #include "peripherals.h"
@@ -81,4 +83,20 @@ bool peripherals_add(const char * app_rel_path, const char * ready_path, unsigne
     linux_error("Wait of %u for %s failed", timeout_us, ready_path);
     return false;
 }
+
+
+void peripherals_close(unsigned* pids, unsigned count)
+{
+    for(unsigned n=0; n<count; n++)
+    {
+        unsigned pid = pids[n];
+        if (pid)
+        {
+            linux_port_debug("Killing child PID %u", pid);
+            kill(pid, SIGINT);
+            waitpid(pid, NULL, 0);
+        }
+    }
+}
+
 

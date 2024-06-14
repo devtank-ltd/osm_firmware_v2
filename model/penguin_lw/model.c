@@ -1,6 +1,5 @@
 typedef int iso_is_annoying_go_away_pls_t;
 #include <string.h>
-#include <signal.h>
 
 #include "timers.h"
 #include "io.h"
@@ -262,14 +261,7 @@ void model_linux_spawn_fakes(void)
 
 void model_linux_close_fakes(void)
 {
-    for(unsigned n=0; n<ARRAY_SIZE(_model_pids); n++)
-    {
-        if (_model_pids[n])
-        {
-            linux_port_debug("Killing child PID %u", _model_pids[n]);
-            kill(_model_pids[n], SIGINT);
-        }
-    }
+    peripherals_close(_model_pids, ARRAY_SIZE(_model_pids));
 }
 
 
