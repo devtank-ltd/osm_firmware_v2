@@ -50,6 +50,7 @@ class virtual_osm:
         return self._binding
 
     def load_config(self, config_dict):
+        self._logger.debug("Loading configuration")
         binding = self.get_binding()
         if not binding:
             return False
