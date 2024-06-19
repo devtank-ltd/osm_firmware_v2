@@ -25,11 +25,31 @@ RELEASE_NAME := $(GIT_TAG)_release_bundle
 
 REAL_MODELS = $(shell find $(MODEL_DIR)/* -maxdepth 0 -type d ! -name "*penguin*" -printf '%f\n')
 MODELS_RELEASE_BUNDLES =$(REAL_MODELS:%=$(RELEASE_DIR)/%_$(RELEASE_NAME).tar.gz)
-
+REAL_MODELS_FW = $(REAL_MODELS:%=$(BUILD_DIR)/%/complete.bin)
+FW_VERSION_DIR:= $(BUILD_DIR)/fw_releases
+FW_VERSION_TAR:= $(BUILD_DIR)/fw_releases.tar.xz
+FW_VERSION_INFO := $(FW_VERSION_DIR)/latest_fw_info.json
 
 default: all
 
 release : $(MODELS_RELEASE_BUNDLES)
+
+$(BUILD_DIR)/.fw_releases: $(REAL_MODELS_FW)
+	mkdir -p $(FW_VERSION_DIR)
+	echo "[" > $(FW_VERSION_INFO)
+	for n in $(REAL_MODELS); \
+	do \
+	  fw=$${n}_$(GIT_TAG).bin; \
+	  cp -v $(BUILD_DIR)/$$n/complete.bin $(FW_VERSION_DIR)/$$fw; \
+	  echo "  {\"tag\": \"$(GIT_TAG)\", \"sha\": \"$(GIT_SHA1)\", \"path\": \"$${fw}\"}," >> $(FW_VERSION_INFO); \
+	done
+	echo "]" >> $(FW_VERSION_INFO)
+	touch $@
+
+$(FW_VERSION_TAR): $(BUILD_DIR)/.fw_releases
+	tar Jcf $@ $(FW_VERSION_DIR)
+
+fw_releases: $(FW_VERSION_TAR)
 
 all: $(MODELS_FW)
 	@if [ $(GIT_SHA1_LEN) != 7 ]; then \
