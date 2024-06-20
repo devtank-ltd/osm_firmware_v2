@@ -26,8 +26,8 @@ RELEASE_NAME := $(GIT_TAG)_release_bundle
 REAL_MODELS = $(shell find $(MODEL_DIR)/* -maxdepth 0 -type d ! -name "*penguin*" -printf '%f\n')
 MODELS_RELEASE_BUNDLES =$(REAL_MODELS:%=$(RELEASE_DIR)/%_$(RELEASE_NAME).tar.gz)
 REAL_MODELS_FW = $(REAL_MODELS:%=$(BUILD_DIR)/%/complete.bin)
-FW_VERSION_DIR:= $(BUILD_DIR)/fw_releases
-FW_VERSION_TAR:= $(BUILD_DIR)/fw_releases.tar.xz
+FW_VERSION_DIR:= $(BUILD_DIR)/fw_releases.$(GIT_TAG)
+FW_VERSION_TAR:= $(FW_VERSION_DIR).tar.xz
 FW_VERSION_INFO := $(FW_VERSION_DIR)/latest_fw_info.json
 
 default: all
