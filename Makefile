@@ -34,20 +34,23 @@ default: all
 
 release : $(MODELS_RELEASE_BUNDLES)
 
-$(BUILD_DIR)/.fw_releases: $(REAL_MODELS_FW)
-	mkdir -p $(FW_VERSION_DIR)
-	echo "[" > $(FW_VERSION_INFO)
-	for n in $(REAL_MODELS); \
-	do \
-	  fw=$${n}_$(GIT_TAG).bin; \
-	  cp -v $(BUILD_DIR)/$$n/complete.bin $(FW_VERSION_DIR)/$$fw; \
-	  echo "  {\"tag\": \"$(GIT_TAG)\", \"sha\": \"$(GIT_SHA1)\", \"path\": \"$${fw}\"}," >> $(FW_VERSION_INFO); \
-	done
-	echo "]" >> $(FW_VERSION_INFO)
-	touch $@
-
-$(FW_VERSION_TAR): $(BUILD_DIR)/.fw_releases
-	tar Jcf $@ $(FW_VERSION_DIR)
+$(FW_VERSION_TAR): $(REAL_MODELS_FW)
+	if [ -n "$(GIT_TAG)" ]; \
+	then \
+	  mkdir -p $(FW_VERSION_DIR);\
+	  echo "[" > $(FW_VERSION_INFO);\
+	  for n in $(REAL_MODELS); \
+	  do \
+	    fw=$${n}_$(GIT_TAG).bin; \
+	    cp -v $(BUILD_DIR)/$$n/complete.bin $(FW_VERSION_DIR)/$$fw; \
+	    echo "  {\"tag\": \"$(GIT_TAG)\", \"sha\": \"$(GIT_SHA1)\", \"path\": \"$${fw}\"}," >> $(FW_VERSION_INFO); \
+	  done; \
+	  echo "]" >> $(FW_VERSION_INFO); \
+	  touch $@; \
+	  tar Jcf $@ $(FW_VERSION_DIR); \
+	else \
+	  echo "No git tag for release.";\
+	fi
 
 fw_releases: $(FW_VERSION_TAR)
 
