@@ -35,7 +35,7 @@ default: all
 release : $(MODELS_RELEASE_BUNDLES)
 
 $(FW_VERSION_TAR): $(REAL_MODELS_FW)
-	if [ -n "$(GIT_TAG)" ]; \
+	git_tag=$(GIT_TAG); if [ "$${git_tag#*release}" != "$(GIT_TAG)"  ]; \
 	then \
 	  mkdir -p $(FW_VERSION_DIR);\
 	  echo "[" > $(FW_VERSION_INFO);\
