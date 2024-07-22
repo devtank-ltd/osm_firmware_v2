@@ -1,0 +1,24 @@
+{
+    "base_dir" : "./my_fakes",
+    "fake_osms":
+    {
+        "fase_fake_osm_1":
+        {
+            "firmware" : "../build/penguin_at_wifi/firmware.elf",
+            "config_file" : "penguin_at_wifi.json",
+            "overloads" : 
+            {
+                "interval_mins" : 0.1
+            }
+        },
+        "slow_fake_osm_2":
+        {
+            "firmware" : "../build/penguin_at_wifi/firmware.elf",
+            "config_file" : "penguin_at_wifi.json",
+            "overloads" : 
+            {
+                "interval_mins" : 1
+            }
+        }
+    }
+}

@@ -718,7 +718,7 @@ class at_wifi_mqtt_t(object):
         self.client.username_pw_set(self.user, password=self.pwd)
         try:
             self.client.connect(self.addr, self.port, 60)
-        except ConnectionResetError as e:
+        except (ConnectionResetError, ConnectionRefusedError, OSError)  as e:
             logger.error(f"Connection Failed: {e}")
             return False
         except ConnectionRefusedError as e:
@@ -831,7 +831,7 @@ class at_wifi_dev_t(object):
         elif os.path.exists(port):
             self._serial = serial.Serial(port)
         else:
-            raise IOError(f"Dont know what to do with {port}")
+            raise IOError(f"Don't know what to do with {port}")
 
         tty.setraw(self._serial)
 

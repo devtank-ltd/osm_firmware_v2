@@ -420,6 +420,7 @@ class dev_base_t(object):
 class dev_t(dev_base_t):
     def __init__(self, port):
         super().__init__(port)
+        self.drain(timeout=0.1)
         line = self.do_cmd("count")
         debug_print(f"LINE '{line}'")
         try:

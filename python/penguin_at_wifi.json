@@ -1,0 +1,155 @@
+{
+  "version": "penguin_at_wifi-[2753]-ed8b8927-Merge-feature-branch-adding-POE-comms-option",
+  "serial_num": "",
+  "interval_mins": 0.25,
+  "comms": {
+    "wifi_ssid": "none",
+    "wifi_pwd": "none",
+    "mqtt_addr": "someserver",
+    "mqtt_user": "someuser",
+    "mqtt_pwd": "somepassword",
+    "mqtt_ca": "someca",
+    "mqtt_port": "443"
+  },
+  "ios": {
+    "0": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "1": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "2": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "3": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "4": {
+      "pull": "NONE",
+      "direction": "IN"
+    },
+    "5": {
+      "pull": "NONE",
+      "direction": "IN"
+    },
+    "6": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "7": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "8": {
+      "pull": "DOWN",
+      "direction": "IN"
+    },
+    "9": {
+      "pull": "DOWN",
+      "direction": "IN"
+    }
+  },
+  "cc_midpoints": {
+    "CC1": "2047.999",
+    "CC2": "2047.999",
+    "CC3": "2047.999"
+  },
+  "modbus_bus": {
+    "setup": [
+      "RTU",
+      "9600",
+      "8N1"
+    ],
+    "modbus_devices": []
+  },
+  "measurements": {
+    "FW": {
+      "interval": "4",
+      "samplecount": "1"
+    },
+    "CREV": {
+      "interval": "4",
+      "samplecount": "1"
+    },
+    "PM10": {
+      "interval": "0",
+      "samplecount": "5"
+    },
+    "PM25": {
+      "interval": "0",
+      "samplecount": "5"
+    },
+    "CC1": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "CC2": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "CC3": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "TMP2": {
+      "interval": "0",
+      "samplecount": "5"
+    },
+    "TEMP": {
+      "interval": "1",
+      "samplecount": "2"
+    },
+    "HUMI": {
+      "interval": "1",
+      "samplecount": "2"
+    },
+    "BAT": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "CNT1": {
+      "interval": "0",
+      "samplecount": "1"
+    },
+    "CNT2": {
+      "interval": "0",
+      "samplecount": "1"
+    },
+    "LGHT": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "SND": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "FTA1": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "FTA2": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "FTA3": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "FTA4": {
+      "interval": "0",
+      "samplecount": "25"
+    },
+    "IO04": {
+      "interval": "0",
+      "samplecount": "0"
+    },
+    "IO05": {
+      "interval": "0",
+      "samplecount": "0"
+    }
+  }
+}
