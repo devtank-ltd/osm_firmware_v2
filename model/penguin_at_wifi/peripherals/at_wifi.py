@@ -831,7 +831,7 @@ class at_wifi_dev_t(object):
         elif os.path.exists(port):
             self._serial = serial.Serial(port)
         else:
-            raise IOError(f"Dont know what to do with {port}")
+            raise IOError(f"Don't know what to do with {port}")
 
         tty.setraw(self._serial)
 

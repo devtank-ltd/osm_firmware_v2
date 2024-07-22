@@ -31,6 +31,8 @@ There are several dependencies required for OSM to compile successfully,install 
         python3-pymodbus \
         python3-scipy \
         python3-yaml \
+        python3-crccheck \
+        python3-paho-mqtt \
         nodejs
 
 Note that if you are running Debian Stable, you may need to install picolibc from source as the version installed on the Debian package manager is too old. You will need version 1.7.4-1 at least.
@@ -82,18 +84,3 @@ created when starting the Virtual OSM and is called
     minicom -b 115200 -D /tmp/osm/UART_DEBUG_slave
 
 You can now communicate with the Virtual OSM through serial.
-
-Config GUI
-==========
-
-To use the Configuration GUI, you will to connect your OSM to your machine.
-If you don't have an OSM, use the virtual OSM.
-
-To start the GUI, run the following commands:
-
--------
-
-    cd osm_firmware/tools/config_gui
-    ./config_gui.py
-
-Select your device from the dropdown menu and press connect.
