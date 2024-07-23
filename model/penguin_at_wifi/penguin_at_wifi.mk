@@ -1,4 +1,4 @@
-LINUX_INCLUDE_PATHS += -I$(LIB_DIR)/embedded-i2c-sen5x
+LINUX_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x
 
 penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/ports/linux/src/uarts.c \
@@ -40,14 +40,14 @@ penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/sensors/src/ftma.c \
     $(OSM_DIR)/sensors/src/sen54.c \
     $(OSM_DIR)/sensors/src/sensirion_i2c_hal.c \
-    $(LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
-    $(LIB_DIR)/embedded-i2c-sen5x/sensirion_i2c.c \
-    $(LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_i2c.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
     $(OSM_DIR)/ports/linux/src/bat.c \
     $(OSM_DIR)/sensors/src/cc.c \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
-    $(MODEL_DIR)/penguin_at_wifi/model.c \
+    $(OSM_MODEL_DIR)/penguin_at_wifi/model.c \
     $(OSM_DIR)/comms/src/common.c \
     $(OSM_DIR)/comms/src/at_base.c \
     $(OSM_DIR)/comms/src/at_mqtt.c \
