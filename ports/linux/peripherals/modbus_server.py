@@ -2,7 +2,7 @@
 import os
 import logging
 from pymodbus.payload import BinaryPayloadBuilder
-from pymodbus.transaction import ModbusBinaryFramer
+from pymodbus.transaction import ModbusRtuFramer
 try:
     from pymodbus.version import version
 except ModuleNotFoundError:
@@ -92,7 +92,7 @@ class modbus_server_t(object):
 
     def run_forever(self):
         log = self._logger
-        StartSerialServer(context=self._context, framer=ModbusBinaryFramer, identity=self._identity,
+        StartSerialServer(context=self._context, framer=ModbusRtuFramer, identity=self._identity,
                       port=self._port, timeout=1, baudrate=9600)
 
     def _create_block(self, src, byteorder, wordorder):
