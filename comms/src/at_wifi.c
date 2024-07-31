@@ -1099,13 +1099,6 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     unsigned bgn = strtoul(p, &np, 10);
     if (p == np || *np != ',' || bgn & ~(0xFF & 0x7) || np > msg + len)
     {
-        comms_debug("np = %s", np);
-        comms_debug("p = %s", p);
-        comms_debug("bgn = 0x%X", (int)bgn);
-        comms_debug("0xFF & 0x3 = 0x%X", ~(0xFF & 0x3));
-        comms_debug("bgn & ~(0xFF & 0x3) = %u", (bgn & ~(0xFF & 0x3)));
-        comms_debug("np = 0x%X", (int)np);
-        comms_debug("msg + len = 0x%X", (int)msg + len);
         comms_debug("Bad format (bgn)");
         return false;
     }
@@ -1635,6 +1628,7 @@ static void _at_wifi_bgn_text(uint8_t bgn, char* buf, unsigned buflen)
 
 static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
 {
+    uart_rings_out_drain();
     cmd_ctx_out(ctx,"[");
     for (unsigned i = 0; i < _at_wifi_ctx.ap_info_len; i++)
     {
@@ -1654,6 +1648,7 @@ static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
         cmd_ctx_out(ctx,"    \"bgn\":\"802.11%s\",", bgn);
         cmd_ctx_out(ctx,"    \"WPS\":\"%s\"", ap_info->wps ? "enabled" : "disabled");
         cmd_ctx_out(ctx,"  }%c", i != _at_wifi_ctx.ap_info_len - 1 ? ',' : ' ');
+        uart_rings_out_drain();
     }
     cmd_ctx_out(ctx,"]");
 }
