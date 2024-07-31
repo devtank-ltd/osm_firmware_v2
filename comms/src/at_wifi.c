@@ -28,6 +28,7 @@
 #define AT_WIFI_MQTT_FAIL_CONNECT_TIMEOUT_MS    60000
 
 #define AT_WIFI_STILL_OFF_TIMEOUT          10000
+#define AT_WIFI_LIST_TIMEOUT                5000
 
 
 #define AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID                "    \"WIFI SSID\": \"%.*s\","
@@ -41,6 +42,8 @@
 #define AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_country_code)  AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE , AT_WIFI_MAX_COUNTRY_CODE_LEN  , _country_code
 #define AT_WIFI_PRINT_CFG_JSON_CHANNEL_START(_schan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START, _schan
 #define AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT(_nchan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT, _nchan
+
+#define AT_WIFI_AP_LIST_LEN                     5
 
 
 enum at_wifi_states_t
@@ -71,6 +74,7 @@ enum at_wifi_states_t
     AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_WIFI_STATE,
     AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_MQTT_STATE,
     AT_WIFI_STATE_WAIT_TIMESTAMP,
+    AT_WIFI_STATE_AP_SCAN,
     AT_WIFI_STATE_COUNT,
 };
 
@@ -85,6 +89,53 @@ enum at_wifi_cw_states_t
 };
 
 
+typedef enum
+{
+    AT_WIFI_AP_ECN_OPEN             = 0,
+    AT_WIFI_AP_ECN_WEP              = 1,
+    AT_WIFI_AP_ECN_WPA_PSK          = 2,
+    AT_WIFI_AP_ECN_WPA2_PSK         = 3,
+    AT_WIFI_AP_ECN_WPA_WPA2_PSK     = 4,
+    AT_WIFI_AP_ECN_WPA2_ENTERPRISE  = 5,
+    AT_WIFI_AP_ECN_WPA3_PSK         = 6,
+    AT_WIFI_AP_ECN_WPA2_WPA3_PSK    = 7,
+    AT_WIFI_AP_ECN_WAPI_PSK         = 8,
+    AT_WIFI_AP_ECN_OWE              = 9,
+    AT_WIFI_AP_ECN_COUNT
+} at_wifi_ap_ecn_t;
+
+
+typedef enum
+{
+    AT_WIFI_AP_CIPHER_NONE          = 0,
+    AT_WIFI_AP_CIPHER_WEP40         = 1,
+    AT_WIFI_AP_CIPHER_WEP104        = 2,
+    AT_WIFI_AP_CIPHER_TKIP          = 3,
+    AT_WIFI_AP_CIPHER_CCMP          = 4,
+    AT_WIFI_AP_CIPHER_TKIP_CCMP     = 5,
+    AT_WIFI_AP_CIPHER_AES_CMAC_128  = 6,
+    AT_WIFI_AP_CIPHER_UNKNOWN       = 7,
+    AT_WIFI_AP_CIPHER_COUNT
+} at_wifi_ap_cipher_t;
+
+
+typedef struct
+{
+    at_wifi_ap_ecn_t    ecn;
+    char                ssid[AT_WIFI_MAX_SSID_LEN + 1];
+    int                 rssi;
+    uint8_t             mac[6];
+    unsigned            channel;
+    int                 freq_offset;
+    int                 freqcal_val;
+    at_wifi_ap_cipher_t pairwise_cipher;
+    at_wifi_ap_cipher_t group_cipher;
+    uint8_t             bgn:3;
+    uint8_t             wps:1;
+    uint8_t             _:4;
+} at_wifi_ap_info_t;
+
+
 static struct
 {
     enum at_wifi_states_t    state;
@@ -93,6 +144,9 @@ static struct
     at_wifi_config_t*       mem;
     uint32_t                ip;
     at_mqtt_ctx_t           mqtt_ctx;
+    at_wifi_ap_info_t       ap_info_list[AT_WIFI_AP_LIST_LEN];
+    unsigned                ap_info_len;
+    enum at_wifi_states_t   before_ap_list_state;
 } _at_wifi_ctx =
 {
     .state                      = AT_WIFI_STATE_OFF,
@@ -114,6 +168,8 @@ static struct
             .time               = {.ts_unix = 0, .sys = 0},
         },
     },
+    .ap_info_list = {{0}},
+    .ap_info_len = 0,
 };
 
 
@@ -150,6 +206,7 @@ static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
         "TIMEDOUT_MQTT_WAIT_WIFI_STATE"                 ,
         "TIMEDOUT_MQTT_WAIT_MQTT_STATE"                 ,
         "WAIT_TIMESTAMP"                                ,
+        "AP_SCAN"                                       ,
     };
     _Static_assert(sizeof(state_strs)/sizeof(state_strs[0]) == AT_WIFI_STATE_COUNT, "Wrong number of states");
     unsigned _state = (unsigned)state;
@@ -927,6 +984,180 @@ static void _at_wifi_process_state_wait_timestamp(char* msg, unsigned len)
 }
 
 
+static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi_ap_info_t* ap_info)
+{
+    char* p = msg;
+    char* np;
+    if (*p != '(')
+    {
+        comms_debug("Bad format (start)");
+        return false;
+    }
+    p++;
+    unsigned enc_type = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || AT_WIFI_AP_ECN_COUNT <= enc_type || np > msg + len)
+    {
+        comms_debug("Bad format (encryption method)");
+        return false;
+    }
+    ap_info->ecn = enc_type;
+    p = np + 1;
+    if (*p != '"')
+    {
+        comms_debug("Bad format (SSID start)");
+        return false;
+    }
+    p++;
+    np = strchr(p, '"');
+    /* If the quotation mark is escaped, then look for next one */
+    while (np && np > p && np[-1] == '\\')
+    {
+        np = strchr(np + 1, '"');
+    }
+    if (np <= p || AT_WIFI_MAX_SSID_LEN < np - p || np + 1 > msg + len)
+    {
+        comms_debug("Bad format (SSID)");
+        return false;
+    }
+    if (*np != '"' && *(np + 1) != ',')
+    {
+        comms_debug("Bad format (SSID end)");
+        return false;
+    }
+    unsigned ssid_len = np - p;
+    memcpy(ap_info->ssid, p, ssid_len);
+    ap_info->ssid[ssid_len] = 0;
+    p = np + 2;
+    ap_info->rssi = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || np > msg + len)
+    {
+        comms_debug("Bad format (RSSI)");
+        return false;
+    }
+    p = np + 1;
+    if (*p != '"')
+    {
+        comms_debug("Bad format (MAC start)");
+        return false;
+    }
+    p++;
+    for (unsigned i = 0; i < 6; i++)
+    {
+        ap_info->mac[i] = strtoul(p, &np, 16);
+        if (np <= p ||
+            ((i == 5 && *np != '"') || (i != 5 && *np != ':'))
+            || np + 1 > msg + len)
+        {
+            comms_debug("Bad format (MAC)");
+            return false;
+        }
+        p = np + 1;
+    }
+    if (*p != ',')
+    {
+        comms_debug("Bad format (MAC end)");
+        return false;
+    }
+    p++;
+    ap_info->channel = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || np > msg + len)
+    {
+        comms_debug("Bad format (channel)");
+        return false;
+    }
+    p = np + 1;
+    ap_info->freq_offset = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || np > msg + len)
+    {
+        comms_debug("Bad format (freq offset)");
+        return false;
+    }
+    p = np + 1;
+    ap_info->freqcal_val = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || np > msg + len)
+    {
+        comms_debug("Bad format (freq cal)");
+        return false;
+    }
+    p = np + 1;
+    unsigned pairwise_cipher = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || AT_WIFI_AP_CIPHER_COUNT <= pairwise_cipher || np > msg + len)
+    {
+        comms_debug("Bad format (pairwise cipher)");
+        return false;
+    }
+    ap_info->pairwise_cipher = pairwise_cipher;
+    p = np + 1;
+    unsigned group_cipher = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || AT_WIFI_AP_CIPHER_COUNT <= group_cipher || np > msg + len)
+    {
+        comms_debug("Bad format (group cipher)");
+        return false;
+    }
+    ap_info->group_cipher = group_cipher;
+    p = np + 1;
+    unsigned bgn = strtoul(p, &np, 10);
+    if (p == np || *np != ',' || bgn & ~(0xFF & 0x7) || np > msg + len)
+    {
+        comms_debug("np = %s", np);
+        comms_debug("p = %s", p);
+        comms_debug("bgn = 0x%X", (int)bgn);
+        comms_debug("0xFF & 0x3 = 0x%X", ~(0xFF & 0x3));
+        comms_debug("bgn & ~(0xFF & 0x3) = %u", (bgn & ~(0xFF & 0x3)));
+        comms_debug("np = 0x%X", (int)np);
+        comms_debug("msg + len = 0x%X", (int)msg + len);
+        comms_debug("Bad format (bgn)");
+        return false;
+    }
+    ap_info->bgn = bgn;
+    p = np + 1;
+    unsigned wps = strtoul(p, &np, 10);
+    if (p == np || wps > 1 || np > msg + len)
+    {
+        comms_debug("Bad format (wps)");
+        return false;
+    }
+    ap_info->wps = wps;
+    if (*np != ')')
+    {
+        comms_debug("Bad format (end)");
+        return false;
+    }
+    return true;
+}
+
+static void _at_wifi_process_state_ap_scan(char* msg, unsigned len)
+{
+    /* +CWLAP:(7,"Devtank Wifi",-81,"a6:b7:d6:12:5d:6b",6,-1,-1,4,4,7,0)
+       +CWLAP:<ecn>,<ssid>,<rssi>,<mac>,<channel>,<freq_offset>,<freqcal_val>,<pairwise_cipher>,<group_cipher>,<bgn>,<wps>
+    */
+    const char cwlap_msg[] = "+CWLAP:";
+    unsigned cwlap_msg_len = strlen(cwlap_msg);
+    if (is_str(cwlap_msg, msg, cwlap_msg_len))
+    {
+        if (AT_WIFI_AP_LIST_LEN <= _at_wifi_ctx.ap_info_len)
+        {
+            comms_debug("Already filled list");
+            return;
+        }
+        at_wifi_ap_info_t* ap_info = &_at_wifi_ctx.ap_info_list[_at_wifi_ctx.ap_info_len++];
+        memset(ap_info, 0, sizeof(at_wifi_ap_info_t));
+        char* p = &msg[cwlap_msg_len];
+        unsigned p_len = msg + len - p;
+        if (!_at_wifi_process_stat_ap_scan_parse(p, p_len, ap_info))
+        {
+            comms_debug("Failed to parse AP message");
+            _at_wifi_ctx.ap_info_len--;
+        }
+    }
+    else if (at_base_is_ok(msg, len))
+    {
+        comms_debug("Finished parsing APs");
+        _at_wifi_ctx.state = _at_wifi_ctx.before_ap_list_state;
+    }
+}
+
+
 void at_wifi_process(char* msg)
 {
     unsigned len = strlen(msg);
@@ -1007,6 +1238,9 @@ void at_wifi_process(char* msg)
             break;
         case AT_WIFI_STATE_WAIT_TIMESTAMP:
             _at_wifi_process_state_wait_timestamp(msg, len);
+            break;
+        case AT_WIFI_STATE_AP_SCAN:
+            _at_wifi_process_state_ap_scan(msg, len);
             break;
         default:
             break;
@@ -1309,6 +1543,167 @@ static command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
+static void _at_start_station_scan(void)
+{
+    _at_wifi_printf("AT+CWLAP");
+    _at_wifi_ctx.state = AT_WIFI_STATE_AP_SCAN;
+}
+
+
+static bool _at_wifi_list_iteration(void* userdata)
+{
+    return _at_wifi_ctx.state != AT_WIFI_STATE_AP_SCAN;
+}
+
+
+static const char* _at_wifi_encryption_text(at_wifi_ap_ecn_t ecn)
+{
+    switch (ecn)
+    {
+        case AT_WIFI_AP_ECN_OPEN:
+            return "OPEN";
+        case AT_WIFI_AP_ECN_WEP:
+            return "WEP";
+        case AT_WIFI_AP_ECN_WPA_PSK:
+            return "WPA_PSK";
+        case AT_WIFI_AP_ECN_WPA2_PSK:
+            return "WPA2_PSK";
+        case AT_WIFI_AP_ECN_WPA_WPA2_PSK:
+            return "WPA_WPA2_PSK";
+        case AT_WIFI_AP_ECN_WPA2_ENTERPRISE:
+            return "WPA2_ENTERPRISE";
+        case AT_WIFI_AP_ECN_WPA3_PSK:
+            return "WPA3_PSK";
+        case AT_WIFI_AP_ECN_WPA2_WPA3_PSK:
+            return "WPA2_WPA3_PSK";
+        case AT_WIFI_AP_ECN_WAPI_PSK:
+            return "WAPI_PSK";
+        case AT_WIFI_AP_ECN_OWE:
+            return "OWE";
+        default:
+            break;
+    }
+    return "Unknown";
+}
+
+
+static const char* _at_wifi_cipher_text(at_wifi_ap_cipher_t cipher)
+{
+    switch (cipher)
+    {
+        case AT_WIFI_AP_CIPHER_NONE:
+            return "None";
+        case AT_WIFI_AP_CIPHER_WEP40:
+            return "WEP40";
+        case AT_WIFI_AP_CIPHER_WEP104:
+            return "WEP104";
+        case AT_WIFI_AP_CIPHER_TKIP:
+            return "TKIP";
+        case AT_WIFI_AP_CIPHER_CCMP:
+            return "CCMP";
+        case AT_WIFI_AP_CIPHER_TKIP_CCMP:
+            return "TKIP and CCMP";
+        case AT_WIFI_AP_CIPHER_AES_CMAC_128:
+            return "AES-CMAC-128";
+        case AT_WIFI_AP_CIPHER_UNKNOWN:
+            /* fall through */
+        default:
+            break;
+    }
+    return "Unknown";
+}
+
+
+static void _at_wifi_bgn_text(uint8_t bgn, char* buf, unsigned buflen)
+{
+    if (buflen)
+    {
+        char letters[] = "bgn";
+        unsigned len = 3 < buflen ? 3 : buflen;
+        char* p = buf;
+        for (unsigned i = 0; i < len; i++)
+        {
+            if (bgn & (1 << i))
+            {
+                *p++ = letters[i];
+            }
+        }
+        buf[buflen-1] = 0;
+    }
+}
+
+
+static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
+{
+    cmd_ctx_out(ctx,"[");
+    for (unsigned i = 0; i < _at_wifi_ctx.ap_info_len; i++)
+    {
+        at_wifi_ap_info_t* ap_info = &_at_wifi_ctx.ap_info_list[i];
+        char bgn[4];
+        _at_wifi_bgn_text(ap_info->bgn, bgn, 4);
+        cmd_ctx_out(
+            ctx,
+            "{"
+            "\"SSID\":\"%.*s\","
+            "\"encryption\":\"%s\","
+            "\"rssi\":%d,"
+            "\"mac\":\"%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\","
+            "\"channel\":%u,"
+            "\"freq_offset\":%d,"
+            "\"freqcal_val\":%d,"
+            "\"pairwise_cipher\":\"%s\","
+            "\"group_cipher\":\"%s\","
+            "\"bgn\":\"802.11%s\","
+            "\"wps\":\"%s\""
+            "}%c",
+            AT_WIFI_MAX_SSID_LEN, ap_info->ssid,
+            _at_wifi_encryption_text(ap_info->ecn),
+            ap_info->rssi,
+            ap_info->mac[0],ap_info->mac[1],ap_info->mac[2],ap_info->mac[3],ap_info->mac[4],ap_info->mac[5],
+            ap_info->channel,
+            ap_info->freq_offset,
+            ap_info->freqcal_val,
+            _at_wifi_cipher_text(ap_info->pairwise_cipher),
+            _at_wifi_cipher_text(ap_info->group_cipher),
+            bgn,
+            ap_info->wps ? "enabled" : "disabled",
+            i != _at_wifi_ctx.ap_info_len - 1 ? ',' : ' '
+        );
+    }
+    cmd_ctx_out(ctx,"]");
+}
+
+
+static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
+{
+    bool is_connected = at_wifi_get_connected();
+    bool prev_measements_enabled = measurements_enabled;
+    if (is_connected)
+    {
+        measurements_enabled = false;
+    }
+    _at_wifi_ctx.before_ap_list_state = _at_wifi_ctx.state;
+    _at_wifi_ctx.ap_info_len = 0;
+    _at_start_station_scan();
+    command_response_t ret = COMMAND_RESP_OK;
+    if (!main_loop_iterate_for(AT_WIFI_LIST_TIMEOUT, _at_wifi_list_iteration, NULL))
+    {
+        cmd_ctx_out(ctx,"Timed out waiting for AP list");
+        _at_wifi_reset();
+        ret = COMMAND_RESP_ERR;
+    }
+    else
+    {
+        _at_wifi_print_ap_list(ctx);
+    }
+    if (is_connected)
+    {
+        measurements_enabled = prev_measements_enabled;
+    }
+    return ret;
+}
+
+
 struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -1318,7 +1713,8 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
         { "comms_boot",   "Enable/disable boot line"    , _at_wifi_boot_cb          , false , NULL },
         { "comms_reset",  "Enable/disable reset line"   , _at_wifi_reset_cb         , false , NULL },
         { "comms_state" , "Get Comms state"             , _at_wifi_state_cb         , false , NULL },
-        { "comms_restart", "Comms restart"              , _at_wifi_restart_cb       , false , NULL }
+        { "comms_restart", "Comms restart"              , _at_wifi_restart_cb       , false , NULL },
+        { "comms_list",   "List stations"               , _at_list_cb               , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
