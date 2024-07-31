@@ -1656,6 +1656,25 @@ static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
 
 static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 {
+    switch (_at_wifi_ctx.state)
+    {
+        case AT_WIFI_STATE_IDLE:
+            /* fall through */
+        case AT_WIFI_STATE_TIMEDOUT_WIFI_WAIT_STATE:
+            /* fall through */
+        case AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_WIFI_STATE:
+            /* fall through */
+        case AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_MQTT_STATE:
+            /* fall through */
+        case AT_WIFI_STATE_MQTT_FAIL_CONNECT:
+            /* fall through */
+        case AT_WIFI_STATE_WIFI_FAIL_CONNECT:
+            break;
+        default:
+            comms_debug("Illegal state for listing AP: %s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+            cmd_ctx_out(ctx,"Busy");
+            return COMMAND_RESP_ERR;
+    }
     bool is_connected = at_wifi_get_connected();
     bool prev_measements_enabled = measurements_enabled;
     if (is_connected)
