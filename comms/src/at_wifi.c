@@ -1641,34 +1641,19 @@ static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
         at_wifi_ap_info_t* ap_info = &_at_wifi_ctx.ap_info_list[i];
         char bgn[4];
         _at_wifi_bgn_text(ap_info->bgn, bgn, 4);
-        cmd_ctx_out(
-            ctx,
-            "{"
-            "\"SSID\":\"%.*s\","
-            "\"encryption\":\"%s\","
-            "\"rssi\":%d,"
-            "\"mac\":\"%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\","
-            "\"channel\":%u,"
-            "\"freq_offset\":%d,"
-            "\"freqcal_val\":%d,"
-            "\"pairwise_cipher\":\"%s\","
-            "\"group_cipher\":\"%s\","
-            "\"bgn\":\"802.11%s\","
-            "\"wps\":\"%s\""
-            "}%c",
-            AT_WIFI_MAX_SSID_LEN, ap_info->ssid,
-            _at_wifi_encryption_text(ap_info->ecn),
-            ap_info->rssi,
-            ap_info->mac[0],ap_info->mac[1],ap_info->mac[2],ap_info->mac[3],ap_info->mac[4],ap_info->mac[5],
-            ap_info->channel,
-            ap_info->freq_offset,
-            ap_info->freqcal_val,
-            _at_wifi_cipher_text(ap_info->pairwise_cipher),
-            _at_wifi_cipher_text(ap_info->group_cipher),
-            bgn,
-            ap_info->wps ? "enabled" : "disabled",
-            i != _at_wifi_ctx.ap_info_len - 1 ? ',' : ' '
-        );
+        cmd_ctx_out(ctx,"  {");
+        cmd_ctx_out(ctx,"    \"SSID\":\"%.*s\",", AT_WIFI_MAX_SSID_LEN, ap_info->ssid);
+        cmd_ctx_out(ctx,"    \"encryption\":\"%s\",", _at_wifi_encryption_text(ap_info->ecn));
+        cmd_ctx_out(ctx,"    \"RSSI\":%d,", ap_info->rssi);
+        cmd_ctx_out(ctx,"    \"MAC\":\"%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\",", ap_info->mac[0],ap_info->mac[1],ap_info->mac[2],ap_info->mac[3],ap_info->mac[4],ap_info->mac[5]);
+        cmd_ctx_out(ctx,"    \"channel\":%u,", ap_info->channel);
+        cmd_ctx_out(ctx,"    \"freq_offset\":%d,", ap_info->freq_offset);
+        cmd_ctx_out(ctx,"    \"freqcal_val\":%d,", ap_info->freqcal_val);
+        cmd_ctx_out(ctx,"    \"pairwise_cipher\":\"%s\",", _at_wifi_cipher_text(ap_info->pairwise_cipher));
+        cmd_ctx_out(ctx,"    \"group_cipher\":\"%s\",", _at_wifi_cipher_text(ap_info->group_cipher));
+        cmd_ctx_out(ctx,"    \"bgn\":\"802.11%s\",", bgn);
+        cmd_ctx_out(ctx,"    \"WPS\":\"%s\"", ap_info->wps ? "enabled" : "disabled");
+        cmd_ctx_out(ctx,"  }%c", i != _at_wifi_ctx.ap_info_len - 1 ? ',' : ' ');
     }
     cmd_ctx_out(ctx,"]");
 }
