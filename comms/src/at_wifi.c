@@ -1320,7 +1320,7 @@ void at_wifi_loop_iteration(void)
         case AT_WIFI_STATE_OFF:
         {
             uint32_t delta = since_boot_delta(now, _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since);
-            if (delta > AT_WIFI_STILL_OFF_TIMEOUT)
+            if (_at_wifi_mem_is_valid() && delta > AT_WIFI_STILL_OFF_TIMEOUT)
             {
                 _at_wifi_hw_reset();
             }
@@ -1658,6 +1658,8 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 {
     switch (_at_wifi_ctx.state)
     {
+        case AT_WIFI_STATE_OFF:
+            /* fall through */
         case AT_WIFI_STATE_IDLE:
             /* fall through */
         case AT_WIFI_STATE_TIMEDOUT_WIFI_WAIT_STATE:
