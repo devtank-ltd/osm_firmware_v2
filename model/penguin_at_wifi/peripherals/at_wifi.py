@@ -118,6 +118,34 @@ class at_wifi_basic_at_commands_t(base_at_commands_t):
 
 
 class at_wifi_at_commands_t(base_at_commands_t):
+
+    class ECN(enum.Enum):
+        OPEN            = 0
+        WEP             = 1
+        WPA_PSK         = 2
+        WPA2_PSK        = 3
+        WPA_WPA2_PSK    = 4
+        WPA2_ENTERPRISE = 5
+        WPA3_PSK        = 6
+        WPA2_WPA3_PSK   = 7
+        WAPI_PSK        = 8
+        OWE             = 9
+
+    class CIPHER(enum.Enum):
+        NONE         = 0
+        WEP40        = 1
+        WEP104       = 2
+        TKIP         = 3
+        CCMP         = 4
+        TKIP_CCMP    = 5
+        AES_CMAC_128 = 6
+        UNKNOWN      = 7
+
+    class BGN(enum.Enum):
+        B = (1<<0)
+        G = (1<<1)
+        N = (1<<2)
+
     def __init__(self, device, command_controller):
         commands = \
         {
@@ -133,6 +161,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
             b"AT+CWCOUNTRY"         : { base_at_commands_t.QUERY:       self.get_country,
                                         base_at_commands_t.SET:         self.set_country},
             b"AT+SYSTIMESTAMP"      : { base_at_commands_t.QUERY:       self.systime },     # Get current time
+            b"AT+CWLAP"             : { base_at_commands_t.EXECUTE:     self.list_ap },     # List wifi stations
         }
         super().__init__(device, command_controller, commands)
 
@@ -302,6 +331,27 @@ class at_wifi_at_commands_t(base_at_commands_t):
         self.reply(f"+SYSTIMESTAMP:{int(time.time())}".encode())
         self.reply_ok()
 
+    def list_ap(self, args):
+        ap_stations = [
+            {
+            "encryption"        : at_wifi_at_commands_t.ECN.WPA2_WPA3_PSK.value,
+            "ssid"              : "Devtank Wifi",
+            "rssi"              : -71,
+            "mac"               : "08:65:87:ec:a0:e8",
+            "channel"           : 1,
+            "freq_offset"       : -1,
+            "freqcal_val"       :-1,
+            "pairwise_cipher"   : at_wifi_at_commands_t.CIPHER.CCMP.value,
+            "group_cipher"      : at_wifi_at_commands_t.CIPHER.CCMP.value,
+            "bgn"               : at_wifi_at_commands_t.BGN.B.value | at_wifi_at_commands_t.BGN.G.value | at_wifi_at_commands_t.BGN.N.value,
+            "wps"               : 0
+            },
+        ]
+        time.sleep(0.5)
+        for ap in ap_stations:
+            self.reply(f"+CWLAP:({ap['encryption']},\"{ap['ssid']}\",{ap['rssi']},\"{ap['mac']}\",{ap['channel']},{ap['freq_offset']},{ap['freqcal_val']},{ap['pairwise_cipher']},{ap['group_cipher']},{ap['bgn']},{ap['wps']})".encode())
+            time.sleep(0.1)
+        self.reply_ok()
 
 
 class at_wifi_cips_at_commands_t(base_at_commands_t):
