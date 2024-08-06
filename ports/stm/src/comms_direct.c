@@ -69,7 +69,6 @@ static void _comms_direct_setup(void)
     osm_uart_stop_bits_t stop_bits;
     uart_channel_t* cmd_uart = &_comms_direct_ctx.prev_cmd_uart;
     uart_channel_t* comms_uart = &_comms_direct_ctx.prev_comms_uart;
-
     if (uart_get_setup(CMD_UART, &speed, &databits, &parity, &stop_bits))
     {
         cmd_uart->baud       = speed;
@@ -93,6 +92,8 @@ static void _comms_direct_setup(void)
     {
         memcpy(comms_uart, _comms_direct_ctx.default_comms_uart, sizeof(uart_channel_t));
     }
+    uart_enable(CMD_UART, false);
+    uart_enable(COMMS_UART, false);
 
     platform_gpio_setup(&_comms_direct_ctx.cmd_rx_ports_n_pins, true, IO_PUPD_NONE);
     platform_gpio_setup(&_comms_direct_ctx.cmd_tx_ports_n_pins, false, IO_PUPD_UP);
@@ -108,6 +109,10 @@ static void _comms_direct_exit(void)
     uart_resetup(CMD_UART, cmd->baud, cmd->databits, cmd->parity, cmd->stop, &uart_cmd_ctx);
     uart_resetup(COMMS_UART, comms->baud, comms->databits, comms->parity, comms->stop, &uart_cmd_ctx);
     uarts_setup();
+    uart_enable(CMD_UART, true);
+    uart_enable(COMMS_UART, true);
+    uart_rings_in_wipe(CMD_UART);
+    uart_rings_in_wipe(COMMS_UART);
     log_out("Exiting COMMS_DIRECT mode");
 }
 
