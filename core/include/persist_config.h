@@ -6,7 +6,7 @@
 #include "persist_config_header.h"
 
 
-#define PERSIST_BASE_VERSION           4
+#define PERSIST_BASE_VERSION           5
 #define PERSIST_VERSION_SET(_x)        ((PERSIST_BASE_VERSION << 8) | _x)
 
 

@@ -9,7 +9,7 @@
 
 
 #define MODEL_NAME_LEN                      16
-#define HUMAN_NAME_LEN                      15
+#define HUMAN_NAME_LEN                      47
 #define HUMAN_NAME_LEN_NULLED               (HUMAN_NAME_LEN + 1)
 
 
