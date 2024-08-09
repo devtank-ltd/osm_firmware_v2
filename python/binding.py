@@ -256,7 +256,10 @@ class wifi_comms_t(comms_t):
         "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "  ),
         "mqtt_sch"  : ( "mqtt_sch",  "SCHEME: "),
         "mqtt_path" : ( "mqtt_path", "PATH: " ),
-        "mqtt_port" : ( "mqtt_port", "PORT: " )
+        "mqtt_port" : ( "mqtt_port", "PORT: " ),
+        "schan"     : ( "schan",     "SCHAN: "   ),
+        "nchan"     : ( "nchan",     "NCHAN: "   ),
+        "country"   : ( "country",   "COUNTRY: " ),
     }
 
 class log_t(object):
