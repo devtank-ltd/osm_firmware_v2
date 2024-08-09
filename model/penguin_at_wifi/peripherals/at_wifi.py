@@ -13,6 +13,8 @@ import select
 import serial
 import weakref
 import selectors
+import re
+import ast
 
 import timerfd
 
@@ -402,7 +404,11 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         super().__init__(device, command_controller, commands)
 
     def user_config(self, args):
-        arg_list = args.split(b",")
+        pattern = r'\".*?\"|\S+'
+        matches = re.split(r'{pattern}', args.decode())
+        x = str(matches).replace("'", "")
+        a = ast.literal_eval(x)
+        arg_list = [i.encode() if type(i) == str else i for i in a]
         if len(arg_list) < 8:
             self.reply_param_error()
             return
@@ -419,8 +425,8 @@ class at_wifi_mqtt_at_commands_t(base_at_commands_t):
         mqtt_obj = self.device.mqtt
         mqtt_obj.scheme = at_wifi_mqtt_t.SCHEMES(scheme)
         mqtt_obj.client_id = client_id.decode()
-        mqtt_obj.user = username.decode()[1:-1]
-        mqtt_obj.pwd = password.decode()[1:-1]
+        mqtt_obj.user = username.decode()
+        mqtt_obj.pwd = password.decode()
         mqtt_obj.ca = ca_path.decode()
         mqtt_obj.reinit_client()
         self.reply_ok()

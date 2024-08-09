@@ -17,12 +17,13 @@ import json_config
 
 
 class virtual_osm:
-    def __init__(self, logger, base_dir, name, firmware_path):
+    def __init__(self, logger, base_dir, name, firmware_path, hw_id):
         self._logger = logger
         self.name = name
         self._firmware_path = firmware_path
         self._loc = f"{base_dir}/{name}"
-        cmd = [f"OSM_LOC={self._loc} {self._firmware_path}"]
+        self._hw_id = hw_id
+        cmd = [f"OSM_HW_ID={self._hw_id} OSM_LOC={self._loc} {self._firmware_path}"]
         self._logger.debug(f"Starting Virtual OSM {name} : {cmd[0]}")
         self._vosm_subp = subprocess.Popen(cmd, shell=True)
         self._binding = None
@@ -87,7 +88,8 @@ def main(args):
     for fake_osm_name, fake_osm_config in fake_osm_configs.items():
         logger.debug("="*72)
         firmware_path = os.path.join(os.path.dirname(network_config_path), fake_osm_config['firmware'])
-        fake_osm = virtual_osm(logger, base_dir, fake_osm_name, firmware_path)
+        hw_id = fake_osm_config["hw_id"]
+        fake_osm = virtual_osm(logger, base_dir, fake_osm_name, firmware_path, hw_id)
         dev_binding = None
         while not dev_binding:
             try:

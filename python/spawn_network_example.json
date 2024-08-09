@@ -2,11 +2,12 @@
     "base_dir" : "./my_fakes",
     "fake_osms":
     {
-        "fase_fake_osm_1":
+        "fasT_fake_osm_1":
         {
             "firmware" : "../build/penguin_at_wifi/firmware.elf",
             "config_file" : "penguin_at_wifi.json",
-            "overloads" : 
+            "hw_id": "00C0FFEE",
+            "overloads" :
             {
                 "interval_mins" : 0.1
             }
@@ -15,7 +16,8 @@
         {
             "firmware" : "../build/penguin_at_wifi/firmware.elf",
             "config_file" : "penguin_at_wifi.json",
-            "overloads" : 
+            "hw_id": "00BEEFFD",
+            "overloads" :
             {
                 "interval_mins" : 1
             }

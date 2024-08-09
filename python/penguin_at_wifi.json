@@ -7,8 +7,9 @@
     "wifi_pwd": "none",
     "mqtt_addr": "someserver",
     "mqtt_user": "someuser",
-    "mqtt_pwd": "somepassword",
-    "mqtt_ca": "someca",
+    "mqtt_pwd": "somepwd",
+    "mqtt_path": "somepath",
+    "mqtt_sch": "7",
     "mqtt_port": "443"
   },
   "ios": {

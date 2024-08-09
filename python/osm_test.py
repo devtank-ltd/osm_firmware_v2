@@ -320,7 +320,7 @@ class test_framework_t(object):
         self._vosm_conn.FTA3.samplecount = 5
         self._vosm_conn.FTA4.samplecount = 5
 
-        self._vosm_conn.setup_modbus(is_bin=True)
+        self._vosm_conn.setup_modbus(is_bin=False)
         self._vosm_conn.setup_modbus_dev(5, "E53", True, True, [
             modbus_reg_t(self._vosm_conn, "PF"     , 0xc56e, 3, "U32"),
             modbus_reg_t(self._vosm_conn, "cVP1"   , 0xc552, 3, "U32")

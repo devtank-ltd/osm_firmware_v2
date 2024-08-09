@@ -186,7 +186,7 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
                 command_server.fake_param_t(
                     measurement.name,
                     getf=lambda: self._get_measurement(measurement),
-                    setf=lambda: self._set_measurement(measurement)
+                    setf=lambda val: self._set_measurement(measurement, val)
                     )
                 )
         return command_server.fake_dev_t("SEN54", params)
