@@ -8,8 +8,13 @@
 #include "persist_config_header_model.h"
 
 
-#define MODEL_NAME_LEN                      16
-#define HUMAN_NAME_LEN                      47
+#define SERIAL_NUM_LEN         47
+#define SERIAL_NUM_LEN_NULLED  (SERIAL_NUM_LEN + 1)
+
+#define MODEL_NAME_LEN                      31
+#define MODEL_NAME_LEN_NULLED               (MODEL_NAME_LEN + 1)
+
+#define HUMAN_NAME_LEN                      31
 #define HUMAN_NAME_LEN_NULLED               (HUMAN_NAME_LEN + 1)
 
 
@@ -20,14 +25,11 @@ typedef struct
     uint32_t                pending_fw;
     uint8_t                 _[6];
     /* 16 byte boundary ---- */
-    char                    model_name[MODEL_NAME_LEN];
-    uint8_t                 __[16-(MODEL_NAME_LEN%16)];
+    char                    model_name[MODEL_NAME_LEN_NULLED];
     /* 16 byte boundary ---- */
     char                    serial_number[SERIAL_NUM_LEN_NULLED];
-    uint8_t                 ___[16-(SERIAL_NUM_LEN_NULLED%16)];
     /* 16 byte boundary ---- */
     char                    human_name[HUMAN_NAME_LEN_NULLED];
-    uint8_t                 ____[16-(HUMAN_NAME_LEN_NULLED%16)];
     /* 16 byte boundary ---- */
     persist_model_config_t  model_config;
     /* 16 byte boundary ---- */
@@ -46,4 +48,3 @@ typedef struct
 {
     measurements_def_t      measurements_arr[MEASUREMENTS_MAX_NUMBER];
 } __attribute__((__packed__)) persist_measurements_storage_t;
-
