@@ -992,7 +992,8 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
         {
             continue;
         }
-        if (fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart)
+        if ((fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart) ||
+            fd_handler->type == LINUX_FD_TYPE_SOCKET_CLIENT)
         {
             if (uart != CMD_UART)
             {
@@ -1005,9 +1006,23 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
                         linux_port_debug("%s(%u) >> [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
                 }
             }
-            return _safe_write(fd_handler->pty.master_fd, data, size, 500);
+            int fd;
+            switch (fd_handler->type)
+            {
+                case LINUX_FD_TYPE_PTY:
+                    fd = fd_handler->pty.master_fd;
+                    break;
+                case LINUX_FD_TYPE_SOCKET_CLIENT:
+                    fd = fd_handler->socket_client.fd;
+                    break;
+                default:
+                    linux_port_debug("Don't know what to do with fd_handler type.");
+                    return false;
+            }
+            return _safe_write(fd, data, size, 500);
         }
     }
+    linux_port_debug("No fd");
     return false;
 }
 
