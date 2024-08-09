@@ -1,8 +1,14 @@
 #! /bin/bash
 
-if [[ -z "$dev" ]]
+if [ -z "$dev" ]
 then
   dev=$(basename $(readlink /dev/serial/by-id/*CP210*))
+fi
+
+if [ -z "$$dev" ]
+then
+  echo "No CP210 device found or given."
+  exit -1
 fi
 
 echo Using /dev/$dev
@@ -31,7 +37,7 @@ fi
 # To return to normal 10 to 11 (dtr,rts)
 gpio_str="-rts&-dtr,dtr,rts,:-dtr,-rts"
 
-if [[ -n "$REVB" ]]
+if [ -n "$REVB" ]
 then
   gpiochip=$(ls /sys/class/tty/$dev/device/../gpio/)
 
