@@ -33,7 +33,7 @@
 #define SEN54_NAME_BUF_SIZ                              ((SEN54_NAME_RAW_BUF_SIZ * 2) / 3 + 1)
 #define SEN54_WAIT_DELAY                                1000
 
-#define SEN54_FAN_INTERVAL_S                            60
+#define SEN54_FAN_INTERVAL_S                            604800 /* 1 week */
 
 typedef enum
 {
