@@ -25,8 +25,8 @@ MASTER>>SLAVE: slave_addr:wn[w,..]:rn
 SLAVE>>MASTER: slave_addr:wn:rn[r,...]
 """
 I2C_MESSAGE_PATTERN_STR = "^(?P<addr>[0-9a-fA-F]{2}):"\
-                          "(?P<wn>[0-9]+)(\[(?P<w>([0-9a-fA-F]{2},?)+)\])?:"\
-                          "(?P<rn>[0-9]+)(\[(?P<r>([0-9a-fA-F]{2},?)+)\])?$"
+                          "(?P<wn>[0-9]+)(\\[(?P<w>([0-9a-fA-F]{2},?)+)\\])?:"\
+                          "(?P<rn>[0-9]+)(\\[(?P<r>([0-9a-fA-F]{2},?)+)\\])?$"
 I2C_MESSAGE_PATTERN = re.compile(I2C_MESSAGE_PATTERN_STR)
 
 

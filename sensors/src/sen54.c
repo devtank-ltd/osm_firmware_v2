@@ -33,7 +33,7 @@
 #define SEN54_NAME_BUF_SIZ                              ((SEN54_NAME_RAW_BUF_SIZ * 2) / 3 + 1)
 #define SEN54_WAIT_DELAY                                1000
 
-#define SEN54_FAN_INTERVAL_S                            60
+#define SEN54_FAN_INTERVAL_S                            604800 /* 1 week */
 
 typedef enum
 {
@@ -283,17 +283,13 @@ void sen54_init(void)
 
 void sen54_iterate(void)
 {
-    uint32_t now = get_since_boot_ms();
-    if (since_boot_delta(now, _sen54_ctx.last_reading.time) >= SEN54_WAIT_DELAY)
+    if (_sen54_ctx.active)
     {
-        _sen54_ctx.last_reading.time = now;
-        int16_t error;
-        if (!_sen54_ctx.active)
+        uint32_t now = get_since_boot_ms();
+        if (since_boot_delta(now, _sen54_ctx.last_reading.time) >= SEN54_WAIT_DELAY)
         {
-            sen54_init();
-        }
-        else
-        {
+            _sen54_ctx.last_reading.time = now;
+            int16_t error;
             error = sen5x_read_measured_values(
                 &_sen54_ctx.last_reading.mass_concentration_pm1p0,
                 &_sen54_ctx.last_reading.mass_concentration_pm2p5,
