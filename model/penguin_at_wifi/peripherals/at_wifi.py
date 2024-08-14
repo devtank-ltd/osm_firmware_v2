@@ -1017,7 +1017,7 @@ class at_wifi_dev_t(object):
         pass
 
     def wifi_connect(self, connect:bool):
-        self.wifi.state = wifi.CONNECTED if connect else wifi.DISCONNECTED
+        self.wifi.state = self.wifi.CONNECTED if connect else self.wifi.DISCONNECTED
 
 
 def run_standalone(tty_path, resetpin):

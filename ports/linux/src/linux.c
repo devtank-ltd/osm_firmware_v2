@@ -109,6 +109,7 @@ struct fd_t
         {
             int32_t fd;
             fd_t* client;
+            unsigned uart;
         } socket_server;
         struct
         {
@@ -147,9 +148,9 @@ static pthread_mutex_t _sleep_mutex =  PTHREAD_MUTEX_INITIALIZER;
 
 static bool _ios_enabled[IOS_COUNT] = {0};
 
-static char _websock_buf[1024];
+static char _socket_buf[1024];
 
-static ring_buf_t _websock_in_ring = RING_BUF_INIT(_websock_buf, sizeof(_websock_buf));
+static ring_buf_t _socket_in_ring = RING_BUF_INIT(_socket_buf, sizeof(_socket_buf));
 
 static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                     .name={"UART_DEBUG"},
@@ -163,6 +164,11 @@ static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
                                                    {.type=LINUX_FD_TYPE_EVENT,
                                                     .name={"ADC_GEN_EVENT"},
                                                     .cb=linux_adc_generate}};
+
+
+static volatile unsigned _sock_line_used_len = 0;
+static char _sock_line_buf[CMD_LINELEN];
+static int _sock_cmd_sock = -1;
 
 
 uint32_t platform_get_frequency(void)
@@ -306,43 +312,24 @@ int64_t linux_get_current_us(void)
 }
 
 
-typedef struct
+static void _linux_socket_client(int sock, char * buf, unsigned len)
 {
-    cmd_ctx_t base;
-    int sock;
-} websock_cmd_ctx_t;
-
-
-static void _websock_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
-{
-    websock_cmd_ctx_t * websock_cmd_ctx = (websock_cmd_ctx_t*)ctx;
-    vdprintf(websock_cmd_ctx->sock, fmt, ap);
-    dprintf(websock_cmd_ctx->sock, "\n\r");
-}
-
-
-static void _websock_cmd_ctx_flush(cmd_ctx_t * ctx)
-{
-}
-
-
-
-static void _linux_websock_client(int sock, char * buf, unsigned len)
-{
-    if (!ring_buf_add_data(&_websock_in_ring, buf, len))
+    if (_sock_line_used_len)
     {
-        linux_error("Too much websocket!");
+        linux_error("Too command already in process!");
+        return;
     }
-    char sock_line_buf[CMD_LINELEN];
-    unsigned line_len = ring_buf_readline(&_websock_in_ring, sock_line_buf, CMD_LINELEN);
-    if (line_len)
-    {
-        websock_cmd_ctx_t ctx = {{.output_cb = _websock_cmd_ctx_out,
-                                  .error_cb = _websock_cmd_ctx_out,
-                                  .flush_cb = _websock_cmd_ctx_flush},
-                                 .sock = sock};
 
-        cmds_process(sock_line_buf, line_len, &ctx.base);
+    if (!ring_buf_add_data(&_socket_in_ring, buf, len))
+    {
+        linux_error("Too much socket!");
+    }
+
+    _sock_line_used_len = ring_buf_readline(&_socket_in_ring, _sock_line_buf, CMD_LINELEN);
+    if (_sock_line_used_len)
+    {
+        _sock_cmd_sock = sock;
+        linux_port_debug("Socket command");
     }
 }
 
@@ -993,7 +980,7 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
             continue;
         }
         if ((fd_handler->type == LINUX_FD_TYPE_PTY && fd_handler->pty.uart == uart) ||
-            fd_handler->type == LINUX_FD_TYPE_SOCKET_CLIENT)
+            (fd_handler->type == LINUX_FD_TYPE_SOCKET_CLIENT && fd_handler->socket_client.server->socket_server.uart == uart))
         {
             if (uart != CMD_UART)
             {
@@ -1302,7 +1289,7 @@ void _linux_iterate(void)
                             tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
                             tfdh->socket_client.fd = client_sockfd;
                             tfdh->socket_client.server = fd_handler;
-                            tfdh->cb = _linux_websock_client;
+                            tfdh->cb = _linux_socket_client;
                             fd_handler->socket_server.client = tfdh;
                             _linux_setup_poll();
                             linux_port_debug("SOCKET CLIENT %s CONNECTED", tfdh->name);
@@ -1390,6 +1377,7 @@ void platform_init(void)
             if (fd->type == LINUX_FD_TYPE_PTY && strcmp(fd->name, "UART_DEBUG") == 0)
             {
                 fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
+                fd->socket_server.uart = CMD_UART;
                 break;
             }
         }
@@ -1734,8 +1722,39 @@ void platform_tight_loop(void)
 void __attribute__((weak)) model_main_loop_iterate(void) {}
 
 
+typedef struct
+{
+    cmd_ctx_t base;
+    int sock;
+} socket_cmd_ctx_t;
+
+
+static void _socket_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    socket_cmd_ctx_t * socket_cmd_ctx = (socket_cmd_ctx_t*)ctx;
+    vdprintf(socket_cmd_ctx->sock, fmt, ap);
+    dprintf(socket_cmd_ctx->sock, "\n\r");
+}
+
+
+static void _socket_cmd_ctx_flush(cmd_ctx_t * ctx)
+{
+}
+
+
 void platform_main_loop_iterate(void)
 {
+    if (_sock_line_used_len)
+    {
+        socket_cmd_ctx_t ctx = {{.output_cb = _socket_cmd_ctx_out,
+                                  .error_cb = _socket_cmd_ctx_out,
+                                  .flush_cb = _socket_cmd_ctx_flush},
+                                 .sock = _sock_cmd_sock};
+
+        cmds_process(_sock_line_buf, _sock_line_used_len, &ctx.base);
+        _sock_line_used_len = 0;
+    }
+
     model_main_loop_iterate();
 }
 

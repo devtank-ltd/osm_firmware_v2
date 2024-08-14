@@ -139,7 +139,6 @@ bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userda
         platform_tight_loop();
         if (should_exit_db(userdata))
             return true;
-
         if (since_boot_delta(get_since_boot_ms(), start_time) > watch_dog_kick)
         {
             log_debug(DEBUG_SYS, "Kicking watchdog.");
