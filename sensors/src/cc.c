@@ -395,29 +395,32 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 
     _cc_running_isolated = ADCS_TYPE_INVALID;
 
-    adcs_resp_t resp = adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
-
-    switch (resp)
+    adcs_resp_t resp;
+    if (CC_TYPE_V == _configs[index].type)
     {
-        case ADCS_RESP_FAIL:
+        resp = adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
+
+        switch (resp)
+        {
+            case ADCS_RESP_FAIL:
+                _cc_running[index] = false;
+                _cc_release_auto();
+                adc_debug("Failed to get AVG");
+                return MEASUREMENTS_SENSOR_STATE_ERROR;
+            case ADCS_RESP_WAIT:
+                return MEASUREMENTS_SENSOR_STATE_BUSY;
+            case ADCS_RESP_OK:
+                break;
+        }
+
+        if (adcs_avg < midpoint - CC_IS_NOT_PLUGGED_IN_THRESHOLD)
+        {
             _cc_running[index] = false;
             _cc_release_auto();
-            adc_debug("Failed to get AVG");
+            adc_debug("Current clamp not plugged in!");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
-        case ADCS_RESP_WAIT:
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
-        case ADCS_RESP_OK:
-            break;
+        }
     }
-
-    if (adcs_avg < midpoint - CC_IS_NOT_PLUGGED_IN_THRESHOLD)
-    {
-        _cc_running[index] = false;
-        _cc_release_auto();
-        adc_debug("Current clamp not plugged in!");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    }
-
     resp = adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
 
     switch (resp)
