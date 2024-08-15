@@ -22,6 +22,17 @@
 
 #define CC_RESISTOR_OHM                     22
 
+/* If CC is lower than 1.3V then assume not plugged in CC.
+ *    1.65V - 1.3V = 0.35V
+ *                 = 350mV
+ *    350mV * (ADC_MAX_VAL + 1) / ADC_MAX_MV
+ *    = 350mV * (4095 + 1) / 3300mV
+ *    = 434.42424242424244
+ * There is a scale on midpoint of x1000
+ */
+#define CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV   340
+#define CC_IS_NOT_PLUGGED_IN_THRESHOLD      (1000 * CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV * (ADC_MAX_VAL + 1) / ADC_MAX_MV)
+
 
 typedef struct
 {
@@ -359,7 +370,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    uint32_t adcs_rms;
+    uint32_t adcs_rms, adcs_avg;
     uint32_t midpoint = _configs[index].midpoint;
     bool is_iv_ct;
     switch (_configs[index].type)
@@ -382,9 +393,32 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
     else
         cc_len = _cc_adc_active_clamps.len;
 
-    adcs_resp_t resp = adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
-
     _cc_running_isolated = ADCS_TYPE_INVALID;
+
+    adcs_resp_t resp = adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
+
+    switch (resp)
+    {
+        case ADCS_RESP_FAIL:
+            _cc_running[index] = false;
+            _cc_release_auto();
+            adc_debug("Failed to get AVG");
+            return MEASUREMENTS_SENSOR_STATE_ERROR;
+        case ADCS_RESP_WAIT:
+            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        case ADCS_RESP_OK:
+            break;
+    }
+
+    if (adcs_avg < midpoint - CC_IS_NOT_PLUGGED_IN_THRESHOLD)
+    {
+        _cc_running[index] = false;
+        _cc_release_auto();
+        adc_debug("Current clamp not plugged in!");
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+
+    resp = adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
 
     switch (resp)
     {
