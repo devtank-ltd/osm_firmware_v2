@@ -395,7 +395,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 
     _cc_running_isolated = ADCS_TYPE_INVALID;
 
-    adcs_resp_t resp;
+    adcs_resp_t resp = ADCS_RESP_FAIL;
     if (CC_TYPE_V == _configs[index].type)
     {
         resp = adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
