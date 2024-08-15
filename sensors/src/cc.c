@@ -518,23 +518,8 @@ static bool _cc_calibrate(void)
         _cc_release_all();
         return false;
     }
-    uint32_t t_mp[ADC_CC_COUNT];
-    resp = adcs_collect_avgs(t_mp, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
-    //_cc_release_all();
-    switch(resp)
-    {
-        case ADCS_RESP_FAIL:
-            adc_debug("Could not average the ADC.");
-            return false;
-        case ADCS_RESP_WAIT:
-            adc_debug("Could not average the ADC.");
-            return false;
-        case ADCS_RESP_OK:
-            break;
-    }
-
     uint32_t midpoints[ADC_CC_COUNT];
-    resp = adcs_collect_rmss(midpoints, t_mp, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
+    resp = adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
     _cc_release_all();
     switch(resp)
     {
@@ -547,7 +532,6 @@ static bool _cc_calibrate(void)
         case ADCS_RESP_OK:
             break;
     }
-
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
         adc_debug("MP CC%u: %"PRIu32".%03"PRIu32, i+1, midpoints[i]/1000, midpoints[i]%1000);
     _cc_set_midpoints(midpoints);
