@@ -102,13 +102,14 @@ There is no way of being sure the state of the measurement loop when it is stopp
     save
     reset
 
-Once the measurement loop is not running, it is safe to take measurements.
+Once the measurement loop is not running, and the state is clean, it is safe to take measurements.
 
 Get the list of possible measurement with:
 
     measurements
 
 When you have the measurement you want to take, you get use the get_meas command to take the measurement.
+
 For example, to take a noise level reading you would do:
 
     get_meas SND
