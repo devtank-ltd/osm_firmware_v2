@@ -90,6 +90,10 @@ Text interface
 ==============
 
 The OSM, virtual or real, offers a text interface over serial. Typing a "?" and carriage return will make it print out the available commands.
+
+Taking a measurement manually
+-----------------------------
+
 The example here will be to take a measurement manually.
 
 If comms (LoRaWAN/Wifi/PoE) has been establish, the measurement loop will have been started.
