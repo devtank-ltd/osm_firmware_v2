@@ -1,5 +1,15 @@
 # Scripts for Devtank OpenSmartMonitor
 
+## Introduction
+
+These are GNU/Linux Bash scripts to program a Devtank Open Smart Monitors and save/load/wipe their configuration flash memory.
+
+As well as GNU/Linux with Bash, you will need:
+
+* dd (Debain/Ubuntu package coreutils)
+* stm32flash (Debain/Ubuntu package stm32flash)
+* fuser (Debain/Ubuntu package psmisc)
+
 ---
 
 ## 1. Config Wipe
@@ -35,6 +45,6 @@ This is a script to write a firmware image onto the smart monitor.
 
 ### Usage
 
-1. Type `./PROJECT_DIR/program.sh FW_BIN` with `FW_BIN` being the location of the firmware .bin file.
+1. Type `./PROJECT_DIR/program.sh FW_BIN` with `FW_BIN` being the location of the firmware .bin file. The firmware name will include the comms type. \_lw_ is LoRaWAN, \_at_wifi is Wifi and \_at_poe is PoE.
 
 2. Set the environment variable `KEEPCONFIG=1` to prevent erasing your config. WARNING - Config may still get erased depending on the firmware version, it is advisable to save your config before flashing, see 'Config Save'.
