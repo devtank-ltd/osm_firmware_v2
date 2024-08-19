@@ -2,7 +2,7 @@
 
 ## Introduction
 
-These are GNU/Linux Bash scripts to program a Devtank Open Smart Monitors and save/load/wipe their configuration flash memory.
+These are GNU/Linux Bash scripts to program a Devtank Open Smart Monitor and save/load/wipe the configuration flash memory.
 
 As well as GNU/Linux with Bash, you will need:
 
