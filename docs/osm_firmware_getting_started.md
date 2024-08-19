@@ -108,7 +108,7 @@ Get the list of possible measurement with:
 
     measurements
 
-When you have the measurement you want to take, you get use the get_meas command to take the measurement.
+When you have the measurement you want to take, you use the "get_meas" command to take the measurement.
 
 For example, to take a noise level reading you would do:
 
