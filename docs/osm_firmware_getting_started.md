@@ -84,3 +84,32 @@ created when starting the Virtual OSM and is called
     minicom -b 115200 -D /tmp/osm/UART_DEBUG_slave
 
 You can now communicate with the Virtual OSM through serial.
+
+
+Text interface
+==============
+
+The OSM, virtual or real, offers a text interface over serial. Typing a "?" and carriage return will make it print out the available commands.
+
+Taking a measurement manually
+-----------------------------
+
+The example here will be to take a measurement manually.
+
+If comms (LoRaWAN/Wifi/PoE) has been established, the measurement loop will have been started.
+Reading measurements manually can conflict with the measurement loop, so the first thing to do is to stop the measurement loop.
+
+    meas_enable 0
+
+Once the measurement loop is not running, and the state is clean, it is safe to take measurements.
+
+Get the list of possible measurement with:
+
+    measurements
+
+When you have the measurement you want to take, you use the "get_meas" command to take the measurement.
+
+For example, to take a noise level reading you would do:
+
+    get_meas SND
+
