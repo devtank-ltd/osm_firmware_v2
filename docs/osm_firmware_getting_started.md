@@ -101,11 +101,6 @@ Reading measurements manually can conflict with the measurement loop, so the fir
 
     meas_enable 0
 
-There is no way of being sure the state of the measurement loop when it is stopped like this. To ensure a clean state, it is best to save with the measurement loop disable and reboot.
-
-    save
-    reset
-
 Once the measurement loop is not running, and the state is clean, it is safe to take measurements.
 
 Get the list of possible measurement with:
