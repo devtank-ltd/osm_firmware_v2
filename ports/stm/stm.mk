@@ -116,7 +116,10 @@ $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME).tar.gz : $$(BUILD_DIR)/$(1)/complete.bin
 	git_tag=$(GIT_TAG); \
 	if [ "$$$${git_tag#*release}" != "$(GIT_TAG)" ]; then \
 	  mkdir -p $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME); \
-	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(JSON_CONV) $$(OSM_DIR)/tools/config_scripts $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/; \
+	  cp -r $$(BUILD_DIR)/$(1)/complete.bin $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/$(1)_$$(RELEASE_NAME).bin; \
+	  cp -r $$(OSM_DIR)/tools/config_scripts/* $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/; \
+	  cp -r $$(OSM_DIR)/tools/json_config_tool/json_config.py $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/; \
+	  cp -r $$(OSM_DIR)/python/binding.py $$(RELEASE_DIR)/$(1)_$$(RELEASE_NAME)/; \
 	  cd $$(RELEASE_DIR); \
 	  tar -czf $(1)_$$(RELEASE_NAME).tar.gz $(1)_$$(RELEASE_NAME); \
 	  rm -r $(1)_$$(RELEASE_NAME); \
