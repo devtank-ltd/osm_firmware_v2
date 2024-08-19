@@ -96,7 +96,7 @@ Taking a measurement manually
 
 The example here will be to take a measurement manually.
 
-If comms (LoRaWAN/Wifi/PoE) has been establish, the measurement loop will have been started.
+If comms (LoRaWAN/Wifi/PoE) has been established, the measurement loop will have been started.
 Reading measurements manually can conflict with the measurement loop, so the first thing to do is to stop the measurement loop.
 
     meas_enable 0
