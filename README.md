@@ -7,7 +7,7 @@ There are STM and Linux platform with models for each.
 
 The STM models are real hardware and the Linux model, Penguin, for testing.
 
-To see project documentation, please for to the [docs README](docs/README.md).
+To see project documentation, please go to the [docs README](docs/README.md).
 
 License
 =======
