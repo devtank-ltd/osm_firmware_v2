@@ -41,8 +41,8 @@ Data Type
 =========
 Can only be two values:
 
-   1: Immediate measurement - single data point
-   2: Averaged measurement - three data points, mean/avg, min and max.
+* 1 = Immediate measurement - single data point
+* 2 = Averaged measurement - three data points, mean/avg, min and max.
 
 Value Type
 ==========
