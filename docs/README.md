@@ -1,10 +1,10 @@
 Contents
 ========
 
-* [osm_firmware_getting_started.md](osm_firmware_getting_started.md) General guide to OSM Firmware.
-* [stm\_dev](stm_dev.md) STM OSM specific development reference.
-* [modbus_registers.md](modbus_registers.md) Guide to setting up OSM Modbus.
-* [osm_lorawan.md](osm_lorawan.md) OSM LoRaWAN server setup.
+* [osm_firmware_getting_started](osm_firmware_getting_started.md) General guide to OSM Firmware.
+* [stm_dev](stm_dev.md) STM OSM specific development reference.
+* [modbus_registers](modbus_registers.md) Guide to setting up OSM Modbus.
+* [osm_lorawan](osm_lorawan.md) OSM LoRaWAN server setup.
 
 Protocols
 =========
