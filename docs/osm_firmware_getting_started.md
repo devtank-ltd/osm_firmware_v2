@@ -112,6 +112,6 @@ For example, to take a noise level reading you would do:
 
 Real Hardware Development
 =========================
-See the ['stm\_dev'](stm\_dev.md) document.
+See the ['stm\_dev'](stm_dev.md) document.
 
 
