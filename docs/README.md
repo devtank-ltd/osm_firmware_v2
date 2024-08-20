@@ -12,5 +12,5 @@ Protocols
 The OSM has different comms options that use different protocols.
 The current two are:
 
-* [lorawan_protocols.md](lorawan_protocols.md) - LoRaWAN payload to unpack at server on decryption.
-* [mqtt_json_protocol.md](mqtt_json_protocol.md) - Payload used over TCP/IP for Wifi and PoE.
+* [lorawan_protocols.md](protocols/lorawan_protocols.md) - LoRaWAN payload to unpack at server on decryption.
+* [mqtt_json_protocol.md](protocols/mqtt_json_protocol.md) - Payload used over TCP/IP for Wifi and PoE.
