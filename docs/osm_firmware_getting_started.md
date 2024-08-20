@@ -25,7 +25,7 @@ There are several dependencies required for OSM to compile successfully,install 
         stm32flash \
         valgrind \
         minicom \
-        idle-python3.12 \
+        idle3 \
         python3-influxdb \
         python3-pil.imagetk \
         python3-pymodbus \
@@ -34,10 +34,6 @@ There are several dependencies required for OSM to compile successfully,install 
         python3-crccheck \
         python3-paho-mqtt \
         nodejs
-
-Note that if you are running Debian Stable, you may need to install picolibc from source as the version installed on the Debian package manager is too old. You will need version 1.7.4-1 at least.
-
-You may need to change to version of idle-python3.12, do `sudo apt-cache search idle-python` to see which ones are available.
 
 Build
 =====
