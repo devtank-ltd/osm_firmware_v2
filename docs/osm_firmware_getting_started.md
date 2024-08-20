@@ -55,7 +55,7 @@ enter the following command in the top level directory.
 
 -------
 
-    make penguin_test
+    make penguin_lw_test
 
 This will spawn the virtual OSM test, connect to the virtual OSM and
 test values for each measurement, ensure you wait for the measurement
@@ -68,7 +68,7 @@ To spawn the Virtual OSM, use the following command:
 
 -------
 
-    ./build/penguin/firmware.elf
+    ./build/penguin_lw/firmware.elf
 
 Once this is running, you can use minicom to open up communications with
 the fake sensor. The device that you will want to supply to minicom is
