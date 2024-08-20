@@ -22,16 +22,9 @@ For Helium, use hl_protocol.js
 Protocol layout
 ===============
 
-       x2    ||      x8       ||    x2     ||     x2     ||   xX   ||     x2     ||   xX   ||     x2     ||   xX   ||      x8       ||    x2     ||     x2     ||   xX   ||     x2     ||   xX   ||     x2     ||   x4   ||      x8       ||    x2     ||     x2     ||   xX   ||     x2     ||   xX   ||     x2     ||   x4   ||
-             ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||
-    PROTOCOL ||   DATA NAME   || DATA TYPE || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  ||   DATA NAME   || DATA TYPE || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  ||   DATA NAME   || DATA TYPE || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  || VALUE TYPE ||  DATA  ||
-             ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||               ||           ||            ||        ||            ||        ||            ||        ||
-       01    ||   43433100    ||    01     ||            ||  0C11  ||            ||  0C11  ||            ||  0C11  ||   544d5031    ||    02     ||            ||  0C11  ||            ||  0C11  ||            ||  0C11  ||   544d5031    ||    02     ||            ||  0C11  ||            ||  0C11  ||            ||  0C11  ||
-
-
-       01        504d3130           02             01         00         02          0000         02         0000       504d3235          02             01         00          02         0000          02        0000       43433100          02            02         5418         02         0000         02         b21b    00
-
-       01        504d3130           02             01         00         02          0000         02         0000       504d3235          02             01         00          02         0000          02        0000       43433100          02            02         ae31         02         0000         02         0000    00
+| PROTOCOL | DATA NAME | DATA TYPE | VALUE TYPE |   DATA   |   DATA   |   DATA   | DATA NAME | DATA TYPE | VALUE TYPE | DATA |
+|----------|-----------|-----------|------------|----------|----------|----------|-----------|-----------|------------|------|
+|    02    |     T1    |   2 (avg) |   2 (u16)  | 533(avg) | 501(min) | 543(max) |     T2    | 1 (single)|  1 (uint8) |   1  |
 
 
 Protocol
@@ -41,11 +34,15 @@ Version number of protocol. Currently 2.
 
 Data Name
 =========
+Four characters of the name of the measurement.
 For a list of non-configuration defined measurements names see  [measurements_mem.h](../../core/include/measurements_mem.h)
 
 Data Type
 =========
-   Immediate measurement (1) or averaged measurement (2).
+Can only be two values:
+
+   1: Immediate measurement - single data point
+   2: Averaged measurement - three data points, mean/avg, min and max.
 
 Value Type
 ==========
