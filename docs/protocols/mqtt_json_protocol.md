@@ -57,6 +57,6 @@ The schema for the payload is :
     } 
 
 
-For a list of non-configuration defined measurements see  [measurements_mem.h](../core/include/measurements_mem.h)
+For a list of non-configuration defined measurements see  [measurements_mem.h](../../core/include/measurements_mem.h)
 
 However modbus measurement names are down to the configuration.

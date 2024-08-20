@@ -109,3 +109,9 @@ For example, to take a noise level reading you would do:
 
     get_meas SND
 
+
+Real Hardware Development
+=========================
+See the ['stm\_dev'](stm\_dev.md) document.
+
+
