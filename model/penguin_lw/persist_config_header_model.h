@@ -29,7 +29,7 @@
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
 
-#define IOS_COUNT           10
+#define IOS_COUNT           3
 #define ADC_CC_COUNT        3
 #define ADC_FTMA_COUNT      4
 #define CC_DEFAULT_TYPE     CC_TYPE_A
