@@ -153,8 +153,14 @@ void model_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
-    measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
-    measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
+    measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            1,  5,  PM10            );
+    measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            1,  5,  PM25            );
+    measurements_repop_indiv(MEASUREMENTS_PM1_0_NAME,           1,  5,  SEN54           );
+    measurements_repop_indiv(MEASUREMENTS_PM4_NAME,             1,  5,  SEN54           );
+    measurements_repop_indiv(MEASUREMENTS_REL_HUM_NAME,         1,  5,  SEN54           );
+    measurements_repop_indiv(MEASUREMENTS_SEN54_TEMP_NAME,      1,  5,  SEN54           );
+    measurements_repop_indiv(MEASUREMENTS_VOC_NAME,             1,  5,  SEN54           );
+    measurements_repop_indiv(MEASUREMENTS_NOX_NAME,             1,  5,  SEN54           );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
@@ -215,6 +221,12 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM1_0_NAME,           1,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM4_NAME,             1,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_REL_HUM_NAME,         1,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN54_TEMP_NAME,      1,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             1,  5,  SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             1,  5,  SEN54           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
