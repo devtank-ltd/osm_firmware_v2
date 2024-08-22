@@ -19,7 +19,7 @@
 #include "measurements.h"
 
 
-#define SLOW_FLASHING_TIME_SEC              3000
+#define DISCONNECTED_FLASHING_TIME_SEC      50
 #define NORMAL_FLASHING_TIME_SEC            1000
 
 
@@ -55,7 +55,7 @@ int osm_main(void)
     log_async_log = true;
 
     uint32_t prev_now = 0;
-    uint32_t flashing_delay = SLOW_FLASHING_TIME_SEC;
+    uint32_t flashing_delay = DISCONNECTED_FLASHING_TIME_SEC;
     while(platform_running())
     {
         platform_watchdog_reset();
@@ -68,7 +68,7 @@ int osm_main(void)
             platform_main_loop_iterate();
         }
         protocol_loop_iteration();
-        flashing_delay = protocol_get_connected()?NORMAL_FLASHING_TIME_SEC:SLOW_FLASHING_TIME_SEC;
+        flashing_delay = protocol_get_connected()?NORMAL_FLASHING_TIME_SEC:DISCONNECTED_FLASHING_TIME_SEC;
         platform_blink_led_toggle();
 
         prev_now = get_since_boot_ms();
