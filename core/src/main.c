@@ -20,7 +20,7 @@
 
 
 #define DISCONNECTED_FLASHING_TIME_SEC      50
-#define NORMAL_FLASHING_TIME_SEC            1000
+#define NORMAL_FLASHING_TIME_SEC            500
 
 
 int osm_main(void)
