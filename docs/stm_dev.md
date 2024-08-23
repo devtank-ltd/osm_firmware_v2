@@ -3,10 +3,10 @@ Devtank OpenSmartMonitor - STMs
 
 The build environment for STM based OSM is Debian with the packages:
 
-make
-gcc-arm-none-eabi
-picolibc-arm-none-eabi
-stm32flash
+* make
+* gcc-arm-none-eabi
+* picolibc-arm-none-eabi
+* stm32flash
 
 To program a OpenSmartMonitor you're need either "stm32flash" or "openocd" and to have soldered wired on the right pins....
 

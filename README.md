@@ -7,8 +7,7 @@ There are STM and Linux platform with models for each.
 
 The STM models are real hardware and the Linux model, Penguin, for testing.
 
-See the 'osm\_firmware\_getting\_started' document to try out on Linux.
-See the 'stm\_dev' document for real OSM hardware development.
+To see project documentation, please go to the [docs README](docs/README.md).
 
 License
 =======
