@@ -139,7 +139,7 @@ class wifi_fw_dl_t(object):
 
     def _publish_command(self):
         self._logger.debug(f"PUBLISHING {self.command_index}/{len(self.commands)}")
-        self._logger.info(f"{100. * self.command_index/len(self.commands): .02f} %")
+        self._logger.debug(f"{100. * self.command_index/len(self.commands): .02f} %")
         self._publish(self.commands[self.command_index])
         self.command_index += 1
 
