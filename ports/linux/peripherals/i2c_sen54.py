@@ -6,8 +6,23 @@ import basetypes
 
 import command_server
 
+MODEL="SEN55"
 
-class i2c_device_sen54_t(basetypes.i2c_device_t):
+def sen5x_str_to_hex(str_: str) -> int:
+    ret = 0x0
+    myarr = [0] * 48
+    for i in range(int(len(myarr) / 3)):
+        if len(str_) > 2*i:
+            myarr[3*i] = ord(str_[2*i])
+        if len(str_) > 2*i+1:
+            myarr[3*i+1] = ord(str_[2*i+1])
+        myarr[3*i+2] = i2c_device_sen5x_t.crc((myarr[3*i] << 8) | (myarr[3*i+1]))
+    ret = 0
+    for i, v in enumerate(myarr):
+        ret = (ret << 8) | myarr[i]
+    return hex(ret)
+
+class i2c_device_sen5x_t(basetypes.i2c_device_t):
 
     SEN54_ADDR   = 0x69
 
@@ -45,7 +60,7 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
         SEN54_CMD_VOC_ALGORITHM_STATE           : 0x00 ,
         SEN54_CMD_FAN_CLEANING_START            : 0x00 ,
         SEN54_CMD_FAN_CLEANING_AUTO_INTERVAL    : 0x00 ,
-        SEN54_CMD_PRODUCT_NAME                  : 0x5345834e35553400b0000081000081000081000081000081000081000081000081000081000081000081000081000081, # "SEN54" - Has CRC between each two bytes XXXXCCXXXXCCXXXXCC...
+        SEN54_CMD_PRODUCT_NAME                  : 0x00 ,
         SEN54_CMD_SERIAL_NAME                   : 0x3345d636449038387831443e3438cc30413f4344dc4333b3000081000081000081000081000081000081000081000081, # "3E6D881D480ACDC3" - Has CRC between each two bytes XXXXCCXXXXCCXXXXCC...
         SEN54_CMD_FIRMWARE_VERSION              : 0x00 ,
         SEN54_CMD_DEVICE_STATUS                 : 0x00 ,
@@ -53,7 +68,7 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
         SEN54_CMD_RESET                         : 0x00 ,
         }
 
-    SEN54_MEASUREMENTS = enum.Enum('sen54_measurement_t',
+    SEN54_MEASUREMENTS = enum.Enum('sen5x_measurement_t',
                             ["PM1"        ,
                              "PM2_5"      ,
                              "PM4"        ,
@@ -108,14 +123,15 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
         voc             = kwargs.get("voc",         self.SEN54_DEFAULT_MEASUREMENT_VALUES[self.SEN54_MEASUREMENTS.VOC.value         ])
         nox             = kwargs.get("nox",         self.SEN54_DEFAULT_MEASUREMENT_VALUES[self.SEN54_MEASUREMENTS.NOX.value         ])
 
-        self.pm1            = pm1
-        self.pm2_5          = pm2_5
-        self.pm4            = pm4
-        self.pm10           = pm10
-        self.humidity       = humidity
-        self.temperature    = temperature
-        self.voc            = voc
-        self.nox            = nox
+        self.pm1                                      = pm1
+        self.pm2_5                                    = pm2_5
+        self.pm4                                      = pm4
+        self.pm10                                     = pm10
+        self.humidity                                 = humidity
+        self.temperature                              = temperature
+        self.voc                                      = voc
+        self.nox                                      = nox
+        self.SEN54_CMDS[self.SEN54_CMD_PRODUCT_NAME]  = int(sen5x_str_to_hex(MODEL), 16)
 
     @staticmethod
     def crc(data):
@@ -193,7 +209,7 @@ class i2c_device_sen54_t(basetypes.i2c_device_t):
 
 
 def main():
-    sen54 = i2c_device_sen54_t()
+    sen54 = i2c_device_sen5x_t()
     val = 0xBEEF
     print(f"CRC(0x{val:04X}) = 0x{sen54.crc(val):02X}")
     print(f"PM 1.0      = {sen54.pm1}")
