@@ -25,9 +25,9 @@ def main():
                         print(f"Result: {cmd_clt.set_blocking("HTU21D", {"HUMI": value})}")
                     # PM* not working
                     case "PM2.5":
-                        print(f"Result: {cmd_clt.set_blocking("SEN54", {"PM2_5": value})}")
+                        print(f"Result: {cmd_clt.set_blocking("SEN5x", {"PM2_5": value})}")
                     case "PM10":
-                        print(f"Result: {cmd_clt.set_blocking("SEN54", {"PM10": value})}")
+                        print(f"Result: {cmd_clt.set_blocking("SEN5x", {"PM10": value})}")
                     case _:
                         print("Unknown property")
             except KeyboardInterrupt:

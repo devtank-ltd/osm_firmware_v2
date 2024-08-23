@@ -30,10 +30,10 @@
 #define MEASUREMENTS_FTMA_4_NAME            "FTA4" /* float  - FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
 #define MEASUREMENTS_PM1_0_NAME             "PM1"  /* float  - Particulate matter, less than 1 micrometres in diameter */
 #define MEASUREMENTS_PM4_NAME               "PM4"  /* float  - Particulate matter, less than 4 micrometres in diameter */
-#define MEASUREMENTS_REL_HUM_NAME           "HUM2" /* float  - Relative Humanity from SEN54 chip (RevD and above) */
-#define MEASUREMENTS_SEN54_TEMP_NAME        "TMP5" /* float  - Temperature from SEN54 chip (RevD and above)*/
-#define MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SEN54. */
-#define MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SEN54. */
+#define MEASUREMENTS_REL_HUM_NAME           "HUM2" /* float  - Relative Humanity from SEN5x chip (RevD and above) */
+#define MEASUREMENTS_SEN5x_TEMP_NAME        "TMP5" /* float  - Temperature from SEN5x chip (RevD and above)*/
+#define MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SEN5x. */
+#define MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SEN5x. */
 
 #define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 

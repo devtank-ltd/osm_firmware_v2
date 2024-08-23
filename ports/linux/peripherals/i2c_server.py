@@ -11,7 +11,7 @@ import socket_server_base as socket_server
 from basetypes import i2c_device_t
 from i2c_htu21d import i2c_device_htu21d_t
 from i2c_veml7700 import i2c_device_veml7700_t
-from i2c_sen54 import i2c_device_sen54_t
+from i2c_sen5x import i2c_device_sen5x_t
 
 import command_server
 
@@ -147,10 +147,10 @@ class i2c_server_t(socket_server.socket_server_t):
 def main():
     htu_dev = i2c_device_htu21d_t()
     veml_dev = i2c_device_veml7700_t()
-    sen54_dev = i2c_device_sen54_t()
+    sen5x_dev = i2c_device_sen5x_t()
     devs = {veml_dev.addr : veml_dev,
             htu_dev.addr  : htu_dev,
-            sen54_dev.addr : sen54_dev}
+            sen5x_dev.addr : sen5x_dev}
     osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
     if not os.path.exists(osm_loc):
         os.mkdir(osm_loc)

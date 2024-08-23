@@ -78,27 +78,13 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     {0},   /* IO 0  */ \
     {1},   /* IO 1 */ \
     {2},   /* IO 2  */ \
-    {3},   /* IO 3  */ \
-    {4},   /* IO 4  */ \
-    {5},   /* IO 5  */ \
-    {6},   /* IO 6  */ \
-    {7},   /* IO 7  */ \
-    {8},   /* IO 8  */ \
-    {9},   /* IO 9 */ \
 }
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
-    IO_AS_INPUT,                                        /* GPIO 4   */ \
-    IO_AS_INPUT,                                        /* GPIO 5   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
+    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
+    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
+    IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
 }
 
 #define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
@@ -110,11 +96,11 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
                              ADCS_TYPE_FTMA3,    \
                              ADCS_TYPE_FTMA4     }
 
-#define W1_PULSE_1_IO               4
-#define W1_PULSE_2_IO               5
+#define W1_PULSE_1_IO               0
+#define W1_PULSE_2_IO               1
 
-#define IOS_WATCH_COUNT 2
 #define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
+#define IOS_WATCH_COUNT 2
 
 #define HTU21D_I2C                  1
 #define HTU21D_I2C_INDEX            0
@@ -137,4 +123,4 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 9600
 
-#define SEN54_I2C                           0
+#define SEN5x_I2C                           0
