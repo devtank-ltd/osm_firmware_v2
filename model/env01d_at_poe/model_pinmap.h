@@ -122,4 +122,4 @@
 }
 
 
-#define SEN54_I2C                           I2C1
+#define SEN5x_I2C                           I2C1

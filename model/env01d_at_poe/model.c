@@ -12,7 +12,7 @@
 #include "config.h"
 #include "pinmap.h"
 #include "uart_rings.h"
-#include "sen54.h"
+#include "sen5x.h"
 #include "cc.h"
 #include "modbus_measurements.h"
 #include "ds18b20.h"
@@ -88,7 +88,7 @@ void model_sensors_init(void)
     pulsecount_init();
     modbus_init();
     can_impl_init();
-    sen54_init();
+    sen5x_init();
 }
 
 
@@ -146,7 +146,7 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case LIGHT:         veml7700_inf_init(inf);    break;
         case SOUND:         sai_inf_init(inf);         break;
         case IO_READING:    ios_inf_init(inf);         break;
-        case SEN54:         sen54_inf_init(inf);       break;
+        case SEN5x:         sen5x_inf_init(inf);       break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -163,14 +163,14 @@ void model_measurements_repopulate(void)
 {
     measurements_repop_indiv(MEASUREMENTS_FW_VERSION,         100,  1,  FW_VERSION      );
     measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,    100,  1,  CONFIG_REVISION );
-    measurements_repop_indiv(MEASUREMENTS_PM1_0_NAME,           0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_PM4_NAME,             0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_REL_HUM_NAME,         0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_SEN54_TEMP_NAME,      0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_VOC_NAME,             0,  5,  SEN54           );
-    measurements_repop_indiv(MEASUREMENTS_NOX_NAME,             0,  5,  SEN54           );
+    measurements_repop_indiv(MEASUREMENTS_PM1_0_NAME,           0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_PM4_NAME,             0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_REL_HUM_NAME,         0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_VOC_NAME,             0,  5,  SEN5x           );
+    measurements_repop_indiv(MEASUREMENTS_NOX_NAME,             0,  5,  SEN5x           );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  CURRENT_CLAMP   );
@@ -194,7 +194,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = sleep_add_commands(tail);
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
-    tail = sen54_add_commands(tail);
+    tail = sen5x_add_commands(tail);
 }
 
 
@@ -231,14 +231,14 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     unsigned pos = 0;
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,         100,  1, FW_VERSION      );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,    100,  1, CONFIG_REVISION );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM1_0_NAME,           0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM4_NAME,             0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_REL_HUM_NAME,         0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN54_TEMP_NAME,      0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             0,  5, SEN54           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             0,  5, SEN54           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM1_0_NAME,           0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM4_NAME,             0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_REL_HUM_NAME,         0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             0,  5, SEN5x           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             0,  5, SEN5x           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, CURRENT_CLAMP   );
@@ -253,7 +253,7 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 
 void model_main_loop_iterate(void)
 {
-    sen54_iterate();
+    sen5x_iterate();
 }
 
 

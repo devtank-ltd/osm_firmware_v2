@@ -97,7 +97,7 @@ class measurements_def_t(ctypes.Structure):
         CUSTOM_1      = 15,
         IO_READING    = 16,
         CONFIG_REVISION = 17,
-        SEN54 = 18,
+        SEN5x = 18,
     } measurements_def_type_t;
     """
     class TYPES(enum.Enum):
@@ -118,7 +118,7 @@ class measurements_def_t(ctypes.Structure):
         CUSTOM_1        = 15
         IO_READING      = 16
         CONFIG_REVISION = 17
-        SEN54           = 18
+        SEN5x           = 18
 
 
 class measurements_data_t(ctypes.Structure):
