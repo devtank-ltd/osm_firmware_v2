@@ -263,8 +263,8 @@ void model_linux_spawn_fakes(void)
     peripherals_add_cmd(&_model_pids[0]);
     peripherals_add_modbus(EXT_UART , &_model_pids[1]);
     peripherals_add_hpm(HPM_UART    , &_model_pids[2]);
-    peripherals_add_w1(1000000      , &_model_pids[3]);
-    peripherals_add_i2c(2000000     , &_model_pids[4]);
+    peripherals_add_w1(10000000      , &_model_pids[3]);
+    peripherals_add_i2c(20000000     , &_model_pids[4]);
     peripherals_add_at_wifi(&_model_pids[5]);
 }
 
