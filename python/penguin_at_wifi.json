@@ -13,45 +13,17 @@
     "mqtt_port": "443"
   },
   "ios": {
-    "0": {
-      "pull": "DOWN",
-      "direction": "IN"
+    "00": {
+      "pull": "UP",
+      "direction": "OUT"
     },
-    "1": {
-      "pull": "DOWN",
-      "direction": "IN"
+    "01": {
+      "pull": "UP",
+      "direction": "OUT"
     },
-    "2": {
-      "pull": "DOWN",
-      "direction": "IN"
-    },
-    "3": {
-      "pull": "DOWN",
-      "direction": "IN"
-    },
-    "4": {
-      "pull": "NONE",
-      "direction": "IN"
-    },
-    "5": {
-      "pull": "NONE",
-      "direction": "IN"
-    },
-    "6": {
-      "pull": "DOWN",
-      "direction": "IN"
-    },
-    "7": {
-      "pull": "DOWN",
-      "direction": "IN"
-    },
-    "8": {
-      "pull": "DOWN",
-      "direction": "IN"
-    },
-    "9": {
-      "pull": "DOWN",
-      "direction": "IN"
+    "02": {
+      "special": "W1",
+      "pull": "NONE"
     }
   },
   "cc_midpoints": {
@@ -69,48 +41,60 @@
   },
   "measurements": {
     "FW": {
-      "interval": "4",
+      "interval": "100",
       "samplecount": "1"
     },
     "CREV": {
-      "interval": "4",
+      "interval": "100",
       "samplecount": "1"
     },
-    "PM10": {
-      "interval": "0",
+    "PM1": {
+      "interval": "1",
       "samplecount": "5"
     },
     "PM25": {
-      "interval": "0",
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "PM4": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "PM10": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "HUM2": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "TMP5": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "VOC": {
+      "interval": "1",
+      "samplecount": "5"
+    },
+    "NOX": {
+      "interval": "1",
       "samplecount": "5"
     },
     "CC1": {
-      "interval": "0",
-      "samplecount": "25"
+      "interval": "1",
+      "samplecount": "1"
     },
     "CC2": {
-      "interval": "0",
-      "samplecount": "25"
+      "interval": "1",
+      "samplecount": "1"
     },
     "CC3": {
-      "interval": "0",
-      "samplecount": "25"
+      "interval": "1",
+      "samplecount": "1"
     },
     "TMP2": {
       "interval": "0",
-      "samplecount": "5"
-    },
-    "TEMP": {
-      "interval": "1",
-      "samplecount": "2"
-    },
-    "HUMI": {
-      "interval": "1",
-      "samplecount": "2"
-    },
-    "BAT": {
-      "interval": "1",
-      "samplecount": "5"
+      "samplecount": "1"
     },
     "CNT1": {
       "interval": "0",
@@ -122,33 +106,17 @@
     },
     "LGHT": {
       "interval": "1",
-      "samplecount": "5"
+      "samplecount": "1"
     },
     "SND": {
       "interval": "1",
-      "samplecount": "5"
+      "samplecount": "1"
     },
-    "FTA1": {
-      "interval": "0",
-      "samplecount": "25"
-    },
-    "FTA2": {
-      "interval": "0",
-      "samplecount": "25"
-    },
-    "FTA3": {
-      "interval": "0",
-      "samplecount": "25"
-    },
-    "FTA4": {
-      "interval": "0",
-      "samplecount": "25"
-    },
-    "IO04": {
+    "IO00": {
       "interval": "0",
       "samplecount": "0"
     },
-    "IO05": {
+    "IO01": {
       "interval": "0",
       "samplecount": "0"
     }
