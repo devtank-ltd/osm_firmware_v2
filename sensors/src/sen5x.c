@@ -32,6 +32,7 @@
 #define SEN5x_NAME_RAW_BUF_SIZ                          48
 #define SEN5x_NAME_BUF_SIZ                              ((SEN5x_NAME_RAW_BUF_SIZ * 2) / 3 + 1)
 #define SEN5x_WAIT_DELAY                                1000
+#define SEN5x_WARMUP_TIME_MS                            5000
 
 #define SEN5x_FAN_INTERVAL_S                            604800 /* 1 week */
 
@@ -283,9 +284,9 @@ void sen5x_init(void)
 
 void sen5x_iterate(void)
 {
+    uint32_t now = get_since_boot_ms();
     if (_sen5x_ctx.active)
     {
-        uint32_t now = get_since_boot_ms();
         if (since_boot_delta(now, _sen5x_ctx.last_reading.time) >= SEN5x_WAIT_DELAY)
         {
             _sen5x_ctx.last_reading.time = now;
@@ -307,6 +308,10 @@ void sen5x_iterate(void)
                 _sen5x_ctx.active = false;
             }
         }
+    }
+    else if (now < SEN5x_WARMUP_TIME_MS && since_boot_delta(now, _sen5x_ctx.last_reading.time) >= SEN5x_WAIT_DELAY)
+    {
+        sen5x_init();
     }
 }
 
