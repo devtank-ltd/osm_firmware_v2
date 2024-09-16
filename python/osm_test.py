@@ -361,8 +361,7 @@ class test_framework_t(object):
         if isinstance(self._vosm_conn.comms, lw_comms_t):
             passed &= self._check_lw_serial_comms()
         elif isinstance(self._vosm_conn.comms, wifi_comms_t):
-            if self.do_ota:
-                passed &= self._check_wifi_serial_comms()
+            passed &= self._check_wifi_serial_comms()
         else:
             self._logger.error("Unknown comms config")
             passed = False
