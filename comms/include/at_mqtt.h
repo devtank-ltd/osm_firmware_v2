@@ -5,7 +5,7 @@
 
 #include "at_base.h"
 
-#define COMMS_DEFAULT_MTU                                   253
+#define COMMS_DEFAULT_MTU                                   254
 
 #define AT_MQTT_ADDR_MAX_LEN                                63
 #define AT_MQTT_USER_MAX_LEN                                63
