@@ -75,11 +75,6 @@
     GPIO_AF13,             \
 }
 
-#define CMD_UART   0
-#define COMMS_UART 1
-#define HPM_UART   2
-#define EXT_UART   3
-
 #define UART_CHANNELS_COUNT 4
 
 #define UART_BUFFERS_INIT                \

@@ -144,6 +144,11 @@ GPIO16 D2                   IO 11
 #define uart2_dma_out_isr               dma1_channel5_isr
 #define uart3_dma_out_isr               dma2_channel3_isr
 
+#define CMD_UART    0
+#define COMMS_UART  1
+#define HPM_UART    2
+#define EXT_UART    3
+
 #define UART_1_SPEED 9600
 #define UART_2_SPEED 115200
 #define UART_3_SPEED 115200
