@@ -14,9 +14,6 @@
     { UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, true, 0}, /* UART 3 485 */     \
 }
 
-
-
-
 #define UART_CHANNELS_COUNT 4
 
 #define ADC_COUNT 10
@@ -71,7 +68,8 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),\
     RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
     RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf)),\
-    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),}
+    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),\
+}
 
 #define IOS_PORT_N_PINS            \
 {                                  \
@@ -113,11 +111,6 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 }
 
 #define     post_init()
-
-
-#define UART_1_SPEED 9600
-#define UART_2_SPEED 115200
-#define UART_3_SPEED 9600
 
 
 #define SEN5x_I2C                           0

@@ -81,38 +81,6 @@
 #define LOG_END_SPACER    "}============"
 #define LOG_SPACER        "============="
 
-/* Uart index on uart ring buffer use
-
-    CMD_UART   0
-    LW_UART    1
-    HPM_UART   2
-    EXT_UART 3
-*/
-
-/* Uart Index on STM Uart */
-
-#define UART_4_SPEED 9600
-
-#define UART_1_PARITY uart_parity_none
-#define UART_2_PARITY uart_parity_none
-#define UART_3_PARITY uart_parity_none
-#define UART_4_PARITY uart_parity_none
-
-#define UART_1_DATABITS 8
-#define UART_2_DATABITS 8
-#define UART_3_DATABITS 8
-#define UART_4_DATABITS 8
-
-#define UART_1_STOP uart_stop_bits_1
-#define UART_2_STOP uart_stop_bits_1
-#define UART_3_STOP uart_stop_bits_1
-#define UART_4_STOP uart_stop_bits_1
-
-#define MODBUS_SPEED    UART_4_SPEED
-#define MODBUS_PARITY   UART_4_PARITY
-#define MODBUS_DATABITS UART_4_DATABITS
-#define MODBUS_STOP     UART_4_STOP
-
 #define USB_DATA_PCK_SZ    64
 
 #define DMA_DATA_PCK_SZ    64
