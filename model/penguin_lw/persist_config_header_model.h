@@ -41,11 +41,11 @@
 #define EXT_UART            3
 #define RS232_UART          4
 
-#define UART_1_SPEED        115200
-#define UART_2_SPEED        115200
-#define UART_3_SPEED        115200
-#define UART_4_SPEED        9600
-#define UART_5_SPEED        9600
+#define UART_1_SPEED        115200  /* HPM   */
+#define UART_2_SPEED        115200  /* DEBUG */
+#define UART_3_SPEED        115200  /* COMMS */
+#define UART_4_SPEED        9600    /* RS485 */
+#define UART_5_SPEED        9600    /* RS232 */
 
 #define UART_1_PARITY       uart_parity_none
 #define UART_2_PARITY       uart_parity_none
