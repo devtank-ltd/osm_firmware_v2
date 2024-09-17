@@ -25,6 +25,14 @@
 #define UART_1_IN_BUF_SIZE  256
 #define UART_1_OUT_BUF_SIZE 512
 
+#define EXT_UART    1
+
+#define MODBUS_SPEED        9600
+#define MODBUS_PARITY       uart_parity_none
+#define MODBUS_DATABITS     8
+#define MODBUS_STOP         uart_stop_bits_1
+
+
 
 typedef struct
 {

@@ -3,6 +3,7 @@
 #include "ring.h"
 #include "log.h"
 
+#ifdef RS232_UART
 
 static unsigned _rs232_send(char* msg, unsigned len)
 {
@@ -21,3 +22,5 @@ void rs232_process(ring_buf_t * ring)
         len = ring_buf_read(ring, &c, 1);
     }
 }
+
+#endif //RS232_UART
