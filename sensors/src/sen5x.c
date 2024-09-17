@@ -311,6 +311,7 @@ void sen5x_iterate(void)
     }
     else if (now < SEN5x_WARMUP_TIME_MS && since_boot_delta(now, _sen5x_ctx.last_reading.time) >= SEN5x_WAIT_DELAY)
     {
+        _sen5x_ctx.last_reading.time = now;
         sen5x_init();
     }
 }
