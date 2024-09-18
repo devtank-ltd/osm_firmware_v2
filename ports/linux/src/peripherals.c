@@ -14,11 +14,13 @@
 #define FAKE_HPM_SERVER     "peripherals/hpm_virtual.py"
 #define FAKE_MODBUS_SERVER  "peripherals/modbus_server.py"
 #define FAKE_CMD_SERVER     "peripherals/command_server.py"
+#define FAKE_RS232_SERVER   "peripherals/rs232.py"
 
 
 #define FAKE_HPM_TTY           "UART_HPM"
 #define FAKE_MODBUS_TTY        "UART_EXT"
 #define FAKE_CMD_TTY           "UART_CMD"
+#define FAKE_RS232_TTY         "UART_RS232"
 
 #define FAKE_I2C_SOCKET        "i2c_socket"
 #define FAKE_1W_SOCKET         "w1_socket"
@@ -55,6 +57,13 @@ void peripherals_add_i2c(unsigned timeout_us, unsigned* pid)
     char i2c_socket[LOCATION_LEN];
     concat_osm_location(i2c_socket, LOCATION_LEN, FAKE_I2C_SOCKET);
     peripherals_add(FAKE_I2C_SERVER, i2c_socket, timeout_us, pid);
+}
+
+
+void peripherals_add_rs232(unsigned uart, unsigned* pid)
+{
+    peripherals_add_uart_tty_bridge(FAKE_RS232_TTY, uart);
+    *pid = linux_spawn(FAKE_RS232_SERVER);
 }
 
 

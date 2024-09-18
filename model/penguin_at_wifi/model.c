@@ -255,7 +255,7 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 }
 
 
-static unsigned _model_pids[6] = {0};
+static unsigned _model_pids[7] = {0};
 
 
 #define FAKE_AT_WIFI_SERVER         "peripherals/at_wifi.py"
@@ -275,6 +275,7 @@ void model_linux_spawn_fakes(void)
     peripherals_add_w1(10000000      , &_model_pids[3]);
     peripherals_add_i2c(20000000     , &_model_pids[4]);
     peripherals_add_at_wifi(&_model_pids[5]);
+    peripherals_add_rs232(RS232_UART , &_model_pids[6]);
 }
 
 
