@@ -41,6 +41,46 @@
 #define UART_3_IN_BUF_SIZE  128
 #define UART_3_OUT_BUF_SIZE 128
 
+/* Uart index on uart ring buffer use
+
+    CMD_UART   0
+    LW_UART    1
+    HPM_UART   2
+    EXT_UART 3
+*/
+
+/* Uart Index on STM Uart */
+
+#define CMD_UART            0
+#define COMMS_UART          1
+#define RS232_UART          2
+#define EXT_UART            3
+
+#define UART_1_SPEED        9600    /* RS232 */
+#define UART_2_SPEED        115200  /* DEBUG */
+#define UART_3_SPEED        115200  /* COMMS */
+#define UART_4_SPEED        9600    /* RS485 */
+
+#define UART_1_PARITY       uart_parity_none
+#define UART_2_PARITY       uart_parity_none
+#define UART_3_PARITY       uart_parity_none
+#define UART_4_PARITY       uart_parity_none
+
+#define UART_1_DATABITS     8
+#define UART_2_DATABITS     8
+#define UART_3_DATABITS     8
+#define UART_4_DATABITS     8
+
+#define UART_1_STOP         uart_stop_bits_1
+#define UART_2_STOP         uart_stop_bits_1
+#define UART_3_STOP         uart_stop_bits_1
+#define UART_4_STOP         uart_stop_bits_1
+
+#define MODBUS_SPEED        UART_4_SPEED
+#define MODBUS_PARITY       UART_4_PARITY
+#define MODBUS_DATABITS     UART_4_DATABITS
+#define MODBUS_STOP         UART_4_STOP
+
 #define IOS_COUNT           3
 
 #define ADC_CC_COUNT        3

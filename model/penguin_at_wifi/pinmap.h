@@ -12,12 +12,10 @@
     { UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, true, 0}, /* UART 1 LoRa */    \
     { UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, true, 0}, /* UART 2 HPM */     \
     { UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, true, 0}, /* UART 3 485 */     \
+    { UART_5_SPEED, UART_5_DATABITS, UART_5_PARITY, UART_5_STOP, true, 0}, /* UART 4 RS232 */   \
 }
 
-
-
-
-#define UART_CHANNELS_COUNT 4
+#define UART_CHANNELS_COUNT 5
 
 #define ADC_COUNT 10
 
@@ -56,7 +54,11 @@ char uart_1_out_buf[UART_1_OUT_BUF_SIZE];\
 char uart_2_in_buf[UART_2_IN_BUF_SIZE];  \
 char uart_2_out_buf[UART_2_OUT_BUF_SIZE];\
 char uart_3_in_buf[UART_3_IN_BUF_SIZE];  \
-char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
+char uart_3_out_buf[UART_3_OUT_BUF_SIZE];\
+char uart_4_in_buf[UART_4_IN_BUF_SIZE];  \
+char uart_4_out_buf[UART_5_OUT_BUF_SIZE];\
+char uart_5_in_buf[UART_5_IN_BUF_SIZE];  \
+char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 
 #define UART_IN_RINGS                                   \
 {                                                       \
@@ -64,6 +66,7 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),\
     RING_BUF_INIT(uart_2_in_buf, sizeof(uart_2_in_buf)),\
     RING_BUF_INIT(uart_3_in_buf, sizeof(uart_3_in_buf)),\
+    RING_BUF_INIT(uart_4_in_buf, sizeof(uart_4_in_buf)),\
 }
 
 #define UART_OUT_RINGS                                    \
@@ -71,7 +74,9 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),\
     RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
     RING_BUF_INIT(uart_2_out_buf, sizeof(uart_2_out_buf)),\
-    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),}
+    RING_BUF_INIT(uart_3_out_buf, sizeof(uart_3_out_buf)),\
+    RING_BUF_INIT(uart_4_out_buf, sizeof(uart_4_out_buf)),\
+}
 
 #define IOS_PORT_N_PINS            \
 {                                  \
@@ -117,10 +122,5 @@ char uart_3_out_buf[UART_3_OUT_BUF_SIZE];
 
 #define COMMS_RESET_PORT_N_PINS     { 10 }
 #define COMMS_BOOT_PORT_N_PINS      { 11 }
-
-
-#define UART_1_SPEED 9600
-#define UART_2_SPEED 115200
-#define UART_3_SPEED 9600
 
 #define SEN5x_I2C                           0

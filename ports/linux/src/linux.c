@@ -152,18 +152,31 @@ static char _socket_buf[1024];
 
 static ring_buf_t _socket_in_ring = RING_BUF_INIT(_socket_buf, sizeof(_socket_buf));
 
-static fd_t             fd_list[LINUX_MAX_NFDS] = {{.type=LINUX_FD_TYPE_PTY,
-                                                    .name={"UART_DEBUG"},
-                                                    .pty = {.uart = CMD_UART},
-                                                    .cb=linux_uart_proc
-                                                    },
-                                                   {.type=LINUX_FD_TYPE_PTY,
-                                                    .name={"UART_COMMS"},
-                                                    .pty = {.uart = COMMS_UART},
-                                                    .cb=linux_uart_proc},
-                                                   {.type=LINUX_FD_TYPE_EVENT,
-                                                    .name={"ADC_GEN_EVENT"},
-                                                    .cb=linux_adc_generate}};
+static fd_t fd_list[LINUX_MAX_NFDS] = {
+    {
+        .type = LINUX_FD_TYPE_PTY,
+        .name = {"UART_DEBUG"},
+        .pty  = {.uart = CMD_UART},
+        .cb   =linux_uart_proc,
+    },
+    {
+        .type = LINUX_FD_TYPE_PTY,
+        .name = {"UART_COMMS"},
+        .pty  = {.uart = COMMS_UART},
+        .cb   = linux_uart_proc,
+    },
+    {
+        .type = LINUX_FD_TYPE_EVENT,
+        .name = {"ADC_GEN_EVENT"},
+        .cb   = linux_adc_generate,
+    },
+    {
+        .type = LINUX_FD_TYPE_PTY,
+        .name = {"UART_RS232"},
+        .pty  = {.uart = RS232_UART},
+        .cb   = linux_uart_proc,
+    }
+};
 
 
 static volatile unsigned _sock_line_used_len = 0;

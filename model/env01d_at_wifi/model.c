@@ -30,6 +30,7 @@
 #include "io_watch.h"
 #include "model_config.h"
 #include "comms_direct.h"
+#include "rs232.h"
 
 
 uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -107,13 +108,11 @@ bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
         modbus_uart_ring_in_process(ring);
         return true;
     }
-    /* If RS232 is in use, take the `process` from here
-    else if (uart == HPM_UART)
+    else if (uart == RS232_UART)
     {
-        hpm_ring_process(ring, line_buffer, CMD_LINELEN);
+        rs232_process(ring);
         return true;
     }
-    */
 
     return false;
 }

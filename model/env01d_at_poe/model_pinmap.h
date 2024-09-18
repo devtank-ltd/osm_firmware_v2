@@ -96,11 +96,6 @@
 #define COMMS_RESET_PORT_N_PINS     { GPIOC, GPIO8 }
 #define COMMS_BOOT_PORT_N_PINS      { GPIOB, GPIO2 }
 
-
-#define UART_1_SPEED 115200
-#define UART_2_SPEED 115200
-#define UART_3_SPEED 115200
-
 #define uart0_in_isr                    usart2_isr
 #define uart1_in_isr                    usart3_isr
 #define uart2_in_isr                    usart1_isr

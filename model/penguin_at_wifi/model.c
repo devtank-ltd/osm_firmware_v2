@@ -25,6 +25,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "update.h"
 #include "modbus.h"
 #include "io_watch.h"
+#include "rs232.h"
 
 #include "peripherals.h"
 
@@ -94,6 +95,11 @@ bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
     else if (uart == HPM_UART)
     {
         hpm_ring_process(ring, line_buffer, CMD_LINELEN);
+        return true;
+    }
+    else if (uart == RS232_UART)
+    {
+        rs232_process(ring);
         return true;
     }
 
