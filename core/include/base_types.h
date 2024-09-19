@@ -100,7 +100,7 @@ typedef enum
     IO_READING    = 16,
     CONFIG_REVISION = 17,
     SEN5x = 18,
-    RS232         = 19,
+    EXAMPLE_RS232         = 19,
 } measurements_def_type_t;
 
 

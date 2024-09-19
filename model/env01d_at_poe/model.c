@@ -29,7 +29,7 @@
 #include "w1.h"
 #include "io_watch.h"
 #include "model_config.h"
-#include "rs232.h"
+#include "example_rs232.h"
 
 
 uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -108,7 +108,7 @@ bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
     }
     else if (uart == RS232_UART)
     {
-        rs232_process(ring);
+        example_rs232_process(ring);
         return true;
     }
 
@@ -146,7 +146,7 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case SOUND:         sai_inf_init(inf);         break;
         case IO_READING:    ios_inf_init(inf);         break;
         case SEN5x:         sen5x_inf_init(inf);       break;
-        case RS232:         rs232_inf_init(inf);       break;
+        case EXAMPLE_RS232:         example_rs232_inf_init(inf);       break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -179,7 +179,7 @@ void model_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
     measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
     measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  1,  SOUND           );
-    measurements_repop_indiv(MEASUREMENTS_RS232_NAME,           0,  1,  RS232           );
+    measurements_repop_indiv(MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  EXAMPLE_RS232           );
 }
 
 
@@ -248,7 +248,7 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, PULSE_COUNT     );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  1, SOUND           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_RS232_NAME,           0,  1, RS232           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1, EXAMPLE_RS232           );
     return pos;
 }
 

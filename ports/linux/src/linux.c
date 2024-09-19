@@ -172,7 +172,7 @@ static fd_t fd_list[LINUX_MAX_NFDS] = {
     },
     {
         .type = LINUX_FD_TYPE_PTY,
-        .name = {"UART_RS232"},
+        .name = {"UART_EXAMPLE_RS232"},
         .pty  = {.uart = RS232_UART},
         .cb   = linux_uart_proc,
     }

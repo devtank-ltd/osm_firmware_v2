@@ -56,7 +56,7 @@
 #define RS232_UART          2
 #define EXT_UART            3
 
-#define UART_1_SPEED        9600    /* RS232 */
+#define UART_1_SPEED        9600    /* EXAMPLE_RS232 */
 #define UART_2_SPEED        115200  /* DEBUG */
 #define UART_3_SPEED        115200  /* COMMS */
 #define UART_4_SPEED        9600    /* RS485 */

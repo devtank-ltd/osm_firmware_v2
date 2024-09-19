@@ -25,7 +25,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "update.h"
 #include "modbus.h"
 #include "io_watch.h"
-#include "rs232.h"
+#include "example_rs232.h"
 
 #include "peripherals.h"
 
@@ -99,7 +99,7 @@ bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
     }
     else if (uart == RS232_UART)
     {
-        rs232_process(ring);
+        example_rs232_process(ring);
         return true;
     }
 
@@ -143,7 +143,7 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case FTMA:          ftma_inf_init(inf);        break;
         case IO_READING:    ios_inf_init(inf);         break;
         case SEN5x:         sen5x_inf_init(inf);       break;
-        case RS232:         rs232_inf_init(inf);       break;
+        case EXAMPLE_RS232:         example_rs232_inf_init(inf);       break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -183,7 +183,7 @@ void model_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_FTMA_2_NAME,          0,  25, FTMA            );
     measurements_repop_indiv(MEASUREMENTS_FTMA_3_NAME,          0,  25, FTMA            );
     measurements_repop_indiv(MEASUREMENTS_FTMA_4_NAME,          0,  25, FTMA            );
-    measurements_repop_indiv(MEASUREMENTS_RS232_NAME,           0,   1, RS232           );
+    measurements_repop_indiv(MEASUREMENTS_EXAMPLE_RS232_NAME,           0,   1, EXAMPLE_RS232           );
 }
 
 
@@ -250,7 +250,7 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_2_NAME,          0,  25, FTMA            );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_3_NAME,          0,  25, FTMA            );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_4_NAME,          0,  25, FTMA            );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_RS232_NAME,           0,   1, RS232           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_EXAMPLE_RS232_NAME,           0,   1, EXAMPLE_RS232           );
     return pos;
 }
 
@@ -275,7 +275,7 @@ void model_linux_spawn_fakes(void)
     peripherals_add_w1(10000000      , &_model_pids[3]);
     peripherals_add_i2c(20000000     , &_model_pids[4]);
     peripherals_add_at_wifi(&_model_pids[5]);
-    peripherals_add_rs232(RS232_UART , &_model_pids[6]);
+    peripherals_add_example_rs232(RS232_UART , &_model_pids[6]);
 }
 
 
