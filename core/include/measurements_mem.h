@@ -34,6 +34,7 @@
 #define MEASUREMENTS_SEN5x_TEMP_NAME        "TMP5" /* float  - Temperature from SEN5x chip (RevD and above)*/
 #define MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SEN5x. */
 #define MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SEN5x. */
+#define MEASUREMENTS_EXAMPLE_RS232_NAME             "R232" /* string - EXAMPLE_RS232 response from command */
 
 #define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 
