@@ -101,17 +101,6 @@ static bool _tmp4718_read_reg(uint8_t addr, uint8_t* value)
 }
 
 
-/*
-static bool _tmp4718_write_reg(uint8_t addr, uint8_t value)
-{
-    uint8_t buf[2];
-    buf[0] = addr;
-    buf[1] = value;
-    return i2c_transfer_timeout(TMP4718_I2C, TMP4718_ADDR, buf, 2, NULL, 0, TMP4718_TIMEOUT_MS);
-}
-*/
-
-
 static float _tmp4718_remote_conv(uint16_t temp16)
 {
     return (float)temp16 / 256.f;
@@ -144,37 +133,6 @@ static bool _tmp4718_read_remote_temperature(float* val)
     *val = _tmp4718_remote_conv(temp16.d);
     return true;
 }
-
-
-/*
-static bool _tmp4718_read_chip_id(uint8_t* val)
-{
-    __TMP4718_READ_REG(TMP4718_REG_ADDR_CHIP_ID, val);
-}
-
-
-static bool _tmp4718_read_vendor_id(uint8_t* val)
-{
-    __TMP4718_READ_REG(TMP4718_REG_ADDR_VENDOR_ID, val);
-}
-
-
-static bool _tmp4718_read_device_rev_id(uint8_t* device_id, uint8_t* rev_id)
-{
-    if (!device_id || !rev_id)
-    {
-        return false;
-    }
-    uint8_t dev_rev_id = 0;
-    if (!_tmp4718_read_reg(TMP4718_REG_ADDR_DEVICE_REV_ID, &dev_rev_id))
-    {
-        return false;
-    }
-    *device_id = TMP4718_DEVICE_ID(dev_rev_id);
-    *rev_id = TMP4718_REV_ID(dev_rev_id);
-    return true;
-}
-*/
 
 
 void tmp4718_init(void)
