@@ -30,6 +30,7 @@
 #include "io_watch.h"
 #include "model_config.h"
 #include "example_rs232.h"
+#include "tmp4718.h"
 
 
 uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -147,6 +148,7 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
         case IO_READING:    ios_inf_init(inf);         break;
         case SEN5x:         sen5x_inf_init(inf);       break;
         case EXAMPLE_RS232:         example_rs232_inf_init(inf);       break;
+        case TMP4718:       tmp4718_inf_init(inf);     break;
         default:
             log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -180,6 +182,8 @@ void model_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
     measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  1,  SOUND           );
     measurements_repop_indiv(MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  EXAMPLE_RS232           );
+    measurements_repop_indiv(MEASUREMENTS_TMP4718_LOCAL_NAME,   1,  1,  TMP4718         );
+    measurements_repop_indiv(MEASUREMENTS_TMP4718_REMOTE_NAME,  1,  1,  TMP4718         );
 }
 
 
@@ -249,6 +253,8 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  1, SOUND           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1, EXAMPLE_RS232           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_TMP4718_LOCAL_NAME,   1,  1,  TMP4718         );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_TMP4718_REMOTE_NAME,  1,  1,  TMP4718         );
     return pos;
 }
 

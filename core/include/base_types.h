@@ -101,6 +101,7 @@ typedef enum
     CONFIG_REVISION = 17,
     SEN5x = 18,
     EXAMPLE_RS232         = 19,
+    TMP4718       = 20,
 } measurements_def_type_t;
 
 
