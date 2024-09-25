@@ -118,3 +118,4 @@
 
 
 #define SEN5x_I2C                           I2C1
+#define TMP4718_I2C                         I2C1

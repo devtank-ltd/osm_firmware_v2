@@ -35,6 +35,8 @@
 #define MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SEN5x. */
 #define MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SEN5x. */
 #define MEASUREMENTS_EXAMPLE_RS232_NAME             "R232" /* string - EXAMPLE_RS232 response from command */
+#define MEASUREMENTS_TMP4718_LOCAL_NAME     "TMP6" /* float  - Temperature on POE/Ethernet module, local */
+#define MEASUREMENTS_TMP4718_REMOTE_NAME    "TMP7" /* float  - Temperature on POE/Ethernet module, remote */
 
 #define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 
