@@ -49,6 +49,7 @@ enum at_poe_states_t
     AT_POE_STATE_WAIT_MQTT_STATE,
     AT_POE_STATE_TIMEDOUT_WAIT_MQTT_STATE,
     AT_POE_STATE_WAIT_TIMESTAMP,
+    AT_POE_STATE_WAIT_MAC_ADDRESS,
     AT_POE_STATE_COUNT,
 };
 
@@ -106,6 +107,7 @@ static const char * _at_poe_get_state_str(enum at_poe_states_t state)
         "WAIT_MQTT_STATE"                               ,
         "TIMEDOUT_MQTT_WAIT_MQTT_STATE"                 ,
         "WAIT_TIMESTAMP"                                ,
+        "WAIT_MAC_ADDRESS"                              ,
     };
     _Static_assert(sizeof(state_strs)/sizeof(state_strs[0]) == AT_POE_STATE_COUNT, "Wrong number of states");
     unsigned _state = (unsigned)state;
@@ -601,6 +603,26 @@ static void _at_poe_process_state_wait_timestamp(char* msg, unsigned len)
 }
 
 
+static void _at_poe_process_state_wait_mac_address(char* msg, unsigned len)
+{
+    const char mac_msg[] = "+CIPSTAMAC:";
+    unsigned mac_msg_len = strlen(mac_msg);
+    if (is_str(mac_msg, msg, mac_msg_len))
+    {
+        unsigned len_rem = len - mac_msg_len;
+        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
+        len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
+        char* dest = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
+        memcpy(dest, msg + mac_msg_len, len_rem);
+        dest[maxstrlen] = 0;
+    }
+    else if (at_base_is_ok(msg, len))
+    {
+        _at_poe_ctx.state = AT_POE_STATE_IDLE;
+    }
+}
+
+
 void at_poe_process(char* msg)
 {
     unsigned len = strlen(msg);
@@ -658,6 +680,8 @@ void at_poe_process(char* msg)
         case AT_POE_STATE_WAIT_TIMESTAMP:
             _at_poe_process_state_wait_timestamp(msg, len);
             break;
+        case AT_POE_STATE_WAIT_MAC_ADDRESS:
+            _at_poe_process_state_wait_mac_address(msg, len);
         default:
             break;
     }
@@ -669,7 +693,8 @@ bool at_poe_get_connected(void)
     return _at_poe_ctx.state == AT_POE_STATE_IDLE ||
            _at_poe_ctx.state == AT_POE_STATE_MQTT_WAIT_PUB ||
            _at_poe_ctx.state == AT_POE_STATE_MQTT_PUBLISHING ||
-           _at_poe_ctx.state == AT_POE_STATE_WAIT_TIMESTAMP;
+           _at_poe_ctx.state == AT_POE_STATE_WAIT_TIMESTAMP ||
+           _at_poe_ctx.state == AT_POE_STATE_WAIT_MAC_ADDRESS;
 }
 
 
@@ -782,12 +807,20 @@ command_response_t at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
     return ret;
 }
 
+static bool _at_poe_get_mac_address(char* buf, unsigned buflen);
 
 command_response_t at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
+    char mac_address[AT_BASE_MAC_ADDRESS_LEN];
+    if (!_at_poe_get_mac_address(mac_address, AT_BASE_MAC_ADDRESS_LEN))
+    {
+        strncpy(mac_address, "UNKNOWN", AT_BASE_MAC_ADDRESS_LEN-1);
+    }
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
     cmd_ctx_flush(ctx);
     at_mqtt_cmd_j_cfg(ctx);
+    cmd_ctx_flush(ctx);
+    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(mac_address));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
     cmd_ctx_flush(ctx);
@@ -911,5 +944,54 @@ bool at_poe_get_unix_time(int64_t * ts)
     *ts = (int64_t)time->ts_unix;
     time->sys = 0;
     time->ts_unix = 0;
+    return true;
+}
+
+
+static bool _at_poe_mac_loop_iteration(void* userdata)
+{
+    return _at_poe_ctx.state != AT_POE_STATE_WAIT_MAC_ADDRESS;
+}
+
+
+static bool _at_poe_get_mac_address2(void)
+{
+    if (_at_poe_ctx.state != AT_POE_STATE_IDLE)
+    {
+        return false;
+    }
+    _at_poe_printf("AT+CIPSTAMAC?");
+    _at_poe_ctx.state = AT_POE_STATE_WAIT_MAC_ADDRESS;
+    if (!main_loop_iterate_for(AT_POE_TS_TIMEOUT, _at_poe_mac_loop_iteration, NULL))
+    {
+        /* Timed out - Not sure what to do with the chip really... */
+        comms_debug("Timed out");
+        _at_poe_ctx.state = AT_POE_STATE_IDLE;
+        return false;
+    }
+    return true;
+}
+
+
+static bool _at_poe_get_mac_address(char* buf, unsigned buflen)
+{
+    char* src = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
+    const unsigned mac_len = AT_BASE_MAC_ADDRESS_LEN-1;
+    if (strnlen(src, mac_len) != mac_len ||
+        !str_is_valid_ascii(src, mac_len, true))
+    {
+        comms_debug("Don't have MAC address, retrieving");
+        if (!_at_poe_get_mac_address2())
+        {
+            comms_debug("Failed to get MAC address");
+            return false;
+        }
+    }
+    if (buflen > AT_BASE_MAC_ADDRESS_LEN)
+    {
+        buflen = AT_BASE_MAC_ADDRESS_LEN;
+    }
+    memcpy(buf, src, buflen-1);
+    buf[buflen-1] = 0;
     return true;
 }

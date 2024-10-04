@@ -9,6 +9,9 @@
 #include "log.h"
 
 
+#define AT_BASE_MAC_ADDR_LEN            18
+
+
 static at_base_ctx_t* _at_base_ctx = NULL;
 
 
