@@ -695,8 +695,7 @@ bool at_poe_get_connected(void)
     return _at_poe_ctx.state == AT_POE_STATE_IDLE ||
            _at_poe_ctx.state == AT_POE_STATE_MQTT_WAIT_PUB ||
            _at_poe_ctx.state == AT_POE_STATE_MQTT_PUBLISHING ||
-           _at_poe_ctx.state == AT_POE_STATE_WAIT_TIMESTAMP ||
-           _at_poe_ctx.state == AT_POE_STATE_WAIT_MAC_ADDRESS;
+           _at_poe_ctx.state == AT_POE_STATE_WAIT_TIMESTAMP;
 }
 
 

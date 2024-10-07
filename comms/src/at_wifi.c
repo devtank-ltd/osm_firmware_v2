@@ -1272,8 +1272,7 @@ bool at_wifi_get_connected(void)
     return _at_wifi_ctx.state == AT_WIFI_STATE_IDLE ||
            _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_WAIT_PUB ||
            _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_PUBLISHING ||
-           _at_wifi_ctx.state == AT_WIFI_STATE_WAIT_TIMESTAMP ||
-           _at_wifi_ctx.state == AT_WIFI_STATE_WAIT_MAC_ADDRESS;
+           _at_wifi_ctx.state == AT_WIFI_STATE_WAIT_TIMESTAMP;
 }
 
 
