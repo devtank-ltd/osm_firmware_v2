@@ -272,16 +272,8 @@ static void _at_poe_process_state_disable_echo(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
-        at_base_cmd_t* cmd = at_mqtt_get_ntp_cfg();
-        if (!cmd)
-        {
-            comms_debug("Failed to get the NTP config");
-        }
-        else
-        {
-            _at_poe_printf(cmd->str);
-            _at_poe_ctx.state = AT_POE_STATE_SNTP_WAIT_SET;
-        }
+        _at_poe_printf("AT+CIPETHMAC?");
+        _at_poe_ctx.state = AT_POE_STATE_WAIT_MAC_ADDRESS;
     }
     else if (at_base_is_error(msg, len))
     {
@@ -605,7 +597,7 @@ static void _at_poe_process_state_wait_timestamp(char* msg, unsigned len)
 
 static void _at_poe_process_state_wait_mac_address(char* msg, unsigned len)
 {
-    const char mac_msg[] = "+CIPSTAMAC:";
+    const char mac_msg[] = "+CIPETHMAC:\"";
     unsigned mac_msg_len = strlen(mac_msg);
     if (is_str(mac_msg, msg, mac_msg_len))
     {
@@ -618,7 +610,16 @@ static void _at_poe_process_state_wait_mac_address(char* msg, unsigned len)
     }
     else if (at_base_is_ok(msg, len))
     {
-        _at_poe_ctx.state = AT_POE_STATE_IDLE;
+        at_base_cmd_t* cmd = at_mqtt_get_ntp_cfg();
+        if (!cmd)
+        {
+            comms_debug("Failed to get the NTP config");
+        }
+        else
+        {
+            _at_poe_printf(cmd->str);
+            _at_poe_ctx.state = AT_POE_STATE_SNTP_WAIT_SET;
+        }
     }
 }
 
@@ -643,6 +644,9 @@ void at_poe_process(char* msg)
             break;
         case AT_POE_STATE_DISABLE_ECHO:
             _at_poe_process_state_disable_echo(msg, len);
+            break;
+        case AT_POE_STATE_WAIT_MAC_ADDRESS:
+            _at_poe_process_state_wait_mac_address(msg, len);
             break;
         case AT_POE_STATE_SNTP_WAIT_SET:
             _at_poe_process_state_sntp(msg, len);
@@ -680,8 +684,6 @@ void at_poe_process(char* msg)
         case AT_POE_STATE_WAIT_TIMESTAMP:
             _at_poe_process_state_wait_timestamp(msg, len);
             break;
-        case AT_POE_STATE_WAIT_MAC_ADDRESS:
-            _at_poe_process_state_wait_mac_address(msg, len);
         default:
             break;
     }
