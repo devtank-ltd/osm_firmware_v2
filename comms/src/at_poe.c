@@ -35,6 +35,8 @@ enum at_poe_states_t
 {
     AT_POE_STATE_OFF,
     AT_POE_STATE_DISABLE_ECHO,
+    AT_POE_STATE_WAIT_MAC_ADDRESS,
+    AT_POE_STATE_NO_CONF,
     AT_POE_STATE_SNTP_WAIT_SET,
     AT_POE_STATE_MQTT_IS_CONNECTED,
     AT_POE_STATE_MQTT_IS_SUBSCRIBED,
@@ -49,7 +51,6 @@ enum at_poe_states_t
     AT_POE_STATE_WAIT_MQTT_STATE,
     AT_POE_STATE_TIMEDOUT_WAIT_MQTT_STATE,
     AT_POE_STATE_WAIT_TIMESTAMP,
-    AT_POE_STATE_WAIT_MAC_ADDRESS,
     AT_POE_STATE_COUNT,
 };
 
@@ -93,6 +94,8 @@ static const char * _at_poe_get_state_str(enum at_poe_states_t state)
     {
         "OFF"                                           ,
         "DISABLE_ECHO"                                  ,
+        "WAIT_MAC_ADDRESS"                              ,
+        "NO_CONF"                                       ,
         "SNTP_WAIT_SET"                                 ,
         "MQTT_IS_CONNECTED"                             ,
         "MQTT_IS_SUBSCRIBED"                            ,
@@ -107,7 +110,6 @@ static const char * _at_poe_get_state_str(enum at_poe_states_t state)
         "WAIT_MQTT_STATE"                               ,
         "TIMEDOUT_MQTT_WAIT_MQTT_STATE"                 ,
         "WAIT_TIMESTAMP"                                ,
-        "WAIT_MAC_ADDRESS"                              ,
     };
     _Static_assert(sizeof(state_strs)/sizeof(state_strs[0]) == AT_POE_STATE_COUNT, "Wrong number of states");
     unsigned _state = (unsigned)state;
@@ -143,16 +145,8 @@ static unsigned _at_poe_printf(const char* fmt, ...)
 
 static void _at_poe_start(void)
 {
-    if (!_at_poe_mem_is_valid())
-    {
-        comms_debug("Invalid memory");
-    }
-    else
-    {
-        /* Mem is valid */
-        _at_poe_printf("AT+RST");
-        _at_poe_ctx.state = AT_POE_STATE_OFF;
-    }
+    _at_poe_printf("AT+RST");
+    _at_poe_ctx.state = AT_POE_STATE_OFF;
 }
 
 
@@ -258,8 +252,7 @@ static void _at_poe_process_state_off(char* msg, unsigned len)
 {
     const char boot_message[] = "+ETH_GOT_IP:";
     const unsigned boot_message_len = strlen(boot_message);
-    if (_at_poe_mem_is_valid() &&
-        len >= boot_message_len &&
+    if (len >= boot_message_len &&
         is_str(boot_message, msg, boot_message_len))
     {
         _at_poe_printf("ATE0");
@@ -278,6 +271,48 @@ static void _at_poe_process_state_disable_echo(char* msg, unsigned len)
     else if (at_base_is_error(msg, len))
     {
         _at_poe_reset();
+    }
+}
+
+
+static void _at_poe_send_sntp(void)
+{
+    at_base_cmd_t* cmd = at_mqtt_get_ntp_cfg();
+    if (!cmd)
+    {
+        comms_debug("Failed to get the NTP config");
+    }
+    else
+    {
+        _at_poe_printf(cmd->str);
+        _at_poe_ctx.state = AT_POE_STATE_SNTP_WAIT_SET;
+    }
+}
+
+
+static void _at_poe_process_state_wait_mac_address(char* msg, unsigned len)
+{
+    const char mac_msg[] = "+CIPETHMAC:\"";
+    unsigned mac_msg_len = strlen(mac_msg);
+    if (is_str(mac_msg, msg, mac_msg_len))
+    {
+        unsigned len_rem = len - mac_msg_len;
+        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
+        len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
+        char* dest = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
+        memcpy(dest, msg + mac_msg_len, len_rem);
+        dest[maxstrlen] = 0;
+    }
+    else if (at_base_is_ok(msg, len))
+    {
+        if (_at_poe_mem_is_valid())
+        {
+            _at_poe_send_sntp();
+        }
+        else
+        {
+            _at_poe_ctx.state = AT_POE_STATE_NO_CONF;
+        }
     }
 }
 
@@ -595,35 +630,6 @@ static void _at_poe_process_state_wait_timestamp(char* msg, unsigned len)
 }
 
 
-static void _at_poe_process_state_wait_mac_address(char* msg, unsigned len)
-{
-    const char mac_msg[] = "+CIPETHMAC:\"";
-    unsigned mac_msg_len = strlen(mac_msg);
-    if (is_str(mac_msg, msg, mac_msg_len))
-    {
-        unsigned len_rem = len - mac_msg_len;
-        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
-        len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
-        char* dest = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
-        memcpy(dest, msg + mac_msg_len, len_rem);
-        dest[maxstrlen] = 0;
-    }
-    else if (at_base_is_ok(msg, len))
-    {
-        at_base_cmd_t* cmd = at_mqtt_get_ntp_cfg();
-        if (!cmd)
-        {
-            comms_debug("Failed to get the NTP config");
-        }
-        else
-        {
-            _at_poe_printf(cmd->str);
-            _at_poe_ctx.state = AT_POE_STATE_SNTP_WAIT_SET;
-        }
-    }
-}
-
-
 void at_poe_process(char* msg)
 {
     unsigned len = strlen(msg);
@@ -647,6 +653,9 @@ void at_poe_process(char* msg)
             break;
         case AT_POE_STATE_WAIT_MAC_ADDRESS:
             _at_poe_process_state_wait_mac_address(msg, len);
+            break;
+        case AT_POE_STATE_NO_CONF:
+            /* Shouldn't really be anything of importance here */
             break;
         case AT_POE_STATE_SNTP_WAIT_SET:
             _at_poe_process_state_sntp(msg, len);
@@ -741,6 +750,9 @@ void at_poe_loop_iteration(void)
             }
             break;
         }
+        case AT_POE_STATE_NO_CONF:
+            /* Do nothing */
+            break;
         case AT_POE_STATE_DISABLE_ECHO:
             /* fall through */
         case AT_POE_STATE_MQTT_IS_CONNECTED:
@@ -801,9 +813,16 @@ command_response_t at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
     at_poe_config_t before_config;
     memcpy(&before_config, _at_poe_ctx.mem, sizeof(at_poe_config_t));
     command_response_t ret = at_base_config_setup_str(_at_poe_config_cmds, skip_space(args), ctx);
-    if (_at_poe_mem_is_valid() && at_poe_persist_config_cmp(&before_config, _at_poe_ctx.mem))
+    if (_at_poe_mem_is_valid())
     {
-        _at_poe_start();
+        if (AT_POE_STATE_NO_CONF == _at_poe_ctx.state)
+        {
+            _at_poe_send_sntp();
+        }
+        else if (at_poe_persist_config_cmp(&before_config, _at_poe_ctx.mem))
+        {
+            _at_poe_start();
+        }
     }
     return ret;
 }
