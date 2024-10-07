@@ -950,31 +950,6 @@ bool at_poe_get_unix_time(int64_t * ts)
 }
 
 
-static bool _at_poe_mac_loop_iteration(void* userdata)
-{
-    return _at_poe_ctx.state != AT_POE_STATE_WAIT_MAC_ADDRESS;
-}
-
-
-static bool _at_poe_get_mac_address2(void)
-{
-    if (_at_poe_ctx.state != AT_POE_STATE_IDLE)
-    {
-        return false;
-    }
-    _at_poe_printf("AT+CIPSTAMAC?");
-    _at_poe_ctx.state = AT_POE_STATE_WAIT_MAC_ADDRESS;
-    if (!main_loop_iterate_for(AT_POE_TS_TIMEOUT, _at_poe_mac_loop_iteration, NULL))
-    {
-        /* Timed out - Not sure what to do with the chip really... */
-        comms_debug("Timed out");
-        _at_poe_ctx.state = AT_POE_STATE_IDLE;
-        return false;
-    }
-    return true;
-}
-
-
 static bool _at_poe_get_mac_address(char* buf, unsigned buflen)
 {
     char* src = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
@@ -983,11 +958,7 @@ static bool _at_poe_get_mac_address(char* buf, unsigned buflen)
         !str_is_valid_ascii(src, mac_len, true))
     {
         comms_debug("Don't have MAC address, retrieving");
-        if (!_at_poe_get_mac_address2())
-        {
-            comms_debug("Failed to get MAC address");
-            return false;
-        }
+        return false;
     }
     if (buflen > AT_BASE_MAC_ADDRESS_LEN)
     {

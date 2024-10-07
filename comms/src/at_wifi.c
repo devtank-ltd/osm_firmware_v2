@@ -548,8 +548,8 @@ static void _at_wifi_process_state_rf_region(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
-        _at_wifi_printf("AT+CWINIT=1");
-        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
+        _at_wifi_printf("AT+CIPSTAMAC?");
+        _at_wifi_ctx.state = AT_WIFI_STATE_WAIT_MAC_ADDRESS;
     }
     else if (at_base_is_error(msg, len))
     {
@@ -1155,7 +1155,7 @@ static void _at_wifi_process_state_ap_scan(char* msg, unsigned len)
 
 static void _at_wifi_process_state_wait_mac_address(char* msg, unsigned len)
 {
-    const char mac_msg[] = "+CIPSTAMAC:";
+    const char mac_msg[] = "+CIPSTAMAC:\"";
     unsigned mac_msg_len = strlen(mac_msg);
     if (is_str(mac_msg, msg, mac_msg_len))
     {
@@ -1168,7 +1168,8 @@ static void _at_wifi_process_state_wait_mac_address(char* msg, unsigned len)
     }
     else if (at_base_is_ok(msg, len))
     {
-        _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
+        _at_wifi_printf("AT+CWINIT=1");
+        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
     }
 }
 
@@ -1202,6 +1203,9 @@ void at_wifi_process(char* msg)
             break;
         case AT_WIFI_STATE_RF_REGION:
             _at_wifi_process_state_rf_region(msg, len);
+            break;
+        case AT_WIFI_STATE_WAIT_MAC_ADDRESS:
+            _at_wifi_process_state_wait_mac_address(msg, len);
             break;
         case AT_WIFI_STATE_WIFI_INIT:
             _at_wifi_process_state_wifi_init(msg, len);
@@ -1256,9 +1260,6 @@ void at_wifi_process(char* msg)
             break;
         case AT_WIFI_STATE_AP_SCAN:
             _at_wifi_process_state_ap_scan(msg, len);
-            break;
-        case AT_WIFI_STATE_WAIT_MAC_ADDRESS:
-            _at_wifi_process_state_wait_mac_address(msg, len);
             break;
         default:
             break;
@@ -1824,31 +1825,6 @@ bool at_wifi_get_unix_time(int64_t * ts)
 }
 
 
-static bool _at_wifi_mac_loop_iteration(void* userdata)
-{
-    return _at_wifi_ctx.state != AT_WIFI_STATE_WAIT_MAC_ADDRESS;
-}
-
-
-static bool _at_wifi_get_mac_address2(void)
-{
-    if (_at_wifi_ctx.state != AT_WIFI_STATE_IDLE)
-    {
-        return false;
-    }
-    _at_wifi_printf("AT+CIPSTAMAC?");
-    _at_wifi_ctx.state = AT_WIFI_STATE_WAIT_MAC_ADDRESS;
-    if (!main_loop_iterate_for(AT_WIFI_TS_TIMEOUT, _at_wifi_mac_loop_iteration, NULL))
-    {
-        /* Timed out - Not sure what to do with the chip really... */
-        comms_debug("Timed out");
-        _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
-        return false;
-    }
-    return true;
-}
-
-
 static bool _at_wifi_get_mac_address(char* buf, unsigned buflen)
 {
     char* src = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
@@ -1856,12 +1832,8 @@ static bool _at_wifi_get_mac_address(char* buf, unsigned buflen)
     if (strnlen(src, mac_len) != mac_len ||
         !str_is_valid_ascii(src, mac_len, true))
     {
-        comms_debug("Don't have MAC address, retrieving");
-        if (!_at_wifi_get_mac_address2())
-        {
-            comms_debug("Failed to get MAC address");
-            return false;
-        }
+        comms_debug("Don't have MAC address");
+        return false;
     }
     if (buflen > AT_BASE_MAC_ADDRESS_LEN)
     {
