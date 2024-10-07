@@ -23,6 +23,11 @@ static measurements_sensor_state_t _modbus_measurements_collection_time(char* na
 
 static measurements_sensor_state_t _modbus_measurements_init(char* name, bool in_isolation)
 {
+    if (MODBUS_ROLE_LISTENER == modbus_bus->role)
+    {
+        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    }
+
     if (in_isolation)
     {
         if (modbus_has_pending())

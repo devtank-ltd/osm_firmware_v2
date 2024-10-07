@@ -30,6 +30,9 @@ extern modbus_reg_t * modbus_get_reg(char * name);
 extern void           modbus_reg_del(modbus_reg_t * reg);
 
 extern uint16_t          modbus_reg_get_unit_id(modbus_reg_t * reg);
+
+extern modbus_reg_t* modbus_mem_search_reg(uint8_t unit_id, uint16_t reg_addr, uint8_t func);
+
 extern bool              modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1]);
 extern modbus_reg_type_t modbus_reg_get_type(modbus_reg_t * reg);
 extern modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg);

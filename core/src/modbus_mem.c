@@ -463,6 +463,26 @@ bool           modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_reg_ty
     return true;
 }
 
+modbus_reg_t* modbus_mem_search_reg(uint8_t unit_id, uint16_t reg_addr, uint8_t func)
+{
+    modbus_dev_t* dev = NULL;
+    for (modbus_dev_t* d = _modbus_get_from_offset(modbus_bus->first_dev_offset); d; d = _modbus_get_from_offset(d->next_dev_offset))
+    {
+        if (d->unit_id == unit_id)
+        {
+            dev = d;
+            break;
+        }
+    }
+    for (modbus_reg_t* r = _modbus_get_from_offset(dev->first_reg_offset); r; r = _modbus_get_from_offset(r->next_reg_offset))
+    {
+        if (r->reg_addr == reg_addr && r->func == func)
+        {
+            return r;
+        }
+    }
+    return NULL;
+}
 
 bool              modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1])
 {
@@ -571,6 +591,7 @@ void modbus_bus_init(modbus_bus_t * bus)
         modbus_bus->stopbits    = MODBUS_STOP;
         modbus_bus->binary_protocol = false;
         modbus_bus->first_free_offset = _modbus_get_offset(modbus_bus->blocks);
+        modbus_bus->role = MODBUS_ROLE_MASTER;
         for(unsigned n = 0; n < (MODBUS_BLOCKS-1) /*Last is zeroed*/; n++)
             modbus_bus->blocks[n].next_free_offset = _modbus_get_offset(&modbus_bus->blocks[n+1]);
     }
@@ -590,7 +611,8 @@ bool modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
         d0->dev_count               != d1->dev_count            ||
         d0->baudrate                != d1->baudrate             ||
         d0->first_dev_offset        != d1->first_dev_offset     ||
-        d0->first_free_offset       != d1->first_free_offset    )
+        d0->first_free_offset       != d1->first_free_offset    ||
+        d0->role                    != d1->role                 )
     {
         return true;
     }

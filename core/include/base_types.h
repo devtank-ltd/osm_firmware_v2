@@ -226,7 +226,8 @@ typedef struct
     uint32_t baudrate;
     uint16_t first_dev_offset;
     uint16_t first_free_offset;
-    uint32_t _;
+    uint8_t  role;             /* is_listener, 0 is master, 1 is listener, 2 left for slave */
+    uint8_t  _[3];
     modbus_free_t  blocks[MODBUS_BLOCKS];
 } __attribute__((__packed__)) modbus_bus_t;
 

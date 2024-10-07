@@ -136,7 +136,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_uart_pari
 
 bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
 {
-    /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
+    /*<BIN/RTU> <MASTER/SLAVE/LISTENER> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
      */
     char * pos = skip_space(str);
@@ -163,6 +163,47 @@ bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
 
     pos+=3;
 
+    modbus_role_t role = MODBUS_ROLE_MASTER;
+
+    pos = skip_space(pos);
+    if (toupper(pos[0]) == 'M' &&
+        toupper(pos[1]) == 'A' &&
+        toupper(pos[2]) == 'S' &&
+        toupper(pos[3]) == 'T' &&
+        toupper(pos[4]) == 'E' &&
+        toupper(pos[5]) == 'R')
+    {
+        role = MODBUS_ROLE_MASTER;
+        pos += 6;
+    }
+    else if (toupper(pos[0]) == 'L' &&
+             toupper(pos[1]) == 'I' &&
+             toupper(pos[2]) == 'S' &&
+             toupper(pos[3]) == 'T' &&
+             toupper(pos[4]) == 'E' &&
+             toupper(pos[5]) == 'N' &&
+             toupper(pos[6]) == 'E' &&
+             toupper(pos[7]) == 'R')
+    {
+        role = MODBUS_ROLE_LISTENER;
+        pos += 7;
+    }
+    else if (toupper(pos[0]) == 'S' &&
+             toupper(pos[1]) == 'L' &&
+             toupper(pos[2]) == 'A' &&
+             toupper(pos[3]) == 'V' &&
+             toupper(pos[4]) == 'E')
+    {
+        /* TODO: Support slave */
+        cmd_ctx_error(ctx,"Modbus slave not yet supported.");
+        return false;
+    }
+    else
+    {
+        cmd_ctx_error(ctx,"Unknown modbus role.");
+        return false;
+    }
+
     if (!uart_resetup_str(EXT_UART, skip_space(pos), ctx))
         return false;
 
@@ -174,6 +215,7 @@ bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
     uart_get_setup(EXT_UART, &speed, &databits, &parity, &stop);
 
     modbus_bus->binary_protocol = binary_framing;
+    modbus_bus->role = role;
 
     _modbus_setup_delays(speed, databits, parity, stop);
 
@@ -608,7 +650,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
 
-void modbus_uart_ring_in_process(ring_buf_t * ring)
+static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
 {
     static unsigned _header_size = 0;
     if (!modbus_want_rx)
@@ -878,6 +920,95 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     _modbus_reg_cb(current_reg, modbuspacket + 3, modbuspacket[2], dev->byte_order, dev->word_order);
 }
 
+static unsigned _modbus_type_to_addr_count(modbus_reg_type_t type)
+{
+    switch (type)
+    {
+        case MODBUS_REG_TYPE_U16    : return 1;
+        case MODBUS_REG_TYPE_I16    : return 1;
+        case MODBUS_REG_TYPE_U32    : return 2;
+        case MODBUS_REG_TYPE_I32    : return 2;
+        case MODBUS_REG_TYPE_FLOAT  : return 2;
+        default:
+            modbus_debug("Unknown type.");
+            break;
+    }
+    return 0;
+}
+
+static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
+{
+    unsigned len = ring_buf_get_pending(ring);
+    /* Try to get request */
+
+    unsigned request_len = 8;
+    if (modbus_bus->binary_protocol)
+    {
+        request_len += 2;
+    }
+
+    if (request_len > len)
+    {
+        /* Our supported functions requests are length 8, if less then
+         * we are short */
+        return;
+    }
+    memset(modbuspacket, 0, request_len);
+    if (!ring_buf_peek(ring, (char*)modbuspacket, request_len))
+    {
+        modbus_debug("Failed to read modbus ring when listening");
+        return;
+    }
+    /* Don't throw out message yet, we need to throw out whole message
+     * if slave id isn't one we listen to, may not have whole message
+     * yet */
+
+    uint8_t* packet = modbuspacket;
+    if (modbus_bus->binary_protocol)
+    {
+        if (MODBUS_BIN_START != modbuspacket[0] ||
+            MODBUS_BIN_STOP != modbuspacket[request_len-1])
+        {
+            return;
+        }
+        /* Skip the start */
+        packet += 1;
+    }
+
+    uint16_t crc = modbus_crc(packet, 6);
+    uint16_t crc_packet = packet[6] | (packet[7] << 8);
+    if (crc == crc_packet)
+    {
+        /* CRC matched for request */
+        ring_buf_discard(ring, 8);
+        uint16_t reg_addr = (packet[2] << 8) | packet[3];
+        modbus_reg_t* reg = modbus_mem_search_reg(packet[0], reg_addr, packet[1]);
+        if (!reg)
+        {
+            /* Not listening to this register */
+            return;
+        }
+        unsigned addr_count = (packet[4] << 8) | packet[5];
+        if (_modbus_type_to_addr_count(reg->type) != addr_count)
+        {
+            return;
+        }
+        reg->value_state = MB_REG_WAITING;
+    }
+}
+
+void modbus_uart_ring_in_process(ring_buf_t * ring)
+{
+    if (MODBUS_ROLE_MASTER == modbus_bus->role)
+    {
+        _modbus_uart_ring_in_process_master(ring);
+    }
+    else if (MODBUS_ROLE_LISTENER == modbus_bus->role)
+    {
+        _modbus_uart_ring_in_process_listener(ring);
+        _modbus_uart_ring_in_process_master(ring);
+    }
+}
 
 static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order)
 {

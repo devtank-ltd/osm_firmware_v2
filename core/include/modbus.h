@@ -5,6 +5,13 @@
 #include "log.h"
 #include "modbus_mem.h"
 
+typedef enum
+{
+    MODBUS_ROLE_MASTER,
+    MODBUS_ROLE_LISTENER,
+    MODBUS_ROLE_SLAVE,
+} modbus_role_t;
+
 
 extern bool modbus_requires_echo_removal(void) __attribute__((weak));
 
