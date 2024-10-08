@@ -1062,13 +1062,19 @@ static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
         {
             return;
         }
-        uint8_t* p = memchr(modbuspacket, MODBUS_BIN_START, len);
-        if (p)
+        uint8_t* p = NULL;
+        if (modbus_bus->binary_protocol)
         {
-            len = p - modbuspacket;
-            modbus_debug("Skipping to next packet");
+            /* If binary protocol we know where the framing is in the
+             * ring buffer, so we can skip to that point */
+            p = memchr(modbuspacket, MODBUS_BIN_START, len);
+            if (p)
+            {
+                len = p - modbuspacket;
+                modbus_debug("Skipping to next packet");
+            }
         }
-        else
+        if (!p)
         {
             modbus_debug("Discarding junk");
         }
