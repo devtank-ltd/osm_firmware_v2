@@ -12,7 +12,7 @@
 
 #define AT_BASE_MAC_ADDRESS_LEN                             18
 
-#define AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\","
+#define AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\""
 #define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , AT_BASE_MAC_ADDRESS_LEN       , _mac
 
 

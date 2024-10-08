@@ -19,7 +19,7 @@
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME              "    \"MQTT SCHEME\": %"PRIu16","
 #define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH                "    \"MQTT PATH\": \"%.*s\","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16""
+#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16","
 
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_MQTT_ADDR_MAX_LEN , _mqtt_addr
 #define AT_MQTT_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_MQTT_USER_MAX_LEN , _mqtt_user
