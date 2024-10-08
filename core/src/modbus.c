@@ -673,13 +673,11 @@ static bool _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             if (delta > MODBUS_TX_GAP_MS)
                 _modbus_next_message();
         }
-        modbus_debug("Doesn't want RX");
         return false;
     }
 
     if (_modbus_has_timedout(ring))
     {
-        modbus_debug("Timed out");
         return false;
     }
 
