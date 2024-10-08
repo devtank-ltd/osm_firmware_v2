@@ -595,8 +595,18 @@ bool modbus_start_read(modbus_reg_t * reg)
         return true;
     }
 
-    modbus_debug("Immediate read");
-    _modbus_do_start_read(reg);
+    if (modbus_bus->role == MODBUS_ROLE_MASTER)
+    {
+        modbus_debug("Immediate read");
+        _modbus_do_start_read(reg);
+    }
+    else if (modbus_bus->role == MODBUS_ROLE_LISTENER)
+    {
+        modbus_want_rx = true;
+        uint32_t now = get_since_boot_ms();
+        modbus_cur_send_time = now;
+        modbus_read_timing_init = now;
+    }
     return true;
 }
 
@@ -608,7 +618,7 @@ static void _modbus_next_message(void)
     if (ring_buf_peek(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg))
         return;
 
-    if (current_reg)
+    if (modbus_bus->role == MODBUS_ROLE_MASTER && current_reg)
         _modbus_do_start_read(current_reg);
 }
 
@@ -650,7 +660,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 
 static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
 
-static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
+static bool _modbus_uart_ring_in_process_master(ring_buf_t * ring)
 {
     static unsigned _header_size = 0;
     if (!modbus_want_rx)
@@ -663,16 +673,22 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             if (delta > MODBUS_TX_GAP_MS)
                 _modbus_next_message();
         }
-        return;
+        modbus_debug("Doesn't want RX");
+        return false;
     }
 
     if (_modbus_has_timedout(ring))
-        return;
+    {
+        modbus_debug("Timed out");
+        return false;
+    }
 
     unsigned len = ring_buf_get_pending(ring);
 
     if (!len)
-        return;
+    {
+        return false;
+    }
 
     if (modbus_requires_echo_removal() && _echo_bytes)
     {
@@ -680,7 +696,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
         _echo_bytes -= discarded;
         if (!_echo_bytes)
             modbus_debug("Echo drained.");
-        return;
+        return false;
     }
 
     if (!modbuspacket_len)
@@ -696,7 +712,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             if (!modbuspacket[0])
             {
                 modbus_debug("Zero start");
-                return;
+                return false;
             }
 
             if (modbus_bus->binary_protocol)
@@ -704,7 +720,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
                 if (modbuspacket[0] != MODBUS_BIN_START)
                 {
                     modbus_debug("Not binary frame start.");
-                    return;
+                    return false;
                 }
                 ring_buf_read(ring, (char*)modbuspacket, 1);
                 len-= 1;
@@ -751,7 +767,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             {
                 modbuspacket_len = 0;
                 modbus_debug("Bad function");
-                return;
+                return false;
             }
 
             modbus_debug("Reply type length : %u", modbuspacket_len);
@@ -773,17 +789,17 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
                 modbus_debug("bus received, timer started at:%"PRIu32, modbus_read_timing_init);
             }
             else _modbus_has_timedout(ring);
-            return;
+            return false;
         }
     }
 
     if (!modbuspacket_len)
-        return;
+        return false;
 
     if (len < modbuspacket_len)
     {
         _modbus_has_timedout(ring);
-        return;
+        return false;
     }
 
     modbus_read_timing_init = 0;
@@ -796,7 +812,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
         if (modbuspacket[modbuspacket_len + _header_size - 1] != MODBUS_BIN_STOP)
         {
             modbus_debug("Not binary frame stopped, discarded.");
-            return;
+            return false;
         }
         modbuspacket_len--;
     }
@@ -814,7 +830,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
         modbus_debug("Bad CRC");
         modbuspacket_len = 0;
         modbus_want_rx = false;
-        return;
+        return false;
     }
 
     modbus_debug("Good CRC");
@@ -830,7 +846,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
-            return;
+            return false;
         }
         uint16_t reg_addr = (modbuspacket[2] << 8) | modbuspacket[3];
         if (reg_addr != _modbus_reg_set_expected.reg_addr)
@@ -838,7 +854,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
-            return;
+            return false;
         }
         uint16_t value = (modbuspacket[4] << 8) | modbuspacket[5];
         if (value != _modbus_reg_set_expected.value)
@@ -846,12 +862,12 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected value (0x%04"PRIX16" != 04%"PRIX16").", value, _modbus_reg_set_expected.value);
-            return;
+            return false;
         }
         modbus_debug("Received acknowledgement.");
         _modbus_reg_set_expected.not_done = false;
         _modbus_reg_set_expected.passfail = true;
-        return;
+        return false;
     }
     else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
     {
@@ -860,7 +876,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
-            return;
+            return false;
         }
         uint16_t reg_addr = (modbuspacket[2] << 8) | modbuspacket[3];
         if (reg_addr != _modbus_reg_set_expected.reg_addr)
@@ -868,7 +884,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
-            return;
+            return false;
         }
         uint16_t num_written = (modbuspacket[4] << 8) | modbuspacket[5];
         if (num_written != _modbus_reg_set_expected.num_written)
@@ -876,12 +892,12 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
             modbus_debug("Unexpected num_written (0x%04"PRIX16" != 04%"PRIX16").", num_written, _modbus_reg_set_expected.num_written);
-            return;
+            return false;
         }
         modbus_debug("Received acknowledgement.");
         _modbus_reg_set_expected.not_done = false;
         _modbus_reg_set_expected.passfail = true;
-        return;
+        return false;
     }
 
     // Good or bad, we think we have the whole message for current register, so remove it from queue.
@@ -890,7 +906,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
     if (ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
     {
         log_error("Modbus comms issues!");
-        return;
+        return false;
     }
 
     if (current_reg->value_state != MB_REG_WAITING)
@@ -906,7 +922,7 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
         (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
     {
         modbus_debug("Exception: 0x%02"PRIx8, modbuspacket[2]);
-        return;
+        return false;
     }
 
     modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
@@ -914,10 +930,11 @@ static void _modbus_uart_ring_in_process_master(ring_buf_t * ring)
     if (dev->unit_id != modbuspacket[0])
     {
         log_error("Modbus comms issues!");
-        return;
+        return false;
     }
 
     _modbus_reg_cb(current_reg, modbuspacket + 3, modbuspacket[2], dev->byte_order, dev->word_order);
+    return true;
 }
 
 static unsigned _modbus_type_to_addr_count(modbus_reg_type_t type)
@@ -936,7 +953,7 @@ static unsigned _modbus_type_to_addr_count(modbus_reg_type_t type)
     return 0;
 }
 
-static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
+static bool _modbus_uart_ring_in_process_listener2(ring_buf_t * ring)
 {
     unsigned len = ring_buf_get_pending(ring);
     /* Try to get request */
@@ -951,13 +968,13 @@ static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
     {
         /* Our supported functions requests are length 8, if less then
          * we are short */
-        return;
+        return false;
     }
     memset(modbuspacket, 0, request_len);
     if (!ring_buf_peek(ring, (char*)modbuspacket, request_len))
     {
         modbus_debug("Failed to read modbus ring when listening");
-        return;
+        return false;
     }
     /* Don't throw out message yet, we need to throw out whole message
      * if slave id isn't one we listen to, may not have whole message
@@ -969,10 +986,11 @@ static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
         if (MODBUS_BIN_START != modbuspacket[0] ||
             MODBUS_BIN_STOP != modbuspacket[request_len-1])
         {
-            return;
+            return false;
         }
         /* Skip the start */
         packet += 1;
+        request_len += 2;
     }
 
     uint16_t crc = modbus_crc(packet, 6);
@@ -980,20 +998,81 @@ static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
     if (crc == crc_packet)
     {
         /* CRC matched for request */
-        ring_buf_discard(ring, 8);
+        ring_buf_discard(ring, request_len);
         uint16_t reg_addr = (packet[2] << 8) | packet[3];
         modbus_reg_t* reg = modbus_mem_search_reg(packet[0], reg_addr, packet[1]);
         if (!reg)
         {
             /* Not listening to this register */
-            return;
+            modbus_debug("Not listening to this register 0x%"PRIX16":0x%"PRIX16":F%u", packet[0], reg_addr, packet[1]);
+            return false;
         }
         unsigned addr_count = (packet[4] << 8) | packet[5];
         if (_modbus_type_to_addr_count(reg->type) != addr_count)
         {
+            modbus_debug("Wrong address count for %s", reg->name);
+            return false;
+        }
+        modbus_debug("SETTING %s (0x%02"PRIX16":0x%04"PRIX16":F%u) TO WAITING", reg->name, reg->unit_id, reg->reg_addr, reg->func);
+        if (!modbus_start_read(reg))
+        {
+            modbus_debug("Failed to start the 'read' of the register");
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+static void _modbus_uart_ring_in_process_listener(ring_buf_t * ring)
+{
+    static uint32_t request_time = 0;
+    static bool has_request = false;
+    uint32_t now = get_since_boot_ms();
+    if (!has_request)
+    {
+        if (_modbus_uart_ring_in_process_listener2(ring))
+        {
+            has_request = true;
+            request_time = now;
+        }
+    }
+    if (has_request)
+    {
+        if (_modbus_uart_ring_in_process_master(ring))
+        {
+            has_request = false;
+        }
+    }
+    if (has_request && since_boot_delta(now, request_time) > MODBUS_RESP_TIMEOUT_MS)
+    {
+        request_time = now;
+        has_request = false;
+        unsigned len = ring_buf_get_pending(ring);
+        if (!len)
+        {
             return;
         }
-        reg->value_state = MB_REG_WAITING;
+        if (len > MAX_MODBUS_PACKET_SIZE)
+        {
+            len = MAX_MODBUS_PACKET_SIZE;
+        }
+        len = ring_buf_peek(ring, (char*)modbuspacket, len);
+        if (!len)
+        {
+            return;
+        }
+        uint8_t* p = memchr(modbuspacket, MODBUS_BIN_START, len);
+        if (p)
+        {
+            len = p - modbuspacket;
+            modbus_debug("Skipping to next packet");
+        }
+        else
+        {
+            modbus_debug("Discarding junk");
+        }
+        ring_buf_discard(ring, len);
     }
 }
 
@@ -1006,7 +1085,6 @@ void modbus_uart_ring_in_process(ring_buf_t * ring)
     else if (MODBUS_ROLE_LISTENER == modbus_bus->role)
     {
         _modbus_uart_ring_in_process_listener(ring);
-        _modbus_uart_ring_in_process_master(ring);
     }
 }
 
@@ -1180,6 +1258,7 @@ bool modbus_uart_ring_do_out_drain(ring_buf_t * ring)
     {
         rs485_transmitting = true;
         platform_set_rs485_mode(true);
+        ring_buf_discard(ring, len);
         rs485_start_transmitting = get_since_boot_ms();
         modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
         return false;
@@ -1217,8 +1296,8 @@ void modbus_init(void)
 
 static command_response_t _modbus_setup_cb(char *args, cmd_ctx_t * ctx)
 {
-    /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
-     * EXAMPLE: RTU 115200 8N1
+    /*<BIN/RTU> <MASTER/SLAVE/LISTENER> <SPEED> <BITS><PARITY><STOP>
+     * EXAMPLE: RTU MASTER 115200 8N1
      */
     return modbus_setup_from_str(args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }

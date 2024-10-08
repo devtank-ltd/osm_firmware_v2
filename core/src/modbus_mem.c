@@ -105,7 +105,7 @@ void modbus_print(cmd_ctx_t * ctx)
     if (!modbus_bus)
         return;
 
-    cmd_ctx_out(ctx,"Modbus @ %s %"PRIu32" %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", modbus_bus->baudrate, modbus_bus->databits, osm_uart_parity_as_char(modbus_bus->parity), osm_uart_stop_bits_as_str(modbus_bus->stopbits));
+    cmd_ctx_out(ctx,"Modbus %s @ %s %"PRIu32" %u%c%s", (modbus_bus->role)?"LISTENER":"MASTER", (modbus_bus->binary_protocol)?"BIN":"RTU", modbus_bus->baudrate, modbus_bus->databits, osm_uart_parity_as_char(modbus_bus->parity), osm_uart_stop_bits_as_str(modbus_bus->stopbits));
 
     modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
