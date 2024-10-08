@@ -1262,7 +1262,12 @@ bool modbus_uart_ring_do_out_drain(ring_buf_t * ring)
     {
         rs485_transmitting = true;
         platform_set_rs485_mode(true);
-        ring_buf_discard(ring, len);
+        ring_buf_t* in_ring = uart_rings_get(EXT_UART, true);
+        if (in_ring)
+        {
+            unsigned in_len = ring_buf_get_pending(in_ring);
+            ring_buf_discard(in_ring, in_len);
+        }
         rs485_start_transmitting = get_since_boot_ms();
         modbus_debug("Data to send, delay %"PRIu32"ms", modbus_start_delay());
         return false;

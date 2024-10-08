@@ -308,3 +308,13 @@ void uart_rings_out_wipe(unsigned uart)
         _uart_rings_wipe(&ring_out_bufs[uart]);
     }
 }
+
+
+ring_buf_t* uart_rings_get(unsigned uart, bool is_in)
+{
+    if (uart >= UART_CHANNELS_COUNT)
+    {
+        return NULL;
+    }
+    return is_in ? &ring_in_bufs[uart] : &ring_out_bufs[uart];
+}
