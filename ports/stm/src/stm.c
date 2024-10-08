@@ -440,3 +440,7 @@ bool platform_gpio_get(const port_n_pins_t * gpio_pin)
 {
     return gpio_get(gpio_pin->port, gpio_pin->pins) != 0;
 }
+
+void platform_modbus_configured(void)
+{
+}

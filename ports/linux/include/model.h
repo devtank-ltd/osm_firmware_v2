@@ -22,3 +22,4 @@ extern unsigned model_measurements_add_defaults(measurements_def_t * measurement
 extern void     model_linux_spawn_fakes(void);
 extern void     model_linux_close_fakes(void);
 extern void     model_main_loop_iterate(void);
+extern void     model_modbus_configured(void);

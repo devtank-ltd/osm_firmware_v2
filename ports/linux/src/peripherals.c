@@ -13,6 +13,8 @@
 #define FAKE_W1_SERVER      "peripherals/w1_server.py"
 #define FAKE_HPM_SERVER     "peripherals/hpm_virtual.py"
 #define FAKE_MODBUS_SERVER  "peripherals/modbus_server.py"
+#define MODBUS_MIDDLEMAN_SERVER     "peripherals/modbus_middleman.py"
+#define MODBUS_MASTER       "peripherals/modbus_master.py"
 #define FAKE_CMD_SERVER     "peripherals/command_server.py"
 #define FAKE_EXAMPLE_RS232_SERVER   "peripherals/example_rs232.py"
 
@@ -26,10 +28,22 @@
 #define FAKE_1W_SOCKET         "w1_socket"
 
 
-void peripherals_add_modbus(unsigned uart, unsigned* pid)
+void peripherals_add_modbus(unsigned* pid)
+{
+    *pid = linux_spawn(FAKE_MODBUS_SERVER);
+}
+
+
+void peripherals_add_modbus_middleman(unsigned uart, unsigned* pid)
 {
     peripherals_add_uart_tty_bridge(FAKE_MODBUS_TTY, uart);
-    *pid = linux_spawn(FAKE_MODBUS_SERVER);
+    *pid = linux_spawn(MODBUS_MIDDLEMAN_SERVER);
+}
+
+
+void peripherals_add_modbus_master(unsigned* pid)
+{
+    *pid = linux_spawn(MODBUS_MASTER);
 }
 
 

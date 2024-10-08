@@ -1888,3 +1888,8 @@ struct cmd_link_t* linux_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
+
+void platform_modbus_configured(void)
+{
+    model_modbus_configured();
+}

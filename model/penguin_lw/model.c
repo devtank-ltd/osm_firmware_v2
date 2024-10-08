@@ -255,13 +255,15 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
 }
 
 
-static unsigned _model_pids[6] = {0};
+static unsigned _model_pids[7] = {0};
+static unsigned _linux_modbus_master_pid = 0;
 
 
 void model_linux_spawn_fakes(void)
 {
     peripherals_add_cmd(&_model_pids[0]);
-    peripherals_add_modbus(EXT_UART , &_model_pids[1]);
+    peripherals_add_modbus_middleman(EXT_UART , &_model_pids[7]);
+    peripherals_add_modbus(&_model_pids[1]);
     peripherals_add_hpm(HPM_UART    , &_model_pids[2]);
     peripherals_add_w1(1000000      , &_model_pids[3]);
     peripherals_add_i2c(2000000     , &_model_pids[4]);
@@ -272,6 +274,44 @@ void model_linux_spawn_fakes(void)
 void model_linux_close_fakes(void)
 {
     peripherals_close(_model_pids, ARRAY_SIZE(_model_pids));
+}
+
+
+static void _linux_close_modbus_master(void)
+{
+    if (_linux_modbus_master_pid > 0)
+    {
+        peripherals_close(&_linux_modbus_master_pid, 1);
+        _linux_modbus_master_pid = 0;
+    }
+}
+
+
+static void _linux_open_modbus_master(void)
+{
+    if (_linux_modbus_master_pid == 0)
+    {
+        peripherals_add_modbus_master(&_linux_modbus_master_pid);
+    }
+}
+
+
+void model_modbus_configured(void)
+{
+    switch (modbus_bus->role)
+    {
+        case MODBUS_ROLE_MASTER:
+            _linux_close_modbus_master();
+            break;
+        case MODBUS_ROLE_LISTENER:
+            _linux_open_modbus_master();
+            break;
+        case MODBUS_ROLE_SLAVE:
+            /* fall through */
+        default:
+            linux_error("Unsupported role %d", modbus_bus->role);
+            break;
+    }
 }
 
 

@@ -219,6 +219,8 @@ bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
 
     _modbus_setup_delays(speed, databits, parity, stop);
 
+    platform_modbus_configured();
+
     return true;
 }
 
@@ -1300,6 +1302,7 @@ void modbus_init(void)
                          bus->databits,
                          bus->parity,
                          bus->stopbits);
+    platform_modbus_configured();
 }
 
 

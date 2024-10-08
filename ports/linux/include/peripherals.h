@@ -1,6 +1,8 @@
 #pragma once
 
-void peripherals_add_modbus(unsigned uart, unsigned* pid);
+void peripherals_add_modbus(unsigned* pid);
+void peripherals_add_modbus_middleman(unsigned uart, unsigned* pid);
+void peripherals_add_modbus_master(unsigned* pid);
 void peripherals_add_hpm(unsigned uart, unsigned* pid);
 void peripherals_add_cmd(unsigned* pid);
 void peripherals_add_example_rs232(unsigned uart, unsigned* pid);

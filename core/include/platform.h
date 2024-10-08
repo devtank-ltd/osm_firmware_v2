@@ -47,3 +47,4 @@ void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t
 void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on);
 bool platform_gpio_get(const port_n_pins_t * gpio_pin);
 
+void platform_modbus_configured(void);

@@ -113,7 +113,7 @@ def main(args):
         dev = args[1]
     else:
         osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
-        dev = os.path.join(osm_loc, "UART_EXT_slave")
+        dev = os.path.join(osm_loc, "MODBUS_SLAVE")
         if not os.path.exists(osm_loc):
             os.mkdir(osm_loc)
     modbus_server = modbus_server_t(dev)
