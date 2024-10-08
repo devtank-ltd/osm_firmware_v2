@@ -179,7 +179,7 @@ void model_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  W1_PROBE        );
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
     measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
+    measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           3,  1,  LIGHT           );
     measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  1,  SOUND           );
     measurements_repop_indiv(MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  EXAMPLE_RS232           );
     measurements_repop_indiv(MEASUREMENTS_TMP4718_LOCAL_NAME,   1,  1,  TMP4718         );

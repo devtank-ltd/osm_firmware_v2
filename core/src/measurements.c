@@ -795,6 +795,20 @@ bool measurements_set_interval(char* name, uint8_t interval)
     if (!model_measurements_get_inf(def, data, &inf))
         return false;
 
+    uint32_t uplink_time = (uint32_t)interval * transmit_interval * 60;
+    uint32_t sample_time = 0;
+    if (inf.collection_time_cb &&
+        inf.collection_time_cb(def->name, &sample_time) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        uint32_t cmp_time = sample_time * def->samplecount / 2;
+        if (uplink_time / 2 < cmp_time)
+        {
+            uint32_t recommended_interval = cmp_time * 2 / (transmit_interval * 60) + 1;
+            measurements_debug("Attempted to set interval to too low a value, try: %"PRIu32, recommended_interval);
+            return false;
+        }
+    }
+
     if (inf.enable_cb && ((interval > 0) != (def->interval > 0)))
         inf.enable_cb(name, interval > 0);
 
@@ -822,12 +836,32 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         log_error("Cannot set the samplecount to 0.");
         return false;
     }
-    measurements_def_t* measurements_def = NULL;
-    if (!measurements_get_measurements_def(name, &measurements_def, NULL))
+    measurements_def_t* def = NULL;
+    measurements_data_t* data;
+    if (!measurements_get_measurements_def(name, &def, &data))
     {
         return false;
     }
-    measurements_def->samplecount = samplecount;
+
+    measurements_inf_t inf;
+    if (!model_measurements_get_inf(def, data, &inf))
+        return false;
+
+    uint32_t uplink_time = def->interval * transmit_interval * 60;
+    uint32_t sample_time = 0;
+    if (inf.collection_time_cb &&
+        inf.collection_time_cb(def->name, &sample_time) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    {
+        uint32_t cmp_time = sample_time * samplecount / 2;
+        if (uplink_time / 2 < cmp_time)
+        {
+            uint32_t recommended_samplecount = def->interval / 2;
+            measurements_debug("Attempted to set samplecount to too high a value, try: %"PRIu32, recommended_samplecount);
+            return false;
+        }
+    }
+
+    def->samplecount = samplecount;
     return true;
 }
 
@@ -1508,7 +1542,7 @@ static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            cmd_ctx_error(ctx,"Failed to set interval");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1522,7 +1556,7 @@ static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            cmd_ctx_error(ctx,"Failed to get interval");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1550,7 +1584,7 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * 
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            cmd_ctx_error(ctx,"Failed to set samplecount");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1564,7 +1598,7 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * 
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            cmd_ctx_error(ctx,"Failed to get samplecount");
             return COMMAND_RESP_ERR;
         }
     }

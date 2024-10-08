@@ -55,8 +55,8 @@ enum at_wifi_states_t
     AT_WIFI_STATE_WAIT_MAC_ADDRESS,
     AT_WIFI_STATE_NO_CONF,
     AT_WIFI_STATE_RF_REGION,
-    AT_WIFI_STATE_WIFI_INIT,
     AT_WIFI_STATE_WIFI_SETTING_MODE,
+    AT_WIFI_STATE_WIFI_INIT,
     AT_WIFI_STATE_WIFI_CONNECTING,
     AT_WIFI_STATE_SNTP_WAIT_SET,
     AT_WIFI_STATE_MQTT_WAIT_USR_CONF,
@@ -189,8 +189,8 @@ static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
         "WAIT_MAC_ADDRESS"                              ,
         "NO_CONF"                                       ,
         "RF_REGION"                                     ,
-        "WIFI_INIT"                                     ,
         "WIFI_SETTING_MODE"                             ,
+        "WIFI_INIT"                                     ,
         "WIFI_CONNECTING"                               ,
         "SNTP_WAIT_SET"                                 ,
         "MQTT_WAIT_USR_CONF"                            ,
@@ -564,20 +564,6 @@ static void _at_wifi_process_state_rf_region(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
-        _at_wifi_printf("AT+CWINIT=1");
-        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
-    }
-    else if (at_base_is_error(msg, len))
-    {
-        _at_wifi_reset();
-    }
-}
-
-
-static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
-{
-    if (at_base_is_ok(msg, len))
-    {
         at_base_sleep();
         _at_wifi_printf("AT+CWMODE=1");
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_SETTING_MODE;
@@ -589,7 +575,21 @@ static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
 }
 
 
-static void at_wifi_process_state_wifi_setting_mode(char* msg, unsigned len)
+static void _at_wifi_process_state_wifi_setting_mode(char* msg, unsigned len)
+{
+    if (at_base_is_ok(msg, len))
+    {
+        _at_wifi_printf("AT+CWINIT=1");
+        _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
+    }
+    else if (at_base_is_error(msg, len))
+    {
+        _at_wifi_reset();
+    }
+}
+
+
+static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
@@ -1205,11 +1205,11 @@ void at_wifi_process(char* msg)
         case AT_WIFI_STATE_RF_REGION:
             _at_wifi_process_state_rf_region(msg, len);
             break;
+        case AT_WIFI_STATE_WIFI_SETTING_MODE:
+            _at_wifi_process_state_wifi_setting_mode(msg, len);
+            break;
         case AT_WIFI_STATE_WIFI_INIT:
             _at_wifi_process_state_wifi_init(msg, len);
-            break;
-        case AT_WIFI_STATE_WIFI_SETTING_MODE:
-            at_wifi_process_state_wifi_setting_mode(msg, len);
             break;
         case AT_WIFI_STATE_WIFI_CONNECTING:
             _at_wifi_process_state_wifi_conn(msg, len);
