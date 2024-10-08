@@ -14,7 +14,7 @@ class rs232_dev_t(basetypes.pty_dev_t):
 def main(args):
     import argparse
     osm_loc = os.getenv("OSM_LOC", "/tmp/osm/")
-    DEFAULT_VIRTUAL_RS232_PATH = os.path.join(osm_loc, "UART_RS232_slave")
+    DEFAULT_VIRTUAL_RS232_PATH = os.path.join(osm_loc, "UART_EXAMPLE_RS232_slave")
     if not os.path.exists(osm_loc):
         os.mkdir(osm_loc)
 
