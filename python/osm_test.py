@@ -351,6 +351,13 @@ class test_framework_t(object):
         self._vosm_conn.CC2.interval = 0
         self._vosm_conn.CC3.interval = 0
 
+        master_pf = self._vosm_conn.PF.value
+        self._logger.info(f"PF value when OSM in Modbus master role = {master_pf}")
+
+        self._vosm_conn.setup_modbus(is_bin=False, role="Listener")
+        self._threshold_check("PF", "PF value when OSM in Modbus listener role", self._vosm_conn.PF.value, master_pf, 0)
+        self._vosm_conn.setup_modbus(is_bin=False, role="Master")
+
         self._logger.info("Running measurement loop...")
         self._vosm_conn.interval_mins = self.INTERVAL_MINS
         for sample in self.DEFAULT_COMMS_MATCH_DICT.keys():
