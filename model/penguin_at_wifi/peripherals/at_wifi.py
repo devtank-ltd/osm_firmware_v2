@@ -121,6 +121,8 @@ class at_wifi_basic_at_commands_t(base_at_commands_t):
 
 class at_wifi_at_commands_t(base_at_commands_t):
 
+    MAC = "00:BA:DC:0F:FE:E0"
+
     class ECN(enum.Enum):
         OPEN            = 0
         WEP             = 1
@@ -164,6 +166,7 @@ class at_wifi_at_commands_t(base_at_commands_t):
                                         base_at_commands_t.SET:         self.set_country},
             b"AT+SYSTIMESTAMP"      : { base_at_commands_t.QUERY:       self.systime },     # Get current time
             b"AT+CWLAP"             : { base_at_commands_t.EXECUTE:     self.list_ap },     # List wifi stations
+            b"AT+CIPSTAMAC"         : { base_at_commands_t.QUERY:       self.get_station_mac }, # Get station mac
         }
         super().__init__(device, command_controller, commands)
 
@@ -353,6 +356,10 @@ class at_wifi_at_commands_t(base_at_commands_t):
         for ap in ap_stations:
             self.reply(f"+CWLAP:({ap['encryption']},\"{ap['ssid']}\",{ap['rssi']},\"{ap['mac']}\",{ap['channel']},{ap['freq_offset']},{ap['freqcal_val']},{ap['pairwise_cipher']},{ap['group_cipher']},{ap['bgn']},{ap['wps']})".encode())
             time.sleep(0.1)
+        self.reply_ok()
+
+    def get_station_mac(self, args):
+        self.reply(f"+CIPSTAMAC:\"{self.MAC}".encode())
         self.reply_ok()
 
 
