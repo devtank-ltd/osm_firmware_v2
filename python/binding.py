@@ -666,7 +666,8 @@ class dev_t(dev_base_t):
         if lines:
             for line in lines:
                 if line.startswith("Modbus"):
-                    bus_config = line.split()[2:]
+                    mb_line_conf = line.split()
+                    bus_config = mb_line_conf[1:2] + mb_line_conf[3:]
                 elif line.startswith("- Device"):
                     unit_id, name, byteorder, wordorder = line.split()[3:]
                     dev = {"unit_id": int(unit_id[2:], 16),
@@ -722,9 +723,10 @@ class dev_t(dev_base_t):
         self._children[reg.name] = reg
         return "Added modbus reg" in r
 
-    def setup_modbus(self, is_bin=False, baudrate=9600, bits=8, parity='N', stopbits=1):
+    def setup_modbus(self, is_bin=False, role="Master", baudrate=9600, bits=8, parity='N', stopbits=1):
         is_bin = "BIN" if is_bin else "RTU"
-        self.do_cmd(f"mb_setup {is_bin} {baudrate} {bits}{parity}{stopbits}")
+        role = role.upper()
+        self.do_cmd(f"mb_setup {is_bin} {role} {baudrate} {bits}{parity}{stopbits}")
 
     def setup_modbus_dev(self, slave_id: int, device: str, is_msb: bool, is_msw: bool, regs: list) -> bool:
         if not self.modbus_dev_add(slave_id, device, is_msb, is_msw):
