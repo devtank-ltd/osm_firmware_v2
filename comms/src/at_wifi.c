@@ -52,6 +52,8 @@ enum at_wifi_states_t
     AT_WIFI_STATE_IS_CONNECTED,
     AT_WIFI_STATE_RESTORE,
     AT_WIFI_STATE_DISABLE_ECHO,
+    AT_WIFI_STATE_WAIT_MAC_ADDRESS,
+    AT_WIFI_STATE_NO_CONF,
     AT_WIFI_STATE_RF_REGION,
     AT_WIFI_STATE_WIFI_INIT,
     AT_WIFI_STATE_WIFI_SETTING_MODE,
@@ -184,6 +186,8 @@ static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
         "IS_CONNECTED"                                  ,
         "RESTORE"                                       ,
         "DISABLE_ECHO"                                  ,
+        "WAIT_MAC_ADDRESS"                              ,
+        "NO_CONF"                                       ,
         "RF_REGION"                                     ,
         "WIFI_INIT"                                     ,
         "WIFI_SETTING_MODE"                             ,
@@ -248,31 +252,25 @@ static unsigned _at_wifi_printf(const char* fmt, ...)
 
 static void _at_wifi_start(void)
 {
-    if (!_at_wifi_mem_is_valid())
+    if (AT_WIFI_STATE_RESTORE == _at_wifi_ctx.state)
     {
-        comms_debug("Invalid memory");
+        comms_debug("Already resetting, nop");
     }
     else
     {
-        /* Mem is valid */
-        if (AT_WIFI_STATE_RESTORE == _at_wifi_ctx.state)
-        {
-            comms_debug("Already resetting, nop");
-        }
-        else
-        {
-            _at_wifi_printf("AT+CWSTATE?");
-            _at_wifi_ctx.state = AT_WIFI_STATE_IS_CONNECTED;
-        }
+        _at_wifi_printf("AT+CWSTATE?");
+        _at_wifi_ctx.state = AT_WIFI_STATE_IS_CONNECTED;
     }
 }
 
-static void _at_wifi_is_mqtt_connected(void) {
+static void _at_wifi_is_mqtt_connected(void)
+{
     _at_wifi_printf("AT+MQTTCONN?");
     _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_IS_CONNECTED;
 }
 
-static void _at_wifi_is_mqtt_subscribed(void) {
+static void _at_wifi_is_mqtt_subscribed(void)
+{
     _at_wifi_printf("AT+MQTTSUB?");
     _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_IS_SUBSCRIBED;
 }
@@ -280,18 +278,11 @@ static void _at_wifi_is_mqtt_subscribed(void) {
 
 static void _at_wifi_reset(void)
 {
-    if (!_at_wifi_mem_is_valid())
-    {
-        comms_debug("Invalid memory");
-    }
-    else
-    {
-        comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
-        comms_debug("AT wifi reset");
-        _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
-        _at_wifi_printf("AT+RESTORE");
-        _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
-    }
+    comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+    comms_debug("AT wifi reset");
+    _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
+    _at_wifi_printf("AT+RESTORE");
+    _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
 }
 
 
@@ -415,7 +406,7 @@ void at_wifi_reset(void)
 static void _at_wifi_process_state_off(char* msg, unsigned len)
 {
     const char ready_msg[] = "ready";
-    if (_at_wifi_mem_is_valid() && is_str(ready_msg, msg, len))
+    if (is_str(ready_msg, msg, len))
     {
         _at_wifi_start();
     }
@@ -466,14 +457,7 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
                     break;
                 default:
                     comms_debug("Unknown CWSTATE:%"PRIu8, state);
-                    if (!_at_wifi_mem_is_valid())
-                    {
-                        comms_debug("Invalid memory");
-                    }
-                    else
-                    {
-                        _at_wifi_reset();
-                    }
+                    _at_wifi_reset();
                     break;
             }
         }
@@ -527,17 +511,51 @@ static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
 {
     if (at_base_is_ok(msg, len))
     {
-        _at_wifi_printf(
-            "AT+CWCOUNTRY=0,\"%.*s\",%"PRIu16",%"PRIu16,
-            AT_WIFI_MAX_COUNTRY_CODE_LEN, _at_wifi_ctx.mem->country_code,
-            _at_wifi_ctx.mem->channel_start,
-            _at_wifi_ctx.mem->channel_count
-            );
-        _at_wifi_ctx.state = AT_WIFI_STATE_RF_REGION;
+        _at_wifi_printf("AT+CIPSTAMAC?");
+        _at_wifi_ctx.state = AT_WIFI_STATE_WAIT_MAC_ADDRESS;
     }
     else if (at_base_is_error(msg, len))
     {
         _at_wifi_reset();
+    }
+}
+
+
+static void _at_wifi_send_rf_region(void)
+{
+    _at_wifi_printf(
+        "AT+CWCOUNTRY=0,\"%.*s\",%"PRIu16",%"PRIu16,
+        AT_WIFI_MAX_COUNTRY_CODE_LEN, _at_wifi_ctx.mem->country_code,
+        _at_wifi_ctx.mem->channel_start,
+        _at_wifi_ctx.mem->channel_count
+        );
+    _at_wifi_ctx.state = AT_WIFI_STATE_RF_REGION;
+}
+
+
+static void _at_wifi_process_state_wait_mac_address(char* msg, unsigned len)
+{
+    const char mac_msg[] = "+CIPSTAMAC:\"";
+    unsigned mac_msg_len = strlen(mac_msg);
+    if (is_str(mac_msg, msg, mac_msg_len))
+    {
+        unsigned len_rem = len - mac_msg_len;
+        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
+        len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
+        char* dest = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
+        memcpy(dest, msg + mac_msg_len, len_rem);
+        dest[maxstrlen] = 0;
+    }
+    else if (at_base_is_ok(msg, len))
+    {
+        if (_at_wifi_mem_is_valid())
+        {
+            _at_wifi_send_rf_region();
+        }
+        else
+        {
+            _at_wifi_ctx.state = AT_WIFI_STATE_NO_CONF;
+        }
     }
 }
 
@@ -1178,6 +1196,12 @@ void at_wifi_process(char* msg)
         case AT_WIFI_STATE_DISABLE_ECHO:
             _at_wifi_process_state_disable_echo(msg, len);
             break;
+        case AT_WIFI_STATE_WAIT_MAC_ADDRESS:
+            _at_wifi_process_state_wait_mac_address(msg, len);
+            break;
+        case AT_WIFI_STATE_NO_CONF:
+            /* Shouldn't really be anything of importance here */
+            break;
         case AT_WIFI_STATE_RF_REGION:
             _at_wifi_process_state_rf_region(msg, len);
             break;
@@ -1320,12 +1344,15 @@ void at_wifi_loop_iteration(void)
         case AT_WIFI_STATE_OFF:
         {
             uint32_t delta = since_boot_delta(now, _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since);
-            if (_at_wifi_mem_is_valid() && delta > AT_WIFI_STILL_OFF_TIMEOUT)
+            if (delta > AT_WIFI_STILL_OFF_TIMEOUT)
             {
                 _at_wifi_hw_reset();
             }
             break;
         }
+        case AT_WIFI_STATE_NO_CONF:
+            /* Do nothing */
+            break;
         case AT_WIFI_STATE_WIFI_INIT:
             /* fall through */
         case AT_WIFI_STATE_WIFI_SETTING_MODE:
@@ -1458,16 +1485,29 @@ command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
     at_wifi_config_t before_config;
     memcpy(&before_config, _at_wifi_ctx.mem, sizeof(at_wifi_config_t));
     command_response_t ret = at_base_config_setup_str(_at_wifi_config_cmds, skip_space(args), ctx);
-    if (_at_wifi_mem_is_valid() && at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
+    if (_at_wifi_mem_is_valid())
     {
-        _at_wifi_reset();
+        if (AT_WIFI_STATE_NO_CONF == _at_wifi_ctx.state)
+        {
+            _at_wifi_send_rf_region();
+        }
+        else if (at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
+        {
+            _at_wifi_reset();
+        }
     }
     return ret;
 }
 
+static bool _at_wifi_get_mac_address(char* buf, unsigned buflen);
 
 command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
+    char mac_address[AT_BASE_MAC_ADDRESS_LEN];
+    if (!_at_wifi_get_mac_address(mac_address, AT_BASE_MAC_ADDRESS_LEN))
+    {
+        strncpy(mac_address, "UNKNOWN", AT_BASE_MAC_ADDRESS_LEN-1);
+    }
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_at_wifi_ctx.mem->wifi.ssid));
@@ -1481,6 +1521,8 @@ command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT(_at_wifi_ctx.mem->channel_count));
     cmd_ctx_flush(ctx);
     at_mqtt_cmd_j_cfg(ctx);
+    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(mac_address));
+    cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
     cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;
@@ -1786,5 +1828,25 @@ bool at_wifi_get_unix_time(int64_t * ts)
     *ts = (int64_t)time->ts_unix;
     time->sys = 0;
     time->ts_unix = 0;
+    return true;
+}
+
+
+static bool _at_wifi_get_mac_address(char* buf, unsigned buflen)
+{
+    char* src = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
+    const unsigned mac_len = AT_BASE_MAC_ADDRESS_LEN-1;
+    if (strnlen(src, mac_len) != mac_len ||
+        !str_is_valid_ascii(src, mac_len, true))
+    {
+        comms_debug("Don't have MAC address");
+        return false;
+    }
+    if (buflen > AT_BASE_MAC_ADDRESS_LEN)
+    {
+        buflen = AT_BASE_MAC_ADDRESS_LEN;
+    }
+    memcpy(buf, src, buflen-1);
+    buf[buflen-1] = 0;
     return true;
 }
