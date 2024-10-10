@@ -23,7 +23,7 @@ typedef struct
     uint8_t mem_version;
     uint8_t comms_type; /* comms_type_t */
     uint16_t crc;
-} comms_identify_mem_t;
+} __attribute__((__packed__)) comms_identify_mem_t;
 
 
 comms_type_t comms_identify(void)
@@ -35,7 +35,6 @@ comms_type_t comms_identify(void)
         log_error("COMMS EEPROM: Failed to read");
         return COMMS_TYPE_UNKNOWN;
     }
-    log_sys_debug("Read = 0x%08"PRIX32, *(uint32_t*)&mem);
     if (COMMS_IDENTIFY_MEM_VERSION != mem.mem_version)
     {
         log_error("COMMS EEPROM: Unknown version (%"PRIu8" != %"PRIu8")", mem.mem_version, COMMS_IDENTIFY_MEM_VERSION);
@@ -47,7 +46,7 @@ comms_type_t comms_identify(void)
         log_error("COMMS EEPROM: Bad CRC (0x%04"PRIX16" != 0x%04"PRIX16")", mem.crc, crc);
         return COMMS_TYPE_UNKNOWN;
     }
-    if (!mem.comms_type || COMMS_TYPE_COUNT >= mem.comms_type)
+    if (!mem.comms_type || COMMS_TYPE_COUNT <= mem.comms_type)
     {
         log_error("COMMS EEPROM: Unknown type (%"PRIu8")", mem.comms_type);
         return COMMS_TYPE_UNKNOWN;
