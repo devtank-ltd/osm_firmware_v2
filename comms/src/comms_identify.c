@@ -66,6 +66,13 @@ static bool _comms_identify_write(void)
 }
 
 
+static bool _comms_identify_wipe(void)
+{
+    uint8_t mem[sizeof(comms_identify_mem_t)] = {0xFF};
+    return comms_eeprom_write(mem, sizeof(comms_identify_mem_t));
+}
+
+
 bool comms_set_identity(void)
 {
     _comms_identify_type = COMMS_IDENTITY_DEFAULT;
@@ -137,6 +144,18 @@ static command_response_t _comms_ident_write_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
+static command_response_t _comms_ident_wipe_cb(char* args, cmd_ctx_t * ctx)
+{
+    if (!_comms_identify_wipe())
+    {
+        cmd_ctx_error(ctx,"Failed to wipe EEPROM");
+        return COMMAND_RESP_ERR;
+    }
+    cmd_ctx_out(ctx,"Wiped EEPROM");
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* comms_identify_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -144,6 +163,7 @@ struct cmd_link_t* comms_identify_add_commands(struct cmd_link_t* tail)
         { "comms_ident_set"     , "Set COMMS type"      , _comms_ident_set_cb   , true  , NULL },
         { "comms_ident"         , "Intentify COMMS"     , _comms_ident_cb       , false , NULL },
         { "comms_ident_write"   , "Set COMMS EEPROM"    , _comms_ident_write_cb , true  , NULL },
+        { "comms_ident_wipe"    , "Wipe COMMS EEPROM"   , _comms_ident_wipe_cb  , true  , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
