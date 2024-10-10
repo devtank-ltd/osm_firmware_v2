@@ -134,7 +134,7 @@ struct cmd_link_t* comms_identify_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
-        { "comms_ident_set"     , "Set COMMS type"      , _comms_ident_set_cb   , false , NULL },
+        { "comms_ident_set"     , "Set COMMS type"      , _comms_ident_set_cb   , true  , NULL },
         { "comms_ident"         , "Intentify COMMS"     , _comms_ident_cb       , false , NULL },
         { "comms_ident_write"   , "Set COMMS EEPROM"    , _comms_ident_write_cb , true  , NULL },
     };
