@@ -66,6 +66,13 @@ static bool _comms_identify_write(void)
 }
 
 
+bool comms_set_identity(void)
+{
+    _comms_identify_type = COMMS_IDENTITY_DEFAULT;
+    return _comms_identify_write();
+}
+
+
 static command_response_t _comms_ident_set_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p = skip_space(args);

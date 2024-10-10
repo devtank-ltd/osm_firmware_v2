@@ -19,6 +19,7 @@
 #include "platform_model.h"
 #include "comms.h"
 #include "sleep.h"
+#include "comms_identify.h"
 
 #include "adcs.h"
 
@@ -173,6 +174,12 @@ void platform_init(void)
 
     _stm_setup_systick();
     _stm_setup_rs485();
+
+    comms_type_t type = comms_identify();
+    if (type == COMMS_TYPE_UNKNOWN && comms_set_identity())
+    {
+        log_sys_debug("Failed write COMMS identity");
+    }
 }
 
 

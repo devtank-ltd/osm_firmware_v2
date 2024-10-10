@@ -6,6 +6,7 @@
 
 
 comms_type_t comms_identify(void);
+bool comms_set_identity(void);
 
 /* To be implemented by caller.*/
 bool comms_eeprom_read(void* mem, unsigned len) __attribute__((weak));

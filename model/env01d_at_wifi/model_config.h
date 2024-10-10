@@ -88,6 +88,8 @@
 
 #define JSON_BUF_SIZE  256
 
+#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_WIFI
+
 
 typedef struct
 {

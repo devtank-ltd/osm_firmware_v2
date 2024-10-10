@@ -86,6 +86,8 @@
 #define ADC_CC_COUNT        3
 #define CC_DEFAULT_TYPE     CC_TYPE_A
 
+#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_LW
+
 
 typedef struct
 {

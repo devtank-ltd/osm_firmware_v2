@@ -27,6 +27,8 @@ env01d_at_wifi_SOURCES := \
            $(OSM_DIR)/comms/src/at_mqtt.c \
            $(OSM_DIR)/comms/src/at_wifi.c \
            $(OSM_DIR)/comms/src/common.c \
+           $(OSM_DIR)/comms/src/e_24lc00t.c \
+           $(OSM_DIR)/comms/src/comms_identify.c \
            $(OSM_DIR)/sensors/src/sen5x.c \
            $(OSM_DIR)/sensors/src/sensirion_i2c_hal.c \
            $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
