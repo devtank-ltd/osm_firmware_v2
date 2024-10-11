@@ -7,6 +7,7 @@
 #include "pinmap.h"
 #include "cc.h"
 #include "at_wifi.h"
+#include "e_24lc00t.h"
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
