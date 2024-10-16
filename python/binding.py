@@ -451,17 +451,29 @@ class dev_t(dev_base_t):
         self._log_obj.emit(msg)
 
     def _get_comms(self):
-        comms_type = self.do_cmd("j_comms_cfg")
-        try:
-            loaded = json.loads(comms_type)
-        except Exception as e:
-            self._log("Could not get comms config.")
-            return None
+        loaded = self.get_comms_config()
         if "LW" in loaded["type"]:
             comms = lw_comms_t (self)
         elif "AT WIFI" in loaded["type"]:
             comms = wifi_comms_t(self)
         return comms
+
+    def get_comms_config(self):
+        comms_type = self.do_cmd("j_comms_cfg")
+        loaded = None
+        try:
+            loaded = json.loads(comms_type)
+        except Exception as e:
+            self._log("Could not get comms config.")
+        return loaded
+
+    @property
+    def mac_address(self):
+        mac = None
+        comms_cfg = self.get_comms_config()
+        if "config" in comms_cfg and "HWID" in comms_cfg["config"]:
+            mac = comms_cfg["config"]["HWID"]
+        return mac
 
     @property
     def name(self):
