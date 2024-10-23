@@ -7,6 +7,7 @@
 #include "pinmap.h"
 #include "cc.h"
 #include "rak3172.h"
+#include "e_24lc00t.h"
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
@@ -85,6 +86,8 @@
 
 #define ADC_CC_COUNT        3
 #define CC_DEFAULT_TYPE     CC_TYPE_A
+
+#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_LW
 
 
 typedef struct

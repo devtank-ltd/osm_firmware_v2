@@ -7,6 +7,7 @@
 #include "pinmap.h"
 #include "cc.h"
 #include "at_poe.h"
+#include "e_24lc00t.h"
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048
@@ -87,6 +88,8 @@
 #define CC_DEFAULT_TYPE     CC_TYPE_A
 
 #define JSON_BUF_SIZE  256
+
+#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_POE
 
 
 typedef struct

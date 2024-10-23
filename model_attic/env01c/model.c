@@ -317,3 +317,9 @@ void model_main_loop_iterate(void)
 {
     comms_direct_loop_iterate();
 }
+
+
+comms_type_t comms_identify(void)
+{
+    return COMMS_TYPE_LW;
+}

@@ -252,9 +252,11 @@ typedef enum
 
 typedef enum
 {
+    COMMS_TYPE_UNKNOWN = 0,
     COMMS_TYPE_LW = 1,
     COMMS_TYPE_WIFI = 2,
     COMMS_TYPE_POE = 3,
+    COMMS_TYPE_COUNT,
 } comms_type_t;
 
 

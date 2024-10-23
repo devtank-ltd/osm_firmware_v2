@@ -31,6 +31,7 @@
 #include "model_config.h"
 #include "example_rs232.h"
 #include "tmp4718.h"
+#include "comms_identify.h"
 
 
 uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
@@ -200,6 +201,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = update_add_commands(tail);
     tail = comms_add_commands(tail);
     tail = sen5x_add_commands(tail);
+    tail = comms_identify_add_commands(tail);
 }
 
 

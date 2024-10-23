@@ -125,3 +125,9 @@ void     pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_
 
 struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail)
 { return tail; }
+
+
+comms_type_t comms_identify(void)
+{
+    return COMMS_TYPE_LW;
+}
