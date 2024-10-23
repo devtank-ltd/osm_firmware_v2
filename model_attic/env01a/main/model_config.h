@@ -32,6 +32,7 @@
 #define MODBUS_DATABITS     8
 #define MODBUS_STOP         uart_stop_bits_1
 
+#define ADC_MAX_MV          3300
 
 
 typedef struct
