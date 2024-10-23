@@ -1510,9 +1510,17 @@ command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     }
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
     cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_at_wifi_ctx.mem->wifi.ssid));
+    const unsigned bufsiz = AT_WIFI_MAX_SSID_LEN * 2;
+    char buf[bufsiz];
+#define __AT_WIFI_SANITISE(_src, _len)                                  \
+    strncpy(buf, _src, _len);                                           \
+    comms_common_json_escape(buf, bufsiz, '\\', '"')
+
+    __AT_WIFI_SANITISE(_at_wifi_ctx.mem->wifi.ssid, AT_WIFI_MAX_SSID_LEN);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(buf));
     cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_at_wifi_ctx.mem->wifi.pwd));
+    __AT_WIFI_SANITISE(_at_wifi_ctx.mem->wifi.pwd, AT_WIFI_MAX_PWD_LEN);
+    cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(buf));
     cmd_ctx_flush(ctx);
     cmd_ctx_out(ctx,AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_at_wifi_ctx.mem->country_code));
     cmd_ctx_flush(ctx);
