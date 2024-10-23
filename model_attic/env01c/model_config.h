@@ -73,6 +73,7 @@
 
 #define IOS_COUNT           7
 
+#define ADC_MAX_MV          3300
 #define ADC_CC_COUNT        3
 #define CC_DEFAULT_TYPE     CC_TYPE_A
 

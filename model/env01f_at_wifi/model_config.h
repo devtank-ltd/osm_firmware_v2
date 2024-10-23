@@ -84,9 +84,9 @@
 
 #define IOS_COUNT           3
 
-#define ADC_MAX_MV          3300
+#define ADC_MAX_MV          3000 /* Set with stable voltage source */
 #define ADC_CC_COUNT        3
-#define CC_DEFAULT_TYPE     CC_TYPE_A
+#define CC_DEFAULT_TYPE     CC_TYPE_V
 
 #define JSON_BUF_SIZE  256
 

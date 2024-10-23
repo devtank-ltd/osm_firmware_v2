@@ -70,6 +70,7 @@
 #define MODBUS_DATABITS     UART_4_DATABITS
 #define MODBUS_STOP         UART_4_STOP
 
+#define ADC_MAX_MV          3300
 #define IOS_COUNT           3
 #define ADC_CC_COUNT        3
 #define ADC_FTMA_COUNT      4

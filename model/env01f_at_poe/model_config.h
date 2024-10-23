@@ -6,7 +6,7 @@
 #include "config.h"
 #include "pinmap.h"
 #include "cc.h"
-#include "at_wifi.h"
+#include "at_poe.h"
 #include "e_24lc00t.h"
 
 #define FLASH_ADDRESS               0x8000000
@@ -84,13 +84,13 @@
 
 #define IOS_COUNT           3
 
-#define ADC_MAX_MV          3300
+#define ADC_MAX_MV          3000
 #define ADC_CC_COUNT        3
-#define CC_DEFAULT_TYPE     CC_TYPE_A
+#define CC_DEFAULT_TYPE     CC_TYPE_V
 
 #define JSON_BUF_SIZE  256
 
-#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_WIFI
+#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_POE
 
 
 typedef struct
