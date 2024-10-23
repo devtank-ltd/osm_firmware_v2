@@ -27,7 +27,6 @@
 
 
 #define ADC_MAX_VAL       4095
-#define ADC_MAX_MV        3300
 #define ADCS_NUM_SAMPLES  1500
 #define CC_DEFAULT_MIDPOINT                 (1000 * (ADC_MAX_VAL + 1) / 2 - 1)
 #define CC_DEFAULT_EXT_MAX_MA               (100 * 1000)
