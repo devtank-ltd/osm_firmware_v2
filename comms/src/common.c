@@ -34,7 +34,7 @@ char* comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_cha
     for (unsigned i = 0; i < len; i++)
     {
         char c = buf[i];
-        if (escaped_char == c)
+        if (escaped_char == c || escape_char == c)
         {
             *p++ = escape_char;
             if (comms_common_buf + COMMS_COMMON_BUF_SIZ <= p)
