@@ -525,7 +525,7 @@ static void _at_wifi_send_rf_region(void)
 {
     _at_wifi_printf(
         "AT+CWCOUNTRY=0,\"%s\",%"PRIu16",%"PRIu16,
-        AT_BASE_SANIT_STR(_at_wifi_ctx.mem->country_code, sizeof(_at_wifi_ctx.mem->country_code)),
+        AT_BASE_SANIT_STR(_at_wifi_ctx.mem->country_code),
         _at_wifi_ctx.mem->channel_start,
         _at_wifi_ctx.mem->channel_count
         );
@@ -595,12 +595,12 @@ static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
     {
         at_base_sleep();
         char ssid[2*AT_WIFI_MAX_SSID_LEN+1];
-        char* san_ssid = AT_BASE_SANIT_STR(_at_wifi_ctx.mem->wifi.ssid, sizeof(_at_wifi_ctx.mem->wifi.ssid));
+        char* san_ssid = AT_BASE_SANIT_STR(_at_wifi_ctx.mem->wifi.ssid);
         strncpy(ssid, san_ssid, 2*AT_WIFI_MAX_SSID_LEN+1);
         _at_wifi_printf(
             "AT+CWJAP=\"%s\",\"%s\"",
             ssid,
-            AT_BASE_SANIT_STR(_at_wifi_ctx.mem->wifi.pwd, sizeof(_at_wifi_ctx.mem->wifi.pwd))
+            AT_BASE_SANIT_STR(_at_wifi_ctx.mem->wifi.pwd)
             );
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_CONNECTING;
     }

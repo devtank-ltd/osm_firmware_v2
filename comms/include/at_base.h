@@ -15,8 +15,8 @@
 #define AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\""
 #define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , AT_BASE_MAC_ADDRESS_LEN       , _mac
 
-#define AT_BASE_SANIT_STR(_s, _l)                                       \
-    comms_common_json_escape(_s, _l, '\\', "\",", 2)
+#define AT_BASE_SANIT_STR(_s)                                           \
+    comms_common_json_escape(_s, sizeof(_s), '\\', "\",", 2)
 
 
 typedef struct

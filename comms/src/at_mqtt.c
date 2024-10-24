@@ -74,7 +74,7 @@ at_base_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned m
             AT_BASE_MAX_CMD_LEN,
             "AT+MQTTPUBRAW=%u,\"%s\",%u,%u,%u",
             AT_MQTT_LINK_ID,
-            AT_BASE_SANIT_STR(full_topic, sizeof(full_topic)),
+            AT_BASE_SANIT_STR(full_topic),
             message_len,
             AT_MQTT_QOS,
             AT_MQTT_RETAIN
@@ -147,10 +147,10 @@ at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
         }
 
         char user[2*AT_MQTT_USER_MAX_LEN+1];
-        char* san_user = AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->user, sizeof(_at_mqtt_ctx->mem->user));
+        char* san_user = AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->user);
         strncpy(user, san_user, 2*AT_MQTT_USER_MAX_LEN+1);
         char pwd[2*AT_MQTT_PWD_MAX_LEN+1];
-        char* san_pwd = AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->pwd, sizeof(_at_mqtt_ctx->mem->pwd));
+        char* san_pwd = AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->pwd);
         strncpy(pwd, san_pwd, 2*AT_MQTT_PWD_MAX_LEN+1);
         ret->len = snprintf(
             ret->str,
@@ -163,7 +163,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
             pwd,
             AT_MQTT_CERT_KEY_ID,
             AT_MQTT_CA_ID,
-            AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->path, sizeof(_at_mqtt_ctx->mem->path))
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->path)
             );
         ret->str[ret->len] = 0;
     }
@@ -182,7 +182,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
             AT_BASE_MAX_CMD_LEN,
             "AT+MQTTSUB=%u,\"%s/"AT_MQTT_TOPIC_COMMAND"\",%u",
             AT_MQTT_LINK_ID,
-            AT_BASE_SANIT_STR(_at_mqtt_ctx->topic_header, sizeof(_at_mqtt_ctx->topic_header)),
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->topic_header),
             AT_MQTT_QOS
             );
         ret->str[ret->len] = 0;
@@ -204,7 +204,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
             AT_MQTT_LINK_ID,
             AT_MQTT_KEEP_ALIVE,
             AT_MQTT_CLEAN_SESSION,
-            AT_BASE_SANIT_STR(_at_mqtt_ctx->topic_header, sizeof(_at_mqtt_ctx->topic_header)),
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->topic_header),
             AT_MQTT_TOPIC_CONNECTION,
             AT_MQTT_LWT_MSG,
             AT_MQTT_LWT_QOS,
@@ -265,7 +265,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn(void)
             AT_BASE_MAX_CMD_LEN,
             "AT+MQTTCONN=%u,\"%s\",%"PRIu16",%u",
             AT_MQTT_LINK_ID,
-            AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->addr, sizeof(_at_mqtt_ctx->mem->addr)),
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->addr),
             _at_mqtt_ctx->mem->port,
             AT_MQTT_RECONNECT
             );
