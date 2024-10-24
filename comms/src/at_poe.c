@@ -839,9 +839,7 @@ command_response_t at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
     cmd_ctx_flush(ctx);
     at_mqtt_cmd_j_cfg(ctx);
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(mac_address));
-    cmd_ctx_flush(ctx);
+    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address   , AT_BASE_MAC_ADDRESS_LEN   );
     cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
     cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;

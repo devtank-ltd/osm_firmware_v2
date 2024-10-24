@@ -515,18 +515,12 @@ bool at_mqtt_get_id(char* str, uint8_t len)
 
 void at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR(_at_mqtt_ctx->mem->addr));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_USER(_at_mqtt_ctx->mem->user));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PWD(_at_mqtt_ctx->mem->pwd));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME(_at_mqtt_ctx->mem->scheme));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PATH(_at_mqtt_ctx->mem->path));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PORT(_at_mqtt_ctx->mem->port));
-    cmd_ctx_flush(ctx);
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR      , _at_mqtt_ctx->mem->addr   , AT_MQTT_ADDR_MAX_LEN  );
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_USER      , _at_mqtt_ctx->mem->user   , AT_MQTT_USER_MAX_LEN  );
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_PWD       , _at_mqtt_ctx->mem->pwd    , AT_MQTT_PWD_MAX_LEN   );
+    COMMS_COMMON_JSON_OUT_INT(AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME    , _at_mqtt_ctx->mem->scheme                         );
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_PATH      , _at_mqtt_ctx->mem->path   , AT_MQTT_PATH_MAX_LEN  );
+    COMMS_COMMON_JSON_OUT_INT(AT_MQTT_PRINT_CFG_JSON_MQTT_PORT      , _at_mqtt_ctx->mem->port                           );
 }
 
 

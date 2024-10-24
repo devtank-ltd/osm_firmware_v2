@@ -24,5 +24,14 @@
 #define comms_cmd_j_cfg_cb                              CONCAT(comms_name,_cmd_j_cfg_cb        )
 #define comms_cmd_conn_cb                               CONCAT(comms_name,_cmd_conn_cb         )
 
+#define COMMS_COMMON_JSON_OUT_STR(_m, _s, _l)                           \
+    cmd_ctx_out(ctx,_m(comms_common_json_escape(_s, _l, '\\', '"')));   \
+    cmd_ctx_flush(ctx)
+
+#define COMMS_COMMON_JSON_OUT_INT(_m, _i)                               \
+    cmd_ctx_out(ctx,_m(_i));                                            \
+    cmd_ctx_flush(ctx)
+
+
 struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail);
-void comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char escaped_char);
+char* comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char escaped_char);

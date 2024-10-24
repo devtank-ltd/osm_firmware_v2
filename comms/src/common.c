@@ -8,6 +8,12 @@
 #include "model_config.h"
 
 
+#define COMMS_COMMON_BUF_SIZ                    128
+
+
+static char comms_common_buf[COMMS_COMMON_BUF_SIZ];
+
+
 struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -21,23 +27,27 @@ struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
 }
 
 
-void comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char escaped_char)
+char* comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char escaped_char)
 {
-    unsigned len = strnlen(buf, bufsiz - 1);
-    unsigned pos = 0;
-    while (pos < len)
+    unsigned len = strnlen(buf, bufsiz-1);
+    char* p = comms_common_buf;
+    for (unsigned i = 0; i < len; i++)
     {
-        if (escaped_char == buf[pos])
+        char c = buf[i];
+        if (escaped_char == c)
         {
-            for (unsigned j = len; j > pos; j--)
+            *p++ = escape_char;
+            if (comms_common_buf + COMMS_COMMON_BUF_SIZ <= p)
             {
-                buf[j] = buf[j-1];
+                break;
             }
-            buf[pos] = escape_char;
-            pos++;
-            len++;
         }
-        pos++;
+        *p++ = c;
+        if (comms_common_buf + COMMS_COMMON_BUF_SIZ <= p)
+        {
+            break;
+        }
     }
-    buf[len] = 0;
+    *p = 0;
+    return comms_common_buf;
 }
