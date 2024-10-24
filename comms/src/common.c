@@ -27,26 +27,39 @@ struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
 }
 
 
-char* comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char escaped_char)
+char* comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char* escaped_char_list, const unsigned escaped_char_count)
 {
     unsigned len = strnlen(buf, bufsiz-1);
     char* p = comms_common_buf;
     for (unsigned i = 0; i < len; i++)
     {
         char c = buf[i];
-        if (escaped_char == c || escape_char == c)
+        /* Remember to escape the escape character as well */
+        if (escape_char == c)
         {
             *p++ = escape_char;
-            if (comms_common_buf + COMMS_COMMON_BUF_SIZ <= p)
+#define __COMMS_COMMON_JSON_CHECK_OVERFLOW                              \
+            if (comms_common_buf + COMMS_COMMON_BUF_SIZ <= p)           \
+            {                                                           \
+                comms_common_buf[COMMS_COMMON_BUF_SIZ-1] = 0;           \
+                return comms_common_buf;                                \
+            }
+            __COMMS_COMMON_JSON_CHECK_OVERFLOW
+        }
+        else
+        {
+            for (unsigned j = 0; j < escaped_char_count; j++)
             {
-                break;
+                if (escaped_char_list[j] == c)
+                {
+                    *p++ = escape_char;
+                    __COMMS_COMMON_JSON_CHECK_OVERFLOW
+                    break;
+                }
             }
         }
         *p++ = c;
-        if (comms_common_buf + COMMS_COMMON_BUF_SIZ <= p)
-        {
-            break;
-        }
+        __COMMS_COMMON_JSON_CHECK_OVERFLOW
     }
     *p = 0;
     return comms_common_buf;
