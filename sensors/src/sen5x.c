@@ -19,6 +19,7 @@
 
 #define I2C_SEN5x_ADDR                                  0x69
 #define SEN5x_I2C_TIMEOUT_MS                            10
+#define SEN5x_COLLECTION_MS                             1000
 
 #define SEN5x_MEASUREMENT_SCALE_FACTOR_PM1_0            10
 #define SEN5x_MEASUREMENT_SCALE_FACTOR_PM2_5            10
@@ -317,6 +318,18 @@ void sen5x_iterate(void)
 }
 
 
+static measurements_sensor_state_t _sen5x_start(char* name, bool in_isolation)
+{
+    uint32_t now = get_since_boot_ms();
+    if (!_sen5x_ctx.active && since_boot_delta(now, _sen5x_ctx.last_reading.time) >= SEN5x_WAIT_DELAY)
+    {
+        _sen5x_ctx.last_reading.time = now;
+        sen5x_init();
+    }
+    return _sen5x_ctx.active ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
+}
+
+
 static measurements_sensor_state_t _sen5x_collect(char* name, measurements_reading_t* val)
 {
     if (!name || !val)
@@ -356,8 +369,21 @@ static measurements_value_type_t _sen5x_value_type(char* name)
 }
 
 
+static measurements_sensor_state_t _sen5x_collection_time(char* name, uint32_t* collection_time)
+{
+    if (!collection_time)
+    {
+        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    }
+    *collection_time = SEN5x_COLLECTION_MS;
+    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+}
+
+
 void sen5x_inf_init(measurements_inf_t* inf)
 {
+    inf->collection_time_cb = _sen5x_collection_time;
+    inf->init_cb            = _sen5x_start;
     inf->get_cb             = _sen5x_collect;
     inf->value_type_cb      = _sen5x_value_type;
 }
