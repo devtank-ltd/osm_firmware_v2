@@ -24,7 +24,7 @@ fi
 
 EEPROM_MEM_VERSION="01"
 DEV_ADDR=0x50
-REG_VALS="${EEPROM_MEM_VERSION} 02"
+REG_VALS="${EEPROM_MEM_VERSION} ${COMMS_TYPE_NUM}"
 
 CRC=$(python3 -c "
 buf = [ int(v, 16) for v in '${REG_VALS}'.split()]
@@ -44,6 +44,7 @@ REG_VALS="${REG_VALS} ${CRC}"
 
 set_reg () {
     i2cset -y "${I2C_DEV}" "${DEV_ADDR}" "$1" "0x$2";
+    sleep 0.01
 }
 
 REG_ADDR="0";
