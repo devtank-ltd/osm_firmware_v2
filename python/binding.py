@@ -262,6 +262,17 @@ class wifi_comms_t(comms_t):
         "country"   : ( "country",   "COUNTRY: " ),
     }
 
+class poe_comms_t(comms_t):
+    COMMS_ATTR_DICT = \
+    {
+        "mqtt_addr" : ( "mqtt_addr", "ADDR: " ),
+        "mqtt_user" : ( "mqtt_user", "USER: " ),
+        "mqtt_pwd"  : ( "mqtt_pwd",  "PWD: "  ),
+        "mqtt_sch"  : ( "mqtt_sch",  "SCHEME: "),
+        "mqtt_path" : ( "mqtt_path", "PATH: " ),
+        "mqtt_port" : ( "mqtt_port", "PORT: " ),
+    }
+
 class log_t(object):
     def __init__(self, sender, receiver):
         self.sender = sender
@@ -452,10 +463,20 @@ class dev_t(dev_base_t):
 
     def _get_comms(self):
         loaded = self.get_comms_config()
-        if "LW" in loaded["type"]:
-            comms = lw_comms_t (self)
-        elif "AT WIFI" in loaded["type"]:
-            comms = wifi_comms_t(self)
+        try:
+            comms_type = loaded["type"]
+        except KeyError:
+            self._log("Key 'type' not found")
+            return None
+        match comms_type:
+            case "LW":
+                comms = lw_comms_t(self)
+            case "AT WIFI":
+                comms = wifi_comms_t(self)
+            case "AT POE":
+                comms = poe_comms_t(self)
+            case _:
+                comms = None
         return comms
 
     def get_comms_config(self):
