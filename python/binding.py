@@ -449,6 +449,7 @@ class dev_t(dev_base_t):
         }
         self.update_measurements()
         self.port = port
+        self.comms_cfg = self.get_comms_config()
         self.comms = self._get_comms()
 
     def __getattr__(self, attr):
@@ -462,38 +463,34 @@ class dev_t(dev_base_t):
         self._log_obj.emit(msg)
 
     def _get_comms(self):
-        loaded = self.get_comms_config()
         try:
-            comms_type = loaded["type"]
+            comms_type = self.comms_cfg["type"]
         except KeyError:
             self._log("Key 'type' not found")
             return None
-        match comms_type:
-            case "LW":
-                comms = lw_comms_t(self)
-            case "AT WIFI":
-                comms = wifi_comms_t(self)
-            case "AT POE":
-                comms = poe_comms_t(self)
-            case _:
-                comms = None
-        return comms
+        comms_types = { "LW"       : lambda s : lw_comms_t(s),
+                        "AT WIFI"  : lambda s : wifi_comms_t(s),
+                        "AT POE"   : lambda s : poe_comms_t(s)
+                        }
+        return comms_types.get(comms_type, lambda s: None)(self)
 
     def get_comms_config(self):
         comms_type = self.do_cmd("j_comms_cfg")
-        loaded = None
+        comms_cfg = None
         try:
-            loaded = json.loads(comms_type)
+            comms_cfg = json.loads(comms_type)
         except Exception as e:
             self._log("Could not get comms config.")
-        return loaded
+            return None
+        return comms_cfg
 
     @property
     def mac_address(self):
-        mac = None
-        comms_cfg = self.get_comms_config()
-        if "config" in comms_cfg and "HWID" in comms_cfg["config"]:
-            mac = comms_cfg["config"]["HWID"]
+        try:
+            mac = self.comms_cfg["config"]["HWID"]
+        except KeyError:
+            self._log("Could not get mac address")
+            return None
         return mac
 
     @property
