@@ -18,7 +18,7 @@
 #define LINUX_COMMS_DEV_EUI     "LINUX-DEV"
 #define LINUX_COMMS_APP_KEY     "LINUX-APP"
 
-#define LINUX_COMMS_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"LW PENGUIN\",\n\r  \"config\": {"
+#define LINUX_COMMS_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"LW\",\n\r  \"config\": {"
 #define LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI                      "    \"DEV EUI\": \""LINUX_COMMS_DEV_EUI"\","
 #define LINUX_COMMS_PRINT_CFG_JSON_APP_KEY                      "    \"APP KEY\": \""LINUX_COMMS_APP_KEY"\""
 #define LINUX_COMMS_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
