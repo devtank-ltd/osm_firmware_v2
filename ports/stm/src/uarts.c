@@ -193,7 +193,11 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
     channel->parity = parity;
     channel->stop = stop;
 
+    usart_disable_rx_interrupt(channel->usart);
+    usart_disable(channel->usart);
     uart_up(channel);
+    usart_enable(channel->usart);
+    usart_enable_rx_interrupt(channel->usart);
 
     gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->tx_pin | channel->rx_pin );
     gpio_set_af( channel->gpioport, channel->alt_func_num, channel->tx_pin | channel->rx_pin );
