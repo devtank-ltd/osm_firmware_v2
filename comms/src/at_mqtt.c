@@ -18,6 +18,7 @@
 #define AT_MQTT_SNTP_SERVER1                        "0.pool.ntp.org"  /* TODO */
 #define AT_MQTT_SNTP_SERVER2                        "1.pool.ntp.org"  /* TODO */
 #define AT_MQTT_SNTP_SERVER3                        "2.pool.ntp.org"  /* TODO */
+#define AT_MQTT_SNTP_SERVER_LEN                     32
 #define AT_MQTT_LINK_ID                             0
 #define AT_MQTT_CERT_KEY_ID                         0
 #define AT_MQTT_CA_ID                               0
@@ -71,9 +72,9 @@ at_base_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned m
         ret->len = snprintf(
             ret->str,
             AT_BASE_MAX_CMD_LEN,
-            "AT+MQTTPUBRAW=%u,\"%.*s\",%u,%u,%u",
+            "AT+MQTTPUBRAW=%u,\"%s\",%u,%u,%u",
             AT_MQTT_LINK_ID,
-            full_topic_len, full_topic,
+            AT_BASE_SANIT_STR(full_topic),
             message_len,
             AT_MQTT_QOS,
             AT_MQTT_RETAIN
@@ -145,18 +146,24 @@ at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
             mqtt_scheme = AT_MQTT_SCHEME_WSS_NO_CERT;
         }
 
+        char user[2*AT_MQTT_USER_MAX_LEN+1];
+        char* san_user = AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->user);
+        strncpy(user, san_user, 2*AT_MQTT_USER_MAX_LEN+1);
+        char pwd[2*AT_MQTT_PWD_MAX_LEN+1];
+        char* san_pwd = AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->pwd);
+        strncpy(pwd, san_pwd, 2*AT_MQTT_PWD_MAX_LEN+1);
         ret->len = snprintf(
             ret->str,
             AT_BASE_MAX_CMD_LEN,
-            "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%.*s\",\"%.*s\",%u,%u,\"%.*s\"",
+            "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%s\",\"%s\",%u,%u,\"%s\"",
             AT_MQTT_LINK_ID,
             (unsigned)mqtt_scheme,
             platform_get_hw_id(),
-            AT_MQTT_USER_MAX_LEN,      _at_mqtt_ctx->mem->user,
-            AT_MQTT_PWD_MAX_LEN,       _at_mqtt_ctx->mem->pwd,
+            user,
+            pwd,
             AT_MQTT_CERT_KEY_ID,
             AT_MQTT_CA_ID,
-            AT_MQTT_PATH_MAX_LEN,      _at_mqtt_ctx->mem->path
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->path)
             );
         ret->str[ret->len] = 0;
     }
@@ -173,9 +180,9 @@ at_base_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
         ret->len = snprintf(
             ret->str,
             AT_BASE_MAX_CMD_LEN,
-            "AT+MQTTSUB=%u,\"%.*s/"AT_MQTT_TOPIC_COMMAND"\",%u",
+            "AT+MQTTSUB=%u,\"%s/"AT_MQTT_TOPIC_COMMAND"\",%u",
             AT_MQTT_LINK_ID,
-            AT_MQTT_TOPIC_LEN, _at_mqtt_ctx->topic_header,
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->topic_header),
             AT_MQTT_QOS
             );
         ret->str[ret->len] = 0;
@@ -193,11 +200,11 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
         ret->len = snprintf(
             ret->str,
             AT_BASE_MAX_CMD_LEN,
-            "AT+MQTTCONNCFG=%u,%u,%u,\"%.*s/%s\",\"%s\",%u,%u",
+            "AT+MQTTCONNCFG=%u,%u,%u,\"%s/%s\",\"%s\",%u,%u",
             AT_MQTT_LINK_ID,
             AT_MQTT_KEEP_ALIVE,
             AT_MQTT_CLEAN_SESSION,
-            AT_MQTT_TOPIC_LEN, _at_mqtt_ctx->topic_header,
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->topic_header),
             AT_MQTT_TOPIC_CONNECTION,
             AT_MQTT_LWT_MSG,
             AT_MQTT_LWT_QOS,
@@ -256,9 +263,9 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn(void)
         ret->len = snprintf(
             ret->str,
             AT_BASE_MAX_CMD_LEN,
-            "AT+MQTTCONN=%u,\"%.*s\",%"PRIu16",%u",
+            "AT+MQTTCONN=%u,\"%s\",%"PRIu16",%u",
             AT_MQTT_LINK_ID,
-            AT_MQTT_ADDR_MAX_LEN, _at_mqtt_ctx->mem->addr,
+            AT_BASE_SANIT_STR(_at_mqtt_ctx->mem->addr),
             _at_mqtt_ctx->mem->port,
             AT_MQTT_RECONNECT
             );
@@ -515,18 +522,12 @@ bool at_mqtt_get_id(char* str, uint8_t len)
 
 void at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR(_at_mqtt_ctx->mem->addr));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_USER(_at_mqtt_ctx->mem->user));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PWD(_at_mqtt_ctx->mem->pwd));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME(_at_mqtt_ctx->mem->scheme));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PATH(_at_mqtt_ctx->mem->path));
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,AT_MQTT_PRINT_CFG_JSON_MQTT_PORT(_at_mqtt_ctx->mem->port));
-    cmd_ctx_flush(ctx);
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR      , _at_mqtt_ctx->mem->addr   , AT_MQTT_ADDR_MAX_LEN  );
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_USER      , _at_mqtt_ctx->mem->user   , AT_MQTT_USER_MAX_LEN  );
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_PWD       , _at_mqtt_ctx->mem->pwd    , AT_MQTT_PWD_MAX_LEN   );
+    COMMS_COMMON_JSON_OUT_INT(AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME    , _at_mqtt_ctx->mem->scheme                         );
+    COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_PATH      , _at_mqtt_ctx->mem->path   , AT_MQTT_PATH_MAX_LEN  );
+    COMMS_COMMON_JSON_OUT_INT(AT_MQTT_PRINT_CFG_JSON_MQTT_PORT      , _at_mqtt_ctx->mem->port                           );
 }
 
 
