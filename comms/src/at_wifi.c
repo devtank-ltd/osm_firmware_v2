@@ -1709,6 +1709,8 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
             /* fall through */
         case AT_WIFI_STATE_MQTT_FAIL_CONNECT:
             /* fall through */
+        case AT_WIFI_STATE_NO_CONF:
+            /* fall through */
         case AT_WIFI_STATE_WIFI_FAIL_CONNECT:
             break;
         default:
