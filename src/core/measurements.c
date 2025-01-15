@@ -16,6 +16,7 @@
 #include <osm/core/platform.h>
 #include "platform_model.h"
 #include <osm/protocols/protocol.h>
+#include <osm/core/io.h>
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000
