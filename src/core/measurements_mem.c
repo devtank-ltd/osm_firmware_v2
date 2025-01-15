@@ -6,7 +6,8 @@
 
 void osm_measurements_setup_default(osm_measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, osm_measurements_def_type_t type)
 {
-    strncpy(def->name, name, OSM_MEASURE_NAME_NULLED_LEN);
+    memcpy(def->name, name, MEASURE_NAME_NULLED_LEN);
+    def->name[MEASURE_NAME_NULLED_LEN-1] = 0;
     def->interval    = interval;
     def->samplecount = samplecount;
     def->type        = type;
