@@ -53,6 +53,8 @@
 #define UART_0_STOP         uart_stop_bits_1
 #define UART_1_STOP         uart_stop_bits_1
 
+#define IOS_COUNT 0
+
 typedef struct
 {
     uint32_t                mins_interval;
