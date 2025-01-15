@@ -96,8 +96,9 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    ios_measurements_init();
     return pos;
 }
 
