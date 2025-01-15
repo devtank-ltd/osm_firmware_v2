@@ -1042,7 +1042,7 @@ void osm_measurements_loop_iteration(void)
 }
 
 
-static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name, char* new_name)
+static void _measurements_replace_name_if_legacy(char* dest_name, const char* old_name, const char* new_name)
 {
     if (strncmp(dest_name, old_name, OSM_MEASURE_NAME_LEN) == 0)
     {
@@ -1083,7 +1083,6 @@ void osm_measurements_init(void)
     {
         osm_log_error("No persistent loaded, load defaults.");
         osm_model_measurements_add_defaults(_measurements_arr.def);
-        osm_ios_measurements_init();
     }
     else osm_measurements_debug("Loading measurements.");
 

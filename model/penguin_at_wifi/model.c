@@ -255,6 +255,7 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FTMA_3_NAME,          0,  25, OSM_FTMA            );
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FTMA_4_NAME,          0,  25, OSM_FTMA            );
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,   1, OSM_EXAMPLE_RS232           );
+    osm_ios_measurements_init();
     return pos;
 }
 
