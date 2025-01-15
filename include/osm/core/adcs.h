@@ -36,4 +36,11 @@ osm_adcs_resp_t osm_adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsig
 osm_adcs_resp_t osm_adcs_wait_done(uint32_t timeout, osm_adcs_keys_t key);
 void osm_adcs_release(osm_adcs_keys_t key);
 
-void osm_adcs_dma_complete(void);
+void adcs_dma_complete(void);
+
+/* To be implemented in platform */
+void platform_setup_adc(adc_setup_config_t* config);
+void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels);
+void platform_adc_start_conversion_regular(void);
+void platform_adc_power_off(void);
+void platform_adc_set_num_data(unsigned num_data);

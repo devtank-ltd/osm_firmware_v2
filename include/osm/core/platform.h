@@ -31,13 +31,7 @@ void osm_platform_clear_flash_flags(void);
 bool osm_platform_running(void);
 void osm_platform_deinit(void);
 
-void osm_platform_setup_adc(osm_adc_setup_config_t* config);
-void osm_platform_adc_set_regular_sequence(uint8_t num_channels, osm_adcs_type_t* channels);
-void osm_platform_adc_start_conversion_regular(void);
-void osm_platform_adc_power_off(void);
-void osm_platform_adc_set_num_data(unsigned num_data);
-
-void osm_platform_hpm_enable(bool enable);
+void platform_hpm_enable(bool enable);
 
 void osm_platform_tight_loop(void);
 void osm_platform_main_loop_iterate(void);
