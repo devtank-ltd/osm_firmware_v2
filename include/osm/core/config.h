@@ -60,8 +60,12 @@
 #define CONCAT2(a, b) a##b
 #define OSM_CONCAT(a, b) CONCAT2(a, b)
 
-#define OSM_MIN(a,b) (((a)<(b))?(a):(b))
-#define OSM_MAX(a,b) (((a)>(b))?(a):(b))
+#ifndef MIN
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#endif // MIN
+#ifndef MAX
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#endif // MAX
 
 #ifndef ARRAY_SIZE
 #define OSM_ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
