@@ -18,10 +18,10 @@
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
 
-static bool _protocol_append_meas(char * fmt, ...) OSM_PRINTF_FMT_CHECK(1, 2);
+static bool _protocol_append_meas(const char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
 
 
-static bool _protocol_append_v(char * fmt, va_list ap)
+static bool _protocol_append_v(const char * fmt, va_list ap)
 {
     unsigned available = JSON_BUF_SIZE - _json_buf_pos;
     unsigned r = vsnprintf(_json_buf + _json_buf_pos, available, fmt, ap);
@@ -32,8 +32,8 @@ static bool _protocol_append_v(char * fmt, va_list ap)
 }
 
 
-static bool _protocol_append(char * fmt, ...) OSM_PRINTF_FMT_CHECK(1, 2);
-static bool _protocol_append(char * fmt, ...)
+static bool _protocol_append(const char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
+static bool _protocol_append(const char * fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -43,7 +43,7 @@ static bool _protocol_append(char * fmt, ...)
 }
 
 
-static bool _protocol_append_meas(char * fmt, ...)
+static bool _protocol_append_meas(const char * fmt, ...)
 {
     if (!_json_buf_pos)
         return false;
