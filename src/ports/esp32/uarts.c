@@ -88,15 +88,7 @@ void osm_uart_enable(unsigned uart, bool enable)
 }
 
 
-bool osm_uart_is_enabled(unsigned uart)
-{
-    if (uart >= OSM_UART_CHANNELS_COUNT)
-        return false;
-
-    return (uart_channels[uart].enabled)?true:false;
-}
-
-static osm_osm_uart_parity_t _osm_uart_parity_get(uart_parity_t parity)
+static osm_uart_parity_t _osm_uart_parity_get(uart_parity_t parity)
 {
     switch(parity)
     {
