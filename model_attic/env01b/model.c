@@ -240,6 +240,7 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  OSM_PULSE_COUNT     );
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_LIGHT_NAME,           1,  5,  OSM_LIGHT           );
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SOUND_NAME,           1,  5,  OSM_SOUND           );
+    osm_ios_measurements_init();
     return pos;
 }
 
