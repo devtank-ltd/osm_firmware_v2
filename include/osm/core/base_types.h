@@ -307,3 +307,11 @@ struct osm_cmd_link_t
     bool hidden;
     struct osm_cmd_link_t * next;
 };
+
+
+typedef enum
+{
+    OSM_IO_PUPD_NONE    = 0,
+    OSM_IO_PUPD_UP      = 1,
+    OSM_IO_PUPD_DOWN    = 2,
+} osm_io_pupd_t;

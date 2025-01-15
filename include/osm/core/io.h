@@ -11,14 +11,6 @@
 #define OSM_IOS_MEASUREMENT_NAME_PRE            "IO"
 
 
-typedef enum
-{
-    OSM_IO_PUPD_NONE    = 0,
-    OSM_IO_PUPD_UP      = 1,
-    OSM_IO_PUPD_DOWN    = 2,
-} osm_io_pupd_t;
-
-
 extern const osm_port_n_pins_t ios_pins[IOS_COUNT];
 
 
