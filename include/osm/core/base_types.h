@@ -76,8 +76,8 @@ typedef enum
 } osm_io_special_t;
 
 
-char* osm_io_get_pull_str(uint16_t io_state);
-bool  osm_io_is_special(uint16_t io_state);
+const char* io_get_pull_str(uint16_t io_state);
+bool io_is_special(uint16_t io_state);
 
 
 typedef enum
