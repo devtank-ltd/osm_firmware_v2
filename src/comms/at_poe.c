@@ -15,6 +15,7 @@
 #include <osm/core/cmd.h>
 #include <osm/protocols/protocol.h>
 #include <osm/core/platform.h>
+#include <osm/core/persist_config.h>
 
 
 #define COMMS_ID_STR                            "POE"
