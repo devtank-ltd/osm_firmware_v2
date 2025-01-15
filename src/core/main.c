@@ -11,9 +11,6 @@
 
 #include <osm/core/cmd.h>
 #include <osm/core/uarts.h>
-#include <osm/core/adcs.h>
-#include <osm/core/io.h>
-#include <osm/core/i2c.h>
 #include <osm/core/persist_config.h>
 #include <osm/protocols/protocol.h>
 #include <osm/core/measurements.h>
@@ -28,10 +25,8 @@ int osm_main(void)
     osm_platform_init();
     osm_platform_blink_led_init();
 
-    osm_i2cs_init();
-
-    osm_uarts_setup();
-    osm_uart_rings_init();
+    uarts_setup();
+    uart_rings_init();
 
     osm_platform_raw_msg("----start----");
     osm_log_sys_debug("Frequency : %"PRIu32, osm_platform_get_frequency());

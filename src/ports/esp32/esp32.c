@@ -87,6 +87,8 @@ void osm_platform_init(void)
         .pull_up_en = GPIO_PULLUP_DISABLE,
     };
     gpio_config(&de_485_conf);
+
+    i2cs_init();
 }
 
 

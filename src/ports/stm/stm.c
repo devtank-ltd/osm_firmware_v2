@@ -20,6 +20,7 @@
 #include <osm/comms/comms.h>
 #include <osm/core/sleep.h>
 #include <osm/comms/comms_identify.h>
+#include <osm/comms/i2c.h>
 
 #include <osm/core/adcs.h>
 
@@ -180,6 +181,8 @@ void osm_platform_init(void)
     {
         osm_log_sys_debug("Failed write COMMS identity");
     }
+
+    i2cs_init();
 }
 
 
