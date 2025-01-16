@@ -23,7 +23,12 @@
 
 MEMORY
 {
-    INCLUDE "pico_flash_region.ld"
+    /* We have 2MB of flash. Given 32kB to the bootloader, 2 sectors
+       reserved for config (8kB), leaving 2056kB for
+       application code. As we want space for 2 full applications for
+       updating, 1028kB maximum size each.
+    */
+    FLASH(rx) : ORIGIN = 0x10000000 + 32k + 8k, LENGTH = 1028k
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 512k
     SCRATCH_X(rwx) : ORIGIN = 0x20080000, LENGTH = 4k
     SCRATCH_Y(rwx) : ORIGIN = 0x20081000, LENGTH = 4k

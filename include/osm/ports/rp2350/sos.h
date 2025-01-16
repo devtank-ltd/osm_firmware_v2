@@ -2,6 +2,7 @@
 
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
+#include "hardware/watchdog.h"
 
 
 #include "pinmap.h"

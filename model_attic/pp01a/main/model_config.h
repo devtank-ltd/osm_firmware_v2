@@ -10,17 +10,22 @@
 #define PERSIST_MODEL_VERSION       3
 #define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
-/* TODO: Currently using last sectors, halved for each part, but will
- * move this when bootloader added.
- */
-#define _MEM_SIZE_KB                (2048 * 1024)
-#define PERSIST_CONFIG_SECTOR       (_MEM_SIZE_KB - FLASH_SECTOR_SIZE)
-#define PERSIST_CONFIG_SIZE         (FLASH_PAGE_SIZE * 8) // = FLASH_SECTOR_SIZE / 2
-#define PERSIST_RAW_DATA            ((uint8_t*)(XIP_BASE + PERSIST_CONFIG_SECTOR))
-#define PERSIST_RAW_MEASUREMENTS    ((uint8_t*)(XIP_BASE + PERSIST_CONFIG_SECTOR + PERSIST_CONFIG_SIZE))
+/* We have 2MB of flash. Given 32kB to the bootloader, 2 sectors
+   reserved for config (8kB), leaving 2056kB for
+   application code. As we want space for 2 full applications for
+   updating, 1028kB maximum size each.
+*/
+#define BOOTLOADER_SIZE             (32 * 1024)
 
-#define FW_ADDR                     NULL
-#define NEW_FW_ADDR                 NULL
+#define PERSIST_CONFIG_SECTOR       BOOTLOADER_SIZE
+#define PERSIST_CONFIG_SECTOR_ADDR  (XIP_BASE + PERSIST_CONFIG_SECTOR)
+#define PERSIST_CONFIG_SIZE         (FLASH_PAGE_SIZE * 8) // = FLASH_SECTOR_SIZE / 2
+#define PERSIST_RAW_DATA            ((uint8_t*)PERSIST_CONFIG_SECTOR_ADDR)
+#define PERSIST_RAW_MEASUREMENTS    ((uint8_t*)(PERSIST_CONFIG_SECTOR_ADDR + PERSIST_CONFIG_SIZE))
+
+#define FW_MAX_SIZE                 1028
+#define FW_ADDR                     (PERSIST_CONFIG_SECTOR_ADDR + 2 * FLASH_SECTOR_SIZE)
+#define NEW_FW_ADDR                 (PERSIST_CONFIG_SECTOR_ADDR + 2 * FLASH_SECTOR_SIZE + FW_MAX_SIZE)
 
 #define JSON_BUF_SIZE  1024
 
