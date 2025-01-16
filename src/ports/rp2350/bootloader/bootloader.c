@@ -57,7 +57,16 @@ static void _uart_setup(void)
 }
 
 
-static void run_application(void)
+static void _uart_unsetup(void)
+{
+    uart_inst_t* uart = uart_get_instance(ERR_UART);
+    uart_deinit(uart);
+    gpio_deinit(ERR_UART_TX_PIN);
+    gpio_deinit(ERR_UART_TX_PIN);
+}
+
+
+static void _run_application(void)
 {
     asm volatile(
       "ldr r0, =%[appcode]\n"
@@ -72,23 +81,39 @@ static void run_application(void)
 }
 
 
-int main(void)
+static void _led_setup(void)
 {
-    _uart_setup();
-
-    _uart_send_str("Bootloader");
-
 #ifdef LED_PIN
     gpio_init(LED_PIN);
     gpio_set_dir(LED_PIN, true);
     gpio_put(LED_PIN, false);
 #elif defined(CYW43_WL_GPIO_LED_PIN)
     if (cyw43_arch_init()) {
-        return -1;
+        return;
     }
 #else
 #pragma message("WARNING: No LED pin defined")
 #endif // LED_PIN / CYW43_WL_GPIO_LED_PIN
+}
+
+
+static void _led_unsetup(void)
+{
+#ifdef LED_PIN
+    gpio_deinit(LED_PIN);
+#elif defined(CYW43_WL_GPIO_LED_PIN)
+    if (cyw43_arch_deinit()) {
+        return;
+    }
+#endif // LED_PIN / CYW43_WL_GPIO_LED_PIN
+}
+
+
+int main(void)
+{
+    _uart_setup();
+    _uart_send_str("Bootloader");
+    _led_setup();
 
     persist_storage_t * config = (persist_storage_t*)PERSIST_RAW_DATA;
 
@@ -104,7 +129,9 @@ int main(void)
     }
     else {
         uart_default_tx_wait_blocking();
-        run_application();
+        _uart_unsetup();
+        _led_unsetup();
+        _run_application();
     }
 
     return 0;
