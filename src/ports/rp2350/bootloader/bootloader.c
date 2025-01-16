@@ -103,6 +103,7 @@ int main(void)
         error_state();
     }
     else {
+        uart_default_tx_wait_blocking();
         run_application();
     }
 
