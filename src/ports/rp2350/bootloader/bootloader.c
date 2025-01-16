@@ -77,10 +77,6 @@ int main(void)
     _uart_setup();
 
     _uart_send_str("Bootloader");
-    char buf[32] = {0};
-    snprintf(buf, 31, "exec: 0x%08"PRIX32, (uint32_t)FW_ADDR);
-    buf[31] = 0;
-    _uart_send_str((const char*)buf);
 
 #ifdef LED_PIN
     gpio_init(LED_PIN);
