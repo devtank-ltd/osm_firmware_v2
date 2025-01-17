@@ -15,6 +15,7 @@ add_executable(application
     $ENV{OSM_DIR}/ports/rp2350/src/sleep.c
     $ENV{OSM_DIR}/ports/rp2350/src/uarts.c
     $ENV{OSM_DIR}/ports/rp2350/src/rp2350_comms.c
+    $ENV{OSM_DIR}/ports/rp2350/src/update.c
     $ENV{OSM_DIR}/core/src/main.c
     $ENV{OSM_DIR}/core/src/base.c
     $ENV{OSM_DIR}/core/src/cmd.c

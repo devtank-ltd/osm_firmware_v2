@@ -9,6 +9,7 @@
 #include <osm/core/modbus_measurements.h>
 #include <osm/sensors/fw.h>
 #include <osm/protocols/protocol.h>
+#include <osm/core/update.h>
 
 void model_post_init(void) {}
 
@@ -73,6 +74,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
 {
     tail = persist_config_add_commands(tail);
     tail = measurements_add_commands(tail);
+    tail = update_add_commands(tail);
 }
 
 
