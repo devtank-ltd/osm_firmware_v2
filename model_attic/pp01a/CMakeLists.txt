@@ -68,6 +68,7 @@ target_link_libraries(bootloader
     hardware_uart
     hardware_watchdog
     hardware_flash
+    hardware_divider
 )
 
 pico_add_extra_outputs(bootloader)
