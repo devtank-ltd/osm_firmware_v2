@@ -6,6 +6,7 @@
 #include "hardware/gpio.h"
 #include "hardware/uart.h"
 #include "hardware/flash.h"
+#include "hardware/divider.h"
 
 #ifdef CYW43_WL_GPIO_LED_PIN
 #include "pico/cyw43_arch.h"
@@ -109,6 +110,35 @@ static void _led_unsetup(void)
 }
 
 
+
+static bool _persist_commit2(uint8_t* dst, uint8_t* src, uint32_t size)
+{
+    static uint8_t  _persist_page[FLASH_PAGE_SIZE];
+
+    divmod_result_t uresult = hw_divider_divmod_u32(size, FLASH_PAGE_SIZE);
+    uint32_t num_full_pages = to_quotient_u32(uresult);
+    uint32_t last_page_len = to_remainder_u32(uresult);
+    uint32_t offset = 0;
+    for (uint32_t page = 0; page < num_full_pages; page++)
+    {
+        flash_range_program((uintptr_t)dst - XIP_BASE + offset, src + offset, FLASH_PAGE_SIZE);
+        offset += FLASH_PAGE_SIZE;
+    }
+    memcpy(_persist_page, src + offset, last_page_len);
+    memset(_persist_page + last_page_len, 0xFF, FLASH_PAGE_SIZE - last_page_len);
+    flash_range_program((uintptr_t)dst - XIP_BASE + offset, _persist_page, FLASH_PAGE_SIZE);
+    return memcmp(dst, src, size) == 0;
+}
+
+
+static bool _persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+{
+    flash_range_erase(PERSIST_CONFIG_SECTOR, FLASH_SECTOR_SIZE);
+    return (_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(persist_storage_t)) &&
+        (_persist_commit2(PERSIST_RAW_MEASUREMENTS, (uint8_t*)persist_measurements, sizeof(persist_measurements_storage_t))));
+}
+
+
 int main(void)
 {
     _uart_setup();
@@ -120,6 +150,59 @@ int main(void)
     if (config->pending_fw && config->pending_fw != 0xFFFFFFFF)
     {
         _uart_send_str("New Firmware Flag");
+        if ((*(uint32_t*)(uintptr_t)NEW_FW_ADDR)!=0xFFFFFFFF)
+        {
+            uint32_t size = config->pending_fw;
+            unsigned sector_count = size / FLASH_SECTOR_SIZE;
+            if (size % FLASH_PAGE_SIZE)
+                sector_count++;
+            uint32_t w_sector = FW_SECTOR;
+            uint32_t r_addr = NEW_FW_ADDR;
+            uint32_t w_addr = NEW_FW_ADDR;
+            for (unsigned sector_no = 0; sector_no < sector_count; sector_no++)
+            {
+                unsigned retries = 3;
+                while (retries--)
+                {
+                    flash_range_erase(w_sector, FLASH_SECTOR_SIZE);
+                    flash_range_program(w_sector, (uint8_t*)r_addr, FLASH_SECTOR_SIZE);
+                    if (memcmp((void*)w_addr, (uint8_t*)r_addr, FLASH_SECTOR_SIZE) == 0)
+                    {
+                        _uart_send_str("FW page copied");
+                        break;
+                    }
+                    if (retries)
+                    {
+                        _uart_send_str("ERROR: FW page copy failed, trying again.");
+                    }
+                    else
+                    {
+                        _uart_send_str("ERROR: FW page copy failed all retries.");
+                        error_state();
+                    }
+                }
+                w_sector += FLASH_SECTOR_SIZE;
+                r_addr += FLASH_SECTOR_SIZE;
+                w_addr += FLASH_SECTOR_SIZE;
+            }
+            _uart_send_str("New Firmware Copied");
+            if (memcmp((const void*)FW_ADDR, (const void*)NEW_FW_ADDR, size) != 0)
+            {
+                _uart_send_str("ERROR: New Firmware check failed.");
+                error_state();
+            }
+        }
+        else _uart_send_str("No New Firmware!");
+
+        static persist_storage_t _config = {0};
+        _config = *config;
+        static persist_measurements_storage_t _measurements = {0};
+        _measurements = *(persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
+        _config.pending_fw = 0;
+        if (!_persist_commit(&_config, &_measurements))
+        {
+            _uart_send_str("WARNING: Config update failed.");
+        }
     }
 
     if ((*(uint32_t*)(uintptr_t)FW_ADDR)==0xFFFFFFFF)
