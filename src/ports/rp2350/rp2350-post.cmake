@@ -23,4 +23,74 @@ add_compile_options(-Wall
     -fstrict-aliasing
 )
 
+separate_arguments(OSM_SRCS UNIX_COMMAND PROGRAM SEPARATE_ARGS $ENV{OSM_SRCS})
 
+list(TRANSFORM OSM_SRCS PREPEND $ENV{OSM_DIR}/)
+
+add_executable(application ${OSM_SRCS})
+
+target_link_libraries(application
+    pico_stdlib
+    pico_unique_id
+    pico_time
+    hardware_clocks
+    hardware_gpio
+    hardware_watchdog
+    hardware_irq
+    hardware_dma
+    hardware_flash
+)
+
+pico_add_extra_outputs(application)
+
+target_include_directories(application PUBLIC
+    $ENV{OSM_MODEL_DIR}/pp01a/main
+    $ENV{OSM_DIR}/include/osm/ports/rp2350
+    $ENV{OSM_DIR}/include
+)
+
+set_target_properties(application
+    PROPERTIES PICO_TARGET_LINKER_SCRIPT $ENV{OSM_DIR}/src/ports/rp2350/rp2350.ld
+)
+
+add_executable(bootloader
+    $ENV{OSM_DIR}/src/ports/rp2350/bootloader/bootloader.c
+)
+
+target_link_libraries(bootloader
+    pico_stdlib
+    hardware_gpio
+    hardware_uart
+    hardware_watchdog
+    hardware_flash
+    hardware_divider
+)
+
+pico_add_extra_outputs(bootloader)
+
+target_include_directories(bootloader PUBLIC
+    $ENV{OSM_DIR}/src/ports/rp2350/bootloader
+    $ENV{OSM_MODEL_DIR}/pp01a/main
+    $ENV{OSM_DIR}/include/osm/ports/rp2350
+    $ENV{OSM_DIR}/include
+)
+
+set_target_properties(bootloader
+    PROPERTIES PICO_TARGET_LINKER_SCRIPT $ENV{OSM_DIR}/src/ports/rp2350/bootloader/rp2350_bootloader.ld
+)
+
+add_custom_target(firmware ALL
+    COMMAND
+        ${BASH}
+        dd if=bootloader.bin of=firmware.bin bs=256 &&
+        dd if=application.bin of=firmware.bin bs=256 seek=160 &&
+        chmod +x firmware.bin &&
+        ${picotool_INSTALL_DIR}/picotool/picotool uf2 convert firmware.bin firmware.uf2 --family rp2350-arm-s --abs-block
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Combining bootloader and application"
+)
+
+add_dependencies(firmware
+    bootloader
+    application
+)
