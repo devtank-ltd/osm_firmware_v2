@@ -27,10 +27,10 @@
 #define PERSIST_RAW_DATA            ((uint8_t*)PERSIST_CONFIG_SECTOR_ADDR)
 #define PERSIST_RAW_MEASUREMENTS    ((uint8_t*)(PERSIST_CONFIG_SECTOR_ADDR + PERSIST_CONFIG_SIZE))
 
-#define FW_MAX_SIZE                 1028
+#define FW_MAX_SIZE                 (1028 * 1024)
 #define FW_SECTOR                   (PERSIST_CONFIG_SECTOR + 2 * FLASH_SECTOR_SIZE)
 #define FW_ADDR                     _SECTOR_TO_ADDR(FW_SECTOR)
-#define NEW_FW_SECTOR               (PERSIST_CONFIG_SECTOR + 2 * FLASH_SECTOR_SIZE + FW_MAX_SIZE)
+#define NEW_FW_SECTOR               (FW_SECTOR + FW_MAX_SIZE)
 #define NEW_FW_ADDR                 _SECTOR_TO_ADDR(NEW_FW_SECTOR)
 #define NEW_FW_PAGE                 _SECTOR_TO_PAGE(NEW_FW_SECTOR)
 
