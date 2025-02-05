@@ -158,14 +158,16 @@ int main(void)
                 sector_count++;
             uint32_t w_sector = FW_SECTOR;
             uint32_t r_addr = NEW_FW_ADDR;
-            uint32_t w_addr = NEW_FW_ADDR;
+            uint32_t w_addr = FW_ADDR;
             for (unsigned sector_no = 0; sector_no < sector_count; sector_no++)
             {
                 unsigned retries = 3;
                 while (retries--)
                 {
+                    static uint8_t _sector[FLASH_SECTOR_SIZE];
                     flash_range_erase(w_sector, FLASH_SECTOR_SIZE);
-                    flash_range_program(w_sector, (uint8_t*)r_addr, FLASH_SECTOR_SIZE);
+                    memcpy(_sector, (uint8_t*)r_addr, FLASH_SECTOR_SIZE);
+                    flash_range_program(w_sector, _sector, FLASH_SECTOR_SIZE);
                     if (memcmp((void*)w_addr, (uint8_t*)r_addr, FLASH_SECTOR_SIZE) == 0)
                     {
                         _uart_send_str("FW page copied");
