@@ -21,6 +21,7 @@
 #include "sos.h"
 #include "pinmap.h"
 #include "platform_model.h"
+#include "model_config.h"
 
 
 uint32_t platform_get_frequency(void)
@@ -151,13 +152,20 @@ void platform_persist_wipe(void)
 
 bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {
-    return false;
+    uintptr_t flash_dst = dst - XIP_BASE;
+    if (flash_dst % FLASH_SECTOR_SIZE == 0)
+    {
+        /* is on a sector boundary, can erase sector */
+        flash_range_erase(flash_dst, FLASH_SECTOR_SIZE);
+    }
+    flash_range_program(flash_dst, fw_page, FLASH_PAGE_SIZE);
+    return 0 == memcmp((void*)dst, fw_page, FLASH_PAGE_SIZE);
 }
 
 
 uintptr_t platform_get_fw_addr(unsigned fw_page_index)
 {
-    return (uintptr_t)NULL;
+    return (uintptr_t)(NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE));
 }
 
 
