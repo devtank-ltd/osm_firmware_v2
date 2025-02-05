@@ -19,6 +19,7 @@
 
 #define _SECTOR_TO_ADDR(_s)         (XIP_BASE + _s)
 #define _ADDR_TO_SECTOR(_a)         (_a - XIP_BASE)
+#define _SECTOR_TO_PAGE(_s)         (_s / FLASH_PAGE_SIZE)
 
 #define PERSIST_CONFIG_SECTOR       BOOTLOADER_SIZE
 #define PERSIST_CONFIG_SECTOR_ADDR  _SECTOR_TO_ADDR(PERSIST_CONFIG_SECTOR)
@@ -31,6 +32,7 @@
 #define FW_ADDR                     _SECTOR_TO_ADDR(FW_SECTOR)
 #define NEW_FW_SECTOR               (PERSIST_CONFIG_SECTOR + 2 * FLASH_SECTOR_SIZE + FW_MAX_SIZE)
 #define NEW_FW_ADDR                 _SECTOR_TO_ADDR(NEW_FW_SECTOR)
+#define NEW_FW_PAGE                 _SECTOR_TO_PAGE(NEW_FW_SECTOR)
 
 #define JSON_BUF_SIZE  1024
 
