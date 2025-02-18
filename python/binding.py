@@ -1,4 +1,3 @@
-from importlib import reload
 import serial
 import select
 import datetime
@@ -13,6 +12,9 @@ import string
 import random
 import json
 import platform
+
+from importlib import reload
+from typing import List
 
 MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_addr>0x[0-9A-Fa-f]+) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
 MODBUS_REG_SET_NAME_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_name>.{1,4})\((?P<reg_addr>0x[0-9A-Fa-f]+)\) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
@@ -609,7 +611,7 @@ class dev_t(dev_base_t):
         return self.do_cmd_multi("cc_gain")
 
     def cc_midpoint(self, phase: str) -> float | None:
-        mp = self.do_cmd_multi(f"cc_mp {phase}")
+        mp = self.do_cmd(f"cc_mp {phase}")
         mp_re = re.findall("\d+[\.\d+]?", mp)
         if not mp_re:
             return None
@@ -638,7 +640,7 @@ class dev_t(dev_base_t):
             return ""
         return "".join([str(line) for line in r])
 
-    def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> str:
+    def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> List[str] | None:
         self._ll.write(cmd)
         debug_print(f"Reading with Timeout : {timeout}")
         now = time.monotonic()
