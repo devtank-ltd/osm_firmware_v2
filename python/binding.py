@@ -608,8 +608,7 @@ class dev_t(dev_base_t):
     def print_cc_gain(self):
         return self.do_cmd_multi("cc_gain")
 
-    @property
-    def cc_midpoint(self, phase):
+    def cc_midpoint(self, phase: str) -> float | None:
         mp = self.do_cmd_multi(f"cc_mp {phase}")
         mp_re = re.findall("\d+[\.\d+]?", mp)
         if not mp_re:
