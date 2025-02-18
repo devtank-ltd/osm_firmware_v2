@@ -608,10 +608,15 @@ class dev_t(dev_base_t):
     def print_cc_gain(self):
         return self.do_cmd_multi("cc_gain")
 
-    def get_midpoint(self, phase):
-        return self.do_cmd_multi(f"cc_mp {phase}")
+    @property
+    def cc_midpoint(self, phase):
+        mp = self.do_cmd_multi(f"cc_mp {phase}")
+        mp_re = re.findall("\d+[\.\d+]?", mp)
+        if not mp_re:
+            return None
+        return float("".join(mp_re))
 
-    def update_midpoint(self, value, phase):
+    def set_cc_midpoint(self, value, phase):
         return self.do_cmd_multi(f"cc_mp {value} {phase}")
 
     def set_input_output_cc(self, phase, input, output):
