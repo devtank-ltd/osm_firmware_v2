@@ -516,7 +516,8 @@ class dev_t(dev_base_t):
     def send_alive_packet(self):
         return self.do_cmd("connect")
 
-    def reconnect_announce(self, timeout_s:float=30., type_="lw"):
+    def reconnect_announce(self, timeout_s:float=30., type_="lw") -> str | bool:
+        comms_id = None
         self.set_dbg(4)
         self.do_cmd("comms_restart")
         end_time = time.monotonic() + timeout_s
@@ -526,11 +527,28 @@ class dev_t(dev_base_t):
                 self._log("Timeout reached, could not confirm send.")
                 return False
             time_left = end_time - time.monotonic()
+            lines = self._ll.readlines()
+            comms_id = self.parse_comms_id(lines)
             sleep_time = 0.5 if time_left > 0.5 else time_left
             time.sleep(sleep_time)
             connected = self.comms_conn.value
         if type_ == "lw":
             self.send_alive_packet()
+        return comms_id
+
+    def parse_comms_id(self, lines: str) -> str | None:
+        comms_id = None
+        comms_id_pattern = 'DEBUG:[0-9]{10}:COMMS:  << AT\+MQTTSUB=0,"osm/(?P<comms_id>[0-9A-F]{8})/cmd",0'
+        for line in lines:
+            r = re.search(comms_id_pattern, line)
+            if not r:
+                continue
+            try:
+                comms_id = r.groupdict()["comms_id"]
+                break
+            except KeyError:
+                self._log("Key doesnt exist: comms_id")
+        return comms_id
 
     def get_rak_version(self):
         self.set_dbg(4)
