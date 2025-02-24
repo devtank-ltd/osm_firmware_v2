@@ -1,4 +1,3 @@
-from importlib import reload
 import serial
 import select
 import datetime
@@ -13,6 +12,9 @@ import string
 import random
 import json
 import platform
+
+from importlib import reload
+from typing import List
 
 MODBUS_REG_SET_ADDR_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_addr>0x[0-9A-Fa-f]+) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
 MODBUS_REG_SET_NAME_SUCCESSFUL_PATTERN = "Successfully set (?P<dev_name>.{1,4})\((?P<unit_id>0x[0-9]+)\):(?P<reg_name>.{1,4})\((?P<reg_addr>0x[0-9A-Fa-f]+)\) = (?P<type>(U16)|(I16)|(U32)|(I32)|(FLOAT)):(?P<value>[0-9]+.[0-9]+)"
@@ -514,7 +516,8 @@ class dev_t(dev_base_t):
     def send_alive_packet(self):
         return self.do_cmd("connect")
 
-    def reconnect_announce(self, timeout_s:float=30., type_="lw"):
+    def reconnect_announce(self, timeout_s:float=30., type_="lw") -> str | bool:
+        comms_id = None
         self.set_dbg(4)
         self.do_cmd("comms_restart")
         end_time = time.monotonic() + timeout_s
@@ -524,11 +527,28 @@ class dev_t(dev_base_t):
                 self._log("Timeout reached, could not confirm send.")
                 return False
             time_left = end_time - time.monotonic()
+            lines = self._ll.readlines()
+            comms_id = self.parse_comms_id(lines)
             sleep_time = 0.5 if time_left > 0.5 else time_left
             time.sleep(sleep_time)
             connected = self.comms_conn.value
         if type_ == "lw":
             self.send_alive_packet()
+        return comms_id
+
+    def parse_comms_id(self, lines: str) -> str | None:
+        comms_id = None
+        comms_id_pattern = 'DEBUG:[0-9]{10}:COMMS:  << AT\+MQTTSUB=0,"osm/(?P<comms_id>[0-9A-F]{8})/cmd",0'
+        for line in lines:
+            r = re.search(comms_id_pattern, line)
+            if not r:
+                continue
+            try:
+                comms_id = r.groupdict()["comms_id"]
+                break
+            except KeyError:
+                self._log("Key doesnt exist: comms_id")
+        return comms_id
 
     def get_rak_version(self):
         self.set_dbg(4)
@@ -608,10 +628,14 @@ class dev_t(dev_base_t):
     def print_cc_gain(self):
         return self.do_cmd_multi("cc_gain")
 
-    def get_midpoint(self, phase):
-        return self.do_cmd_multi(f"cc_mp {phase}")
+    def cc_midpoint(self, phase: str) -> float | None:
+        mp = self.do_cmd(f"cc_mp {phase}")
+        mp_re = re.findall("\d+[\.\d+]?", mp)
+        if not mp_re:
+            return None
+        return float("".join(mp_re))
 
-    def update_midpoint(self, value, phase):
+    def set_cc_midpoint(self, value, phase):
         return self.do_cmd_multi(f"cc_mp {value} {phase}")
 
     def set_input_output_cc(self, phase, input, output):
@@ -634,7 +658,7 @@ class dev_t(dev_base_t):
             return ""
         return "".join([str(line) for line in r])
 
-    def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> str:
+    def do_cmd_multi(self, cmd: str, timeout: float = 1.5) -> List[str] | None:
         self._ll.write(cmd)
         debug_print(f"Reading with Timeout : {timeout}")
         now = time.monotonic()

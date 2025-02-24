@@ -268,8 +268,8 @@ class test_framework_t(object):
             unit = types_[p][-1]
             passed &= self._str_check(f"Valid {cc_name} Exterior value", cc_g[p*2], f"{cc_name} EXT max: 100.000A")
             passed &= self._str_check(f"Valid {cc_name} Interior value", cc_g[p*2+1], f"{cc_name} INT max: 0.050{unit}")
-            mp = self._vosm_conn.get_midpoint(cc_name)
-            passed &= self._str_check(f"{cc_name} Midpoint value is valid", mp[0], "MP: 2048.000")
+            mp = self._vosm_conn.cc_midpoint(cc_name)
+            passed &= self._threshold_check(cc_name, f"{cc_name} Midpoint value is valid", mp, 2048.0, 0.)
         return passed
 
     def test(self):
@@ -287,7 +287,7 @@ class test_framework_t(object):
             return False
         passed = True
         for p in range(1,4):
-            self._vosm_conn.update_midpoint(2048, f"CC{p}")
+            self._vosm_conn.set_cc_midpoint(2048, f"CC{p}")
             self._vosm_conn.set_input_output_cc(p, 100, 50)
         self._vosm_conn.interval_mins = self.INTERVAL_MINS
         passed &= self._check_interval_mins_val()

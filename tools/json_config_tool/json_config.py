@@ -46,9 +46,9 @@ class dev_json_t:
         self.fw = self.dev.version.value
         self.serial_num = self.dev.serial_num.value
         self.comms = self.dev.comms.as_dict()
-        self.cc1_mp = self.dev.get_midpoint("CC1")[0].split()[1]
-        self.cc2_mp = self.dev.get_midpoint("CC2")[0].split()[1]
-        self.cc3_mp = self.dev.get_midpoint("CC3")[0].split()[1]
+        self.cc1_mp = self.dev.cc_midpoint("CC1")
+        self.cc2_mp = self.dev.cc_midpoint("CC2")
+        self.cc3_mp = self.dev.cc_midpoint("CC3")
         modbus_exists = self.modbus_devices
         self.modbus_devs = []
         if modbus_exists:
@@ -210,7 +210,7 @@ class dev_json_t:
 
             cc_midpoints = contents["cc_midpoints"]
             for cc, value in cc_midpoints.items():
-                self.dev.update_midpoint(value, cc)
+                self.dev.set_cc_midpoint(value, cc)
 
             mb_contents = contents.get("modbus_bus")
 
