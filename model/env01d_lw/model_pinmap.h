@@ -58,6 +58,11 @@
 #define W1_PULSE_1_EXTI                     EXTI5
 #define W1_PULSE_1_EXTI_IRQ                 NVIC_EXTI9_5_IRQ
 #define W1_PULSE_1_ISR                      exti9_5_isr
+#define W1_PULSE_1_TIM                      TIM6
+#define W1_PULSE_1_TIM_RCC                  RCC_TIM6
+#define W1_PULSE_1_TIM_RST                  RST_TIM6
+#define W1_PULSE_1_TIM_IRQ                  NVIC_TIM6_DACUNDER_IRQ
+#define pulsecount_1_debounce_isr           tim6_dacunder_isr
 
 
 #define W1_PULSE_2_PORT_N_PINS              { GPIOC, GPIO11  }
@@ -65,6 +70,11 @@
 #define W1_PULSE_2_EXTI                     EXTI11
 #define W1_PULSE_2_EXTI_IRQ                 NVIC_EXTI15_10_IRQ
 #define W1_PULSE_2_ISR                      exti15_10_isr
+#define W1_PULSE_2_TIM                      TIM7
+#define W1_PULSE_2_TIM_RCC                  RCC_TIM7
+#define W1_PULSE_2_TIM_RST                  RST_TIM7
+#define W1_PULSE_2_TIM_IRQ                  NVIC_TIM7_IRQ
+#define pulsecount_2_debounce_isr           tim7_isr
 
 
 #define DS18B20_INSTANCES   {                                          \

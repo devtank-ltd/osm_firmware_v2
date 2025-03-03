@@ -7,6 +7,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/exti.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/stm32/timer.h>
 
 #include "log.h"
 #include "pinmap.h"
@@ -15,7 +16,6 @@
 #include "pulsecount.h"
 #include "platform_model.h"
 
-
 #define PULSECOUNT_COLLECTION_TIME_MS       10
 
 #define PULSECOUNT_INSTANCES   {                                       \
@@ -23,12 +23,14 @@
         W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
         W1_PULSE_1_EXTI_IRQ,                                           \
         IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
-        0, 0 },                                                        \
+        0, 0,                                                          \
+        W1_PULSE_1_TIM, W1_PULSE_1_TIM_RCC, W1_PULSE_1_TIM_RST, W1_PULSE_1_TIM_IRQ }, \
     { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
         W1_PULSE_2_PORT_N_PINS , W1_PULSE_2_EXTI,                      \
         W1_PULSE_2_EXTI_IRQ,                                           \
         IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
-        0, 0 }                                                         \
+        0, 0,                                                          \
+        W1_PULSE_2_TIM, W1_PULSE_2_TIM_RCC, W1_PULSE_2_TIM_RST, W1_PULSE_2_TIM_IRQ }, \
 }
 
 
@@ -41,6 +43,10 @@ typedef struct
     io_special_t        edge;
     volatile uint32_t   count;
     uint32_t            send_count;
+    uint32_t            tim;
+    uint32_t            tim_rcc;
+    uint32_t            tim_rst;
+    uint32_t            tim_irq;
 } pulsecount_instance_t;
 
 
@@ -58,6 +64,54 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 }
 
 
+static void _pulsecount_debounce_isr(volatile pulsecount_instance_t* inst)
+{
+    if (inst)
+    {
+        timer_clear_flag(inst->tim, TIM_SR_UIF);
+        /* Logic is:
+         * - if triggered on both, assume good, no way to know if it should be high or low here, increment any condition
+         * - if triggered on rising edge, check gpio is high, if it is high, increment
+         * - if triggered on falling edge, check gpio is low, if it is low, increment
+         */
+        switch(inst->edge)
+        {
+            case IO_SPECIAL_PULSECOUNT_BOTH_EDGE:
+                __sync_add_and_fetch(&inst->count, 1);
+                break;
+            case IO_SPECIAL_PULSECOUNT_RISING_EDGE:
+                if (gpio_get(inst->pnp.port, inst->pnp.pins))
+                {
+                    __sync_add_and_fetch(&inst->count, 1);
+                }
+                break;
+            case IO_SPECIAL_PULSECOUNT_FALLING_EDGE:
+                if (!gpio_get(inst->pnp.port, inst->pnp.pins))
+                {
+                    __sync_add_and_fetch(&inst->count, 1);
+                }
+                break;
+            default:
+                /* Unknown edge type */
+                break;
+        }
+        exti_enable_request(inst->exti);
+    }
+}
+
+
+void pulsecount_1_debounce_isr(void)
+{
+    _pulsecount_debounce_isr(&_pulsecount_instances[0]);
+}
+
+
+void pulsecount_2_debounce_isr(void)
+{
+    _pulsecount_debounce_isr(&_pulsecount_instances[1]);
+}
+
+
 void pulsecount_isr(uint32_t exti_group)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
@@ -71,7 +125,8 @@ void pulsecount_isr(uint32_t exti_group)
         if (!exti_state)
             continue;
         exti_reset_request(inst->exti);
-        __sync_add_and_fetch(&inst->count, 1);
+        exti_disable_request(inst->exti);
+        timer_enable_counter(inst->tim);
     }
 }
 
@@ -116,6 +171,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
             return;
     }
 
+    /* SETUP EXTI */
     rcc_periph_clock_enable(PORT_TO_RCC(instance->pnp.port));
     gpio_mode_setup(instance->pnp.port, GPIO_MODE_INPUT, pupd, instance->pnp.pins);
 
@@ -126,7 +182,26 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     instance->count = 0;
     instance->send_count = 0;
 
+    /* SETUP TIMER */
+    rcc_periph_clock_enable(instance->tim_rcc);
+
+    timer_disable_counter(instance->tim);
+
+    /* because it starts at zero, and interrupts on the overflow
+       Using 50ms for debounce
+     */
+    timer_set_prescaler(instance->tim, rcc_apb1_frequency / 10000 -1);
+    timer_set_period(instance->tim, 500);
+    timer_one_shot_mode(instance->tim);
+
+    timer_enable_update_event(instance->tim); /* default at reset! */
+    timer_clear_flag(instance->tim, TIM_SR_UIF);
+    timer_enable_irq(instance->tim, TIM_DIER_UIE);
+
+    /* ENABLE INTERRUPTS */
+    nvic_enable_irq(instance->tim_irq);
     nvic_enable_irq(instance->exti_irq);
+
     pulsecount_debug("Pulsecount '%s' enabled", instance->info.name);
 }
 
