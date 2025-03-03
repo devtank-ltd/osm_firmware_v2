@@ -33,6 +33,8 @@
         W1_PULSE_2_TIM, W1_PULSE_2_TIM_RCC, W1_PULSE_2_TIM_RST, W1_PULSE_2_TIM_IRQ }, \
 }
 
+#define PULSECOUNT_INDEX_FROM_INST(_inst, _arr)         ((_inst - _arr) / sizeof(pulsecount_instance_t))
+
 
 typedef struct
 {
@@ -51,6 +53,7 @@ typedef struct
 
 
 static pulsecount_instance_t _pulsecount_instances[] = PULSECOUNT_INSTANCES;
+static uint32_t* _pulsecount_debounces_ms = NULL;
 
 
 static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
@@ -191,7 +194,14 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
        Using 50ms for debounce
      */
     timer_set_prescaler(instance->tim, rcc_apb1_frequency / 10000 -1);
-    timer_set_period(instance->tim, 500);
+    unsigned index = PULSECOUNT_INDEX_FROM_INST(instance, _pulsecount_instances);
+    uint32_t period = _pulsecount_debounces_ms[index] * 10;
+    if (!period)
+    {
+        pulsecount_debug("Set period is 0ms, using 50ms");
+        period = 500;
+    }
+    timer_set_period(instance->tim, period);
     timer_one_shot_mode(instance->tim);
 
     timer_enable_update_event(instance->tim); /* default at reset! */
@@ -208,6 +218,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 
 static void _pulsecount_init(unsigned io, io_special_t edge)
 {
+    _pulsecount_debounces_ms = ((persist_model_config_t*)&persist_data)->pulsecount_debounces_ms;
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
@@ -237,6 +248,8 @@ static void _pulsecount_shutdown_instance(pulsecount_instance_t* instance)
         pulsecount_debug("IO is not pulsecount.");
         return;
     }
+    nvic_disable_irq(instance->tim_irq);
+    timer_disable_counter(instance->tim);
     exti_disable_request(instance->exti);
     nvic_disable_irq(instance->exti_irq);
     instance->count = 0;
@@ -400,8 +413,66 @@ syntax_exit:
 }
 
 
+static bool _pulsecount_index_from_io(unsigned* index, unsigned io)
+{
+    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    {
+        if (_pulsecount_instances[i].info.io == io)
+        {
+            *index = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+static command_response_t _pulsecount_pulse_dbnc_cb(char* args, cmd_ctx_t * ctx)
+{
+    if (!_pulsecount_debounces_ms)
+    {
+        cmd_ctx_out(ctx,"Persistent storage not loaded");
+        return COMMAND_RESP_ERR;
+    }
+    char* p;
+    unsigned io = strtoul(args, &p, 10);
+    if (p == args)
+        goto syntax_exit;
+    if (!io_is_pulsecount_now(io))
+    {
+        cmd_ctx_out(ctx,"IO isn't a pulsecount");
+        return COMMAND_RESP_ERR;
+    }
+    unsigned index = 0;
+    if (!_pulsecount_index_from_io(&index, io))
+    {
+        cmd_ctx_out(ctx,"Can't find IO as pulsecount");
+        return COMMAND_RESP_ERR;
+    }
+    p = skip_space(p);
+    char* np;
+    unsigned ms = strtoul(p, &np, 10);
+    if (p != np)
+    {
+        _pulsecount_debounces_ms[index] = ms;
+        pulsecount_instance_t* inst = &_pulsecount_instances[index];
+        _pulsecount_shutdown_instance(inst);
+        _pulsecount_init_instance(inst);
+    }
+    cmd_ctx_out(ctx,"%02u: %"PRIu32"ms", io, _pulsecount_debounces_ms[index]);
+    return COMMAND_RESP_OK;
+syntax_exit:
+    cmd_ctx_out(ctx,"<io> [ms]");
+    return COMMAND_RESP_ERR;
+}
+
+
 struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "hw_pupd",      "Print all IOs.",           _hw_pupd_cb                   , false , NULL }};
+    static struct cmd_link_t cmds[] =
+    {
+        { "hw_pupd",      "Print all IOs.",                 _hw_pupd_cb                 , false , NULL },
+        { "pulse_dbnc",   "Get/set pulse debounce (ms)",    _pulsecount_pulse_dbnc_cb   , false , NULL },
+    };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

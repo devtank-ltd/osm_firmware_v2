@@ -86,6 +86,7 @@
 
 #define W1_IOS                  { {.pnp={ GPIOC, GPIO6 }, .io=2 } }
 
+#define W1_PULSE_COUNT                      3
 
 #define IOS_PORT_N_PINS            \
 {                                  \

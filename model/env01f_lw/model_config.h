@@ -25,7 +25,7 @@
 #define PERSIST_RAW_DATA            ((const uint8_t*)PAGE2ADDR(FLASH_CONFIG_PAGE))
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
-#define PERSIST_MODEL_VERSION       3
+#define PERSIST_MODEL_VERSION       4
 #define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 #define CMD_LINELEN 128
@@ -106,11 +106,14 @@ typedef struct
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ___[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
+    uint32_t                pulsecount_debounces_ms[W1_PULSE_COUNT];
+    uint8_t                 ____[16-((W1_PULSE_COUNT * sizeof(uint32_t))%16)];
+    /* 16 byte boundary ---- */
     float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-    uint8_t                 ____[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    uint8_t                 _____[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
     uint32_t                sai_no_buf;
-    uint8_t                 _____[16-(sizeof(uint32_t)%16)];
+    uint8_t                 ______[16-(sizeof(uint32_t)%16)];
     /* 7 x 16 bytes          */
 } persist_model_config_v1_t;
 
@@ -118,6 +121,7 @@ STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, modbus_bus);
 STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, comms_config);
 STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, cc_configs);
 STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ios_state);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, pulsecount_debounces_ms);
 STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, sai_cal_coeffs);
 
 #define persist_model_config_t        persist_model_config_v1_t
