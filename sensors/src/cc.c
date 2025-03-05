@@ -32,6 +32,7 @@
  */
 #define CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV   340
 #define CC_IS_NOT_PLUGGED_IN_THRESHOLD      (1000 * CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV * (ADC_MAX_VAL + 1) / ADC_MAX_MV)
+#define CC_MIDPOINT_VALID_WIDTH             (1000 * 500)
 
 
 typedef struct
@@ -458,10 +459,25 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 }
 
 
+static bool _cc_mp_valid(uint32_t midpoint)
+{
+    int64_t diff = midpoint;
+    diff -= CC_DEFAULT_MIDPOINT;
+    return (diff >= 0 ? diff < CC_MIDPOINT_VALID_WIDTH : diff > -CC_MIDPOINT_VALID_WIDTH);
+}
+
+
 static bool _cc_set_midpoints(uint32_t new_midpoints[ADC_CC_COUNT])
 {
     for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
+    {
+        if (!_cc_mp_valid(new_midpoints[i]))
+        {
+            adc_debug("Midpoint not valid for CC%u", i+1);
+            return false;
+        }
         _configs[i].midpoint = new_midpoints[i];
+    }
     return true;
 }
 
@@ -473,6 +489,11 @@ static bool _cc_set_midpoint(uint32_t midpoint, char* name)
         return false;
     if (index >= ADC_CC_COUNT)
     {
+        return false;
+    }
+    if (!_cc_mp_valid(midpoint))
+    {
+        adc_debug("Midpoint not valid");
         return false;
     }
     _configs[index].midpoint = midpoint;
