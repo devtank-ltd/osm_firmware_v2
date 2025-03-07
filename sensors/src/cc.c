@@ -463,7 +463,8 @@ static bool _cc_mp_valid(uint32_t midpoint)
 {
     int64_t diff = midpoint;
     diff -= CC_DEFAULT_MIDPOINT;
-    return (diff >= 0 ? diff < CC_MIDPOINT_VALID_WIDTH : diff > -CC_MIDPOINT_VALID_WIDTH);
+    diff = llabs(diff);
+    return (diff < CC_MIDPOINT_VALID_WIDTH);
 }
 
 
