@@ -4,3 +4,6 @@
 [submodule "libs/embedded-i2c-sen5x"]
 	path = libs/embedded-i2c-sen5x
 	url = ../embedded-i2c-sen5x
+[submodule "libs/embedded-i2c-sen66"]
+	path = libs/embedded-i2c-sen66
+	url = ../embedded-i2c-sen66
