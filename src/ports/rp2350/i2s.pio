@@ -1,0 +1,86 @@
+.program i2s_out
+
+.side_set 2
+
+public entry_point:
+                     ;        /--- LRCLK
+                     ;        |/-- BCLK
+frame_l:             ;        ||
+    set x, 30         side 0b00 ; start of Left frame
+    pull noblock      side 0b01 ; One clock after edge change with no data
+data_l:
+    out pins, 1       side 0b00
+    jmp x-- data_l    side 0b01
+
+frame_r:
+    set x, 30         side 0b10
+    pull noblock      side 0b11 ; One clock after edge change with no data
+data_r:
+    out pins, 1       side 0b10
+    jmp x-- data_r    side 0b11
+
+
+.program i2s_in
+
+start_sample_l:
+    wait 1 pin 1            ; DIN should be sampled on rising transition of BCK
+    in pins, 1              ; first "bit" of new frame is actually LSB of last frame, per I2S
+    push noblock            ; push however many bits we read into the FIFO
+    wait 0 pin 1            ; ignore first BCK transition after edge
+public_entry_point:
+    wait 0 pin 2            ; wait for L frame to come around before we start
+sample_l:
+    wait 1 pin 1            ; DIN should be sampled on rising transition of BCK
+    in pins, 1              ; read DIN
+    wait 0 pin 1            ; don't sample more than once per rising edge, wait for next clock
+    jmp pin start_sample_r  ; if LRCK has gone high, we're "done" with this word (1 bit left to read)
+    jmp sample_l
+start_sample_r:
+    wait 1 pin 1            ; wait for the last bit of the previous frame
+    in pins, 1              ; first "bit" of new frame is actually LSB of last frame, per I2S
+    push noblock            ; push the completed word to the FIFO
+    wait 0 pin 1            ; wait for next clock cycle
+sample_r:
+    wait 1 pin 1
+    in pins, 1
+    wait 0 pin 1
+    jmp pin sample_r        ; if LRCK is still high, we're still sampling this word
+                            ; implicit jmp to start_sample_l: otherwise, start the loop over
+
+
+% c-sdk {
+static inline void i2s_out_program_init(PIO pio, uint8_t sm, uint8_t offset, uint8_t bit_depth, uint8_t clock_pin, uint8_t lrcl_pin) {
+    pio_gpio_init(pio, clock_pin);
+    pio_gpio_init(pio, lrcl_pin);
+
+    pio_sm_config sm_config = i2s_out_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&sm_config, clock_pin);
+    sm_config_set_out_shift(&sm_config, false, false, bit_depth);
+    sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_TX);
+    pio_sm_init(pio, sm, offset, &sm_config);
+
+    uint32_t pin_mask = (1u << clock_pin) | (1u << lrcl_pin);
+    pio_sm_set_pins_with_mask(pio, sm, 0, pin_mask);
+    pio_sm_set_pindirs_with_mask(pio, sm, pin_mask, pin_mask);
+
+    pio_sm_set_clkdiv_int_frac(pio, sm, 24, 104);
+}
+
+static inline void i2s_in_program_init(PIO pio, uint8_t sm, uint8_t offset, uint8_t din_pin, uint8_t clock_pin, uint8_t lrcl_pin) {
+    pio_gpio_init(pio, din_pin);
+    gpio_set_pulls(din_pin, false, false);
+    gpio_set_dir(din_pin, false);
+
+    pio_sm_config sm_config = i2s_in_program_get_default_config(offset);
+    sm_config_set_in_pins(&sm_config, din_pin);
+    sm_config_set_in_shift(&sm_config, false, false, 0);
+    sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_RX);
+    sm_config_set_jmp_pin(&sm_config, lrcl_pin);
+    pio_sm_init(pio, sm, offset, &sm_config);
+
+    uint32_t pin_mask = (1u << din_pin) | (1u << clock_pin) | (1u << lrcl_pin);
+    pio_sm_set_pindirs_with_mask(pio, sm, 0, pin_mask);
+
+    pio_sm_set_clkdiv_int_frac(pio, sm, 6, 26);
+}
+%}

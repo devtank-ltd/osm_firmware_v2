@@ -22,4 +22,13 @@ $$(OSM_BUILD_DIR)/$(1)/.complete:
 	mkdir -p $$(OSM_BUILD_DIR)/$(1)
 	touch $$@
 endif
+
+$(1)_flash: $$(OSM_BUILD_DIR)/$(1)/bootloader.bin $$(OSM_BUILD_DIR)/$(1)/application.bin
+	openocd -f interface/cmsis-dap.cfg \
+	        -f target/rp2350.cfg \
+	        -c "init" -c "reset init" \
+	        -c "program $$(OSM_BUILD_DIR)/$(1)/bootloader.bin 0x10000000 verify reset" \
+	        -c "program $$(OSM_BUILD_DIR)/$(1)/application.bin 0x1000a000 verify reset exit" \
+	        -c "reset" \
+	        -c "shutdown"
 endef

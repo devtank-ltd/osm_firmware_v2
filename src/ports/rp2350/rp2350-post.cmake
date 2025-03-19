@@ -27,7 +27,13 @@ separate_arguments(OSM_SRCS UNIX_COMMAND PROGRAM SEPARATE_ARGS $ENV{OSM_SRCS})
 
 list(TRANSFORM OSM_SRCS PREPEND $ENV{OSM_DIR}/)
 
-add_executable(application ${OSM_SRCS})
+add_executable(application)
+
+pico_generate_pio_header(application
+    ${CMAKE_CURRENT_LIST_DIR}/i2s.pio
+)
+
+target_sources(application PRIVATE ${OSM_SRCS})
 
 target_link_libraries(application
     pico_stdlib
@@ -39,6 +45,7 @@ target_link_libraries(application
     hardware_irq
     hardware_dma
     hardware_flash
+    hardware_pio
 )
 
 pico_add_extra_outputs(application)

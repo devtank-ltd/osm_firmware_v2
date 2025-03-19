@@ -128,7 +128,6 @@ void uart_enable(unsigned uart, bool enable)
         if (0 <= dma_channel)
         {
             dma_channel_abort(dma_channel);
-            dma_channel_acknowledge_irq0(dma_channel);
             dma_channel_cleanup(dma_channel);
             dma_channel_unclaim(dma_channel);
             _uarts_dma_channels[uart] = -1;

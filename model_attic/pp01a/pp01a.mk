@@ -16,6 +16,7 @@ pp01a_SOURCES := \
     $(OSM_DIR)/src/ports/rp2350/uarts.c \
     $(OSM_DIR)/src/ports/rp2350/rp2350_comms.c \
     $(OSM_DIR)/src/ports/rp2350/update.c \
+    $(OSM_DIR)/src/ports/rp2350/i2s.c \
     $(OSM_DIR)/src/protocols/jsonblob.c \
     $(OSM_DIR)/src/protocols/comms_behind.c \
     $(OSM_DIR)/src/sensors/fw.c \

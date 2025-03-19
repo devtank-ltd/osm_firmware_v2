@@ -10,11 +10,13 @@
 #include <osm/sensors/fw.h>
 #include <osm/protocols/protocol.h>
 #include <osm/core/update.h>
+#include "i2s.h"
 
 void model_post_init(void) {}
 
 void model_sensors_init(void)
 {
+    i2s_init();
 }
 
 /* Return true  if different
@@ -75,6 +77,7 @@ void model_cmds_add_all(struct cmd_link_t* tail)
     tail = persist_config_add_commands(tail);
     tail = measurements_add_commands(tail);
     tail = update_add_commands(tail);
+    tail = i2s_add_commands(tail);
 }
 
 

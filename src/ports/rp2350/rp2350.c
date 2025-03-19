@@ -2,6 +2,7 @@
 
 #include "pico/unique_id.h"
 #include "pico/flash.h"
+#include "pico/sync.h"
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
 #include "hardware/divider.h"
@@ -85,6 +86,7 @@ void platform_init(void)
 #ifdef CYW43_WL_GPIO_LED_PIN
     cyw43_arch_init();
 #endif
+    set_sys_clock_khz(150000, true);
 }
 
 
@@ -139,9 +141,18 @@ static bool _rp2350_persist_commit2(uint8_t* dst, uint8_t* src, uint32_t size)
 
 bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
+    /* ============================ WARNING ============================
+     * Entering critical section, will potentially miss interrupts here
+     */
+    critical_section_t crit_sec;
+    critical_section_init(&crit_sec);
+    critical_section_enter_blocking(&crit_sec);
     flash_range_erase(PERSIST_CONFIG_SECTOR, FLASH_SECTOR_SIZE);
-    return (_rp2350_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(persist_storage_t)) &&
+    bool ret = (_rp2350_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(persist_storage_t)) &&
         (_rp2350_persist_commit2(PERSIST_RAW_MEASUREMENTS, (uint8_t*)persist_measurements, sizeof(persist_measurements_storage_t))));
+    critical_section_exit(&crit_sec);
+    critical_section_deinit(&crit_sec);
+    return ret;
 }
 
 void platform_persist_wipe(void)
