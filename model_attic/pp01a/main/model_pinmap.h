@@ -47,3 +47,6 @@ char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
 }
 
+#define I2S_DIN_PIN             7
+#define I2S_BCK_PIN             8
+#define I2S_LRCL_PIN            9
