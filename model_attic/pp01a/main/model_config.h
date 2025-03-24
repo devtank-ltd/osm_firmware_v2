@@ -44,26 +44,44 @@
 #define UART_1_IN_BUF_SIZE  256
 #define UART_1_OUT_BUF_SIZE 512
 
+#define UART_2_IN_BUF_SIZE  256
+#define UART_2_OUT_BUF_SIZE 512
+
+#define UART_3_IN_BUF_SIZE  256
+#define UART_3_OUT_BUF_SIZE 512
+
 /* Uart index on uart ring buffer use
 
     CMD_UART    0
     COMMS_UART  1
+    RS485_UART  1
+    RS232_UART  1
 */
 
 #define CMD_UART            0
 #define COMMS_UART          1
+#define RS485_UART          2
+#define RS232_UART          3
 
 #define UART_0_SPEED        115200  /* DEBUG */
 #define UART_1_SPEED        9600    /* COMMS */
+#define UART_2_SPEED        9600    /* RS485 */
+#define UART_3_SPEED        9600    /* RS232 */
 
 #define UART_0_PARITY       uart_parity_none
 #define UART_1_PARITY       uart_parity_none
+#define UART_2_PARITY       uart_parity_none
+#define UART_3_PARITY       uart_parity_none
 
 #define UART_0_DATABITS     8
 #define UART_1_DATABITS     8
+#define UART_2_DATABITS     8
+#define UART_3_DATABITS     8
 
 #define UART_0_STOP         uart_stop_bits_1
 #define UART_1_STOP         uart_stop_bits_1
+#define UART_2_STOP         uart_stop_bits_1
+#define UART_3_STOP         uart_stop_bits_1
 
 #define IOS_COUNT 0
 
