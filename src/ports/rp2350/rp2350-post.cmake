@@ -31,6 +31,7 @@ add_executable(application)
 
 pico_generate_pio_header(application
     ${CMAKE_CURRENT_LIST_DIR}/i2s.pio
+    ${CMAKE_CURRENT_LIST_DIR}/uarts.pio
 )
 
 target_sources(application PRIVATE ${OSM_SRCS})

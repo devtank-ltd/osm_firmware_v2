@@ -59,7 +59,7 @@ void i2s_init(void)
 {
     mutex_init(&_mtx);
 
-    PIO pio = pio0;
+    PIO pio = pio1;
     uint32_t in_sm  = pio_claim_unused_sm(pio, true);
     uint32_t in_offset = pio_add_program(pio, &i2s_in_program);
     i2s_in_program_init(pio, in_sm, in_offset, I2S_DIN_PIN, I2S_BCK_PIN, I2S_LRCL_PIN);
