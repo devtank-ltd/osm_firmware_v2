@@ -13,6 +13,7 @@ typedef struct
     uint16_t              tx_pin;
     uint16_t              rx_pin;
     uint8_t               enabled;
+    int                   pio; /* if pio < 0 then don't use pio */
 } uart_channel_t;
 
 
