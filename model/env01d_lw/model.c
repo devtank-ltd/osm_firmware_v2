@@ -54,6 +54,10 @@ void model_persist_config_model_init(persist_model_config_v1_t* model_config)
     cc_setup_default_mem(model_config->cc_configs, sizeof(model_config->cc_configs));
     lw_config_init(&model_config->comms_config);
     model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
+    for (unsigned i = 0; i < W1_PULSE_COUNT; i++)
+    {
+        model_config->pulsecount_debounces_ms[i] = 50;
+    }
 }
 
 
@@ -69,7 +73,8 @@ bool model_persist_config_cmp(persist_model_config_v1_t* d0, persist_model_confi
         memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
         memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&
-        d0->sai_no_buf == d1->sai_no_buf );
+        d0->sai_no_buf == d1->sai_no_buf &&
+        memcmp(d0->pulsecount_debounces_ms, d1->pulsecount_debounces_ms, sizeof(uint32_t) * W1_PULSE_COUNT) == 0);
 }
 
 
