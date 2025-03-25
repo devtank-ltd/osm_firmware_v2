@@ -218,7 +218,6 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 
 static void _pulsecount_init(unsigned io, io_special_t edge)
 {
-    _pulsecount_debounces_ms = ((persist_model_config_t*)&persist_data)->pulsecount_debounces_ms;
     for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
@@ -233,6 +232,7 @@ static void _pulsecount_init(unsigned io, io_special_t edge)
 
 void pulsecount_init(void)
 {
+    _pulsecount_debounces_ms = ((persist_model_config_t*)&persist_data.model_config)->pulsecount_debounces_ms;
 }
 
 
