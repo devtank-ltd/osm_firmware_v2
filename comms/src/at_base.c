@@ -142,6 +142,23 @@ command_response_t at_base_config_setup_str(struct cmd_link_t * cmds, char * str
             next = skip_space(next);
             *t = 0;
         }
+        if ('"' == next[0])
+        {
+            char* end_name = strchr(next+1, '"');
+            if (end_name)
+            {
+                next++;
+                while (end_name && '\\' == *(end_name - 1))
+                {
+                    unsigned len = strlen(end_name);
+                    memmove(end_name - 1, end_name, len);
+                    end_name[len - 1] = 0;
+                    end_name = strchr(end_name, '"');
+                }
+                if (end_name)
+                    *end_name = 0;
+            }
+        }
         for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
         {
             if (!strcmp(cmd->key, str) && cmd->cb)
