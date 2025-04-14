@@ -27,7 +27,7 @@
 
 #define ADC_DMA_CHANNELS_COUNT  1
 
-#define ADC_COUNT       5
+#define ADC_COUNT       4
 
 #define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
                            ADCS_TYPE_CC_CLAMP2,  \

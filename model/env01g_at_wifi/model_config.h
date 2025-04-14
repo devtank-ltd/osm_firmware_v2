@@ -133,8 +133,18 @@ STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, sai_cal_coeffs);
 
 #define persist_model_config_t        persist_model_config_v1_t
 
-#define FTMA_DEFAULT_COEFF_A                                  0.00000954233007577f
-#define FTMA_DEFAULT_COEFF_B                                  0.00635309602004452f
+#define FTMA_RESISTOR_S_OHM                                 30
+#define FTMA_RESISTOR_0_OHM                                 50000
+#define FTMA_RESISTOR_G_OHM                                 13000
+/*
+ * Gain =          1
+ *       ----------------------
+ *       30 * ( 50k / 13k ) + 1
+ */
+#define FTMA_HARDWARE_GAIN                                  (1.f / ((float)FTMA_RESISTOR_S_OHM * (((float)FTMA_RESISTOR_0_OHM / (float)FTMA_RESISTOR_G_OHM) + 1.f)))
+
+#define FTMA_DEFAULT_COEFF_A                                  0.f
+#define FTMA_DEFAULT_COEFF_B                                  FTMA_HARDWARE_GAIN
 #define FTMA_DEFAULT_COEFF_C                                  0.f
 #define FTMA_DEFAULT_COEFF_D                                  0.f
 
