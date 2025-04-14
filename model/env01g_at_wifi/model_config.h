@@ -83,7 +83,7 @@
 #define MODBUS_DATABITS     UART_4_DATABITS
 #define MODBUS_STOP         UART_4_STOP
 
-#define IOS_COUNT           3
+#define IOS_COUNT           4
 
 #define ADC_MAX_MV          3000 /* Set with stable voltage source */
 #define ADC_CC_COUNT        3

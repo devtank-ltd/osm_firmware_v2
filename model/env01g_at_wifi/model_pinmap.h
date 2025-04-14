@@ -97,6 +97,7 @@
     { GPIOB, GPIO5 },  /* IO 0  */ \
     { GPIOC, GPIO11 }, /* IO 1  */ \
     { GPIOC, GPIO6 },  /* IO 2  */ \
+    { GPIOC, GPIO7 },  /* IO 3  */ \
 }
 
 
@@ -105,6 +106,7 @@
     IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
     IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
     IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
+    IO_DIR_LOCKED,                                      /* GPIO 3   */ \
 }
 
 
