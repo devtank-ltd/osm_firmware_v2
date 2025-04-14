@@ -136,3 +136,6 @@
 
 #define SEN5x_I2C                           I2C1
 #define E_24LC00T_I2C                       I2C1
+
+#define COMMS_LED                   { GPIOC, GPIO1 }
+#define ERROR_LED                   { GPIOC, GPIO2 }
