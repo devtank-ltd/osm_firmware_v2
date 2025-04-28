@@ -149,6 +149,7 @@ static struct
     at_wifi_ap_info_t       ap_info_list[AT_WIFI_AP_LIST_LEN];
     unsigned                ap_info_len;
     enum at_wifi_states_t   before_ap_list_state;
+    bool                    autoconnect;
 } _at_wifi_ctx =
 {
     .state                      = AT_WIFI_STATE_OFF,
@@ -172,6 +173,7 @@ static struct
     },
     .ap_info_list = {{0}},
     .ap_info_len = 0,
+    .autoconnect = 0,
 };
 
 
@@ -1494,7 +1496,8 @@ command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
         {
             _at_wifi_send_rf_region();
         }
-        else if (at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
+        else if (_at_wifi_ctx.autoconnect &&
+            at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
         {
             _at_wifi_reset();
         }
@@ -1746,6 +1749,14 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
+static command_response_t _at_wifi_autoconnect_cb(char* args, cmd_ctx_t * ctx)
+{
+    unsigned en = strtoul(args, NULL, 10);
+    _at_wifi_ctx.autoconnect = !!en;
+    return COMMAND_RESP_OK;
+}
+
+
 struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
@@ -1757,6 +1768,7 @@ struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
         { "comms_state" , "Get Comms state"             , _at_wifi_state_cb         , false , NULL },
         { "comms_restart", "Comms restart"              , _at_wifi_restart_cb       , false , NULL },
         { "comms_list",   "List stations"               , _at_list_cb               , false , NULL },
+        { "comms_autoconnect", "Enable/disable autoconnect", _at_wifi_autoconnect_cb , false , NULL },
     };
     return add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
