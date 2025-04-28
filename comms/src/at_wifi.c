@@ -173,7 +173,7 @@ static struct
     },
     .ap_info_list = {{0}},
     .ap_info_len = 0,
-    .autoconnect = 0,
+    .autoconnect = true,
 };
 
 
@@ -1751,8 +1751,14 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_wifi_autoconnect_cb(char* args, cmd_ctx_t * ctx)
 {
-    unsigned en = strtoul(args, NULL, 10);
-    _at_wifi_ctx.autoconnect = !!en;
+    char* p = skip_space(args);
+    char* np = NULL;
+    unsigned en = strtoul(p, &np, 10);
+    if (p != np)
+    {
+        _at_wifi_ctx.autoconnect = !!en;
+    }
+    cmd_ctx_out(ctx,"AUTOCONNECT:%u", (unsigned)_at_wifi_ctx.autoconnect);
     return COMMAND_RESP_OK;
 }
 
