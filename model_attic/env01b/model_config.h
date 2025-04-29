@@ -103,6 +103,6 @@ typedef struct
     uint8_t                 ______[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 7 x 16 bytes          */
-} persist_model_config_v1_t;
+} persist_model_config_v4_t;
 
-#define persist_model_config_t        persist_model_config_v1_t
+#define persist_model_config_t        persist_model_config_v4_t
