@@ -9,7 +9,23 @@
 #include "platform.h"
 #include "persist_config.h"
 #include "uart_rings.h"
+#include "model.h"
 
+
+bool persist_config_update(const persist_storage_t* from_config, persist_storage_t* to_config)
+{
+    uint16_t base_version = from_config->version >> 8;
+    uint16_t model_version = from_config->version & 0xFF;
+    if (PERSIST_BASE_VERSION == base_version)
+    {
+        memcpy(to_config, from_config, sizeof(persist_storage_t));
+    }
+    else
+    {
+        return false;
+    }
+    return model_config_update((const void*)&from_config->model_config, &to_config->model_config, model_version);
+}
 
 
 char * persist_get_serial_number(void)

@@ -27,3 +27,5 @@ extern char*    persist_get_human_name(void);
 
 extern struct cmd_link_t* persist_config_add_commands(struct cmd_link_t* tail);
 extern void persist_config_inf_init(measurements_inf_t* inf);
+
+extern bool persist_config_update(const persist_storage_t* from_config, persist_storage_t* to_config);

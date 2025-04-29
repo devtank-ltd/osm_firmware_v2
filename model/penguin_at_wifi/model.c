@@ -34,7 +34,7 @@ typedef int iso_is_annoying_go_away_pls_t;
 #include "linux.h"
 
 
-void model_persist_config_model_init(persist_model_config_v1_t* model_config)
+void model_persist_config_model_init(persist_model_config_t* model_config)
 {
     model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     cc_setup_default_mem(model_config->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
@@ -46,7 +46,7 @@ void model_persist_config_model_init(persist_model_config_v1_t* model_config)
 
 /* Return true  if different
  *        false if same      */
-bool model_persist_config_cmp(persist_model_config_v1_t* d0, persist_model_config_v1_t* d1)
+bool model_persist_config_cmp(persist_model_config_t* d0, persist_model_config_t* d1)
 {
     return !(
         d0 && d1 &&
