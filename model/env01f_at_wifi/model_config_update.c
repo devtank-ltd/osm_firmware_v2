@@ -1,7 +1,7 @@
 #include "model_config.h"
 
 
-static void _model_config_update_data_v3_to_v4(persist_model_config_v3_t* v3, persist_model_config_v4_t* v4)
+static void _model_config_update_data_v3_to_v4(const persist_model_config_v3_t* v3, persist_model_config_v4_t* v4)
 {
     memset(v4, 0, sizeof(persist_model_config_v4_t));
     v4->mins_interval = v3->mins_interval;
@@ -18,11 +18,11 @@ static void _model_config_update_data_v3_to_v4(persist_model_config_v3_t* v3, pe
 }
 
 
-bool model_config_update(void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
+bool model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
 {
     if (3 == from_model_version)
     {
-        persist_model_config_v3_t* v3 = (persist_model_config_v3_t*)from_config;
+        const persist_model_config_v3_t* v3 = (const persist_model_config_v3_t*)from_config;
         _model_config_update_data_v3_to_v4(v3, to_config);
         return true;
     }

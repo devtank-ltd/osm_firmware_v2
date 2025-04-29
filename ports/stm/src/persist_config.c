@@ -41,8 +41,8 @@ static void _persist_wipe(void)
 
 bool persistent_init(void)
 {
-    persist_storage_t* persist_data_raw = platform_get_raw_persist();
-    persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
+    const persist_storage_t* persist_data_raw = platform_get_raw_persist();
+    const persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
 
     bool wipe = false;
 

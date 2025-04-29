@@ -1,7 +1,7 @@
 #include "persist_config_header_model.h"
 
 
-bool model_config_update(void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
+bool model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
 {
     return false;
 }
