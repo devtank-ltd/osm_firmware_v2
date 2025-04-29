@@ -9,7 +9,23 @@
 #include "platform.h"
 #include "persist_config.h"
 #include "uart_rings.h"
+#include "model.h"
 
+
+bool persist_config_update(persist_storage_t* config)
+{
+    uint16_t base_version = config->version >> 8;
+    uint16_t model_version = config->version & 0xFF;
+    if (PERSIST_BASE_VERSION == base_version)
+    {
+        /* if anything to upgrade, do here */
+    }
+    else
+    {
+        return false;
+    }
+    return model_config_update(&config->model_config, model_version);
+}
 
 
 char * persist_get_serial_number(void)

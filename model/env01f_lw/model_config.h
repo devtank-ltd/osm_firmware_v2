@@ -115,13 +115,13 @@ typedef struct
     uint32_t                sai_no_buf;
     uint8_t                 ______[16-(sizeof(uint32_t)%16)];
     /* 7 x 16 bytes          */
-} persist_model_config_v1_t;
+} persist_model_config_v4_t;
 
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, modbus_bus);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, comms_config);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, cc_configs);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ios_state);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, pulsecount_debounces_ms);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, sai_cal_coeffs);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, modbus_bus);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, comms_config);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, cc_configs);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, ios_state);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, pulsecount_debounces_ms);
+STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, sai_cal_coeffs);
 
-#define persist_model_config_t        persist_model_config_v1_t
+#define persist_model_config_t        persist_model_config_v4_t

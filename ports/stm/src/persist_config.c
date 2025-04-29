@@ -21,6 +21,24 @@ persist_storage_t               persist_data __attribute__((aligned (16)));
 persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));
 
 
+static void _persist_wipe(void)
+{
+    log_error("Setting persistent data.");
+    memset(&persist_data, 0, sizeof(persist_data));
+    memset(&persist_measurements, 0, sizeof(persist_measurements));
+    persist_data.version = PERSIST_VERSION;
+    persist_data.log_debug_mask = DEBUG_SYS;
+    persist_data.config_count = 0;
+    if (strlen(STR(fw_name)) > MODEL_NAME_LEN)
+        memcpy(&persist_data.model_name[0], STR(fw_name), MODEL_NAME_LEN);
+    else
+        snprintf(persist_data.model_name, MODEL_NAME_LEN, STR(fw_name));
+    unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, platform_get_hw_id());
+    persist_data.human_name[human_name_len] = 0;
+    model_persist_config_model_init(&persist_data.model_config);
+}
+
+
 bool persistent_init(void)
 {
     persist_storage_t* persist_data_raw = platform_get_raw_persist();
@@ -32,11 +50,6 @@ bool persistent_init(void)
         !persist_measurements_raw)
     {
         log_error("Unable to load persistent data.");
-        wipe = true;
-    }
-    else if (persist_data_raw->version != PERSIST_VERSION)
-    {
-        log_error("Persistent data version doesn't match.");
         wipe = true;
     }
     else if (strncmp(persist_data_raw->model_name, STR(fw_name), MODEL_NAME_LEN))
@@ -52,24 +65,22 @@ bool persistent_init(void)
 
     if (wipe)
     {
-        log_error("Setting persistent data.");
-        memset(&persist_data, 0, sizeof(persist_data));
-        memset(&persist_measurements, 0, sizeof(persist_measurements));
-        persist_data.version = PERSIST_VERSION;
-        persist_data.log_debug_mask = DEBUG_SYS;
-        persist_data.config_count = 0;
-        if (strlen(STR(fw_name)) > MODEL_NAME_LEN)
-            memcpy(&persist_data.model_name[0], STR(fw_name), MODEL_NAME_LEN);
-        else
-            snprintf(persist_data.model_name, MODEL_NAME_LEN, STR(fw_name));
-        unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, platform_get_hw_id());
-        persist_data.human_name[human_name_len] = 0;
-        model_persist_config_model_init(&persist_data.model_config);
+        _persist_wipe();
         return false;
     }
 
     memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
     memcpy(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements));
+
+    if (persist_data.version != PERSIST_VERSION)
+    {
+        log_error("Persistent data version doesn't match.");
+        if (!persist_config_update(&persist_data))
+        {
+            log_error("Unable to update config");
+            _persist_wipe();
+        }
+    }
     return true;
 }
 
