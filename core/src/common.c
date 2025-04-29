@@ -268,3 +268,9 @@ bool is_str(const char* ref, char* cmp, unsigned cmplen)
     const unsigned reflen = strlen(ref);
     return (reflen == cmplen && strncmp(ref, cmp, reflen) == 0);
 }
+
+
+bool __attribute__((weak)) model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
+{
+    return false;
+}

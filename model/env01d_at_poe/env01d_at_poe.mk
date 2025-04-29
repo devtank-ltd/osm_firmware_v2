@@ -44,7 +44,6 @@ env01d_at_poe_SOURCES := \
            $(OSM_DIR)/sensors/src/io_watch.c \
            $(OSM_DIR)/sensors/src/tmp4718.c \
            $(OSM_MODEL_DIR)/env01d_at_poe/model.c \
-           $(OSM_MODEL_DIR)/env01d_at_poe/model_config_update.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \
            $(OSM_DIR)/ports/stm/src/i2c.c \

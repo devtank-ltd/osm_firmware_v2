@@ -49,7 +49,6 @@ penguin_lw_SOURCES := \
     $(OSM_DIR)/sensors/src/can_impl.c \
     $(OSM_DIR)/sensors/src/fw.c \
     $(OSM_MODEL_DIR)/penguin_lw/model.c \
-    $(OSM_MODEL_DIR)/penguin_at_wifi/model_config_update.c \
     $(OSM_DIR)/comms/src/common.c \
     $(OSM_DIR)/comms/src/linux_comms.c
 

@@ -43,7 +43,6 @@ env01d_at_wifi_SOURCES := \
            $(OSM_DIR)/sensors/src/fw.c \
            $(OSM_DIR)/sensors/src/io_watch.c \
            $(OSM_MODEL_DIR)/env01d_at_wifi/model.c \
-           $(OSM_MODEL_DIR)/env01d_at_wifi/model_config_update.c \
            $(OSM_DIR)/ports/stm/src/can_comm.c \
            $(OSM_DIR)/ports/stm/src/stm.c \
            $(OSM_DIR)/ports/stm/src/i2c.c \
