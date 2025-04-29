@@ -23,3 +23,4 @@ extern void     model_uarts_setup(void);
 extern void     model_setup_pulse_pupd(uint8_t* pupd);
 extern unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr);
 extern void     model_main_loop_iterate(void);
+extern bool     model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version);
