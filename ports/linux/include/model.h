@@ -22,4 +22,4 @@ extern unsigned model_measurements_add_defaults(measurements_def_t * measurement
 extern void     model_linux_spawn_fakes(void);
 extern void     model_linux_close_fakes(void);
 extern void     model_main_loop_iterate(void);
-extern bool     model_config_update(persist_model_config_t* config, uint16_t from_model_version);
+extern bool     model_config_update(void* from_config, persist_model_config_t* to_config, uint16_t from_model_version);

@@ -12,19 +12,19 @@
 #include "model.h"
 
 
-bool persist_config_update(persist_storage_t* config)
+bool persist_config_update(persist_storage_t* from_config, persist_storage_t* to_config)
 {
-    uint16_t base_version = config->version >> 8;
-    uint16_t model_version = config->version & 0xFF;
+    uint16_t base_version = from_config->version >> 8;
+    uint16_t model_version = from_config->version & 0xFF;
     if (PERSIST_BASE_VERSION == base_version)
     {
-        /* if anything to upgrade, do here */
+        memcpy(to_config, from_config, sizeof(persist_storage_t));
     }
     else
     {
         return false;
     }
-    return model_config_update(&config->model_config, model_version);
+    return model_config_update((void*)&from_config->model_config, &to_config->model_config, model_version);
 }
 
 

@@ -18,12 +18,12 @@ static void _model_config_update_data_v3_to_v4(persist_model_config_v3_t* v3, pe
 }
 
 
-bool model_config_update(persist_model_config_t* config, uint16_t from_model_version)
+bool model_config_update(void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
 {
     if (3 == from_model_version)
     {
-        persist_model_config_v3_t v3 = *(persist_model_config_v3_t*)config;
-        _model_config_update_data_v3_to_v4(&v3, config);
+        persist_model_config_v3_t* v3 = (persist_model_config_v3_t*)from_config;
+        _model_config_update_data_v3_to_v4(v3, to_config);
         return true;
     }
     return false;

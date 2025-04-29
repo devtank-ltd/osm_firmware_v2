@@ -69,13 +69,12 @@ bool persistent_init(void)
         return false;
     }
 
-    memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
     memcpy(&persist_measurements, persist_measurements_raw, sizeof(persist_measurements));
 
-    if (persist_data.version != PERSIST_VERSION)
+    if (persist_data_raw->version != PERSIST_VERSION)
     {
         log_error("Persistent data version doesn't match.");
-        if (!persist_config_update(&persist_data))
+        if (!persist_config_update(persist_data_raw, &persist_data))
         {
             log_error("Unable to update config");
             _persist_wipe();
