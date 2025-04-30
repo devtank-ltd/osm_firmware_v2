@@ -1,1 +1,0 @@
-../../stm/src/bat.c

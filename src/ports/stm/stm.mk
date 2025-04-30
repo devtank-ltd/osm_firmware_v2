@@ -19,7 +19,7 @@ STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs -flto
 
-STM_INCLUDE_PATHS += -I$(OSM_DIR)/ports/stm/include -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/comms/include -I$(OSM_DIR)/protocols/include
+STM_INCLUDE_PATHS += -I$(OSM_DIR)/include/osm/ports/stm -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/include/osm/core -I$(OSM_DIR)/include/osm/sensors -I$(OSM_DIR)/include/osm/comms -I$(OSM_DIR)/include/osm/protocols
 
 STM_LINK_FLAGS =  -L$(OSM_DIR)/libs/libopencm3/lib --static -nostartfiles
 STM_LINK_FLAGS += -L$(OSM_DIR)/libs/libopencm3/lib/stm32/l4
@@ -68,13 +68,13 @@ $$(OSM_BUILD_DIR)/$(1)/firmware.elf: $$($(1)_OBJS) $$($(1)_LINK_SCRIPT)
 	$$(STM_CC) $$($(1)_OBJS) $$(STM_LINK_FLAGS) -T$$($(1)_LINK_SCRIPT) -o $$@
 
 
-$$(OSM_BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/ports/stm/bootloader/%.c $$(LIBOPENCM3)
+$$(OSM_BUILD_DIR)/$(1)/bootloader/%.o : $$(OSM_DIR)/src/ports/stm/bootloader/%.c $$(LIBOPENCM3)
 	mkdir -p "$$(@D)"
 	$$(STM_CC) -c -Dfw_name=$(1) -DFW_NAME=$$($(1)_UP_NAME) $$(STM_CFLAGS) -I$$(OSM_MODEL_DIR)/$(1) $$(STM_INCLUDE_PATHS) $$< -o $$@
 
 $$(OSM_BUILD_DIR)/$(1)/bootloader.elf : $$(OSM_BUILD_DIR)/$(1)/bootloader/bootloader.o
 	echo $$(bootloader_LINK_SCRIPT)
-	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$(OSM_DIR)/ports/stm/bootloader/stm32l4.ld -o $$@
+	$$(STM_CC) $$< $$(STM_LINK_FLAGS) -T$$(OSM_DIR)/src/ports/stm/bootloader/stm32l4.ld -o $$@
 
 $$(OSM_BUILD_DIR)/$(1)/%.bin: $$(OSM_BUILD_DIR)/$(1)/%.elf
 	$$(STM_OBJCOPY) -O binary $$< $$@

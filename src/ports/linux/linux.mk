@@ -1,7 +1,5 @@
 #Toolchain settings
 
-LINUXDIR := $(OSM_DIR)/ports/linux
-
 OSM_LOC ?= /tmp/osm/
 
 LINUX_CC ?= gcc
@@ -20,7 +18,7 @@ LINUX_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 LINUX_CFLAGS		+= -fprofile-arcs -ftest-coverage
 
 
-LINUX_INCLUDE_PATHS += -I$(LINUXDIR)/include -I$(OSM_DIR)/core/include -I$(OSM_DIR)/sensors/include -I$(OSM_DIR)/protocols/include -I$(OSM_DIR)/comms/include $(shell pkg-config --cflags json-c)
+LINUX_INCLUDE_PATHS += -I$(OSM_DIR)/include/osm/ports/linux -I$(OSM_DIR)/include/osm/core -I$(OSM_DIR)/include/osm/sensors -I$(OSM_DIR)/include/osm/comms -I$(OSM_DIR)/include/osm/protocols $(shell pkg-config --cflags json-c)
 
 LINUX_LDFLAGS = -Wl,--start-group -lc -lgcc -lm -Wl,--end-group -Wl,--gc-sections $(shell pkg-config --libs json-c)
 LINUX_LDFLAGS += -lgcov --coverage -pthread -lutil
@@ -58,11 +56,11 @@ $(OSM_BUILD_DIR)/.linux_coverage:
 define LINUX_FIRMWARE
 $(call PORT_BASE_RULES,$(1),LINUX)
 
-$(1)_PERIPHERALS_SRC:=$$(shell find $$(OSM_DIR)/ports/linux/peripherals -name "*.py")
+$(1)_PERIPHERALS_SRC:=$$(shell find $$(OSM_DIR)/src/ports/linux/peripherals -name "*.py")
 
-$(1)_PERIPHERALS_DST:=$$($(1)_PERIPHERALS_SRC:$$(OSM_DIR)/ports/linux/%=$$(OSM_BUILD_DIR)/$(1)/%)
+$(1)_PERIPHERALS_DST:=$$($(1)_PERIPHERALS_SRC:$$(OSM_DIR)/src/ports/linux/%=$$(OSM_BUILD_DIR)/$(1)/%)
 
-$$($(1)_PERIPHERALS_DST): $$(OSM_BUILD_DIR)/$(1)/% : $$(OSM_DIR)/ports/linux/% $$(OSM_BUILD_DIR)/.linux_build_env
+$$($(1)_PERIPHERALS_DST): $$(OSM_BUILD_DIR)/$(1)/% : $$(OSM_DIR)/src/ports/linux/% $$(OSM_BUILD_DIR)/.linux_build_env
 	mkdir -p "$$(@D)"
 	cp $$< $$@
 
