@@ -1,11 +1,11 @@
 #include <driver/i2c.h>
 
-#include "i2c.h"
+#include <osm/core/i2c.h>
 
 #include "pinmap.h"
-#include "log.h"
-#include "common.h"
-#include "uart_rings.h"
+#include <osm/core/log.h>
+#include <osm/core/common.h>
+#include <osm/core/uart_rings.h>
 
 
 static const i2c_def_t i2c_buses[]     = I2C_BUSES;

@@ -3,9 +3,9 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include "config.h"
-#include "timers.h"
-#include "log.h"
+#include <osm/core/config.h>
+#include <osm/core/timers.h>
+#include <osm/core/log.h>
 
 
 static volatile uint32_t us_counter = 0;

@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "at_mqtt.h"
-#include "common.h"
-#include "log.h"
-#include "cmd.h"
-#include "platform.h"
+#include <osm/comms/at_mqtt.h>
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/cmd.h>
+#include <osm/core/platform.h>
 
 #define AT_MQTT_MAX_CMD_LEN                      (1024 + 128)
 

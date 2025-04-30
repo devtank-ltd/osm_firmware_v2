@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "base_types.h"
-#include "measurements.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
 
 
 extern void                         sen5x_iterate(void);

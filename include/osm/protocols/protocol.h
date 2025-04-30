@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "base_types.h"
-#include "measurements.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
 
 void        protocol_system_init(void);
 

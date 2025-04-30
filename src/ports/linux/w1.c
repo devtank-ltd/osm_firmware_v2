@@ -3,9 +3,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "w1.h"
+#include <osm/core/w1.h>
 
-#include "log.h"
+#include <osm/core/log.h>
 #include "linux.h"
 
 

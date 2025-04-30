@@ -4,14 +4,14 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "config.h"
-#include "log.h"
-#include "persist_config.h"
-#include "persist_config_header.h"
-#include "platform.h"
+#include <osm/core/config.h>
+#include <osm/core/log.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/persist_config_header.h>
+#include <osm/core/platform.h>
 #include "platform_model.h"
-#include "common.h"
-#include "io.h"
+#include <osm/core/common.h>
+#include <osm/core/io.h>
 
 _Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
 _Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");

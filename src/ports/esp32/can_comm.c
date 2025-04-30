@@ -6,10 +6,10 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "can_comm.h"
+#include <osm/core/can_comm.h>
 #include "pinmap.h"
-#include "common.h"
-#include "log.h"
+#include <osm/core/common.h>
+#include <osm/core/log.h>
 
 
 void can_comm_init(void)

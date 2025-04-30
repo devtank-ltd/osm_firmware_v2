@@ -1,13 +1,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "base_types.h"
-#include "uarts.h"
-#include "io.h"
-#include "common.h"
-#include "platform.h"
-#include "uart_rings.h"
-#include "log.h"
+#include <osm/core/base_types.h>
+#include <osm/core/uarts.h>
+#include <osm/core/io.h>
+#include <osm/core/common.h>
+#include <osm/core/platform.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/log.h>
 
 
 #define COMMS_DIRECT_TIMEOUT_MS                  3000

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ring.h"
-#include "log.h"
+#include <osm/core/ring.h>
+#include <osm/core/log.h>
 
 
 

@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "measurements.h"
+#include <osm/core/measurements.h>
 
 
 extern void htu21d_init(void);

@@ -1,13 +1,13 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "w1.h"
+#include <osm/core/w1.h>
 
-#include "timers.h"
+#include <osm/core/timers.h>
 #include "pinmap.h"
-#include "log.h"
-#include "base_types.h"
-#include "io.h"
+#include <osm/core/log.h>
+#include <osm/core/base_types.h>
+#include <osm/core/io.h>
 #include "platform_model.h"
 
 

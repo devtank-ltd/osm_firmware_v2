@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 
 #define AT_BASE_MAX_CMD_LEN                                  (1024 + 128)

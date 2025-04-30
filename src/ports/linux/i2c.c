@@ -6,9 +6,9 @@
 #include <inttypes.h>
 #include <sys/socket.h>
 
-#include "i2c.h"
+#include <osm/core/i2c.h>
 
-#include "log.h"
+#include <osm/core/log.h>
 #include "linux.h"
 
 

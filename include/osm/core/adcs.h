@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 
-#include "config.h"
-#include "base_types.h"
+#include <osm/core/config.h>
+#include <osm/core/base_types.h>
 
 
 typedef enum

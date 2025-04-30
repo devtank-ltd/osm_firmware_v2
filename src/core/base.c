@@ -1,8 +1,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "base_types.h"
-#include "log.h"
+#include <osm/core/base_types.h>
+#include <osm/core/log.h>
 
 
 char * skip_space(char * pos)

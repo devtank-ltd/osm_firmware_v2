@@ -2,18 +2,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "config.h"
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "io.h"
-#include "log.h"
-#include "pulsecount.h"
-#include "uarts.h"
-#include "platform.h"
-#include "w1.h"
-#include "persist_config.h"
-#include "common.h"
+#include <osm/core/io.h>
+#include <osm/core/log.h>
+#include <osm/sensors/pulsecount.h>
+#include <osm/core/uarts.h>
+#include <osm/core/platform.h>
+#include <osm/core/w1.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/common.h>
 #include "platform_model.h"
-#include "io_watch.h"
+#include <osm/sensors/io_watch.h>
 
 const port_n_pins_t ios_pins[IOS_COUNT]      = IOS_PORT_N_PINS;
 static uint16_t * ios_state;

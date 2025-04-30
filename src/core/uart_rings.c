@@ -4,16 +4,16 @@
 
 
 #include "pinmap.h"
-#include "uart_rings.h"
-#include "ring.h"
-#include "log.h"
-#include "cmd.h"
-#include "uarts.h"
-#include "common.h"
-#include "platform.h"
+#include <osm/core/uart_rings.h>
+#include <osm/core/ring.h>
+#include <osm/core/log.h>
+#include <osm/core/cmd.h>
+#include <osm/core/uarts.h>
+#include <osm/core/common.h>
+#include <osm/core/platform.h>
 #include "platform_model.h"
 
-#include "protocol.h"
+#include <osm/protocols/protocol.h>
 
 
 #define UART_RATE_LIMIT_MS              250

@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 
 extern modbus_bus_t * modbus_bus;

@@ -3,11 +3,11 @@
 #include <inttypes.h>
 
 
-#include "log.h"
-#include "uarts.h"
-#include "uart_rings.h"
-#include "persist_config.h"
-#include "common.h"
+#include <osm/core/log.h>
+#include <osm/core/uarts.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/common.h>
 
 uint32_t log_debug_mask = DEBUG_SYS | DEBUG_COMMS | DEBUG_MEASUREMENTS | DEBUG_LIGHT;
 bool     log_async_log  = false;

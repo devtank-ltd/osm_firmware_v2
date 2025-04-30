@@ -1,13 +1,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "log.h"
-#include "modbus.h"
-#include "persist_config.h"
-#include "persist_config_header.h"
-#include "update.h"
-#include "platform.h"
-#include "common.h"
+#include <osm/core/log.h>
+#include <osm/core/modbus.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/persist_config_header.h>
+#include <osm/core/update.h>
+#include <osm/core/platform.h>
+#include <osm/core/common.h>
 
 static uint8_t _fw_page[FLASH_PAGE_SIZE] __attribute__ ( (aligned (16)));
 

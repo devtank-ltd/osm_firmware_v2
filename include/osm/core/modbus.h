@@ -1,9 +1,9 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
-#include "ring.h"
-#include "log.h"
-#include "modbus_mem.h"
+#include <osm/core/ring.h>
+#include <osm/core/log.h>
+#include <osm/core/modbus_mem.h>
 
 
 extern bool modbus_requires_echo_removal(void) __attribute__((weak));

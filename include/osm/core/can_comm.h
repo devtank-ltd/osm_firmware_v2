@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "ring.h"
+#include <osm/core/ring.h>
 
 
 #define CAN_COMM_MAX_DATA_SIZE                                      8

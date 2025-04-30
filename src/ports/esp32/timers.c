@@ -1,7 +1,7 @@
 
-#include "config.h"
-#include "timers.h"
-#include "log.h"
+#include <osm/core/config.h>
+#include <osm/core/timers.h>
+#include <osm/core/log.h>
 
 
 

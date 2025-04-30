@@ -4,14 +4,14 @@
 #include <math.h>
 #include <ctype.h>
 
-#include "config.h"
-#include "common.h"
+#include <osm/core/config.h>
+#include <osm/core/common.h>
 
-#include "uart_rings.h"
-#include "measurements.h"
-#include "platform.h"
-#include "config.h"
-#include "log.h"
+#include <osm/core/uart_rings.h>
+#include <osm/core/measurements.h>
+#include <osm/core/platform.h>
+#include <osm/core/config.h>
+#include <osm/core/log.h>
 #include "pinmap.h"
 
 

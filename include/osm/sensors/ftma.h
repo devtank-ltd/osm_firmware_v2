@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "measurements.h"
-#include "config.h"
+#include <osm/core/measurements.h>
+#include <osm/core/config.h>
 
 
 typedef struct

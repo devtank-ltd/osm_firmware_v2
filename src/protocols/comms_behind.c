@@ -1,6 +1,6 @@
 #include "model_config.h"
-#include "protocol.h"
-#include "comms.h"
+#include <osm/protocols/protocol.h>
+#include <osm/comms/comms.h>
 
 void        protocol_system_init(void)              { comms_init(); }
 

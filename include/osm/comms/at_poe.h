@@ -3,9 +3,9 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#include "base_types.h"
-#include "measurements.h"
-#include "at_mqtt.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
+#include <osm/comms/at_mqtt.h>
 
 #ifndef comms_name
 #define comms_name          at_poe

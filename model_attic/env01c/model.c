@@ -1,36 +1,36 @@
 #include <string.h>
 
-#include "measurements.h"
+#include <osm/core/measurements.h>
 
 #include <libopencm3/stm32/gpio.h>
 
-#include "timers.h"
-#include "io.h"
-#include "adcs.h"
-#include "can_impl.h"
-#include "log.h"
-#include "config.h"
+#include <osm/core/timers.h>
+#include <osm/core/io.h>
+#include <osm/core/adcs.h>
+#include <osm/sensors/can_impl.h>
+#include <osm/core/log.h>
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "uart_rings.h"
-#include "hpm.h"
-#include "cc.h"
-#include "bat.h"
-#include "modbus_measurements.h"
-#include "ds18b20.h"
-#include "htu21d.h"
-#include "pulsecount.h"
-#include "veml7700.h"
-#include "sai.h"
-#include "fw.h"
-#include "persist_config.h"
-#include "sleep.h"
-#include "update.h"
-#include "modbus.h"
+#include <osm/core/uart_rings.h>
+#include <osm/sensors/hpm.h>
+#include <osm/sensors/cc.h>
+#include <osm/sensors/bat.h>
+#include <osm/core/modbus_measurements.h>
+#include <osm/sensors/ds18b20.h>
+#include <osm/sensors/htu21d.h>
+#include <osm/sensors/pulsecount.h>
+#include <osm/sensors/veml7700.h>
+#include <osm/sensors/sai.h>
+#include <osm/sensors/fw.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/sleep.h>
+#include <osm/core/update.h>
+#include <osm/core/modbus.h>
 #include "model.h"
-#include "platform.h"
-#include "w1.h"
-#include "io_watch.h"
-#include "lw.h"
+#include <osm/core/platform.h>
+#include <osm/core/w1.h>
+#include <osm/sensors/io_watch.h>
+#include <osm/comms/lw.h>
 #include "comms_direct.h"
 
 

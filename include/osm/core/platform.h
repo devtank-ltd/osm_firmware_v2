@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "persist_config_header.h"
+#include <osm/core/persist_config_header.h>
 
 
 uint32_t platform_get_frequency(void);

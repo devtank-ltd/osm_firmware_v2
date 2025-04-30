@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 
 comms_type_t comms_identify(void);

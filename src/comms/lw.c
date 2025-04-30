@@ -2,12 +2,12 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "lw.h"
+#include <osm/comms/lw.h>
 
-#include "log.h"
-#include "base_types.h"
-#include "persist_config.h"
-#include "common.h"
+#include <osm/core/log.h>
+#include <osm/core/base_types.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/common.h>
 
 #define LW_PRINT_CFG_JSON_FMT_DEV_EUI                   "    \"DEV EUI\": \"%.*s\","
 #define LW_PRINT_CFG_JSON_FMT_APP_KEY                   "    \"APP KEY\": \"%.*s\""

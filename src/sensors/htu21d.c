@@ -12,12 +12,12 @@ Documents used:
 #include <string.h>
 #include <stdlib.h>
 
-#include "common.h"
-#include "config.h"
-#include "i2c.h"
-#include "log.h"
-#include "htu21d.h"
-#include "measurements.h"
+#include <osm/core/common.h>
+#include <osm/core/config.h>
+#include <osm/core/i2c.h>
+#include <osm/core/log.h>
+#include <osm/sensors/htu21d.h>
+#include <osm/core/measurements.h>
 #include "pinmap.h"
 
 

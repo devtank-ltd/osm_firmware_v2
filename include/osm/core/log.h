@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include "config.h"
+#include <osm/core/config.h>
 
 extern bool log_async_log;
 extern uint32_t log_debug_mask;

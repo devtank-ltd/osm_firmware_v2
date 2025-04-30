@@ -4,8 +4,8 @@
 #include <stdbool.h>
 
 
-#include "ring.h"
-#include "measurements.h"
+#include <osm/core/ring.h>
+#include <osm/core/measurements.h>
 
 extern void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len);
 

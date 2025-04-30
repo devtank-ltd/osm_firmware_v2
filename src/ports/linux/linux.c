@@ -25,16 +25,16 @@
 #include <netinet/in.h>
 
 
-#include "platform.h"
+#include <osm/core/platform.h>
 #include "linux.h"
-#include "common.h"
-#include "uarts.h"
-#include "persist_config.h"
-#include "log.h"
-#include "measurements.h"
+#include <osm/core/common.h>
+#include <osm/core/uarts.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/log.h>
+#include <osm/core/measurements.h>
 #include "platform_model.h"
 #include "pinmap.h"
-#include "cmd.h"
+#include <osm/core/cmd.h>
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_LINE_BUF_SIZ      1024

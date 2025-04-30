@@ -3,14 +3,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "uarts.h"
+#include <osm/core/uarts.h>
 
 #include "linux.h"
-#include "uart_rings.h"
-#include "sleep.h"
-#include "log.h"
+#include <osm/core/uart_rings.h>
+#include <osm/core/sleep.h>
+#include <osm/core/log.h>
 #include "pinmap.h"
-#include "common.h"
+#include <osm/core/common.h>
 
 static uart_channel_t uart_channels[] = UART_CHANNELS;
 

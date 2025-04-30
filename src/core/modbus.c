@@ -5,15 +5,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "log.h"
-#include "modbus.h"
-#include "modbus_mem.h"
-#include "uart_rings.h"
-#include "uarts.h"
-#include "common.h"
-#include "cmd.h"
-#include "persist_config.h"
-#include "platform.h"
+#include <osm/core/log.h>
+#include <osm/core/modbus.h>
+#include <osm/core/modbus_mem.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/uarts.h>
+#include <osm/core/common.h>
+#include <osm/core/cmd.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/platform.h>
 #include "pinmap.h"
 
 #define MODBUS_TX_GAP_MS        100

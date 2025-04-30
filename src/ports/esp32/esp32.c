@@ -9,15 +9,15 @@
 #include <esp_task_wdt.h>
 #include <esp_wifi.h>
 
-#include "platform.h"
+#include <osm/core/platform.h>
 
 #include "pinmap.h"
-#include "log.h"
+#include <osm/core/log.h>
 #include "platform_model.h"
-#include "comms.h"
-#include "sleep.h"
+#include <osm/comms/comms.h>
+#include <osm/core/sleep.h>
 
-#include "adcs.h"
+#include <osm/core/adcs.h>
 
 static bool _led_state = false;
 

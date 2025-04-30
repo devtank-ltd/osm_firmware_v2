@@ -10,18 +10,18 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 
-#include "platform.h"
+#include <osm/core/platform.h>
 #include "flash_data.h"
 
 #include "sos.h"
 #include "pinmap.h"
-#include "log.h"
+#include <osm/core/log.h>
 #include "platform_model.h"
-#include "comms.h"
-#include "sleep.h"
-#include "comms_identify.h"
+#include <osm/comms/comms.h>
+#include <osm/core/sleep.h>
+#include <osm/comms/comms_identify.h>
 
-#include "adcs.h"
+#include <osm/core/adcs.h>
 
 
 #define ADC_CCR_PRESCALE_1     0x0  /* 0b0000 */

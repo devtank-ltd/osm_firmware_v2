@@ -1,9 +1,9 @@
 #pragma once
 #include <stdbool.h>
 
-#include "base_types.h"
-#include "measurements.h"
-#include "io.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
+#include <osm/core/io.h>
 
 
 extern void     pulsecount_init(void);

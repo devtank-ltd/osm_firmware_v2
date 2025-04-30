@@ -1,7 +1,7 @@
 #pragma once
 
-#include "measurements.h"
-#include "modbus.h"
+#include <osm/core/measurements.h>
+#include <osm/core/modbus.h>
 
 extern void modbus_inf_init(measurements_inf_t* inf);
 

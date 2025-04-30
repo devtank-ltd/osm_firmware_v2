@@ -1,12 +1,12 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "log.h"
-#include "hpm.h"
-#include "uart_rings.h"
-#include "common.h"
-#include "platform.h"
-#include "uarts.h"
+#include <osm/core/log.h>
+#include <osm/sensors/hpm.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/common.h>
+#include <osm/core/platform.h>
+#include <osm/core/uarts.h>
 
 
 #define MEASUREMENTS_COLLECT_TIME_HPM_MS         6000

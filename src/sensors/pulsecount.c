@@ -9,11 +9,11 @@
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/timer.h>
 
-#include "log.h"
+#include <osm/core/log.h>
 #include "pinmap.h"
-#include "common.h"
-#include "io.h"
-#include "pulsecount.h"
+#include <osm/core/common.h>
+#include <osm/core/io.h>
+#include <osm/sensors/pulsecount.h>
 #include "platform_model.h"
 
 #define PULSECOUNT_COLLECTION_TIME_MS       10

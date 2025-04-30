@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "sleep.h"
-#include "log.h"
-#include "common.h"
-#include "uart_rings.h"
-#include "measurements.h"
+#include <osm/core/sleep.h>
+#include <osm/core/log.h>
+#include <osm/core/common.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/measurements.h>
 #include "pinmap.h"
-#include "adcs.h"
-#include "i2c.h"
+#include <osm/core/adcs.h>
+#include <osm/core/i2c.h>
 
 
 

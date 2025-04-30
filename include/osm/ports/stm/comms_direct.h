@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 
 void comms_direct_init(void);

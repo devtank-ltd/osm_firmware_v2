@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 
 extern bool     w1_reset(uint8_t index);

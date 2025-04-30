@@ -2,10 +2,10 @@
 
 #include <stdint.h>
 
-#include "measurements.h"
-#include "config.h"
-#include "cc.h"
-#include "rak4270.h"
+#include <osm/core/measurements.h>
+#include <osm/core/config.h>
+#include <osm/sensors/cc.h>
+#include <osm/comms/rak4270.h>
 #include "pinmap.h"
 
 #define FLASH_ADDRESS               0x8000000

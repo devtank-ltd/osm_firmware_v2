@@ -2,11 +2,11 @@
 #include <stdlib.h>
 
 #include "pinmap.h"
-#include "uart_rings.h"
-#include "platform.h"
-#include "common.h"
-#include "base_types.h"
-#include "log.h"
+#include <osm/core/uart_rings.h>
+#include <osm/core/platform.h>
+#include <osm/core/common.h>
+#include <osm/core/base_types.h>
+#include <osm/core/log.h>
 
 
 #define AT_BASE_MAC_ADDR_LEN            18

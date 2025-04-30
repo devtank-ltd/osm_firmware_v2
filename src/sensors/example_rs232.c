@@ -2,11 +2,11 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "measurements.h"
-#include "ring.h"
-#include "uart_rings.h"
+#include <osm/core/measurements.h>
+#include <osm/core/ring.h>
+#include <osm/core/uart_rings.h>
 #include "pinmap.h"
-#include "common.h"
+#include <osm/core/common.h>
 
 
 #define EXAMPLE_RS232_PROMPT_CHAR               'A'

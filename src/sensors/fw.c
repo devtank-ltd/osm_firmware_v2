@@ -1,6 +1,6 @@
-#include "fw.h"
-#include "log.h"
-#include "measurements.h"
+#include <osm/sensors/fw.h>
+#include <osm/core/log.h>
+#include <osm/core/measurements.h>
 
 #define FW_SHA_LEN                          7
 

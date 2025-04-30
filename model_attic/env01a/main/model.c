@@ -2,14 +2,14 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "config.h"
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "persist_config.h"
-#include "measurements.h"
-#include "modbus_measurements.h"
-#include "fw.h"
-#include "io.h"
-#include "protocol.h"
+#include <osm/core/persist_config.h>
+#include <osm/core/measurements.h>
+#include <osm/core/modbus_measurements.h>
+#include <osm/sensors/fw.h>
+#include <osm/core/io.h>
+#include <osm/protocols/protocol.h>
 
 void model_post_init(void) {}
 

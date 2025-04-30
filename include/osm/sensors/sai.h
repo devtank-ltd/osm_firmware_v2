@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "measurements.h"
+#include <osm/core/measurements.h>
 
 
 #define SAI_DEFAULT_NO_BUF                                              100

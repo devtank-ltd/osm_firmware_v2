@@ -8,9 +8,9 @@
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/cm3/scb.h>
 
-#include "config.h"
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "persist_config_header.h"
+#include <osm/core/persist_config_header.h>
 #include "flash_data.h"
 #include "sos.h"
 

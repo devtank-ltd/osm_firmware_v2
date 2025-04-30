@@ -33,10 +33,10 @@
 #include "sensirion_common.h"
 #include "sensirion_config.h"
 #include "pinmap.h"
-#include "i2c.h"
-#include "common.h"
-#include "platform.h"
-#include "log.h"
+#include <osm/core/i2c.h>
+#include <osm/core/common.h>
+#include <osm/core/platform.h>
+#include <osm/core/log.h>
 
 #define SEN5x_I2C_TIMEOUT_MS                            10
 

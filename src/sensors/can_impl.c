@@ -1,7 +1,7 @@
 #include <stddef.h>
 
-#include "common.h"
-#include "can_comm.h"
+#include <osm/core/common.h>
+#include <osm/core/can_comm.h>
 
 void can_impl_init(void)
 {

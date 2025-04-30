@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "measurements.h"
+#include <osm/core/measurements.h>
 
 
 extern void                         ds18b20_enable(bool enable);

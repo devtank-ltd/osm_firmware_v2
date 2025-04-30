@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "measurements.h"
+#include <osm/core/measurements.h>
 
 
 extern bool                         bat_get_blocking(char* name, measurements_reading_t* value);

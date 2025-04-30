@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include "config.h"
+#include <osm/core/config.h>
 
 typedef struct
 {

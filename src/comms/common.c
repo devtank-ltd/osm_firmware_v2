@@ -1,10 +1,10 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "comms.h"
-#include "common.h"
-#include "cmd.h"
-#include "base_types.h"
+#include <osm/comms/comms.h>
+#include <osm/core/common.h>
+#include <osm/core/cmd.h>
+#include <osm/core/base_types.h>
 #include "model_config.h"
 
 

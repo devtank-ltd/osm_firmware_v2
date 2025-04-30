@@ -9,11 +9,11 @@ Documents used:
 */
 #include <string.h>
 
-#include "log.h"
-#include "common.h"
-#include "io.h"
-#include "w1.h"
-#include "ds18b20.h"
+#include <osm/core/log.h>
+#include <osm/core/common.h>
+#include <osm/core/io.h>
+#include <osm/core/w1.h>
+#include <osm/sensors/ds18b20.h>
 #include "pinmap.h"
 
 #define DS18B20_CMD_SKIP_ROM        0xCC

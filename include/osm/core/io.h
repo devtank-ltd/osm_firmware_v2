@@ -3,10 +3,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "base_types.h"
-#include "measurements.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
 #include "pinmap.h"
-#include "persist_config.h"
+#include <osm/core/persist_config.h>
 
 #define IOS_MEASUREMENT_NAME_PRE            "IO"
 

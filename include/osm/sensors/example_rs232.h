@@ -1,7 +1,7 @@
 # pragma once
 
-#include "measurements.h"
-#include "ring.h"
+#include <osm/core/measurements.h>
+#include <osm/core/ring.h>
 
 
 void example_rs232_process(ring_buf_t* ring);

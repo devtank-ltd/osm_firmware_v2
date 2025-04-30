@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "measurements.h"
-#include "i2c.h"
+#include <osm/core/measurements.h>
+#include <osm/core/i2c.h>
 #include "pinmap.h"
-#include "common.h"
-#include "log.h"
+#include <osm/core/common.h>
+#include <osm/core/log.h>
 
 #define TMP4718_ADDR                                0x4C /* 0x4D for TMP4718BDGKR */
 #define TMP4718_TIMEOUT_MS                          10

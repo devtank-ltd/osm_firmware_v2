@@ -5,17 +5,17 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "measurements.h"
-#include "log.h"
-#include "config.h"
-#include "common.h"
-#include "persist_config.h"
-#include "sleep.h"
-#include "uart_rings.h"
-#include "bat.h"
-#include "platform.h"
+#include <osm/core/measurements.h>
+#include <osm/core/log.h>
+#include <osm/core/config.h>
+#include <osm/core/common.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/sleep.h>
+#include <osm/core/uart_rings.h>
+#include <osm/sensors/bat.h>
+#include <osm/core/platform.h>
 #include "platform_model.h"
-#include "protocol.h"
+#include <osm/protocols/protocol.h>
 
 
 #define MEASUREMENTS_DEFAULT_COLLECTION_TIME    (uint32_t)1000

@@ -2,8 +2,8 @@
 
 #include <stdint.h>
 
-#include "base_types.h"
-#include "uart_rings.h"
+#include <osm/core/base_types.h>
+#include <osm/core/uart_rings.h>
 #include "model_config.h"
 
 

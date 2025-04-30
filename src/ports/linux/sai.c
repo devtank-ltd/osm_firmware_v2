@@ -1,9 +1,9 @@
 #include <stdlib.h>
 
-#include "sai.h"
+#include <osm/sensors/sai.h>
 
-#include "log.h"
-#include "common.h"
+#include <osm/core/log.h>
+#include <osm/core/common.h>
 
 
 void sai_init(void)

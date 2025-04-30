@@ -4,11 +4,11 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "io.h"
-#include "io_watch.h"
-#include "config.h"
-#include "platform.h"
-#include "log.h"
+#include <osm/core/io.h>
+#include <osm/sensors/io_watch.h>
+#include <osm/core/config.h>
+#include <osm/core/platform.h>
+#include <osm/core/log.h>
 
 
 const unsigned              ios_watch_ios[IOS_WATCH_COUNT]                  = IOS_WATCH_IOS;

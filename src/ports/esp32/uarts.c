@@ -5,16 +5,16 @@
 
 #include <driver/uart.h>
 
-#include "cmd.h"
-#include "log.h"
+#include <osm/core/cmd.h>
+#include <osm/core/log.h>
 #include "pinmap.h"
-#include "ring.h"
-#include "uart_rings.h"
-#include "uarts.h"
-#include "sleep.h"
+#include <osm/core/ring.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/uarts.h>
+#include <osm/core/sleep.h>
 #include "platform_model.h"
 #include "mqtt.h"
-#include "common.h"
+#include <osm/core/common.h>
 
 static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
 

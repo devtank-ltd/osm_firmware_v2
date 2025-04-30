@@ -1,7 +1,7 @@
 #include <string.h>
-#include "measurements_mem.h"
-#include "measurements.h"
-#include "log.h"
+#include <osm/core/measurements_mem.h>
+#include <osm/core/measurements.h>
+#include <osm/core/log.h>
 
 
 void measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)

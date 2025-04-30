@@ -2,21 +2,21 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-#include "platform.h"
+#include <osm/core/platform.h>
 #include "platform_model.h"
 
-#include "common.h"
-#include "log.h"
-#include "uart_rings.h"
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/uart_rings.h>
 
-#include "cmd.h"
-#include "uarts.h"
-#include "adcs.h"
-#include "io.h"
-#include "i2c.h"
-#include "persist_config.h"
-#include "protocol.h"
-#include "measurements.h"
+#include <osm/core/cmd.h>
+#include <osm/core/uarts.h>
+#include <osm/core/adcs.h>
+#include <osm/core/io.h>
+#include <osm/core/i2c.h>
+#include <osm/core/persist_config.h>
+#include <osm/protocols/protocol.h>
+#include <osm/core/measurements.h>
 
 
 #define DISCONNECTED_FLASHING_TIME_SEC      50

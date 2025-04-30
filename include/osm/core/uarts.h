@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 extern void uarts_setup();
 

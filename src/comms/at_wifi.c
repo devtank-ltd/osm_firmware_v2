@@ -7,14 +7,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "at_wifi.h"
-#include "uart_rings.h"
+#include <osm/comms/at_wifi.h>
+#include <osm/core/uart_rings.h>
 #include "pinmap.h"
-#include "common.h"
-#include "log.h"
-#include "cmd.h"
-#include "protocol.h"
-#include "platform.h"
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/cmd.h>
+#include <osm/protocols/protocol.h>
+#include <osm/core/platform.h>
 
 
 #define COMMS_ID_STR                            "WIFI"

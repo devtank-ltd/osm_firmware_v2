@@ -5,7 +5,7 @@
 #include <stdarg.h>
 
 #include "platform_base_types.h"
-#include "config.h"
+#include <osm/core/config.h>
 
 #ifdef _PICOLIBC__
 _Static_assert(_PICOLIBC__ >= 1 && _PICOLIBC_MINOR__>= 7, "Picolibc too old.");

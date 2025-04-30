@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 #ifndef comms_name
 #define comms_name          linux_comms

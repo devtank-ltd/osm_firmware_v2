@@ -5,7 +5,7 @@ tests_LDFLAGS:= -lgcov
 tests_DIR:=$(OSM_DIR)/tests
 tests_OSM_BUILD_DIR:=$(OSM_BUILD_DIR)/tests
 
-tests_CFLAGS+=-I$(tests_DIR)
+tests_CFLAGS+=-I$(OSM_DIR)/include -I$(tests_DIR)
 
 PROGRAMS_MKS = $(shell find $(tests_DIR) -maxdepth 2 -mindepth 2 -name "*.mk" -printf "%f\n")
 

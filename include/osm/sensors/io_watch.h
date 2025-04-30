@@ -2,8 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "base_types.h"
-#include "io.h"
+#include <osm/core/base_types.h>
+#include <osm/core/io.h>
 
 
 extern const unsigned ios_watch_ios[IOS_WATCH_COUNT];

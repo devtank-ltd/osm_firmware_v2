@@ -19,7 +19,7 @@ STM_CFLAGS		+= -MMD -MP
 STM_CFLAGS		+= -fno-common -ffunction-sections -fdata-sections
 STM_CFLAGS		+= $(STM_CPU_DEFINES) --specs=picolibc.specs -flto
 
-STM_INCLUDE_PATHS += -I$(OSM_DIR)/include/osm/ports/stm -I$(OSM_DIR)/libs/libopencm3/include -I$(OSM_DIR)/include/osm/core -I$(OSM_DIR)/include/osm/sensors -I$(OSM_DIR)/include/osm/comms -I$(OSM_DIR)/include/osm/protocols
+STM_INCLUDE_PATHS += -I$(OSM_DIR)/include -I$(OSM_DIR)/include/osm/ports/stm -I$(OSM_DIR)/libs/libopencm3/include
 
 STM_LINK_FLAGS =  -L$(OSM_DIR)/libs/libopencm3/lib --static -nostartfiles
 STM_LINK_FLAGS += -L$(OSM_DIR)/libs/libopencm3/lib/stm32/l4

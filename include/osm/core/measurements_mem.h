@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 #define MEASUREMENTS_MAX_NUMBER                   256
 

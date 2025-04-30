@@ -3,12 +3,12 @@
 #include <ctype.h>
 #include <stdio.h>
 
-#include "config.h"
-#include "log.h"
-#include "common.h"
-#include "platform.h"
-#include "persist_config.h"
-#include "uart_rings.h"
+#include <osm/core/config.h>
+#include <osm/core/log.h>
+#include <osm/core/common.h>
+#include <osm/core/platform.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/uart_rings.h>
 #include "model.h"
 
 

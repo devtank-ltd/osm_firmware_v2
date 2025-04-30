@@ -4,12 +4,12 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "ftma.h"
+#include <osm/sensors/ftma.h>
 
-#include "adcs.h"
-#include "common.h"
-#include "log.h"
-#include "persist_config.h"
+#include <osm/core/adcs.h>
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/persist_config.h>
 #include "pinmap.h"
 
 

@@ -8,18 +8,18 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 
-#include "rak3172.h"
+#include <osm/comms/rak3172.h>
 
-#include "lw.h"
-#include "common.h"
-#include "log.h"
-#include "base_types.h"
-#include "uart_rings.h"
+#include <osm/comms/lw.h>
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/base_types.h>
+#include <osm/core/uart_rings.h>
 #include "pinmap.h"
-#include "sleep.h"
-#include "cmd.h"
-#include "update.h"
-#include "protocol.h"
+#include <osm/core/sleep.h>
+#include <osm/core/cmd.h>
+#include <osm/core/update.h>
+#include <osm/protocols/protocol.h>
 
 
 #define RAK3172_TIMEOUT_MS              15000

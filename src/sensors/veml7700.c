@@ -12,14 +12,14 @@ Application Guide:
 #include <string.h>
 #include <stdlib.h>
 
-#include "veml7700.h"
-#include "config.h"
-#include "i2c.h"
-#include "log.h"
-#include "measurements.h"
-#include "common.h"
-#include "uart_rings.h"
-#include "timers.h"
+#include <osm/sensors/veml7700.h>
+#include <osm/core/config.h>
+#include <osm/core/i2c.h>
+#include <osm/core/log.h>
+#include <osm/core/measurements.h>
+#include <osm/core/common.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/timers.h>
 #include "pinmap.h"
 
 

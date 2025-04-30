@@ -4,14 +4,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "sleep.h"
+#include <osm/core/sleep.h>
 
-#include "log.h"
-#include "common.h"
-#include "uart_rings.h"
-#include "measurements.h"
-#include "adcs.h"
-#include "platform.h"
+#include <osm/core/log.h>
+#include <osm/core/common.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/measurements.h>
+#include <osm/core/adcs.h>
+#include <osm/core/platform.h>
 #include "linux.h"
 #include "pinmap.h"
 

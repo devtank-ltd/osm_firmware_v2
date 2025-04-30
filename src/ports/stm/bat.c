@@ -1,13 +1,13 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-#include "bat.h"
+#include <osm/sensors/bat.h>
 
-#include "common.h"
-#include "log.h"
-#include "adcs.h"
-#include "persist_config.h"
-#include "uart_rings.h"
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/adcs.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/uart_rings.h>
 
 
 #define BAT_MON_DEFAULT_COLLECTION_TIME     1000

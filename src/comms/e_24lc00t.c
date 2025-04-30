@@ -1,9 +1,9 @@
 #include <stdint.h>
 
-#include "base_types.h"
-#include "i2c.h"
+#include <osm/core/base_types.h>
+#include <osm/core/i2c.h>
 #include "model_config.h"
-#include "log.h"
+#include <osm/core/log.h>
 
 #define E_24LC00T_ADDR_MASK             0x78
 #define E_24LC00T_ADDR                  0x50 /* Last 3bits of address ignored*/

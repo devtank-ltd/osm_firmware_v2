@@ -3,8 +3,8 @@
 #include <stdint.h>
 
 
-#include "measurements.h"
-#include "config.h"
+#include <osm/core/measurements.h>
+#include <osm/core/config.h>
 #include "persist_config_header_model.h"
 
 

@@ -3,11 +3,11 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "config.h"
-#include "comms.h"
-#include "base_types.h"
+#include <osm/core/config.h>
+#include <osm/comms/comms.h>
+#include <osm/core/base_types.h>
 
-#include "measurements_mem.h"
+#include <osm/core/measurements_mem.h>
 
 #define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)(15 * 1000)
 #define MEASUREMENTS_VALUE_STR_LEN              23

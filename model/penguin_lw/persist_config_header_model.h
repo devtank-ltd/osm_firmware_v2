@@ -2,11 +2,11 @@
 
 #include <stdint.h>
 
-#include "measurements.h"
-#include "config.h"
-#include "cc.h"
-#include "ftma.h"
-#include "linux_comms.h"
+#include <osm/core/measurements.h>
+#include <osm/core/config.h>
+#include <osm/sensors/cc.h>
+#include <osm/sensors/ftma.h>
+#include <osm/comms/linux_comms.h>
 
 #define PERSIST_MODEL_VERSION 1
 #define PERSIST_VERSION PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "persist_config_header.h"
+#include <osm/core/persist_config_header.h>
 
 
 #define PERSIST_BASE_VERSION           4

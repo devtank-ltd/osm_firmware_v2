@@ -3,12 +3,12 @@
 #include <ctype.h>
 #include <stdio.h>
 
-#include "common.h"
-#include "modbus_mem.h"
-#include "modbus.h"
-#include "modbus_measurements.h"
-#include "log.h"
-#include "persist_config.h"
+#include <osm/core/common.h>
+#include <osm/core/modbus_mem.h>
+#include <osm/core/modbus.h>
+#include <osm/core/modbus_measurements.h>
+#include <osm/core/log.h>
+#include <osm/core/persist_config.h>
 #include "pinmap.h"
 
 #define MODBUS_REG_DESC_BUF_LEN             48

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "config.h"
-#include "w1.h"
-#include "pulsecount.h"
+#include <osm/core/config.h>
+#include <osm/core/w1.h>
+#include <osm/sensors/pulsecount.h>
 
 
 _Static_assert(STRLEN(GIT_VERSION)-3, "No git commit.");

@@ -6,10 +6,10 @@
 #include <json-c/json.h>
 #include <json-c/json_util.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 #include "pinmap.h"
-#include "log.h"
-#include "adcs.h"
+#include <osm/core/log.h>
+#include <osm/core/adcs.h>
 #include "linux.h"
 #include "persist_config_header_model.h"
 

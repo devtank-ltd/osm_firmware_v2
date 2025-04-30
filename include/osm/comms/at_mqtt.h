@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#include "at_base.h"
+#include <osm/comms/at_base.h>
 
 #define COMMS_DEFAULT_MTU                                   254
 

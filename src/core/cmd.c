@@ -5,15 +5,15 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include "cmd.h"
-#include "io.h"
-#include "timers.h"
-#include "persist_config.h"
-#include "common.h"
-#include "log.h"
-#include "platform.h"
+#include <osm/core/cmd.h>
+#include <osm/core/io.h>
+#include <osm/core/timers.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/common.h>
+#include <osm/core/log.h>
+#include <osm/core/platform.h>
 #include "platform_model.h"
-#include "uart_rings.h"
+#include <osm/core/uart_rings.h>
 
 #define SERIAL_NUM_COMM_LEN         17
 

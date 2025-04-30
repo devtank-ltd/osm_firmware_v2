@@ -2,12 +2,12 @@
 
 #include <stdint.h>
 
-#include "measurements.h"
-#include "config.h"
+#include <osm/core/measurements.h>
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "cc.h"
-#include "at_poe.h"
-#include "e_24lc00t.h"
+#include <osm/sensors/cc.h>
+#include <osm/comms/at_poe.h>
+#include <osm/comms/e_24lc00t.h>
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048

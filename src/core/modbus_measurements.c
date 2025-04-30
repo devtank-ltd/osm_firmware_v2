@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "modbus_measurements.h"
-#include "modbus.h"
-#include "common.h"
+#include <osm/core/modbus_measurements.h>
+#include <osm/core/modbus.h>
+#include <osm/core/common.h>
 
 /* On tests it's about 300ms per register @9600 with the RI-F220
  * Max 4 devices with max 16 registers

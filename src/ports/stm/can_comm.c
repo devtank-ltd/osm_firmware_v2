@@ -11,10 +11,10 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include "can_comm.h"
+#include <osm/core/can_comm.h>
 #include "pinmap.h"
-#include "common.h"
-#include "log.h"
+#include <osm/core/common.h>
+#include <osm/core/log.h>
 
 
 #define CAN_COMM_BUFFER_NUM                                         10

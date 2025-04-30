@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "measurements.h"
+#include <osm/core/measurements.h>
 
 
 extern void veml7700_init(void);

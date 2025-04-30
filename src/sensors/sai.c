@@ -20,13 +20,13 @@ Documents used:
 #include <string.h>
 #include <stdlib.h>
 
-#include "common.h"
-#include "config.h"
+#include <osm/core/common.h>
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "log.h"
-#include "uart_rings.h"
-#include "measurements.h"
-#include "persist_config.h"
+#include <osm/core/log.h>
+#include <osm/core/uart_rings.h>
+#include <osm/core/measurements.h>
+#include <osm/core/persist_config.h>
 
 #define SAI1   SAI1_BASE
 

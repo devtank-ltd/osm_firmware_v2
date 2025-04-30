@@ -3,15 +3,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "base_types.h"
-#include "measurements.h"
-#include "i2c.h"
-#include "common.h"
-#include "log.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
+#include <osm/core/i2c.h>
+#include <osm/core/common.h>
+#include <osm/core/log.h>
 #include "persist_config_header_model.h"
-#include "sen5x.h"
-#include "platform.h"
-#include "sleep.h"
+#include <osm/sensors/sen5x.h>
+#include <osm/core/platform.h>
+#include <osm/core/sleep.h>
 #include "sen5x_i2c.h"
 #include "sensirion_common.h"
 #include "sensirion_i2c_hal.h"

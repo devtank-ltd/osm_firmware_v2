@@ -1,6 +1,6 @@
 #include <inttypes.h>
 
-#include "pulsecount.h"
+#include <osm/sensors/pulsecount.h>
 
 
 #define PULSECOUNT_COLLECTION_TIME_MS       1000;

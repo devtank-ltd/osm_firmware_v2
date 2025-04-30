@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "base_types.h"
-#include "measurements.h"
+#include <osm/core/base_types.h>
+#include <osm/core/measurements.h>
 
 
 #define CC_TYPE_A               'A'

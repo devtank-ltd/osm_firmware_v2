@@ -2,7 +2,7 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 #define LW_UNSOL_VERSION                    0x01
 #define LW_CONFIG_VERSION                   0x02

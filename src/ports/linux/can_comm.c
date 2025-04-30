@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "can_comm.h"
+#include <osm/core/can_comm.h>
 
 
 void can_comm_init(void)

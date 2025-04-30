@@ -1,9 +1,9 @@
 blob_test_DIR:=$(tests_DIR)/blob
 
-blob_test_CFLAGS:=-I$(OSM_DIR)/comms/include -I$(blob_test_DIR)
+blob_test_CFLAGS:=-I$(blob_test_DIR)
 
 blob_test_SOURCES:= \
-  $(OSM_DIR)/protocols/src/hexblob.c \
+  $(OSM_DIR)/src/protocols/hexblob.c \
   $(blob_test_DIR)/blob_empty_send.c
 
 blob_test_OBJS:=$(blob_test_SOURCES:%.c=$(OSM_BUILD_DIR)/tests/%.o)

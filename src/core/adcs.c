@@ -2,12 +2,12 @@
 #include <math.h>
 #include <stddef.h>
 
-#include "adcs.h"
+#include <osm/core/adcs.h>
 
-#include "common.h"
-#include "config.h"
-#include "log.h"
-#include "platform.h"
+#include <osm/core/common.h>
+#include <osm/core/config.h>
+#include <osm/core/log.h>
+#include <osm/core/platform.h>
 
 /* 640.5 + 12.5 cycles of (80Mhz / 64) clock
  * (640.5 + 12.5) * (1000000 / (80000000 / 64)) = 522.4 microseconds

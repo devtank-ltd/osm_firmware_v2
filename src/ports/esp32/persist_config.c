@@ -4,11 +4,11 @@
 #include <nvs.h>
 
 #include "pinmap.h"
-#include "config.h"
-#include "log.h"
-#include "persist_config.h"
-#include "persist_config_header.h"
-#include "platform.h"
+#include <osm/core/config.h>
+#include <osm/core/log.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/persist_config_header.h>
+#include <osm/core/platform.h>
 #include "platform_model.h"
 
 #define OSM_NS   "osm_ns"

@@ -2,11 +2,11 @@
 
 #include <stdint.h>
 
-#include "measurements.h"
-#include "config.h"
+#include <osm/core/measurements.h>
+#include <osm/core/config.h>
 #include "pinmap.h"
-#include "cc.h"
-#include "rak3172.h"
+#include <osm/sensors/cc.h>
+#include <osm/comms/rak3172.h>
 
 #define FLASH_ADDRESS               0x8000000
 #define FLASH_PAGE_SIZE             2048

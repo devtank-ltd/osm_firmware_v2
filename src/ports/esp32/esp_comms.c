@@ -6,15 +6,15 @@
 
 #include <mqtt_client.h>
 
-#include "log.h"
-#include "cmd.h"
-#include "common.h"
-#include "base_types.h"
-#include "persist_config.h"
+#include <osm/core/log.h>
+#include <osm/core/cmd.h>
+#include <osm/core/common.h>
+#include <osm/core/base_types.h>
+#include <osm/core/persist_config.h>
 #include "mqtt.h"
 #include "esp_comms.h"
-#include "protocol.h"
-#include "uart_rings.h"
+#include <osm/protocols/protocol.h>
+#include <osm/core/uart_rings.h>
 #include "platform_model.h"
 
 #define WIFI_DELAY_MS 1000

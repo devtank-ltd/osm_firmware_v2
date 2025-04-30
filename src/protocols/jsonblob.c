@@ -6,10 +6,10 @@
 #include <stdlib.h>
 
 #include "model_config.h"
-#include "log.h"
-#include "measurements.h"
-#include "comms.h"
-#include "persist_config.h"
+#include <osm/core/log.h>
+#include <osm/core/measurements.h>
+#include <osm/comms/comms.h>
+#include <osm/core/persist_config.h>
 
 
 #define JSON_CLOSE_SIZE 3

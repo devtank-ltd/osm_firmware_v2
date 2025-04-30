@@ -3,9 +3,9 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "log.h"
-#include "measurements.h"
-#include "comms.h"
+#include <osm/core/log.h>
+#include <osm/core/measurements.h>
+#include <osm/comms/comms.h>
 #include "platform_model.h"
 
 static int8_t                       _measurements_hex_arr[PROTOCOL_HEX_ARRAY_SIZE]   = {0};

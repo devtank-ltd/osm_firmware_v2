@@ -1,6 +1,6 @@
 #pragma once
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 #define ERR_UART           USART2
 #define ERR_UART_RCC       RCC_USART2

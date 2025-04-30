@@ -9,13 +9,13 @@
 #include <libopencm3/stm32/exti.h>
 #include <libopencm3/cm3/nvic.h>
 
-#include "io.h"
-#include "io_watch.h"
-#include "config.h"
-#include "platform.h"
-#include "log.h"
+#include <osm/core/io.h>
+#include <osm/sensors/io_watch.h>
+#include <osm/core/config.h>
+#include <osm/core/platform.h>
+#include <osm/core/log.h>
 #include "platform_model.h"
-#include "sleep.h"
+#include <osm/core/sleep.h>
 
 
 

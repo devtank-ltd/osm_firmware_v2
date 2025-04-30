@@ -9,20 +9,20 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 
-#include "uart_rings.h"
-#include "uarts.h"
-#include "config.h"
-#include "rak4270.h"
-#include "log.h"
-#include "cmd.h"
-#include "measurements.h"
-#include "persist_config.h"
-#include "common.h"
-#include "timers.h"
-#include "update.h"
+#include <osm/core/uart_rings.h>
+#include <osm/core/uarts.h>
+#include <osm/core/config.h>
+#include <osm/comms/rak4270.h>
+#include <osm/core/log.h>
+#include <osm/core/cmd.h>
+#include <osm/core/measurements.h>
+#include <osm/core/persist_config.h>
+#include <osm/core/common.h>
+#include <osm/core/timers.h>
+#include <osm/core/update.h>
 #include "pinmap.h"
-#include "lw.h"
-#include "protocol.h"
+#include <osm/comms/lw.h>
+#include <osm/protocols/protocol.h>
 
 #define RAK4270_HEADER_SIZE                      17
 #define RAK4270_TAIL_SIZE                        2

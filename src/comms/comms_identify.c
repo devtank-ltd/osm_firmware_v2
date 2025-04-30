@@ -1,11 +1,11 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "base_types.h"
-#include "comms_identify.h"
-#include "modbus.h"
-#include "i2c.h"
-#include "common.h"
+#include <osm/core/base_types.h>
+#include <osm/comms/comms_identify.h>
+#include <osm/core/modbus.h>
+#include <osm/core/i2c.h>
+#include <osm/core/common.h>
 
 #define COMMS_IDENTIFY_MEM_VERSION              1
 

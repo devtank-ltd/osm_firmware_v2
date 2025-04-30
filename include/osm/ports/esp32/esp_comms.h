@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "base_types.h"
+#include <osm/core/base_types.h>
 
 extern bool        esp_comms_send_ready(void);
 extern bool        esp_comms_send_allowed(void);

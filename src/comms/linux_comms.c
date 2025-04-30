@@ -3,13 +3,13 @@
 #include <stdio.h>
 
 
-#include "config.h"
-#include "uart_rings.h"
+#include <osm/core/config.h>
+#include <osm/core/uart_rings.h>
 #include "pinmap.h"
-#include "log.h"
-#include "common.h"
-#include "protocol.h"
-#include "cmd.h"
+#include <osm/core/log.h>
+#include <osm/core/common.h>
+#include <osm/protocols/protocol.h>
+#include <osm/core/cmd.h>
 
 
 #define COMMS_DEFAULT_MTU       256
