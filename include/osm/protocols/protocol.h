@@ -29,4 +29,4 @@ struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail);
 void        protocol_power_down(void);
 
 /* To be implemented by caller.*/
-extern void     on_protocol_sent_ack(bool acked) __attribute__((weak));
+void     on_protocol_sent_ack(bool acked) __attribute__((weak));

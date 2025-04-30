@@ -6,7 +6,7 @@
 #include <osm/core/measurements.h>
 
 
-extern void htu21d_init(void);
+void htu21d_init(void);
 
 void htu21d_temp_inf_init(measurements_inf_t* inf);
 void htu21d_humi_inf_init(measurements_inf_t* inf);

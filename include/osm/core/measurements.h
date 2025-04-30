@@ -89,32 +89,32 @@ typedef struct
 typedef bool (*measurements_for_each_cb_t)(measurements_def_t* def, void * data);
 
 
-extern bool     measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
-extern bool     measurements_for_each(measurements_for_each_cb_t cb, void * data);
+bool     measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
+bool     measurements_for_each(measurements_for_each_cb_t cb, void * data);
 
-extern bool     measurements_add(measurements_def_t* measurement);
-extern bool     measurements_del(char* name);
+bool     measurements_add(measurements_def_t* measurement);
+bool     measurements_del(char* name);
 
-extern bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
-extern bool     measurements_get_interval(char* name, uint8_t * interval);     // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
-extern bool     measurements_set_samplecount(char* name, uint8_t samplecount); // How many samples should be taken in each interval
-extern bool     measurements_get_samplecount(char* name, uint8_t * samplecount); // How many samples should be taken in each interval
+bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
+bool     measurements_get_interval(char* name, uint8_t * interval);     // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
+bool     measurements_set_samplecount(char* name, uint8_t samplecount); // How many samples should be taken in each interval
+bool     measurements_get_samplecount(char* name, uint8_t * samplecount); // How many samples should be taken in each interval
 
-extern void     measurements_loop_iteration(void);
-extern void     measurements_init(void);
+void     measurements_loop_iteration(void);
+void     measurements_init(void);
 
-extern void     measurements_power_mode(measurements_power_mode_t mode);
-extern void     measurements_derive_cc_phase(void);
-extern bool     measurements_send_test(char * name);
+void     measurements_power_mode(measurements_power_mode_t mode);
+void     measurements_derive_cc_phase(void);
+bool     measurements_send_test(char * name);
 
 extern bool     measurements_enabled;
-extern bool     measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type);
-extern bool     measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
+bool     measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type);
+bool     measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
 
 
-extern bool     model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
-extern void     model_measurements_repopulate(void);
+bool     model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
+void     model_measurements_repopulate(void);
 
-extern bool     measurements_rename(char* orig_name, char* new_name_raw);
+bool     measurements_rename(char* orig_name, char* new_name_raw);
 
-extern struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail);
+struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail);

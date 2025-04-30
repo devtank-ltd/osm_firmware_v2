@@ -3,12 +3,12 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-extern void     timers_init();
+void     timers_init();
 
-extern void     timer_delay_us(uint16_t wait_us);
-extern void     timer_delay_us_64(uint64_t wait_us);
+void     timer_delay_us(uint16_t wait_us);
+void     timer_delay_us_64(uint64_t wait_us);
 
-extern void     timer_wait();
+void     timer_wait();
 
-extern bool     timer_set_adc_boardary(unsigned ms);
-extern unsigned timer_get_adc_boardary();
+bool     timer_set_adc_boardary(unsigned ms);
+unsigned timer_get_adc_boardary();

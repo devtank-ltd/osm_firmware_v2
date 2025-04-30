@@ -28,9 +28,9 @@ typedef struct
 extern ring_buf_t can_comm_ring_data;
 
 
-extern void can_comm_init(void);
-extern void can_comm_send(can_comm_packet_t* pkt);
-extern void can_comm_enable(bool enabled);
+void can_comm_init(void);
+void can_comm_send(can_comm_packet_t* pkt);
+void can_comm_enable(bool enabled);
 
 /* To be implemented by caller.*/
-extern void can_drain_array(void) __attribute__((weak));
+void can_drain_array(void) __attribute__((weak));

@@ -36,8 +36,8 @@ extern bool osm_decompose_uart_str(char             * str,
                                osm_uart_parity_t    * parity,
                                osm_uart_stop_bits_t * stop);
 
-extern char * skip_space(char * pos);
-extern char * skip_to_space(char * pos);
+char * skip_space(char * pos);
+char * skip_to_space(char * pos);
 
 
 /** FLAGS */
@@ -76,8 +76,8 @@ typedef enum
 } io_special_t;
 
 
-extern char* io_get_pull_str(uint16_t io_state);
-extern bool  io_is_special(uint16_t io_state);
+char* io_get_pull_str(uint16_t io_state);
+bool  io_is_special(uint16_t io_state);
 
 
 typedef enum

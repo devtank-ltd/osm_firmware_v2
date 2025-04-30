@@ -8,20 +8,20 @@
 extern bool log_async_log;
 extern uint32_t log_debug_mask;
 
-extern void platform_raw_msg(const char * s);
+void platform_raw_msg(const char * s);
 
-extern void log_debugv(uint32_t flag, const char * s,va_list ap);
-extern void log_debug(uint32_t flag, const char * s, ...) PRINTF_FMT_CHECK( 2, 3);
+void log_debugv(uint32_t flag, const char * s,va_list ap);
+void log_debug(uint32_t flag, const char * s, ...) PRINTF_FMT_CHECK( 2, 3);
 
-extern void log_bad_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
-extern void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
-extern void log_out(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
-extern void log_init(void);
+void log_bad_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
+void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
+void log_out(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
+void log_init(void);
 
-extern void log_errorv(const char * s, va_list ap);
-extern void log_outv(const char * s, va_list ap);
+void log_errorv(const char * s, va_list ap);
+void log_outv(const char * s, va_list ap);
 
-extern void log_debug_data(uint32_t flag, const void * data, unsigned size);
+void log_debug_data(uint32_t flag, const void * data, unsigned size);
 
 #ifdef NOPODEBUG
 inline static void _empty_log() {}
