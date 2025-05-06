@@ -18,7 +18,7 @@ import paho.mqtt as paho
 import paho.mqtt.client as mqtt
 from binding import modbus_reg_t, dev_t, set_debug_print, lw_comms_t, wifi_comms_t
 
-sys.path.append("../ports/linux/peripherals/")
+sys.path.append("../src/ports/linux/peripherals/")
 
 import comms_connection as comms
 
