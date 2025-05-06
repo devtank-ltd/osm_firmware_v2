@@ -65,10 +65,10 @@ $(OSM_BUILD_DIR)/.git.$(OSM_GIT_COMMIT): $(LIBOPENCM3)
 	touch $@
 
 
-include $(OSM_DIR)/ports/base.mk
-include $(OSM_DIR)/ports/stm/stm.mk
-include $(OSM_DIR)/ports/linux/linux.mk
-include $(OSM_DIR)/ports/esp32/esp32.mk
+include $(OSM_DIR)/src/ports/base.mk
+include $(OSM_DIR)/src/ports/stm/stm.mk
+include $(OSM_DIR)/src/ports/linux/linux.mk
+include $(OSM_DIR)/src/ports/esp32/esp32.mk
 
 define OSM_PROGRAM_template
   include $(1)

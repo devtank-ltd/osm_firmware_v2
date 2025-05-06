@@ -29,8 +29,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "config.h"
-#include "log.h"
+#include <osm/core/config.h>
+#include <osm/core/log.h>
 
 
 static bool (*_test_comms_send)(int8_t* hex_arr, uint16_t arr_len) = NULL;
