@@ -80,6 +80,10 @@ bool persistent_init(void)
             _persist_wipe();
         }
     }
+    else
+    {
+        memcpy(&persist_data, persist_data_raw, sizeof(persist_data));
+    }
     return true;
 }
 
