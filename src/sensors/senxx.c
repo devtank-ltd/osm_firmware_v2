@@ -561,10 +561,10 @@ static command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
 {
     char product_name[32];
     uint8_t product_name_size = 32;
-    int16_t error = _senxx_get_product(product_name, product_name_size);
-    if (error)
+    senxx_model_t model = _senxx_get_product(product_name, product_name_size);
+    if (SENxx_MODEL_NONE == model)
     {
-        cmd_ctx_out(ctx,"Error executing _senxx_get_product(): %"PRIu16, error);
+        cmd_ctx_out(ctx,"Error executing _senxx_get_product()");
         return COMMAND_RESP_ERR;
     }
     cmd_ctx_out(ctx,"Product name: %s\n", product_name);
