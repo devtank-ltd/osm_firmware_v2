@@ -24,7 +24,10 @@ bool osm_persist_config_update(const osm_persist_storage_t* from_config, osm_per
     {
         return false;
     }
-    return osm_model_config_update((const void*)&from_config->model_config, &to_config->model_config, model_version);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    return model_config_update((const void*)&from_config->model_config, &to_config->model_config, model_version);
+#pragma GCC diagnostic pop
 }
 
 
