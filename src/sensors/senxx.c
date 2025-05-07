@@ -376,10 +376,7 @@ static int16_t _senxx_start_measurement(void)
 static void _senxx_init(void)
 {
     sensirion_i2c_hal_init();
-    if (SENxx_MODEL_IS_FAMILY(_senxx_ctx.model, SENxx_FAMILY_SEN6x))
-    {
-        sen66_init(SEN66_I2C_ADDR_6B);
-    }
+    sen66_init(SEN66_I2C_ADDR_6B);
 }
 
 
