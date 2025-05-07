@@ -30,11 +30,13 @@
 #define MEASUREMENTS_FTMA_4_NAME            "FTA4" /* float  - FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
 #define MEASUREMENTS_PM1_0_NAME             "PM1"  /* float  - Particulate matter, less than 1 micrometres in diameter */
 #define MEASUREMENTS_PM4_NAME               "PM4"  /* float  - Particulate matter, less than 4 micrometres in diameter */
-#define MEASUREMENTS_REL_HUM_NAME           "HUM2" /* float  - Relative Humanity from SEN5x chip (RevD and above) */
-#define MEASUREMENTS_SEN5x_TEMP_NAME        "TMP5" /* float  - Temperature from SEN5x chip (RevD and above)*/
-#define MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SEN5x. */
-#define MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SEN5x. */
-#define MEASUREMENTS_EXAMPLE_RS232_NAME             "R232" /* string - EXAMPLE_RS232 response from command */
+#define MEASUREMENTS_REL_HUM_NAME           "HUM2" /* float  - Relative Humanity from SENxx chip (RevD and above) */
+#define MEASUREMENTS_SEN5x_TEMP_NAME        "TMP5" /* float  - Temperature from SENxx chip (RevD and above)*/
+#define MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SENxx. */
+#define MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SENxx. */
+#define MEASUREMENTS_CO2_NAME               "CO2"  /* float  - Carbon Dioxide from SENxx. */
+#define MEASUREMENTS_HCHO_NAME              "HCHO" /* float  - Formaldehyde from SENxx */
+#define MEASUREMENTS_EXAMPLE_RS232_NAME     "R232" /* string - EXAMPLE_RS232 response from command */
 #define MEASUREMENTS_TMP4718_LOCAL_NAME     "TMP6" /* float  - Temperature on POE/Ethernet module, local */
 #define MEASUREMENTS_TMP4718_REMOTE_NAME    "TMP7" /* float  - Temperature on POE/Ethernet module, remote */
 
