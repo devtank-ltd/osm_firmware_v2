@@ -1,4 +1,4 @@
-LINUX_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x
+LINUX_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x -I$(OSM_LIB_DIR)/embedded-i2c-sen66
 
 penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/src/core/main.c \
@@ -44,14 +44,15 @@ penguin_at_wifi_SOURCES := \
     $(OSM_DIR)/src/sensors/ds18b20.c \
     $(OSM_DIR)/src/sensors/veml7700.c \
     $(OSM_DIR)/src/sensors/ftma.c \
-    $(OSM_DIR)/src/sensors/sen5x.c \
+    $(OSM_DIR)/src/sensors/senxx.c \
     $(OSM_DIR)/src/sensors/sensirion_i2c_hal.c \
     $(OSM_DIR)/src/sensors/cc.c \
     $(OSM_DIR)/src/sensors/can_impl.c \
     $(OSM_DIR)/src/sensors/fw.c \
-    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
-    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_i2c.c \
     $(OSM_LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_common.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_i2c.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen66/sen66_i2c.c \
     $(OSM_MODEL_DIR)/penguin_at_wifi/model.c \
 
 $(eval $(call LINUX_FIRMWARE,penguin_at_wifi))

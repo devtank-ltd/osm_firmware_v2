@@ -1,4 +1,4 @@
-STM_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x
+STM_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x -I$(OSM_LIB_DIR)/embedded-i2c-sen66
 
 env01f_lw_SOURCES := \
     $(OSM_DIR)/src/core/main.c \
@@ -34,7 +34,7 @@ env01f_lw_SOURCES := \
     $(OSM_DIR)/src/comms/rak3172.c \
     $(OSM_DIR)/src/comms/e_24lc00t.c \
     $(OSM_DIR)/src/comms/comms_identify.c \
-    $(OSM_DIR)/src/sensors/sen5x.c \
+    $(OSM_DIR)/src/sensors/senxx.c \
     $(OSM_DIR)/src/sensors/sensirion_i2c_hal.c \
     $(OSM_DIR)/src/sensors/ds18b20.c \
     $(OSM_DIR)/src/sensors/pulsecount.c \
@@ -45,9 +45,10 @@ env01f_lw_SOURCES := \
     $(OSM_DIR)/src/sensors/fw.c \
     $(OSM_DIR)/src/sensors/io_watch.c \
     $(OSM_DIR)/src/sensors/example_rs232.c \
-    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_common.c \
-    $(OSM_LIB_DIR)/embedded-i2c-sen5x/sensirion_i2c.c \
     $(OSM_LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_common.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_i2c.c \
+    $(OSM_LIB_DIR)/embedded-i2c-sen66/sen66_i2c.c \
     $(OSM_MODEL_DIR)/env01f_lw/model.c
 
 env01f_lw_LINK_SCRIPT := $(OSM_DIR)/src/ports/stm/stm32l4.ld

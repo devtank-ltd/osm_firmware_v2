@@ -1,4 +1,4 @@
-STM_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x
+STM_INCLUDE_PATHS += -I$(OSM_LIB_DIR)/embedded-i2c-sen5x  -I$(OSM_LIB_DIR)/embedded-i2c-sen66
 
 env01f_at_wifi_SOURCES := \
     $(OSM_DIR)/src/core/main.c \
