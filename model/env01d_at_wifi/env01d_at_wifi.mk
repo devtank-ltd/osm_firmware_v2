@@ -50,7 +50,8 @@ env01d_at_wifi_SOURCES := \
     $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_common.c \
     $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_i2c.c \
     $(OSM_LIB_DIR)/embedded-i2c-sen66/sen66_i2c.c \
-    $(OSM_MODEL_DIR)/env01d_at_wifi/model.c
+    $(OSM_MODEL_DIR)/env01d_at_wifi/model.c \
+    $(OSM_MODEL_DIR)/env01d_at_wifi/model_config_update.c
 
 env01d_at_wifi_LINK_SCRIPT := $(OSM_DIR)/src/ports/stm/stm32l4.ld
 
