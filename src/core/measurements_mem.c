@@ -4,7 +4,7 @@
 #include <osm/core/log.h>
 
 
-void measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)
+void osm_measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)
 {
     strncpy(def->name, name, MEASURE_NAME_NULLED_LEN);
     def->interval    = interval;
@@ -14,15 +14,15 @@ void measurements_setup_default(measurements_def_t* def, char* name, uint8_t int
 }
 
 
-void measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)
+void osm_measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type)
 {
     measurements_def_t def;
-    measurements_setup_default(&def, name, interval, samplecount, type);
-    measurements_add(&def);
+    osm_measurements_setup_default(&def, name, interval, samplecount, type);
+    osm_measurements_add(&def);
 }
 
 
-measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name)
+measurements_def_t*  osm_measurements_array_find(measurements_def_t * measurements_arr, char* name)
 {
     if (!measurements_arr || !name || strlen(name) > MEASURE_NAME_LEN || !name[0])
         return NULL;

@@ -16,7 +16,7 @@ static measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
 static measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
 
 
-bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
+bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
 {
     if (enabled)
     {
@@ -28,7 +28,7 @@ bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
 }
 
 
-void io_watch_isr(uint32_t exti_group)
+void osm_io_watch_isr(uint32_t exti_group)
 {
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
@@ -46,16 +46,16 @@ void io_watch_isr(uint32_t exti_group)
 }
 
 
-void io_watch_init(void)
+void osm_io_watch_init(void)
 {
-    /* Must be called after measurements_init */
+    /* Must be called after osm_measurements_init */
     char name[MEASURE_NAME_NULLED_LEN] = IOS_MEASUREMENT_NAME_PRE;
     unsigned len = strnlen(name, MEASURE_NAME_LEN);
     char* p = name + len;
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
         snprintf(p, MEASURE_NAME_NULLED_LEN - len, "%02u", ios_watch_ios[i]);
-        if (!measurements_get_measurements_def(name, &_ios_watch_measurements_def[i], &_ios_watch_measurements_data[i]))
+        if (!osm_measurements_get_measurements_def(name, &_ios_watch_measurements_def[i], &_ios_watch_measurements_data[i]))
         {
             _ios_watch_measurements_def[i] = NULL;
             _ios_watch_measurements_data[i] = NULL;

@@ -82,7 +82,7 @@ static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t
                 return false;
         }
 
-        model_setup_pulse_pupd(&pupd8);
+        osm_model_setup_pulse_pupd(&pupd8);
 
         rcc_periph_clock_enable(PORT_TO_RCC(inst->pnp.port));
         gpio_mode_setup(inst->pnp.port, GPIO_MODE_INPUT, pupd8, inst->pnp.pins);
@@ -104,7 +104,7 @@ static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t
 }
 
 
-bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
+bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
 {
     io_watch_instance_t* inst = _io_watch_get_inst(io);
     if (!inst)
@@ -112,12 +112,12 @@ bool io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
         io_debug("Could not get the instance for '%u'", io);
         return false;
     }
-    model_w1_pulse_enable_pupd(io, pupd == IO_PUPD_UP);
+    osm_model_w1_pulse_enable_pupd(io, pupd == IO_PUPD_UP);
     return _io_watch_enable2(inst, enabled, pupd);
 }
 
 
-void io_watch_isr(uint32_t exti_group)
+void osm_io_watch_isr(uint32_t exti_group)
 {
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
@@ -125,7 +125,7 @@ void io_watch_isr(uint32_t exti_group)
         if (!inst)
             continue;
 
-        if (!io_is_watch_now(inst->io))
+        if (!osm_io_is_watch_now(inst->io))
             continue;
 
         uint32_t exti_state = exti_get_flag_status(inst->exti);
@@ -143,21 +143,21 @@ void io_watch_isr(uint32_t exti_group)
             continue;
 
         data->instant_send = 1;
-        sleep_exit_sleep_mode();
+        osm_sleep_exit_sleep_mode();
     }
 }
 
 
-void io_watch_init(void)
+void osm_io_watch_init(void)
 {
-    /* Must be called after measurements_init */
+    /* Must be called after osm_measurements_init */
     char name[MEASURE_NAME_NULLED_LEN] = IOS_MEASUREMENT_NAME_PRE;
     unsigned len = strnlen(name, MEASURE_NAME_LEN);
     char* p = name + len;
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
         snprintf(p, MEASURE_NAME_NULLED_LEN - len, "%02u", ios_watch_ios[i]);
-        if (!measurements_get_measurements_def(name, &_ios_watch_measurements_def[i], &_ios_watch_measurements_data[i]))
+        if (!osm_measurements_get_measurements_def(name, &_ios_watch_measurements_def[i], &_ios_watch_measurements_data[i]))
         {
             _ios_watch_measurements_def[i] = NULL;
             _ios_watch_measurements_data[i] = NULL;
@@ -167,15 +167,15 @@ void io_watch_init(void)
 
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
     {
-        if (io_is_watch_now(n))
+        if (osm_io_is_watch_now(n))
         {
             uint8_t pupd;
-            if (!ios_get_pupd(n, &pupd))
+            if (!osm_ios_get_pupd(n, &pupd))
             {
                 io_debug("Could not get pull of IO %u", n);
                 continue;
             }
-            if (!io_watch_enable(n, true, pupd))
+            if (!osm_io_watch_enable(n, true, pupd))
                 io_debug("Could not enable IO watch for IO %u on init.", n);
         }
     }

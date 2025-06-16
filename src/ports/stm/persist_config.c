@@ -23,7 +23,7 @@ persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)
 
 static void _persist_wipe(void)
 {
-    log_error("Setting persistent data.");
+    osm_log_error("Setting persistent data.");
     memset(&persist_data, 0, sizeof(persist_data));
     memset(&persist_measurements, 0, sizeof(persist_measurements));
     persist_data.version = PERSIST_VERSION;
@@ -33,33 +33,33 @@ static void _persist_wipe(void)
         memcpy(&persist_data.model_name[0], STR(fw_name), MODEL_NAME_LEN);
     else
         snprintf(persist_data.model_name, MODEL_NAME_LEN, STR(fw_name));
-    unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, platform_get_hw_id());
+    unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, osm_platform_get_hw_id());
     persist_data.human_name[human_name_len] = 0;
-    model_persist_config_model_init(&persist_data.model_config);
+    osm_model_persist_config_model_init(&persist_data.model_config);
 }
 
 
-bool persistent_init(void)
+bool osm_persistent_init(void)
 {
-    const persist_storage_t* persist_data_raw = platform_get_raw_persist();
-    const persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
+    const persist_storage_t* persist_data_raw = osm_platform_get_raw_persist();
+    const persist_measurements_storage_t* persist_measurements_raw = osm_platform_get_measurements_raw_persist();
 
     bool wipe = false;
 
     if (!persist_data_raw ||
         !persist_measurements_raw)
     {
-        log_error("Unable to load persistent data.");
+        osm_log_error("Unable to load persistent data.");
         wipe = true;
     }
     else if (strncmp(persist_data_raw->model_name, STR(fw_name), MODEL_NAME_LEN))
     {
-        log_error("Persistent model name doesn't match.");
+        osm_log_error("Persistent model name doesn't match.");
         wipe = true;
     }
     else if (persist_data_raw->model_config.comms_config.type != COMMS_BUILD_TYPE)
     {
-        log_error("Persistent comms type doesn't match.");
+        osm_log_error("Persistent comms type doesn't match.");
         wipe = true;
     }
 
@@ -73,10 +73,10 @@ bool persistent_init(void)
 
     if (persist_data_raw->version != PERSIST_VERSION)
     {
-        log_error("Persistent data version doesn't match.");
-        if (!persist_config_update(persist_data_raw, &persist_data))
+        osm_log_error("Persistent data version doesn't match.");
+        if (!osm_persist_config_update(persist_data_raw, &persist_data))
         {
-            log_error("Unable to update config");
+            osm_log_error("Unable to update config");
             _persist_wipe();
         }
     }
@@ -92,7 +92,7 @@ bool persistent_init(void)
  *        false if same      */
 static bool _persist_data_cmp(void)
 {
-    persist_storage_t* persist_data_raw = platform_get_raw_persist();
+    persist_storage_t* persist_data_raw = osm_platform_get_raw_persist();
     return !(
         persist_data_raw                                                &&
         persist_data.log_debug_mask == persist_data_raw->log_debug_mask &&
@@ -107,7 +107,7 @@ static bool _persist_data_cmp(void)
         memcmp(persist_data.human_name,
             persist_data_raw->human_name,
             sizeof(char) * HUMAN_NAME_LEN_NULLED) == 0                  &&
-        !model_persist_config_cmp(
+        !osm_model_persist_config_cmp(
             &persist_data.model_config,
             &persist_data_raw->model_config)                            &&
         persist_data.config_count   == persist_data_raw->config_count   );
@@ -118,7 +118,7 @@ static bool _persist_data_cmp(void)
  *        false if same      */
 static bool _persist_measurements_cmp(void)
 {
-    persist_measurements_storage_t* persist_measurements_raw = platform_get_measurements_raw_persist();
+    persist_measurements_storage_t* persist_measurements_raw = osm_platform_get_measurements_raw_persist();
     return !(
         persist_measurements_raw                                        &&
         memcmp(&persist_measurements,
@@ -127,22 +127,22 @@ static bool _persist_measurements_cmp(void)
 }
 
 
-void persist_commit()
+void osm_persist_commit()
 {
     if (_persist_data_cmp()            ||
         _persist_measurements_cmp()    )
     {
         persist_data.config_count += 1;
-        if (platform_persist_commit(&persist_data, &persist_measurements))
+        if (osm_platform_persist_commit(&persist_data, &persist_measurements))
             log_sys_debug("Flash successfully written.");
         else
-            log_error("Flash write failed");
+            osm_log_error("Flash write failed");
     }
     else log_sys_debug("No changes to write to flash.");
 }
 
-void persist_set_fw_ready(uint32_t size)
+void osm_persist_set_fw_ready(uint32_t size)
 {
     persist_data.pending_fw = size;
-    persist_commit();
+    osm_persist_commit();
 }

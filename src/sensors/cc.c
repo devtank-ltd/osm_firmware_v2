@@ -92,7 +92,7 @@ static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint3
     adc_debug("Difference = %"PRIu32".%03"PRIu32, adc_diff/1000, adc_diff%1000);
 
     // Once the conversion is no longer linearly multiplicative this needs to be changed.
-    if (!adcs_to_mV(adc_diff, &inter_value))
+    if (!osm_adcs_to_mV(adc_diff, &inter_value))
     {
         adc_debug("Cannot get mV value of midpoint.");
         return false;
@@ -207,7 +207,7 @@ static bool _cc_get_info(char* name, uint8_t* index, uint8_t* active_index, adcs
 static bool _cc_wait(void)
 {
     adc_debug("Waiting for ADC CC");
-    adcs_resp_t resp = adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC);
+    adcs_resp_t resp = osm_adcs_wait_done(CC_TIMEOUT_MS, ADCS_KEY_CC);
     switch (resp)
     {
         case ADCS_RESP_FAIL:
@@ -222,7 +222,7 @@ static bool _cc_wait(void)
 }
 
 
-bool cc_set_active_clamps(adcs_type_t* active_clamps, unsigned len)
+bool osm_cc_set_active_clamps(adcs_type_t* active_clamps, unsigned len)
 {
     for (unsigned i = 0; i < ADC_CC_COUNT; i++)
     {
@@ -251,7 +251,7 @@ static void _cc_release_auto(void)
         if (_cc_running[i])
             return;
     }
-    adcs_release(ADCS_KEY_CC);
+    osm_adcs_release(ADCS_KEY_CC);
 }
 
 
@@ -261,7 +261,7 @@ static void _cc_release_all(void)
     {
         _cc_running[i] = false;
     }
-    adcs_release(ADCS_KEY_CC);
+    osm_adcs_release(ADCS_KEY_CC);
 }
 
 
@@ -310,7 +310,7 @@ static measurements_sensor_state_t _cc_begin(char* name, bool in_isolation)
 
         _cc_running_isolated = lone_cc;
 
-        resp = adcs_begin(&lone_cc, 1, CC_NUM_SAMPLES, ADCS_KEY_CC);
+        resp = osm_adcs_begin(&lone_cc, 1, CC_NUM_SAMPLES, ADCS_KEY_CC);
     }
     else
     {
@@ -332,7 +332,7 @@ static measurements_sensor_state_t _cc_begin(char* name, bool in_isolation)
                 return MEASUREMENTS_SENSOR_STATE_SUCCESS;
             }
         }
-        resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+        resp = osm_adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
     }
 
     switch(resp)
@@ -399,7 +399,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
     adcs_resp_t resp = ADCS_RESP_FAIL;
     if (CC_TYPE_V == _configs[index].type)
     {
-        resp = adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
+        resp = osm_adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
 
         switch (resp)
         {
@@ -422,7 +422,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         }
     }
-    resp = adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
+    resp = osm_adcs_collect_rms(&adcs_rms, midpoint, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, &_cc_collection_time);
 
     switch (resp)
     {
@@ -524,7 +524,7 @@ static bool _cc_calibrate(void)
     memcpy(_cc_adc_active_clamps.active, all_cc_clamps, ADC_CC_COUNT);
     _cc_adc_active_clamps.len = ADC_CC_COUNT;
 
-    adcs_resp_t resp = adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
+    adcs_resp_t resp = osm_adcs_begin(_cc_adc_active_clamps.active, _cc_adc_active_clamps.len, CC_NUM_SAMPLES, ADCS_KEY_CC);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -541,7 +541,7 @@ static bool _cc_calibrate(void)
         return false;
     }
     uint32_t midpoints[ADC_CC_COUNT];
-    resp = adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
+    resp = osm_adcs_collect_avgs(midpoints, ADC_CC_COUNT, CC_NUM_SAMPLES, ADCS_KEY_CC, NULL);
     _cc_release_all();
     switch(resp)
     {
@@ -563,11 +563,11 @@ static bool _cc_calibrate(void)
 }
 
 
-bool cc_get_blocking(char* name, measurements_reading_t* value)
+bool osm_cc_get_blocking(char* name, measurements_reading_t* value)
 {
     if (!_configs)
     {
-        log_error("No CC calibration");
+        osm_log_error("No CC calibration");
         return false;
     }
     if (_cc_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
@@ -583,11 +583,11 @@ bool cc_get_blocking(char* name, measurements_reading_t* value)
 }
 
 
-bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3)
+bool osm_cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3)
 {
     if (!_configs)
     {
-        log_error("No CC calibration");
+        osm_log_error("No CC calibration");
         return false;
     }
     adcs_type_t all_cc_clamps[ADC_CC_COUNT] = ADC_TYPES_ALL_CC;
@@ -595,7 +595,7 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
     memcpy(prev_cc_adc_active_clamps.active, _cc_adc_active_clamps.active, _cc_adc_active_clamps.len * sizeof(_cc_adc_active_clamps.active[0]));
     prev_cc_adc_active_clamps.len = _cc_adc_active_clamps.len;
 
-    if (!cc_set_active_clamps(all_cc_clamps, ADC_CC_COUNT))
+    if (!osm_cc_set_active_clamps(all_cc_clamps, ADC_CC_COUNT))
     {
         adc_debug("Cannot set active clamp.");
         return false;
@@ -639,7 +639,7 @@ bool cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t
     }
     _cc_release_all();
 
-    return cc_set_active_clamps(prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
+    return osm_cc_set_active_clamps(prev_cc_adc_active_clamps.active, prev_cc_adc_active_clamps.len);
 bad_exit:
     _cc_release_all();
     adc_debug("Couldnt get %s value.", name);
@@ -680,7 +680,7 @@ static void  _cc_enable(char* name, bool enabled)
                 clamps[len++] = _cc_adc_active_clamps.active[i];
     }
 
-    cc_set_active_clamps(clamps, len);
+    osm_cc_set_active_clamps(clamps, len);
 }
 
 
@@ -694,7 +694,7 @@ static bool _cc_is_enabled(char* name)
 {
     if (!_configs)
     {
-        log_error("No CC calibration");
+        osm_log_error("No CC calibration");
         return false;
     }
     uint8_t index_local;
@@ -708,7 +708,7 @@ static bool _cc_is_enabled(char* name)
 }
 
 
-void cc_inf_init(measurements_inf_t* inf)
+void osm_cc_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _cc_get_collection_time;
     inf->init_cb            = _cc_begin;
@@ -719,12 +719,12 @@ void cc_inf_init(measurements_inf_t* inf)
 }
 
 
-void cc_setup_default_mem(cc_config_t* memory, unsigned size)
+void osm_cc_setup_default_mem(cc_config_t* memory, unsigned size)
 {
     uint8_t num_cc_configs = ADC_CC_COUNT;
     if (sizeof(cc_config_t) * ADC_CC_COUNT > size)
     {
-        log_error("CC config is larger than the size of memory given.");
+        osm_log_error("CC config is larger than the size of memory given.");
         num_cc_configs = size / sizeof(cc_config_t);
     }
     for (uint8_t i = 0; i < num_cc_configs; i++)
@@ -737,14 +737,14 @@ void cc_setup_default_mem(cc_config_t* memory, unsigned size)
 }
 
 
-void cc_init(void)
+void osm_cc_init(void)
 {
     _configs = persist_data.model_config.cc_configs;
     if (!_configs)
     {
         adc_debug("Failed to load persistent midpoint.");
         static cc_config_t default_configs[ADC_CC_COUNT];
-        cc_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
+        osm_cc_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
         _configs = default_configs;
     }
 }
@@ -754,7 +754,7 @@ static command_response_t _cc_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_ctx_error(ctx,"No CC calibration");
+        osm_cmd_ctx_error(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     char* p;
@@ -763,30 +763,30 @@ static command_response_t _cc_cb(char* args, cmd_ctx_t * ctx)
     if (p == args)
     {
         measurements_reading_t value_2, value_3;
-        if (!cc_get_all_blocking(&value_1, &value_2, &value_3))
+        if (!osm_cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
-            cmd_ctx_out(ctx,"Could not get CC values.");
+            osm_cmd_ctx_out(ctx,"Could not get CC values.");
             return COMMAND_RESP_ERR;
         }
-        cmd_ctx_out(ctx,"CC1 = %"PRIi64".%03"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
-        cmd_ctx_out(ctx,"CC2 = %"PRIi64".%03"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
-        cmd_ctx_out(ctx,"CC3 = %"PRIi64".%03"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
+        osm_cmd_ctx_out(ctx,"CC1 = %"PRIi64".%03"PRIi64" A", value_1.v_i64/1000, value_1.v_i64%1000);
+        osm_cmd_ctx_out(ctx,"CC2 = %"PRIi64".%03"PRIi64" A", value_2.v_i64/1000, value_2.v_i64%1000);
+        osm_cmd_ctx_out(ctx,"CC3 = %"PRIi64".%03"PRIi64" A", value_3.v_i64/1000, value_3.v_i64%1000);
         return COMMAND_RESP_OK;
     }
     if (cc_num > 3 || cc_num == 0)
     {
-        cmd_ctx_out(ctx,"cc [1/2/3]");
+        osm_cmd_ctx_out(ctx,"cc [1/2/3]");
         return COMMAND_RESP_ERR;
     }
     char name[4];
     snprintf(name, 4, "CC%"PRIu8, cc_num);
-    if (!cc_get_blocking(name, &value_1))
+    if (!osm_cc_get_blocking(name, &value_1))
     {
-        cmd_ctx_out(ctx,"Could not get adc value.");
+        osm_cmd_ctx_out(ctx,"Could not get adc value.");
         return COMMAND_RESP_ERR;
     }
 
-    cmd_ctx_out(ctx,"CC = %"PRIi64"mA", value_1.v_i64);
+    osm_cmd_ctx_out(ctx,"CC = %"PRIi64"mA", value_1.v_i64);
     return COMMAND_RESP_OK;
 }
 
@@ -795,7 +795,7 @@ static command_response_t _cc_calibrate_cb(char *args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_ctx_out(ctx,"No CC calibration");
+        osm_cmd_ctx_out(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     return _cc_calibrate() ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
@@ -806,24 +806,24 @@ static command_response_t _cc_mp_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_ctx_error(ctx,"No CC calibration");
+        osm_cmd_ctx_error(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     // 2046 CC1
     char* p;
     float new_mp = strtof(args, &p);
-    p = skip_space(p);
+    p = osm_skip_space(p);
     uint32_t new_mp32;
     if (p == args)
     {
         if (_cc_get_midpoint(&new_mp32, p))
-            cmd_ctx_out(ctx,"MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
+            osm_cmd_ctx_out(ctx,"MP: %"PRIu32".%03"PRIu32, new_mp32/1000, new_mp32%1000);
         return COMMAND_RESP_ERR;
     }
     new_mp32 = new_mp * 1000;
-    p = skip_space(p);
+    p = osm_skip_space(p);
     if (!_cc_set_midpoint(new_mp32, p))
-        cmd_ctx_out(ctx,"Failed to set the midpoint.");
+        osm_cmd_ctx_out(ctx,"Failed to set the midpoint.");
     return COMMAND_RESP_OK;
 }
 
@@ -832,20 +832,20 @@ static command_response_t _cc_gain(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        cmd_ctx_error(ctx,"No CC calibration");
+        osm_cmd_ctx_error(ctx,"No CC calibration");
         return COMMAND_RESP_ERR;
     }
     // <index> <ext_A> <int_mV>
     // 1       100     50
     char* p;
     uint8_t index = strtoul(args, &p, 10);
-    p = skip_space(p);
+    p = osm_skip_space(p);
     if (strlen(p) == 0)
     {
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
-            cmd_ctx_out(ctx,"CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
-            cmd_ctx_out(ctx,"CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[i].type);
+            osm_cmd_ctx_out(ctx,"CC%"PRIu8" EXT max: %"PRIu32".%03"PRIu32"A", i+1, _configs[i].ext_max_mA/1000, _configs[i].ext_max_mA%1000);
+            osm_cmd_ctx_out(ctx,"CC%"PRIu8" INT max: %"PRIu32".%03"PRIu32"%c", i+1, _configs[i].int_max_mV/1000, _configs[i].int_max_mV%1000, _configs[i].type);
         }
         return COMMAND_RESP_ERR;
     }
@@ -857,20 +857,20 @@ static command_response_t _cc_gain(char* args, cmd_ctx_t * ctx)
     float ext_A = strtof(p, &q);
     if (q == p)
         goto print_exit;
-    q = skip_space(q);
+    q = osm_skip_space(q);
     uint32_t int_mA = strtoul(q, &p, 10);
     if (p == q)
         goto syntax_exit;
     _configs[index].ext_max_mA = ext_A * 1000;
     _configs[index].int_max_mV = int_mA;
-    cmd_ctx_out(ctx,"Set the CC gain:");
+    osm_cmd_ctx_out(ctx,"Set the CC gain:");
 print_exit:
-    cmd_ctx_out(ctx,"EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
-    cmd_ctx_out(ctx,"INT max: %"PRIu32".%03"PRIu32"%c", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000, _configs[index].type);
+    osm_cmd_ctx_out(ctx,"EXT max: %"PRIu32".%03"PRIu32"A", _configs[index].ext_max_mA/1000, _configs[index].ext_max_mA%1000);
+    osm_cmd_ctx_out(ctx,"INT max: %"PRIu32".%03"PRIu32"%c", _configs[index].int_max_mV/1000, _configs[index].int_max_mV%1000, _configs[index].type);
     return COMMAND_RESP_OK;
 syntax_exit:
-    cmd_ctx_out(ctx,"Syntax: cc_gain <channel> <ext max A> <ext min mV>");
-    cmd_ctx_out(ctx,"e.g cc_gain 3 100 50");
+    osm_cmd_ctx_out(ctx,"Syntax: cc_gain <channel> <ext max A> <ext min mV>");
+    osm_cmd_ctx_out(ctx,"e.g cc_gain 3 100 50");
     return COMMAND_RESP_ERR;
 }
 
@@ -879,23 +879,23 @@ static command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
-        log_error("No CC calibration");
+        osm_log_error("No CC calibration");
         return COMMAND_RESP_ERR;
     }
     // <index> <A/V>
     command_response_t ret = COMMAND_RESP_ERR;
 
     char* p, * np;
-    np = skip_space(args);
+    np = osm_skip_space(args);
     uint8_t index = strtoul(args, &p, 10);
-    p = skip_space(p);
+    p = osm_skip_space(p);
     if (!strlen(p))
     {
         /* Print all */
         ret = COMMAND_RESP_OK;
         for (uint8_t i = 0; i < ADC_CC_COUNT; i++)
         {
-            cmd_ctx_out(ctx,"CC%"PRIu8" Type: %c", i+1, _configs[i].type);
+            osm_cmd_ctx_out(ctx,"CC%"PRIu8" Type: %c", i+1, _configs[i].type);
         }
     }
     else if (index != 0 && index <= ADC_CC_COUNT && p != np)
@@ -903,7 +903,7 @@ static command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
         /* Set index */
         index--;
 
-        char new_type = *skip_space(p);
+        char new_type = *osm_skip_space(p);
         switch (new_type)
         {
             case CC_TYPE_V:
@@ -915,18 +915,18 @@ static command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
             default:
                 break;
         }
-        cmd_ctx_out(ctx,"CC%"PRIu8" Type: %c", index+1, _configs[index].type);
+        osm_cmd_ctx_out(ctx,"CC%"PRIu8" Type: %c", index+1, _configs[index].type);
     }
     else
     {
-        cmd_ctx_out(ctx,"Syntax: cc_type <channel> <V/A>");
-        cmd_ctx_out(ctx,"e.g cc_type 3 100 50");
+        osm_cmd_ctx_out(ctx,"Syntax: cc_type <channel> <V/A>");
+        osm_cmd_ctx_out(ctx,"e.g cc_type 3 100 50");
     }
     return ret;
 }
 
 
-struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_cc_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
@@ -936,5 +936,5 @@ struct cmd_link_t* cc_add_commands(struct cmd_link_t* tail)
         { "cc_gain"     , "Set the max int and ext" , _cc_gain                       , false , NULL },
         { "cc_type"     , "Set type of CT"          , _cc_type_cb                    , false , NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

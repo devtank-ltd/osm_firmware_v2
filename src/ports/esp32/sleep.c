@@ -12,12 +12,12 @@
 
 
 
-void sleep_exit_sleep_mode(void)
+void osm_sleep_exit_sleep_mode(void)
 {
 }
 
 
-bool sleep_for_ms(uint32_t ms)
+bool osm_sleep_for_ms(uint32_t ms)
 {
     if (ms > SLEEP_MAX_TIME_MS)
         ms = SLEEP_MAX_TIME_MS;
@@ -33,11 +33,11 @@ static command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
     uint32_t sleep_ms = strtoul(args, &p, 10);
     if (p == args)
     {
-        cmd_ctx_out(ctx, "<TIME(MS)>");
+        osm_cmd_ctx_out(ctx, "<TIME(MS)>");
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx, "Sleeping for %"PRIu32"ms.", sleep_ms);
-    sleep_for_ms(sleep_ms);
+    osm_cmd_ctx_out(ctx, "Sleeping for %"PRIu32"ms.", sleep_ms);
+    osm_sleep_for_ms(sleep_ms);
     return COMMAND_RESP_OK;
 }
 
@@ -53,14 +53,14 @@ static command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
         mode = MEASUREMENTS_POWER_MODE_PLUGGED;
     else
         return COMMAND_RESP_ERR;
-    measurements_power_mode(mode);
+    osm_measurements_power_mode(mode);
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* sleep_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

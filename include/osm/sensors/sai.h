@@ -7,9 +7,9 @@
 #define SAI_DEFAULT_NO_BUF                                              100
 
 
-void                         sai_init(void);
-bool                         sai_set_coeff(uint8_t index, float coeff);
-void                         sai_print_coeffs(cmd_ctx_t * ctx);
+void                         osm_sai_init(void);
+bool                         osm_sai_set_coeff(uint8_t index, float coeff);
+void                         osm_sai_print_coeffs(cmd_ctx_t * ctx);
 
-void                                sai_inf_init(measurements_inf_t* inf);
-struct cmd_link_t*           sai_add_commands(struct cmd_link_t* tail);
+void                                osm_sai_inf_init(measurements_inf_t* inf);
+struct cmd_link_t*           osm_sai_add_commands(struct cmd_link_t* tail);

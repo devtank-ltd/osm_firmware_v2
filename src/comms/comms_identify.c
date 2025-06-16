@@ -26,29 +26,29 @@ typedef struct
 } __attribute__((__packed__)) comms_identify_mem_t;
 
 
-comms_type_t comms_identify(void)
+comms_type_t osm_comms_identify(void)
 {
-    i2cs_init();
+    osm_i2cs_init();
     comms_identify_mem_t mem = {0};
-    if (!comms_eeprom_read(&mem, sizeof(comms_identify_mem_t)))
+    if (!osm_comms_eeprom_read(&mem, sizeof(comms_identify_mem_t)))
     {
-        log_error("COMMS EEPROM: Failed to read");
+        osm_log_error("COMMS EEPROM: Failed to read");
         return COMMS_TYPE_UNKNOWN;
     }
     if (COMMS_IDENTIFY_MEM_VERSION != mem.mem_version)
     {
-        log_error("COMMS EEPROM: Unknown version (%"PRIu8" != %"PRIu8")", mem.mem_version, COMMS_IDENTIFY_MEM_VERSION);
+        osm_log_error("COMMS EEPROM: Unknown version (%"PRIu8" != %"PRIu8")", mem.mem_version, COMMS_IDENTIFY_MEM_VERSION);
         return COMMS_TYPE_UNKNOWN;
     }
-    uint16_t crc = modbus_crc((uint8_t*)&mem, 2);
+    uint16_t crc = osm_modbus_crc((uint8_t*)&mem, 2);
     if (crc != mem.crc)
     {
-        log_error("COMMS EEPROM: Bad CRC (0x%04"PRIX16" != 0x%04"PRIX16")", mem.crc, crc);
+        osm_log_error("COMMS EEPROM: Bad CRC (0x%04"PRIX16" != 0x%04"PRIX16")", mem.crc, crc);
         return COMMS_TYPE_UNKNOWN;
     }
     if (!mem.comms_type || COMMS_TYPE_COUNT <= mem.comms_type)
     {
-        log_error("COMMS EEPROM: Unknown type (%"PRIu8")", mem.comms_type);
+        osm_log_error("COMMS EEPROM: Unknown type (%"PRIu8")", mem.comms_type);
         return COMMS_TYPE_UNKNOWN;
     }
     _comms_identify_type = (comms_type_t)mem.comms_type;
@@ -61,19 +61,19 @@ static bool _comms_identify_write(void)
     comms_identify_mem_t mem;
     mem.mem_version = COMMS_IDENTIFY_MEM_VERSION;
     mem.comms_type = _comms_identify_type;
-    mem.crc = modbus_crc((uint8_t*)&mem, 2);
-    return comms_eeprom_write(&mem, sizeof(mem));
+    mem.crc = osm_modbus_crc((uint8_t*)&mem, 2);
+    return osm_comms_eeprom_write(&mem, sizeof(mem));
 }
 
 
 static bool _comms_identify_wipe(void)
 {
     uint8_t mem[sizeof(comms_identify_mem_t)] = {0xFF};
-    return comms_eeprom_write(mem, sizeof(comms_identify_mem_t));
+    return osm_comms_eeprom_write(mem, sizeof(comms_identify_mem_t));
 }
 
 
-bool comms_set_identity(void)
+bool osm_comms_set_identity(void)
 {
     _comms_identify_type = COMMS_IDENTITY_DEFAULT;
     return _comms_identify_write();
@@ -82,26 +82,26 @@ bool comms_set_identity(void)
 
 static command_response_t _comms_ident_set_cb(char* args, cmd_ctx_t * ctx)
 {
-    char* p = skip_space(args);
+    char* p = osm_skip_space(args);
     unsigned len = strlen(p);
-    if (is_str(COMMS_IDENTIFY_ID_STR_LW, p, len))
+    if (osm_is_str(COMMS_IDENTIFY_ID_STR_LW, p, len))
     {
-        cmd_ctx_out(ctx, "Set to: "COMMS_IDENTIFY_ID_STR_LW);
+        osm_cmd_ctx_out(ctx, "Set to: "COMMS_IDENTIFY_ID_STR_LW);
         _comms_identify_type = COMMS_TYPE_LW;
     }
-    else if (is_str(COMMS_IDENTIFY_ID_STR_WIFI, p, len))
+    else if (osm_is_str(COMMS_IDENTIFY_ID_STR_WIFI, p, len))
     {
-        cmd_ctx_out(ctx, "Set to: "COMMS_IDENTIFY_ID_STR_WIFI);
+        osm_cmd_ctx_out(ctx, "Set to: "COMMS_IDENTIFY_ID_STR_WIFI);
         _comms_identify_type = COMMS_TYPE_WIFI;
     }
-    else if (is_str(COMMS_IDENTIFY_ID_STR_POE, p, len))
+    else if (osm_is_str(COMMS_IDENTIFY_ID_STR_POE, p, len))
     {
-        cmd_ctx_out(ctx, "Set to: "COMMS_IDENTIFY_ID_STR_POE);
+        osm_cmd_ctx_out(ctx, "Set to: "COMMS_IDENTIFY_ID_STR_POE);
         _comms_identify_type = COMMS_TYPE_POE;
     }
     else
     {
-        cmd_ctx_out(ctx, "Unknown type '%s' (%u)", p, len);
+        osm_cmd_ctx_out(ctx, "Unknown type '%s' (%u)", p, len);
         return COMMAND_RESP_ERR;
     }
     return COMMAND_RESP_OK;
@@ -110,22 +110,22 @@ static command_response_t _comms_ident_set_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _comms_ident_cb(char* args, cmd_ctx_t * ctx)
 {
-    comms_type_t type = comms_identify();
+    comms_type_t type = osm_comms_identify();
     switch (type)
     {
         case COMMS_TYPE_LW:
-            cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_LW);
+            osm_cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_LW);
             break;
         case COMMS_TYPE_WIFI:
-            cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_WIFI);
+            osm_cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_WIFI);
             break;
         case COMMS_TYPE_POE:
-            cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_POE);
+            osm_cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_POE);
             break;
         case COMMS_TYPE_UNKNOWN:
             /* fall through */
         default:
-            cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_UNKNOWN);
+            osm_cmd_ctx_out(ctx,COMMS_IDENTIFY_ID_STR_UNKNOWN);
             return COMMAND_RESP_ERR;
     }
     return COMMAND_RESP_OK;
@@ -136,10 +136,10 @@ static command_response_t _comms_ident_write_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_comms_identify_write())
     {
-        cmd_ctx_error(ctx,"Failed to write identification");
+        osm_cmd_ctx_error(ctx,"Failed to write identification");
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx,"Wrote identification");
+    osm_cmd_ctx_out(ctx,"Wrote identification");
     return COMMAND_RESP_OK;
 }
 
@@ -148,15 +148,15 @@ static command_response_t _comms_ident_wipe_cb(char* args, cmd_ctx_t * ctx)
 {
     if (!_comms_identify_wipe())
     {
-        cmd_ctx_error(ctx,"Failed to wipe EEPROM");
+        osm_cmd_ctx_error(ctx,"Failed to wipe EEPROM");
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx,"Wiped EEPROM");
+    osm_cmd_ctx_out(ctx,"Wiped EEPROM");
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* comms_identify_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_comms_identify_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
@@ -165,5 +165,5 @@ struct cmd_link_t* comms_identify_add_commands(struct cmd_link_t* tail)
         { "comms_ident_write"   , "Set COMMS EEPROM"    , _comms_ident_write_cb , true  , NULL },
         { "comms_ident_wipe"    , "Wipe COMMS EEPROM"   , _comms_ident_wipe_cb  , true  , NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

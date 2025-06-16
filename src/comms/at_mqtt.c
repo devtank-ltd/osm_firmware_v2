@@ -35,7 +35,7 @@
 static at_mqtt_ctx_t* _at_mqtt_ctx = NULL;
 
 
-bool at_mqtt_mem_is_valid(void)
+bool osm_at_mqtt_mem_is_valid(void)
 {
     if (!_at_mqtt_ctx)
     {
@@ -47,14 +47,14 @@ bool at_mqtt_mem_is_valid(void)
         comms_debug("Not given memory");
         return false;
     }
-    return (str_is_valid_ascii(_at_mqtt_ctx->mem->addr  , AT_MQTT_ADDR_MAX_LEN       , true  ) &&
-            str_is_valid_ascii(_at_mqtt_ctx->mem->user  , AT_MQTT_USER_MAX_LEN       , true  ) &&
-            str_is_valid_ascii(_at_mqtt_ctx->mem->pwd   , AT_MQTT_PWD_MAX_LEN        , true  ) &&
-            str_is_valid_ascii(_at_mqtt_ctx->mem->path  , AT_MQTT_PATH_MAX_LEN       , false ) );
+    return (osm_str_is_valid_ascii(_at_mqtt_ctx->mem->addr  , AT_MQTT_ADDR_MAX_LEN       , true  ) &&
+            osm_str_is_valid_ascii(_at_mqtt_ctx->mem->user  , AT_MQTT_USER_MAX_LEN       , true  ) &&
+            osm_str_is_valid_ascii(_at_mqtt_ctx->mem->pwd   , AT_MQTT_PWD_MAX_LEN        , true  ) &&
+            osm_str_is_valid_ascii(_at_mqtt_ctx->mem->path  , AT_MQTT_PATH_MAX_LEN       , false ) );
 }
 
 
-at_base_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len)
+at_base_cmd_t* osm_at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len)
 {
     at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
@@ -91,17 +91,17 @@ at_base_cmd_t* at_mqtt_publish_prep(const char* topic, char* message, unsigned m
 }
 
 
-void at_mqtt_init(at_mqtt_ctx_t* ctx)
+void osm_at_mqtt_init(at_mqtt_ctx_t* ctx)
 {
     if (ctx)
     {
         _at_mqtt_ctx = ctx;
-        at_base_init(&ctx->at_base_ctx);
+        osm_at_base_init(&ctx->at_base_ctx);
         unsigned topic_header_len = snprintf(
             _at_mqtt_ctx->topic_header,
             AT_MQTT_TOPIC_LEN,
             "osm/%08"PRIX32,
-            platform_get_hw_id()
+            osm_platform_get_hw_id()
             );
         _at_mqtt_ctx->topic_header[topic_header_len] = 0;
         comms_debug("MQTT Topic : %s", _at_mqtt_ctx->topic_header);
@@ -113,7 +113,7 @@ void at_mqtt_init(at_mqtt_ctx_t* ctx)
 }
 
 
-at_base_cmd_t* at_mqtt_get_ntp_cfg(void)
+at_base_cmd_t* osm_at_mqtt_get_ntp_cfg(void)
 {
     at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
@@ -133,7 +133,7 @@ at_base_cmd_t* at_mqtt_get_ntp_cfg(void)
 }
 
 
-at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
+at_base_cmd_t* osm_at_mqtt_get_mqtt_user_cfg(void)
 {
     at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
@@ -158,7 +158,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
             "AT+MQTTUSERCFG=%u,%u,\"osm-0x%"PRIX32"\",\"%s\",\"%s\",%u,%u,\"%s\"",
             AT_MQTT_LINK_ID,
             (unsigned)mqtt_scheme,
-            platform_get_hw_id(),
+            osm_platform_get_hw_id(),
             user,
             pwd,
             AT_MQTT_CERT_KEY_ID,
@@ -171,7 +171,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_user_cfg(void)
 }
 
 
-at_base_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
+at_base_cmd_t* osm_at_mqtt_get_mqtt_sub_cfg(void)
 {
     at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
@@ -191,7 +191,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_sub_cfg(void)
 }
 
 
-at_base_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
+at_base_cmd_t* osm_at_mqtt_get_mqtt_conn_cfg(void)
 {
     at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
@@ -216,7 +216,7 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn_cfg(void)
 }
 
 
-bool at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len)
+bool osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len)
 {
     char* p = msg;
     char* np;
@@ -254,7 +254,7 @@ bool at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned le
 }
 
 
-at_base_cmd_t* at_mqtt_get_mqtt_conn(void)
+at_base_cmd_t* osm_at_mqtt_get_mqtt_conn(void)
 {
     at_base_cmd_t* ret = NULL;
     if (_at_mqtt_ctx)
@@ -277,21 +277,21 @@ at_base_cmd_t* at_mqtt_get_mqtt_conn(void)
 
 static void _debug_cmd_ctx_output(cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
-    log_debugv(DEBUG_COMMS, fmt, ap);
+    osm_log_debugv(DEBUG_COMMS, fmt, ap);
 }
 
 static void _debug_cmd_ctx_error(cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
-    log_debug(DEBUG_COMMS, "Command error:");
-    log_debugv(DEBUG_COMMS, fmt, ap);
+    osm_log_debug(DEBUG_COMMS, "Command error:");
+    osm_log_debugv(DEBUG_COMMS, fmt, ap);
 }
 
 
 static int _at_mqtt_do_command(char* payload, unsigned payload_len, char* resp_buf, unsigned resp_buflen)
 {
     cmd_ctx_t debug_cmd_ctx = { .output_cb = _debug_cmd_ctx_output, .error_cb = _debug_cmd_ctx_error };
-    log_debug(DEBUG_COMMS, "Command output:");
-    command_response_t ret_code = cmds_process(payload, payload_len, &debug_cmd_ctx);
+    osm_log_debug(DEBUG_COMMS, "Command output:");
+    command_response_t ret_code = osm_cmds_process(payload, payload_len, &debug_cmd_ctx);
     int resp_payload_len = snprintf(
         resp_buf,
         resp_buflen,
@@ -323,7 +323,7 @@ static int _at_mqtt_parse_payload(char* topic, unsigned topic_len, char* payload
             topic_tail++;
             topic_tail_len--;
         }
-        if (is_str(AT_MQTT_TOPIC_COMMAND, topic_tail, topic_tail_len))
+        if (osm_is_str(AT_MQTT_TOPIC_COMMAND, topic_tail, topic_tail_len))
         {
             /* Topic is command */
             len = _at_mqtt_do_command(payload, payload_len, resp_buf, resp_buflen);
@@ -386,13 +386,13 @@ static int _at_mqtt_parse_msg(char* msg, unsigned len, char* resp_buf, unsigned 
 }
 
 
-int at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen)
+int osm_at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen)
 {
     int r = AT_ERROR_CODE;
     const char recv_msg[] = "+MQTTSUBRECV:";
     const unsigned recv_msg_len = strlen(recv_msg);
     if (recv_msg_len <= len &&
-        is_str(recv_msg, msg, recv_msg_len))
+        osm_is_str(recv_msg, msg, recv_msg_len))
     {
         /* Received message */
         char* msg_tail = msg + recv_msg_len;
@@ -403,7 +403,7 @@ int at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp
 }
 
 
-bool at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn)
+bool osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn)
 {
     if (!msg || !conn)
     {
@@ -438,7 +438,7 @@ bool at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t
 
 static command_response_t _at_mqtt_config_addr_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_base_config_get_set_str(
+    osm_at_base_config_get_set_str(
         "ADDR",
         _at_mqtt_ctx->mem->addr,
         AT_MQTT_ADDR_MAX_LEN,
@@ -449,7 +449,7 @@ static command_response_t _at_mqtt_config_addr_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_user_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_base_config_get_set_str(
+    osm_at_base_config_get_set_str(
         "USER",
         _at_mqtt_ctx->mem->user,
         AT_MQTT_USER_MAX_LEN,
@@ -460,7 +460,7 @@ static command_response_t _at_mqtt_config_user_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_pwd_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_base_config_get_set_str(
+    osm_at_base_config_get_set_str(
         "PWD",
         _at_mqtt_ctx->mem->pwd,
         AT_MQTT_PWD_MAX_LEN,
@@ -471,7 +471,7 @@ static command_response_t _at_mqtt_config_pwd_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
 {
-    return at_base_config_get_set_u16(
+    return osm_at_base_config_get_set_u16(
         "SCHEME",
         &_at_mqtt_ctx->mem->scheme,
         args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
@@ -480,7 +480,7 @@ static command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_path_cb(char* args, cmd_ctx_t * ctx)
 {
-    at_base_config_get_set_str(
+    osm_at_base_config_get_set_str(
         "PATH",
         _at_mqtt_ctx->mem->path,
         AT_MQTT_PATH_MAX_LEN,
@@ -491,14 +491,14 @@ static command_response_t _at_mqtt_config_path_cb(char* args, cmd_ctx_t * ctx)
 
 static command_response_t _at_mqtt_config_port_cb(char* args, cmd_ctx_t * ctx)
 {
-    return at_base_config_get_set_u16(
+    return osm_at_base_config_get_set_u16(
         "PORT",
         &_at_mqtt_ctx->mem->port,
         args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
-struct cmd_link_t* at_mqtt_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_at_mqtt_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
@@ -509,18 +509,18 @@ struct cmd_link_t* at_mqtt_add_commands(struct cmd_link_t* tail)
         { "mqtt_path",      "Set/get MQTT PATH",        _at_mqtt_config_path_cb        , false , NULL },
         { "mqtt_port",      "Set/get MQTT port",        _at_mqtt_config_port_cb        , false , NULL }
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }
 
 
-bool at_mqtt_get_id(char* str, uint8_t len)
+bool osm_at_mqtt_get_id(char* str, uint8_t len)
 {
     strncpy(str, _at_mqtt_ctx->topic_header, len);
     return true;
 }
 
 
-void at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
+void osm_at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
 {
     COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR      , _at_mqtt_ctx->mem->addr   , AT_MQTT_ADDR_MAX_LEN  );
     COMMS_COMMON_JSON_OUT_STR(AT_MQTT_PRINT_CFG_JSON_MQTT_USER      , _at_mqtt_ctx->mem->user   , AT_MQTT_USER_MAX_LEN  );
@@ -531,7 +531,7 @@ void at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
 }
 
 
-void at_mqtt_config_init(at_mqtt_config_t* conf)
+void osm_at_mqtt_config_init(at_mqtt_config_t* conf)
 {
     memset(conf, 0, sizeof(at_mqtt_config_t));
     conf->scheme = AT_MQTT_SCHEME_WSS_NO_CERT;

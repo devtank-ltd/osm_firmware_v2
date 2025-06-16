@@ -102,18 +102,18 @@ typedef struct
 
 
 
-bool                at_mqtt_mem_is_valid(void);
-at_base_cmd_t*       at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len);
-void                at_mqtt_init(at_mqtt_ctx_t* ctx);
-at_base_cmd_t*       at_mqtt_get_ntp_cfg(void);
-at_base_cmd_t*       at_mqtt_get_mqtt_user_cfg(void);
-at_base_cmd_t*       at_mqtt_get_mqtt_sub_cfg(void);
-at_base_cmd_t*       at_mqtt_get_mqtt_conn_cfg(void);
-bool                at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len);
-at_base_cmd_t*       at_mqtt_get_mqtt_conn(void);
-int                 at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen);
-bool                at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn);
-struct cmd_link_t*  at_mqtt_add_commands(struct cmd_link_t* tail);
-bool                at_mqtt_get_id(char* str, uint8_t len);
-void                at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx);
-void                at_mqtt_config_init(at_mqtt_config_t* conf);
+bool                osm_at_mqtt_mem_is_valid(void);
+at_base_cmd_t*       osm_at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len);
+void                osm_at_mqtt_init(at_mqtt_ctx_t* ctx);
+at_base_cmd_t*       osm_at_mqtt_get_ntp_cfg(void);
+at_base_cmd_t*       osm_at_mqtt_get_mqtt_user_cfg(void);
+at_base_cmd_t*       osm_at_mqtt_get_mqtt_sub_cfg(void);
+at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn_cfg(void);
+bool                osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len);
+at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn(void);
+int                 osm_at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen);
+bool                osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn);
+struct cmd_link_t*  osm_at_mqtt_add_commands(struct cmd_link_t* tail);
+bool                osm_at_mqtt_get_id(char* str, uint8_t len);
+void                osm_at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx);
+void                osm_at_mqtt_config_init(at_mqtt_config_t* conf);

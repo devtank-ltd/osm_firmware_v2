@@ -109,7 +109,7 @@ static bool _protocol_append_value_type_str(const char * name, measurements_data
 }
 
 
-bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
+bool        osm_protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
 {
     char * name = def->name;
     unsigned before_pos = _json_buf_pos;
@@ -126,7 +126,7 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
             ret = _protocol_append_value_type_float(name, data );
             break;
         default:
-            log_error("Unknown type '%"PRIu8"'.", data->value_type);
+            osm_log_error("Unknown type '%"PRIu8"'.", data->value_type);
             break;
     }
     if (!ret)
@@ -138,7 +138,7 @@ bool        protocol_append_measurement(measurements_def_t* def, measurements_da
 }
 
 
-bool protocol_send(void)
+bool osm_protocol_send(void)
 {
     unsigned available = JSON_BUF_SIZE - _json_buf_pos;
 
@@ -154,7 +154,7 @@ bool protocol_send(void)
 
     comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
 
-    if (!comms_send(_json_buf, _json_buf_pos))
+    if (!osm_comms_send(_json_buf, _json_buf_pos))
     {
         return false;
     }
@@ -163,14 +163,14 @@ bool protocol_send(void)
 }
 
 
-bool protocol_init(void)
+bool osm_protocol_init(void)
 {
     int64_t ts;
 
-    if (!comms_get_unix_time(&ts))
+    if (!osm_comms_get_unix_time(&ts))
         return false;
 
     _json_buf_pos = 0;
 
-    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, HUMAN_NAME_LEN, persist_get_human_name());
+    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, HUMAN_NAME_LEN, osm_persist_get_human_name());
 }

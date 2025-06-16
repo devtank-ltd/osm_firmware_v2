@@ -15,32 +15,32 @@
 static at_base_ctx_t* _at_base_ctx = NULL;
 
 
-unsigned at_base_raw_send(char* msg, unsigned len)
+unsigned osm_at_base_raw_send(char* msg, unsigned len)
 {
-    return uart_ring_out(COMMS_UART, msg, len);
+    return osm_uart_ring_out(COMMS_UART, msg, len);
 }
 
 
-bool at_base_send_str(char* str)
+bool osm_at_base_send_str(char* str)
 {
-    if(!at_base_raw_send(str, strlen(str)))
+    if(!osm_at_base_raw_send(str, strlen(str)))
         return false;
-    return at_base_raw_send("\r\n", 2);
+    return osm_at_base_raw_send("\r\n", 2);
 }
 
 
-void at_base_init(at_base_ctx_t* ctx)
+void osm_at_base_init(at_base_ctx_t* ctx)
 {
     if (ctx)
     {
         _at_base_ctx = ctx;
 
-        platform_gpio_init(&_at_base_ctx->reset_pin);
-        platform_gpio_setup(&_at_base_ctx->reset_pin, false, IO_PUPD_UP);
-        platform_gpio_set(&_at_base_ctx->reset_pin, true);
-        platform_gpio_init(&_at_base_ctx->boot_pin);
-        platform_gpio_setup(&_at_base_ctx->boot_pin, false, IO_PUPD_UP);
-        platform_gpio_set(&_at_base_ctx->boot_pin, true);
+        osm_platform_gpio_init(&_at_base_ctx->reset_pin);
+        osm_platform_gpio_setup(&_at_base_ctx->reset_pin, false, IO_PUPD_UP);
+        osm_platform_gpio_set(&_at_base_ctx->reset_pin, true);
+        osm_platform_gpio_init(&_at_base_ctx->boot_pin);
+        osm_platform_gpio_setup(&_at_base_ctx->boot_pin, false, IO_PUPD_UP);
+        osm_platform_gpio_set(&_at_base_ctx->boot_pin, true);
     }
     else
     {
@@ -49,17 +49,17 @@ void at_base_init(at_base_ctx_t* ctx)
 }
 
 
-bool at_base_is_ok(char* msg, unsigned len)
+bool osm_at_base_is_ok(char* msg, unsigned len)
 {
     const char ok_msg[] = "OK";
-    return is_str(ok_msg, msg, len);
+    return osm_is_str(ok_msg, msg, len);
 }
 
 
-bool at_base_is_error(char* msg, unsigned len)
+bool osm_at_base_is_error(char* msg, unsigned len)
 {
     const char error_msg[] = "ERROR";
-    return is_str(error_msg, msg, len);
+    return osm_is_str(error_msg, msg, len);
 }
 
 
@@ -69,13 +69,13 @@ static bool _at_base_sleep_loop_iterate(void *userdata)
 }
 
 
-void at_base_sleep(void)
+void osm_at_base_sleep(void)
 {
-    main_loop_iterate_for(10, _at_base_sleep_loop_iterate, NULL);
+    osm_main_loop_iterate_for(10, _at_base_sleep_loop_iterate, NULL);
 }
 
 
-void at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx)
+void osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx)
 {
     unsigned len = strlen(src);
     if (len)
@@ -87,11 +87,11 @@ void at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_
         memcpy(dest, src, len);
     }
     /* Get */
-    cmd_ctx_out(ctx,"%s: %.*s", name, max_dest_len, dest);
+    osm_cmd_ctx_out(ctx,"%s: %.*s", name, max_dest_len, dest);
 }
 
 
-bool at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx)
+bool osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx)
 {
     bool ret = true;
     unsigned len = strlen(src);
@@ -109,37 +109,37 @@ bool at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd
         }
     }
     /* Get */
-    cmd_ctx_out(ctx,"%s: %"PRIu16, name, *dest);
+    osm_cmd_ctx_out(ctx,"%s: %"PRIu16, name, *dest);
     return ret;
 }
 
 
-void at_base_boot(char* args, cmd_ctx_t * ctx)
+void osm_at_base_boot(char* args, cmd_ctx_t * ctx)
 {
     bool is_out = (bool)strtoul(args, NULL, 10);
-    platform_gpio_set(&_at_base_ctx->boot_pin, is_out);
-    cmd_ctx_out(ctx,"BOOT PIN: %u", is_out ? 1U : 0U);
+    osm_platform_gpio_set(&_at_base_ctx->boot_pin, is_out);
+    osm_cmd_ctx_out(ctx,"BOOT PIN: %u", is_out ? 1U : 0U);
 }
 
 
-void at_base_reset(char* args, cmd_ctx_t * ctx)
+void osm_at_base_reset(char* args, cmd_ctx_t * ctx)
 {
     bool is_out = (bool)strtoul(args, NULL, 10);
-    platform_gpio_set(&_at_base_ctx->reset_pin, is_out);
-    cmd_ctx_out(ctx,"RESET PIN: %u", is_out ? 1U : 0U);
+    osm_platform_gpio_set(&_at_base_ctx->reset_pin, is_out);
+    osm_cmd_ctx_out(ctx,"RESET PIN: %u", is_out ? 1U : 0U);
 }
 
 
-command_response_t at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx)
+command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx)
 {
     command_response_t r = COMMAND_RESP_ERR;
     if (str[0])
     {
-        char * next = skip_to_space(str);
+        char * next = osm_skip_to_space(str);
         if (next[0])
         {
             char * t = next;
-            next = skip_space(next);
+            next = osm_skip_space(next);
             *t = 0;
         }
         if ('"' == next[0])
@@ -170,7 +170,7 @@ command_response_t at_base_config_setup_str(struct cmd_link_t * cmds, char * str
     for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
     {
         if (!cmd->hidden)
-            cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
+            osm_cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);
     }
     return r;
 }

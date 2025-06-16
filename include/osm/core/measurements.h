@@ -89,32 +89,32 @@ typedef struct
 typedef bool (*measurements_for_each_cb_t)(measurements_def_t* def, void * data);
 
 
-bool     measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
-bool     measurements_for_each(measurements_for_each_cb_t cb, void * data);
+bool     osm_measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
+bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data);
 
-bool     measurements_add(measurements_def_t* measurement);
-bool     measurements_del(char* name);
+bool     osm_measurements_add(measurements_def_t* measurement);
+bool     osm_measurements_del(char* name);
 
 bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
 bool     measurements_get_interval(char* name, uint8_t * interval);     // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
 bool     measurements_set_samplecount(char* name, uint8_t samplecount); // How many samples should be taken in each interval
 bool     measurements_get_samplecount(char* name, uint8_t * samplecount); // How many samples should be taken in each interval
 
-void     measurements_loop_iteration(void);
-void     measurements_init(void);
+void     osm_measurements_loop_iteration(void);
+void     osm_measurements_init(void);
 
-void     measurements_power_mode(measurements_power_mode_t mode);
-void     measurements_derive_cc_phase(void);
-bool     measurements_send_test(char * name);
+void     osm_measurements_power_mode(measurements_power_mode_t mode);
+void     osm_measurements_derive_cc_phase(void);
+bool     osm_measurements_send_test(char * name);
 
 extern bool     measurements_enabled;
-bool     measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type);
-bool     measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
+bool     osm_measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type);
+bool     osm_measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len);
 
 
-bool     model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
-void     model_measurements_repopulate(void);
+bool     osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
+void     osm_model_measurements_repopulate(void);
 
-bool     measurements_rename(char* orig_name, char* new_name_raw);
+bool     osm_measurements_rename(char* orig_name, char* new_name_raw);
 
-struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail);
+struct cmd_link_t* osm_measurements_add_commands(struct cmd_link_t* tail);

@@ -6,18 +6,18 @@
 #include <osm/core/common.h>
 
 
-void sai_init(void)
+void osm_sai_init(void)
 {
 }
 
 
-bool sai_set_coeff(uint8_t index, float coeff)
+bool osm_sai_set_coeff(uint8_t index, float coeff)
 {
     return false;
 }
 
 
-void sai_print_coeffs(cmd_ctx_t * ctx)
+void osm_sai_print_coeffs(cmd_ctx_t * ctx)
 {
 }
 
@@ -51,7 +51,7 @@ static measurements_value_type_t _pulsecount_value_type(char* name)
 }
 
 
-void  sai_inf_init(measurements_inf_t* inf)
+void  osm_sai_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _sai_collection_time;
     inf->init_cb            = _sai_measurements_init;
@@ -67,22 +67,22 @@ static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
     uint8_t index = strtoul(args, &p, 10);
     if (index < 1 || index > SAI_NUM_CAL_COEFFS)
     {
-        cmd_ctx_error(ctx,"Index out of range.");
+        osm_cmd_ctx_error(ctx,"Index out of range.");
         return COMMAND_RESP_ERR;
     }
-    p = skip_space(p);
+    p = osm_skip_space(p);
     float coeff = strtof(p, NULL);
-    if (!sai_set_coeff(index-1, coeff))
+    if (!osm_sai_set_coeff(index-1, coeff))
     {
-        cmd_ctx_error(ctx,"Could not set the coefficient.");
+        osm_cmd_ctx_error(ctx,"Could not set the coefficient.");
         return COMMAND_RESP_ERR;
     }
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* sai_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_sai_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

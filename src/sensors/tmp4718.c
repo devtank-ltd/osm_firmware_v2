@@ -97,7 +97,7 @@ typedef union
 
 static bool _tmp4718_read_reg(uint8_t addr, uint8_t* value)
 {
-    return i2c_transfer_timeout(TMP4718_I2C, TMP4718_ADDR, &addr, 1, value, 1, TMP4718_TIMEOUT_MS);
+    return osm_i2c_transfer_timeout(TMP4718_I2C, TMP4718_ADDR, &addr, 1, value, 1, TMP4718_TIMEOUT_MS);
 }
 
 
@@ -137,7 +137,7 @@ static bool _tmp4718_read_remote_temperature(float* val)
 
 void tmp4718_init(void)
 {
-    i2cs_init();
+    osm_i2cs_init();
 }
 
 
@@ -201,7 +201,7 @@ static measurements_sensor_state_t _tmp4718_collect(char* name, measurements_rea
             {
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
             }
-            value->v_f32 = to_f32_from_float(tempf);
+            value->v_f32 = osm_to_f32_from_float(tempf);
             break;
         }
         default:
@@ -211,7 +211,7 @@ static measurements_sensor_state_t _tmp4718_collect(char* name, measurements_rea
 }
 
 
-void tmp4718_inf_init(measurements_inf_t* inf)
+void osm_tmp4718_inf_init(measurements_inf_t* inf)
 {
     inf->get_cb             = _tmp4718_collect;
     inf->value_type_cb      = _tmp4718_value_type;

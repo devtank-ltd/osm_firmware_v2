@@ -42,7 +42,7 @@
 
 #define MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 
-void measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
-void measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
+void osm_measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
+void osm_measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
 
-measurements_def_t*  measurements_array_find(measurements_def_t * measurements_arr, char* name);
+measurements_def_t*  osm_measurements_array_find(measurements_def_t * measurements_arr, char* name);

@@ -18,7 +18,7 @@ static void _model_config_update_data_v3_to_v4(const persist_model_config_v3_t* 
 }
 
 
-bool model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
+bool osm_model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
 {
     if (3 == from_model_version)
     {

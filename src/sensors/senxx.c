@@ -380,7 +380,7 @@ static void _senxx_init(void)
 }
 
 
-void senxx_init(void)
+void osm_senxx_init(void)
 {
     _senxx_init();
     senxx_model_t model = _senxx_get_product(NULL, 0);
@@ -442,12 +442,12 @@ static int16_t _senxx_read_measured_values(senxx_readings_t* reading)
 }
 
 
-void senxx_iterate(void)
+void osm_senxx_iterate(void)
 {
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
     if (_senxx_ctx.active)
     {
-        if (since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
+        if (osm_since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
         {
             _senxx_ctx.last_reading.time = now;
             int16_t error = _senxx_read_measured_values(&_senxx_ctx.last_reading);
@@ -459,21 +459,21 @@ void senxx_iterate(void)
             }
         }
     }
-    else if (now < SENxx_WARMUP_TIME_MS && since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
+    else if (now < SENxx_WARMUP_TIME_MS && osm_since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
     {
         _senxx_ctx.last_reading.time = now;
-        senxx_init();
+        osm_senxx_init();
     }
 }
 
 
 static measurements_sensor_state_t _senxx_start(char* name, bool in_isolation)
 {
-    uint32_t now = get_since_boot_ms();
-    if (!_senxx_ctx.active && since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
+    uint32_t now = osm_get_since_boot_ms();
+    if (!_senxx_ctx.active && osm_since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
     {
         _senxx_ctx.last_reading.time = now;
-        senxx_init();
+        osm_senxx_init();
     }
     return _senxx_ctx.active ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
 }
@@ -507,7 +507,7 @@ static measurements_sensor_state_t _senxx_collect(char* name, measurements_readi
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    val->v_f32 = to_f32_from_float(val_f);
+    val->v_f32 = osm_to_f32_from_float(val_f);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -529,7 +529,7 @@ static measurements_sensor_state_t _senxx_collection_time(char* name, uint32_t* 
 }
 
 
-void senxx_inf_init(measurements_inf_t* inf)
+void osm_senxx_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _senxx_collection_time;
     inf->init_cb            = _senxx_start;
@@ -541,14 +541,14 @@ void senxx_inf_init(measurements_inf_t* inf)
 static command_response_t _senxx_pwr_cb(char* args, cmd_ctx_t * ctx)
 {
     uint8_t enable = strtoul(args, NULL, 10);
-    platform_hpm_enable(enable);
+    osm_platform_hpm_enable(enable);
     if (enable)
     {
-        cmd_ctx_out(ctx,"SENxx PWR ENABLED");
+        osm_cmd_ctx_out(ctx,"SENxx PWR ENABLED");
     }
     else
     {
-        cmd_ctx_out(ctx,"SENxx PWR DISABLED");
+        osm_cmd_ctx_out(ctx,"SENxx PWR DISABLED");
     }
     return COMMAND_RESP_OK;
 }
@@ -561,15 +561,15 @@ static command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
     senxx_model_t model = _senxx_get_product(product_name, product_name_size);
     if (SENxx_MODEL_NONE == model)
     {
-        cmd_ctx_out(ctx,"Error executing _senxx_get_product()");
+        osm_cmd_ctx_out(ctx,"Error executing _senxx_get_product()");
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx,"Product name: %s\n", product_name);
+    osm_cmd_ctx_out(ctx,"Product name: %s\n", product_name);
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* senxx_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_senxx_add_commands(struct cmd_link_t* tail)
 {
 
     static struct cmd_link_t cmds[] =
@@ -577,5 +577,5 @@ struct cmd_link_t* senxx_add_commands(struct cmd_link_t* tail)
         { "senxx_pwr",      "Control PWR for SENxx",    _senxx_pwr_cb, false , NULL },
         { "senxx_name",     "Get name for SENxx",       _senxx_name_cb, false , NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

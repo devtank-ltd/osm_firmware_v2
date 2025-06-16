@@ -15,18 +15,18 @@
 static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 
-void linux_uart_proc(unsigned uart, char* in, unsigned len)
+void osm_linux_uart_proc(unsigned uart, char* in, unsigned len)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
-    unsigned written = uart_ring_in(uart, in, len);
+    unsigned written = osm_uart_ring_in(uart, in, len);
     if (written != len)
     {
         if (uart)
-            linux_error("Failed to write all uart:%u len:%u", uart, len);
+            osm_linux_error("Failed to write all uart:%u len:%u", uart, len);
         else
-            linux_port_debug("Failed to write all to uart:0 len:%u", len);
+            osm_linux_port_debug("Failed to write all to uart:0 len:%u", len);
     }
 
     if (uart == CMD_UART)
@@ -36,25 +36,25 @@ void linux_uart_proc(unsigned uart, char* in, unsigned len)
             if (in[i] == '\n' || in[i] == '\r')
             {
                 sleep_debug("Waking up on command.");
-                sleep_exit_sleep_mode();
+                osm_sleep_exit_sleep_mode();
             }
         }
     }
     else
     {
-        linux_port_debug("UART:%u now has %u", uart, uart_ring_in_get_len(uart));
+        osm_linux_port_debug("UART:%u now has %u", uart, osm_uart_ring_in_get_len(uart));
         sleep_debug("Waking up on receive data.");
-        sleep_exit_sleep_mode();
+        osm_sleep_exit_sleep_mode();
     }
 }
 
 
-void uarts_setup(void)
+void osm_uarts_setup(void)
 {
 }
 
 
-void uart_enable(unsigned uart, bool enable)
+void osm_uart_enable(unsigned uart, bool enable)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
@@ -62,7 +62,7 @@ void uart_enable(unsigned uart, bool enable)
 }
 
 
-bool uart_is_enabled(unsigned uart)
+bool osm_uart_is_enabled(unsigned uart)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return false;
@@ -70,25 +70,25 @@ bool uart_is_enabled(unsigned uart)
 }
 
 
-void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
+void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return;
 
     if (databits < 7)
     {
-        cmd_ctx_error(ctx,"Invalid low UART databits, using 7");
+        osm_cmd_ctx_error(ctx,"Invalid low UART databits, using 7");
         databits = 7;
     }
     else if (databits > 9)
     {
-        cmd_ctx_error(ctx,"Invalid high UART databits, using 9");
+        osm_cmd_ctx_error(ctx,"Invalid high UART databits, using 9");
         databits = 9;
     }
 
     if (parity && databits == 9)
     {
-        cmd_ctx_error(ctx,"Invalid UART databits:9 + parity, using 9N");
+        osm_cmd_ctx_error(ctx,"Invalid UART databits:9 + parity, using 9N");
         parity = uart_parity_none;
     }
 
@@ -103,7 +103,7 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
 }
 
 
-bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
+bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
 {
     if (uart >= UART_CHANNELS_COUNT)
         return false;
@@ -116,7 +116,7 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uar
 }
 
 
-bool uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
+bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
 {
         return true;
     uint32_t         speed;
@@ -126,19 +126,19 @@ bool uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
 
     if (uart >= UART_CHANNELS_COUNT )
     {
-        log_error("INVALID UART GIVEN");
+        osm_log_error("INVALID UART GIVEN");
         return false;
     }
 
     if (!osm_decompose_uart_str(str, &speed, &databits, &parity, &stop))
         return false;
 
-    uart_resetup(uart, speed, databits, parity, stop, ctx);
+    osm_uart_resetup(uart, speed, databits, parity, stop, ctx);
     return true;
 }
 
 
-bool uart_is_tx_empty(unsigned uart)
+bool osm_uart_is_tx_empty(unsigned uart)
 {
     return true;
 }
@@ -148,15 +148,15 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
 {
     if (log_async_log)
     {
-        if (!linux_write_pty(uart, data, size))
-            linux_port_debug("Write failed.");
+        if (!osm_linux_write_pty(uart, data, size))
+            osm_linux_port_debug("Write failed.");
     }
     else if (uart == CMD_UART)
     {
         if (linux_has_reset)
         {
-            if (!linux_write_pty(uart, data, size))
-                linux_port_debug("Write failed.");
+            if (!osm_linux_write_pty(uart, data, size))
+                osm_linux_port_debug("Write failed.");
         }
         else if (fwrite((char*)data, 1, size, stdout) != (size_t)size)
             exit(-1);
@@ -164,13 +164,13 @@ static void _uart_blocking(unsigned uart, const char *data, int size)
 }
 
 
-void uart_blocking(unsigned uart, const char *data, unsigned size)
+void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
 {
     _uart_blocking(uart, data, size);
 }
 
 
-unsigned uart_dma_out(unsigned uart, char *data, unsigned size)
+unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
 {
     _uart_blocking(uart, data, size);
     return size;

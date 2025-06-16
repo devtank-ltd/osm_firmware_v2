@@ -25,56 +25,56 @@
 
 int osm_main(void)
 {
-    platform_init();
-    platform_blink_led_init();
+    osm_platform_init();
+    osm_platform_blink_led_init();
 
-    i2cs_init();
+    osm_i2cs_init();
 
-    uarts_setup();
-    uart_rings_init();
+    osm_uarts_setup();
+    osm_uart_rings_init();
 
-    platform_raw_msg("----start----");
-    log_sys_debug("Frequency : %"PRIu32, platform_get_frequency());
+    osm_platform_raw_msg("----start----");
+    log_sys_debug("Frequency : %"PRIu32, osm_platform_get_frequency());
     log_sys_debug("Version : %s", GIT_VERSION);
 
-    persistent_init();
-    log_init();
-    cmds_init();
+    osm_persistent_init();
+    osm_log_init();
+    osm_cmds_init();
 
-    model_sensors_init();
+    osm_model_sensors_init();
 
-    protocol_system_init();
+    osm_protocol_system_init();
 
-    platform_watchdog_init(IWDG_NORMAL_TIME_MS);
+    osm_platform_watchdog_init(IWDG_NORMAL_TIME_MS);
 
-    measurements_init();
+    osm_measurements_init();
 
-    model_post_init();
+    osm_model_post_init();
 
-    platform_start();
+    osm_platform_start();
     log_async_log = true;
 
     uint32_t prev_now = 0;
     uint32_t flashing_delay = DISCONNECTED_FLASHING_TIME_SEC;
-    while(platform_running())
+    while(osm_platform_running())
     {
-        platform_watchdog_reset();
-        while(since_boot_delta(get_since_boot_ms(), prev_now) < flashing_delay)
+        osm_platform_watchdog_reset();
+        while(osm_since_boot_delta(osm_get_since_boot_ms(), prev_now) < flashing_delay)
         {
-            uart_rings_in_drain();
-            uart_rings_out_drain();
-            measurements_loop_iteration();
-            platform_tight_loop();
-            platform_main_loop_iterate();
+            osm_uart_rings_in_drain();
+            osm_uart_rings_out_drain();
+            osm_measurements_loop_iteration();
+            osm_platform_tight_loop();
+            osm_platform_main_loop_iterate();
         }
-        protocol_loop_iteration();
-        flashing_delay = protocol_get_connected()?NORMAL_FLASHING_TIME_SEC:DISCONNECTED_FLASHING_TIME_SEC;
-        platform_blink_led_toggle();
+        osm_protocol_loop_iteration();
+        flashing_delay = osm_protocol_get_connected()?NORMAL_FLASHING_TIME_SEC:DISCONNECTED_FLASHING_TIME_SEC;
+        osm_platform_blink_led_toggle();
 
-        prev_now = get_since_boot_ms();
+        prev_now = osm_get_since_boot_ms();
     }
 
-    platform_deinit();
+    osm_platform_deinit();
 
     return 0;
 }

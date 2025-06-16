@@ -47,7 +47,7 @@ static void _ftma_auto_release(void)
         if (_ftma_channel_inited[i])
             return;
     }
-    adcs_release(ADCS_KEY_FTMA);
+    osm_adcs_release(ADCS_KEY_FTMA);
 }
 
 
@@ -125,14 +125,14 @@ static measurements_sensor_state_t _ftma_begin(char* name, bool in_isolation)
     if (_ftma_is_running)
     {
         /* Will return error if has been started for more then FTMA_TIMEOUT_MS, else return success. */
-        if (since_boot_delta(get_since_boot_ms(), _ftma_start_time) > FTMA_TIMEOUT_MS)
+        if (osm_since_boot_delta(osm_get_since_boot_ms(), _ftma_start_time) > FTMA_TIMEOUT_MS)
         {
             adc_debug("ADC been running too long.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         }
         goto good_exit;
     }
-    adcs_resp_t resp = adcs_begin(_ftma_channels, _ftma_num_channels, FTMA_NUM_SAMPLES, ADCS_KEY_FTMA);
+    adcs_resp_t resp = osm_adcs_begin(_ftma_channels, _ftma_num_channels, FTMA_NUM_SAMPLES, ADCS_KEY_FTMA);
     switch (resp)
     {
         case ADCS_RESP_FAIL:
@@ -151,7 +151,7 @@ static measurements_sensor_state_t _ftma_begin(char* name, bool in_isolation)
         }
     }
     _ftma_is_running = true;
-    _ftma_start_time = get_since_boot_ms();
+    _ftma_start_time = osm_get_since_boot_ms();
     adc_debug("ADC successfully started for FTMA.");
 good_exit:
     _ftma_channel_inited[index] = true;
@@ -181,7 +181,7 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
     }
 
     uint32_t avg;
-    adcs_resp_t resp = adcs_collect_avg(&avg, _ftma_num_channels, FTMA_NUM_SAMPLES, index, ADCS_KEY_FTMA, &_ftma_collection_time);
+    adcs_resp_t resp = osm_adcs_collect_avg(&avg, _ftma_num_channels, FTMA_NUM_SAMPLES, index, ADCS_KEY_FTMA, &_ftma_collection_time);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -200,7 +200,7 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
     }
     adc_debug("FTMA Raw: %"PRIu32, avg);
     uint32_t mV;
-    if (!adcs_to_mV(avg, &mV))
+    if (!osm_adcs_to_mV(avg, &mV))
     {
         adc_debug("Unable to convert to mV.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -217,7 +217,7 @@ static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t*
         adc_debug("%s: %f > %f", name, fin_val, FTMA_UPPER_THRESHOLD);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_f32 = to_f32_from_float(fin_val);
+    value->v_f32 = osm_to_f32_from_float(fin_val);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -240,7 +240,7 @@ static bool _ftma_is_enabled(char* name)
 }
 
 
-void ftma_inf_init(measurements_inf_t* inf)
+void osm_ftma_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _ftma_get_collection_time;
     inf->init_cb            = _ftma_begin;
@@ -250,12 +250,12 @@ void ftma_inf_init(measurements_inf_t* inf)
     inf->value_type_cb      = _ftma_value_type;
 }
 
-void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
+void osm_ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
 {
     uint8_t num_ftma_configs = ADC_FTMA_COUNT;
     if (sizeof(ftma_config_t) * ADC_FTMA_COUNT > size)
     {
-        log_error("FTMA config is larger than the size of memory given.");
+        osm_log_error("FTMA config is larger than the size of memory given.");
         num_ftma_configs = size / sizeof(ftma_config_t);
     }
     float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
@@ -269,13 +269,13 @@ void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
 }
 
 
-void ftma_init(void)
+void osm_ftma_init(void)
 {
     _ftma_config = persist_data.model_config.ftma_configs;
     if (!_ftma_config)
     {
         static ftma_config_t _default_conf[ADC_FTMA_COUNT];
-        ftma_setup_default_mem(_default_conf, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
+        osm_ftma_setup_default_mem(_default_conf, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
         _ftma_config = _default_conf;
     }
 }
@@ -289,50 +289,50 @@ static command_response_t _ftma_name_cb(char* args, cmd_ctx_t * ctx)
     char* new_name = strchr(args, ' ');
     if (!new_name)
     {
-        cmd_ctx_out(ctx,"No new name given.");
+        osm_cmd_ctx_out(ctx,"No new name given.");
         return COMMAND_RESP_ERR;
     }
     *new_name = '\0';
-    new_name = skip_space(++new_name);
+    new_name = osm_skip_space(++new_name);
     char* orig_name = args;
 
     uint8_t index;
     if (!_ftma_get_index_by_name(orig_name, &index))
     {
-        cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", orig_name);
+        osm_cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", orig_name);
         return COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
-        cmd_ctx_out(ctx,"Index is out of range.");
+        osm_cmd_ctx_out(ctx,"Index is out of range.");
         return COMMAND_RESP_ERR;
     }
     unsigned new_len = strlen(new_name);
     if (new_len > MEASURE_NAME_LEN)
     {
-        cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
+        osm_cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
         return COMMAND_RESP_ERR;
     }
     if (new_len == 0)
     {
-        cmd_ctx_out(ctx,"No new name given.");
+        osm_cmd_ctx_out(ctx,"No new name given.");
         return COMMAND_RESP_ERR;
     }
     for (char* c = new_name; *c; c++)
     {
         if (!isascii(*c))
         {
-            cmd_ctx_out(ctx,"New name '%s' contains none ascii characters.", new_name);
+            osm_cmd_ctx_out(ctx,"New name '%s' contains none ascii characters.", new_name);
             return COMMAND_RESP_ERR;
         }
     }
-    if (!measurements_rename(orig_name, new_name))
+    if (!osm_measurements_rename(orig_name, new_name))
     {
-        cmd_ctx_out(ctx,"Failed to rename the measurement.");
+        osm_cmd_ctx_out(ctx,"Failed to rename the measurement.");
         return COMMAND_RESP_ERR;
     }
     strncpy(_ftma_config[index].name, new_name, MEASURE_NAME_LEN);
-    cmd_ctx_out(ctx,"Measurement '%s' is now called '%s'.", orig_name, new_name);
+    osm_cmd_ctx_out(ctx,"Measurement '%s' is now called '%s'.", orig_name, new_name);
     return COMMAND_RESP_OK;
 }
 
@@ -353,17 +353,17 @@ static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
     else
     {
         *p = '\0';
-        p = skip_space(++p);
+        p = osm_skip_space(++p);
     }
     uint8_t index;
     if (!_ftma_get_index_by_name(args, &index))
     {
-        cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", args);
+        osm_cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", args);
         return COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
-        cmd_ctx_out(ctx,"Index is out of range.");
+        osm_cmd_ctx_out(ctx,"Index is out of range.");
         return COMMAND_RESP_ERR;
     }
     ftma_config_t* ftma = &_ftma_config[index];
@@ -380,22 +380,22 @@ static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
                 ftma->coeffs[i++] = A;
             for (; i < FTMA_NUM_COEFFS; i++)
                 ftma->coeffs[i] = strtod(p, &p);
-            cmd_ctx_out(ctx,"Set new coefficients for '%s'", args);
+            osm_cmd_ctx_out(ctx,"Set new coefficients for '%s'", args);
         }
     }
 
-    cmd_ctx_out(ctx,"Coeffients for '%s':", args);
+    osm_cmd_ctx_out(ctx,"Coeffients for '%s':", args);
     for (unsigned i = 0; i < FTMA_NUM_COEFFS; i++)
     {
-        cmd_ctx_out(ctx,"%c: %.06f", 'A'+i, ftma->coeffs[i]);
+        osm_cmd_ctx_out(ctx,"%c: %.06f", 'A'+i, ftma->coeffs[i]);
     }
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* ftma_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_ftma_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "ftma_name",   "Set the FTMA name",            _ftma_name_cb   , false , NULL },
                                        { "ftma_coeff",  "Set the FTMA coefficients",    _ftma_coeff_cb  , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

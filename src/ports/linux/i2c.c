@@ -21,40 +21,40 @@ static bool _i2c_connected = false;
 static int  _i2c_socketfd = -1;
 
 
-void i2cs_init(void)
+void osm_i2cs_init(void)
 {
     char osm_i2c_loc[LOCATION_LEN];
-    concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
-    _i2c_connected = socket_connect(osm_i2c_loc, &_i2c_socketfd);
+    osm_concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
+    _i2c_connected = osm_socket_connect(osm_i2c_loc, &_i2c_socketfd);
     if (!_i2c_connected)
     {
-        log_error("Fake I2C Failed to connect to socket.");
+        osm_log_error("Fake I2C Failed to connect to socket.");
         return;
     }
 }
 
 
-void i2c_linux_deinit(void)
+void osm_i2c_linux_deinit(void)
 {
     if (_i2c_connected)
         close(_i2c_socketfd);
 
     char osm_i2c_loc[LOCATION_LEN];
-    concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
+    osm_concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
     unlink(osm_i2c_loc);
 }
 
 
-bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
+bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
     if ((!w && wn) || (!r && rn))
     {
-        log_error("Handed NULL pointer.");
+        osm_log_error("Handed NULL pointer.");
         return false;
     }
     if (!_i2c_connected)
     {
-        log_error("Fake I2C is not connected.");
+        osm_log_error("Fake I2C is not connected.");
         return false;
     }
 
@@ -80,19 +80,19 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
     int send_size = send(_i2c_socketfd, buf, buf_siz, 0);
     if (send_size != buf_siz)
     {
-        log_error("Failed to send the correct size I2C for the message. (%d != %d)", send_size, buf_siz);
+        osm_log_error("Failed to send the correct size I2C for the message. (%d != %d)", send_size, buf_siz);
         return false;
     }
-    linux_port_debug("I2C sent %d", send_size);
+    osm_linux_port_debug("I2C sent %d", send_size);
 
     int recv_siz = recv(_i2c_socketfd, buf, I2C_BUF_SIZ-1, 0);
     if (recv_siz < 0)
     {
-        log_error("Failed to receive.");
+        osm_log_error("Failed to receive.");
         return false;
     }
 
-    linux_port_debug("I2C received %d", recv_siz);
+    osm_linux_port_debug("I2C received %d", recv_siz);
 
     buf[recv_siz] = 0;
     char* pos = buf;
@@ -148,9 +148,9 @@ bool i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned
         goto recv_bad_fmt_exit;
 
 recv_bad_fmt_exit:
-    log_error("Received bad format. (%s)", buf);
+    osm_log_error("Received bad format. (%s)", buf);
     return false;
 recv_bad_exit:
-    log_error("Received message doesn't match sent. (%s)", buf);
+    osm_log_error("Received message doesn't match sent. (%s)", buf);
     return false;
 }

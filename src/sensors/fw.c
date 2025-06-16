@@ -28,7 +28,7 @@ static measurements_value_type_t _fw_value_type(char* name)
 }
 
 
-void fw_version_inf_init(measurements_inf_t* inf)
+void osm_fw_version_inf_init(measurements_inf_t* inf)
 {
     inf->get_cb         = _fw_version_get;
     inf->value_type_cb  = _fw_value_type;

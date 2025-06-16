@@ -16,7 +16,7 @@
 #define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , AT_BASE_MAC_ADDRESS_LEN       , _mac
 
 #define AT_BASE_SANIT_STR(_s)                                           \
-    comms_common_json_escape(_s, sizeof(_s), '\\', "\",", 2)
+    osm_comms_common_json_escape(_s, sizeof(_s), '\\', "\",", 2)
 
 
 typedef struct
@@ -45,14 +45,14 @@ typedef struct
 } at_base_ctx_t;
 
 
-unsigned    at_base_raw_send(char* msg, unsigned len);
-bool        at_base_send_str(char* str);
-void        at_base_init(at_base_ctx_t* ctx);
-bool        at_base_is_ok(char* msg, unsigned len);
-bool        at_base_is_error(char* msg, unsigned len);
-void        at_base_sleep(void);
-void        at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx);
-bool        at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx);
-void        at_base_boot(char* args, cmd_ctx_t * ctx);
-void        at_base_reset(char* args, cmd_ctx_t * ctx);
-command_response_t at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);
+unsigned    osm_at_base_raw_send(char* msg, unsigned len);
+bool        osm_at_base_send_str(char* str);
+void        osm_at_base_init(at_base_ctx_t* ctx);
+bool        osm_at_base_is_ok(char* msg, unsigned len);
+bool        osm_at_base_is_error(char* msg, unsigned len);
+void        osm_at_base_sleep(void);
+void        osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx);
+bool        osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx);
+void        osm_at_base_boot(char* args, cmd_ctx_t * ctx);
+void        osm_at_base_reset(char* args, cmd_ctx_t * ctx);
+command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);

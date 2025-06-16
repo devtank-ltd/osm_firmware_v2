@@ -25,17 +25,17 @@ static measurements_sensor_state_t _modbus_measurements_init(char* name, bool in
 {
     if (in_isolation)
     {
-        if (modbus_has_pending())
+        if (osm_modbus_has_pending())
         {
             modbus_debug("Unable to get modbus reg in isolation as bus is busy.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         }
     }
 
-    modbus_reg_t * reg = modbus_get_reg(name);
+    modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    return (modbus_start_read(reg) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
+    return (osm_modbus_start_read(reg) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
@@ -43,11 +43,11 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
 {
     if (!value)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    modbus_reg_t * reg = modbus_get_reg(name);
+    modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    modbus_reg_state_t state = modbus_reg_get_state(reg);
+    modbus_reg_state_t state = osm_modbus_reg_get_state(reg);
 
     if (state == MB_REG_WAITING)
         return MEASUREMENTS_SENSOR_STATE_BUSY;
@@ -55,13 +55,13 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
     if (state != MB_REG_READY)
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    switch(modbus_reg_get_type(reg))
+    switch(osm_modbus_reg_get_type(reg))
     {
         case MODBUS_REG_TYPE_U16:
         {
             uint16_t v;
 
-            if (!modbus_reg_get_u16(reg, &v))
+            if (!osm_modbus_reg_get_u16(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
@@ -71,7 +71,7 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
         {
             int16_t v;
 
-            if (!modbus_reg_get_i16(reg, &v))
+            if (!osm_modbus_reg_get_i16(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
@@ -81,7 +81,7 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
         {
             uint32_t v;
 
-            if (!modbus_reg_get_u32(reg, &v))
+            if (!osm_modbus_reg_get_u32(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
@@ -91,7 +91,7 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
         {
             int32_t v;
 
-            if (!modbus_reg_get_i32(reg, &v))
+            if (!osm_modbus_reg_get_i32(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
@@ -101,10 +101,10 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
         {
             float v;
 
-            if (!modbus_reg_get_float(reg, &v))
+            if (!osm_modbus_reg_get_float(reg, &v))
                 return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-            value->v_f32 = to_f32_from_float(v);
+            value->v_f32 = osm_to_f32_from_float(v);
             return MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
         default: break;
@@ -115,8 +115,8 @@ static measurements_sensor_state_t _modbus_measurements_get(char* name, measurem
 
 static measurements_value_type_t _modbus_measurements_value_type(char* name)
 {
-    modbus_reg_t* reg = modbus_get_reg(name);
-    modbus_reg_type_t reg_type = modbus_reg_get_type(reg);
+    modbus_reg_t* reg = osm_modbus_get_reg(name);
+    modbus_reg_type_t reg_type = osm_modbus_reg_get_type(reg);
     switch(reg_type)
     {
         case MODBUS_REG_TYPE_FLOAT:
@@ -137,7 +137,7 @@ static measurements_value_type_t _modbus_measurements_value_type(char* name)
 }
 
 
-void modbus_inf_init(measurements_inf_t* inf)
+void osm_modbus_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _modbus_measurements_collection_time;
     inf->init_cb            = _modbus_measurements_init;
@@ -146,16 +146,16 @@ void modbus_inf_init(measurements_inf_t* inf)
 }
 
 
-bool modbus_measurement_add(modbus_reg_t * reg)
+bool osm_modbus_measurement_add(modbus_reg_t * reg)
 {
     if (!reg)
         return false;
 
     measurements_def_t meas_def;
 
-    modbus_reg_get_name(reg, meas_def.name);
+    osm_modbus_reg_get_name(reg, meas_def.name);
 
-    measurements_del(meas_def.name);
+    osm_measurements_del(meas_def.name);
 
     meas_def.name[MODBUS_NAME_LEN] = 0;
     meas_def.samplecount = 1;
@@ -163,17 +163,17 @@ bool modbus_measurement_add(modbus_reg_t * reg)
     meas_def.type        = MODBUS;
     meas_def.is_immediate = 0;
 
-    return measurements_add(&meas_def);
+    return osm_measurements_add(&meas_def);
 }
 
 
-bool modbus_measurement_del_reg(char * name)
+bool osm_modbus_measurement_del_reg(char * name)
 {
-    modbus_reg_t * reg = modbus_get_reg(name);
+    modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
         return false;
-    bool r = measurements_del(name);
-    modbus_reg_del(reg);
+    bool r = osm_measurements_del(name);
+    osm_modbus_reg_del(reg);
     return r;
 }
 
@@ -181,20 +181,20 @@ bool modbus_measurement_del_reg(char * name)
 static bool _modbus_measurement_del_dev_reg(modbus_reg_t * reg, void * userdata)
 {
     char name[MODBUS_NAME_LEN+1];
-    if (modbus_reg_get_name(reg, name))
-        measurements_del(name);
+    if (osm_modbus_reg_get_name(reg, name))
+        osm_measurements_del(name);
     return false;
 }
 
 
-bool modbus_measurement_del_dev(char * dev_name)
+bool osm_modbus_measurement_del_dev(char * dev_name)
 {
-    modbus_dev_t * dev = modbus_get_device_by_name(dev_name);
+    modbus_dev_t * dev = osm_modbus_get_device_by_name(dev_name);
     if (!dev)
         return false;
 
-    bool r = modbus_dev_for_each_reg(dev, _modbus_measurement_del_dev_reg, NULL);
+    bool r = osm_modbus_dev_for_each_reg(dev, _modbus_measurement_del_dev_reg, NULL);
 
-    modbus_dev_del(dev);
+    osm_modbus_dev_del(dev);
     return r;
 }

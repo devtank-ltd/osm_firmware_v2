@@ -6,15 +6,15 @@
 #define PULSECOUNT_COLLECTION_TIME_MS       1000;
 
 
-void pulsecount_init(void)
+void osm_pulsecount_init(void)
 {
 }
 
 
-void pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge)
+void osm_pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge)
 {
     if (enable)
-        pulsecount_init();
+        osm_pulsecount_init();
 }
 
 
@@ -57,7 +57,7 @@ static measurements_value_type_t _pulsecount_value_type(char* name)
 }
 
 
-void     pulsecount_inf_init(measurements_inf_t* inf)
+void     osm_pulsecount_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _pulsecount_collection_time;
     inf->init_cb            = _pulsecount_begin;
@@ -67,7 +67,7 @@ void     pulsecount_inf_init(measurements_inf_t* inf)
 }
 
 
-struct cmd_link_t* pulsecount_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_pulsecount_add_commands(struct cmd_link_t* tail)
 {
     return tail;
 }

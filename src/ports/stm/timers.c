@@ -11,7 +11,7 @@
 static volatile uint32_t us_counter = 0;
 
 
-void timer_delay_us(uint16_t wait_us)
+void osm_timer_delay_us(uint16_t wait_us)
 {
     TIM_ARR(TIM2) = wait_us;
     TIM_EGR(TIM2) = TIM_EGR_UG;
@@ -21,18 +21,18 @@ void timer_delay_us(uint16_t wait_us)
 }
 
 
-void timer_delay_us_64(uint64_t wait_us)
+void osm_timer_delay_us_64(uint64_t wait_us)
 {
     while (wait_us > UINT16_MAX)
     {
-        timer_delay_us(UINT16_MAX);
+        osm_timer_delay_us(UINT16_MAX);
         wait_us -= UINT16_MAX;
     }
-    timer_delay_us(wait_us);
+    osm_timer_delay_us(wait_us);
 }
 
 
-void     timers_init()
+void     osm_timers_init()
 {
     rcc_periph_clock_enable(RCC_TIM2);
 

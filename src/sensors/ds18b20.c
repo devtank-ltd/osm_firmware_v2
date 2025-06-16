@@ -53,7 +53,7 @@ static void _ds18b20_read_scpad(ds18b20_memory_t* d, ds18b20_instance_t* instanc
 {
     for (int i = 0; i < 9; i++)
     {
-        d->raw[i] = w1_read_byte(instance->w1_index);
+        d->raw[i] = osm_w1_read_byte(instance->w1_index);
     }
 }
 
@@ -121,13 +121,13 @@ static measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool i
     if (!_ds18b20_get_instance(&instance, name))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    if (!w1_reset(instance->w1_index))
+    if (!osm_w1_reset(instance->w1_index))
     {
         exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(instance->w1_index, DS18B20_CMD_CONV_T);
+    osm_w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
+    osm_w1_send_byte(instance->w1_index, DS18B20_CMD_CONV_T);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -138,13 +138,13 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
     if (!_ds18b20_get_instance(&instance, name))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     ds18b20_memory_t d;
-    if (!w1_reset(instance->w1_index))
+    if (!osm_w1_reset(instance->w1_index))
     {
         exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
-    w1_send_byte(instance->w1_index, DS18B20_CMD_READ_SCP);
+    osm_w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
+    osm_w1_send_byte(instance->w1_index, DS18B20_CMD_READ_SCP);
     _ds18b20_read_scpad(&d, instance);
 
     if (!_ds18b20_crc_check(d.raw, 8))
@@ -169,7 +169,7 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
             integer_bits--;
     }
     float temperature = (float)integer_bits + (float)decimal_bits / 16.f;
-    value->v_f32 = to_f32_from_float(temperature);
+    value->v_f32 = osm_to_f32_from_float(temperature);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -191,7 +191,7 @@ static measurements_value_type_t _ds18b20_value_type(char* name)
 }
 
 
-void                         ds18b20_inf_init(measurements_inf_t* inf)
+void                         osm_ds18b20_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _ds18b20_collection_time;
     inf->init_cb            = _ds18b20_measurements_init;
@@ -202,11 +202,11 @@ void                         ds18b20_inf_init(measurements_inf_t* inf)
 
 static void _ds18b20_init_instance(ds18b20_instance_t* instance)
 {
-    w1_init(instance->w1_index);
+    osm_w1_init(instance->w1_index);
 }
 
 
-void ds18b20_temp_init(void)
+void osm_ds18b20_temp_init(void)
 {
     for (unsigned i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
     {

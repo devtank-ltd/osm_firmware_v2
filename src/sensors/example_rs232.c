@@ -37,13 +37,13 @@ static struct
 
 static unsigned _example_rs232_send(char* msg, unsigned len)
 {
-    return uart_ring_out(RS232_UART, msg, len);
+    return osm_uart_ring_out(RS232_UART, msg, len);
 }
 
 
 static bool _example_rs232_process(ring_buf_t* ring, char* buf, unsigned buflen, unsigned* len)
 {
-    unsigned len_l = ring_buf_get_pending(ring);
+    unsigned len_l = osm_ring_buf_get_pending(ring);
     if (!len_l)
     {
         /* nothing to read */
@@ -53,7 +53,7 @@ static bool _example_rs232_process(ring_buf_t* ring, char* buf, unsigned buflen,
     {
         len_l = buflen - 1;
     }
-    len_l = ring_buf_read(ring, buf, len_l);
+    len_l = osm_ring_buf_read(ring, buf, len_l);
     buf[len_l] = 0;
     *len = len_l;
     if (!len_l)
@@ -65,7 +65,7 @@ static bool _example_rs232_process(ring_buf_t* ring, char* buf, unsigned buflen,
 }
 
 
-void example_rs232_process(ring_buf_t* ring)
+void osm_example_rs232_process(ring_buf_t* ring)
 {
     unsigned len = 0;
     char buf[EXAMPLE_RS232_MSG_LEN];
@@ -79,7 +79,7 @@ void example_rs232_process(ring_buf_t* ring)
         }
         memcpy(_example_rs232_ctx.stored_msg.msg, buf, len);
         _example_rs232_ctx.stored_msg.len = len;
-        _example_rs232_ctx.stored_msg.time = get_since_boot_ms();
+        _example_rs232_ctx.stored_msg.time = osm_get_since_boot_ms();
     }
 }
 
@@ -125,7 +125,7 @@ static measurements_sensor_state_t _example_rs232_get_collection_time(char* name
 }
 
 
-void example_rs232_inf_init(measurements_inf_t* inf)
+void osm_example_rs232_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _example_rs232_get_collection_time;
     inf->init_cb            = _example_rs232_start;

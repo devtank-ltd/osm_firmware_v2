@@ -59,7 +59,7 @@ static void _can_comm_clk_init(void)
 }
 
 
-void can_comm_init(void)
+void osm_can_comm_init(void)
 {
     port_n_pins_t* can_stdby = &_can_comm_config.stdby;
     port_n_pins_t* can_rx    = &_can_comm_config.rx;
@@ -157,9 +157,9 @@ void can_comm_init(void)
 static bool _can_comm_new_data(can_comm_packet_t* pkt)
 {
     // Need to check if length is size of packet or the size of data.
-    if (!ring_buf_add_data(&can_comm_ring_data, &pkt->header, sizeof(can_comm_header_t)))
+    if (!osm_ring_buf_add_data(&can_comm_ring_data, &pkt->header, sizeof(can_comm_header_t)))
         return false;
-    return ring_buf_add_data(&can_comm_ring_data, pkt->data, pkt->header.length);
+    return osm_ring_buf_add_data(&can_comm_ring_data, pkt->data, pkt->header.length);
 }
 
 
@@ -185,7 +185,7 @@ void tim3_isr(void)
 }
 
 
-void can_comm_enable(bool enabled)
+void osm_can_comm_enable(bool enabled)
 {
     _can_comm_enabled = enabled;
     if (enabled)
@@ -193,9 +193,9 @@ void can_comm_enable(bool enabled)
 }
 
 
-void can_comm_send(can_comm_packet_t* pkt)
+void osm_can_comm_send(can_comm_packet_t* pkt)
 {
     can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
-    log_debug_data(DEBUG_CAN, pkt->data, pkt->header.length);
+    osm_log_debug_data(DEBUG_CAN, pkt->data, pkt->header.length);
     can_transmit(_can_comm_config.unit, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
 }

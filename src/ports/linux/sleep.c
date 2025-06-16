@@ -24,36 +24,36 @@ static volatile uint16_t _sleep_compare = 0;
 
 void _sleep_before_sleep(void)
 {
-    adcs_off();
-    platform_watchdog_init(IWDG_MAX_TIME_MS);
+    osm_adcs_off();
+    osm_platform_watchdog_init(IWDG_MAX_TIME_MS);
 }
 
 
 void _sleep_on_wakeup(void)
 {
-    adcs_init();
-    platform_watchdog_init(IWDG_NORMAL_TIME_MS);
+    osm_adcs_init();
+    osm_platform_watchdog_init(IWDG_NORMAL_TIME_MS);
 }
 
 
-void sleep_exit_sleep_mode(void)
+void osm_sleep_exit_sleep_mode(void)
 {
-    linux_awaken();
+    osm_linux_awaken();
 }
 
 
-bool sleep_for_ms(uint32_t ms)
+bool osm_sleep_for_ms(uint32_t ms)
 {
     if (ms > SLEEP_MAX_TIME_MS)
         ms = SLEEP_MAX_TIME_MS;
-    uint32_t    before_time = get_since_boot_ms();
+    uint32_t    before_time = osm_get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
-    while (uart_rings_out_busy())
+    while (osm_uart_rings_out_busy())
     {
-        uart_rings_out_drain();
-        uart_ring_in_drain(COMMS_UART);
+        osm_uart_rings_out_drain();
+        osm_uart_ring_in_drain(COMMS_UART);
     }
-    uint32_t    time_passed = since_boot_delta(get_since_boot_ms(), before_time);
+    uint32_t    time_passed = osm_since_boot_delta(osm_get_since_boot_ms(), before_time);
     if (ms <= time_passed)
         return false;
     ms -= time_passed;
@@ -76,9 +76,9 @@ bool sleep_for_ms(uint32_t ms)
     count = (ms * 1000) / (SLEEP_LSI_CLK_FREQ_KHZ * (1 << div_shift));
 turn_on_sleep:
     _sleep_before_sleep();
-    linux_usleep(ms * 1000);
+    osm_linux_usleep(ms * 1000);
     _sleep_on_wakeup();
-    sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));
+    sleep_debug("Woken back up after %"PRIu32"ms.", osm_since_boot_delta(osm_get_since_boot_ms(), before_time));
     return true;
 }
 
@@ -89,11 +89,11 @@ static command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
     uint32_t sleep_ms = strtoul(args, &p, 10);
     if (p == args)
     {
-        cmd_ctx_out(ctx,"<TIME(MS)>");
+        osm_cmd_ctx_out(ctx,"<TIME(MS)>");
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx,"Sleeping for %"PRIu32"ms.", sleep_ms);
-    sleep_for_ms(sleep_ms);
+    osm_cmd_ctx_out(ctx,"Sleeping for %"PRIu32"ms.", sleep_ms);
+    osm_sleep_for_ms(sleep_ms);
     return COMMAND_RESP_OK;
 }
 
@@ -109,14 +109,14 @@ static command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
         mode = MEASUREMENTS_POWER_MODE_PLUGGED;
     else
         return COMMAND_RESP_ERR;
-    measurements_power_mode(mode);
+    osm_measurements_power_mode(mode);
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* sleep_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

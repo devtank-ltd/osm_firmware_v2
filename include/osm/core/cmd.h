@@ -2,7 +2,7 @@
 
 #include <osm/core/base_types.h>
 
-command_response_t cmds_process(char * command, unsigned len, cmd_ctx_t * ctx);
+command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ctx);
 
-void cmds_init(void);
+void osm_cmds_init(void);
 

@@ -23,13 +23,13 @@ static bool _led_state = false;
 
 static uint8_t _mac[6];
 
-uint32_t platform_get_frequency(void)
+uint32_t osm_platform_get_frequency(void)
 {
     return SOC_CLK_XTAL32K_FREQ_APPROX;
 }
 
 
-const uint8_t * esp_port_get_mac(void)
+const uint8_t * osm_esp_port_get_mac(void)
 {
     if (!_mac[0])
         ESP_ERROR_CHECK(esp_wifi_get_mac(WIFI_MODE_STA, _mac));
@@ -37,47 +37,47 @@ const uint8_t * esp_port_get_mac(void)
 }
 
 
-uint32_t platform_get_hw_id(void)
+uint32_t osm_platform_get_hw_id(void)
 {
-    const uint8_t * mac = esp_port_get_mac();
+    const uint8_t * mac = osm_esp_port_get_mac();
     return (mac[2] << 24) | (mac[3] << 16) | (mac[4] << 8) | mac[5];
 }
 
 
 /* There is an echo on RS485 to remove. */
-extern bool modbus_requires_echo_removal(void)
+extern bool osm_modbus_requires_echo_removal(void)
 {
     return true;
 }
 
 
-void platform_blink_led_init(void)
+void osm_platform_blink_led_init(void)
 {
     gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
    _led_state = false;
 }
 
 
-void platform_blink_led_toggle(void)
+void osm_platform_blink_led_toggle(void)
 {
     _led_state = !_led_state;
     gpio_set_level(LED_PIN, (_led_state)?0:1);
 }
 
 
-void platform_watchdog_reset(void)
+void osm_platform_watchdog_reset(void)
 {
     esp_task_wdt_reset();
     vTaskDelay(1); /* Give IDLE time to kick watchdog too. */
 }
 
 
-void platform_watchdog_init(uint32_t ms)
+void osm_platform_watchdog_init(uint32_t ms)
 {
 }
 
 
-void platform_init(void)
+void osm_platform_init(void)
 {
     gpio_config_t de_485_conf = {
         .pin_bit_mask = BIT64(DE_485_PIN),
@@ -90,7 +90,7 @@ void platform_init(void)
 }
 
 
-void platform_set_rs485_mode(bool driver_enable)
+void osm_platform_set_rs485_mode(bool driver_enable)
 {
     gpio_set_direction(SW_SEL, GPIO_MODE_OUTPUT);
     gpio_set_level(SW_SEL, 1);
@@ -107,97 +107,97 @@ void platform_set_rs485_mode(bool driver_enable)
 }
 
 
-void platform_main_loop_iterate(void)
+void osm_platform_main_loop_iterate(void)
 {
-    model_main_loop_iterate();
+    osm_model_main_loop_iterate();
 }
 
 
-void platform_reset_sys(void)
+void osm_platform_reset_sys(void)
 {
     esp_restart();
 }
 
 
-bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
     return false;
 }
 
 
-bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
+bool osm_platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {
     return false;
 }
 
 
-void platform_clear_flash_flags(void)
+void osm_platform_clear_flash_flags(void)
 {
 }
 
 
-void platform_start(void)
+void osm_platform_start(void)
 {
     ;
 }
 
 
-bool platform_running(void)
+bool osm_platform_running(void)
 {
     return true;
 }
 
 
-void platform_deinit(void)
+void osm_platform_deinit(void)
 {
 }
 
 
-void platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(adc_setup_config_t* config)
 {
 }
 
 
-void platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
+void osm_platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
 {
 }
 
 
-void platform_adc_start_conversion_regular(void)
+void osm_platform_adc_start_conversion_regular(void)
 {
 }
 
 
-void platform_adc_power_off(void)
+void osm_platform_adc_power_off(void)
 {
 }
 
 
-void platform_adc_set_num_data(unsigned num_data)
+void osm_platform_adc_set_num_data(unsigned num_data)
 {
 }
 
 
-void platform_hpm_enable(bool enable)
+void osm_platform_hpm_enable(bool enable)
 {
 }
 
 
-void platform_tight_loop(void) { }
+void osm_platform_tight_loop(void) { }
 
 
-uint32_t get_since_boot_ms(void)
+uint32_t osm_get_since_boot_ms(void)
 {
     return pdTICKS_TO_MS(xTaskGetTickCount());
 }
 
 
-void platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const port_n_pins_t * gpio_pin)
 {
 }
 
 
-void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
     gpio_set_direction(*gpio_pin, (is_input)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT);
 
@@ -212,12 +212,12 @@ void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t
     gpio_set_pull_mode(*gpio_pin, pull_mode);
 }
 
-void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 {
     gpio_set_level(*gpio_pin, (int)is_on);
 }
 
-bool platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const port_n_pins_t * gpio_pin)
 {
     return (bool)gpio_get_level(*gpio_pin);
 }

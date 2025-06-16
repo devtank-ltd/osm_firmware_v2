@@ -169,7 +169,7 @@ static bool _adcs_float_from_json(struct json_object * root, const char* name, f
 static bool _adcs_load_from_file(void)
 {
     char osm_adc_loc[LOCATION_LEN];
-    concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    osm_concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
     FILE* adcs_config_file = fopen(osm_adc_loc, "r");
     if (!adcs_config_file)
         return false;
@@ -245,46 +245,46 @@ static bool _adcs_load_from_file(void)
 static void _adcs_remove_file(void)
 {
     char osm_adc_loc[LOCATION_LEN];
-    concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    osm_concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
     remove(osm_adc_loc);
 }
 
 
-void linux_adc_generate(void)
+void osm_linux_adc_generate(void)
 {
     if (_adcs_load_from_file())
         _adcs_remove_file();
     _adcs_fill_buffer();
-    linux_usleep(900000); // FIXME: Set this to something closer to real use.
-    adcs_dma_complete();
+    osm_linux_usleep(900000); // FIXME: Set this to something closer to real use.
+    osm_adcs_dma_complete();
 }
 
 
-void platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(adc_setup_config_t* config)
 {
     _adcs_buf = (uint16_t*)config->mem_addr;
 }
 
 
-void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
+void osm_platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
 {
     _adcs_num_active_channels = num_channels;
     memcpy((adcs_type_t*)_adcs_active_channels, channels, sizeof(adcs_type_t) * num_channels);
 }
 
 
-void platform_adc_start_conversion_regular(void)
+void osm_platform_adc_start_conversion_regular(void)
 {
-    linux_kick_adc_gen();
+    osm_linux_kick_adc_gen();
 }
 
 
-void platform_adc_power_off(void)
+void osm_platform_adc_power_off(void)
 {
 }
 
 
-void platform_adc_set_num_data(unsigned num_data)
+void osm_platform_adc_set_num_data(unsigned num_data)
 {
     _adcs_num_data = num_data;
 }

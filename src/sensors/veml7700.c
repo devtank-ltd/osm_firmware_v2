@@ -246,7 +246,7 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
     uint8_t reg8 = reg;
     uint8_t d[2] = {0};
     light_debug("Read command 0x%"PRIx8, reg8);
-    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
+    if (!osm_i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
     {
         light_debug("Read timed out.");
         return false;
@@ -260,7 +260,7 @@ static bool _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
 {
     uint8_t payload[3] = { reg, data & 0xFF, data >> 8 };
     light_debug("Send command 0x%"PRIx8" [0x%"PRIx8" 0x%"PRIx8"].", payload[0], payload[1], payload[2]);
-    if (!i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, payload, 3, NULL, 0, 100))
+    if (!osm_i2c_transfer_timeout(VEML7700_I2C, I2C_VEML7700_ADDR, payload, 3, NULL, 0, 100))
     {
         light_debug("Write timed out.");
         return false;
@@ -451,7 +451,7 @@ static bool _veml7700_get_counts_collect(uint16_t* counts)
 
 static bool _veml7700_check_state(void)
 {
-    bool r = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time) <= VEML7700_MAX_READ_TIME;
+    bool r = osm_since_boot_delta(osm_get_since_boot_ms(), _veml7700_time.start_time) <= VEML7700_MAX_READ_TIME;
     if (!r)
         light_debug("Request timed out.");
     return r;
@@ -468,7 +468,7 @@ static bool _veml7700_iteration_reading(void)
 {
     if (!_veml7700_check_state())
         goto bad_exit;
-    if (since_boot_delta(get_since_boot_ms(), _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
+    if (osm_since_boot_delta(osm_get_since_boot_ms(), _veml7700_state_machine.last_read) > _veml7700_ctx.wait_time)
     {
         uint16_t counts;
         if (!_veml7700_get_counts_collect(&counts))
@@ -478,7 +478,7 @@ static bool _veml7700_iteration_reading(void)
         }
         if (counts > VEML7700_COUNT_LOWER_THRESHOLD)
         {
-            _veml7700_time.last_time_taken = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time);
+            _veml7700_time.last_time_taken = osm_since_boot_delta(osm_get_since_boot_ms(), _veml7700_time.start_time);
             _veml7700_state_machine.state = VEML7700_STATE_DONE;
             _veml7700_reading.is_valid = true;
             if (!_veml7700_conv(&_veml7700_reading.lux, counts))
@@ -490,7 +490,7 @@ static bool _veml7700_iteration_reading(void)
         }
         if (!_veml7700_increase_settings())
         {
-            _veml7700_time.last_time_taken = since_boot_delta(get_since_boot_ms(), _veml7700_time.start_time);
+            _veml7700_time.last_time_taken = osm_since_boot_delta(osm_get_since_boot_ms(), _veml7700_time.start_time);
             _veml7700_state_machine.state = VEML7700_STATE_DONE;
             _veml7700_reading.is_valid = true;
             if (!_veml7700_conv(&_veml7700_reading.lux, counts))
@@ -500,7 +500,7 @@ static bool _veml7700_iteration_reading(void)
             }
             return true;
         }
-        _veml7700_state_machine.last_read = get_since_boot_ms();
+        _veml7700_state_machine.last_read = osm_get_since_boot_ms();
         if (!_veml7700_get_counts_begin())
         {
             light_debug("Could not restart counts.");
@@ -565,7 +565,7 @@ static measurements_sensor_state_t _veml7700_light_measurements_init(char* name,
         case VEML7700_STATE_DONE:
             return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
     _veml7700_time.start_time = now;
     _veml7700_state_machine.state = VEML7700_STATE_READING;
     _veml7700_state_machine.last_read = now;
@@ -599,7 +599,7 @@ static measurements_sensor_state_t _veml7700_light_measurements_get(char* name, 
 }
 
 
-void veml7700_init(void)
+void osm_veml7700_init(void)
 {
 }
 
@@ -610,7 +610,7 @@ static measurements_value_type_t _veml7700_value_type(char* name)
 }
 
 
-void veml7700_inf_init(measurements_inf_t* inf)
+void osm_veml7700_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _veml7700_measurements_collection_time;
     inf->init_cb            = _veml7700_light_measurements_init;

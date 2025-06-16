@@ -60,7 +60,7 @@ static void _stm_setup_rs485(void)
     gpio_mode_setup(re_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, re_port_n_pin.pins);
     gpio_mode_setup(de_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, de_port_n_pin.pins);
 
-    platform_set_rs485_mode(false);
+    osm_platform_set_rs485_mode(false);
 }
 
 
@@ -123,49 +123,49 @@ static void _stm_setup_adc_dma(adc_setup_config_t* config)
 void hard_fault_handler(void)
 {
     /* Special libopencm3 function to handle crashes */
-    platform_raw_msg("----big fat crash -----");
+    osm_platform_raw_msg("----big fat crash -----");
     error_state();
 }
 
 
-uint32_t platform_get_frequency(void)
+uint32_t osm_platform_get_frequency(void)
 {
     return rcc_ahb_frequency;
 }
 
-uint32_t platform_get_hw_id(void)
+uint32_t osm_platform_get_hw_id(void)
 {
     return DESIG_UNIQUE_ID0;
 }
 
 
-void platform_blink_led_init(void)
+void osm_platform_blink_led_init(void)
 {
     gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
     gpio_clear(LED_PORT, LED_PIN);
 }
 
 
-void platform_blink_led_toggle(void)
+void osm_platform_blink_led_toggle(void)
 {
     gpio_toggle(LED_PORT, LED_PIN);
 }
 
 
-void platform_watchdog_reset(void)
+void osm_platform_watchdog_reset(void)
 {
     iwdg_reset();
 }
 
 
-void platform_watchdog_init(uint32_t ms)
+void osm_platform_watchdog_init(uint32_t ms)
 {
     iwdg_set_period_ms(ms);
     iwdg_start();
 }
 
 
-void platform_init(void)
+void osm_platform_init(void)
 {
     /* Main clocks setup in bootloader, but of course libopencm3 doesn't know. */
     rcc_ahb_frequency = 80e6;
@@ -175,15 +175,15 @@ void platform_init(void)
     _stm_setup_systick();
     _stm_setup_rs485();
 
-    comms_type_t type = comms_identify();
-    if (type == COMMS_TYPE_UNKNOWN && comms_set_identity())
+    comms_type_t type = osm_comms_identify();
+    if (type == COMMS_TYPE_UNKNOWN && osm_comms_set_identity())
     {
         log_sys_debug("Failed write COMMS identity");
     }
 }
 
 
-void platform_set_rs485_mode(bool driver_enable)
+void osm_platform_set_rs485_mode(bool driver_enable)
 {
     /* ST3485E
      *
@@ -217,10 +217,10 @@ void platform_set_rs485_mode(bool driver_enable)
 }
 
 
-void platform_reset_sys(void)
+void osm_platform_reset_sys(void)
 {
-    //comms_power_down();
-    //sleep_for_ms(1000);
+    //osm_comms_power_down();
+    //osm_sleep_for_ms(1000);
 
     SCB_VTOR = FW_ADDR & 0xFFFF;
     /* Initialise master stack pointer. */
@@ -230,25 +230,25 @@ void platform_reset_sys(void)
 }
 
 
-void platform_hard_reset_sys(void)
+void osm_platform_hard_reset_sys(void)
 {
     scb_reset_system();
 }
 
 
-persist_storage_t* platform_get_raw_persist(void)
+persist_storage_t* osm_platform_get_raw_persist(void)
 {
     return (persist_storage_t*)PERSIST_RAW_DATA;
 }
 
 
-persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
+persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 {
     return (persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
 }
 
 
-bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
@@ -261,7 +261,7 @@ bool platform_persist_commit(persist_storage_t* persist_data, persist_measuremen
             memcmp(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(persist_measurements_storage_t)) == 0);
 }
 
-void platform_persist_wipe(void)
+void osm_platform_persist_wipe(void)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
@@ -270,7 +270,7 @@ void platform_persist_wipe(void)
 }
 
 
-bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
+bool osm_platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {
     flash_unlock();
     flash_erase_page(abs_page);
@@ -287,41 +287,41 @@ bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_pa
 }
 
 
-uintptr_t platform_get_fw_addr(unsigned fw_page_index)
+uintptr_t osm_platform_get_fw_addr(unsigned fw_page_index)
 {
     return (uintptr_t)(NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE));
 }
 
 
-void platform_finish_fw(void)
+void osm_platform_finish_fw(void)
 {
 }
 
 
-void platform_clear_flash_flags(void)
+void osm_platform_clear_flash_flags(void)
 {
     flash_clear_status_flags();
 }
 
 
-void platform_start(void)
+void osm_platform_start(void)
 {
     ;
 }
 
 
-bool platform_running(void)
+bool osm_platform_running(void)
 {
     return true;
 }
 
 
-void platform_deinit(void)
+void osm_platform_deinit(void)
 {
 }
 
 
-void platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(adc_setup_config_t* config)
 {
     // Setup the clock and gpios
     const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
@@ -339,22 +339,22 @@ void platform_setup_adc(adc_setup_config_t* config)
 }
 
 
-void platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
+void osm_platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
 {
     uint8_t channels[ADC_COUNT];
     for (uint8_t i = 0; i < num_adcs_types; i++)
-        channels[i] = model_stm_adcs_get_channel(adcs_types[i]);
+        channels[i] = osm_model_stm_adcs_get_channel(adcs_types[i]);
     adc_set_regular_sequence(ADC1, num_adcs_types, channels);
 }
 
 
-void platform_adc_start_conversion_regular(void)
+void osm_platform_adc_start_conversion_regular(void)
 {
     adc_start_conversion_regular(ADC1);
 }
 
 
-void platform_adc_power_off(void)
+void osm_platform_adc_power_off(void)
 {
     adc_power_off(ADC1);
 }
@@ -366,12 +366,12 @@ void dma1_channel1_isr(void)  /* ADC1 dma interrupt */
     if (dma_get_interrupt_flag(DMA1, DMA_CHANNEL1, DMA_TCIF))
     {
         dma_clear_interrupt_flags(DMA1, DMA_CHANNEL1, DMA_TCIF);
-        adcs_dma_complete();
+        osm_adcs_dma_complete();
     }
 }
 
 
-void platform_adc_set_num_data(unsigned num_data)
+void osm_platform_adc_set_num_data(unsigned num_data)
 {
     dma_disable_channel(DMA1, DMA_CHANNEL1);
     dma_set_number_of_data(DMA1, DMA_CHANNEL1, num_data);
@@ -379,7 +379,7 @@ void platform_adc_set_num_data(unsigned num_data)
 }
 
 
-void platform_hpm_enable(bool enable)
+void osm_platform_hpm_enable(bool enable)
 {
     port_n_pins_t port_n_pin = HPM_EN_PIN;
     if (enable)
@@ -395,19 +395,19 @@ void platform_hpm_enable(bool enable)
 }
 
 
-void platform_tight_loop(void) {}
+void osm_platform_tight_loop(void) {}
 
 
-void __attribute__((weak)) model_main_loop_iterate(void) {}
+void __attribute__((weak)) osm_model_main_loop_iterate(void) {}
 
 
-void platform_main_loop_iterate(void)
+void osm_platform_main_loop_iterate(void)
 {
-    model_main_loop_iterate();
+    osm_model_main_loop_iterate();
 }
 
 
-uint32_t get_since_boot_ms(void)
+uint32_t osm_get_since_boot_ms(void)
 {
     return since_boot_ms;
 }
@@ -421,13 +421,13 @@ void sys_tick_handler(void)
 }
 
 
-void platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const port_n_pins_t * gpio_pin)
 {
     rcc_periph_clock_enable(PORT_TO_RCC(gpio_pin->port));
 }
 
 
-void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
     gpio_mode_setup(gpio_pin->port,
                     (is_input)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT,
@@ -435,7 +435,7 @@ void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t
                     gpio_pin->pins);
 }
 
-void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 {
     if (is_on)
         gpio_set(gpio_pin->port, gpio_pin->pins);
@@ -443,7 +443,7 @@ void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
         gpio_clear(gpio_pin->port, gpio_pin->pins);
 }
 
-bool platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const port_n_pins_t * gpio_pin)
 {
     return gpio_get(gpio_pin->port, gpio_pin->pins) != 0;
 }

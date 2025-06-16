@@ -51,13 +51,13 @@ static bool _protocol_append_i8(int8_t val)
 {
     if (!_protocol_ctx.buf || !_protocol_ctx.buflen)
     {
-        log_error("Buffer is not inited.");
+        osm_log_error("Buffer is not inited.");
         return false;
     }
 
     if (_protocol_ctx.pos >= _protocol_ctx.buflen)
     {
-        log_error("Protocol buffer is full.");
+        osm_log_error("Protocol buffer is full.");
         return false;
     }
     _protocol_ctx.buf[_protocol_ctx.pos++] = val;
@@ -220,7 +220,7 @@ static bool _protocol_append_value_type_float(measurements_data_t* data, bool si
 }
 
 
-bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
+bool osm_protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
 {
     bool single = def->samplecount == 1;
 
@@ -243,7 +243,7 @@ bool protocol_append_measurement(measurements_def_t* def, measurements_data_t* d
             r |= !_protocol_append_value_type_float(data, single);
             break;
         default:
-            log_error("Unknown type '%"PRIu8"'.", data->value_type);
+            osm_log_error("Unknown type '%"PRIu8"'.", data->value_type);
             r = true;
             break;
     }
@@ -284,14 +284,14 @@ static bool _protocol_init(int8_t* buf, unsigned buflen)
     memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
     if (!_protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
     {
-        log_error("Failed to add even version to measurem     ents hex array.");
+        osm_log_error("Failed to add even version to measurem     ents hex array.");
         return false;
     }
     return true;
 }
 
 
-bool protocol_init(void)
+bool osm_protocol_init(void)
 {
     return _protocol_init(_measurements_hex_arr, PROTOCOL_HEX_ARRAY_SIZE);
 }
@@ -303,13 +303,13 @@ static unsigned _protocol_get_length(void)
 }
 
 
-bool protocol_send(void)
+bool osm_protocol_send(void)
 {
-    return comms_send(_protocol_ctx.buf, _protocol_get_length());
+    return osm_comms_send(_protocol_ctx.buf, _protocol_get_length());
 }
 
 
-void        protocol_send_error_code(uint8_t err_code)
+void        osm_protocol_send_error_code(uint8_t err_code)
 {
     /* Immediate sent, so temporary use a different memory buffer for protocol. */
     int8_t arr[15] = {0};
@@ -321,6 +321,6 @@ void        protocol_send_error_code(uint8_t err_code)
         return;
     }
     _protocol_append_error_code(err_code);
-    comms_send(arr, _protocol_get_length());
+    osm_comms_send(arr, _protocol_get_length());
     _protocol_ctx = org; /* Restore normal memory buffer for protocol. */
 }

@@ -1,6 +1,6 @@
 // Maths Functions
 
-float Q_rsqrt( float number )
+float osm_Q_rsqrt( float number )
 {
     long i;
     float x2, y;

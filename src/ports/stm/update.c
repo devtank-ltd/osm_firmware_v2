@@ -18,7 +18,7 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
 {
     unsigned abs_page = NEW_FW_PAGE + fw_page_index;
     //uintptr_t dst = NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE);
-    uintptr_t dst = platform_get_fw_addr(fw_page_index);
+    uintptr_t dst = osm_platform_get_fw_addr(fw_page_index);
 
     fw_debug("Writing page %u (%p) pos:%u", abs_page, (void*)dst, _fw_ota_pos);
 
@@ -27,7 +27,7 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
     while(retries--)
     {
         fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, *(uint64_t*)_fw_page);
-        if (platform_overwrite_fw_page(dst, abs_page, _fw_page))
+        if (osm_platform_overwrite_fw_page(dst, abs_page, _fw_page))
         {
             fw_debug("Written page");
             memset(_fw_page, 0, FLASH_PAGE_SIZE);
@@ -36,43 +36,43 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
 
         if (retries)
         {
-            log_error("Retrying to write page");
-            platform_clear_flash_flags();
+            osm_log_error("Retrying to write page");
+            osm_platform_clear_flash_flags();
         }
     }
 
-    log_error("Failed to write FW page");
+    osm_log_error("Failed to write FW page");
     return false;
 }
 
 
-void fw_ota_reset(void)
+void osm_fw_ota_reset(void)
 {
     _fw_ota_pos = -1;
     fw_debug("Reset FW download.");
 }
 
 
-bool fw_ota_add_chunk(void * data, unsigned size, cmd_ctx_t * ctx)
+bool osm_fw_ota_add_chunk(void * data, unsigned size, cmd_ctx_t * ctx)
 {
     if (_fw_ota_pos < 0)
     {
         fw_debug("Start FW download.");
         _fw_ota_pos = 0;
         memset(_fw_page, 0xFF, FLASH_PAGE_SIZE);
-        persist_set_fw_ready(0);
+        osm_persist_set_fw_ready(0);
     }
 
     if (size > FLASH_PAGE_SIZE)
     {
-        cmd_ctx_error(ctx,"Firmware chunk too big.");
+        osm_cmd_ctx_error(ctx,"Firmware chunk too big.");
         _fw_ota_pos = -1;
         return false;
     }
 
     if ((_fw_ota_pos + size) > FW_MAX_SIZE)
     {
-        cmd_ctx_error(ctx,"Firmware update too big (%u > %u)", _fw_ota_pos + size, FW_MAX_SIZE);
+        osm_cmd_ctx_error(ctx,"Firmware update too big (%u > %u)", _fw_ota_pos + size, FW_MAX_SIZE);
         _fw_ota_pos = -1;
         return false;
     }
@@ -102,7 +102,7 @@ bool fw_ota_add_chunk(void * data, unsigned size, cmd_ctx_t * ctx)
     return true;
 }
 
-bool fw_ota_complete(uint16_t crc)
+bool osm_fw_ota_complete(uint16_t crc)
 {
     unsigned cur_page_pos = _fw_ota_pos % FLASH_PAGE_SIZE;
     unsigned pages        = _fw_ota_pos / FLASH_PAGE_SIZE;
@@ -112,7 +112,7 @@ bool fw_ota_complete(uint16_t crc)
         fw_debug("Unwritten:%u", cur_page_pos);
         _fw_ota_flush_page(pages);
     }
-    uint16_t data_crc = modbus_crc((uint8_t*)platform_get_fw_addr(0), _fw_ota_pos);
+    uint16_t data_crc = osm_modbus_crc((uint8_t*)osm_platform_get_fw_addr(0), _fw_ota_pos);
     fw_debug("CRC:0x%04x", data_crc);
     if (data_crc != crc)
     {
@@ -120,8 +120,8 @@ bool fw_ota_complete(uint16_t crc)
         _fw_ota_pos = -1;
         return false;
     }
-    platform_finish_fw();
-    persist_set_fw_ready(_fw_ota_pos);
+    osm_platform_finish_fw();
+    osm_persist_set_fw_ready(_fw_ota_pos);
     _fw_ota_pos = -1;
     fw_debug("New FW ready.");
     return true;
@@ -130,11 +130,11 @@ bool fw_ota_complete(uint16_t crc)
 
 static command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
 {
-    args = skip_space(args);
+    args = osm_skip_space(args);
     unsigned len = strlen(args);
     if (len%2)
     {
-        cmd_ctx_out(ctx,"Invalid fw chunk.");
+        osm_cmd_ctx_out(ctx,"Invalid fw chunk.");
         return COMMAND_RESP_ERR;
     }
     char * end = args + len;
@@ -146,43 +146,43 @@ static command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
         uint8_t d = strtoul(args, NULL, 16);
         *next=t;
         args=next;
-        if (!fw_ota_add_chunk(&d, 1, ctx))
+        if (!osm_fw_ota_add_chunk(&d, 1, ctx))
         {
-            cmd_ctx_out(ctx,"Invalid fw.");
+            osm_cmd_ctx_out(ctx,"Invalid fw.");
             return COMMAND_RESP_ERR;
         }
     }
-    cmd_ctx_out(ctx,"FW %u chunk added", len/2);
+    osm_cmd_ctx_out(ctx,"FW %u chunk added", len/2);
     return COMMAND_RESP_OK;
 }
 
 
 static command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
 {
-    args = skip_space(args);
+    args = osm_skip_space(args);
     uint16_t crc = strtoul(args, NULL, 16);
-    if (fw_ota_complete(crc))
+    if (osm_fw_ota_complete(crc))
     {
-        cmd_ctx_out(ctx,"FW added");
+        osm_cmd_ctx_out(ctx,"FW added");
         return COMMAND_RESP_OK;
     }
-    cmd_ctx_out(ctx,"FW adding failed.");
+    osm_cmd_ctx_out(ctx,"FW adding failed.");
     return COMMAND_RESP_ERR;
 }
 
 
 static command_response_t _fw_reset(char *args, cmd_ctx_t * ctx)
 {
-    persist_commit();
-    platform_hard_reset_sys();
+    osm_persist_commit();
+    osm_platform_hard_reset_sys();
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* update_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_update_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     _fw_add                       , false , NULL },
                                        { "fw@",          "Finishing crc of new fw.", _fw_fin                       , false , NULL },
                                        { "fw_reset",     "Reset into new firmware.", _fw_reset                     , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

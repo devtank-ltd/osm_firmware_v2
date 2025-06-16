@@ -63,7 +63,7 @@ static char* _ios_get_type_possible(unsigned io)
     unsigned count = 0;
     for (io_special_t n = IO_SPECIAL_START; n <= IO_SPECIAL_MAX; n+=0x1000)
     {
-        if (!model_can_io_be_special(io, n))
+        if (!osm_model_can_io_be_special(io, n))
             continue;
         int16_t space = IOS_SPECIAL_STR_LEN - strnlen(special_str, IOS_SPECIAL_STR_LEN);
         if (space < 3)
@@ -112,7 +112,7 @@ static char* _ios_get_type_possible(unsigned io)
 }
 
 
-bool ios_get_pupd(unsigned io, uint8_t* pupd)
+bool osm_ios_get_pupd(unsigned io, uint8_t* pupd)
 {
     if (!pupd)
     {
@@ -138,19 +138,19 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
 
-    platform_gpio_setup(gpio_pin, io_state & IO_AS_INPUT, io_state & IO_PULL_MASK);
+    osm_platform_gpio_setup(gpio_pin, io_state & IO_AS_INPUT, io_state & IO_PULL_MASK);
 
     ios_state[io] = (ios_state[io] & (IO_ACTIVE_SPECIAL_MASK)) | io_state;
 
     io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & IO_AS_INPUT)?"IN":"OUT",
-            io_get_pull_str(io_state),
+            osm_io_get_pull_str(io_state),
             (type[0])?" [":"",type,(type[0])?"]":"");
 }
 
 
-void     ios_init(void)
+void     osm_ios_init(void)
 {
     ios_state = persist_data.model_config.ios_state;
 
@@ -163,19 +163,19 @@ void     ios_init(void)
 
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
     {
-        platform_gpio_init(&ios_pins[n]);
+        osm_platform_gpio_init(&ios_pins[n]);
 
         uint16_t io_state = ios_state[n];
 
         if (io_state & IO_ACTIVE_SPECIAL_MASK)
         {
             if (io_state & IO_SPECIAL_ONEWIRE)
-                w1_enable(n, true);
+                osm_w1_enable(n, true);
             if (io_state & IO_SPECIAL_PULSECOUNT_RISING_EDGE    ||
                 io_state & IO_SPECIAL_PULSECOUNT_FALLING_EDGE   ||
                 io_state & IO_SPECIAL_PULSECOUNT_BOTH_EDGE      )
             {
-                pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
+                osm_pulsecount_enable(n, true, io_state & IO_PULL_MASK, io_state & IO_ACTIVE_SPECIAL_MASK);
             }
             io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
@@ -185,18 +185,18 @@ void     ios_init(void)
 }
 
 
-unsigned ios_get_count(void)
+unsigned osm_ios_get_count(void)
 {
     return ARRAY_SIZE(ios_pins);
 }
 
 
-bool io_enable_w1(unsigned io)
+bool osm_io_enable_w1(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    if (!model_can_io_be_special(io, IO_SPECIAL_ONEWIRE))
+    if (!osm_model_can_io_be_special(io, IO_SPECIAL_ONEWIRE))
         return false;
 
     ios_state[io] &= ~IO_OUT_ON;
@@ -204,9 +204,9 @@ bool io_enable_w1(unsigned io)
 
     ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
     ios_state[io] |= IO_SPECIAL_ONEWIRE;
-    pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
-    io_watch_enable(io, false, IO_PUPD_NONE);
-    w1_enable(io, true);
+    osm_pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
+    osm_io_watch_enable(io, false, IO_PUPD_NONE);
+    osm_w1_enable(io, true);
     io_debug("%02u : USED W1", io);
     return true;
 }
@@ -227,12 +227,12 @@ static unsigned io_pull(io_pupd_t pull)
 }
 
 
-bool io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
+bool osm_io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    if (!model_can_io_be_special(io, edge))
+    if (!osm_model_can_io_be_special(io, edge))
         return false;
 
     ios_state[io] &= ~IO_OUT_ON;
@@ -244,9 +244,9 @@ bool io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
     ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
     ios_state[io] |= edge;
 
-    w1_enable(io, false);
-    io_watch_enable(io, false, pupd);
-    pulsecount_enable(io, true, pupd, edge);
+    osm_w1_enable(io, false);
+    osm_io_watch_enable(io, false, pupd);
+    osm_pulsecount_enable(io, true, pupd, edge);
     io_debug("%02u : USED PLSCNT", io);
     return true;
 }
@@ -257,7 +257,7 @@ static bool io_enable_watch(unsigned io, io_pupd_t pupd)
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
 
-    if (!model_can_io_be_special(io, IO_SPECIAL_WATCH))
+    if (!osm_model_can_io_be_special(io, IO_SPECIAL_WATCH))
         return false;
 
     ios_state[io] &= ~IO_OUT_ON;
@@ -269,15 +269,15 @@ static bool io_enable_watch(unsigned io, io_pupd_t pupd)
     ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
     ios_state[io] |= IO_SPECIAL_WATCH;
 
-    w1_enable(io, false);
-    pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
-    io_watch_enable(io, true, pupd);
+    osm_w1_enable(io, false);
+    osm_pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
+    osm_io_watch_enable(io, true, pupd);
     io_debug("%02u : USED WATCH", io);
     return true;
 }
 
 
-void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
+void     osm_io_configure(unsigned io, bool as_input, io_pupd_t pull)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
@@ -287,8 +287,8 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
     if ((io_state & IO_ACTIVE_SPECIAL_MASK))
     {
         ios_state[io] &= ~IO_ACTIVE_SPECIAL_MASK;
-        w1_enable(io, false);
-        pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
+        osm_w1_enable(io, false);
+        osm_pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
         io_debug("%02u : NO LONGER SPECIAL", io);
         return;
     }
@@ -313,7 +313,7 @@ void     io_configure(unsigned io, bool as_input, io_pupd_t pull)
 }
 
 
-bool io_is_input(unsigned io)
+bool osm_io_is_input(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -322,7 +322,7 @@ bool io_is_input(unsigned io)
 }
 
 
-bool io_is_w1_now(unsigned io)
+bool osm_io_is_w1_now(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -331,7 +331,7 @@ bool io_is_w1_now(unsigned io)
 }
 
 
-bool io_is_pulsecount_now(unsigned io)
+bool osm_io_is_pulsecount_now(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -343,7 +343,7 @@ bool io_is_pulsecount_now(unsigned io)
 }
 
 
-bool io_is_watch_now(unsigned io)
+bool osm_io_is_watch_now(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -351,7 +351,7 @@ bool io_is_watch_now(unsigned io)
 }
 
 
-unsigned io_get_bias(unsigned io)
+unsigned osm_io_get_bias(unsigned io)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return false;
@@ -360,7 +360,7 @@ unsigned io_get_bias(unsigned io)
 }
 
 
-void     io_on(unsigned io, bool on_off)
+void     osm_io_on(unsigned io, bool on_off)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
@@ -375,17 +375,17 @@ void     io_on(unsigned io, bool on_off)
     if (on_off)
     {
         ios_state[io] |= IO_OUT_ON;
-        platform_gpio_set(output, true);
+        osm_platform_gpio_set(output, true);
     }
     else
     {
         ios_state[io] &= ~IO_OUT_ON;
-        platform_gpio_set(output, false);
+        osm_platform_gpio_set(output, false);
     }
 }
 
 
-void     io_log(unsigned io, cmd_ctx_t * ctx)
+void     osm_io_log(unsigned io, cmd_ctx_t * ctx)
 {
     if (io >= ARRAY_SIZE(ios_pins))
         return;
@@ -412,15 +412,15 @@ void     io_log(unsigned io, cmd_ctx_t * ctx)
     {
 
         if (io_state & IO_AS_INPUT)
-            cmd_ctx_out(ctx,"IO %02u : %s%s%sIN %s = %s",
+            osm_cmd_ctx_out(ctx,"IO %02u : %s%s%sIN %s = %s",
                        io, pretype, type, posttype,
-                       io_get_pull_str(io_state),
-                       (platform_gpio_get(gpio_pin))?"ON":"OFF");
+                       osm_io_get_pull_str(io_state),
+                       (osm_platform_gpio_get(gpio_pin))?"ON":"OFF");
         else
-            cmd_ctx_out(ctx,"IO %02u : %s%s%sOUT %s = %s",
+            osm_cmd_ctx_out(ctx,"IO %02u : %s%s%sOUT %s = %s",
                        io, pretype, type, posttype,
-                       io_get_pull_str(io_state),
-                       (platform_gpio_get(gpio_pin))?"ON":"OFF");
+                       osm_io_get_pull_str(io_state),
+                       (osm_platform_gpio_get(gpio_pin))?"ON":"OFF");
     }
     else
     {
@@ -434,21 +434,21 @@ void     io_log(unsigned io, cmd_ctx_t * ctx)
             pupd_char = 'N';
         else
             pupd_char = ' ';
-        cmd_ctx_out(ctx,"IO %02u : %s%s%sUSED %s %c", io, pretype, type, posttype, active_type, pupd_char);
+        osm_cmd_ctx_out(ctx,"IO %02u : %s%s%sUSED %s %c", io, pretype, type, posttype, active_type, pupd_char);
     }
 }
 
 
-void     ios_log(cmd_ctx_t * ctx)
+void     osm_ios_log(cmd_ctx_t * ctx)
 {
     for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
-        io_log(n, ctx);
+        osm_io_log(n, ctx);
 }
 
 
 static command_response_t _io_log_cb(char* args, cmd_ctx_t * ctx)
 {
-    ios_log(ctx);
+    osm_ios_log(ctx);
     return COMMAND_RESP_OK;
 }
 
@@ -461,96 +461,96 @@ static command_response_t _io_cb(char *args, cmd_ctx_t * ctx)
      */
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
-    pos = skip_space(pos);
+    pos = osm_skip_space(pos);
     bool do_read = false;
 
     if (*pos == ':')
     {
         do_read = true;
         bool as_input;
-        pos = skip_space(pos + 1);
+        pos = osm_skip_space(pos + 1);
         if (strncmp(pos, "IN", 2) == 0 || *pos == 'I')
         {
-            pos = skip_to_space(pos);
+            pos = osm_skip_to_space(pos);
             as_input = true;
         }
         else if (strncmp(pos, "OUT", 3) == 0 || *pos == 'O')
         {
-            pos = skip_to_space(pos);
+            pos = osm_skip_to_space(pos);
             as_input = false;
         }
         else
         {
-            cmd_ctx_error(ctx,"Malformed gpio type command");
+            osm_cmd_ctx_error(ctx,"Malformed gpio type command");
             return COMMAND_RESP_ERR;
         }
 
         io_pupd_t pull = IO_PUPD_NONE;
 
-        pos = skip_space(pos);
+        pos = osm_skip_space(pos);
 
         if (*pos && *pos != '=')
         {
             if ((strncmp(pos, "UP", 2) == 0) || (pos[0] == 'U'))
             {
-                pos = skip_to_space(pos);
+                pos = osm_skip_to_space(pos);
                 pull = IO_PUPD_UP;
             }
             else if (strncmp(pos, "DOWN", 4) == 0 || pos[0] == 'D')
             {
-                pos = skip_to_space(pos);
+                pos = osm_skip_to_space(pos);
                 pull = IO_PUPD_DOWN;
             }
             else if (strncmp(pos, "NONE", 4) == 0 || pos[0] == 'N')
             {
-                pos = skip_to_space(pos);
+                pos = osm_skip_to_space(pos);
             }
             else
             {
-                cmd_ctx_error(ctx,"Malformed gpio pull command");
+                osm_cmd_ctx_error(ctx,"Malformed gpio pull command");
                 return COMMAND_RESP_ERR;
             }
-            pos = skip_space(pos);
+            pos = osm_skip_space(pos);
         }
 
-        io_configure(io, as_input, pull);
+        osm_io_configure(io, as_input, pull);
     }
 
     if (*pos == '=')
     {
-        pos = skip_space(pos + 1);
+        pos = osm_skip_space(pos + 1);
         if (strncmp(pos, "ON", 2) == 0 || *pos == '1')
         {
-            pos = skip_to_space(pos);
-            if (!io_is_input(io))
+            pos = osm_skip_to_space(pos);
+            if (!osm_io_is_input(io))
             {
-                io_on(io, true);
+                osm_io_on(io, true);
                 if (!do_read)
-                    cmd_ctx_out(ctx,"IO %02u = ON", io);
+                    osm_cmd_ctx_out(ctx,"IO %02u = ON", io);
             }
-            else cmd_ctx_error(ctx,"IO %02u is input but output command.", io);
+            else osm_cmd_ctx_error(ctx,"IO %02u is input but output command.", io);
         }
         else if (strncmp(pos, "OFF", 3) == 0 || *pos == '0')
         {
-            pos = skip_to_space(pos);
-            if (!io_is_input(io))
+            pos = osm_skip_to_space(pos);
+            if (!osm_io_is_input(io))
             {
-                io_on(io, false);
+                osm_io_on(io, false);
                 if (!do_read)
-                    cmd_ctx_out(ctx,"IO %02u = OFF", io);
+                    osm_cmd_ctx_out(ctx,"IO %02u = OFF", io);
             }
-            else cmd_ctx_error(ctx,"IO %02u is input but output command.", io);
+            else osm_cmd_ctx_error(ctx,"IO %02u is input but output command.", io);
         }
         else
         {
-            cmd_ctx_error(ctx,"Malformed gpio on/off command");
+            osm_cmd_ctx_error(ctx,"Malformed gpio on/off command");
             return COMMAND_RESP_ERR;
         }
     }
     else do_read = true;
 
     if (do_read)
-        io_log(io, ctx);
+        osm_io_log(io, ctx);
     return COMMAND_RESP_OK;
 }
 
@@ -563,7 +563,7 @@ static command_response_t _io_cmd_enable_pulsecount_cb(char * args, cmd_ctx_t * 
     unsigned io = strtoul(args, &pos, 10);
     if (args == pos)
         goto bad_exit;
-    pos = skip_space(pos);
+    pos = osm_skip_space(pos);
     io_special_t edge;
     if (pos[0] == 'R')
         edge = IO_SPECIAL_PULSECOUNT_RISING_EDGE;
@@ -574,7 +574,7 @@ static command_response_t _io_cmd_enable_pulsecount_cb(char * args, cmd_ctx_t * 
     else
         goto bad_exit;
 
-    pos = skip_space(pos+1);
+    pos = osm_skip_space(pos+1);
     uint8_t pupd;
     if (pos[0] == 'U')
         pupd = IO_PUPD_UP;
@@ -585,13 +585,13 @@ static command_response_t _io_cmd_enable_pulsecount_cb(char * args, cmd_ctx_t * 
     else
         goto bad_exit;
 
-    if (io_enable_pulsecount(io, pupd, edge))
-        cmd_ctx_out(ctx,"IO %02u pulsecount enabled", io);
+    if (osm_io_enable_pulsecount(io, pupd, edge))
+        osm_cmd_ctx_out(ctx,"IO %02u pulsecount enabled", io);
     else
-        cmd_ctx_out(ctx,"IO %02u has no pulsecount", io);
+        osm_cmd_ctx_out(ctx,"IO %02u has no pulsecount", io);
     return COMMAND_RESP_OK;
 bad_exit:
-    cmd_ctx_out(ctx,"<io> <R/F/B> <U/D/N>");
+    osm_cmd_ctx_out(ctx,"<io> <R/F/B> <U/D/N>");
     return COMMAND_RESP_ERR;
 }
 
@@ -601,13 +601,13 @@ static command_response_t _io_cmd_enable_onewire_cb(char * args, cmd_ctx_t * ctx
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
 
-    if (io_enable_w1(io))
+    if (osm_io_enable_w1(io))
     {
-        cmd_ctx_out(ctx,"IO %02u onewire enabled", io);
+        osm_cmd_ctx_out(ctx,"IO %02u onewire enabled", io);
         return COMMAND_RESP_OK;
     }
 
-    cmd_ctx_out(ctx,"IO %02u has no onewire", io);
+    osm_cmd_ctx_out(ctx,"IO %02u has no onewire", io);
     return COMMAND_RESP_ERR;
 }
 
@@ -620,7 +620,7 @@ static command_response_t _io_cmd_enable_watch_cb(char* args, cmd_ctx_t * ctx)
     unsigned io = strtoul(args, &pos, 10);
     if (args == pos)
         goto bad_exit;
-    pos = skip_space(pos);
+    pos = osm_skip_space(pos);
     uint8_t pupd;
     if (pos[0] == 'U')
         pupd = IO_PUPD_UP;
@@ -632,29 +632,29 @@ static command_response_t _io_cmd_enable_watch_cb(char* args, cmd_ctx_t * ctx)
         goto bad_exit;
 
     if (io_enable_watch(io, pupd))
-        cmd_ctx_out(ctx,"IO %02u watch enabled", io);
+        osm_cmd_ctx_out(ctx,"IO %02u watch enabled", io);
     else
-        cmd_ctx_out(ctx,"IO %02u has no watch", io);
+        osm_cmd_ctx_out(ctx,"IO %02u has no watch", io);
     return COMMAND_RESP_OK;
 bad_exit:
-    cmd_ctx_out(ctx,"<io> <U/D/N>");
+    osm_cmd_ctx_out(ctx,"<io> <U/D/N>");
     return COMMAND_RESP_ERR;
 }
 
 
-struct cmd_link_t* ios_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_ios_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           _io_log_cb                        , false , NULL },
                                        { "io",           "Get/set IO set.",          _io_cb                            , false , NULL },
                                        { "en_pulse",     "Enable Pulsecount IO.",    _io_cmd_enable_pulsecount_cb      , false , NULL },
                                        { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL },
                                        { "en_watch",     "Enable Watch IO.",         _io_cmd_enable_watch_cb           , false , NULL }};
-    tail = add_commands(tail, cmds, ARRAY_SIZE(cmds));
-    return pulsecount_add_commands(tail);
+    tail = osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_pulsecount_add_commands(tail);
 }
 
 
-void ios_measurements_init(void)
+void osm_ios_measurements_init(void)
 {
 #if IOS_WATCH_COUNT > 0
     measurements_def_t def;
@@ -668,7 +668,7 @@ void ios_measurements_init(void)
         unsigned io = ios_watch_ios[i];
         snprintf(def.name, MEASURE_NAME_NULLED_LEN, IOS_MEASUREMENT_NAME_PRE"%02u", io);
         io_debug("Adding '%s' measurement...", def.name);
-        if (!measurements_add(&def))
+        if (!osm_measurements_add(&def))
         {
             io_debug("Failed to add IO measurement '%s'", def.name);
             return;
@@ -711,7 +711,7 @@ static measurements_sensor_state_t _ios_collect(char* name, measurements_reading
         io_debug("IO is not input.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_i64 = platform_gpio_get(&ios_pins[index]) ? 1 : 0;
+    value->v_i64 = osm_platform_gpio_get(&ios_pins[index]) ? 1 : 0;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -722,7 +722,7 @@ static measurements_value_type_t _ios_value_type(char* name)
 }
 
 
-void ios_inf_init(measurements_inf_t* inf)
+void osm_ios_inf_init(measurements_inf_t* inf)
 {
     inf->get_cb             = _ios_collect;
     inf->value_type_cb      = _ios_value_type;
@@ -732,14 +732,14 @@ void ios_inf_init(measurements_inf_t* inf)
 // cppcheck-suppress unusedFunction ; System handler
 void W1_PULSE_1_ISR(void)
 {
-    if (io_is_pulsecount_now(W1_PULSE_1_IO))
+    if (osm_io_is_pulsecount_now(W1_PULSE_1_IO))
     {
-        pulsecount_isr(1);
+        osm_pulsecount_isr(1);
         return;
     }
-    if (io_is_watch_now(W1_PULSE_1_IO))
+    if (osm_io_is_watch_now(W1_PULSE_1_IO))
     {
-        io_watch_isr(1);
+        osm_io_watch_isr(1);
         return;
     }
 }
@@ -748,14 +748,14 @@ void W1_PULSE_1_ISR(void)
 // cppcheck-suppress unusedFunction ; System handler
 void W1_PULSE_2_ISR(void)
 {
-    if (io_is_pulsecount_now(W1_PULSE_2_IO))
+    if (osm_io_is_pulsecount_now(W1_PULSE_2_IO))
     {
-        pulsecount_isr(2);
+        osm_pulsecount_isr(2);
         return;
     }
-    if (io_is_watch_now(W1_PULSE_2_IO))
+    if (osm_io_is_watch_now(W1_PULSE_2_IO))
     {
-        io_watch_isr(2);
+        osm_io_watch_isr(2);
         return;
     }
 }

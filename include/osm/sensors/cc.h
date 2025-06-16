@@ -18,15 +18,15 @@ typedef struct
 } cc_config_t;
 
 
-void                         cc_init(void);
+void                         osm_cc_init(void);
 
-bool                         cc_get_blocking(char* name, measurements_reading_t* value);
-bool                         cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3);
+bool                         osm_cc_get_blocking(char* name, measurements_reading_t* value);
+bool                         osm_cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3);
 
-bool                         cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
+bool                         osm_cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
 
-void                         cc_inf_init(measurements_inf_t* inf);
+void                         osm_cc_inf_init(measurements_inf_t* inf);
 
-struct cmd_link_t*           cc_add_commands(struct cmd_link_t* tail);
+struct cmd_link_t*           osm_cc_add_commands(struct cmd_link_t* tail);
 
-void                         cc_setup_default_mem(cc_config_t* memory, unsigned size);
+void                         osm_cc_setup_default_mem(cc_config_t* memory, unsigned size);

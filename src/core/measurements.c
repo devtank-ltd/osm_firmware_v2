@@ -64,7 +64,7 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 #define MEASUREMENTS_MIN_TRANSMIT_MS                (15 * 1000)
 
 
-bool measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
+bool osm_measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
 {
     if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
         return false;
@@ -89,10 +89,10 @@ bool measurements_get_measurements_def(char* name, measurements_def_t ** measure
 
 static bool _measurements_send_start(void)
 {
-    if (!protocol_init())
+    if (!osm_protocol_init())
     {
         _pending_send = false;
-        _last_sent_ms = get_since_boot_ms();
+        _last_sent_ms = osm_get_since_boot_ms();
         return false;
     }
 
@@ -100,9 +100,9 @@ static bool _measurements_send_start(void)
 }
 
 
-bool measurements_send_test(char * name)
+bool osm_measurements_send_test(char * name)
 {
-    if (!protocol_get_connected() || !protocol_send_ready())
+    if (!osm_protocol_get_connected() || !osm_protocol_send_ready())
     {
         measurements_debug("LW not ready.");
         return false;
@@ -117,7 +117,7 @@ bool measurements_send_test(char * name)
     measurements_reading_t v;
     measurements_value_type_t v_type;
 
-    if (!measurements_get_reading(name, &v, &v_type))
+    if (!osm_measurements_get_reading(name, &v, &v_type))
     {
         measurements_debug("Failed to get reading of %s.", name);
         return false;
@@ -125,18 +125,18 @@ bool measurements_send_test(char * name)
 
     measurements_def_t* def;
     measurements_data_t* data;
-    if (!measurements_get_measurements_def(name, &def, &data))
+    if (!osm_measurements_get_measurements_def(name, &def, &data))
     {
         measurements_debug("Unable to get measurements definition.");
         return false;
     }
 
-    bool r = protocol_append_measurement(def, data);
+    bool r = osm_protocol_append_measurement(def, data);
 
     if (r)
     {
         measurements_debug("Sending test array.");
-        protocol_send();
+        osm_protocol_send();
     }
     else measurements_debug("Failed to add to array.");
 
@@ -147,7 +147,7 @@ bool measurements_send_test(char * name)
 static void _measurements_reset_send(void)
 {
     measurements_debug("Protocol reset");
-    protocol_reset();
+    osm_protocol_reset();
     _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
     _pending_send = false;
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
@@ -161,7 +161,7 @@ static void _measurements_send(void)
 
     static bool has_printed_no_con = false;
 
-    if (!protocol_get_connected())
+    if (!osm_protocol_get_connected())
     {
         if (!has_printed_no_con)
         {
@@ -175,23 +175,23 @@ static void _measurements_send(void)
 
     has_printed_no_con = false;
 
-    if (!protocol_send_ready())
+    if (!osm_protocol_send_ready())
     {
-        if (protocol_send_allowed())
+        if (osm_protocol_send_allowed())
         {
             // Tried to send but not allowed (receiving FW?)
             return;
         }
         if (_pending_send)
         {
-            if (since_boot_delta(get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
+            if (osm_since_boot_delta(osm_get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
                 measurements_debug("Pending send timed out.");
                 _measurements_reset_send();
             }
             return;
         }
-        _last_sent_ms = get_since_boot_ms();
+        _last_sent_ms = osm_get_since_boot_ms();
         _pending_send = true;
         return;
     }
@@ -217,10 +217,10 @@ static void _measurements_send(void)
             {
                 data->num_samples_init = 0;
                 data->num_samples_collected = 0;
-                log_error("Measurement \"%s\" requested but value not set.", def->name);
+                osm_log_error("Measurement \"%s\" requested but value not set.", def->name);
                 continue;
             }
-            if (!protocol_append_measurement(def, data))
+            if (!osm_protocol_append_measurement(def, data))
             {
                 measurements_debug("Failed to queue send of  \"%s\".", def->name);
                 _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
@@ -247,11 +247,11 @@ static void _measurements_send(void)
     }
 
     if (!_pending_send)
-        _last_sent_ms = get_since_boot_ms();
+        _last_sent_ms = osm_get_since_boot_ms();
     if (num_qd > 0)
     {
         _pending_send = !is_max;
-        bool send_ret = protocol_send();
+        bool send_ret = osm_protocol_send();
         if (!send_ret)
         {
             measurements_debug("Protocol send failed, resetting protocol");
@@ -298,7 +298,7 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
 }
 
 
-void on_protocol_sent_ack(bool ack)
+void osm_on_protocol_sent_ack(bool ack)
 {
     if (!ack)
     {
@@ -314,7 +314,7 @@ void on_protocol_sent_ack(bool ack)
         if (!def->name[0] || !def->interval || (_interval_count % def->interval != 0))
             continue;
         measurements_inf_t inf;
-        if (!model_measurements_get_inf(def, NULL, &inf))
+        if (!osm_model_measurements_get_inf(def, NULL, &inf))
             continue;
 
         if (inf.acked_cb)
@@ -338,7 +338,7 @@ static measurements_sensor_state_t _measurements_sample_init_iteration(measureme
 {
     /* returns boolean of not busy/waiting for measurement */
     measurements_inf_t inf;
-    if (!model_measurements_get_inf(def, data, &inf))
+    if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
@@ -385,7 +385,7 @@ static measurements_sensor_state_t _measurements_sample_init_iteration(measureme
 static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!model_measurements_get_inf(def, data, &inf))
+    if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
@@ -519,7 +519,7 @@ static void _measurements_sample_proc_float(measurements_data_t* data, measureme
 static measurements_sensor_state_t _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
 {
     measurements_inf_t inf;
-    if (!model_measurements_get_inf(def, data, &inf))
+    if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_collected++;
@@ -563,7 +563,7 @@ static measurements_sensor_state_t _measurements_sample_get_iteration(measuremen
 static void _measurements_sample(void)
 {
     uint32_t            sample_interval;
-    uint32_t            now = get_since_boot_ms();
+    uint32_t            now = osm_get_since_boot_ms();
     uint32_t            time_since_interval;
 
     uint32_t            time_init_boundary;
@@ -587,7 +587,7 @@ static void _measurements_sample(void)
         }
 
         sample_interval = def->interval * INTERVAL_TRANSMIT_MS / def->samplecount;
-        time_since_interval = since_boot_delta(now, _last_sent_ms) + (_interval_count % def->interval) * INTERVAL_TRANSMIT_MS;
+        time_since_interval = osm_since_boot_delta(now, _last_sent_ms) + (_interval_count % def->interval) * INTERVAL_TRANSMIT_MS;
 
         /* is_immediate is only valid if samplecount is 1 */
         bool is_immediate = def->is_immediate && def->samplecount == 1;
@@ -625,12 +625,12 @@ static void _measurements_sample(void)
             }
             else
             {
-                wait_time = since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
+                wait_time = osm_since_boot_delta(data->collection_time_cache + time_init, time_since_interval);
             }
         }
         else
         {
-            wait_time = since_boot_delta(time_init, time_since_interval);
+            wait_time = osm_since_boot_delta(time_init, time_since_interval);
         }
 
         if (_check_time.wait_time > wait_time)
@@ -656,17 +656,17 @@ static void _measurements_sample(void)
                 }
                 else
                 {
-                    wait_time = since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
+                    wait_time = osm_since_boot_delta(time_collect + sample_interval, data->collection_time_cache + time_since_interval);
                 }
             }
             else
             {
-                wait_time = since_boot_delta(time_collect, time_since_interval);
+                wait_time = osm_since_boot_delta(time_collect, time_since_interval);
             }
         }
         else
         {
-            log_error("Collect and init fell out of sync for %s, skipping collects.", def->name);
+            osm_log_error("Collect and init fell out of sync for %s, skipping collects.", def->name);
             data->num_samples_collected = data->num_samples_init;
         }
 
@@ -674,14 +674,14 @@ static void _measurements_sample(void)
         {
             _check_time.wait_time = wait_time;
         }
-        uart_rings_out_drain();
+        osm_uart_rings_out_drain();
     }
     if (_check_time.wait_time == UINT32_MAX)
         _check_time.wait_time = 0;
 }
 
 
-bool     measurements_for_each(measurements_for_each_cb_t cb, void * data)
+bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data)
 {
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -697,7 +697,7 @@ bool     measurements_for_each(measurements_for_each_cb_t cb, void * data)
 }
 
 
-bool measurements_add(measurements_def_t* measurements_def)
+bool osm_measurements_add(measurements_def_t* measurements_def)
 {
     bool                    found_space = false;
     unsigned                space = MEASUREMENTS_MAX_NUMBER - 1;
@@ -718,7 +718,7 @@ bool measurements_add(measurements_def_t* measurements_def)
         }
         if (strncmp(def->name, measurements_def->name, sizeof(def->name)) == 0)
         {
-            log_error("Tried to add measurements with the same name: %s", measurements_def->name);
+            osm_log_error("Tried to add measurements with the same name: %s", measurements_def->name);
             return false;
         }
     }
@@ -730,9 +730,9 @@ bool measurements_add(measurements_def_t* measurements_def)
         memset(data, 0, sizeof(measurements_data_t));
         {
             measurements_inf_t inf;
-            if (!model_measurements_get_inf(def, data, &inf))
+            if (!osm_model_measurements_get_inf(def, data, &inf))
             {
-                log_error("Could not get measurement interface.");
+                osm_log_error("Could not get measurement interface.");
                 memset(def, 0, sizeof(measurements_def_t));
                 memset(data, 0, sizeof(measurements_data_t));
                 return false;
@@ -755,12 +755,12 @@ bool measurements_add(measurements_def_t* measurements_def)
         }
         return true;
     }
-    log_error("Could not find a space to add %s", measurements_def->name);
+    osm_log_error("Could not find a space to add %s", measurements_def->name);
     return false;
 }
 
 
-bool measurements_del(char* name)
+bool osm_measurements_del(char* name)
 {
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -769,7 +769,7 @@ bool measurements_del(char* name)
             measurements_def_t*  def = &_measurements_arr.def[i];
             measurements_data_t* data = &_measurements_arr.data[i];
             measurements_inf_t inf;
-            if (!model_measurements_get_inf(def, data, &inf))
+            if (!osm_model_measurements_get_inf(def, data, &inf))
                 return false;
             if (inf.enable_cb)
                 inf.enable_cb(def->name, false);
@@ -786,13 +786,13 @@ bool measurements_set_interval(char* name, uint8_t interval)
 {
     measurements_def_t* def = NULL;
     measurements_data_t* data;
-    if (!measurements_get_measurements_def(name, &def, &data))
+    if (!osm_measurements_get_measurements_def(name, &def, &data))
     {
         return false;
     }
 
     measurements_inf_t inf;
-    if (!model_measurements_get_inf(def, data, &inf))
+    if (!osm_model_measurements_get_inf(def, data, &inf))
         return false;
 
     if (inf.enable_cb && ((interval > 0) != (def->interval > 0)))
@@ -806,7 +806,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 bool measurements_get_interval(char* name, uint8_t * interval)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!interval || !measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!interval || !osm_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -819,11 +819,11 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 {
     if (samplecount == 0)
     {
-        log_error("Cannot set the samplecount to 0.");
+        osm_log_error("Cannot set the samplecount to 0.");
         return false;
     }
     measurements_def_t* measurements_def = NULL;
-    if (!measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!osm_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -835,7 +835,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
     measurements_def_t* measurements_def = NULL;
-    if (!samplecount || !measurements_get_measurements_def(name, &measurements_def, NULL))
+    if (!samplecount || !osm_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
     }
@@ -866,7 +866,7 @@ static void _measurements_sleep_iteration(void)
     switch (_measurements_power_mode)
     {
         case MEASUREMENTS_POWER_MODE_AUTO:
-            if (!bat_on_battery(&on_bat))
+            if (!osm_bat_on_battery(&on_bat))
                 return;
             if (!on_bat)
                 return;
@@ -879,16 +879,16 @@ static void _measurements_sleep_iteration(void)
 
     uint32_t sleep_time;
     /* Get new now as above functions may have taken a while */
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
 
-    if (since_boot_delta(now, _check_time.last_checked_time) >= _check_time.wait_time)
+    if (osm_since_boot_delta(now, _check_time.last_checked_time) >= _check_time.wait_time)
         return;
 
-    if (since_boot_delta(now, _last_sent_ms) >= INTERVAL_TRANSMIT_MS)
+    if (osm_since_boot_delta(now, _last_sent_ms) >= INTERVAL_TRANSMIT_MS)
         return;
 
-    uint32_t next_sample_time = since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, now);
-    uint32_t next_send_time = since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now);
+    uint32_t next_sample_time = osm_since_boot_delta(_check_time.last_checked_time + _check_time.wait_time, now);
+    uint32_t next_send_time = osm_since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS, now);
     if (next_sample_time < next_send_time)
         sleep_time = next_sample_time;
     else
@@ -904,7 +904,7 @@ static void _measurements_sleep_iteration(void)
     {
         _measurements_print_sleep = false;
     }
-    if (sleep_for_ms(sleep_time))
+    if (osm_sleep_for_ms(sleep_time))
         _measurements_print_sleep = true;
 }
 
@@ -920,7 +920,7 @@ static bool _protocol_append_instant_measurement(measurements_def_t* def, measur
         .num_samples    = 1,
     };
     memcpy(&data.value, reading, sizeof(measurements_value_type_t));
-    return protocol_append_measurement(def, &data);
+    return osm_protocol_append_measurement(def, &data);
 }
 
 
@@ -936,7 +936,7 @@ void _measurements_check_instant_send(void)
     if (!to_instant_send)
         return;
 
-    if (!protocol_init())
+    if (!osm_protocol_init())
     {
         measurements_debug("Could not initialise the hex array for the protocol.");
         return;
@@ -976,25 +976,25 @@ void _measurements_check_instant_send(void)
         measurements_debug("Cannot instant send, there is a measurement send underway.");
         return;
     }
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
     /* Add +10 as this is called before measurements_send and to ensure no negative overflow. */
-    if (since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS + 10, now) <= MEASUREMENTS_MIN_TRANSMIT_MS + 10)
+    if (osm_since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS + 10, now) <= MEASUREMENTS_MIN_TRANSMIT_MS + 10)
     {
         measurements_debug("Cannot send instant send, scheduled uplink soon.");
         return;
     }
-    protocol_send();
+    osm_protocol_send();
 }
 
 
-void measurements_loop_iteration(void)
+void osm_measurements_loop_iteration(void)
 {
     if (!measurements_enabled)
         return;
 
     static bool has_printed_no_con = false;
 
-    if (!protocol_get_connected())
+    if (!osm_protocol_get_connected())
     {
         if (!has_printed_no_con)
         {
@@ -1006,7 +1006,7 @@ void measurements_loop_iteration(void)
         _measurements_iterate_callbacks();
         return;
     }
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
 
     if (has_printed_no_con)
     {
@@ -1016,14 +1016,14 @@ void measurements_loop_iteration(void)
         return;
     }
 
-    if (protocol_send_ready())
+    if (osm_protocol_send_ready())
         _measurements_check_instant_send();
 
-    if (since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
+    if (osm_since_boot_delta(now, _check_time.last_checked_time) > _check_time.wait_time)
     {
         _measurements_sample();
     }
-    if (since_boot_delta(now, _last_sent_ms) > INTERVAL_TRANSMIT_MS)
+    if (osm_since_boot_delta(now, _last_sent_ms) > INTERVAL_TRANSMIT_MS)
     {
         if (_interval_count > UINT32_MAX - 1)
         {
@@ -1057,7 +1057,7 @@ static void _measurements_update_def(measurements_def_t* def)
 }
 
 
-void measurements_init(void)
+void osm_measurements_init(void)
 {
     _measurements_arr.def = persist_measurements.measurements_arr;
 
@@ -1080,9 +1080,9 @@ void measurements_init(void)
 
     if (!found)
     {
-        log_error("No persistent loaded, load defaults.");
-        model_measurements_add_defaults(_measurements_arr.def);
-        ios_measurements_init();
+        osm_log_error("No persistent loaded, load defaults.");
+        osm_model_measurements_add_defaults(_measurements_arr.def);
+        osm_ios_measurements_init();
     }
     else measurements_debug("Loading measurements.");
 
@@ -1095,7 +1095,7 @@ void measurements_init(void)
             continue;
 
         measurements_inf_t inf;
-        if (!model_measurements_get_inf(def, data, &inf))
+        if (!osm_model_measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
         if (inf.enable_cb)
@@ -1103,7 +1103,7 @@ void measurements_init(void)
     }
 
     if (!found)
-        persist_commit();
+        osm_persist_commit();
 
     transmit_interval = persist_data.model_config.mins_interval;
 
@@ -1114,7 +1114,7 @@ void measurements_init(void)
 }
 
 
-void measurements_power_mode(measurements_power_mode_t mode)
+void osm_measurements_power_mode(measurements_power_mode_t mode)
 {
     _measurements_power_mode = mode;
 }
@@ -1179,7 +1179,7 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     }
 
     measurements_inf_t inf;
-    if (!model_measurements_get_inf(def, data, &inf))
+    if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         measurements_debug("Could not get measurement interface.");
         return false;
@@ -1197,27 +1197,27 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     data->collection_time_cache = _measurements_get_collection_time(def, &inf);
 
     data->is_collecting = 1;
-    uint32_t init_time = get_since_boot_ms();
+    uint32_t init_time = osm_get_since_boot_ms();
 
     _measurements_get_reading_packet_t info = {{def, data, &inf}, reading, type, false};
-    bool iterate_success = main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info);
+    bool iterate_success = osm_main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info);
     if (inf.iteration_cb && !iterate_success)
     {
         measurements_debug("Failed on iterate.");
         goto bad_exit;
     }
 
-    uint32_t time_taken = since_boot_delta(get_since_boot_ms(), init_time);
+    uint32_t time_taken = osm_since_boot_delta(osm_get_since_boot_ms(), init_time);
     uint32_t time_remaining = (time_taken > data->collection_time_cache)? 0 :(data->collection_time_cache - time_taken);
 
     measurements_debug("Time taken: %"PRIu32, time_taken);
 
     measurements_debug("Waiting for collection.");
     info.func_success = false;
-    init_time = get_since_boot_ms();
-    bool collect_success = main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info);
+    init_time = osm_get_since_boot_ms();
+    bool collect_success = osm_main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info);
 
-    time_taken = since_boot_delta(get_since_boot_ms(), init_time);
+    time_taken = osm_since_boot_delta(osm_get_since_boot_ms(), init_time);
     time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
 
     measurements_debug("Time taken: %"PRIu32, time_taken);
@@ -1243,7 +1243,7 @@ bad_exit:
 }
 
 
-bool measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
+bool osm_measurements_get_reading(char* measurement_name, measurements_reading_t* reading, measurements_value_type_t* type)
 {
     if (!measurement_name || !reading)
     {
@@ -1252,7 +1252,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
     }
     measurements_def_t* def;
     measurements_data_t* data;
-    if (!measurements_get_measurements_def(measurement_name, &def, &data))
+    if (!osm_measurements_get_measurements_def(measurement_name, &def, &data))
     {
         measurements_debug("Could not get measurement definition and data.");
         return false;
@@ -1261,7 +1261,7 @@ bool measurements_get_reading(char* measurement_name, measurements_reading_t* re
 }
 
 
-bool measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len)
+bool osm_measurements_reading_to_str(measurements_reading_t* reading, measurements_value_type_t type, char* text, uint8_t len)
 {
     if (!reading || !text)
         return false;
@@ -1288,7 +1288,7 @@ bool measurements_reading_to_str(measurements_reading_t* reading, measurements_v
 }
 
 
-bool measurements_rename(char* orig_name, char* new_name_raw)
+bool osm_measurements_rename(char* orig_name, char* new_name_raw)
 {
     if (!orig_name || !new_name_raw)
     {
@@ -1297,13 +1297,13 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
     }
     char new_name[MEASURE_NAME_NULLED_LEN] = {0};
     strncpy(new_name, new_name_raw, MEASURE_NAME_LEN);
-    if (measurements_get_measurements_def(new_name, NULL, NULL))
+    if (osm_measurements_get_measurements_def(new_name, NULL, NULL))
     {
         measurements_debug("Measurement with new name already exists.");
         return false;
     }
     measurements_def_t* def;
-    if (!measurements_get_measurements_def(orig_name, &def, NULL))
+    if (!osm_measurements_get_measurements_def(orig_name, &def, NULL))
     {
         measurements_debug("Can not get the measurements def.");
         return false;
@@ -1316,8 +1316,8 @@ bool measurements_rename(char* orig_name, char* new_name_raw)
 static command_response_t _measurements_cb(char *args, cmd_ctx_t * ctx)
 {
     measurements_def_t* measurements_def;
-    cmd_ctx_out(ctx,"Loaded Measurements");
-    cmd_ctx_out(ctx,"Name\tInterval\tSample Count");
+    osm_cmd_ctx_out(ctx,"Loaded Measurements");
+    osm_cmd_ctx_out(ctx,"Name\tInterval\tSample Count");
     for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def = &_measurements_arr.def[i];
@@ -1325,9 +1325,9 @@ static command_response_t _measurements_cb(char *args, cmd_ctx_t * ctx)
         if (!id_start || id_start == 0xFF)
             continue;
         if (transmit_interval % 1000)
-            cmd_ctx_out(ctx,"%s\t%"PRIu8"x%"PRIu32".%03"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, transmit_interval%1000, measurements_def->samplecount);
+            osm_cmd_ctx_out(ctx,"%s\t%"PRIu8"x%"PRIu32".%03"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, transmit_interval%1000, measurements_def->samplecount);
         else
-            cmd_ctx_out(ctx,"%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, measurements_def->samplecount);
+            osm_cmd_ctx_out(ctx,"%s\t%"PRIu8"x%"PRIu32"mins\t\t%"PRIu8, measurements_def->name, measurements_def->interval, transmit_interval/1000, measurements_def->samplecount);
     }
     return COMMAND_RESP_OK;
 }
@@ -1339,15 +1339,15 @@ static command_response_t _measurements_enable_cb(char *args, cmd_ctx_t * ctx)
     if (args[0])
         measurements_enabled = (args[0] == '1');
     if (!was_enabled && measurements_enabled)
-        _last_sent_ms = get_since_boot_ms();
-    cmd_ctx_out(ctx,"measurements_enabled : %c", (measurements_enabled)?'1':'0');
+        _last_sent_ms = osm_get_since_boot_ms();
+    osm_cmd_ctx_out(ctx,"measurements_enabled : %c", (measurements_enabled)?'1':'0');
     return COMMAND_RESP_OK;
 }
 
 
 static command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
 {
-    char * p = skip_space(args);
+    char * p = osm_skip_space(args);
     char name[MEASURE_NAME_NULLED_LEN];
     unsigned len = strnlen(p, MEASURE_NAME_LEN);
     char* end_first_word = strchr(p, ' ');
@@ -1357,36 +1357,36 @@ static command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
     name[len] = 0;
     measurements_reading_t reading;
     measurements_value_type_t type;
-    if (!measurements_get_reading(name, &reading, &type))
+    if (!osm_measurements_get_reading(name, &reading, &type))
     {
-        cmd_ctx_error(ctx,"Failed to get measurement reading.");
+        osm_cmd_ctx_error(ctx,"Failed to get measurement reading.");
         return COMMAND_RESP_ERR;
     }
     char text[16];
-    if (!measurements_reading_to_str(&reading, type, text, 16))
+    if (!osm_measurements_reading_to_str(&reading, type, text, 16))
     {
-        cmd_ctx_error(ctx,"Could not convert the reading to a string.");
+        osm_cmd_ctx_error(ctx,"Could not convert the reading to a string.");
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx,"%s: %s", name, text);
+    osm_cmd_ctx_out(ctx,"%s: %s", name, text);
     return COMMAND_RESP_OK;
 }
 
 
 static command_response_t _measurements_get_to_cb(char* args, cmd_ctx_t * ctx)
 {
-    char * p = skip_space(args);
+    char * p = osm_skip_space(args);
 
     measurements_def_t* def;
     measurements_inf_t inf;
-    if (!measurements_get_measurements_def(p, &def, NULL) ||
-        !model_measurements_get_inf(def, NULL, &inf))
+    if (!osm_measurements_get_measurements_def(p, &def, NULL) ||
+        !osm_model_measurements_get_inf(def, NULL, &inf))
     {
-        cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
+        osm_cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
         return COMMAND_RESP_ERR;
     }
 
-    cmd_ctx_out(ctx,"%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
+    osm_cmd_ctx_out(ctx,"%s : %u", p, (unsigned)(_measurements_get_collection_time(def, &inf) * 1.5));
     return COMMAND_RESP_OK;
 }
 
@@ -1456,7 +1456,7 @@ static const char* measurements_type_to_str(measurements_def_type_t type)
 
 static command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * ctx)
 {
-    char* p = skip_space(args);
+    char* p = osm_skip_space(args);
     char name[MEASURE_NAME_NULLED_LEN];
     char* np = strchr(p, ' ');
     unsigned len;
@@ -1471,18 +1471,18 @@ static command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * ctx)
     strncpy(name, p, len+1);
 
     measurements_def_t* def;
-    if (!measurements_get_measurements_def(name, &def, NULL))
+    if (!osm_measurements_get_measurements_def(name, &def, NULL))
     {
-        cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
+        osm_cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
         return COMMAND_RESP_ERR;
     }
     const char* type_str = measurements_type_to_str(def->type);
     if (!type_str)
     {
-        cmd_ctx_error(ctx,"Unknown measurement type for '%s' (%"PRIu8")", name, def->type);
+        osm_cmd_ctx_error(ctx,"Unknown measurement type for '%s' (%"PRIu8")", name, def->type);
         return COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx,"%s: %s", name, type_str);
+    osm_cmd_ctx_out(ctx,"%s: %s", name, type_str);
     return COMMAND_RESP_OK;
 }
 
@@ -1490,12 +1490,12 @@ static command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * ctx)
 static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx)
 {
     char* name = args;
-    char* p = skip_space(args);
+    char* p = osm_skip_space(args);
     p = strchr(p, ' ');
     if (p)
     {
         p[0] = 0;
-        p = skip_space(p+1);
+        p = osm_skip_space(p+1);
     }
     if (p && isdigit((int)p[0]))
     {
@@ -1503,12 +1503,12 @@ static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx
 
         if (measurements_set_interval(name, new_interval))
         {
-            cmd_ctx_out(ctx,"Changed %s interval to %"PRIu8, name, new_interval);
+            osm_cmd_ctx_out(ctx,"Changed %s interval to %"PRIu8, name, new_interval);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            osm_cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1517,12 +1517,12 @@ static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx
         uint8_t interval;
         if (measurements_get_interval(name, &interval))
         {
-            cmd_ctx_out(ctx,"Interval of %s = %"PRIu8, name, interval);
+            osm_cmd_ctx_out(ctx,"Interval of %s = %"PRIu8, name, interval);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            osm_cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1531,13 +1531,13 @@ static command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx
 
 static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * ctx)
 {
-    char* p = skip_space(args);
+    char* p = osm_skip_space(args);
     char* name = p;
     p = strchr(p, ' ');
     if (p)
     {
         p[0] = 0;
-        p = skip_space(p+1);
+        p = osm_skip_space(p+1);
     }
     if (p && isdigit((int)p[0]))
     {
@@ -1545,12 +1545,12 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * 
 
         if (measurements_set_samplecount(name, new_samplecount))
         {
-            cmd_ctx_out(ctx,"Changed %s samplecount to %"PRIu8, name, new_samplecount);
+            osm_cmd_ctx_out(ctx,"Changed %s samplecount to %"PRIu8, name, new_samplecount);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            osm_cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1559,12 +1559,12 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * 
         uint8_t samplecount;
         if (measurements_get_samplecount(name, &samplecount))
         {
-            cmd_ctx_out(ctx,"Samplecount of %s = %"PRIu8, name, samplecount);
+            osm_cmd_ctx_out(ctx,"Samplecount of %s = %"PRIu8, name, samplecount);
             return COMMAND_RESP_OK;
         }
         else
         {
-            cmd_ctx_error(ctx,"Unknown measurement");
+            osm_cmd_ctx_error(ctx,"Unknown measurement");
             return COMMAND_RESP_ERR;
         }
     }
@@ -1573,8 +1573,8 @@ static command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * 
 
 static command_response_t _measurements_repop_cb(char* args, cmd_ctx_t * ctx)
 {
-    model_measurements_repopulate();
-    cmd_ctx_out(ctx,"Repopulated measurements.");
+    osm_model_measurements_repopulate();
+    osm_cmd_ctx_out(ctx,"Repopulated measurements.");
     return COMMAND_RESP_OK;
 }
 
@@ -1590,18 +1590,18 @@ static command_response_t _measurements_interval_mins_cb(char* args, cmd_ctx_t *
         uint32_t new_interval_mins = (new_interval_mins_f * 1000.);
 
         if (new_interval_mins % 1000)
-            cmd_ctx_out(ctx,"Setting interval minutes to %"PRIu32".%03"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
+            osm_cmd_ctx_out(ctx,"Setting interval minutes to %"PRIu32".%03"PRIu32, new_interval_mins/1000, new_interval_mins%1000);
         else
-            cmd_ctx_out(ctx,"Setting interval minutes to %"PRIu32, new_interval_mins/1000);
+            osm_cmd_ctx_out(ctx,"Setting interval minutes to %"PRIu32, new_interval_mins/1000);
         persist_data.model_config.mins_interval = new_interval_mins;
         transmit_interval = new_interval_mins;
     }
     else
     {
         if (transmit_interval % 1000)
-            cmd_ctx_out(ctx,"Current interval minutes is %"PRIu32".%03"PRIu32, transmit_interval/1000, transmit_interval%1000);
+            osm_cmd_ctx_out(ctx,"Current interval minutes is %"PRIu32".%03"PRIu32, transmit_interval/1000, transmit_interval%1000);
         else
-            cmd_ctx_out(ctx,"Current interval minutes is %"PRIu32, transmit_interval/1000);
+            osm_cmd_ctx_out(ctx,"Current interval minutes is %"PRIu32, transmit_interval/1000);
     }
     return COMMAND_RESP_OK;
 }
@@ -1619,16 +1619,16 @@ static command_response_t _measurements_is_immediate_cb(char* args, cmd_ctx_t * 
     strncpy(name, args, len);
     name[len] = 0;
     measurements_def_t* def;
-    if (!measurements_get_measurements_def(name, &def, NULL))
+    if (!osm_measurements_get_measurements_def(name, &def, NULL))
     {
-        cmd_ctx_error(ctx,"Could not get measurement '%s'", name);
+        osm_cmd_ctx_error(ctx,"Could not get measurement '%s'", name);
         return COMMAND_RESP_ERR;
     }
     if (!p)
         goto print_out;
 
     char* np;
-    p = skip_space(p);
+    p = osm_skip_space(p);
     uint8_t enabled = strtoul(p, &np, 10) ? 1 : 0;
     if (p == np)
         goto print_out;
@@ -1637,14 +1637,14 @@ static command_response_t _measurements_is_immediate_cb(char* args, cmd_ctx_t * 
 
 print_out:
     if (def->is_immediate)
-        cmd_ctx_out(ctx,"%s is immediate", def->name);
+        osm_cmd_ctx_out(ctx,"%s is immediate", def->name);
     else
-        cmd_ctx_out(ctx,"%s is not immediate", def->name);
+        osm_cmd_ctx_out(ctx,"%s is not immediate", def->name);
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_measurements_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] =
     {
@@ -1659,5 +1659,5 @@ struct cmd_link_t* measurements_add_commands(struct cmd_link_t* tail)
         { "repop",        "Repopulate measurements.",            _measurements_repop_cb          , false , NULL },
         { "is_immediate", "Set/unset immediate measurements.",   _measurements_is_immediate_cb   , false , NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

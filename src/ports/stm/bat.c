@@ -41,7 +41,7 @@ static bat_on_battery_t _bat_on_battery         = {false, false, 0};
 static bool _bat_wait(void)
 {
     adc_debug("Waiting for ADC BAT");
-    adcs_resp_t resp = adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT);
+    adcs_resp_t resp = osm_adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT);
     switch (resp)
     {
         case ADCS_RESP_FAIL:
@@ -58,7 +58,7 @@ static bool _bat_wait(void)
 
 static void _bat_release(void)
 {
-    adcs_release(ADCS_KEY_BAT);
+    osm_adcs_release(ADCS_KEY_BAT);
 }
 
 
@@ -66,14 +66,14 @@ static void _bat_update_on_battery(bool on_battery)
 {
     _bat_on_battery.on_battery = on_battery;
     _bat_on_battery.is_valid = true;
-    _bat_on_battery.last_checked = get_since_boot_ms();
+    _bat_on_battery.last_checked = osm_get_since_boot_ms();
     adc_debug("BAT status updated.");
 }
 
 
 static bool _bat_check_request(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _bat_starting_time) > BAT_TIMEOUT_MS)
+    if (osm_since_boot_delta(osm_get_since_boot_ms(), _bat_starting_time) > BAT_TIMEOUT_MS)
     {
         adc_debug("BAT Request timed out.");
         _bat_running = false;
@@ -130,7 +130,7 @@ static measurements_sensor_state_t _bat_begin(char* name, bool in_isolation)
     }
 
     adcs_type_t bat_channel = ADCS_TYPE_BAT;
-    adcs_resp_t resp = adcs_begin(&bat_channel, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT);
+    adcs_resp_t resp = osm_adcs_begin(&bat_channel, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -162,7 +162,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
     }
 
     uint32_t raw;
-    adcs_resp_t resp = adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time);
+    adcs_resp_t resp = osm_adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, &_bat_collection_time);
     switch(resp)
     {
         case ADCS_RESP_FAIL:
@@ -184,7 +184,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
 
     _bat_update_on_battery(perc < BAT_ON_BAT_THRESHOLD);
 
-    value->v_f32 = to_f32_from_float((float)perc / 100.f);
+    value->v_f32 = osm_to_f32_from_float((float)perc / 100.f);
 
     adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
@@ -192,7 +192,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
 }
 
 
-bool bat_get_blocking(char* name, measurements_reading_t* value)
+bool osm_bat_get_blocking(char* name, measurements_reading_t* value)
 {
     if (_bat_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
@@ -244,7 +244,7 @@ static bool _bat_get_on_battery(bool* on_battery)
     _bat_running = false;
 
     uint32_t raw;
-    adcs_resp_t adc_resp = adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, NULL);
+    adcs_resp_t adc_resp = osm_adcs_collect_avgs(&raw, 1, BAT_NUM_SAMPLES, ADCS_KEY_BAT, NULL);
     _bat_release();
     switch (adc_resp)
     {
@@ -261,7 +261,7 @@ static bool _bat_get_on_battery(bool* on_battery)
 }
 
 
-bool bat_on_battery(bool* on_battery)
+bool osm_bat_on_battery(bool* on_battery)
 {
     if (!on_battery)
     {
@@ -270,7 +270,7 @@ bool bat_on_battery(bool* on_battery)
     }
 
     if (_bat_on_battery.is_valid &&
-        since_boot_delta(get_since_boot_ms(), _bat_on_battery.last_checked) <= BAT_IS_VALID_FOR_MS)
+        osm_since_boot_delta(osm_get_since_boot_ms(), _bat_on_battery.last_checked) <= BAT_IS_VALID_FOR_MS)
     {
         *on_battery = _bat_on_battery.on_battery;
         return true;
@@ -292,7 +292,7 @@ static measurements_value_type_t _bat_value_type(char* name)
 }
 
 
-void                         bat_inf_init(measurements_inf_t* inf)
+void                         osm_bat_inf_init(measurements_inf_t* inf)
 {
     inf->collection_time_cb = _bat_collection_time_cb;
     inf->init_cb            = _bat_begin;
@@ -304,19 +304,19 @@ void                         bat_inf_init(measurements_inf_t* inf)
 static command_response_t _bat_cb(char* args, cmd_ctx_t * ctx)
 {
     measurements_reading_t value;
-    if (!bat_get_blocking(NULL, &value))
+    if (!osm_bat_get_blocking(NULL, &value))
     {
-        cmd_ctx_out(ctx,"Could not get bat value.");
+        osm_cmd_ctx_out(ctx,"Could not get bat value.");
         return COMMAND_RESP_ERR;
     }
 
-    cmd_ctx_out(ctx,"Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
+    osm_cmd_ctx_out(ctx,"Bat %"PRIi64".%02"PRIi64, value.v_i64 / 100, value.v_i64 %100);
     return COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* bat_add_commands(struct cmd_link_t* tail)
+struct cmd_link_t* osm_bat_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = { { "bat",          "Get battery level.",      _bat_cb                        , false , NULL } };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
 }

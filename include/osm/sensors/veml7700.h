@@ -6,6 +6,6 @@
 #include <osm/core/measurements.h>
 
 
-void veml7700_init(void);
+void osm_veml7700_init(void);
 
-void veml7700_inf_init(measurements_inf_t* inf);
+void osm_veml7700_inf_init(measurements_inf_t* inf);

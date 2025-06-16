@@ -40,30 +40,30 @@ typedef struct
 _Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
 
 
-uint16_t at_wifi_get_mtu(void);
+uint16_t osm_at_wifi_get_mtu(void);
 
-bool     at_wifi_send_ready(void);
-bool     at_wifi_send_str(char* str);
-bool     at_wifi_send_allowed(void);
-bool     at_wifi_send(char* data, uint16_t len);
+bool     osm_at_wifi_send_ready(void);
+bool     osm_at_wifi_send_str(char* str);
+bool     osm_at_wifi_send_allowed(void);
+bool     osm_at_wifi_send(char* data, uint16_t len);
 
-void     at_wifi_init(void);
-void     at_wifi_reset(void);
-void     at_wifi_process(char* message);
-bool     at_wifi_get_connected(void);
-void     at_wifi_loop_iteration(void);
+void     osm_at_wifi_init(void);
+void     osm_at_wifi_reset(void);
+void     osm_at_wifi_process(char* message);
+bool     osm_at_wifi_get_connected(void);
+void     osm_at_wifi_loop_iteration(void);
 
-bool     at_wifi_get_id(char* str, uint8_t len);
+bool     osm_at_wifi_get_id(char* str, uint8_t len);
 
-struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail);
+struct cmd_link_t* osm_at_wifi_add_commands(struct cmd_link_t* tail);
 
-void     at_wifi_power_down(void);
+void     osm_at_wifi_power_down(void);
 
-bool     at_wifi_persist_config_cmp(void* d0, void* d1);
-void     at_wifi_config_init(comms_config_t* comms_config);
+bool     osm_at_wifi_persist_config_cmp(void* d0, void* d1);
+void     osm_at_wifi_config_init(comms_config_t* comms_config);
 
-command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx);
-command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
-command_response_t at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
+command_response_t osm_at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx);
+command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
+command_response_t osm_at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
 
-bool at_wifi_get_unix_time(int64_t * ts);
+bool osm_at_wifi_get_unix_time(int64_t * ts);
