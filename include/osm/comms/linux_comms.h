@@ -7,7 +7,7 @@
 
 #ifndef comms_name
 #define comms_name          linux_comms
-#define COMMS_BUILD_TYPE    COMMS_TYPE_LW
+#define OSM_COMMS_BUILD_TYPE    COMMS_TYPE_LW
 #endif //comms_name
 
 uint16_t osm_linux_comms_get_mtu(void);

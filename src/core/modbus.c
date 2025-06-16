@@ -23,7 +23,7 @@
 #define MODBUS_BIN_START '{'
 #define MODBUS_BIN_STOP '}'
 
-#define MODBUS_SLOTS  (MODBUS_BLOCKS - 1)
+#define MODBUS_SLOTS  (OSM_MODBUS_BLOCKS - 1)
 
 #define MODBUS_MAX_RETRANSMITS 10
 
@@ -78,8 +78,8 @@ static struct
     };
     union
     {
-        uint16_t value;         /* For MODBUS_WRITE_SINGLE_HOLDING_FUNC   */
-        uint16_t num_written;   /* For MODBUS_WRITE_MULTIPLE_HOLDING_FUNC */
+        uint16_t value;         /* For OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC   */
+        uint16_t num_written;   /* For OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC */
     };
 } _modbus_reg_set_expected = {0};
 
@@ -228,17 +228,17 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         default: break;
     }
 
-    modbus_debug("Reading %"PRIu8" of %."STR(MODBUS_NAME_LEN)"s (0x%"PRIx8":0x%"PRIx16")" , reg_count, reg->name, unit_id, reg->reg_addr);
+    modbus_debug("Reading %"PRIu8" of %."STR(OSM_MODBUS_NAME_LEN)"s (0x%"PRIx8":0x%"PRIx16")" , reg_count, reg->name, unit_id, reg->reg_addr);
 
     unsigned body_size = 4;
 
-    if (reg->func == MODBUS_READ_HOLDING_FUNC)
+    if (reg->func == OSM_MODBUS_READ_HOLDING_FUNC)
     {
         /* ADU Header (Application Data Unit) */
         tx_modbuspacket[0] = unit_id;
         /* ====================================== */
         /* PDU payload (Protocol Data Unit) */
-        tx_modbuspacket[1] = MODBUS_READ_HOLDING_FUNC; /*Holding*/
+        tx_modbuspacket[1] = OSM_MODBUS_READ_HOLDING_FUNC; /*Holding*/
         tx_modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
         tx_modbuspacket[3] = reg->reg_addr & 0xFF;
         tx_modbuspacket[4] = reg_count >> 8; /*Register read count */
@@ -246,13 +246,13 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         body_size = 6;
         /* ====================================== */
     }
-    else if (reg->func == MODBUS_READ_INPUT_FUNC)
+    else if (reg->func == OSM_MODBUS_READ_INPUT_FUNC)
     {
         /* ADU Header (Application Data Unit) */
         tx_modbuspacket[0] = unit_id;
         /* ====================================== */
         /* PDU payload (Protocol Data Unit) */
-        tx_modbuspacket[1] = MODBUS_READ_INPUT_FUNC; /*Input*/
+        tx_modbuspacket[1] = OSM_MODBUS_READ_INPUT_FUNC; /*Input*/
         tx_modbuspacket[2] = reg->reg_addr >> 8;   /*Register read address */
         tx_modbuspacket[3] = reg->reg_addr & 0xFF;
         tx_modbuspacket[4] = reg_count >> 8; /*Register read count */
@@ -405,18 +405,18 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
 
     unsigned body_size = 4;
 
-    if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
+    if (func == OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC)
     {
         tx_modbuspacket[0] = unit_id;
-        tx_modbuspacket[1] = MODBUS_WRITE_SINGLE_HOLDING_FUNC;
+        tx_modbuspacket[1] = OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC;
         tx_modbuspacket[2] = reg_addr >> 8;
         tx_modbuspacket[3] = reg_addr & 0xFF;
         body_size = 4;
     }
-    else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+    else if (func == OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
     {
         tx_modbuspacket[0] = unit_id;
-        tx_modbuspacket[1] = MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
+        tx_modbuspacket[1] = OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
         tx_modbuspacket[2] = reg_addr >> 8;
         tx_modbuspacket[3] = reg_addr & 0xFF;
         tx_modbuspacket[4] = reg_count >> 8;
@@ -463,13 +463,13 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
         return false;
     }
 
-    if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
+    if (func == OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC)
     {
         _modbus_reg_set_expected.unit_id        = unit_id;
         _modbus_reg_set_expected.reg_addr       = reg_addr;
         _modbus_reg_set_expected.value          = value32;
     }
-    else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+    else if (func == OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
     {
         _modbus_reg_set_expected.unit_id        = unit_id;
         _modbus_reg_set_expected.reg_addr       = reg_addr;
@@ -487,7 +487,7 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
     tx_modbuspacket[body_size++] = crc >> 8;
 
     modbus_debug("Modbus packet (%u):", body_size);
-    osm_log_debug_data(DEBUG_MODBUS, tx_modbuspacket, body_size);
+    osm_log_debug_data(OSM_DEBUG_MODBUS, tx_modbuspacket, body_size);
 
     modbus_want_rx = true;
     modbus_cur_send_time = osm_get_since_boot_ms();
@@ -506,14 +506,14 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
     modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
     if (!dev ||
-        !(reg->func == MODBUS_READ_HOLDING_FUNC || reg->func == MODBUS_READ_INPUT_FUNC) ||
+        !(reg->func == OSM_MODBUS_READ_HOLDING_FUNC || reg->func == OSM_MODBUS_READ_INPUT_FUNC) ||
         !(reg->type == MODBUS_REG_TYPE_U16  ||
           reg->type == MODBUS_REG_TYPE_I16  ||
           reg->type == MODBUS_REG_TYPE_U32  ||
           reg->type == MODBUS_REG_TYPE_I32  ||
           reg->type == MODBUS_REG_TYPE_FLOAT))
     {
-        osm_log_error("Modbus register \"%."STR(MODBUS_NAME_LEN)"s\" unable to start read.", reg->name);
+        osm_log_error("Modbus register \"%."STR(OSM_MODBUS_NAME_LEN)"s\" unable to start read.", reg->name);
         return false;
     }
 
@@ -522,7 +522,7 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
         if (modbus_want_rx)
         {
             uint32_t delta = osm_since_boot_delta(osm_get_since_boot_ms(), modbus_cur_send_time);
-            if (delta < MODBUS_RESP_TIMEOUT_MS)
+            if (delta < OSM_MODBUS_RESP_TIMEOUT_MS)
             {
                 modbus_debug("No slot free.. sending to fast?? (%u/%u)", (unsigned)(osm_ring_buf_get_pending(&_message_queue)/sizeof(modbus_reg_t*)), (unsigned)(_message_queue.size/sizeof(modbus_reg_t*)) );
                 return false;
@@ -549,7 +549,7 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
 
     if (modbus_want_rx)
     {
-        modbus_debug("Deferred read of \"%."STR(MODBUS_NAME_LEN)"s\"", reg->name);
+        modbus_debug("Deferred read of \"%."STR(OSM_MODBUS_NAME_LEN)"s\"", reg->name);
         return true;
     }
 
@@ -578,7 +578,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
                     :
                     osm_since_boot_delta(osm_get_since_boot_ms(), modbus_cur_send_time);
 
-    if (delta < MODBUS_RESP_TIMEOUT_MS)
+    if (delta < OSM_MODBUS_RESP_TIMEOUT_MS)
         return false;
     modbus_debug("Message timeout, dumping left overs.");
     modbuspacket_len = 0;
@@ -674,25 +674,25 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
 
             len -= 2; /* We wait for 3 though as that's the longest header we deal with. */
             modbus_debug("Reply, Address:%"PRIu8" Function: %"PRIu8, modbuspacket[0], func);
-            if (func == MODBUS_READ_HOLDING_FUNC)
+            if (func == OSM_MODBUS_READ_HOLDING_FUNC)
             {
                 osm_ring_buf_read(ring, (char*)modbuspacket + 2, 1);
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
                 _header_size = 3;
             }
-            else if (func == MODBUS_READ_INPUT_FUNC)
+            else if (func == OSM_MODBUS_READ_INPUT_FUNC)
             {
                 osm_ring_buf_read(ring, (char*)modbuspacket + 2, 1);
                 modbuspacket_len = modbuspacket[2] + 2 /* result data and crc*/;
                 _header_size = 3;
             }
-            else if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
+            else if (func == OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC)
             {
                 /*We waited an extra byte more than required before starting the header as body is fixed length here.*/
                 modbuspacket_len = 6; /* register and value written */
                 _header_size = 2;
             }
-            else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+            else if (func == OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
             {
                 /*We waited an extra byte more than required before starting the header as body is fixed length here.*/
                 modbuspacket_len = 6; /* first register and number of registes written. */
@@ -762,7 +762,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     // Now include the header too.
     modbuspacket_len += _header_size;
 
-    osm_log_debug_data(DEBUG_MODBUS, modbuspacket, modbuspacket_len);
+    osm_log_debug_data(OSM_DEBUG_MODBUS, modbuspacket, modbuspacket_len);
 
     uint16_t crc = osm_modbus_crc(modbuspacket, modbuspacket_len - 2);
 
@@ -781,7 +781,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
 
     uint8_t unit_id = modbuspacket[0];
     uint8_t func    = modbuspacket[1];
-    if (func == MODBUS_WRITE_SINGLE_HOLDING_FUNC)
+    if (func == OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC)
     {
         if (unit_id != _modbus_reg_set_expected.unit_id)
         {
@@ -811,7 +811,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         _modbus_reg_set_expected.passfail = true;
         return;
     }
-    else if (func == MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
+    else if (func == OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC)
     {
         if (unit_id != _modbus_reg_set_expected.unit_id)
         {
@@ -852,7 +852,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     }
 
     if (current_reg->value_state != MB_REG_WAITING)
-        modbus_debug("Reg :%."STR(MODBUS_NAME_LEN)"s not waiting!", current_reg->name);
+        modbus_debug("Reg :%."STR(OSM_MODBUS_NAME_LEN)"s not waiting!", current_reg->name);
 
     current_reg->value_state = MB_REG_INVALID;
 
@@ -860,8 +860,8 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
 
     modbus_retransmit_count = 0;
 
-    if ((modbuspacket[1] == (MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
-        (modbuspacket[1] == (MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
+    if ((modbuspacket[1] == (OSM_MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
+        (modbuspacket[1] == (OSM_MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
     {
         modbus_debug("Exception: 0x%02"PRIx8, modbuspacket[2]);
         return;
@@ -952,7 +952,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u16(&v, data, size, byte_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
+    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
 static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)
@@ -963,7 +963,7 @@ static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u16((uint16_t*)&v, data, size, byte_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
+    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
 }
 
 static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -974,7 +974,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u32(&v, data, size, byte_order, word_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
+    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
 static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -985,7 +985,7 @@ static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u32((uint32_t*)&v, data, size, byte_order, word_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
+    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
 }
 
 static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -997,7 +997,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
         return;
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-    modbus_debug("reg:%."STR(MODBUS_NAME_LEN)"s F32:%f", reg->name, *(float*)&v);
+    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s F32:%f", reg->name, *(float*)&v);
     #pragma GCC diagnostic pop
     _modbus_reg_set(reg, v);
 }

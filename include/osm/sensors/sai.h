@@ -4,7 +4,7 @@
 #include <osm/core/measurements.h>
 
 
-#define SAI_DEFAULT_NO_BUF                                              100
+#define OSM_SAI_DEFAULT_NO_BUF                                              100
 
 
 void                         osm_sai_init(void);

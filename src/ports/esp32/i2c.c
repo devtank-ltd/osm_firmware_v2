@@ -8,7 +8,7 @@
 #include <osm/core/uart_rings.h>
 
 
-static const i2c_def_t i2c_buses[]     = I2C_BUSES;
+static const i2c_def_t i2c_buses[]     = OSM_I2C_BUSES;
 static uint8_t         i2c_buses_ready = 0;
 
 

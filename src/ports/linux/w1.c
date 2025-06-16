@@ -20,8 +20,8 @@ bool osm_w1_reset(uint8_t index)
 {
     if (_w1_connected)
         close(_w1_socketfd);
-    char osm_w1_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_w1_loc, LOCATION_LEN, W1_SERVER_LOC);
+    char osm_w1_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_w1_loc, OSM_LOCATION_LEN, W1_SERVER_LOC);
     _w1_connected = osm_socket_connect(osm_w1_loc, &_w1_socketfd);
     if (!_w1_connected)
         osm_log_error("Fake one-wire failed to connect to socket.");
@@ -66,8 +66,8 @@ void osm_w1_linux_deinit(void)
     if (_w1_connected)
         close(_w1_socketfd);
 
-    char osm_w1_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_w1_loc, LOCATION_LEN, W1_SERVER_LOC);
+    char osm_w1_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_w1_loc, OSM_LOCATION_LEN, W1_SERVER_LOC);
     unlink(osm_w1_loc);
 }
 

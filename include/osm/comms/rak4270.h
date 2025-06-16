@@ -9,7 +9,7 @@
 #define comms_name          rak4270
 #endif //comms_name
 
-#define COMMS_BUILD_TYPE    COMMS_TYPE_LW
+#define OSM_COMMS_BUILD_TYPE    COMMS_TYPE_LW
 
 uint16_t osm_rak4270_get_mtu(void);
 

@@ -12,7 +12,7 @@ void osm_can_impl_init(void)
 
 bool osm_can_impl_send(uint32_t id, uint8_t* data, unsigned len)
 {
-    if (len > CAN_COMM_MAX_DATA_SIZE)
+    if (len > OSM_CAN_COMM_MAX_DATA_SIZE)
         return false;
     can_comm_packet_t pkt;
     pkt.header.id = id;

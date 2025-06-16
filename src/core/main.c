@@ -45,7 +45,7 @@ int osm_main(void)
 
     osm_protocol_system_init();
 
-    osm_platform_watchdog_init(IWDG_NORMAL_TIME_MS);
+    osm_platform_watchdog_init(OSM_IWDG_NORMAL_TIME_MS);
 
     osm_measurements_init();
 

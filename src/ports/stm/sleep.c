@@ -30,7 +30,7 @@ void _sleep_before_sleep(void)
 {
     osm_adcs_off();
     osm_i2cs_deinit();
-    iwdg_set_period_ms(IWDG_MAX_TIME_MS);
+    iwdg_set_period_ms(OSM_IWDG_MAX_TIME_MS);
 }
 
 
@@ -38,7 +38,7 @@ void _sleep_on_wakeup(void)
 {
     osm_adcs_init();
     osm_i2cs_init();
-    iwdg_set_period_ms(IWDG_NORMAL_TIME_MS);
+    iwdg_set_period_ms(OSM_IWDG_NORMAL_TIME_MS);
 }
 
 
@@ -101,9 +101,9 @@ static void _sleep_setup_tim(uint16_t count, uint32_t prescaler)
 
 bool osm_sleep_for_ms(uint32_t ms)
 {
-    if (ms > SLEEP_MAX_TIME_MS)
-        ms = SLEEP_MAX_TIME_MS;
-    else if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+    if (ms > OSM_SLEEP_MAX_TIME_MS)
+        ms = OSM_SLEEP_MAX_TIME_MS;
+    else if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
     uint32_t    before_time = osm_get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
@@ -116,9 +116,9 @@ bool osm_sleep_for_ms(uint32_t ms)
     if (ms <= time_passed)
         return false;
     ms -= time_passed;
-    if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+    if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
-    ms -= SLEEP_MIN_SLEEP_TIME_MS;
+    ms -= OSM_SLEEP_MIN_SLEEP_TIME_MS;
     /* Must sort out count and prescale depending on size of count */
     uint32_t    div_shift   = 0;
     uint64_t    count       = ms;

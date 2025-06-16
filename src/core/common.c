@@ -118,18 +118,18 @@ bool osm_u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t 
 bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
 {
     uint32_t start_time = osm_get_since_boot_ms();
-    uint32_t watch_dog_kick = IWDG_NORMAL_TIME_MS/2;
+    uint32_t watch_dog_kick = OSM_IWDG_NORMAL_TIME_MS/2;
 
     osm_platform_watchdog_reset();
-    if (timeout > IWDG_NORMAL_TIME_MS)
-        osm_log_debug(DEBUG_SYS, "Warning, timeout required watchdog kicking.");
+    if (timeout > OSM_IWDG_NORMAL_TIME_MS)
+        osm_log_debug(OSM_DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 
     if (should_exit_db(userdata))
         return true;
 
     while(osm_since_boot_delta(osm_get_since_boot_ms(), start_time) < timeout)
     {
-        for(unsigned uart = 0; uart < UART_CHANNELS_COUNT; uart++)
+        for(unsigned uart = 0; uart < OSM_UART_CHANNELS_COUNT; uart++)
         {
             if (uart != CMD_UART)
                 osm_uart_ring_in_drain(uart);
@@ -141,9 +141,9 @@ bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *us
             return true;
         if (osm_since_boot_delta(osm_get_since_boot_ms(), start_time) > watch_dog_kick)
         {
-            osm_log_debug(DEBUG_SYS, "Kicking watchdog.");
+            osm_log_debug(OSM_DEBUG_SYS, "Kicking watchdog.");
             osm_platform_watchdog_reset();
-            watch_dog_kick += (IWDG_NORMAL_TIME_MS/2);
+            watch_dog_kick += (OSM_IWDG_NORMAL_TIME_MS/2);
         }
     }
     return false;

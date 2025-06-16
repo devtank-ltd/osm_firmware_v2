@@ -98,9 +98,9 @@ int main(void)
 
     uart_send_str("Bootloader");
 
-    rcc_periph_clock_enable(PORT_TO_RCC(LED_PORT));
-    gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
-    gpio_clear(LED_PORT, LED_PIN);
+    rcc_periph_clock_enable(PORT_TO_RCC(OSM_LED_PORT));
+    gpio_mode_setup(OSM_LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, OSM_LED_PIN);
+    gpio_clear(OSM_LED_PORT, OSM_LED_PIN);
 
     persist_storage_t * config = (persist_storage_t*)PERSIST_RAW_DATA;
 

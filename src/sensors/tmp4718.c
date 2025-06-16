@@ -151,11 +151,11 @@ static bool _tmp4718_is_ref(char* name, const char* ref)
 
 static tmp4718_measurement_t _tmp4718_name_to_enum(char* name)
 {
-    if (_tmp4718_is_ref(name, MEASUREMENTS_TMP4718_LOCAL_NAME))
+    if (_tmp4718_is_ref(name, OSM_MEASUREMENTS_TMP4718_LOCAL_NAME))
     {
         return TMP4718_MEASUREMENT_LOCAL;
     }
-    else if (_tmp4718_is_ref(name, MEASUREMENTS_TMP4718_REMOTE_NAME))
+    else if (_tmp4718_is_ref(name, OSM_MEASUREMENTS_TMP4718_REMOTE_NAME))
     {
         return TMP4718_MEASUREMENT_REMOTE;
     }

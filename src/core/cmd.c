@@ -48,7 +48,7 @@ static command_response_t _cmd_debug_cb(char * args, cmd_ctx_t * ctx)
 
         unsigned mask = strtoul(pos, &pos, 16);
 
-        mask |= DEBUG_SYS;
+        mask |= OSM_DEBUG_SYS;
 
         log_debug_mask = mask;
         osm_persist_set_log_debug_mask(mask);
@@ -90,14 +90,14 @@ print_exit:
 
 static command_response_t _cmd_serial_num_cb(char* args, cmd_ctx_t * ctx)
 {
-    return _cmd_get_set_str("Serial Number", osm_persist_get_serial_number(), SERIAL_NUM_LEN, osm_skip_space(args), ctx) ?
+    return _cmd_get_set_str("Serial Number", osm_persist_get_serial_number(), OSM_SERIAL_NUM_LEN, osm_skip_space(args), ctx) ?
         COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
 
 static command_response_t _cmd_human_name_cb(char* args, cmd_ctx_t * ctx)
 {
-    return _cmd_get_set_str("Name", osm_persist_get_human_name(), HUMAN_NAME_LEN, osm_skip_space(args), ctx) ?
+    return _cmd_get_set_str("Name", osm_persist_get_human_name(), OSM_HUMAN_NAME_LEN, osm_skip_space(args), ctx) ?
         COMMAND_RESP_OK : COMMAND_RESP_ERR;
 }
 
@@ -123,7 +123,7 @@ command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ct
     log_sys_debug("Command \"%s\"", command);
 
     bool found = false;
-    osm_cmd_ctx_out(ctx,LOG_START_SPACER);
+    osm_cmd_ctx_out(ctx,OSM_LOG_START_SPACER);
     command_response_t resp = COMMAND_RESP_ERR;
     char * args;
     for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
@@ -144,7 +144,7 @@ command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ct
     if (!found)
     {
         osm_cmd_ctx_out(ctx,"Unknown command \"%s\"", command);
-        osm_cmd_ctx_out(ctx,LOG_SPACER);
+        osm_cmd_ctx_out(ctx,OSM_LOG_SPACER);
         for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
         {
             if (!cmd->hidden)
@@ -154,7 +154,7 @@ command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ct
             }
         }
     }
-    osm_cmd_ctx_out(ctx,LOG_END_SPACER);
+    osm_cmd_ctx_out(ctx,OSM_LOG_END_SPACER);
     log_sys_debug("Command Response Code:%d", (int)resp);
     return resp;
 }

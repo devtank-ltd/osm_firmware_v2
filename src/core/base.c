@@ -28,7 +28,7 @@ char * osm_skip_to_space(char * pos)
 
 char* osm_io_get_pull_str(uint16_t io_state)
 {
-    switch(io_state & IO_PULL_MASK)
+    switch(io_state & OSM_IO_PULL_MASK)
     {
         case GPIO_PUPD_PULLUP:   return IO_PULL_STR_UP;
         case GPIO_PUPD_PULLDOWN: return IO_PULL_STR_DOWN;
@@ -41,7 +41,7 @@ char* osm_io_get_pull_str(uint16_t io_state)
 
 bool osm_io_is_special(uint16_t io_state)
 {
-    return (bool)(io_state & IO_ACTIVE_SPECIAL_MASK);
+    return (bool)(io_state & OSM_IO_ACTIVE_SPECIAL_MASK);
 }
 
 

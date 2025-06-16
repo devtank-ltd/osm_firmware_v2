@@ -53,7 +53,7 @@ extern bool osm_modbus_requires_echo_removal(void)
 
 void osm_platform_blink_led_init(void)
 {
-    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(OSM_LED_PIN, GPIO_MODE_OUTPUT);
    _led_state = false;
 }
 
@@ -61,7 +61,7 @@ void osm_platform_blink_led_init(void)
 void osm_platform_blink_led_toggle(void)
 {
     _led_state = !_led_state;
-    gpio_set_level(LED_PIN, (_led_state)?0:1);
+    gpio_set_level(OSM_LED_PIN, (_led_state)?0:1);
 }
 
 
@@ -80,7 +80,7 @@ void osm_platform_watchdog_init(uint32_t ms)
 void osm_platform_init(void)
 {
     gpio_config_t de_485_conf = {
-        .pin_bit_mask = BIT64(DE_485_PIN),
+        .pin_bit_mask = BIT64(OSM_DE_485_PIN),
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
         .pull_down_en = GPIO_PULLDOWN_ENABLE,
@@ -97,12 +97,12 @@ void osm_platform_set_rs485_mode(bool driver_enable)
     if (driver_enable)
     {
         modbus_debug("driver:enable");
-        gpio_set_level(DE_485_PIN, 1);
+        gpio_set_level(OSM_DE_485_PIN, 1);
     }
     else
     {
         modbus_debug("driver:disable");
-        gpio_set_level(DE_485_PIN, 0);
+        gpio_set_level(OSM_DE_485_PIN, 0);
     }
 }
 

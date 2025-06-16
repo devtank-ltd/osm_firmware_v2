@@ -5,35 +5,35 @@
 
 #include <osm/comms/at_base.h>
 
-#define COMMS_DEFAULT_MTU                                   254
+#define OSM_COMMS_DEFAULT_MTU                                   254
 
-#define AT_MQTT_ADDR_MAX_LEN                                63
-#define AT_MQTT_USER_MAX_LEN                                63
-#define AT_MQTT_PWD_MAX_LEN                                 63
-#define AT_MQTT_PATH_MAX_LEN                                63
-#define AT_MQTT_TOPIC_LEN                                   63
-#define AT_MQTT_RESP_PAYLOAD_LEN                            63
+#define OSM_AT_MQTT_ADDR_MAX_LEN                                63
+#define OSM_AT_MQTT_USER_MAX_LEN                                63
+#define OSM_AT_MQTT_PWD_MAX_LEN                                 63
+#define OSM_AT_MQTT_PATH_MAX_LEN                                63
+#define OSM_AT_MQTT_TOPIC_LEN                                   63
+#define OSM_AT_MQTT_RESP_PAYLOAD_LEN                            63
 
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_ADDR                "    \"MQTT ADDR\": \"%.*s\","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER                "    \"MQTT USER\": \"%.*s\","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME              "    \"MQTT SCHEME\": %"PRIu16","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH                "    \"MQTT PATH\": \"%.*s\","
-#define AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16","
+#define OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_ADDR                "    \"MQTT ADDR\": \"%.*s\","
+#define OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER                "    \"MQTT USER\": \"%.*s\","
+#define OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD                 "    \"MQTT PWD\": \"%.*s\","
+#define OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME              "    \"MQTT SCHEME\": %"PRIu16","
+#define OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH                "    \"MQTT PATH\": \"%.*s\","
+#define OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT                "    \"MQTT PORT\": %"PRIu16","
 
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_ADDR    , AT_MQTT_ADDR_MAX_LEN , _mqtt_addr
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER    , AT_MQTT_USER_MAX_LEN , _mqtt_user
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD     , AT_MQTT_PWD_MAX_LEN  , _mqtt_pwd
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME(_mqtt_scheme)    AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME  , _mqtt_scheme
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_PATH(_mqtt_path)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH    , AT_MQTT_PATH_MAX_LEN , _mqtt_path
-#define AT_MQTT_PRINT_CFG_JSON_MQTT_PORT(_mqtt_port)        AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT    , _mqtt_port
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_ADDR(_mqtt_addr)        OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_ADDR    , OSM_AT_MQTT_ADDR_MAX_LEN , _mqtt_addr
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_USER(_mqtt_user)        OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_USER    , OSM_AT_MQTT_USER_MAX_LEN , _mqtt_user
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_PWD(_mqtt_pwd)          OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PWD     , OSM_AT_MQTT_PWD_MAX_LEN  , _mqtt_pwd
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_SCHEME(_mqtt_scheme)    OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_SCHEME  , _mqtt_scheme
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_PATH(_mqtt_path)        OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PATH    , OSM_AT_MQTT_PATH_MAX_LEN , _mqtt_path
+#define AT_MQTT_PRINT_CFG_JSON_MQTT_PORT(_mqtt_port)        OSM_AT_MQTT_PRINT_CFG_JSON_FMT_MQTT_PORT    , _mqtt_port
 
-#define AT_MQTT_TOPIC_MEASUREMENTS                          "measurements"
-#define AT_MQTT_TOPIC_COMMAND                               "cmd"
-#define AT_MQTT_TOPIC_CONNECTION                            "conn"
-#define AT_MQTT_TOPIC_COMMAND_RESP                          AT_MQTT_TOPIC_COMMAND"/resp"
+#define OSM_AT_MQTT_TOPIC_MEASUREMENTS                          "measurements"
+#define OSM_AT_MQTT_TOPIC_COMMAND                               "cmd"
+#define OSM_AT_MQTT_TOPIC_CONNECTION                            "conn"
+#define OSM_AT_MQTT_TOPIC_COMMAND_RESP                          OSM_AT_MQTT_TOPIC_COMMAND"/resp"
 
-#define AT_ERROR_CODE                                       -1
+#define OSM_AT_ERROR_CODE                                       -1
 
 
 enum at_mqtt_scheme_t
@@ -67,13 +67,13 @@ enum at_mqtt_conn_states_t
 
 typedef struct
 {
-    char        addr[AT_MQTT_ADDR_MAX_LEN + 1];
+    char        addr[OSM_AT_MQTT_ADDR_MAX_LEN + 1];
     /* 16 byte boundary ---- */
-    char        user[AT_MQTT_USER_MAX_LEN + 1];
+    char        user[OSM_AT_MQTT_USER_MAX_LEN + 1];
     /* 16 byte boundary ---- */
-    char        pwd[AT_MQTT_PWD_MAX_LEN + 1];
+    char        pwd[OSM_AT_MQTT_PWD_MAX_LEN + 1];
     /* 16 byte boundary ---- */
-    char        path[AT_MQTT_PATH_MAX_LEN + 1];
+    char        path[OSM_AT_MQTT_PATH_MAX_LEN + 1];
     /* 16 byte boundary ---- */
     uint16_t    scheme; /* at_wifi_mqtt_scheme_t */
     uint16_t    port;
@@ -91,10 +91,10 @@ typedef struct
 {
     at_base_ctx_t        at_base_ctx;
     at_mqtt_config_t*   mem;
-    char                topic_header[AT_MQTT_TOPIC_LEN + 1];
+    char                topic_header[OSM_AT_MQTT_TOPIC_LEN + 1];
     struct
     {
-        char message[COMMS_DEFAULT_MTU];
+        char message[OSM_COMMS_DEFAULT_MTU];
         unsigned len;
     } publish_packet;
 } at_mqtt_ctx_t;

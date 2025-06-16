@@ -12,7 +12,7 @@
 #include <osm/core/cmd.h>
 
 
-#define COMMS_DEFAULT_MTU       256
+#define OSM_COMMS_DEFAULT_MTU       256
 #define COMMS_ID_STR            "LINUX_COMMS"
 
 #define LINUX_COMMS_DEV_EUI     "LINUX-DEV"
@@ -26,7 +26,7 @@
 
 uint16_t osm_linux_comms_get_mtu(void)
 {
-    return COMMS_DEFAULT_MTU;
+    return OSM_COMMS_DEFAULT_MTU;
 }
 
 
@@ -71,7 +71,7 @@ bool osm_linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
 
 void     osm_linux_comms_config_init(comms_config_t* config)
 {
-    config->type = COMMS_BUILD_TYPE;
+    config->type = OSM_COMMS_BUILD_TYPE;
 }
 
 

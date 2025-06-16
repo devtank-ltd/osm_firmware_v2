@@ -67,8 +67,8 @@ bool osm_model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 
 void osm_model_measurements_repopulate(void)
 {
-    osm_measurements_repop_indiv(MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    osm_measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
 }
 
 
@@ -96,15 +96,15 @@ unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_a
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    osm_measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    osm_measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
     return pos;
 }
 
 
 void osm_model_persist_config_model_init(persist_model_config_v1_t* model_config)
 {
-    model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+    model_config->mins_interval = OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
 }
 
 void osm_model_main_loop_iterate(void)

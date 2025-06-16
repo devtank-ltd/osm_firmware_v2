@@ -7,8 +7,8 @@
 
 typedef struct
 {
-    char        name[MEASURE_NAME_NULLED_LEN];
-    float       coeffs[FTMA_NUM_COEFFS];
+    char        name[OSM_MEASURE_NAME_NULLED_LEN];
+    float       coeffs[OSM_FTMA_NUM_COEFFS];
 } ftma_config_t;
 
 

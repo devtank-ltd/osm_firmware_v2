@@ -150,30 +150,30 @@ static struct
 static bool _senxx_get_meas_from_name(char* name, senxx_measurement_t* meas)
 {
     unsigned len = strlen(name);
-    if (len > MEASURE_NAME_LEN)
+    if (len > OSM_MEASURE_NAME_LEN)
         return false;
 
-    if (strncmp(name, MEASUREMENTS_PM1_0_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_PM1_0_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_PM1_0;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_PM25_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_PM25_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_PM2_5;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_PM4_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_PM4_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_PM4;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_PM10_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_PM10_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_PM10;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_REL_HUM_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_REL_HUM_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_REL_HUM;
         return true;
@@ -183,22 +183,22 @@ static bool _senxx_get_meas_from_name(char* name, senxx_measurement_t* meas)
         *meas = SENxx_MEASUREMENT_TEMP;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_VOC_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_VOC_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_VOC;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_NOX_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_NOX_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_NOX;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_CO2_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_CO2_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_CO2;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_HCHO_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_HCHO_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_HCHO;
         return true;

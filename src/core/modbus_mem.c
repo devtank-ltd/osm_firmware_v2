@@ -116,11 +116,11 @@ void osm_modbus_print(cmd_ctx_t * ctx)
             byte_char = 'L';
         if (dev->word_order == MODBUS_WORD_ORDER_LSW)
             word_char = 'L';
-        osm_cmd_ctx_out(ctx,"- Device - 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->unit_id, dev->name, byte_char, word_char);
+        osm_cmd_ctx_out(ctx,"- Device - 0x%"PRIx16" \"%."STR(OSM_MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->unit_id, dev->name, byte_char, word_char);
         modbus_reg_t * reg = _modbus_get_first_reg(dev);
         while(reg)
         {
-            osm_cmd_ctx_out(ctx,"  - Reg - 0x%"PRIx16" (F:%"PRIu8") \"%."STR(MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->func, reg->name, osm_modbus_reg_type_get_str(reg->type));
+            osm_cmd_ctx_out(ctx,"  - Reg - 0x%"PRIx16" (F:%"PRIu8") \"%."STR(OSM_MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->func, reg->name, osm_modbus_reg_type_get_str(reg->type));
             reg = _modbus_get_next_reg(reg);
         }
         dev = _modbus_get_next_dev(dev);
@@ -217,12 +217,12 @@ static modbus_dev_t * _modbus_get_device_by_name(modbus_bus_t* bus, char * name)
     if (!name)
         return NULL;
     unsigned name_len = strlen(name);
-    if (name_len > MODBUS_NAME_LEN)
+    if (name_len > OSM_MODBUS_NAME_LEN)
         return NULL;
     modbus_dev_t * dev = _modbus_get_first_dev2(bus);
     while(dev)
     {
-        if (strncmp(name, dev->name, MODBUS_NAME_LEN) == 0)
+        if (strncmp(name, dev->name, OSM_MODBUS_NAME_LEN) == 0)
             return dev;
         dev = _modbus_get_next_dev(dev);
     }
@@ -242,13 +242,13 @@ modbus_reg_t * osm_modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
         return NULL;
 
     unsigned name_len = strlen(name);
-    if (name_len > MODBUS_NAME_LEN)
+    if (name_len > OSM_MODBUS_NAME_LEN)
         return NULL;
 
     modbus_reg_t * reg = _modbus_get_first_reg(dev);
     while(reg)
     {
-        if (strncmp(name, reg->name, MODBUS_NAME_LEN) == 0)
+        if (strncmp(name, reg->name, OSM_MODBUS_NAME_LEN) == 0)
             return reg;
         reg = _modbus_get_next_reg(reg);
     }
@@ -400,7 +400,7 @@ modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, modbus_byte_o
 
     unsigned len = strlen(name);
 
-    if (len > MODBUS_NAME_LEN)
+    if (len > OSM_MODBUS_NAME_LEN)
         return NULL;
 
     if (osm_modbus_get_device_by_name(name))
@@ -417,7 +417,7 @@ modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, modbus_byte_o
     dev->word_order = word_order;
     dev->next_dev_offset = modbus_bus->first_dev_offset;
     modbus_bus->first_dev_offset = _modbus_get_offset(dev);
-    modbus_debug("Added device 0x%"PRIx16" \"%."STR(MODBUS_NAME_LEN)"s\"", unit_id, name);
+    modbus_debug("Added device 0x%"PRIx16" \"%."STR(OSM_MODBUS_NAME_LEN)"s\"", unit_id, name);
     return dev;
 }
 
@@ -429,13 +429,13 @@ bool           osm_modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_re
 
     unsigned name_len = strlen(name);
 
-    if (name_len > MODBUS_NAME_LEN)
+    if (name_len > OSM_MODBUS_NAME_LEN)
     {
         modbus_debug("Name too long");
         return false;
     }
 
-    if (func != MODBUS_READ_HOLDING_FUNC && func != MODBUS_READ_INPUT_FUNC)
+    if (func != OSM_MODBUS_READ_HOLDING_FUNC && func != OSM_MODBUS_READ_INPUT_FUNC)
     {
         modbus_debug("Unsupported func");
         return false;
@@ -464,13 +464,13 @@ bool           osm_modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_re
 }
 
 
-bool              osm_modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1])
+bool              osm_modbus_reg_get_name(modbus_reg_t * reg, char name[OSM_MODBUS_NAME_LEN + 1])
 {
     if (!reg)
         return false;
 
-    memcpy(name, reg->name, MODBUS_NAME_LEN);
-    name[MODBUS_NAME_LEN] = 0;
+    memcpy(name, reg->name, OSM_MODBUS_NAME_LEN);
+    name[OSM_MODBUS_NAME_LEN] = 0;
     return true;
 }
 
@@ -556,7 +556,7 @@ void osm_modbus_bus_init(modbus_bus_t * bus)
 {
     modbus_bus = bus;
 
-    if (modbus_bus->version == MODBUS_BLOB_VERSION)
+    if (modbus_bus->version == OSM_MODBUS_BLOB_VERSION)
     {
         modbus_debug("Loaded modbus defs");
     }
@@ -564,14 +564,14 @@ void osm_modbus_bus_init(modbus_bus_t * bus)
     {
         modbus_debug("Failed to load modbus defs");
         memset(modbus_bus, 0, sizeof(modbus_bus_t));
-        modbus_bus->version = MODBUS_BLOB_VERSION;
+        modbus_bus->version = OSM_MODBUS_BLOB_VERSION;
         modbus_bus->baudrate    = MODBUS_SPEED;
         modbus_bus->databits    = MODBUS_DATABITS;
         modbus_bus->parity      = MODBUS_PARITY;
         modbus_bus->stopbits    = MODBUS_STOP;
         modbus_bus->binary_protocol = false;
         modbus_bus->first_free_offset = _modbus_get_offset(modbus_bus->blocks);
-        for(unsigned n = 0; n < (MODBUS_BLOCKS-1) /*Last is zeroed*/; n++)
+        for(unsigned n = 0; n < (OSM_MODBUS_BLOCKS-1) /*Last is zeroed*/; n++)
             modbus_bus->blocks[n].next_free_offset = _modbus_get_offset(&modbus_bus->blocks[n+1]);
     }
 }
@@ -600,7 +600,7 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
     modbus_reg_t* d0reg;
     modbus_reg_t* d1reg;
     unsigned recursion_count = 0;
-    while (recursion_count < MODBUS_BLOCKS)
+    while (recursion_count < OSM_MODBUS_BLOCKS)
     {
         if (!d0dev && !d1dev)
         {
@@ -617,7 +617,7 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
         }
         d0reg = _modbus_get_first_reg(d0dev);
         d1reg = _modbus_get_first_reg(d1dev);
-        while(recursion_count < MODBUS_BLOCKS)
+        while(recursion_count < OSM_MODBUS_BLOCKS)
         {
             if ((!d0reg && d1reg) || (d0reg && !d1reg))
             {
@@ -628,7 +628,7 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
                 break;
             }
             bool reg_is_same =
-                memcmp(d0reg->name, d1reg->name, sizeof(char) * MODBUS_NAME_LEN) == 0 &&
+                memcmp(d0reg->name, d1reg->name, sizeof(char) * OSM_MODBUS_NAME_LEN) == 0 &&
                 d0reg->type == d1reg->type &&
                 d0reg->func == d1reg->func &&
                 d0reg->reg_addr == d1reg->reg_addr &&
@@ -646,7 +646,7 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
         d1dev = _modbus_get_next_dev(d1dev);
         recursion_count++;
     }
-    return recursion_count >= MODBUS_BLOCKS;
+    return recursion_count >= OSM_MODBUS_BLOCKS;
 }
 
 
@@ -689,8 +689,8 @@ static bool _modbus_add_dev_from_str(char* str, cmd_ctx_t * ctx)
 
     pos = osm_skip_space(pos);
 
-    unsigned len = strnlen(pos, MEASURE_NAME_LEN);
-    char name[MEASURE_NAME_NULLED_LEN];
+    unsigned len = strnlen(pos, OSM_MEASURE_NAME_LEN);
+    char name[OSM_MEASURE_NAME_NULLED_LEN];
     strncpy(name, pos, len+1);
 
     if (osm_modbus_add_device(unit_id, name, byte_order, word_order))
@@ -835,14 +835,14 @@ static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, modbus_r
         case MODBUS_REG_TYPE_U16:
             /* Fall through */
         case MODBUS_REG_TYPE_I16:
-            func = MODBUS_WRITE_SINGLE_HOLDING_FUNC;
+            func = OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC;
             break;
         case MODBUS_REG_TYPE_U32:
             /* Fall through */
         case MODBUS_REG_TYPE_I32:
             /* Fall through */
         case MODBUS_REG_TYPE_FLOAT:
-            func = MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
+            func = OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
             break;
         default:
             modbus_debug("Could not get modbus function from type (%d).", type);
@@ -859,7 +859,7 @@ static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
     char * p = osm_skip_space(args);
     char * np;
 
-    char name[MODBUS_NAME_LEN + 1] = {0};
+    char name[OSM_MODBUS_NAME_LEN + 1] = {0};
     np = strchr(p, ' ');
     if (!np)
     {
@@ -867,7 +867,7 @@ static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
         return COMMAND_RESP_ERR;
     }
     unsigned len = np - p;
-    if (len > MODBUS_NAME_LEN)
+    if (len > OSM_MODBUS_NAME_LEN)
     {
         osm_cmd_ctx_error(ctx,"Too long name.");
         return COMMAND_RESP_ERR;
@@ -941,10 +941,10 @@ static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
             reg_desc,
             MODBUS_REG_DESC_BUF_LEN,
             "%.*s(0x%"PRIX8"):%.*s(0x%"PRIX8") = %.*s:%f",
-            MODBUS_NAME_LEN,
+            OSM_MODBUS_NAME_LEN,
             dev->name,
             dev->unit_id,
-            MODBUS_NAME_LEN,
+            OSM_MODBUS_NAME_LEN,
             reg->name,
             reg_addr,
             3,
@@ -959,7 +959,7 @@ static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
             reg_desc,
             MODBUS_REG_DESC_BUF_LEN,
             "%.*s(0x%"PRIX8"):0x%"PRIX8" = %.*s:%f",
-            MODBUS_NAME_LEN,
+            OSM_MODBUS_NAME_LEN,
             dev->name,
             dev->unit_id,
             reg_addr,
@@ -973,7 +973,7 @@ static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
 
     osm_cmd_ctx_out(ctx,"Queued setting %s", reg_desc);
 
-    if (!osm_main_loop_iterate_for(MODBUS_RESP_TIMEOUT_MS, _modbus_reg_set_value_is_done, NULL))
+    if (!osm_main_loop_iterate_for(OSM_MODBUS_RESP_TIMEOUT_MS, _modbus_reg_set_value_is_done, NULL))
     {
         osm_cmd_ctx_error(ctx,"Timed out waiting for acknowledgement.");
         return COMMAND_RESP_ERR;

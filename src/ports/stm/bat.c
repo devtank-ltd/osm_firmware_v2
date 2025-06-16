@@ -12,15 +12,15 @@
 
 #define BAT_MON_DEFAULT_COLLECTION_TIME     1000
 #define BAT_TIMEOUT_MS                      1000
-#define BAT_NUM_SAMPLES                     ADCS_NUM_SAMPLES
+#define BAT_NUM_SAMPLES                     OSM_ADCS_NUM_SAMPLES
 #define BAT_IS_VALID_FOR_MS                 120 * 1000
 
 
 #define BAT_MUL                             10000UL
 #define BAT_MAX_MV                          1343 /* 1.343 volts */
 #define BAT_MIN_MV                          791  /* 0.791 volts */
-#define BAT_MAX                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MAX_MV)
-#define BAT_MIN                             (ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
+#define BAT_MAX                             (OSM_ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MAX_MV)
+#define BAT_MIN                             (OSM_ADC_MAX_VAL * BAT_MUL / ADC_MAX_MV * BAT_MIN_MV)
 #define BAT_ON_BAT_THRESHOLD                9000UL /* 90.00% */
 
 

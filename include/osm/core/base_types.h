@@ -42,8 +42,8 @@ char * osm_skip_to_space(char * pos);
 
 /** FLAGS */
 /* Flag Masks */
-#define IO_PULL_MASK        0x0003
-#define IO_STATE_MASK       0x0F00
+#define OSM_IO_PULL_MASK        0x0003
+#define OSM_IO_STATE_MASK       0x0F00
 
 /* Flags */
 #ifndef STM32L4
@@ -54,13 +54,13 @@ char * osm_skip_to_space(char * pos);
 #include <libopencm3/stm32/gpio.h>
 #endif //STM32L4
 
-#define IO_AS_INPUT         0x0100
-#define IO_DIR_LOCKED       0x0200
-#define IO_OUT_ON           0x0400
+#define OSM_IO_AS_INPUT         0x0100
+#define OSM_IO_DIR_LOCKED       0x0200
+#define OSM_IO_OUT_ON           0x0400
 
 /** ENUMS */
 /* Enum Masks */
-#define IO_ACTIVE_SPECIAL_MASK      0xF000
+#define OSM_IO_ACTIVE_SPECIAL_MASK      0xF000
 
 /* Enums */
 typedef enum
@@ -105,48 +105,48 @@ typedef enum
 } measurements_def_type_t;
 
 
-#define MEASUREMENTS_DEF_NAME_MODBUS            "MODBUS"
-#define MEASUREMENTS_DEF_NAME_PM10              "PM10"
-#define MEASUREMENTS_DEF_NAME_PM25              "PM25"
-#define MEASUREMENTS_DEF_NAME_CURRENT_CLAMP     "CURRENT_CLAMP"
-#define MEASUREMENTS_DEF_NAME_W1_PROBE          "W1_PROBE"
-#define MEASUREMENTS_DEF_NAME_HTU21D_HUM        "HTU21D_HUM"
-#define MEASUREMENTS_DEF_NAME_HTU21D_TMP        "HTU21D_TMP"
-#define MEASUREMENTS_DEF_NAME_BAT_MON           "BAT_MON"
-#define MEASUREMENTS_DEF_NAME_PULSE_COUNT       "PULSE_COUNT"
-#define MEASUREMENTS_DEF_NAME_LIGHT             "LIGHT"
-#define MEASUREMENTS_DEF_NAME_SOUND             "SOUND"
-#define MEASUREMENTS_DEF_NAME_FW_VERSION        "FW_VERSION"
-#define MEASUREMENTS_DEF_NAME_CONFIG_REVISION   "CONFIG_REVISION"
-#define MEASUREMENTS_DEF_NAME_FTMA              "FTMA"
+#define OSM_MEASUREMENTS_DEF_NAME_MODBUS            "MODBUS"
+#define OSM_MEASUREMENTS_DEF_NAME_PM10              "PM10"
+#define OSM_MEASUREMENTS_DEF_NAME_PM25              "PM25"
+#define OSM_MEASUREMENTS_DEF_NAME_CURRENT_CLAMP     "CURRENT_CLAMP"
+#define OSM_MEASUREMENTS_DEF_NAME_W1_PROBE          "W1_PROBE"
+#define OSM_MEASUREMENTS_DEF_NAME_HTU21D_HUM        "HTU21D_HUM"
+#define OSM_MEASUREMENTS_DEF_NAME_HTU21D_TMP        "HTU21D_TMP"
+#define OSM_MEASUREMENTS_DEF_NAME_BAT_MON           "BAT_MON"
+#define OSM_MEASUREMENTS_DEF_NAME_PULSE_COUNT       "PULSE_COUNT"
+#define OSM_MEASUREMENTS_DEF_NAME_LIGHT             "LIGHT"
+#define OSM_MEASUREMENTS_DEF_NAME_SOUND             "SOUND"
+#define OSM_MEASUREMENTS_DEF_NAME_FW_VERSION        "FW_VERSION"
+#define OSM_MEASUREMENTS_DEF_NAME_CONFIG_REVISION   "CONFIG_REVISION"
+#define OSM_MEASUREMENTS_DEF_NAME_FTMA              "FTMA"
 
-#ifndef MEASUREMENTS_DEF_NAME_CUSTOM_0
-#define MEASUREMENTS_DEF_NAME_CUSTOM_0          "CUSTOM_0"
-#endif // MEASUREMENTS_DEF_NAME_CUSTOM_0
+#ifndef OSM_MEASUREMENTS_DEF_NAME_CUSTOM_0
+#define OSM_MEASUREMENTS_DEF_NAME_CUSTOM_0          "CUSTOM_0"
+#endif // OSM_MEASUREMENTS_DEF_NAME_CUSTOM_0
 
-#ifndef MEASUREMENTS_DEF_NAME_CUSTOM_1
-#define MEASUREMENTS_DEF_NAME_CUSTOM_1          "CUSTOM_1"
-#endif // MEASUREMENTS_DEF_NAME_CUSTOM_1
+#ifndef OSM_MEASUREMENTS_DEF_NAME_CUSTOM_1
+#define OSM_MEASUREMENTS_DEF_NAME_CUSTOM_1          "CUSTOM_1"
+#endif // OSM_MEASUREMENTS_DEF_NAME_CUSTOM_1
 
-#define MEASUREMENTS_DEF_NAME_IO_READING        "IO_READING"
+#define OSM_MEASUREMENTS_DEF_NAME_IO_READING        "IO_READING"
 
 
 typedef struct
 {
-    char     name[MEASURE_NAME_NULLED_LEN];             // Name of the measurement
+    char     name[OSM_MEASURE_NAME_NULLED_LEN];             // Name of the measurement
     uint8_t  interval;                                  // System intervals happen every 5 mins, this is how many must pass for measurement to be sent
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type:7;                                    // measurement_def_type_t
     uint8_t  is_immediate:1;                            // Should collect as soon to sending as possible.
 } measurements_def_t;
 
-#define MODBUS_BLOCK_SIZE 16
-#define MODBUS_BLOCKS  ((MODBUS_MEMORY_SIZE / MODBUS_BLOCK_SIZE) - 1) /* We have 1k and the first block is the bus description.*/
+#define OSM_MODBUS_BLOCK_SIZE 16
+#define OSM_MODBUS_BLOCKS  ((OSM_MODBUS_MEMORY_SIZE / OSM_MODBUS_BLOCK_SIZE) - 1) /* We have 1k and the first block is the bus description.*/
 
-#define MODBUS_READ_HOLDING_FUNC 3
-#define MODBUS_READ_INPUT_FUNC 4
-#define MODBUS_WRITE_SINGLE_HOLDING_FUNC 6
-#define MODBUS_WRITE_MULTIPLE_HOLDING_FUNC 16
+#define OSM_MODBUS_READ_HOLDING_FUNC 3
+#define OSM_MODBUS_READ_INPUT_FUNC 4
+#define OSM_MODBUS_WRITE_SINGLE_HOLDING_FUNC 6
+#define OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC 16
 
 typedef enum
 {
@@ -184,7 +184,7 @@ typedef enum
 
 typedef struct
 {
-    char              name[MODBUS_NAME_LEN];
+    char              name[OSM_MODBUS_NAME_LEN];
     uint32_t          value_data;
     uint8_t           type; /*modbus_reg_type_t*/
     uint8_t           func:4;
@@ -197,7 +197,7 @@ typedef struct
 
 typedef struct
 {
-    char           name[MODBUS_NAME_LEN];
+    char           name[OSM_MODBUS_NAME_LEN];
     uint8_t        byte_order; /* modbus_byte_orders_t */
     uint8_t        word_order; /* modbus_word_orders_t */
     uint8_t        reg_count;
@@ -227,13 +227,13 @@ typedef struct
     uint16_t first_dev_offset;
     uint16_t first_free_offset;
     uint32_t _;
-    modbus_free_t  blocks[MODBUS_BLOCKS];
+    modbus_free_t  blocks[OSM_MODBUS_BLOCKS];
 } __attribute__((__packed__)) modbus_bus_t;
 
-_Static_assert(((sizeof(modbus_bus_t) % MODBUS_BLOCK_SIZE) == 0) &&
-               (sizeof(modbus_free_t) == MODBUS_BLOCK_SIZE) &&
-               (sizeof(modbus_dev_t) == MODBUS_BLOCK_SIZE) &&
-               (sizeof(modbus_reg_t) == MODBUS_BLOCK_SIZE),
+_Static_assert(((sizeof(modbus_bus_t) % OSM_MODBUS_BLOCK_SIZE) == 0) &&
+               (sizeof(modbus_free_t) == OSM_MODBUS_BLOCK_SIZE) &&
+               (sizeof(modbus_dev_t) == OSM_MODBUS_BLOCK_SIZE) &&
+               (sizeof(modbus_reg_t) == OSM_MODBUS_BLOCK_SIZE),
                "Modbus blocks broken.");
 
 typedef enum

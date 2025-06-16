@@ -59,7 +59,7 @@ static struct
 {
     enum at_poe_states_t    state;
     enum at_poe_states_t    before_timedout_state;
-    char                    before_timedout_last_cmd[AT_BASE_MAX_CMD_LEN];
+    char                    before_timedout_last_cmd[OSM_AT_BASE_MAX_CMD_LEN];
     at_poe_config_t*        mem;
     uint32_t                ip;
     at_mqtt_ctx_t           mqtt_ctx;
@@ -131,7 +131,7 @@ static unsigned _at_poe_printf(const char* fmt, ...)
     char* buf = _at_poe_ctx.mqtt_ctx.at_base_ctx.last_cmd.str;
     va_list args;
     va_start(args, fmt);
-    int len = vsnprintf(buf, AT_BASE_MAX_CMD_LEN - 2, fmt, args);
+    int len = vsnprintf(buf, OSM_AT_BASE_MAX_CMD_LEN - 2, fmt, args);
     va_end(args);
     buf[len] = 0;
     _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent = osm_get_since_boot_ms();
@@ -166,7 +166,7 @@ static unsigned _at_poe_mqtt_publish(const char* topic, char* message, unsigned 
     {
         case AT_POE_STATE_IDLE:
         {
-            message_len = message_len < COMMS_DEFAULT_MTU ? message_len : COMMS_DEFAULT_MTU;
+            message_len = message_len < OSM_COMMS_DEFAULT_MTU ? message_len : OSM_COMMS_DEFAULT_MTU;
             at_base_cmd_t* cmd = osm_at_mqtt_publish_prep(topic, message, message_len);
             if (!cmd)
             {
@@ -190,7 +190,7 @@ static unsigned _at_poe_mqtt_publish(const char* topic, char* message, unsigned 
 
 uint16_t osm_at_poe_get_mtu(void)
 {
-    return COMMS_DEFAULT_MTU;
+    return OSM_COMMS_DEFAULT_MTU;
 }
 
 
@@ -208,7 +208,7 @@ bool osm_at_poe_send_allowed(void)
 
 static bool _at_poe_mqtt_publish_measurements(char* data, uint16_t len)
 {
-    return _at_poe_mqtt_publish(AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
+    return _at_poe_mqtt_publish(OSM_AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
 }
 
 
@@ -297,7 +297,7 @@ static void _at_poe_process_state_wait_mac_address(char* msg, unsigned len)
     if (osm_is_str(mac_msg, msg, mac_msg_len))
     {
         unsigned len_rem = len - mac_msg_len;
-        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
+        const unsigned maxstrlen = OSM_AT_BASE_MAC_ADDRESS_LEN - 1;
         len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
         char* dest = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
         memcpy(dest, msg + mac_msg_len, len_rem);
@@ -528,10 +528,10 @@ static void _at_poe_process_state_mqtt_wait_sub(char* msg, unsigned len)
 
 static bool _at_poe_process_event(char* msg, unsigned len)
 {
-    char resp_payload[AT_MQTT_RESP_PAYLOAD_LEN + 1];
-    int resp_payload_len = osm_at_mqtt_process_event(msg, len, resp_payload, AT_MQTT_RESP_PAYLOAD_LEN + 1);
-    return (AT_ERROR_CODE != resp_payload_len) &&
-        _at_poe_mqtt_publish(AT_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len);
+    char resp_payload[OSM_AT_MQTT_RESP_PAYLOAD_LEN + 1];
+    int resp_payload_len = osm_at_mqtt_process_event(msg, len, resp_payload, OSM_AT_MQTT_RESP_PAYLOAD_LEN + 1);
+    return (OSM_AT_ERROR_CODE != resp_payload_len) &&
+        _at_poe_mqtt_publish(OSM_AT_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len);
 }
 
 
@@ -831,16 +831,16 @@ static bool _at_poe_get_mac_address(char* buf, unsigned buflen);
 
 command_response_t osm_at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
-    char mac_address[AT_BASE_MAC_ADDRESS_LEN];
-    if (!_at_poe_get_mac_address(mac_address, AT_BASE_MAC_ADDRESS_LEN))
+    char mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
+    if (!_at_poe_get_mac_address(mac_address, OSM_AT_BASE_MAC_ADDRESS_LEN))
     {
-        strncpy(mac_address, "UNKNOWN", AT_BASE_MAC_ADDRESS_LEN-1);
+        strncpy(mac_address, "UNKNOWN", OSM_AT_BASE_MAC_ADDRESS_LEN-1);
     }
-    osm_cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
+    osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_HEADER);
     osm_cmd_ctx_flush(ctx);
     osm_at_mqtt_cmd_j_cfg(ctx);
-    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address   , AT_BASE_MAC_ADDRESS_LEN   );
-    osm_cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
+    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address   , OSM_AT_BASE_MAC_ADDRESS_LEN   );
+    osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_TAIL);
     osm_cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;
 }
@@ -969,16 +969,16 @@ bool osm_at_poe_get_unix_time(int64_t * ts)
 static bool _at_poe_get_mac_address(char* buf, unsigned buflen)
 {
     char* src = _at_poe_ctx.mqtt_ctx.at_base_ctx.mac_address;
-    const unsigned mac_len = AT_BASE_MAC_ADDRESS_LEN-1;
+    const unsigned mac_len = OSM_AT_BASE_MAC_ADDRESS_LEN-1;
     if (strnlen(src, mac_len) != mac_len ||
         !osm_str_is_valid_ascii(src, mac_len, true))
     {
         comms_debug("Don't have MAC address, retrieving");
         return false;
     }
-    if (buflen > AT_BASE_MAC_ADDRESS_LEN)
+    if (buflen > OSM_AT_BASE_MAC_ADDRESS_LEN)
     {
-        buflen = AT_BASE_MAC_ADDRESS_LEN;
+        buflen = OSM_AT_BASE_MAC_ADDRESS_LEN;
     }
     memcpy(buf, src, buflen-1);
     buf[buflen-1] = 0;

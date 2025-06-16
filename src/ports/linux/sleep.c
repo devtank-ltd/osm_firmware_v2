@@ -25,14 +25,14 @@ static volatile uint16_t _sleep_compare = 0;
 void _sleep_before_sleep(void)
 {
     osm_adcs_off();
-    osm_platform_watchdog_init(IWDG_MAX_TIME_MS);
+    osm_platform_watchdog_init(OSM_IWDG_MAX_TIME_MS);
 }
 
 
 void _sleep_on_wakeup(void)
 {
     osm_adcs_init();
-    osm_platform_watchdog_init(IWDG_NORMAL_TIME_MS);
+    osm_platform_watchdog_init(OSM_IWDG_NORMAL_TIME_MS);
 }
 
 
@@ -44,8 +44,8 @@ void osm_sleep_exit_sleep_mode(void)
 
 bool osm_sleep_for_ms(uint32_t ms)
 {
-    if (ms > SLEEP_MAX_TIME_MS)
-        ms = SLEEP_MAX_TIME_MS;
+    if (ms > OSM_SLEEP_MAX_TIME_MS)
+        ms = OSM_SLEEP_MAX_TIME_MS;
     uint32_t    before_time = osm_get_since_boot_ms();
     sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (osm_uart_rings_out_busy())
@@ -57,7 +57,7 @@ bool osm_sleep_for_ms(uint32_t ms)
     if (ms <= time_passed)
         return false;
     ms -= time_passed;
-    if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+    if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
     /* Must sort out count and prescale depending on size of count */
     uint32_t    div_shift   = 0;

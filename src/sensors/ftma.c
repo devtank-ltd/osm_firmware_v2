@@ -14,16 +14,16 @@
 
 
 #define FTMA_DEFAULT_COLLECTION_TIME                        1000
-#define FTMA_NUM_SAMPLES                                    ADCS_NUM_SAMPLES
+#define FTMA_NUM_SAMPLES                                    OSM_ADCS_NUM_SAMPLES
 #define FTMA_TIMEOUT_MS                                     3000
 
 #define FTMA_MIN_MA                                         4.f
 #define FTMA_MAX_MA                                         20.f
 
-#define FTMA_DEFAULT_CONFIG                                 { { MEASUREMENTS_FTMA_1_NAME , FTMA_DEFAULT_COEFFS } , \
-                                                              { MEASUREMENTS_FTMA_2_NAME , FTMA_DEFAULT_COEFFS } , \
-                                                              { MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \
-                                                              { MEASUREMENTS_FTMA_4_NAME , FTMA_DEFAULT_COEFFS }   }
+#define FTMA_DEFAULT_CONFIG                                 { { OSM_MEASUREMENTS_FTMA_1_NAME , FTMA_DEFAULT_COEFFS } , \
+                                                              { OSM_MEASUREMENTS_FTMA_2_NAME , FTMA_DEFAULT_COEFFS } , \
+                                                              { OSM_MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \
+                                                              { OSM_MEASUREMENTS_FTMA_4_NAME , FTMA_DEFAULT_COEFFS }   }
 
 #define FTMA_LOWER_THRESHOLD                                2.f // mA
 
@@ -69,7 +69,7 @@ static bool _ftma_get_index_by_name(char* name, uint8_t* index)
     {
         ftma_config_t* conf = &_ftma_config[i];
         uint8_t name_len = strlen(name);
-        uint8_t conf_name_len = strnlen(conf->name, MEASURE_NAME_NULLED_LEN);
+        uint8_t conf_name_len = strnlen(conf->name, OSM_MEASURE_NAME_NULLED_LEN);
         if (name_len != conf_name_len)
             continue;
         if (strncmp(conf->name, name, name_len) == 0)
@@ -88,7 +88,7 @@ static float _ftma_conv(uint32_t uV, uint8_t index)
     /* Coeffs: A + Bx + Cx^2 + Dx^3 + ... */
     float result = 0;
     float* coeffs = _ftma_config[index].coeffs;
-    for (uint8_t i = 0; i < FTMA_NUM_COEFFS; i++)
+    for (uint8_t i = 0; i < OSM_FTMA_NUM_COEFFS; i++)
     {
         float midval = 1.f;
         for (uint8_t j = 0; j < i; j++)
@@ -258,13 +258,13 @@ void osm_ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
         osm_log_error("FTMA config is larger than the size of memory given.");
         num_ftma_configs = size / sizeof(ftma_config_t);
     }
-    float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
+    float default_coeffs[OSM_FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
     for (uint8_t i = 0; i < MIN(num_ftma_configs,9); i++)
     {
-        char name[MEASURE_NAME_NULLED_LEN+1];
-        snprintf(name, MEASURE_NAME_NULLED_LEN, "FTA%"PRIu8, i+1);
-        strncpy(memory[i].name, name, MEASURE_NAME_LEN);
-        memcpy(memory[i].coeffs, default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
+        char name[OSM_MEASURE_NAME_NULLED_LEN+1];
+        snprintf(name, OSM_MEASURE_NAME_NULLED_LEN, "FTA%"PRIu8, i+1);
+        strncpy(memory[i].name, name, OSM_MEASURE_NAME_LEN);
+        memcpy(memory[i].coeffs, default_coeffs, sizeof(float) * OSM_FTMA_NUM_COEFFS);
     }
 }
 
@@ -308,9 +308,9 @@ static command_response_t _ftma_name_cb(char* args, cmd_ctx_t * ctx)
         return COMMAND_RESP_ERR;
     }
     unsigned new_len = strlen(new_name);
-    if (new_len > MEASURE_NAME_LEN)
+    if (new_len > OSM_MEASURE_NAME_LEN)
     {
-        osm_cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
+        osm_cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", OSM_MEASURE_NAME_LEN, new_len);
         return COMMAND_RESP_ERR;
     }
     if (new_len == 0)
@@ -331,7 +331,7 @@ static command_response_t _ftma_name_cb(char* args, cmd_ctx_t * ctx)
         osm_cmd_ctx_out(ctx,"Failed to rename the measurement.");
         return COMMAND_RESP_ERR;
     }
-    strncpy(_ftma_config[index].name, new_name, MEASURE_NAME_LEN);
+    strncpy(_ftma_config[index].name, new_name, OSM_MEASURE_NAME_LEN);
     osm_cmd_ctx_out(ctx,"Measurement '%s' is now called '%s'.", orig_name, new_name);
     return COMMAND_RESP_OK;
 }
@@ -376,16 +376,16 @@ static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
         {
             p = np;
             unsigned i = 0;
-            if (FTMA_NUM_COEFFS > i)
+            if (OSM_FTMA_NUM_COEFFS > i)
                 ftma->coeffs[i++] = A;
-            for (; i < FTMA_NUM_COEFFS; i++)
+            for (; i < OSM_FTMA_NUM_COEFFS; i++)
                 ftma->coeffs[i] = strtod(p, &p);
             osm_cmd_ctx_out(ctx,"Set new coefficients for '%s'", args);
         }
     }
 
     osm_cmd_ctx_out(ctx,"Coeffients for '%s':", args);
-    for (unsigned i = 0; i < FTMA_NUM_COEFFS; i++)
+    for (unsigned i = 0; i < OSM_FTMA_NUM_COEFFS; i++)
     {
         osm_cmd_ctx_out(ctx,"%c: %.06f", 'A'+i, ftma->coeffs[i]);
     }

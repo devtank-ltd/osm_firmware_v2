@@ -6,7 +6,7 @@
 #include "pinmap.h"
 
 
-#define NUM_SOS_LOOPS           3
+#define OSM_NUM_SOS_LOOPS           3
 
 
 /* SOS in morse code is ... --- ...
@@ -23,15 +23,15 @@ static void _wait_units(unsigned count)
 }
 static void _dot(void)
 {
-    gpio_clear(LED_PORT, LED_PIN);
+    gpio_clear(OSM_LED_PORT, OSM_LED_PIN);
     _wait_units(1);
-    gpio_set(LED_PORT, LED_PIN);
+    gpio_set(OSM_LED_PORT, OSM_LED_PIN);
 }
 static void _dash(void)
 {
-    gpio_clear(LED_PORT, LED_PIN);
+    gpio_clear(OSM_LED_PORT, OSM_LED_PIN);
     _wait_units(3);
-    gpio_set(LED_PORT, LED_PIN);
+    gpio_set(OSM_LED_PORT, OSM_LED_PIN);
 }
 
 void error_state(void)
@@ -58,7 +58,7 @@ void error_state(void)
         }
         _wait_units(7);
         count++;
-        if (count > NUM_SOS_LOOPS)
+        if (count > OSM_NUM_SOS_LOOPS)
             scb_reset_system(); /* reset */
     }
 }

@@ -10,7 +10,7 @@ _Static_assert(STRLEN(GIT_VERSION)-3, "No git commit.");
 
 typedef struct
 {
-    char        name[MEASURE_NAME_LEN];
+    char        name[OSM_MEASURE_NAME_LEN];
     unsigned    io;
 } special_io_info_t;
 

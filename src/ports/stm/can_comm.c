@@ -42,20 +42,20 @@ static bool             _can_comm_enabled                       = false;
 
 static void _can_comm_clk_init(void)
 {
-    rcc_periph_clock_enable(CAN_RCC_TIM);
+    rcc_periph_clock_enable(OSM_CAN_RCC_TIM);
 
-    timer_disable_counter(CAN_TIM);
+    timer_disable_counter(OSM_CAN_TIM);
 
-    timer_set_mode(CAN_TIM,
+    timer_set_mode(OSM_CAN_TIM,
                    TIM_CR1_CKD_CK_INT,
                    TIM_CR1_CMS_EDGE,
                    TIM_CR1_DIR_UP);
 
-    timer_set_prescaler(CAN_TIM, rcc_ahb_frequency / 10000-1);//-1 because it starts at zero, and interrupts on the overflow
-    timer_set_period(CAN_TIM, 5);
-    timer_enable_preload(CAN_TIM);
-    timer_continuous_mode(CAN_TIM);
-    timer_enable_irq(CAN_TIM, TIM_DIER_CC1IE);
+    timer_set_prescaler(OSM_CAN_TIM, rcc_ahb_frequency / 10000-1);//-1 because it starts at zero, and interrupts on the overflow
+    timer_set_period(OSM_CAN_TIM, 5);
+    timer_enable_preload(OSM_CAN_TIM);
+    timer_continuous_mode(OSM_CAN_TIM);
+    timer_enable_irq(OSM_CAN_TIM, TIM_DIER_CC1IE);
 }
 
 
@@ -148,7 +148,7 @@ void osm_can_comm_init(void)
     */
     _can_comm_clk_init();
     if (_can_comm_enabled)
-        timer_enable_counter(CAN_TIM);
+        timer_enable_counter(OSM_CAN_TIM);
 
     nvic_enable_irq(NVIC_TIM3_IRQ);
 }
@@ -165,23 +165,23 @@ static bool _can_comm_new_data(can_comm_packet_t* pkt)
 
 void tim3_isr(void)
 {
-    timer_clear_flag(CAN_TIM, TIM_SR_CC1IF);
+    timer_clear_flag(OSM_CAN_TIM, TIM_SR_CC1IF);
 
     can_comm_packet_t pkt;
-    uint8_t data[CAN_COMM_MAX_DATA_SIZE];
+    uint8_t data[OSM_CAN_COMM_MAX_DATA_SIZE];
     pkt.data = data;
 
     can_receive(_can_comm_config.unit, 0, false, &pkt.header.id, &pkt.header.ext, &pkt.header.rtr, &pkt.header.fmi, &pkt.header.length, pkt.data, NULL);
 
     can_fifo_release(_can_comm_config.unit, 0);
 
-    if (pkt.header.length > CAN_COMM_MAX_DATA_SIZE)
-        pkt.header.length = CAN_COMM_MAX_DATA_SIZE;
+    if (pkt.header.length > OSM_CAN_COMM_MAX_DATA_SIZE)
+        pkt.header.length = OSM_CAN_COMM_MAX_DATA_SIZE;
 
     // Unused bool func
     _can_comm_new_data(&pkt);
     if (!_can_comm_enabled)
-        timer_disable_counter(CAN_TIM);
+        timer_disable_counter(OSM_CAN_TIM);
 }
 
 
@@ -189,13 +189,13 @@ void osm_can_comm_enable(bool enabled)
 {
     _can_comm_enabled = enabled;
     if (enabled)
-        timer_enable_counter(CAN_TIM);
+        timer_enable_counter(OSM_CAN_TIM);
 }
 
 
 void osm_can_comm_send(can_comm_packet_t* pkt)
 {
     can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
-    osm_log_debug_data(DEBUG_CAN, pkt->data, pkt->header.length);
+    osm_log_debug_data(OSM_DEBUG_CAN, pkt->data, pkt->header.length);
     can_transmit(_can_comm_config.unit, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
 }

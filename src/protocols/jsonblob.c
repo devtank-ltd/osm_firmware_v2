@@ -76,7 +76,7 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
         return _protocol_append_data_type_float(name, data->value.value_f.sum);
     bool r = true;
     int32_t mean = data->value.value_f.sum / data->num_samples;
-    char tmp[MEASURE_NAME_NULLED_LEN + 4];
+    char tmp[OSM_MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_float(name, mean);
     snprintf(tmp, sizeof(tmp), "%s_min", name);
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
@@ -92,7 +92,7 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
         return _protocol_append_data_type_i64(name, data->value.value_f.sum);
     bool r = true;
     int64_t mean = data->value.value_64.sum / data->num_samples;
-    char tmp[MEASURE_NAME_NULLED_LEN + 4];
+    char tmp[OSM_MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_i64(name, mean);
     snprintf(tmp, sizeof(tmp), "%s_min", name);
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
@@ -172,5 +172,5 @@ bool osm_protocol_init(void)
 
     _json_buf_pos = 0;
 
-    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, HUMAN_NAME_LEN, osm_persist_get_human_name());
+    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, OSM_HUMAN_NAME_LEN, osm_persist_get_human_name());
 }

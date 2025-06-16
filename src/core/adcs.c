@@ -19,7 +19,7 @@
  */
 
 
-typedef uint16_t adcs_all_buf_t[ADCS_NUM_SAMPLES];
+typedef uint16_t adcs_all_buf_t[OSM_ADCS_NUM_SAMPLES];
 
 #define ADCS_MON_DEFAULT_COLLECTION_TIME    100;
 
@@ -38,7 +38,7 @@ bool osm_adcs_to_mV(uint32_t value, uint32_t* mV)
     // ADC of    0 -> 0V
     //        4096 -> 3.3V
 
-    const uint16_t max_value = ADC_MAX_VAL;
+    const uint16_t max_value = OSM_ADC_MAX_VAL;
     const uint16_t min_value = 0;
     const uint16_t max_mV = ADC_MAX_MV;
     const uint16_t min_mV = 0;
@@ -75,7 +75,7 @@ static bool _adcs_get_rms(const adcs_all_buf_t buff, unsigned buff_len, uint32_t
     return true;
 }
 #else
-static uint16_t                     peak_vals[ADCS_NUM_SAMPLES];
+static uint16_t                     peak_vals[OSM_ADCS_NUM_SAMPLES];
 static bool _adcs_get_rms(const adcs_all_buf_t buff, unsigned buff_len, uint32_t* adc_rms, uint8_t start_index, uint8_t step, uint32_t midpoint)
 {
     /**
@@ -161,7 +161,7 @@ adcs_resp_t osm_adcs_begin(adcs_type_t* channels, unsigned num_channels, unsigne
         return ADCS_RESP_WAIT;
     }
 
-    if (num_samples > ADCS_NUM_SAMPLES)
+    if (num_samples > OSM_ADCS_NUM_SAMPLES)
     {
         adc_debug("ADC buffer too small for that many samples.");
         return ADCS_RESP_FAIL;

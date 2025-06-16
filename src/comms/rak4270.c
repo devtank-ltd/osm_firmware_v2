@@ -30,7 +30,7 @@
 #define RAK4270_PAYLOAD_MAX_DEFAULT              242
 
 
-_Static_assert (PROTOCOL_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
+_Static_assert (OSM_PROTOCOL_HEX_ARRAY_SIZE * 2 < RAK4270_PAYLOAD_MAX_DEFAULT, "Measurement send data max longer than LoRaWAN payload max.");
 
 /* AT commands https://docs.rakwireless.com/Product-Categories/WisDuo/RAK4270-Module/AT-Command-Manual */
 
@@ -179,7 +179,7 @@ typedef struct
         struct
         {
             uint8_t len;
-            int8_t arr[PROTOCOL_HEX_ARRAY_SIZE];
+            int8_t arr[OSM_PROTOCOL_HEX_ARRAY_SIZE];
         } hex;
     };
 } rak4270_backup_msg_t;
@@ -300,25 +300,25 @@ static const char* _rak4270_region_name(uint8_t region)
     switch (region)
     {
         case LW_REGION_EU433:
-            name = LW_REGION_NAME_EU433;
+            name = OSM_LW_REGION_NAME_EU433;
             break;
         case LW_REGION_CN470:
-            name = LW_REGION_NAME_CN470;
+            name = OSM_LW_REGION_NAME_CN470;
             break;
         case LW_REGION_IN865:
-            name = LW_REGION_NAME_IN865;
+            name = OSM_LW_REGION_NAME_IN865;
             break;
         case LW_REGION_EU868:
-            name = LW_REGION_NAME_EU868;
+            name = OSM_LW_REGION_NAME_EU868;
             break;
         case LW_REGION_US915:
-            name = LW_REGION_NAME_US915;
+            name = OSM_LW_REGION_NAME_US915;
             break;
         case LW_REGION_AU915:
-            name = LW_REGION_NAME_AU915;
+            name = OSM_LW_REGION_NAME_AU915;
             break;
         case LW_REGION_KR920:
-            name = LW_REGION_NAME_KR920;
+            name = OSM_LW_REGION_NAME_KR920;
             break;
         case LW_REGION_AS923_2:
             /* fall through */
@@ -360,10 +360,10 @@ static bool _rak4270_load_config(cmd_ctx_t * ctx)
         region_name = _rak4270_region_name(LW_REGION_EU868);
     }
 
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-4], sizeof(rak4270_msg_buf_t), "at+set_config=lora:region:%.*s",  LW_REGION_LEN,  region_name    );
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%.*s", LW_DEV_EUI_LEN, config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%.*s", LW_DEV_EUI_LEN, config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%.*s", LW_APP_KEY_LEN, config->app_key);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-4], sizeof(rak4270_msg_buf_t), "at+set_config=lora:region:%.*s",  OSM_LW_REGION_LEN,  region_name    );
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%.*s", OSM_LW_DEV_EUI_LEN, config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%.*s", OSM_LW_DEV_EUI_LEN, config->dev_eui);
+    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%.*s", OSM_LW_APP_KEY_LEN, config->app_key);
     return true;
 }
 
@@ -532,7 +532,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
         return;
     }
 
-    if (osm_lw_consume(p, 2) != LW_UNSOL_VERSION)
+    if (osm_lw_consume(p, 2) != OSM_LW_UNSOL_VERSION)
     {
         osm_log_error("Couldn't parse RAK4270 unsol msg");
         return;
@@ -543,20 +543,20 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
 
     switch (pl_id)
     {
-        case LW_ID_CMD:
+        case OSM_LW_ID_CMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
             osm_cmds_process(_rak4270_cmd_ascii, cmd_len, NULL);
             break;
         }
-        case LW_ID_CCMD:
+        case OSM_LW_ID_CCMD:
         {
             unsigned cmd_len = _rak4270_handle_unsol_2_rak4270_cmd_ascii(p);
             _rak4270_error_code.code = osm_cmds_process(_rak4270_cmd_ascii, cmd_len, NULL); /* command_resp_t */
             _rak4270_error_code.valid = true;
             break;
         }
-        case LW_ID_FW_START:
+        case OSM_LW_ID_FW_START:
         {
             uint16_t count = (uint16_t)osm_lw_consume(p, 4);
             comms_debug("FW of %"PRIu16" chunks", count);
@@ -564,7 +564,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
             osm_fw_ota_reset();
             break;
         }
-        case LW_ID_FW_CHUNK:
+        case OSM_LW_ID_FW_CHUNK:
         {
             uint16_t chunk_id = (uint16_t)osm_lw_consume(p, 4);
             p += 4;
@@ -586,7 +586,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
             }
             break;
         }
-        case LW_ID_FW_COMPLETE:
+        case OSM_LW_ID_FW_COMPLETE:
         {
             if (len < 12 || !_next_fw_chunk_id)
             {

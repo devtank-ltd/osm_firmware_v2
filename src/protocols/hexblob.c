@@ -8,7 +8,7 @@
 #include <osm/comms/comms.h>
 #include "platform_model.h"
 
-static int8_t                       _measurements_hex_arr[PROTOCOL_HEX_ARRAY_SIZE]   = {0};
+static int8_t                       _measurements_hex_arr[OSM_PROTOCOL_HEX_ARRAY_SIZE]   = {0};
 
 #define PROTOCOL_SEND_STR_LEN               8
 #define PROTOCOL_ERR_CODE_NAME                  "ERR"
@@ -175,7 +175,7 @@ static bool _protocol_append_data_type_str(char* value)
 {
     if (!_protocol_append_i8(PROTOCOL_SEND_TYPE_STR))
         return false;
-    uint8_t len = strnlen(value, MEASUREMENTS_VALUE_STR_LEN);
+    uint8_t len = strnlen(value, OSM_MEASUREMENTS_VALUE_STR_LEN);
     return _protocol_append_str(value, len);
 }
 
@@ -228,7 +228,7 @@ bool osm_protocol_append_measurement(measurements_def_t* def, measurements_data_
 
     bool r = 0;
     r |= !_protocol_append_i32(*(int32_t*)def->name);
-    uint8_t datatype = single ? MEASUREMENTS_DATATYPE_SINGLE : MEASUREMENTS_DATATYPE_AVERAGED;
+    uint8_t datatype = single ? OSM_MEASUREMENTS_DATATYPE_SINGLE : OSM_MEASUREMENTS_DATATYPE_AVERAGED;
     r |= !_protocol_append_i8(datatype);
 
     switch(data->value_type)
@@ -260,9 +260,9 @@ static bool _protocol_append_error_code(uint8_t err_code)
     unsigned before_pos = _protocol_ctx.pos;
 
     bool r = false;
-    char name[MEASURE_NAME_NULLED_LEN] = PROTOCOL_ERR_CODE_NAME;
+    char name[OSM_MEASURE_NAME_NULLED_LEN] = PROTOCOL_ERR_CODE_NAME;
     r |= !_protocol_append_i32(*(int32_t*)name);
-    r |= !_protocol_append_i8(MEASUREMENTS_DATATYPE_SINGLE);
+    r |= !_protocol_append_i8(OSM_MEASUREMENTS_DATATYPE_SINGLE);
     int64_t err_code64 = err_code;
     r |= !_protocol_append_data_type_i64(&err_code64);
     if (r)
@@ -282,7 +282,7 @@ static bool _protocol_init(int8_t* buf, unsigned buflen)
     _protocol_ctx.pos = 0;
 
     memset(_protocol_ctx.buf, 0, _protocol_ctx.buflen);
-    if (!_protocol_append_i8((int8_t)MEASUREMENTS_PAYLOAD_VERSION))
+    if (!_protocol_append_i8((int8_t)OSM_MEASUREMENTS_PAYLOAD_VERSION))
     {
         osm_log_error("Failed to add even version to measurem     ents hex array.");
         return false;
@@ -293,7 +293,7 @@ static bool _protocol_init(int8_t* buf, unsigned buflen)
 
 bool osm_protocol_init(void)
 {
-    return _protocol_init(_measurements_hex_arr, PROTOCOL_HEX_ARRAY_SIZE);
+    return _protocol_init(_measurements_hex_arr, OSM_PROTOCOL_HEX_ARRAY_SIZE);
 }
 
 

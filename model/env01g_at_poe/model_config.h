@@ -87,7 +87,7 @@
 
 #define ADC_MAX_MV          3000 /* Set with stable voltage source */
 #define ADC_CC_COUNT        3
-#define CC_DEFAULT_TYPE     CC_TYPE_V
+#define CC_DEFAULT_TYPE     OSM_CC_TYPE_V
 
 #define JSON_BUF_SIZE  256
 
@@ -115,8 +115,8 @@ typedef struct
     uint32_t                pulsecount_debounces_ms[W1_PULSE_COUNT];
     uint8_t                 _____[16-((W1_PULSE_COUNT * sizeof(uint32_t))%16)];
     /* 16 byte boundary ---- */
-    float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-    uint8_t                 ______[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    float                   sai_cal_coeffs[OSM_SAI_NUM_CAL_COEFFS];
+    uint8_t                 ______[16-((OSM_SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
     uint32_t                sai_no_buf;
     uint8_t                 _______[16-(sizeof(uint32_t)%16)];

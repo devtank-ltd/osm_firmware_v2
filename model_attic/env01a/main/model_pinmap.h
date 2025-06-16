@@ -1,8 +1,8 @@
 #pragma once
 
-#define LED_PIN       GPIO_NUM_33
+#define OSM_LED_PIN       GPIO_NUM_33
 
-#define DE_485_PIN    GPIO_NUM_25
+#define OSM_DE_485_PIN    GPIO_NUM_25
 
 #define SW_SEL GPIO_NUM_27
 
@@ -13,7 +13,7 @@
 
 #define IOS_COUNT 2
 #define IOS_PORT_N_PINS {GPIO_NUM_32, GPIO_NUM_35}
-#define IOS_STATE       {IO_AS_INPUT, IO_AS_INPUT}
+#define IOS_STATE       {OSM_IO_AS_INPUT, OSM_IO_AS_INPUT}
 
 
 #define UART_CHANNELS                                               \
@@ -48,12 +48,12 @@
     }                                                               \
 }
 
-#define UART_CHANNELS_COUNT 2
+#define OSM_UART_CHANNELS_COUNT 2
 
 #define CMD_UART 0
 #define EXT_UART 1
 
-#define I2C_BUSES                                                   \
+#define OSM_I2C_BUSES                                                   \
 {                                                                   \
     {                                                               \
         I2C_NUM_0,                                                  \
@@ -71,19 +71,19 @@
 
 
 
-#define UART_BUFFERS_INIT                \
+#define OSM_UART_BUFFERS_INIT                \
 char uart_0_in_buf[UART_0_IN_BUF_SIZE];  \
 char uart_0_out_buf[UART_0_OUT_BUF_SIZE];\
 char uart_1_in_buf[UART_1_IN_BUF_SIZE];  \
 char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
 
-#define UART_IN_RINGS                                   \
+#define OSM_UART_IN_RINGS                                   \
 {                                                       \
     RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),\
     RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),\
 }
 
-#define UART_OUT_RINGS                                    \
+#define OSM_UART_OUT_RINGS                                    \
 {                                                         \
     RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),\
     RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\

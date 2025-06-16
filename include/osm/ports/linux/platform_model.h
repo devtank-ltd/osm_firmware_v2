@@ -3,4 +3,4 @@
 
 #define osm_main main
 
-#define MODEL_NAME STR(FW_NAME)
+#define OSM_MODEL_NAME STR(FW_NAME)

@@ -46,16 +46,16 @@ void osm_peripherals_add_cmd(unsigned* pid)
 
 void osm_peripherals_add_w1(unsigned timeout_us, unsigned* pid)
 {
-    char w1_socket[LOCATION_LEN];
-    osm_concat_osm_location(w1_socket, LOCATION_LEN, FAKE_1W_SOCKET);
+    char w1_socket[OSM_LOCATION_LEN];
+    osm_concat_osm_location(w1_socket, OSM_LOCATION_LEN, FAKE_1W_SOCKET);
     osm_peripherals_add(FAKE_W1_SERVER, w1_socket, timeout_us, pid);
 }
 
 
 void osm_peripherals_add_i2c(unsigned timeout_us, unsigned* pid)
 {
-    char i2c_socket[LOCATION_LEN];
-    osm_concat_osm_location(i2c_socket, LOCATION_LEN, FAKE_I2C_SOCKET);
+    char i2c_socket[OSM_LOCATION_LEN];
+    osm_concat_osm_location(i2c_socket, OSM_LOCATION_LEN, FAKE_I2C_SOCKET);
     osm_peripherals_add(FAKE_I2C_SERVER, i2c_socket, timeout_us, pid);
 }
 

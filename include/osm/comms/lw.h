@@ -4,34 +4,34 @@
 #include <stdbool.h>
 #include <osm/core/base_types.h>
 
-#define LW_UNSOL_VERSION                    0x01
-#define LW_CONFIG_VERSION                   0x02
+#define OSM_LW_UNSOL_VERSION                    0x01
+#define OSM_LW_CONFIG_VERSION                   0x02
 
-#define LW_ID_CMD_LEN                       4
-#define LW_ID_CMD                           0x434d4400 /* CMD  */
-#define LW_ID_CCMD                          0x43434d44 /* CCMD */
-#define LW_ID_FW_START                      0x46572d00 /* FW-  */
-#define LW_ID_FW_CHUNK                      0x46572b00 /* FW+  */
-#define LW_ID_FW_COMPLETE                   0x46574000 /* FW@  */
-
-
-#define LW_DEV_EUI_LEN                      16
-#define LW_APP_KEY_LEN                      32
-#define LW_REGION_LEN                       7
+#define OSM_LW_ID_CMD_LEN                       4
+#define OSM_LW_ID_CMD                           0x434d4400 /* CMD  */
+#define OSM_LW_ID_CCMD                          0x43434d44 /* CCMD */
+#define OSM_LW_ID_FW_START                      0x46572d00 /* FW-  */
+#define OSM_LW_ID_FW_CHUNK                      0x46572b00 /* FW+  */
+#define OSM_LW_ID_FW_COMPLETE                   0x46574000 /* FW@  */
 
 
-#define LW_REGION_NAME_EU433                "EU433\x00\x00"
-#define LW_REGION_NAME_CN470                "CN470\x00\x00"
-#define LW_REGION_NAME_RU864                "RU864\x00\x00"
-#define LW_REGION_NAME_IN865                "IN865\x00\x00"
-#define LW_REGION_NAME_EU868                "EU868\x00\x00"
-#define LW_REGION_NAME_US915                "US915\x00\x00"
-#define LW_REGION_NAME_AU915                "AU915\x00\x00"
-#define LW_REGION_NAME_KR920                "KR920\x00\x00"
-#define LW_REGION_NAME_AS923_1              "AS923-1"
-#define LW_REGION_NAME_AS923_2              "AS923-2"
-#define LW_REGION_NAME_AS923_3              "AS923-3"
-#define LW_REGION_NAME_AS923_4              "AS923-4"
+#define OSM_LW_DEV_EUI_LEN                      16
+#define OSM_LW_APP_KEY_LEN                      32
+#define OSM_LW_REGION_LEN                       7
+
+
+#define OSM_LW_REGION_NAME_EU433                "EU433\x00\x00"
+#define OSM_LW_REGION_NAME_CN470                "CN470\x00\x00"
+#define OSM_LW_REGION_NAME_RU864                "RU864\x00\x00"
+#define OSM_LW_REGION_NAME_IN865                "IN865\x00\x00"
+#define OSM_LW_REGION_NAME_EU868                "EU868\x00\x00"
+#define OSM_LW_REGION_NAME_US915                "US915\x00\x00"
+#define OSM_LW_REGION_NAME_AU915                "AU915\x00\x00"
+#define OSM_LW_REGION_NAME_KR920                "KR920\x00\x00"
+#define OSM_LW_REGION_NAME_AS923_1              "AS923-1"
+#define OSM_LW_REGION_NAME_AS923_2              "AS923-2"
+#define OSM_LW_REGION_NAME_AS923_3              "AS923-3"
+#define OSM_LW_REGION_NAME_AS923_4              "AS923-4"
 
 
 typedef enum
@@ -56,8 +56,8 @@ typedef struct
 {
     uint8_t type;
     uint8_t _[15];
-    char    dev_eui[LW_DEV_EUI_LEN];
-    char    app_key[LW_APP_KEY_LEN];
+    char    dev_eui[OSM_LW_DEV_EUI_LEN];
+    char    app_key[OSM_LW_APP_KEY_LEN];
     uint8_t region; /* lw_region_t */
     uint8_t version;
 } __attribute__((__packed__)) lw_config_t;

@@ -90,7 +90,7 @@ void sensirion_i2c_hal_free(void) {
 int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
     int8_t err = osm_i2c_transfer_timeout(SEN5x_I2C, address, NULL, 0, data, count, SEN5x_I2C_TIMEOUT_MS) ? NO_ERROR : NOT_IMPLEMENTED_ERROR;
     particulate_debug("I2C Read %"PRIu16" - %s", count, (err == NO_ERROR)?"OK":"Failed");
-    osm_log_debug_data(DEBUG_PARTICULATE, data, count);
+    osm_log_debug_data(OSM_DEBUG_PARTICULATE, data, count);
     return err;
 }
 
@@ -109,7 +109,7 @@ int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data,
                                uint16_t count) {
     int8_t err = osm_i2c_transfer_timeout(SEN5x_I2C, address, data, count, NULL, 0, SEN5x_I2C_TIMEOUT_MS) ? NO_ERROR : NOT_IMPLEMENTED_ERROR;
     particulate_debug("I2C Write %"PRIu16" - %s", count, (err == NO_ERROR)?"OK":"Failed");
-    osm_log_debug_data(DEBUG_PARTICULATE, data, count);
+    osm_log_debug_data(OSM_DEBUG_PARTICULATE, data, count);
     return err;
 }
 

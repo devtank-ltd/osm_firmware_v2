@@ -16,7 +16,7 @@ bool osm_persist_config_update(const persist_storage_t* from_config, persist_sto
 {
     uint16_t base_version = from_config->version >> 8;
     uint16_t model_version = from_config->version & 0xFF;
-    if (PERSIST_BASE_VERSION == base_version)
+    if (OSM_PERSIST_BASE_VERSION == base_version)
     {
         memcpy(to_config, from_config, sizeof(persist_storage_t));
     }
@@ -48,7 +48,7 @@ char* osm_persist_get_human_name(void)
 
 void osm_persist_set_log_debug_mask(uint32_t mask)
 {
-    persist_data.log_debug_mask = mask | DEBUG_SYS;
+    persist_data.log_debug_mask = mask | OSM_DEBUG_SYS;
 }
 
 
@@ -77,7 +77,7 @@ static command_response_t _persist_commit_cb(char* args, cmd_ctx_t * ctx)
 static command_response_t _reset_cb(char *args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"Resetting...");
-    osm_cmd_ctx_out(ctx,LOG_END_SPACER);
+    osm_cmd_ctx_out(ctx,OSM_LOG_END_SPACER);
     osm_uart_rings_drain_all_out();
     osm_platform_reset_sys();
     return COMMAND_RESP_OK;
@@ -86,7 +86,7 @@ static command_response_t _reset_cb(char *args, cmd_ctx_t * ctx)
 
 static command_response_t _wipe_cb(char* args, cmd_ctx_t * ctx)
 {
-    osm_cmd_ctx_out(ctx,LOG_END_SPACER);
+    osm_cmd_ctx_out(ctx,OSM_LOG_END_SPACER);
     osm_persistent_wipe();
     return COMMAND_RESP_OK;
 }

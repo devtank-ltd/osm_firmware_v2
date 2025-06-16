@@ -65,7 +65,7 @@ static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
-    if (index < 1 || index > SAI_NUM_CAL_COEFFS)
+    if (index < 1 || index > OSM_SAI_NUM_CAL_COEFFS)
     {
         osm_cmd_ctx_error(ctx,"Index out of range.");
         return COMMAND_RESP_ERR;

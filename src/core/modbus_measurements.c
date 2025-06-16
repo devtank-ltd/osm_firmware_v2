@@ -157,7 +157,7 @@ bool osm_modbus_measurement_add(modbus_reg_t * reg)
 
     osm_measurements_del(meas_def.name);
 
-    meas_def.name[MODBUS_NAME_LEN] = 0;
+    meas_def.name[OSM_MODBUS_NAME_LEN] = 0;
     meas_def.samplecount = 1;
     meas_def.interval    = 1;
     meas_def.type        = MODBUS;
@@ -180,7 +180,7 @@ bool osm_modbus_measurement_del_reg(char * name)
 
 static bool _modbus_measurement_del_dev_reg(modbus_reg_t * reg, void * userdata)
 {
-    char name[MODBUS_NAME_LEN+1];
+    char name[OSM_MODBUS_NAME_LEN+1];
     if (osm_modbus_reg_get_name(reg, name))
         osm_measurements_del(name);
     return false;

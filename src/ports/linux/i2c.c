@@ -23,8 +23,8 @@ static int  _i2c_socketfd = -1;
 
 void osm_i2cs_init(void)
 {
-    char osm_i2c_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
+    char osm_i2c_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_i2c_loc, OSM_LOCATION_LEN, I2C_SERVER_LOC);
     _i2c_connected = osm_socket_connect(osm_i2c_loc, &_i2c_socketfd);
     if (!_i2c_connected)
     {
@@ -39,8 +39,8 @@ void osm_i2c_linux_deinit(void)
     if (_i2c_connected)
         close(_i2c_socketfd);
 
-    char osm_i2c_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_i2c_loc, LOCATION_LEN, I2C_SERVER_LOC);
+    char osm_i2c_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_i2c_loc, OSM_LOCATION_LEN, I2C_SERVER_LOC);
     unlink(osm_i2c_loc);
 }
 

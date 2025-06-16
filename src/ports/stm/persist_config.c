@@ -27,13 +27,13 @@ static void _persist_wipe(void)
     memset(&persist_data, 0, sizeof(persist_data));
     memset(&persist_measurements, 0, sizeof(persist_measurements));
     persist_data.version = PERSIST_VERSION;
-    persist_data.log_debug_mask = DEBUG_SYS;
+    persist_data.log_debug_mask = OSM_DEBUG_SYS;
     persist_data.config_count = 0;
-    if (strlen(STR(fw_name)) > MODEL_NAME_LEN)
-        memcpy(&persist_data.model_name[0], STR(fw_name), MODEL_NAME_LEN);
+    if (strlen(STR(fw_name)) > OSM_MODEL_NAME_LEN)
+        memcpy(&persist_data.model_name[0], STR(fw_name), OSM_MODEL_NAME_LEN);
     else
-        snprintf(persist_data.model_name, MODEL_NAME_LEN, STR(fw_name));
-    unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, osm_platform_get_hw_id());
+        snprintf(persist_data.model_name, OSM_MODEL_NAME_LEN, STR(fw_name));
+    unsigned human_name_len = snprintf(persist_data.human_name, OSM_HUMAN_NAME_LEN, "0x%08"PRIX32, osm_platform_get_hw_id());
     persist_data.human_name[human_name_len] = 0;
     osm_model_persist_config_model_init(&persist_data.model_config);
 }
@@ -52,12 +52,12 @@ bool osm_persistent_init(void)
         osm_log_error("Unable to load persistent data.");
         wipe = true;
     }
-    else if (strncmp(persist_data_raw->model_name, STR(fw_name), MODEL_NAME_LEN))
+    else if (strncmp(persist_data_raw->model_name, STR(fw_name), OSM_MODEL_NAME_LEN))
     {
         osm_log_error("Persistent model name doesn't match.");
         wipe = true;
     }
-    else if (persist_data_raw->model_config.comms_config.type != COMMS_BUILD_TYPE)
+    else if (persist_data_raw->model_config.comms_config.type != OSM_COMMS_BUILD_TYPE)
     {
         osm_log_error("Persistent comms type doesn't match.");
         wipe = true;
@@ -100,13 +100,13 @@ static bool _persist_data_cmp(void)
         persist_data.pending_fw     == persist_data_raw->pending_fw     &&
         memcmp(persist_data.model_name,
             persist_data_raw->model_name,
-            sizeof(char) * MODEL_NAME_LEN) == 0                         &&
+            sizeof(char) * OSM_MODEL_NAME_LEN) == 0                         &&
         memcmp(persist_data.serial_number,
             persist_data_raw->serial_number,
-            sizeof(char) * SERIAL_NUM_LEN_NULLED) == 0                  &&
+            sizeof(char) * OSM_SERIAL_NUM_LEN_NULLED) == 0                  &&
         memcmp(persist_data.human_name,
             persist_data_raw->human_name,
-            sizeof(char) * HUMAN_NAME_LEN_NULLED) == 0                  &&
+            sizeof(char) * OSM_HUMAN_NAME_LEN_NULLED) == 0                  &&
         !osm_model_persist_config_cmp(
             &persist_data.model_config,
             &persist_data_raw->model_config)                            &&

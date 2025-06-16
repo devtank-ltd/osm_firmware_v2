@@ -3,9 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define LINUX_PTY_NAME_STR_SIZE 32
-#define LINUX_PTY_NAME_SIZE     (LINUX_PTY_NAME_STR_SIZE+1)
-#define LOCATION_LEN 100
+#define OSM_LINUX_PTY_NAME_STR_SIZE 32
+#define OSM_LINUX_PTY_NAME_SIZE     (OSM_LINUX_PTY_NAME_STR_SIZE+1)
+#define OSM_LOCATION_LEN 100
 
 extern volatile bool linux_threads_deinit;
 

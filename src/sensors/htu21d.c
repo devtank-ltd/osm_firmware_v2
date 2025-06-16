@@ -104,7 +104,7 @@ uint8_t _crc8(const uint8_t* mem, uint8_t size)
 }
 
 
-#define htu21d_debug(...)  osm_log_debug(DEBUG_TMP_HUM, "HTU21D: " __VA_ARGS__)
+#define htu21d_debug(...)  osm_log_debug(OSM_DEBUG_TMP_HUM, "HTU21D: " __VA_ARGS__)
 
 
 
@@ -124,7 +124,7 @@ static void _htu21d_send(htu21d_reg_t reg)
 {
     uint8_t reg8 = reg;
     htu21d_debug("Send command 0x%"PRIx8, reg8);
-    if (!osm_i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
+    if (!osm_i2c_transfer_timeout(OSM_HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
         osm_htu21d_init();
 }
 
@@ -133,7 +133,7 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
 {
     htu21d_debug("Try read");
     uint8_t d[3] = {0};
-    if (!osm_i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, NULL, 0, d, 3, timeout))
+    if (!osm_i2c_transfer_timeout(OSM_HTU21D_I2C, I2C_HTU21D_ADDR, NULL, 0, d, 3, timeout))
     {
         htu21d_debug("Read timeout.");
         osm_htu21d_init();
@@ -346,13 +346,13 @@ static measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
     return MEASUREMENTS_SENSOR_STATE_BUSY;
 
 bad_temp_exit:
-    if (strncmp(name, MEASUREMENTS_HTU21D_TEMP, MEASURE_NAME_LEN) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_HTU21D_TEMP, OSM_MEASURE_NAME_LEN) == 0)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     return MEASUREMENTS_SENSOR_STATE_BUSY;
 bad_humi_exit:
-    if (strncmp(name, MEASUREMENTS_HTU21D_HUMI, MEASURE_NAME_LEN) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_HTU21D_HUMI, OSM_MEASURE_NAME_LEN) == 0)
     {
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }

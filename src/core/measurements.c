@@ -24,7 +24,7 @@
 typedef struct
 {
     measurements_def_t * def;
-    measurements_data_t  data[MEASUREMENTS_MAX_NUMBER];
+    measurements_data_t  data[OSM_MEASUREMENTS_MAX_NUMBER];
 } measurements_arr_t;
 
 
@@ -57,7 +57,7 @@ static unsigned _measurements_chunk_start_pos = 0;
 static unsigned _measurements_chunk_prev_start_pos = 0;
 
 
-uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
+uint32_t transmit_interval = OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minutes, defaulting to 15 minutes */
 
 #define INTERVAL_TRANSMIT_MS   (transmit_interval * 60)
 
@@ -66,14 +66,14 @@ uint32_t transmit_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in minut
 
 bool osm_measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
 {
-    if (!name || strlen(name) > MEASURE_NAME_LEN || !name[0])
+    if (!name || strlen(name) > OSM_MEASURE_NAME_LEN || !name[0])
         return false;
 
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def_t * def   = &_measurements_arr.def[i];
         measurements_data_t * data = &_measurements_arr.data[i];
-        if (strncmp(def->name, name, MEASURE_NAME_LEN) == 0)
+        if (strncmp(def->name, name, OSM_MEASURE_NAME_LEN) == 0)
         {
             if (measurements_def)
                 *measurements_def = def;
@@ -150,7 +150,7 @@ static void _measurements_reset_send(void)
     osm_protocol_reset();
     _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
     _pending_send = false;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
         _measurements_arr.data[i].has_sent = false;
 }
 
@@ -199,7 +199,7 @@ static void _measurements_send(void)
     if (!_measurements_send_start())
         return;
 
-    if (_measurements_chunk_start_pos == MEASUREMENTS_MAX_NUMBER)
+    if (_measurements_chunk_start_pos == OSM_MEASUREMENTS_MAX_NUMBER)
         _measurements_chunk_start_pos = 0;
 
     unsigned i = _measurements_chunk_start_pos;
@@ -207,7 +207,7 @@ static void _measurements_send(void)
     if (_measurements_chunk_start_pos)
         measurements_debug("Resuming previous measurements send.");
 
-    for (; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
         measurements_data_t* data = &_measurements_arr.data[i];
@@ -235,7 +235,7 @@ static void _measurements_send(void)
             data->num_samples_collected = 0;
         }
     }
-    bool is_max = i == MEASUREMENTS_MAX_NUMBER;
+    bool is_max = i == OSM_MEASUREMENTS_MAX_NUMBER;
     if (is_max)
     {
         if (_measurements_chunk_start_pos)
@@ -243,7 +243,7 @@ static void _measurements_send(void)
             _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
         else
             _measurements_chunk_prev_start_pos = 0;
-        _measurements_chunk_start_pos = MEASUREMENTS_MAX_NUMBER;
+        _measurements_chunk_start_pos = OSM_MEASUREMENTS_MAX_NUMBER;
     }
 
     if (!_pending_send)
@@ -307,7 +307,7 @@ void osm_on_protocol_sent_ack(bool ack)
         return;
     }
     unsigned start = _measurements_chunk_prev_start_pos;
-    unsigned end = _measurements_chunk_start_pos ? _measurements_chunk_start_pos : MEASUREMENTS_MAX_NUMBER;
+    unsigned end = _measurements_chunk_start_pos ? _measurements_chunk_start_pos : OSM_MEASUREMENTS_MAX_NUMBER;
     for (unsigned i = start; i < end; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
@@ -477,7 +477,7 @@ static void _measurements_sample_proc_i64(measurements_data_t* data, measurement
 
 static void _measurements_sample_proc_str(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    uint8_t new_len = strnlen(new_value->v_str, MEASUREMENTS_VALUE_STR_LEN - 1);
+    uint8_t new_len = strnlen(new_value->v_str, OSM_MEASUREMENTS_VALUE_STR_LEN - 1);
     strncpy(data->value.value_s.str, new_value->v_str, new_len);
     data->value.value_s.str[new_len] = 0;
     measurements_debug("Value : %s", data->value.value_s.str);
@@ -575,7 +575,7 @@ static void _measurements_sample(void)
     _check_time.last_checked_time = now;
     _check_time.wait_time = UINT32_MAX;
 
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
         measurements_data_t* data = &_measurements_arr.data[i];
@@ -683,7 +683,7 @@ static void _measurements_sample(void)
 
 bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data)
 {
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def_t*  def  = &_measurements_arr.def[i];
 
@@ -700,10 +700,10 @@ bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data)
 bool osm_measurements_add(measurements_def_t* measurements_def)
 {
     bool                    found_space = false;
-    unsigned                space = MEASUREMENTS_MAX_NUMBER - 1;
+    unsigned                space = OSM_MEASUREMENTS_MAX_NUMBER - 1;
     measurements_def_t*     def;
     measurements_data_t*    data;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         def = &_measurements_arr.def[i];
         data = &_measurements_arr.data[i];
@@ -741,14 +741,14 @@ bool osm_measurements_add(measurements_def_t* measurements_def)
             if (inf.enable_cb)
                 inf.enable_cb(def->name, def->interval > 0);
         }
-        unsigned name_len = strnlen(def->name, MEASURE_NAME_LEN);
+        unsigned name_len = strnlen(def->name, OSM_MEASURE_NAME_LEN);
         unsigned i;
         for (i = 0; i < name_len; i++)
         {
             if (def->name[i] == ' ')
                 def->name[i] = '_';
         }
-        for (i = name_len; i < MEASURE_NAME_LEN; i++)
+        for (i = name_len; i < OSM_MEASURE_NAME_LEN; i++)
         {
             if (def->name[i] == ' ')
                 def->name[i] = '\0';
@@ -762,7 +762,7 @@ bool osm_measurements_add(measurements_def_t* measurements_def)
 
 bool osm_measurements_del(char* name)
 {
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         if (strcmp(name, _measurements_arr.def[i].name) == 0)
         {
@@ -847,7 +847,7 @@ bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 static uint16_t _measurements_iterate_callbacks(void)
 {
     uint16_t active_count = 0;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         if (_measurements_arr.data[i].num_samples_init <= _measurements_arr.data[i].num_samples_collected)
             continue;
@@ -894,12 +894,12 @@ static void _measurements_sleep_iteration(void)
     else
         sleep_time = next_send_time;
 
-    if (sleep_time < SLEEP_MIN_SLEEP_TIME_MS)
+    if (sleep_time < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         /* No point sleeping for short amount of time */
         return;
 
     /* Make sure to wake up before required */
-    sleep_time -= SLEEP_MIN_SLEEP_TIME_MS;
+    sleep_time -= OSM_SLEEP_MIN_SLEEP_TIME_MS;
     if (_measurements_print_sleep)
     {
         _measurements_print_sleep = false;
@@ -927,7 +927,7 @@ static bool _protocol_append_instant_measurement(measurements_def_t* def, measur
 void _measurements_check_instant_send(void)
 {
     bool to_instant_send = false;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         if (_measurements_arr.data[i].instant_send)
             to_instant_send = true;
@@ -943,7 +943,7 @@ void _measurements_check_instant_send(void)
     }
 
     unsigned count = 0;
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def_t* def = &_measurements_arr.def[i];
         measurements_data_t* data = &_measurements_arr.data[i];
@@ -971,7 +971,7 @@ void _measurements_check_instant_send(void)
         measurements_debug("No measurements were added, not sending.");
         return;
     }
-    if (_measurements_chunk_start_pos != MEASUREMENTS_MAX_NUMBER && _measurements_chunk_start_pos != 0)
+    if (_measurements_chunk_start_pos != OSM_MEASUREMENTS_MAX_NUMBER && _measurements_chunk_start_pos != 0)
     {
         measurements_debug("Cannot instant send, there is a measurement send underway.");
         return;
@@ -1043,9 +1043,9 @@ void osm_measurements_loop_iteration(void)
 
 static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name, char* new_name)
 {
-    if (strncmp(dest_name, old_name, MEASURE_NAME_LEN) == 0)
+    if (strncmp(dest_name, old_name, OSM_MEASURE_NAME_LEN) == 0)
     {
-        strncpy(dest_name, new_name, MEASURE_NAME_NULLED_LEN);
+        strncpy(dest_name, new_name, OSM_MEASURE_NAME_NULLED_LEN);
     }
 }
 
@@ -1053,7 +1053,7 @@ static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name
 static void _measurements_update_def(measurements_def_t* def)
 {
     if (def->type == PULSE_COUNT)
-        _measurements_replace_name_if_legacy(def->name, MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, MEASUREMENTS_PULSE_COUNT_NAME_1);
+        _measurements_replace_name_if_legacy(def->name, OSM_MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, OSM_MEASUREMENTS_PULSE_COUNT_NAME_1);
 }
 
 
@@ -1063,7 +1063,7 @@ void osm_measurements_init(void)
 
     unsigned found = 0;
 
-    for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
+    for(unsigned n = 0; n < OSM_MEASUREMENTS_MAX_NUMBER; n++)
     {
         measurements_def_t* def = &_measurements_arr.def[n];
         unsigned char id_start = def->name[0];
@@ -1086,7 +1086,7 @@ void osm_measurements_init(void)
     }
     else measurements_debug("Loading measurements.");
 
-    for(unsigned n = 0; n < MEASUREMENTS_MAX_NUMBER; n++)
+    for(unsigned n = 0; n < OSM_MEASUREMENTS_MAX_NUMBER; n++)
     {
         measurements_def_t* def = &_measurements_arr.def[n];
         measurements_data_t* data = &_measurements_arr.data[n];
@@ -1295,8 +1295,8 @@ bool osm_measurements_rename(char* orig_name, char* new_name_raw)
         measurements_debug("Handed a NULL pointer.");
         return false;
     }
-    char new_name[MEASURE_NAME_NULLED_LEN] = {0};
-    strncpy(new_name, new_name_raw, MEASURE_NAME_LEN);
+    char new_name[OSM_MEASURE_NAME_NULLED_LEN] = {0};
+    strncpy(new_name, new_name_raw, OSM_MEASURE_NAME_LEN);
     if (osm_measurements_get_measurements_def(new_name, NULL, NULL))
     {
         measurements_debug("Measurement with new name already exists.");
@@ -1308,7 +1308,7 @@ bool osm_measurements_rename(char* orig_name, char* new_name_raw)
         measurements_debug("Can not get the measurements def.");
         return false;
     }
-    strncpy(def->name, new_name, MEASURE_NAME_NULLED_LEN);
+    strncpy(def->name, new_name, OSM_MEASURE_NAME_NULLED_LEN);
     return true;
 }
 
@@ -1318,7 +1318,7 @@ static command_response_t _measurements_cb(char *args, cmd_ctx_t * ctx)
     measurements_def_t* measurements_def;
     osm_cmd_ctx_out(ctx,"Loaded Measurements");
     osm_cmd_ctx_out(ctx,"Name\tInterval\tSample Count");
-    for (unsigned i = 0; i < MEASUREMENTS_MAX_NUMBER; i++)
+    for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         measurements_def = &_measurements_arr.def[i];
         unsigned char id_start = measurements_def->name[0];
@@ -1348,8 +1348,8 @@ static command_response_t _measurements_enable_cb(char *args, cmd_ctx_t * ctx)
 static command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
 {
     char * p = osm_skip_space(args);
-    char name[MEASURE_NAME_NULLED_LEN];
-    unsigned len = strnlen(p, MEASURE_NAME_LEN);
+    char name[OSM_MEASURE_NAME_NULLED_LEN];
+    unsigned len = strnlen(p, OSM_MEASURE_NAME_LEN);
     char* end_first_word = strchr(p, ' ');
     if (end_first_word)
         len = end_first_word - p;
@@ -1393,23 +1393,23 @@ static command_response_t _measurements_get_to_cb(char* args, cmd_ctx_t * ctx)
 
 static const char* measurements_type_to_str(measurements_def_type_t type)
 {
-    static const char modbus_name[]         = MEASUREMENTS_DEF_NAME_MODBUS;
-    static const char pm10_name[]           = MEASUREMENTS_DEF_NAME_PM10;
-    static const char pm25_name[]           = MEASUREMENTS_DEF_NAME_PM25;
-    static const char current_clamp_name[]  = MEASUREMENTS_DEF_NAME_CURRENT_CLAMP;
-    static const char w1_probe_name[]       = MEASUREMENTS_DEF_NAME_W1_PROBE;
-    static const char htu21d_hum_name[]     = MEASUREMENTS_DEF_NAME_HTU21D_HUM;
-    static const char htu21d_tmp_name[]     = MEASUREMENTS_DEF_NAME_HTU21D_TMP;
-    static const char bat_mon_name[]        = MEASUREMENTS_DEF_NAME_BAT_MON;
-    static const char pulse_count_name[]    = MEASUREMENTS_DEF_NAME_PULSE_COUNT;
-    static const char light_name[]          = MEASUREMENTS_DEF_NAME_LIGHT;
-    static const char sound_name[]          = MEASUREMENTS_DEF_NAME_SOUND;
-    static const char fw_version_name[]     = MEASUREMENTS_DEF_NAME_FW_VERSION;
-    static const char config_revision_name[] = MEASUREMENTS_DEF_NAME_CONFIG_REVISION;
-    static const char ftma_name[]           = MEASUREMENTS_DEF_NAME_FTMA;
-    static const char custom_0_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_0;
-    static const char custom_1_name[]       = MEASUREMENTS_DEF_NAME_CUSTOM_1;
-    static const char io_reading_name[]     = MEASUREMENTS_DEF_NAME_IO_READING;
+    static const char modbus_name[]         = OSM_MEASUREMENTS_DEF_NAME_MODBUS;
+    static const char pm10_name[]           = OSM_MEASUREMENTS_DEF_NAME_PM10;
+    static const char pm25_name[]           = OSM_MEASUREMENTS_DEF_NAME_PM25;
+    static const char current_clamp_name[]  = OSM_MEASUREMENTS_DEF_NAME_CURRENT_CLAMP;
+    static const char w1_probe_name[]       = OSM_MEASUREMENTS_DEF_NAME_W1_PROBE;
+    static const char htu21d_hum_name[]     = OSM_MEASUREMENTS_DEF_NAME_HTU21D_HUM;
+    static const char htu21d_tmp_name[]     = OSM_MEASUREMENTS_DEF_NAME_HTU21D_TMP;
+    static const char bat_mon_name[]        = OSM_MEASUREMENTS_DEF_NAME_BAT_MON;
+    static const char pulse_count_name[]    = OSM_MEASUREMENTS_DEF_NAME_PULSE_COUNT;
+    static const char light_name[]          = OSM_MEASUREMENTS_DEF_NAME_LIGHT;
+    static const char sound_name[]          = OSM_MEASUREMENTS_DEF_NAME_SOUND;
+    static const char fw_version_name[]     = OSM_MEASUREMENTS_DEF_NAME_FW_VERSION;
+    static const char config_revision_name[] = OSM_MEASUREMENTS_DEF_NAME_CONFIG_REVISION;
+    static const char ftma_name[]           = OSM_MEASUREMENTS_DEF_NAME_FTMA;
+    static const char custom_0_name[]       = OSM_MEASUREMENTS_DEF_NAME_CUSTOM_0;
+    static const char custom_1_name[]       = OSM_MEASUREMENTS_DEF_NAME_CUSTOM_1;
+    static const char io_reading_name[]     = OSM_MEASUREMENTS_DEF_NAME_IO_READING;
 
     switch (type)
     {
@@ -1457,12 +1457,12 @@ static const char* measurements_type_to_str(measurements_def_type_t type)
 static command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p = osm_skip_space(args);
-    char name[MEASURE_NAME_NULLED_LEN];
+    char name[OSM_MEASURE_NAME_NULLED_LEN];
     char* np = strchr(p, ' ');
     unsigned len;
     if (!np)
     {
-        len = strnlen(p, MEASURE_NAME_LEN);
+        len = strnlen(p, OSM_MEASURE_NAME_LEN);
     }
     else
     {
@@ -1609,11 +1609,11 @@ static command_response_t _measurements_interval_mins_cb(char* args, cmd_ctx_t *
 
 static command_response_t _measurements_is_immediate_cb(char* args, cmd_ctx_t * ctx)
 {
-    char name[MEASURE_NAME_NULLED_LEN];
+    char name[OSM_MEASURE_NAME_NULLED_LEN];
     char* p = strchr(args, ' ');
     unsigned len;
     if (!p)
-        len = strnlen(args, MEASURE_NAME_LEN);
+        len = strnlen(args, OSM_MEASURE_NAME_LEN);
     else
         len = p - args;
     strncpy(name, args, len);

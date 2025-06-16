@@ -25,13 +25,13 @@ static void _persistent_wipe(void)
     memset(&persist_data, 0, sizeof(persist_data));
     memset(&persist_measurements, 0, sizeof(persist_measurements));
     persist_data.version = PERSIST_VERSION;
-    persist_data.log_debug_mask = DEBUG_SYS;
+    persist_data.log_debug_mask = OSM_DEBUG_SYS;
     persist_data.config_count = 0;
-    if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
-        memcpy(&persist_data.model_name[0], MODEL_NAME, MODEL_NAME_LEN);
+    if (strlen(OSM_MODEL_NAME) > OSM_MODEL_NAME_LEN)
+        memcpy(&persist_data.model_name[0], OSM_MODEL_NAME, OSM_MODEL_NAME_LEN);
     else
-        snprintf(persist_data.model_name, MODEL_NAME_LEN, MODEL_NAME);
-    unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, osm_platform_get_hw_id());
+        snprintf(persist_data.model_name, OSM_MODEL_NAME_LEN, OSM_MODEL_NAME);
+    unsigned human_name_len = snprintf(persist_data.human_name, OSM_HUMAN_NAME_LEN, "0x%08"PRIX32, osm_platform_get_hw_id());
     persist_data.human_name[human_name_len] = 0;
     osm_model_persist_config_model_init(&persist_data.model_config);
 }

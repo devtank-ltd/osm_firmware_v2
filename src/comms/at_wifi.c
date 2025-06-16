@@ -37,9 +37,9 @@
 #define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START            "    \"CHANNEL START\": %"PRIu16","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT            "    \"CHANNEL COUNT\": %"PRIu16","
 
-#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN          ,_wifi_ssid
-#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN           , _wifi_pwd
-#define AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_country_code)  AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE , AT_WIFI_MAX_COUNTRY_CODE_LEN  , _country_code
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , OSM_AT_WIFI_MAX_SSID_LEN          ,_wifi_ssid
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , OSM_AT_WIFI_MAX_PWD_LEN           , _wifi_pwd
+#define AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_country_code)  AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE , OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN  , _country_code
 #define AT_WIFI_PRINT_CFG_JSON_CHANNEL_START(_schan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START, _schan
 #define AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT(_nchan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT, _nchan
 
@@ -124,7 +124,7 @@ typedef enum
 typedef struct
 {
     at_wifi_ap_ecn_t    ecn;
-    char                ssid[AT_WIFI_MAX_SSID_LEN + 1];
+    char                ssid[OSM_AT_WIFI_MAX_SSID_LEN + 1];
     int                 rssi;
     uint8_t             mac[6];
     unsigned            channel;
@@ -142,7 +142,7 @@ static struct
 {
     enum at_wifi_states_t    state;
     enum at_wifi_states_t    before_timedout_state;
-    char                    before_timedout_last_cmd[AT_BASE_MAX_CMD_LEN];
+    char                    before_timedout_last_cmd[OSM_AT_BASE_MAX_CMD_LEN];
     at_wifi_config_t*       mem;
     uint32_t                ip;
     at_mqtt_ctx_t           mqtt_ctx;
@@ -229,8 +229,8 @@ static bool _at_wifi_mem_is_valid(void)
 
     return _at_wifi_ctx.mem &&
         osm_at_mqtt_mem_is_valid() &&
-        osm_str_is_valid_ascii(_at_wifi_ctx.mem->wifi.ssid   , AT_WIFI_MAX_SSID_LEN          , true  ) &&
-        osm_str_is_valid_ascii(_at_wifi_ctx.mem->wifi.pwd    , AT_WIFI_MAX_PWD_LEN           , false );
+        osm_str_is_valid_ascii(_at_wifi_ctx.mem->wifi.ssid   , OSM_AT_WIFI_MAX_SSID_LEN          , true  ) &&
+        osm_str_is_valid_ascii(_at_wifi_ctx.mem->wifi.pwd    , OSM_AT_WIFI_MAX_PWD_LEN           , false );
 }
 
 
@@ -240,7 +240,7 @@ static unsigned _at_wifi_printf(const char* fmt, ...)
     char* buf = _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_cmd.str;
     va_list args;
     va_start(args, fmt);
-    int len = vsnprintf(buf, AT_BASE_MAX_CMD_LEN - 2, fmt, args);
+    int len = vsnprintf(buf, OSM_AT_BASE_MAX_CMD_LEN - 2, fmt, args);
     va_end(args);
     buf[len] = 0;
     _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent = osm_get_since_boot_ms();
@@ -317,7 +317,7 @@ static unsigned _at_wifi_mqtt_publish(const char* topic, char* message, unsigned
     {
         case AT_WIFI_STATE_IDLE:
         {
-            message_len = message_len < COMMS_DEFAULT_MTU ? message_len : COMMS_DEFAULT_MTU;
+            message_len = message_len < OSM_COMMS_DEFAULT_MTU ? message_len : OSM_COMMS_DEFAULT_MTU;
             at_base_cmd_t* cmd = osm_at_mqtt_publish_prep(topic, message, message_len);
             if (!cmd)
             {
@@ -341,7 +341,7 @@ static unsigned _at_wifi_mqtt_publish(const char* topic, char* message, unsigned
 
 uint16_t osm_at_wifi_get_mtu(void)
 {
-    return COMMS_DEFAULT_MTU;
+    return OSM_COMMS_DEFAULT_MTU;
 }
 
 
@@ -359,7 +359,7 @@ bool osm_at_wifi_send_allowed(void)
 
 static bool _at_wifi_mqtt_publish_measurements(char* data, uint16_t len)
 {
-    return _at_wifi_mqtt_publish(AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
+    return _at_wifi_mqtt_publish(OSM_AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
 }
 
 
@@ -462,7 +462,7 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
                     unsigned ssid_len = (msg + len) > (ssid + 1) ? msg + len - ssid - 1 : 0;
                     /* Probably should check if saved has trailing spaces */
                     char* cmp_ssid = _at_wifi_ctx.mem->wifi.ssid;
-                    unsigned cmp_ssid_len = strnlen(cmp_ssid, AT_WIFI_MAX_SSID_LEN);
+                    unsigned cmp_ssid_len = strnlen(cmp_ssid, OSM_AT_WIFI_MAX_SSID_LEN);
                     if (ssid_len == cmp_ssid_len &&
                         strncmp(cmp_ssid, ssid, cmp_ssid_len) == 0)
                     {
@@ -560,7 +560,7 @@ static void _at_wifi_process_state_wait_mac_address(char* msg, unsigned len)
     if (osm_is_str(mac_msg, msg, mac_msg_len))
     {
         unsigned len_rem = len - mac_msg_len;
-        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
+        const unsigned maxstrlen = OSM_AT_BASE_MAC_ADDRESS_LEN - 1;
         len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
         char* dest = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
         memcpy(dest, msg + mac_msg_len, len_rem);
@@ -614,9 +614,9 @@ static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
     if (osm_at_base_is_ok(msg, len))
     {
         osm_at_base_sleep();
-        char ssid[2*AT_WIFI_MAX_SSID_LEN+1];
+        char ssid[2*OSM_AT_WIFI_MAX_SSID_LEN+1];
         char* san_ssid = AT_BASE_SANIT_STR(_at_wifi_ctx.mem->wifi.ssid);
-        strncpy(ssid, san_ssid, 2*AT_WIFI_MAX_SSID_LEN+1);
+        strncpy(ssid, san_ssid, 2*OSM_AT_WIFI_MAX_SSID_LEN+1);
         _at_wifi_printf(
             "AT+CWJAP=\"%s\",\"%s\"",
             ssid,
@@ -856,10 +856,10 @@ static void _at_wifi_process_state_mqtt_wait_sub(char* msg, unsigned len)
 
 static bool _at_wifi_process_event(char* msg, unsigned len)
 {
-    char resp_payload[AT_MQTT_RESP_PAYLOAD_LEN + 1];
-    int resp_payload_len = osm_at_mqtt_process_event(msg, len, resp_payload, AT_MQTT_RESP_PAYLOAD_LEN + 1);
-    return (AT_ERROR_CODE != resp_payload_len) &&
-        _at_wifi_mqtt_publish(AT_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len);
+    char resp_payload[OSM_AT_MQTT_RESP_PAYLOAD_LEN + 1];
+    int resp_payload_len = osm_at_mqtt_process_event(msg, len, resp_payload, OSM_AT_MQTT_RESP_PAYLOAD_LEN + 1);
+    return (OSM_AT_ERROR_CODE != resp_payload_len) &&
+        _at_wifi_mqtt_publish(OSM_AT_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len);
 }
 
 
@@ -1059,7 +1059,7 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     {
         np = strchr(np + 1, '"');
     }
-    if (np <= p || AT_WIFI_MAX_SSID_LEN < np - p || np + 1 > msg + len)
+    if (np <= p || OSM_AT_WIFI_MAX_SSID_LEN < np - p || np + 1 > msg + len)
     {
         comms_debug("Bad format (SSID)");
         return false;
@@ -1303,7 +1303,7 @@ bool osm_at_wifi_get_connected(void)
 
 static void _at_wifi_timedout_start_wifi_status(void)
 {
-    strncpy(_at_wifi_ctx.before_timedout_last_cmd, _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_cmd.str, AT_BASE_MAX_CMD_LEN);
+    strncpy(_at_wifi_ctx.before_timedout_last_cmd, _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_cmd.str, OSM_AT_BASE_MAX_CMD_LEN);
     _at_wifi_printf("AT+CWSTATE?");
     _at_wifi_ctx.before_timedout_state = _at_wifi_ctx.state;
 }
@@ -1440,7 +1440,7 @@ static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * c
     _at_wifi_config_get_set_str(
         "SSID",
         _at_wifi_ctx.mem->wifi.ssid,
-        AT_WIFI_MAX_SSID_LEN,
+        OSM_AT_WIFI_MAX_SSID_LEN,
         args, ctx);
     return COMMAND_RESP_OK;
 }
@@ -1451,7 +1451,7 @@ static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ct
     _at_wifi_config_get_set_str(
         "PWD",
         _at_wifi_ctx.mem->wifi.pwd,
-        AT_WIFI_MAX_PWD_LEN,
+        OSM_AT_WIFI_MAX_PWD_LEN,
         args, ctx);
     return COMMAND_RESP_OK;
 }
@@ -1462,7 +1462,7 @@ static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx)
     _at_wifi_config_get_set_str(
         "COUNTRY",
         _at_wifi_ctx.mem->country_code,
-        AT_WIFI_MAX_COUNTRY_CODE_LEN,
+        OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN,
         args, ctx);
     return COMMAND_RESP_OK;
 }
@@ -1532,21 +1532,21 @@ static bool _at_wifi_get_mac_address(char* buf, unsigned buflen);
 
 command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
-    char mac_address[AT_BASE_MAC_ADDRESS_LEN];
-    if (!_at_wifi_get_mac_address(mac_address, AT_BASE_MAC_ADDRESS_LEN))
+    char mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
+    if (!_at_wifi_get_mac_address(mac_address, OSM_AT_BASE_MAC_ADDRESS_LEN))
     {
-        strncpy(mac_address, "UNKNOWN", AT_BASE_MAC_ADDRESS_LEN-1);
+        strncpy(mac_address, "UNKNOWN", OSM_AT_BASE_MAC_ADDRESS_LEN-1);
     }
-    osm_cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
+    osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_HEADER);
     osm_cmd_ctx_flush(ctx);
-    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_SSID      , _at_wifi_ctx.mem->wifi.ssid       , AT_WIFI_MAX_SSID_LEN      );
-    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_PWD       , _at_wifi_ctx.mem->wifi.pwd        , AT_WIFI_MAX_PWD_LEN       );
+    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_SSID      , _at_wifi_ctx.mem->wifi.ssid       , OSM_AT_WIFI_MAX_SSID_LEN      );
+    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_PWD       , _at_wifi_ctx.mem->wifi.pwd        , OSM_AT_WIFI_MAX_PWD_LEN       );
     COMMS_COMMON_JSON_OUT_INT(AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE   , _at_wifi_ctx.mem->country_code                                );
     COMMS_COMMON_JSON_OUT_INT(AT_WIFI_PRINT_CFG_JSON_CHANNEL_START  , _at_wifi_ctx.mem->channel_start                               );
     COMMS_COMMON_JSON_OUT_INT(AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT  , _at_wifi_ctx.mem->channel_count                               );
     osm_at_mqtt_cmd_j_cfg(ctx);
-    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address                       , AT_BASE_MAC_ADDRESS_LEN   );
-    osm_cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
+    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address                       , OSM_AT_BASE_MAC_ADDRESS_LEN   );
+    osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_TAIL);
     osm_cmd_ctx_flush(ctx);
     return COMMAND_RESP_OK;
 }
@@ -1701,7 +1701,7 @@ static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
         char bgn[4];
         _at_wifi_bgn_text(ap_info->bgn, bgn, 4);
         osm_cmd_ctx_out(ctx,"  {");
-        osm_cmd_ctx_out(ctx,"    \"SSID\":\"%.*s\",", AT_WIFI_MAX_SSID_LEN, ap_info->ssid);
+        osm_cmd_ctx_out(ctx,"    \"SSID\":\"%.*s\",", OSM_AT_WIFI_MAX_SSID_LEN, ap_info->ssid);
         osm_cmd_ctx_out(ctx,"    \"encryption\":\"%s\",", _at_wifi_encryption_text(ap_info->ecn));
         osm_cmd_ctx_out(ctx,"    \"RSSI\":%d,", ap_info->rssi);
         osm_cmd_ctx_out(ctx,"    \"MAC\":\"%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\",", ap_info->mac[0],ap_info->mac[1],ap_info->mac[2],ap_info->mac[3],ap_info->mac[4],ap_info->mac[5]);
@@ -1819,8 +1819,8 @@ static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
     at_wifi_config->type = COMMS_TYPE_WIFI;
     at_wifi_config->mqtt.scheme = AT_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
-    strncpy(at_wifi_config->country_code, "GB", AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
-    at_wifi_config->country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN] = 0;
+    strncpy(at_wifi_config->country_code, "GB", OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
+    at_wifi_config->country_code[OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN] = 0;
     at_wifi_config->channel_start = 1;
     at_wifi_config->channel_count = 13;
 }
@@ -1875,16 +1875,16 @@ bool osm_at_wifi_get_unix_time(int64_t * ts)
 static bool _at_wifi_get_mac_address(char* buf, unsigned buflen)
 {
     char* src = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
-    const unsigned mac_len = AT_BASE_MAC_ADDRESS_LEN-1;
+    const unsigned mac_len = OSM_AT_BASE_MAC_ADDRESS_LEN-1;
     if (strnlen(src, mac_len) != mac_len ||
         !osm_str_is_valid_ascii(src, mac_len, true))
     {
         comms_debug("Don't have MAC address");
         return false;
     }
-    if (buflen > AT_BASE_MAC_ADDRESS_LEN)
+    if (buflen > OSM_AT_BASE_MAC_ADDRESS_LEN)
     {
-        buflen = AT_BASE_MAC_ADDRESS_LEN;
+        buflen = OSM_AT_BASE_MAC_ADDRESS_LEN;
     }
     memcpy(buf, src, buflen-1);
     buf[buflen-1] = 0;

@@ -324,7 +324,7 @@ static void _sai_dma_init(void)
 static bool _sai_load_coeffs(void)
 {
     _sai_calibration_coeffs = persist_data.model_config.sai_cal_coeffs;
-    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    for (unsigned i = 0; i < OSM_SAI_NUM_CAL_COEFFS; i++)
     {
         if (_sai_calibration_coeffs[i] != 0)
             return true;
@@ -335,8 +335,8 @@ static bool _sai_load_coeffs(void)
 
 void osm_sai_init(void)
 {
-    const port_n_pins_t sai_pins[]  = SAI_PORT_N_PINS;
-    const uint32_t      sai_pin_funcs[] = SAI_PORT_N_PINS_AF;
+    const port_n_pins_t sai_pins[]  = OSM_SAI_PORT_N_PINS;
+    const uint32_t      sai_pin_funcs[] = OSM_SAI_PORT_N_PINS_AF;
 
     rcc_periph_clock_enable(SCC_SAI1);
 
@@ -390,7 +390,7 @@ void osm_sai_init(void)
 
     if (!_sai_load_coeffs())
     {
-        const float _sai_default_calibration_coeffs[SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
+        const float _sai_default_calibration_coeffs[OSM_SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
         sound_debug("No calibration values found, using default.");
         memcpy(_sai_calibration_coeffs, _sai_default_calibration_coeffs, sizeof(_sai_default_calibration_coeffs));
     }
@@ -642,7 +642,7 @@ static measurements_sensor_state_t _sai_measurements_get(char* name, measurement
 
 void osm_sai_print_coeffs(cmd_ctx_t * ctx)
 {
-    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    for (unsigned i = 0; i < OSM_SAI_NUM_CAL_COEFFS; i++)
     {
         osm_cmd_ctx_out(ctx,"Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
     }
@@ -651,7 +651,7 @@ void osm_sai_print_coeffs(cmd_ctx_t * ctx)
 
 bool osm_sai_set_coeff(uint8_t index, float coeff)
 {
-    if (index > SAI_NUM_CAL_COEFFS)
+    if (index > OSM_SAI_NUM_CAL_COEFFS)
         return false;
     _sai_calibration_coeffs[index] = coeff;
     return true;
@@ -678,7 +678,7 @@ static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
-    if (index < 1 || index > SAI_NUM_CAL_COEFFS)
+    if (index < 1 || index > OSM_SAI_NUM_CAL_COEFFS)
     {
         osm_cmd_ctx_out(ctx,"Index out of range.");
         return COMMAND_RESP_ERR;

@@ -9,7 +9,7 @@ static void _model_config_update_data_v3_to_v4(const persist_model_config_v3_t* 
     memcpy(&v4->comms_config, &v3->comms_config, sizeof(comms_config_t));
     memcpy(v4->cc_configs, v3->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
     memcpy(v4->ios_state, v3->ios_state, sizeof(uint16_t) * IOS_COUNT);
-    memcpy(v4->sai_cal_coeffs, v3->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS);
+    memcpy(v4->sai_cal_coeffs, v3->sai_cal_coeffs, sizeof(float) * OSM_SAI_NUM_CAL_COEFFS);
     v4->sai_no_buf = v3->sai_no_buf;
     for (unsigned i = 0; i < W1_PULSE_COUNT; i++)
     {

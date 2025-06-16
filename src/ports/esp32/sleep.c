@@ -19,9 +19,9 @@ void osm_sleep_exit_sleep_mode(void)
 
 bool osm_sleep_for_ms(uint32_t ms)
 {
-    if (ms > SLEEP_MAX_TIME_MS)
-        ms = SLEEP_MAX_TIME_MS;
-    else if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+    if (ms > OSM_SLEEP_MAX_TIME_MS)
+        ms = OSM_SLEEP_MAX_TIME_MS;
+    else if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
     return false;
 }

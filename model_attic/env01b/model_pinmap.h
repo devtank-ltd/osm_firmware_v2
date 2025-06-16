@@ -25,7 +25,7 @@
 
 #define ADC_DMA_CHANNELS                                                  \
 {                                                                               \
-    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
+    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, OSM_ADC_PRIORITY  , true } , /* ADC1 */   \
 }
 
 #define ADC_DMA_CHANNELS_COUNT  1
@@ -83,7 +83,7 @@
 
 
 #define DS18B20_INSTANCES   {                                          \
-    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+    { { OSM_MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
         0 },                                                           \
 }
 
@@ -128,16 +128,16 @@ GPIO16 D2                   IO 11
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
-    IO_AS_INPUT,                                        /* GPIO 4   */ \
-    IO_AS_INPUT,                                        /* GPIO 5   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
-    IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 1   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 2   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
+    OSM_IO_AS_INPUT,                                        /* GPIO 4   */ \
+    OSM_IO_AS_INPUT,                                        /* GPIO 5   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 7   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 8   */ \
+    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 9   */ \
 }
 
 
@@ -158,8 +158,8 @@ GPIO16 D2                   IO 11
 
 #define UART_CHANNELS                                                                                             \
 {                                                                                                                       \
-    { USART2, RCC_USART2, UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2, GPIO3,   GPIO_AF7, NVIC_USART2_IRQ, (uint32_t)&USART2_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, UART2_PRIORITY, true , 2 }, /* UART 0 Debug */ \
-    { USART3, RCC_USART3, UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4, GPIO5,   GPIO_AF7, NVIC_USART3_IRQ, (uint32_t)&USART3_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, UART3_PRIORITY, true , 2 }, /* UART 1 LoRa */ \
-    { USART1, RCC_USART1, UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6, GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL5_IRQ, DMA_CHANNEL5, UART1_PRIORITY, true , 2 }, /* UART 2 HPM */ \
-    { UART4,  RCC_UART4,  UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOC, GPIO10, GPIO11, GPIO_AF8, NVIC_UART4_IRQ,  (uint32_t)&UART4_TDR,  DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL3_IRQ, DMA_CHANNEL3, UART4_PRIORITY, true , 2 }, /* UART 3 485 */ \
+    { USART2, RCC_USART2, UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2, GPIO3,   GPIO_AF7, NVIC_USART2_IRQ, (uint32_t)&USART2_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, OSM_UART2_PRIORITY, true , 2 }, /* UART 0 Debug */ \
+    { USART3, RCC_USART3, UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4, GPIO5,   GPIO_AF7, NVIC_USART3_IRQ, (uint32_t)&USART3_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, OSM_UART3_PRIORITY, true , 2 }, /* UART 1 LoRa */ \
+    { USART1, RCC_USART1, UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6, GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL5_IRQ, DMA_CHANNEL5, OSM_UART1_PRIORITY, true , 2 }, /* UART 2 HPM */ \
+    { UART4,  RCC_UART4,  UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOC, GPIO10, GPIO11, GPIO_AF8, NVIC_UART4_IRQ,  (uint32_t)&UART4_TDR,  DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL3_IRQ, DMA_CHANNEL3, OSM_UART4_PRIORITY, true , 2 }, /* UART 3 485 */ \
 }

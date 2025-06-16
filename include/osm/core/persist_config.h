@@ -6,8 +6,8 @@
 #include <osm/core/persist_config_header.h>
 
 
-#define PERSIST_BASE_VERSION           4
-#define PERSIST_VERSION_SET(_x)        ((PERSIST_BASE_VERSION << 8) | _x)
+#define OSM_PERSIST_BASE_VERSION           4
+#define PERSIST_VERSION_SET(_x)        ((OSM_PERSIST_BASE_VERSION << 8) | _x)
 
 
 extern persist_storage_t               persist_data __attribute__((aligned (16)));

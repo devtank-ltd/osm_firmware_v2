@@ -9,8 +9,8 @@
 
 #include <osm/core/measurements_mem.h>
 
-#define MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)(15 * 1000)
-#define MEASUREMENTS_VALUE_STR_LEN              23
+#define OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL  (uint32_t)(15 * 1000)
+#define OSM_MEASUREMENTS_VALUE_STR_LEN              23
 
 extern uint32_t transmit_interval;
 
@@ -63,7 +63,7 @@ typedef struct
         } value_f;
         struct
         {
-            char    str[MEASUREMENTS_VALUE_STR_LEN];
+            char    str[OSM_MEASUREMENTS_VALUE_STR_LEN];
         } value_s;
     };
 } measurements_value_t;

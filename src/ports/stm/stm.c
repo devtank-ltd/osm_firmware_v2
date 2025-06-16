@@ -51,8 +51,8 @@ static void _stm_setup_systick(void)
 
 static void _stm_setup_rs485(void)
 {
-    port_n_pins_t re_port_n_pin = RE_485_PIN;
-    port_n_pins_t de_port_n_pin = DE_485_PIN;
+    port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
+    port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
 
     rcc_periph_clock_enable(PORT_TO_RCC(re_port_n_pin.port));
     rcc_periph_clock_enable(PORT_TO_RCC(de_port_n_pin.port));
@@ -111,7 +111,7 @@ static void _stm_setup_adc_dma(adc_setup_config_t* config)
     dma_set_priority(DMA1, DMA_CHANNEL1, DMA_CCR_PL_LOW);
 
     dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL1);
-    dma_set_number_of_data(DMA1, DMA_CHANNEL1, ADCS_NUM_SAMPLES);
+    dma_set_number_of_data(DMA1, DMA_CHANNEL1, OSM_ADCS_NUM_SAMPLES);
     dma_enable_circular_mode(DMA1, DMA_CHANNEL1);
     dma_set_read_from_peripheral(DMA1, DMA_CHANNEL1);
 
@@ -141,14 +141,14 @@ uint32_t osm_platform_get_hw_id(void)
 
 void osm_platform_blink_led_init(void)
 {
-    gpio_mode_setup(LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_PIN);
-    gpio_clear(LED_PORT, LED_PIN);
+    gpio_mode_setup(OSM_LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, OSM_LED_PIN);
+    gpio_clear(OSM_LED_PORT, OSM_LED_PIN);
 }
 
 
 void osm_platform_blink_led_toggle(void)
 {
-    gpio_toggle(LED_PORT, LED_PIN);
+    gpio_toggle(OSM_LED_PORT, OSM_LED_PIN);
 }
 
 
@@ -200,8 +200,8 @@ void osm_platform_set_rs485_mode(bool driver_enable)
      *
      * */
 
-    port_n_pins_t re_port_n_pin = RE_485_PIN;
-    port_n_pins_t de_port_n_pin = DE_485_PIN;
+    port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
+    port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
     if (driver_enable)
     {
         modbus_debug("driver:enable receiver:disable");
@@ -381,7 +381,7 @@ void osm_platform_adc_set_num_data(unsigned num_data)
 
 void osm_platform_hpm_enable(bool enable)
 {
-    port_n_pins_t port_n_pin = HPM_EN_PIN;
+    port_n_pins_t port_n_pin = OSM_HPM_EN_PIN;
     if (enable)
     {
         rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));

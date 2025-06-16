@@ -21,9 +21,9 @@
 #include <osm/core/common.h>
 
 
-static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
+static uart_channel_t uart_channels[OSM_UART_CHANNELS_COUNT] = UART_CHANNELS;
 
-static volatile bool uart_doing_dma[UART_CHANNELS_COUNT] = {0};
+static volatile bool uart_doing_dma[OSM_UART_CHANNELS_COUNT] = {0};
 
 
 static uint32_t _uart_get_parity(osm_uart_parity_t parity)
@@ -137,7 +137,7 @@ static void uart_setup(uart_channel_t * channel)
 
 void osm_uart_enable(unsigned uart, bool enable)
 {
-    if (uart >= UART_CHANNELS_COUNT || !uart)
+    if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
     uart_debug(uart, "%s", (enable)?"Enable":"Disable");
@@ -157,7 +157,7 @@ void osm_uart_enable(unsigned uart, bool enable)
 
 bool osm_uart_is_enabled(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
 
     return (uart_channels[uart].enabled)?true:false;
@@ -166,7 +166,7 @@ bool osm_uart_is_enabled(unsigned uart)
 
 void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
 {
-    if (uart >= UART_CHANNELS_COUNT || !uart)
+    if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
     uart_channel_t * channel = &uart_channels[uart];
@@ -209,7 +209,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
 
 extern bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
 {
-    if (uart >= UART_CHANNELS_COUNT )
+    if (uart >= OSM_UART_CHANNELS_COUNT )
         return false;
 
     const uart_channel_t * channel = &uart_channels[uart];
@@ -237,7 +237,7 @@ bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
     osm_uart_parity_t    parity;
     osm_uart_stop_bits_t stop;
 
-    if (uart >= UART_CHANNELS_COUNT )
+    if (uart >= OSM_UART_CHANNELS_COUNT )
     {
         osm_cmd_ctx_error(ctx, "INVALID UART GIVEN");
         return false;
@@ -270,7 +270,7 @@ static bool uart_getc(uint32_t uart, char* c)
 
 static void process_serial(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
     uart_channel_t * channel = &uart_channels[uart];
@@ -296,13 +296,13 @@ void osm_uarts_setup(void)
 {
     osm_model_uarts_setup();
 
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
         uart_setup(&uart_channels[n]);
 }
 
 bool osm_uart_is_tx_empty(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
 
     if (uart_doing_dma[uart])
@@ -316,7 +316,7 @@ bool osm_uart_is_tx_empty(unsigned uart)
 
 void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
     const uart_channel_t * channel = &uart_channels[uart];
@@ -328,7 +328,7 @@ void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
 
 unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
 
     if (uart_doing_dma[uart])
@@ -378,7 +378,7 @@ unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
 
 static void process_complete_dma(unsigned index)
 {
-    if (index >= UART_CHANNELS_COUNT)
+    if (index >= OSM_UART_CHANNELS_COUNT)
         return;
 
     const uart_channel_t * channel = &uart_channels[index];

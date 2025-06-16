@@ -10,11 +10,11 @@
 #define comms_name          at_wifi
 #endif //comms_name
 
-#define COMMS_BUILD_TYPE    COMMS_TYPE_WIFI
+#define OSM_COMMS_BUILD_TYPE    COMMS_TYPE_WIFI
 
-#define AT_WIFI_MAX_SSID_LEN                    63
-#define AT_WIFI_MAX_PWD_LEN                     63
-#define AT_WIFI_MAX_COUNTRY_CODE_LEN            2
+#define OSM_AT_WIFI_MAX_SSID_LEN                    63
+#define OSM_AT_WIFI_MAX_PWD_LEN                     63
+#define OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN            2
 
 typedef struct
 {
@@ -27,12 +27,12 @@ typedef struct
     /* 16 byte boundary ---- */
     struct
     {
-        char        ssid[AT_WIFI_MAX_SSID_LEN + 1];
+        char        ssid[OSM_AT_WIFI_MAX_SSID_LEN + 1];
         /* 16 byte boundary ---- */
-        char        pwd[AT_WIFI_MAX_PWD_LEN + 1];
+        char        pwd[OSM_AT_WIFI_MAX_PWD_LEN + 1];
     } wifi;
     /* 16 byte boundary ---- */
-    char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
+    char        country_code[OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
     uint8_t     __[13];
     /* 16 byte boundary ---- */
 } __attribute__((__packed__)) at_wifi_config_t;

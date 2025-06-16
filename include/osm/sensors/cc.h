@@ -5,8 +5,8 @@
 #include <osm/core/measurements.h>
 
 
-#define CC_TYPE_A               'A'
-#define CC_TYPE_V               'V'
+#define OSM_CC_TYPE_A               'A'
+#define OSM_CC_TYPE_V               'V'
 
 
 typedef struct

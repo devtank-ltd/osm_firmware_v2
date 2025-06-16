@@ -17,7 +17,7 @@ static uart_channel_t uart_channels[] = UART_CHANNELS;
 
 void osm_linux_uart_proc(unsigned uart, char* in, unsigned len)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
     unsigned written = osm_uart_ring_in(uart, in, len);
@@ -56,7 +56,7 @@ void osm_uarts_setup(void)
 
 void osm_uart_enable(unsigned uart, bool enable)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
     uart_channels[uart].enabled = enable;
 }
@@ -64,7 +64,7 @@ void osm_uart_enable(unsigned uart, bool enable)
 
 bool osm_uart_is_enabled(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
     return uart_channels[uart].enabled;
 }
@@ -72,7 +72,7 @@ bool osm_uart_is_enabled(unsigned uart)
 
 void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
     if (databits < 7)
@@ -105,7 +105,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
 
 bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
     uart_channel_t* chan = &uart_channels[uart];
     *speed      = chan->baud;
@@ -124,7 +124,7 @@ bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
     osm_uart_parity_t    parity;
     osm_uart_stop_bits_t stop;
 
-    if (uart >= UART_CHANNELS_COUNT )
+    if (uart >= OSM_UART_CHANNELS_COUNT )
     {
         osm_log_error("INVALID UART GIVEN");
         return false;

@@ -5,15 +5,15 @@
 #include <osm/core/base_types.h>
 
 
-#define AT_BASE_MAX_CMD_LEN                                  (1024 + 128)
+#define OSM_AT_BASE_MAX_CMD_LEN                                  (1024 + 128)
 
-#define AT_BASE_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT "COMMS_ID_STR"\",\n\r  \"config\": {"
-#define AT_BASE_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
+#define OSM_AT_BASE_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT "COMMS_ID_STR"\",\n\r  \"config\": {"
+#define OSM_AT_BASE_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
 
-#define AT_BASE_MAC_ADDRESS_LEN                             18
+#define OSM_AT_BASE_MAC_ADDRESS_LEN                             18
 
-#define AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\""
-#define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , AT_BASE_MAC_ADDRESS_LEN       , _mac
+#define OSM_AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\""
+#define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            OSM_AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , OSM_AT_BASE_MAC_ADDRESS_LEN       , _mac
 
 #define AT_BASE_SANIT_STR(_s)                                           \
     osm_comms_common_json_escape(_s, sizeof(_s), '\\', "\",", 2)
@@ -21,7 +21,7 @@
 
 typedef struct
 {
-    char        str[AT_BASE_MAX_CMD_LEN];
+    char        str[OSM_AT_BASE_MAX_CMD_LEN];
     unsigned    len;
 } at_base_cmd_t;
 
@@ -41,7 +41,7 @@ typedef struct
     port_n_pins_t   boot_pin;
     at_base_time_t   time;
     at_base_cmd_t    cmd_line;
-    char            mac_address[AT_BASE_MAC_ADDRESS_LEN];
+    char            mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
 } at_base_ctx_t;
 
 

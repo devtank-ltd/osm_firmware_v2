@@ -4,10 +4,10 @@
 #include <osm/core/ring.h>
 
 
-#define CAN_COMM_MAX_DATA_SIZE                                      8
+#define OSM_CAN_COMM_MAX_DATA_SIZE                                      8
 
 
-typedef uint8_t can_comm_data_t[CAN_COMM_MAX_DATA_SIZE];
+typedef uint8_t can_comm_data_t[OSM_CAN_COMM_MAX_DATA_SIZE];
 
 typedef struct
 {

@@ -19,7 +19,7 @@
 #define ADCS_WAVE_TYPE_AC_STRING                "AC"
 #define ADCS_WAVE_TYPE_DC_STRING                "DC"
 
-#define ADCS_THEORETICAL_MIDPOINT               ((ADC_MAX_VAL + 1) / 2)
+#define ADCS_THEORETICAL_MIDPOINT               ((OSM_ADC_MAX_VAL + 1) / 2)
 #define ADCS_5A_AMPLITUDE                       96.54f
 #define ADCS_7_5A_AMPLITUDE                     144.81f
 #define ADCS_10A_AMPLITUDE                      193.09f
@@ -69,11 +69,11 @@ typedef struct
 } adcs_wave_t;
 
 
-static uint16_t*    _adcs_buf                           = NULL;         /* sizeof ADCS_NUM_SAMPLES */
+static uint16_t*    _adcs_buf                           = NULL;         /* sizeof OSM_ADCS_NUM_SAMPLES */
 static unsigned     _adcs_num_data                      = 0;
 static uint8_t      _adcs_num_active_channels           = 0;
 static adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
-static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
+static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=OSM_ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=2*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_2 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=4*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_3 */
@@ -168,8 +168,8 @@ static bool _adcs_float_from_json(struct json_object * root, const char* name, f
 
 static bool _adcs_load_from_file(void)
 {
-    char osm_adc_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    char osm_adc_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_adc_loc, OSM_LOCATION_LEN, ADCS_CONFIG_FILE);
     FILE* adcs_config_file = fopen(osm_adc_loc, "r");
     if (!adcs_config_file)
         return false;
@@ -244,8 +244,8 @@ static bool _adcs_load_from_file(void)
 
 static void _adcs_remove_file(void)
 {
-    char osm_adc_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    char osm_adc_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_adc_loc, OSM_LOCATION_LEN, ADCS_CONFIG_FILE);
     remove(osm_adc_loc);
 }
 

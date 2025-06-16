@@ -49,9 +49,9 @@
 #define LINUX_NEW_FW_LOC_BUF_SIZ                128
 #define LINUX_REBOOT_FILE_TIMEOUT_S 60
 
-#define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
-#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32"\n"
-#define LINUX_FD_SAVE_FMT_SOCKET_CLIENT                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"STR(LINUX_PTY_NAME_STR_SIZE)"s\n"
+#define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32"\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_CLIENT                                 "%d %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s\n"
 
 #define LINUX_FD_SAVE_PTY(_name, _master_fd, _slave_fd, _uart)          LINUX_FD_SAVE_FMT_PTY           , LINUX_FD_TYPE_PTY, _name, _master_fd, _slave_fd, _uart
 #define LINUX_FD_SAVE_SOCKET_SERVER(_name, _fd)                  LINUX_FD_SAVE_FMT_SOCKET_SERVER , LINUX_FD_TYPE_SOCKET_SERVER, _name, _fd
@@ -117,7 +117,7 @@ struct fd_t
             fd_t* server;
         } socket_client;
     };
-    char            name[LINUX_PTY_NAME_SIZE];
+    char            name[OSM_LINUX_PTY_NAME_SIZE];
     void            (*cb)();
 };
 
@@ -385,7 +385,7 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
 }
 
 
-static void _linux_remove_symlink(char name[LINUX_PTY_NAME_SIZE])
+static void _linux_remove_symlink(char name[OSM_LINUX_PTY_NAME_SIZE])
 {
 
     pty_buf_t buf;
@@ -431,7 +431,7 @@ static void _linux_pty_symlink(int32_t fd, char* new_tty_name)
 }
 
 
-static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd, int32_t* slave_fd)
+static void _linux_setup_pty(char name[OSM_LINUX_PTY_NAME_SIZE], int32_t* master_fd, int32_t* slave_fd)
 {
     if (openpty(master_fd, slave_fd, NULL, NULL, NULL))
         goto bad_exit;
@@ -464,8 +464,8 @@ bad_exit:
 
 static void _linux_save_fd_file(void)
 {
-    char osm_reboot_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    char osm_reboot_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_reboot_loc, OSM_LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     FILE* osm_reboot_file = fopen(osm_reboot_loc, "w");
     if (!osm_reboot_file)
         osm_linux_error("Could not make a OSM reboot file.");
@@ -583,7 +583,7 @@ static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
     }
     fd->type = LINUX_FD_TYPE_SOCKET_CLIENT;
     fd->cb = osm_linux_uart_proc;
-    char server_name[LINUX_PTY_NAME_SIZE] = {0};
+    char server_name[OSM_LINUX_PTY_NAME_SIZE] = {0};
     int type;
     if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_CLIENT, &type, fd->name, &fd->socket_client.fd, server_name) != 4)
     {
@@ -600,13 +600,13 @@ static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
         osm_linux_error("FD missing for \"%s\" (SOCKET CLIENT)", fd->name);
         return false;
     }
-    unsigned server_name_len = strnlen(server_name, LINUX_PTY_NAME_SIZE-1);
+    unsigned server_name_len = strnlen(server_name, OSM_LINUX_PTY_NAME_SIZE-1);
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd_n = &fd_list[i];
         if (!fd_n->name[0] || !isascii(fd_n->name[0]))
             continue;
-        if (strnlen(fd_n->name, LINUX_PTY_NAME_SIZE-1) != server_name_len)
+        if (strnlen(fd_n->name, OSM_LINUX_PTY_NAME_SIZE-1) != server_name_len)
             continue;
         if (strncmp(fd_n->name, server_name, server_name_len) != 0)
             continue;
@@ -622,7 +622,7 @@ static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
 
 static void _linux_insert_fd(fd_t new_fd)
 {
-    unsigned new_fw_name_len = strnlen(new_fd.name, LINUX_PTY_NAME_SIZE-1);
+    unsigned new_fw_name_len = strnlen(new_fd.name, OSM_LINUX_PTY_NAME_SIZE-1);
     bool found = false;
     int next_slot = -1;
     for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
@@ -634,7 +634,7 @@ static void _linux_insert_fd(fd_t new_fd)
                 next_slot = i;
             continue;
         }
-        if (strnlen(fd->name, LINUX_PTY_NAME_SIZE-1) != new_fw_name_len)
+        if (strnlen(fd->name, OSM_LINUX_PTY_NAME_SIZE-1) != new_fw_name_len)
         {
             continue;
         }
@@ -663,8 +663,8 @@ static void _linux_insert_fd(fd_t new_fd)
 
 static void _linux_load_fd_file(void)
 {
-    char osm_reboot_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    char osm_reboot_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_reboot_loc, OSM_LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     FILE* osm_reboot_file = fopen(osm_reboot_loc, "r");
     if (!osm_reboot_file)
     {
@@ -745,8 +745,8 @@ static void _linux_load_fd_file(void)
 
 static void _linux_rm_fd_file(void)
 {
-    char osm_reboot_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    char osm_reboot_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_reboot_loc, OSM_LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     remove(osm_reboot_loc);
 }
 
@@ -1092,7 +1092,7 @@ bool osm_peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
                     if (name_len > 6 && strncmp(pty_name + name_len - 6, "_slave", 6) == 0)
                         name_len -= 6;
 
-                    if (name_len > (LINUX_PTY_NAME_SIZE - 1))
+                    if (name_len > (OSM_LINUX_PTY_NAME_SIZE - 1))
                     {
                         osm_linux_error2(EINVAL, "PTY name %s too long", pty_name);
                         return false;
@@ -1108,7 +1108,7 @@ bool osm_peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
             }
             else
             {
-                if (strlen(pty_name) >    (LINUX_PTY_NAME_SIZE - 1))
+                if (strlen(pty_name) >    (OSM_LINUX_PTY_NAME_SIZE - 1))
                 {
                     osm_linux_error2(EINVAL, "PTY name %s too long", pty_name);
                     return false;
@@ -1126,7 +1126,7 @@ bool osm_peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
                     return true;
                 }
 
-                strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
+                strncpy(fd->name, pty_name, OSM_LINUX_PTY_NAME_SIZE);
                 fd->type = LINUX_FD_TYPE_PTY;
                 fd->pty.uart = uart;
                 fd->cb = osm_linux_uart_proc;
@@ -1295,10 +1295,10 @@ void _linux_iterate(void)
                             continue;
                         if (!tfdh->name[0])
                         {
-                            strncpy(tfdh->name, fd_handler->name, LINUX_PTY_NAME_SIZE-1);
-                            unsigned rem_len = LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, LINUX_PTY_NAME_SIZE-1) - 1;
+                            strncpy(tfdh->name, fd_handler->name, OSM_LINUX_PTY_NAME_SIZE-1);
+                            unsigned rem_len = OSM_LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, OSM_LINUX_PTY_NAME_SIZE-1) - 1;
                             strncat(tfdh->name, "_CLIENT", rem_len);
-                            tfdh->name[LINUX_PTY_NAME_SIZE-1] = 0;
+                            tfdh->name[OSM_LINUX_PTY_NAME_SIZE-1] = 0;
                             tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
                             tfdh->socket_client.fd = client_sockfd;
                             tfdh->socket_client.server = fd_handler;
@@ -1420,7 +1420,7 @@ void osm_platform_start(void)
     if (overloaded_log_debug_mask)
     {
         osm_linux_port_debug("New debug mask: %s", overloaded_log_debug_mask);
-        log_debug_mask = DEBUG_SYS | strtoul(overloaded_log_debug_mask, NULL, 16);
+        log_debug_mask = OSM_DEBUG_SYS | strtoul(overloaded_log_debug_mask, NULL, 16);
         osm_persist_set_log_debug_mask(log_debug_mask);
         log_debug_mask = log_debug_mask;
     }
@@ -1519,8 +1519,8 @@ char osm_concat_osm_location(char* new_loc, unsigned loc_len, char* global)
 
 static persist_mem_t* _linux_get_persist(void)
 {
-    char osm_img_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_img_loc, LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
+    char osm_img_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_img_loc, OSM_LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
     FILE* mem_file = fopen(osm_img_loc, "rb");
     if (!mem_file)
         return NULL;
@@ -1554,8 +1554,8 @@ persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 
 bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
 {
-    char osm_img_loc[LOCATION_LEN];
-    osm_concat_osm_location(osm_img_loc, LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
+    char osm_img_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_img_loc, OSM_LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
     FILE* mem_file = fopen(osm_img_loc, "wb");
     if (!mem_file)
         return false;

@@ -427,21 +427,21 @@ static bool _rak3172_load_config(cmd_ctx_t * ctx)
         _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-3],
         RAK3172_INIT_MSG_LEN,
         "AT+DEVEUI=%.*s",
-        LW_DEV_EUI_LEN,
+        OSM_LW_DEV_EUI_LEN,
         config->dev_eui);
 
     snprintf(
         _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-2],
         RAK3172_INIT_MSG_LEN,
         "AT+APPEUI=%.*s",
-        LW_DEV_EUI_LEN,
+        OSM_LW_DEV_EUI_LEN,
         config->dev_eui);
 
     snprintf(
         _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-1],
         RAK3172_INIT_MSG_LEN,
         "AT+APPKEY=%.*s",
-        LW_APP_KEY_LEN,
+        OSM_LW_APP_KEY_LEN,
         config->app_key);
 
     return true;
@@ -521,21 +521,21 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
 {
     char* p = data;
     unsigned len = strlen(p);
-    if (osm_lw_consume(p, 2) != LW_UNSOL_VERSION)
+    if (osm_lw_consume(p, 2) != OSM_LW_UNSOL_VERSION)
         return;
     p += 2;
     uint32_t pl_id = (uint32_t)osm_lw_consume(p, 8);
     p += 8;
     switch (pl_id)
     {
-        case LW_ID_CMD:
+        case OSM_LW_ID_CMD:
         {
             comms_debug("Message is command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
             osm_cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
             break;
         }
-        case LW_ID_CCMD:
+        case OSM_LW_ID_CCMD:
         {
             comms_debug("Message is confirmed command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
@@ -543,7 +543,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
             comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
             break;
         }
-        case LW_ID_FW_START:
+        case OSM_LW_ID_FW_START:
         {
             comms_debug("Message is fw start.");
             uint16_t count = (uint16_t)osm_lw_consume(p, 4);
@@ -552,7 +552,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
             osm_fw_ota_reset();
             break;
         }
-        case LW_ID_FW_CHUNK:
+        case OSM_LW_ID_FW_CHUNK:
         {
             uint16_t chunk_id = (uint16_t)osm_lw_consume(p, 4);
             p += 4;
@@ -574,7 +574,7 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
             }
             break;
         }
-        case LW_ID_FW_COMPLETE:
+        case OSM_LW_ID_FW_COMPLETE:
         {
             comms_debug("Message is fw complete.");
             if (len < 12 || !_rak3172_next_fw_chunk_id)

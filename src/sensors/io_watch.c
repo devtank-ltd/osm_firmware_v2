@@ -151,12 +151,12 @@ void osm_io_watch_isr(uint32_t exti_group)
 void osm_io_watch_init(void)
 {
     /* Must be called after osm_measurements_init */
-    char name[MEASURE_NAME_NULLED_LEN] = IOS_MEASUREMENT_NAME_PRE;
-    unsigned len = strnlen(name, MEASURE_NAME_LEN);
+    char name[OSM_MEASURE_NAME_NULLED_LEN] = OSM_IOS_MEASUREMENT_NAME_PRE;
+    unsigned len = strnlen(name, OSM_MEASURE_NAME_LEN);
     char* p = name + len;
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
-        snprintf(p, MEASURE_NAME_NULLED_LEN - len, "%02u", ios_watch_ios[i]);
+        snprintf(p, OSM_MEASURE_NAME_NULLED_LEN - len, "%02u", ios_watch_ios[i]);
         if (!osm_measurements_get_measurements_def(name, &_ios_watch_measurements_def[i], &_ios_watch_measurements_data[i]))
         {
             _ios_watch_measurements_def[i] = NULL;

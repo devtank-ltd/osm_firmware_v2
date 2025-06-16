@@ -30,7 +30,7 @@ modbus_reg_t * osm_modbus_get_reg(char * name);
 void           osm_modbus_reg_del(modbus_reg_t * reg);
 
 uint16_t          osm_modbus_reg_get_unit_id(modbus_reg_t * reg);
-bool              osm_modbus_reg_get_name(modbus_reg_t * reg, char name[MODBUS_NAME_LEN + 1]);
+bool              osm_modbus_reg_get_name(modbus_reg_t * reg, char name[OSM_MODBUS_NAME_LEN + 1]);
 modbus_reg_type_t osm_modbus_reg_get_type(modbus_reg_t * reg);
 modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg);
 modbus_reg_state_t osm_modbus_reg_get_state(modbus_reg_t * reg);

@@ -18,20 +18,20 @@
 
 #define CC_DEFAULT_COLLECTION_TIME          1000
 #define CC_TIMEOUT_MS                       2000
-#define CC_NUM_SAMPLES                      ADCS_NUM_SAMPLES
+#define CC_NUM_SAMPLES                      OSM_ADCS_NUM_SAMPLES
 
 #define CC_RESISTOR_OHM                     22
 
 /* If CC is lower than 1.3V then assume not plugged in CC.
  *    1.65V - 1.3V = 0.35V
  *                 = 350mV
- *    350mV * (ADC_MAX_VAL + 1) / ADC_MAX_MV
+ *    350mV * (OSM_ADC_MAX_VAL + 1) / ADC_MAX_MV
  *    = 350mV * (4095 + 1) / 3300mV
  *    = 434.42424242424244
  * There is a scale on midpoint of x1000
  */
 #define CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV   340
-#define CC_IS_NOT_PLUGGED_IN_THRESHOLD      (1000 * CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV * (ADC_MAX_VAL + 1) / ADC_MAX_MV)
+#define CC_IS_NOT_PLUGGED_IN_THRESHOLD      (1000 * CC_IS_NOT_PLUGGED_IN_THRESHOLD_MV * (OSM_ADC_MAX_VAL + 1) / ADC_MAX_MV)
 #define CC_MIDPOINT_VALID_WIDTH             (1000 * 500)
 
 
@@ -132,15 +132,15 @@ static bool _cc_find_active_clamp_index(uint8_t* active_clamp_index, uint8_t ind
 
 static bool _cc_get_index(uint8_t* index, char* name)
 {
-    if (strncmp(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_LEN) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, OSM_MEASURE_NAME_LEN) == 0)
     {
         *index = 0;
     }
-    else if (strncmp(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_LEN) == 0)
+    else if (strncmp(name, OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, OSM_MEASURE_NAME_LEN) == 0)
     {
         *index = 1;
     }
-    else if (strncmp(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_LEN) == 0)
+    else if (strncmp(name, OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, OSM_MEASURE_NAME_LEN) == 0)
     {
         *index = 2;
     }
@@ -376,10 +376,10 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
     bool is_iv_ct;
     switch (_configs[index].type)
     {
-        case CC_TYPE_A:
+        case OSM_CC_TYPE_A:
             is_iv_ct = false;
             break;
-        case CC_TYPE_V:
+        case OSM_CC_TYPE_V:
             is_iv_ct = true;
             break;
         default:
@@ -397,7 +397,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
     _cc_running_isolated = ADCS_TYPE_INVALID;
 
     adcs_resp_t resp = ADCS_RESP_FAIL;
-    if (CC_TYPE_V == _configs[index].type)
+    if (OSM_CC_TYPE_V == _configs[index].type)
     {
         resp = osm_adcs_collect_avg(&adcs_avg, cc_len, CC_NUM_SAMPLES, active_index, ADCS_KEY_CC, NULL);
 
@@ -462,7 +462,7 @@ static measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* v
 static bool _cc_mp_valid(uint32_t midpoint)
 {
     int64_t diff = midpoint;
-    diff -= CC_DEFAULT_MIDPOINT;
+    diff -= OSM_CC_DEFAULT_MIDPOINT;
     diff = llabs(diff);
     return (diff < CC_MIDPOINT_VALID_WIDTH);
 }
@@ -601,19 +601,19 @@ bool osm_cc_get_all_blocking(measurements_reading_t* value_1, measurements_readi
         return false;
     }
 
-    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_1_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_2_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
     }
 
-    if (_cc_begin(MEASUREMENTS_CURRENT_CLAMP_3_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_begin(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, false) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
         adc_debug("Can not begin ADC.");
         return false;
@@ -621,20 +621,20 @@ bool osm_cc_get_all_blocking(measurements_reading_t* value_1, measurements_readi
 
     if (!_cc_wait())
         return false;
-    char name[MEASURE_NAME_NULLED_LEN] = {0};
-    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    char name[OSM_MEASURE_NAME_NULLED_LEN] = {0};
+    if (_cc_get(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, value_1) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        strncpy(name, MEASUREMENTS_CURRENT_CLAMP_1_NAME, MEASURE_NAME_NULLED_LEN);
+        strncpy(name, OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, OSM_MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, value_2) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        strncpy(name, MEASUREMENTS_CURRENT_CLAMP_2_NAME, MEASURE_NAME_NULLED_LEN);
+        strncpy(name, OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, OSM_MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
-    if (_cc_get(MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
+    if (_cc_get(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, value_3) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        strncpy(name, MEASUREMENTS_CURRENT_CLAMP_3_NAME, MEASURE_NAME_NULLED_LEN);
+        strncpy(name, OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, OSM_MEASURE_NAME_NULLED_LEN);
         goto bad_exit;
     }
     _cc_release_all();
@@ -729,9 +729,9 @@ void osm_cc_setup_default_mem(cc_config_t* memory, unsigned size)
     }
     for (uint8_t i = 0; i < num_cc_configs; i++)
     {
-        memory[i].midpoint      = CC_DEFAULT_MIDPOINT;
-        memory[i].ext_max_mA    = CC_DEFAULT_EXT_MAX_MA;
-        memory[i].int_max_mV    = CC_DEFAULT_INT_MAX_MV;
+        memory[i].midpoint      = OSM_CC_DEFAULT_MIDPOINT;
+        memory[i].ext_max_mA    = OSM_CC_DEFAULT_EXT_MAX_MA;
+        memory[i].int_max_mV    = OSM_CC_DEFAULT_INT_MAX_MV;
         memory[i].type          = CC_DEFAULT_TYPE;
     }
 }
@@ -906,9 +906,9 @@ static command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
         char new_type = *osm_skip_space(p);
         switch (new_type)
         {
-            case CC_TYPE_V:
+            case OSM_CC_TYPE_V:
                 /* fall through */
-            case CC_TYPE_A:
+            case OSM_CC_TYPE_A:
                 _configs[index].type = new_type;
                 ret = COMMAND_RESP_OK;
                 break;

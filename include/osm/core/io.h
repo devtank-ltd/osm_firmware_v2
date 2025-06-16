@@ -8,7 +8,7 @@
 #include "pinmap.h"
 #include <osm/core/persist_config.h>
 
-#define IOS_MEASUREMENT_NAME_PRE            "IO"
+#define OSM_IOS_MEASUREMENT_NAME_PRE            "IO"
 
 
 typedef enum

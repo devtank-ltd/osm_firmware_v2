@@ -20,14 +20,14 @@
 
 #if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
 #define PULSECOUNT_INSTANCES   {                                       \
-    { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
+    { { OSM_MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,          \
         W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
         W1_PULSE_1_EXTI_IRQ,                                           \
         IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
         0, 0,                                                          \
         W1_PULSE_1_TIM, W1_PULSE_1_TIM_RCC, W1_PULSE_1_TIM_RST, W1_PULSE_1_TIM_IRQ, \
         W1_PULSE_1_LED_PORT_N_PINS, W1_PULSE_1_LED_TIM, W1_PULSE_1_LED_TIM_RCC, W1_PULSE_1_LED_TIM_RST, W1_PULSE_1_LED_IRQ }, \
-    { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
+    { { OSM_MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
         W1_PULSE_2_PORT_N_PINS , W1_PULSE_2_EXTI,                      \
         W1_PULSE_2_EXTI_IRQ,                                           \
         IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
@@ -37,13 +37,13 @@
 }
 #else
 #define PULSECOUNT_INSTANCES   {                                       \
-    { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
+    { { OSM_MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,          \
         W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
         W1_PULSE_1_EXTI_IRQ,                                           \
         IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
         0, 0,                                                          \
         W1_PULSE_1_TIM, W1_PULSE_1_TIM_RCC, W1_PULSE_1_TIM_RST, W1_PULSE_1_TIM_IRQ }, \
-    { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
+    { { OSM_MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,          \
         W1_PULSE_2_PORT_N_PINS , W1_PULSE_2_EXTI,                      \
         W1_PULSE_2_EXTI_IRQ,                                           \
         IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \

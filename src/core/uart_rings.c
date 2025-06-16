@@ -19,16 +19,16 @@
 #define UART_RATE_LIMIT_MS              250
 
 
-typedef char dma_uart_buf_t[DMA_DATA_PCK_SZ];
+typedef char dma_uart_buf_t[OSM_DMA_DATA_PCK_SZ];
 
-UART_BUFFERS_INIT
+OSM_UART_BUFFERS_INIT
 
-static ring_buf_t ring_in_bufs[UART_CHANNELS_COUNT]=UART_IN_RINGS;
-static ring_buf_t ring_out_bufs[UART_CHANNELS_COUNT]=UART_OUT_RINGS;
+static ring_buf_t ring_in_bufs[OSM_UART_CHANNELS_COUNT]=OSM_UART_IN_RINGS;
+static ring_buf_t ring_out_bufs[OSM_UART_CHANNELS_COUNT]=OSM_UART_OUT_RINGS;
 
 char line_buffer[CMD_LINELEN];
 
-static dma_uart_buf_t uart_dma_buf[UART_CHANNELS_COUNT];
+static dma_uart_buf_t uart_dma_buf[OSM_UART_CHANNELS_COUNT];
 
 static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, va_list ap);
 static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, va_list ap);
@@ -66,7 +66,7 @@ bool osm_uart_ring_out_busy(unsigned uart)
 
 bool osm_uart_rings_out_busy(void)
 {
-    for (unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    for (unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
     {
         if (osm_uart_ring_out_busy(n))
             return true;
@@ -77,7 +77,7 @@ bool osm_uart_rings_out_busy(void)
 
 unsigned osm_uart_ring_in(unsigned uart, const char* s, unsigned len)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
 
     ring_buf_t * ring = &ring_in_bufs[uart];
@@ -94,7 +94,7 @@ unsigned osm_uart_ring_in(unsigned uart, const char* s, unsigned len)
 
 unsigned osm_uart_ring_out(unsigned uart, const char* s, unsigned len)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
 
     ring_buf_t * ring = &ring_out_bufs[uart];
@@ -107,7 +107,7 @@ unsigned osm_uart_ring_out(unsigned uart, const char* s, unsigned len)
             return 0;
         }
 
-        if (len > DMA_DATA_PCK_SZ)
+        if (len > OSM_DMA_DATA_PCK_SZ)
         {
             osm_log_error("String too big for UART %u DMA without ring.", uart);
             return 0;
@@ -123,7 +123,7 @@ unsigned osm_uart_ring_out(unsigned uart, const char* s, unsigned len)
     if (uart) // Add debug messages to debug ring buffer is a loop.
         osm_log_debug(DEBUG_UART(uart), "UART %u out < %u", uart, len);
 
-    static uint32_t last_sent[UART_CHANNELS_COUNT] = {0};
+    static uint32_t last_sent[OSM_UART_CHANNELS_COUNT] = {0};
 
     for (unsigned n = 0; n < len; n++)
     {
@@ -144,7 +144,7 @@ unsigned osm_uart_ring_out(unsigned uart, const char* s, unsigned len)
 
 unsigned osm_uart_ring_in_get_len(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
     return osm_ring_buf_get_pending(&ring_in_bufs[uart]);
 }
@@ -152,7 +152,7 @@ unsigned osm_uart_ring_in_get_len(unsigned uart)
 
 unsigned osm_uart_ring_out_get_len(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
     return osm_ring_buf_get_pending(&ring_out_bufs[uart]);
 }
@@ -160,7 +160,7 @@ unsigned osm_uart_ring_out_get_len(unsigned uart)
 
 void osm_uart_ring_in_drain(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
     ring_buf_t * ring = &ring_in_bufs[uart];
@@ -207,7 +207,7 @@ static unsigned _uart_out_dma(char * c, unsigned len, void * puart)
 
 static void uart_ring_out_drain(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
     ring_buf_t * ring = &ring_out_bufs[uart];
@@ -225,7 +225,7 @@ static void uart_ring_out_drain(unsigned uart)
         if (uart)
             osm_log_debug(DEBUG_UART(uart), "UART %u OUT > %u", uart, len);
 
-        len = (len > DMA_DATA_PCK_SZ)?DMA_DATA_PCK_SZ:len;
+        len = (len > OSM_DMA_DATA_PCK_SZ)?OSM_DMA_DATA_PCK_SZ:len;
 
         osm_ring_buf_consume(ring, _uart_out_dma, uart_dma_buf[uart], len, &uart);
     }
@@ -234,14 +234,14 @@ static void uart_ring_out_drain(unsigned uart)
 
 void osm_uart_rings_in_drain()
 {
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
         osm_uart_ring_in_drain(n);
 }
 
 
 void osm_uart_rings_out_drain()
 {
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
         uart_ring_out_drain(n);
 }
 
@@ -268,7 +268,7 @@ static void uart_ring_check(ring_buf_t * ring, char * name, unsigned index)
 
 void osm_uart_rings_check()
 {
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
     {
         ring_buf_t * in_ring  = &ring_in_bufs[n];
         ring_buf_t * out_ring = &ring_out_bufs[n];
@@ -294,7 +294,7 @@ static void _uart_rings_wipe(ring_buf_t * ring)
 
 void osm_uart_rings_in_wipe(unsigned uart)
 {
-    if (uart < UART_CHANNELS_COUNT)
+    if (uart < OSM_UART_CHANNELS_COUNT)
     {
         _uart_rings_wipe(&ring_in_bufs[uart]);
     }
@@ -303,7 +303,7 @@ void osm_uart_rings_in_wipe(unsigned uart)
 
 void osm_uart_rings_out_wipe(unsigned uart)
 {
-    if (uart < UART_CHANNELS_COUNT)
+    if (uart < OSM_UART_CHANNELS_COUNT)
     {
         _uart_rings_wipe(&ring_out_bufs[uart]);
     }

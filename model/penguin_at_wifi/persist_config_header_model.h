@@ -74,7 +74,7 @@
 #define IOS_COUNT           3
 #define ADC_CC_COUNT        3
 #define ADC_FTMA_COUNT      4
-#define CC_DEFAULT_TYPE     CC_TYPE_A
+#define CC_DEFAULT_TYPE     OSM_CC_TYPE_A
 
 typedef struct
 {
@@ -91,8 +91,8 @@ typedef struct
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ___[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
-    float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-    uint8_t                 ____[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    float                   sai_cal_coeffs[OSM_SAI_NUM_CAL_COEFFS];
+    uint8_t                 ____[16-((OSM_SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
     ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
     uint8_t                 _____[16-((ADC_FTMA_COUNT * sizeof(ftma_config_t))%16)];
