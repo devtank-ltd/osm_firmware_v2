@@ -64,9 +64,9 @@ void osm_can_comm_init(void)
     port_n_pins_t* can_stdby = &_can_comm_config.stdby;
     port_n_pins_t* can_rx    = &_can_comm_config.rx;
     port_n_pins_t* can_tx    = &_can_comm_config.tx;
-    rcc_periph_clock_enable(PORT_TO_RCC(can_stdby->port));
-    rcc_periph_clock_enable(PORT_TO_RCC(can_rx->port));
-    rcc_periph_clock_enable(PORT_TO_RCC(can_tx->port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(can_stdby->port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(can_rx->port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(can_tx->port));
     gpio_mode_setup(can_rx->port, GPIO_MODE_AF, GPIO_PUPD_NONE, can_rx->pins);
     gpio_mode_setup(can_tx->port, GPIO_MODE_AF, GPIO_PUPD_NONE, can_tx->pins);
     gpio_mode_setup(can_stdby->port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, can_stdby->pins);
@@ -195,7 +195,7 @@ void osm_can_comm_enable(bool enabled)
 
 void osm_can_comm_send(can_comm_packet_t* pkt)
 {
-    can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
+    osm_can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
     osm_log_debug_data(OSM_DEBUG_CAN, pkt->data, pkt->header.length);
     can_transmit(_can_comm_config.unit, pkt->header.id, pkt->header.ext, pkt->header.rtr, pkt->header.length, pkt->data);
 }

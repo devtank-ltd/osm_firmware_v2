@@ -59,7 +59,7 @@ void osm_sleep_exit_sleep_mode(void)
 {
     if (!(SCB_SCR & SCB_SCR_SLEEPONEXIT))
     {
-        sleep_debug("Not sleeping.");
+        osm_sleep_debug("Not sleeping.");
         return;
     }
     /* Remove SLEEPONEXIT to bring the device out of sleep mode. */
@@ -106,7 +106,7 @@ bool osm_sleep_for_ms(uint32_t ms)
     else if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
     uint32_t    before_time = osm_get_since_boot_ms();
-    sleep_debug("Sleeping for %"PRIu32"ms.", ms);
+    osm_sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (osm_uart_rings_out_busy())
     {
         osm_uart_rings_out_drain();
@@ -142,7 +142,7 @@ turn_on_sleep:
     _sleep_setup_tim(count16, (div_shift << LPTIM_CFGR_PRESC_SHIFT));
     _sleep_enter_sleep_mode();
     _sleep_on_wakeup();
-    sleep_debug("Woken back up after %"PRIu32"ms.", osm_since_boot_delta(osm_get_since_boot_ms(), before_time));
+    osm_sleep_debug("Woken back up after %"PRIu32"ms.", osm_since_boot_delta(osm_get_since_boot_ms(), before_time));
     return true;
 }
 
@@ -193,5 +193,5 @@ struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

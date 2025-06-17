@@ -47,7 +47,7 @@ bool osm_sleep_for_ms(uint32_t ms)
     if (ms > OSM_SLEEP_MAX_TIME_MS)
         ms = OSM_SLEEP_MAX_TIME_MS;
     uint32_t    before_time = osm_get_since_boot_ms();
-    sleep_debug("Sleeping for %"PRIu32"ms.", ms);
+    osm_sleep_debug("Sleeping for %"PRIu32"ms.", ms);
     while (osm_uart_rings_out_busy())
     {
         osm_uart_rings_out_drain();
@@ -78,7 +78,7 @@ turn_on_sleep:
     _sleep_before_sleep();
     osm_linux_usleep(ms * 1000);
     _sleep_on_wakeup();
-    sleep_debug("Woken back up after %"PRIu32"ms.", osm_since_boot_delta(osm_get_since_boot_ms(), before_time));
+    osm_sleep_debug("Woken back up after %"PRIu32"ms.", osm_since_boot_delta(osm_get_since_boot_ms(), before_time));
     return true;
 }
 
@@ -118,5 +118,5 @@ struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

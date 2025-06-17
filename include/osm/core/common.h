@@ -5,7 +5,7 @@
 #include <osm/sensors/pulsecount.h>
 
 
-_Static_assert(STRLEN(GIT_VERSION)-3, "No git commit.");
+_Static_assert(OSM_STRLEN(GIT_VERSION)-3, "No git commit.");
 
 
 typedef struct

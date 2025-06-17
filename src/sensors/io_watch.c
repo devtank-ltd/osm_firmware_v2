@@ -78,13 +78,13 @@ static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t
                 pupd8 = GPIO_PUPD_NONE;
                 break;
             default:
-                io_debug("Could not determine PUPD.");
+                osm_io_debug("Could not determine PUPD.");
                 return false;
         }
 
         osm_model_setup_pulse_pupd(&pupd8);
 
-        rcc_periph_clock_enable(PORT_TO_RCC(inst->pnp.port));
+        rcc_periph_clock_enable(OSM_PORT_TO_RCC(inst->pnp.port));
         gpio_mode_setup(inst->pnp.port, GPIO_MODE_INPUT, pupd8, inst->pnp.pins);
 
         exti_select_source(inst->exti, inst->pnp.port);
@@ -93,13 +93,13 @@ static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t
 
         nvic_enable_irq(inst->exti_irq);
 
-        io_debug("Set up IO %u for IO watch.", inst->io);
+        osm_io_debug("Set up IO %u for IO watch.", inst->io);
         return true;
     }
     /* Remove interrupt etc. */
     exti_disable_request(inst->exti);
     nvic_disable_irq(inst->exti_irq);
-    io_debug("IO watch for IO %u disabled", inst->io);
+    osm_io_debug("IO watch for IO %u disabled", inst->io);
     return true;
 }
 
@@ -109,7 +109,7 @@ bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
     io_watch_instance_t* inst = _io_watch_get_inst(io);
     if (!inst)
     {
-        io_debug("Could not get the instance for '%u'", io);
+        osm_io_debug("Could not get the instance for '%u'", io);
         return false;
     }
     osm_model_w1_pulse_enable_pupd(io, pupd == IO_PUPD_UP);
@@ -161,22 +161,22 @@ void osm_io_watch_init(void)
         {
             _ios_watch_measurements_def[i] = NULL;
             _ios_watch_measurements_data[i] = NULL;
-            io_debug("Could not find measurements data for '%s'", name);
+            osm_io_debug("Could not find measurements data for '%s'", name);
         }
     }
 
-    for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
+    for(unsigned n = 0; n < OSM_ARRAY_SIZE(ios_pins); n++)
     {
         if (osm_io_is_watch_now(n))
         {
             uint8_t pupd;
             if (!osm_ios_get_pupd(n, &pupd))
             {
-                io_debug("Could not get pull of IO %u", n);
+                osm_io_debug("Could not get pull of IO %u", n);
                 continue;
             }
             if (!osm_io_watch_enable(n, true, pupd))
-                io_debug("Could not enable IO watch for IO %u on init.", n);
+                osm_io_debug("Could not enable IO watch for IO %u on init.", n);
         }
     }
 }

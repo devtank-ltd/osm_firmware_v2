@@ -126,7 +126,7 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
 {
     if (!def || !inf)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
     // Optional callbacks: get is not optional, neither is collection

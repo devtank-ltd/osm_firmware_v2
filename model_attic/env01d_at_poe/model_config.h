@@ -26,7 +26,7 @@
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
 #define PERSIST_MODEL_VERSION       4
-#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
+#define PERSIST_VERSION             OSM_PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 #define CMD_LINELEN 256
 
@@ -119,11 +119,11 @@ typedef struct
     /* 7 x 16 bytes          */
 } persist_model_config_v4_t;
 
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, modbus_bus);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, comms_config);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, cc_configs);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, ios_state);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, pulsecount_debounces_ms);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, sai_cal_coeffs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, modbus_bus);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, comms_config);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, cc_configs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, ios_state);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, pulsecount_debounces_ms);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v4_t, sai_cal_coeffs);
 
 #define persist_model_config_t        persist_model_config_v4_t

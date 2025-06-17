@@ -349,7 +349,7 @@ static void _linux_socket_client(int sock, char * buf, unsigned len)
 
 static fd_t* _linux_get_fd_handler(int32_t fd)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         if (!fd_list[i].name[0])
             return NULL;
@@ -469,7 +469,7 @@ static void _linux_save_fd_file(void)
     FILE* osm_reboot_file = fopen(osm_reboot_loc, "w");
     if (!osm_reboot_file)
         osm_linux_error("Could not make a OSM reboot file.");
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (fd->name[0] && isascii(fd->name[0]))
@@ -601,7 +601,7 @@ static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
         return false;
     }
     unsigned server_name_len = strnlen(server_name, OSM_LINUX_PTY_NAME_SIZE-1);
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd_n = &fd_list[i];
         if (!fd_n->name[0] || !isascii(fd_n->name[0]))
@@ -625,7 +625,7 @@ static void _linux_insert_fd(fd_t new_fd)
     unsigned new_fw_name_len = strnlen(new_fd.name, OSM_LINUX_PTY_NAME_SIZE-1);
     bool found = false;
     int next_slot = -1;
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -781,7 +781,7 @@ static void _linux_kick_event(int fd)
 
 bool osm_linux_kick_adc_gen(void)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         switch(fd->type)
@@ -853,7 +853,7 @@ static void _linux_setup_fd_handlers(void)
 {
     _linux_load_fd_file();
     _linux_rm_fd_file();
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -888,7 +888,7 @@ static void _linux_setup_fd_handlers(void)
 
 static void _linux_cleanup_fd_handlers(void)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -985,7 +985,7 @@ static bool _safe_write(int fd, const void* data, size_t len, int64_t max_usecs)
 
 bool osm_linux_write_pty(unsigned uart, const char *data, unsigned size)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd_handler = &fd_list[i];
         if (!fd_handler->name[0] || !isascii(fd_handler->name[0]))
@@ -1031,7 +1031,7 @@ static void _linux_setup_poll(void)
 {
     memset(pfds, 0, sizeof(pfds));
     nfds = 0;
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -1069,7 +1069,7 @@ static void _linux_setup_poll(void)
 
 bool osm_peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -1886,5 +1886,5 @@ static command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
 struct cmd_link_t* osm_linux_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

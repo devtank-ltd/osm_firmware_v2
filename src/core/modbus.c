@@ -99,7 +99,7 @@ static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, u
         case uart_stop_bits_1_5 : databits += 5;  break;
         case uart_stop_bits_2   : databits += 20; break;
         default:
-            modbus_debug("Stop bits unknown...assuming 1.");
+            osm_modbus_debug("Stop bits unknown...assuming 1.");
             databits += 10;
             break;
     }
@@ -125,7 +125,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_uart_pari
         modbus_send_start_delay = _modbus_get_deci_char_time(35 /*3.5*/, speed, databits, parity, stop);
         modbus_send_stop_delay = _modbus_get_deci_char_time(35 /*3.5*/, speed, databits, parity, stop);
     }
-    modbus_debug("Modbus @ %s %u %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", speed, databits, osm_uart_parity_as_char(parity), osm_uart_stop_bits_as_str(stop));
+    osm_modbus_debug("Modbus @ %s %u %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", speed, databits, osm_uart_parity_as_char(parity), osm_uart_stop_bits_as_str(stop));
 
     modbus_bus->baudrate    = speed;
     modbus_bus->databits    = databits;
@@ -228,7 +228,7 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         default: break;
     }
 
-    modbus_debug("Reading %"PRIu8" of %."STR(OSM_MODBUS_NAME_LEN)"s (0x%"PRIx8":0x%"PRIx16")" , reg_count, reg->name, unit_id, reg->reg_addr);
+    osm_modbus_debug("Reading %"PRIu8" of %."STR(OSM_MODBUS_NAME_LEN)"s (0x%"PRIx8":0x%"PRIx16")" , reg_count, reg->name, unit_id, reg->reg_addr);
 
     unsigned body_size = 4;
 
@@ -290,7 +290,7 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
 {
     if (len <= 2)
     {
-        modbus_debug("Ran out of space in array for appending u16.");
+        osm_modbus_debug("Ran out of space in array for appending u16.");
         return false;
     }
     /* TODO: Figure out which order is which */
@@ -303,7 +303,7 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
         memcpy(arr, &v, 2);
     else
     {
-        modbus_debug("Unknown byte order.");
+        osm_modbus_debug("Unknown byte order.");
         return false;
     }
     return true;
@@ -324,7 +324,7 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
 {
     if (len <= 4)
     {
-        modbus_debug("Ran out of space in array for appending u32.");
+        osm_modbus_debug("Ran out of space in array for appending u32.");
         return false;
     }
     if (word_order == MODBUS_WORD_ORDER_MSW)
@@ -343,7 +343,7 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
     }
     else
     {
-        modbus_debug("Unknown word order.");
+        osm_modbus_debug("Unknown word order.");
         return false;
     }
     return true;
@@ -399,7 +399,7 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
         case MODBUS_REG_TYPE_I32    : reg_count = 2; break;
         case MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
         default:
-            modbus_debug("Unknown type.");
+            osm_modbus_debug("Unknown type.");
             return false;
     }
 
@@ -426,7 +426,7 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
     }
     else
     {
-        modbus_debug("Unknown function.");
+        osm_modbus_debug("Unknown function.");
         return false;
     }
 
@@ -453,13 +453,13 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
     }
     else
     {
-        modbus_debug("Unknown type for converting value. (%d)", type);
+        osm_modbus_debug("Unknown type for converting value. (%d)", type);
         return false;
     }
 
     if (!_modbus_append_value(&tx_modbuspacket[body_size], MODBUS_PACKET_BUF_SIZ - body_size, type, byte_order, word_order, &value32, &body_size))
     {
-        modbus_debug("Failed to append modbus value.");
+        osm_modbus_debug("Failed to append modbus value.");
         return false;
     }
 
@@ -477,7 +477,7 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
     }
     else
     {
-        modbus_debug("Undefined modbus function for setting expected.");
+        osm_modbus_debug("Undefined modbus function for setting expected.");
         return false;
     }
 
@@ -486,7 +486,7 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
     tx_modbuspacket[body_size++] = crc & 0xFF;
     tx_modbuspacket[body_size++] = crc >> 8;
 
-    modbus_debug("Modbus packet (%u):", body_size);
+    osm_modbus_debug("Modbus packet (%u):", body_size);
     osm_log_debug_data(OSM_DEBUG_MODBUS, tx_modbuspacket, body_size);
 
     modbus_want_rx = true;
@@ -524,13 +524,13 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
             uint32_t delta = osm_since_boot_delta(osm_get_since_boot_ms(), modbus_cur_send_time);
             if (delta < OSM_MODBUS_RESP_TIMEOUT_MS)
             {
-                modbus_debug("No slot free.. sending to fast?? (%u/%u)", (unsigned)(osm_ring_buf_get_pending(&_message_queue)/sizeof(modbus_reg_t*)), (unsigned)(_message_queue.size/sizeof(modbus_reg_t*)) );
+                osm_modbus_debug("No slot free.. sending to fast?? (%u/%u)", (unsigned)(osm_ring_buf_get_pending(&_message_queue)/sizeof(modbus_reg_t*)), (unsigned)(_message_queue.size/sizeof(modbus_reg_t*)) );
                 return false;
             }
         }
-        else modbus_debug("No slot free, but not waiting?.. comms??");
+        else osm_modbus_debug("No slot free, but not waiting?.. comms??");
 
-        modbus_debug("Previous comms issue. Restarting slots.");
+        osm_modbus_debug("Previous comms issue. Restarting slots.");
         ring_buf_clear(&_message_queue);
 
         modbus_read_last_good = 0;
@@ -549,11 +549,11 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
 
     if (modbus_want_rx)
     {
-        modbus_debug("Deferred read of \"%."STR(OSM_MODBUS_NAME_LEN)"s\"", reg->name);
+        osm_modbus_debug("Deferred read of \"%."STR(OSM_MODBUS_NAME_LEN)"s\"", reg->name);
         return true;
     }
 
-    modbus_debug("Immediate read");
+    osm_modbus_debug("Immediate read");
     _modbus_do_start_read(reg);
     return true;
 }
@@ -580,7 +580,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
 
     if (delta < OSM_MODBUS_RESP_TIMEOUT_MS)
         return false;
-    modbus_debug("Message timeout, dumping left overs.");
+    osm_modbus_debug("Message timeout, dumping left overs.");
     modbuspacket_len = 0;
     modbus_read_timing_init = 0;
     modbus_want_rx = false;
@@ -593,12 +593,12 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     {
         modbus_reg_t * current_reg = NULL;
 
-        modbus_debug("Dropping message in queue.");
+        osm_modbus_debug("Dropping message in queue.");
         modbus_retransmit_count = 0;
 
         if (osm_ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
         {
-            modbus_debug("Failed to drop message, dropping all messages.");
+            osm_modbus_debug("Failed to drop message, dropping all messages.");
             ring_buf_clear(&_message_queue);
         }
     }
@@ -637,7 +637,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         unsigned discarded = osm_ring_buf_discard(ring, _echo_bytes);
         _echo_bytes -= discarded;
         if (!_echo_bytes)
-            modbus_debug("Echo drained.");
+            osm_modbus_debug("Echo drained.");
         return;
     }
 
@@ -646,14 +646,14 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         if ((!modbus_bus->binary_protocol && len > 2) || (modbus_bus->binary_protocol && len > 3))
         {
             _header_size = 0;
-            modbus_debug("Starting reply read with : %u", len);
+            osm_modbus_debug("Starting reply read with : %u", len);
 
             modbus_read_timing_init = 0;
             osm_ring_buf_read(ring, (char*)modbuspacket, 1);
 
             if (!modbuspacket[0])
             {
-                modbus_debug("Zero start");
+                osm_modbus_debug("Zero start");
                 return;
             }
 
@@ -661,19 +661,19 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
             {
                 if (modbuspacket[0] != MODBUS_BIN_START)
                 {
-                    modbus_debug("Not binary frame start.");
+                    osm_modbus_debug("Not binary frame start.");
                     return;
                 }
                 osm_ring_buf_read(ring, (char*)modbuspacket, 1);
                 len-= 1;
-                modbus_debug("Binary prototype read, %u left", len);
+                osm_modbus_debug("Binary prototype read, %u left", len);
             }
 
             osm_ring_buf_read(ring, (char*)modbuspacket + 1, 1);
             uint8_t func = modbuspacket[1];
 
             len -= 2; /* We wait for 3 though as that's the longest header we deal with. */
-            modbus_debug("Reply, Address:%"PRIu8" Function: %"PRIu8, modbuspacket[0], func);
+            osm_modbus_debug("Reply, Address:%"PRIu8" Function: %"PRIu8, modbuspacket[0], func);
             if (func == OSM_MODBUS_READ_HOLDING_FUNC)
             {
                 osm_ring_buf_read(ring, (char*)modbuspacket + 2, 1);
@@ -708,19 +708,19 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
             if (!_header_size)
             {
                 modbuspacket_len = 0;
-                modbus_debug("Bad function");
+                osm_modbus_debug("Bad function");
                 return;
             }
 
-            modbus_debug("Reply type length : %u", modbuspacket_len);
+            osm_modbus_debug("Reply type length : %u", modbuspacket_len);
             if (modbus_bus->binary_protocol)
             {
                 modbuspacket_len++;
-                modbus_debug("Binary prototype extra 1 byte required.");
+                osm_modbus_debug("Binary prototype extra 1 byte required.");
             }
 
             modbus_read_timing_init = osm_get_since_boot_ms();
-            modbus_debug("header received, timer started at:%"PRIu32" body:%u/%u", modbus_read_timing_init, len, modbuspacket_len);
+            osm_modbus_debug("header received, timer started at:%"PRIu32" body:%u/%u", modbus_read_timing_init, len, modbuspacket_len);
         }
         else
         {
@@ -728,7 +728,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
             {
                 // There is some bytes, but not enough to be a header yet
                 modbus_read_timing_init = osm_get_since_boot_ms();
-                modbus_debug("bus received, timer started at:%"PRIu32, modbus_read_timing_init);
+                osm_modbus_debug("bus received, timer started at:%"PRIu32, modbus_read_timing_init);
             }
             else _modbus_has_timedout(ring);
             return;
@@ -745,7 +745,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     }
 
     modbus_read_timing_init = 0;
-    modbus_debug("Message bytes (%u) reached.", modbuspacket_len);
+    osm_modbus_debug("Message bytes (%u) reached.", modbuspacket_len);
 
     osm_ring_buf_read(ring, (char*)modbuspacket + _header_size, modbuspacket_len);
 
@@ -753,7 +753,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     {
         if (modbuspacket[modbuspacket_len + _header_size - 1] != MODBUS_BIN_STOP)
         {
-            modbus_debug("Not binary frame stopped, discarded.");
+            osm_modbus_debug("Not binary frame stopped, discarded.");
             return;
         }
         modbuspacket_len--;
@@ -769,13 +769,13 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     if ( (modbuspacket[modbuspacket_len-1] != (crc >> 8)) ||
          (modbuspacket[modbuspacket_len-2] != (crc & 0xFF)) )
     {
-        modbus_debug("Bad CRC");
+        osm_modbus_debug("Bad CRC");
         modbuspacket_len = 0;
         modbus_want_rx = false;
         return;
     }
 
-    modbus_debug("Good CRC");
+    osm_modbus_debug("Good CRC");
     modbuspacket_len = 0;
     modbus_want_rx = false;
 
@@ -787,7 +787,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         {
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
-            modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
+            osm_modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
             return;
         }
         uint16_t reg_addr = (modbuspacket[2] << 8) | modbuspacket[3];
@@ -795,7 +795,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         {
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
-            modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
+            osm_modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
             return;
         }
         uint16_t value = (modbuspacket[4] << 8) | modbuspacket[5];
@@ -803,10 +803,10 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         {
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
-            modbus_debug("Unexpected value (0x%04"PRIX16" != 04%"PRIX16").", value, _modbus_reg_set_expected.value);
+            osm_modbus_debug("Unexpected value (0x%04"PRIX16" != 04%"PRIX16").", value, _modbus_reg_set_expected.value);
             return;
         }
-        modbus_debug("Received acknowledgement.");
+        osm_modbus_debug("Received acknowledgement.");
         _modbus_reg_set_expected.not_done = false;
         _modbus_reg_set_expected.passfail = true;
         return;
@@ -817,7 +817,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         {
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
-            modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
+            osm_modbus_debug("Unexpected unit id (0x%02"PRIX8" != 0x%02"PRIX8").", unit_id, _modbus_reg_set_expected.unit_id);
             return;
         }
         uint16_t reg_addr = (modbuspacket[2] << 8) | modbuspacket[3];
@@ -825,7 +825,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         {
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
-            modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
+            osm_modbus_debug("Unexpected register address (0x%04"PRIX16" != 0x%04"PRIX16").", reg_addr, _modbus_reg_set_expected.reg_addr);
             return;
         }
         uint16_t num_written = (modbuspacket[4] << 8) | modbuspacket[5];
@@ -833,10 +833,10 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         {
             _modbus_reg_set_expected.not_done = false;
             _modbus_reg_set_expected.passfail = false;
-            modbus_debug("Unexpected num_written (0x%04"PRIX16" != 04%"PRIX16").", num_written, _modbus_reg_set_expected.num_written);
+            osm_modbus_debug("Unexpected num_written (0x%04"PRIX16" != 04%"PRIX16").", num_written, _modbus_reg_set_expected.num_written);
             return;
         }
-        modbus_debug("Received acknowledgement.");
+        osm_modbus_debug("Received acknowledgement.");
         _modbus_reg_set_expected.not_done = false;
         _modbus_reg_set_expected.passfail = true;
         return;
@@ -852,7 +852,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     }
 
     if (current_reg->value_state != MB_REG_WAITING)
-        modbus_debug("Reg :%."STR(OSM_MODBUS_NAME_LEN)"s not waiting!", current_reg->name);
+        osm_modbus_debug("Reg :%."STR(OSM_MODBUS_NAME_LEN)"s not waiting!", current_reg->name);
 
     current_reg->value_state = MB_REG_INVALID;
 
@@ -863,7 +863,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     if ((modbuspacket[1] == (OSM_MODBUS_READ_HOLDING_FUNC | MODBUS_ERROR_MASK)) ||
         (modbuspacket[1] == (OSM_MODBUS_READ_INPUT_FUNC | MODBUS_ERROR_MASK)))
     {
-        modbus_debug("Exception: 0x%02"PRIx8, modbuspacket[2]);
+        osm_modbus_debug("Exception: 0x%02"PRIx8, modbuspacket[2]);
         return;
     }
 
@@ -883,12 +883,12 @@ static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t si
 {
     if (!value)
     {
-        modbus_debug("Handed NULL pointer.");
+        osm_modbus_debug("Handed NULL pointer.");
         return false;
     }
     if (size != 2)
     {
-        modbus_debug("Not given array of size 2.");
+        osm_modbus_debug("Not given array of size 2.");
         return false;
     }
     switch (byte_order)
@@ -900,7 +900,7 @@ static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t si
             *value = ((data[1] << 8) | data[0]);
             return true;
         default:
-            modbus_debug("Unknown byte order.");
+            osm_modbus_debug("Unknown byte order.");
             return false;
     }
 }
@@ -910,12 +910,12 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
 {
     if (!value)
     {
-        modbus_debug("Handed NULL pointer.");
+        osm_modbus_debug("Handed NULL pointer.");
         return false;
     }
     if (size != 4)
     {
-        modbus_debug("Not given array size of 4.");
+        osm_modbus_debug("Not given array size of 4.");
         return false;
     }
     uint16_t word_1, word_2;
@@ -932,7 +932,7 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
             *value = (word_2 << 16) | word_1;
             return true;
         default:
-            modbus_debug("Unknown word order.");
+            osm_modbus_debug("Unknown word order.");
             return false;
     }
 }
@@ -952,7 +952,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u16(&v, data, size, byte_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
+    osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
 static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)
@@ -963,7 +963,7 @@ static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u16((uint16_t*)&v, data, size, byte_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
+    osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
 }
 
 static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -974,7 +974,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u32(&v, data, size, byte_order, word_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
+    osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
 static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -985,7 +985,7 @@ static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     if (!_modbus_data_to_u32((uint32_t*)&v, data, size, byte_order, word_order))
         return;
     _modbus_reg_set(reg, v);
-    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
+    osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
 }
 
 static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
@@ -997,7 +997,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
         return;
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wstrict-aliasing"
-    modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s F32:%f", reg->name, *(float*)&v);
+    osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s F32:%f", reg->name, *(float*)&v);
     #pragma GCC diagnostic pop
     _modbus_reg_set(reg, v);
 }
@@ -1031,7 +1031,7 @@ bool osm_modbus_uart_ring_do_out_drain(ring_buf_t * ring)
             static uint32_t rs485_stop_transmitting = 0;
             if (!rs485_transmit_stopping)
             {
-                modbus_debug("Sending complete, delay %"PRIu32"ms", osm_modbus_stop_delay());
+                osm_modbus_debug("Sending complete, delay %"PRIu32"ms", osm_modbus_stop_delay());
                 rs485_stop_transmitting = osm_get_since_boot_ms();
                 rs485_transmit_stopping = true;
             }
@@ -1050,7 +1050,7 @@ bool osm_modbus_uart_ring_do_out_drain(ring_buf_t * ring)
         rs485_transmitting = true;
         osm_platform_set_rs485_mode(true);
         rs485_start_transmitting = osm_get_since_boot_ms();
-        modbus_debug("Data to send, delay %"PRIu32"ms", osm_modbus_start_delay());
+        osm_modbus_debug("Data to send, delay %"PRIu32"ms", osm_modbus_start_delay());
         return false;
     }
     else
@@ -1059,7 +1059,7 @@ bool osm_modbus_uart_ring_do_out_drain(ring_buf_t * ring)
             return false;
     }
 
-    modbus_debug("Sending %u", len);
+    osm_modbus_debug("Sending %u", len);
     return true;
 }
 
@@ -1107,5 +1107,5 @@ struct cmd_link_t* osm_modbus_add_commands(struct cmd_link_t* tail)
         { "mb_setup",     "Change Modbus comms",      _modbus_setup_cb               , false , NULL },
         { "mb_log",       "Show modbus setup",        _modbus_log_cb                 , false , NULL },
     };
-    return osm_modbus_add_mem_commands(osm_add_commands(tail, cmds, ARRAY_SIZE(cmds)));
+    return osm_modbus_add_mem_commands(osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds)));
 }

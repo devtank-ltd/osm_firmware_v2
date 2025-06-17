@@ -102,7 +102,7 @@ static bool _ds18b20_empty_check(const uint8_t* mem, unsigned size)
 static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 {
     ds18b20_instance_t* inst;
-    for (unsigned i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_ds18b20_instances); i++)
     {
         inst = &_ds18b20_instances[i];
         if (strncmp(name, inst->info.name, sizeof(inst->info.name) * sizeof(char)) == 0)
@@ -123,7 +123,7 @@ static measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool i
 
     if (!osm_w1_reset(instance->w1_index))
     {
-        exttemp_debug("Temperature probe did not respond");
+        osm_exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     osm_w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
@@ -140,7 +140,7 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
     ds18b20_memory_t d;
     if (!osm_w1_reset(instance->w1_index))
     {
-        exttemp_debug("Temperature probe did not respond");
+        osm_exttemp_debug("Temperature probe did not respond");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     osm_w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
@@ -149,13 +149,13 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
 
     if (!_ds18b20_crc_check(d.raw, 8))
     {
-        exttemp_debug("Data not confirmed by CRC");
+        osm_exttemp_debug("Data not confirmed by CRC");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!_ds18b20_empty_check(d.raw, 9))
     {
-        exttemp_debug("Empty memory.");
+        osm_exttemp_debug("Empty memory.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -208,7 +208,7 @@ static void _ds18b20_init_instance(ds18b20_instance_t* instance)
 
 void osm_ds18b20_temp_init(void)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(_ds18b20_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_ds18b20_instances); i++)
     {
         _ds18b20_init_instance(&_ds18b20_instances[i]);
     }

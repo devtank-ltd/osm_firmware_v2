@@ -109,14 +109,14 @@ static float _tmp4718_remote_conv(uint16_t temp16)
 
 static bool _tmp4718_read_local_temperature(uint8_t* val)
 {
-    exttemp_debug("READING LOCAL TEMPERATURE");
+    osm_exttemp_debug("READING LOCAL TEMPERATURE");
     __TMP4718_READ_REG(TMP4718_REG_ADDR_TEMP_LOCAL, val);
 }
 
 
 static bool _tmp4718_read_remote_temperature(float* val)
 {
-    exttemp_debug("READING REMOTE TEMPERATURE");
+    osm_exttemp_debug("READING REMOTE TEMPERATURE");
     if (!val)
     {
         return false;

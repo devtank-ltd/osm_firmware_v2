@@ -23,7 +23,7 @@ struct cmd_link_t* osm_comms_add_commands(struct cmd_link_t* tail)
         { "comms_conn"  , "Comms connected"         , osm_comms_cmd_conn_cb         , false , NULL },
     };
 
-    return osm_comms_add_extra_commands(osm_add_commands(tail, cmds, ARRAY_SIZE(cmds)));
+    return osm_comms_add_extra_commands(osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds)));
 }
 
 

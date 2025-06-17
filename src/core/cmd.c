@@ -120,7 +120,7 @@ command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ct
     if (!len)
         return COMMAND_RESP_ERR;
 
-    log_sys_debug("Command \"%s\"", command);
+    osm_log_sys_debug("Command \"%s\"", command);
 
     bool found = false;
     osm_cmd_ctx_out(ctx,OSM_LOG_START_SPACER);
@@ -155,7 +155,7 @@ command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ct
         }
     }
     osm_cmd_ctx_out(ctx,OSM_LOG_END_SPACER);
-    log_sys_debug("Command Response Code:%d", (int)resp);
+    osm_log_sys_debug("Command Response Code:%d", (int)resp);
     return resp;
 }
 
@@ -172,7 +172,7 @@ void osm_cmds_init(void)
         { "hw_id",        "Get Hardware ID",          _cmd_hw_id_cb                  , false , NULL},
     };
 
-    struct cmd_link_t* tail = &cmds[ARRAY_SIZE(cmds)-1];
+    struct cmd_link_t* tail = &cmds[OSM_ARRAY_SIZE(cmds)-1];
 
     for (struct cmd_link_t* cur = cmds; cur != tail; cur++)
         cur->next = cur + 1;

@@ -64,14 +64,14 @@ static bool _adcs_get_rms(const adcs_all_buf_t buff, unsigned buff_len, uint32_t
         int64_t v = buff[i] - mp_small;
         inter_val += v * v;
     }
-    adc_debug("inter_val = %.03lf", inter_val/1000.f);
+    osm_adc_debug("inter_val = %.03lf", inter_val/1000.f);
     inter_val /= (buff_len / step);
     inter_val = sqrt(inter_val);
     inter_val *= 1000;
     inter_val = midpoint - inter_val;
-    adc_debug("inter_val = %.03lf", inter_val/1000.f);
+    osm_adc_debug("inter_val = %.03lf", inter_val/1000.f);
     *adc_rms = inter_val;
-    adc_debug("RMS = %"PRIu32".%03"PRIu32, *adc_rms/1000, *adc_rms%1000);
+    osm_adc_debug("RMS = %"PRIu32".%03"PRIu32, *adc_rms/1000, *adc_rms%1000);
     return true;
 }
 #else
@@ -113,13 +113,13 @@ static bool _adcs_get_rms(const adcs_all_buf_t buff, unsigned buff_len, uint32_t
     // Early exit if nothing found
     if (peak_pos == 0)
     {
-        adc_debug("Cannot find any peaks.");
+        osm_adc_debug("Cannot find any peaks.");
         return false;
     }
     uint32_t inter_val = midpoint - sum / peak_pos;
     inter_val /= sqrt(2);
     *adc_rms = midpoint - inter_val * 1000;
-    adc_debug("RMS = %"PRIu32"%.03"PRIu32, *adc_rms/1000, *adc_rms%1000);
+    osm_adc_debug("RMS = %"PRIu32"%.03"PRIu32, *adc_rms/1000, *adc_rms%1000);
     return true;
 }
 #endif //__ADC_RMS_FULL__
@@ -135,7 +135,7 @@ static bool _adcs_get_avg(const adcs_all_buf_t buff, unsigned buff_len, uint32_t
     buff_len /= step;
     sum *= 1000;
     *adc_avg = sum / buff_len;
-    adc_debug("AVG = %"PRIu32".%03"PRIu32, *adc_avg/1000, *adc_avg%1000);
+    osm_adc_debug("AVG = %"PRIu32".%03"PRIu32, *adc_avg/1000, *adc_avg%1000);
     return true;
 }
 
@@ -157,13 +157,13 @@ adcs_resp_t osm_adcs_begin(adcs_type_t* channels, unsigned num_channels, unsigne
 
     if (_adcs_active_key != ADCS_KEY_NONE)
     {
-        //adc_debug("Still locked.");
+        //osm_adc_debug("Still locked.");
         return ADCS_RESP_WAIT;
     }
 
     if (num_samples > OSM_ADCS_NUM_SAMPLES)
     {
-        adc_debug("ADC buffer too small for that many samples.");
+        osm_adc_debug("ADC buffer too small for that many samples.");
         return ADCS_RESP_FAIL;
     }
 
@@ -182,7 +182,7 @@ adcs_resp_t osm_adcs_collect_rms(uint32_t* rms, uint32_t midpoint, unsigned num_
 {
     if (!rms)
     {
-        adc_debug("Handed NULL pointer.");
+        osm_adc_debug("Handed NULL pointer.");
         return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
@@ -193,7 +193,7 @@ adcs_resp_t osm_adcs_collect_rms(uint32_t* rms, uint32_t midpoint, unsigned num_
         return ADCS_RESP_WAIT;
     if (!_adcs_get_rms(_adcs_buffer, num_samples, rms, cc_index, num_channels, midpoint))
     {
-        adc_debug("Could not get RMS value for pos %u", cc_index);
+        osm_adc_debug("Could not get RMS value for pos %u", cc_index);
         return ADCS_RESP_FAIL;
     }
     if (time_taken)
@@ -206,7 +206,7 @@ adcs_resp_t osm_adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned 
 {
     if (!rmss || !midpoints)
     {
-        adc_debug("Handed NULL pointer.");
+        osm_adc_debug("Handed NULL pointer.");
         return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
@@ -219,12 +219,12 @@ adcs_resp_t osm_adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned 
     {
         if (!rmss || !midpoints)
         {
-            adc_debug("Handed NULL pointer.");
+            osm_adc_debug("Handed NULL pointer.");
             return ADCS_RESP_FAIL;
         }
         if (!_adcs_get_rms(_adcs_buffer, num_samples, &rmss[i], i, num_channels, midpoints[i]))
         {
-            adc_debug("Could not get RMS value for pos %u", i);
+            osm_adc_debug("Could not get RMS value for pos %u", i);
             return ADCS_RESP_FAIL;
         }
     }
@@ -238,7 +238,7 @@ adcs_resp_t osm_adcs_collect_avg(uint32_t* avg, unsigned num_channels, unsigned 
 {
     if (!avg)
     {
-        adc_debug("Handed NULL pointer.");
+        osm_adc_debug("Handed NULL pointer.");
         return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
@@ -250,7 +250,7 @@ adcs_resp_t osm_adcs_collect_avg(uint32_t* avg, unsigned num_channels, unsigned 
 
     if (!_adcs_get_avg(_adcs_buffer, num_samples, avg, index, num_channels))
     {
-        adc_debug("Could not get AVG value for pos %u", index);
+        osm_adc_debug("Could not get AVG value for pos %u", index);
         return ADCS_RESP_FAIL;
     }
 
@@ -264,7 +264,7 @@ adcs_resp_t osm_adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigne
 {
     if (!avgs)
     {
-        adc_debug("Handed NULL pointer.");
+        osm_adc_debug("Handed NULL pointer.");
         return ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
@@ -277,12 +277,12 @@ adcs_resp_t osm_adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigne
     {
         if (!avgs)
         {
-            adc_debug("Handed NULL pointer.");
+            osm_adc_debug("Handed NULL pointer.");
             return ADCS_RESP_FAIL;
         }
         if (!_adcs_get_avg(_adcs_buffer, num_samples, avgs++, i, num_channels))
         {
-            adc_debug("Could not get AVG value for pos %u", i);
+            osm_adc_debug("Could not get AVG value for pos %u", i);
             return ADCS_RESP_FAIL;
         }
     }

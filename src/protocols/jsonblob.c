@@ -18,7 +18,7 @@
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
 
-static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
+static bool _protocol_append_meas(char * fmt, ...) OSM_PRINTF_FMT_CHECK(1, 2);
 
 
 static bool _protocol_append_v(char * fmt, va_list ap)
@@ -32,7 +32,7 @@ static bool _protocol_append_v(char * fmt, va_list ap)
 }
 
 
-static bool _protocol_append(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
+static bool _protocol_append(char * fmt, ...) OSM_PRINTF_FMT_CHECK(1, 2);
 static bool _protocol_append(char * fmt, ...)
 {
     va_list ap;
@@ -131,7 +131,7 @@ bool        osm_protocol_append_measurement(measurements_def_t* def, measurement
     }
     if (!ret)
     {
-        comms_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
+        osm_comms_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
         _json_buf_pos = before_pos;
     }
     return ret;
@@ -144,7 +144,7 @@ bool osm_protocol_send(void)
 
     if (available < JSON_CLOSE_SIZE)
     {
-        comms_debug("Space error");
+        osm_comms_debug("Space error");
         return false;
     }
 
@@ -152,13 +152,13 @@ bool osm_protocol_send(void)
 
     _json_buf_pos += r;
 
-    comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
+    osm_comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
 
     if (!osm_comms_send(_json_buf, _json_buf_pos))
     {
         return false;
     }
-    comms_debug("batch complete.");
+    osm_comms_debug("batch complete.");
     return true;
 }
 

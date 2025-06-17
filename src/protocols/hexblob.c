@@ -317,7 +317,7 @@ void        osm_protocol_send_error_code(uint8_t err_code)
     if (!_protocol_init(arr, sizeof(arr)))
     {
         _protocol_ctx = org;
-        comms_debug("Could not init memory protocol.");
+        osm_comms_debug("Could not init memory protocol.");
         return;
     }
     _protocol_append_error_code(err_code);

@@ -264,7 +264,7 @@ static void _rak4270_write(char* fmt, ...)
     va_start(args, fmt);
     vsnprintf(_rak4270_out_buffer, RAK4270_BUFFER_SIZE, fmt, args);
     va_end(args);
-    comms_debug("<< %s", _rak4270_out_buffer);
+    osm_comms_debug("<< %s", _rak4270_out_buffer);
     size_t len = strlen(_rak4270_out_buffer);
     _rak4270_out_buffer[len] = '\r';
     _rak4270_out_buffer[len+1] = '\n';
@@ -286,7 +286,7 @@ static uint8_t _rak4270_get_port(void)
 
 static void _rak4270_reset_gpio_init(void)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak4270_reset_gpio.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(_rak4270_reset_gpio.port));
     gpio_mode_setup(_rak4270_reset_gpio.port,
                     GPIO_MODE_OUTPUT,
                     GPIO_PUPD_NONE,
@@ -325,14 +325,14 @@ static const char* _rak4270_region_name(uint8_t region)
         case LW_REGION_AS923_3:
             /* fall through */
         case LW_REGION_AS923_4:
-            comms_debug("Not capable of set region, defaulting to LW_REGION_AS923_1");
+            osm_comms_debug("Not capable of set region, defaulting to LW_REGION_AS923_1");
             /* fall through */
         case LW_REGION_AS923_1:
             /* Different from default */
             name = RAK4270_REGION_NAME_AS923;
             break;
         case LW_REGION_RU864:
-            comms_debug("Not capable of set region.");
+            osm_comms_debug("Not capable of set region.");
             /* fall through */
         default:
             name = NULL;
@@ -360,10 +360,10 @@ static bool _rak4270_load_config(cmd_ctx_t * ctx)
         region_name = _rak4270_region_name(LW_REGION_EU868);
     }
 
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-4], sizeof(rak4270_msg_buf_t), "at+set_config=lora:region:%.*s",  OSM_LW_REGION_LEN,  region_name    );
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%.*s", OSM_LW_DEV_EUI_LEN, config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%.*s", OSM_LW_DEV_EUI_LEN, config->dev_eui);
-    snprintf(_init_msgs[ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%.*s", OSM_LW_APP_KEY_LEN, config->app_key);
+    snprintf(_init_msgs[OSM_ARRAY_SIZE(_init_msgs)-4], sizeof(rak4270_msg_buf_t), "at+set_config=lora:region:%.*s",  OSM_LW_REGION_LEN,  region_name    );
+    snprintf(_init_msgs[OSM_ARRAY_SIZE(_init_msgs)-3], sizeof(rak4270_msg_buf_t), "at+set_config=lora:dev_eui:%.*s", OSM_LW_DEV_EUI_LEN, config->dev_eui);
+    snprintf(_init_msgs[OSM_ARRAY_SIZE(_init_msgs)-2], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_eui:%.*s", OSM_LW_DEV_EUI_LEN, config->dev_eui);
+    snprintf(_init_msgs[OSM_ARRAY_SIZE(_init_msgs)-1], sizeof(rak4270_msg_buf_t), "at+set_config=lora:app_key:%.*s", OSM_LW_APP_KEY_LEN, config->app_key);
     return true;
 }
 
@@ -372,11 +372,11 @@ static void _rak4270_chip_init(void)
 {
     if (_rak4270_state_machine.state != RAK4270_STATE_OFF)
     {
-        comms_debug("Chip already on, restarting chip.");
+        osm_comms_debug("Chip already on, restarting chip.");
         _rak4270_chip_off();
         osm_timer_delay_us_64(RAK4270_RESET_GPIO_DEFAULT_MS * 1000);
     }
-    comms_debug("Initialising LoRaWAN chip.");
+    osm_comms_debug("Initialising LoRaWAN chip.");
     _rak4270_chip_on();
 }
 
@@ -386,13 +386,13 @@ static void _rak4270_set_confirmed(bool confirmed)
     if (confirmed)
     {
         _rak4270_state_machine.state = RAK4270_STATE_WAIT_CONF_OK;
-        comms_debug("Setting to confirmed.");
+        osm_comms_debug("Setting to confirmed.");
         _rak4270_write("at+set_config=lora:confirm:1");
     }
     else
     {
         _rak4270_state_machine.state = RAK4270_STATE_WAIT_UCONF_OK;
-        comms_debug("Setting to unconfirmed.");
+        osm_comms_debug("Setting to unconfirmed.");
         _rak4270_write("at+set_config=lora:confirm:0");
     }
 }
@@ -420,7 +420,7 @@ bool osm_rak4270_send_str(char* str)
 {
     if (!osm_rak4270_send_ready())
     {
-        comms_debug("Cannot send '%s' as chip is not in IDLE state.", str);
+        osm_comms_debug("Cannot send '%s' as chip is not in IDLE state.", str);
         return false;
     }
     _rak4270_state_machine.state = RAK4270_STATE_WAIT_OK;
@@ -441,14 +441,14 @@ static void _rak4270_retry_write(void)
 {
     if (_rak4270_state_machine.resend_count >= RAK4270_MAX_RESEND)
     {
-        comms_debug("Failed to successfully resend (%u times), resetting chip.", RAK4270_MAX_RESEND);
+        osm_comms_debug("Failed to successfully resend (%u times), resetting chip.", RAK4270_MAX_RESEND);
         _rak4270_state_machine.resend_count = 0;
         osm_rak4270_reset();
         osm_on_protocol_sent_ack(false);
         return;
     }
     _rak4270_state_machine.resend_count++;
-    comms_debug("Resending %"PRIu8"/%u", _rak4270_state_machine.resend_count, RAK4270_MAX_RESEND);
+    osm_comms_debug("Resending %"PRIu8"/%u", _rak4270_state_machine.resend_count, RAK4270_MAX_RESEND);
     switch (_rak4270_backup_message.backup_type)
     {
         case RAK4270_BKUP_MSG_STR:
@@ -460,7 +460,7 @@ static void _rak4270_retry_write(void)
             osm_rak4270_send(_rak4270_backup_message.hex.arr, _rak4270_backup_message.hex.len);
             break;
         default:
-            comms_debug("Broken backup, cant resend");
+            osm_comms_debug("Broken backup, cant resend");
             return;
     }
 }
@@ -468,7 +468,7 @@ static void _rak4270_retry_write(void)
 
  void _rak4270_send_alive(void)
 {
-    comms_debug("Sending an 'is alive' packet.");
+    osm_comms_debug("Sending an 'is alive' packet.");
     _rak4270_write("at+send=lora:%"PRIu8":", _rak4270_get_port());
     return;
 }
@@ -559,7 +559,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
         case OSM_LW_ID_FW_START:
         {
             uint16_t count = (uint16_t)osm_lw_consume(p, 4);
-            comms_debug("FW of %"PRIu16" chunks", count);
+            osm_comms_debug("FW of %"PRIu16" chunks", count);
             _next_fw_chunk_id = 0;
             osm_fw_ota_reset();
             break;
@@ -569,7 +569,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
             uint16_t chunk_id = (uint16_t)osm_lw_consume(p, 4);
             p += 4;
             unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)incoming_pl->data);
-            comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
+            osm_comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             if (_next_fw_chunk_id != chunk_id)
             {
                 osm_log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _next_fw_chunk_id);
@@ -600,7 +600,7 @@ static void _rak4270_handle_unsol(rak4270_payload_t * incoming_pl)
         }
         default:
         {
-            comms_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
+            osm_comms_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
             break;
         }
     }
@@ -686,7 +686,7 @@ static bool _rak4270_msg_is_ack(char* message)
 
 static bool _rak4270_write_next_init_step(void)
 {
-    if (_rak4270_state_machine.init_step >= ARRAY_SIZE(_init_msgs))
+    if (_rak4270_state_machine.init_step >= OSM_ARRAY_SIZE(_init_msgs))
     {
         return false;
     }
@@ -702,7 +702,7 @@ static void _rak4270_send_error_code(void)
     {
         char err_msg[11] = "";
         snprintf(err_msg, 11, "%"PRIx16, _rak4270_error_code.code);
-        comms_debug("Sending error message '%s'", err_msg);
+        osm_comms_debug("Sending error message '%s'", err_msg);
         osm_rak4270_send_str(err_msg);
         _rak4270_error_code.valid = false;
     }
@@ -713,14 +713,14 @@ void osm_rak4270_reset(void)
 {
     if (_rak4270_state_machine.state == RAK4270_STATE_OFF)
     {
-        comms_debug("Already resetting.");
+        osm_comms_debug("Already resetting.");
         return;
     }
     _rak4270_chip_off();
     _rak4270_chip_off_time = osm_get_since_boot_ms();
     if (++_rak4270_state_machine.reset_count > 2)
     {
-        comms_debug("Going into long reset mode (wait %"PRIi16" mins).", RAK4270_SLOW_RESET_TIMEOUT_MINS);
+        osm_comms_debug("Going into long reset mode (wait %"PRIi16" mins).", RAK4270_SLOW_RESET_TIMEOUT_MINS);
         _rak4270_reset_timeout = RAK4270_SLOW_RESET_TIMEOUT_MINS * 60 * 1000;
     }
     else
@@ -754,11 +754,11 @@ static void _rak4270_handle_error(char* message)
     switch (err_no)
     {
         case RAK4270_ERROR_TRANS_BUSY:
-            comms_debug("LoRa Transceiver is busy, retrying.");
+            osm_comms_debug("LoRa Transceiver is busy, retrying.");
             _rak4270_retry_write();
             break;
         case RAK4270_ERROR_PACKET_SIZE:
-            comms_debug("Packet size too large, reducing limit throwing data and resetting chip.");
+            osm_comms_debug("Packet size too large, reducing limit throwing data and resetting chip.");
             _rak4270_packet_max_size -= 2;
             osm_on_protocol_sent_ack(false);
             osm_rak4270_reset();
@@ -766,49 +766,49 @@ static void _rak4270_handle_error(char* message)
         case RAK4270_ERROR_TIMEOUT_RX1:
             if (osm_rak4270_get_connected())
             {
-                comms_debug("Timed out waiting for packet in windox RX1.");
+                osm_comms_debug("Timed out waiting for packet in windox RX1.");
                 _rak4270_retry_write();
             }
             else
             {
-                comms_debug("Send alive wasn't responded to.");
+                osm_comms_debug("Send alive wasn't responded to.");
                 osm_rak4270_reset();
             }
             break;
         case RAK4270_ERROR_TIMEOUT_RX2:
             if (osm_rak4270_get_connected())
             {
-                comms_debug("Timed out waiting for packet in windox RX2.");
+                osm_comms_debug("Timed out waiting for packet in windox RX2.");
                 _rak4270_retry_write();
             }
             else
             {
-                comms_debug("Send alive wasn't responded to.");
+                osm_comms_debug("Send alive wasn't responded to.");
                 osm_rak4270_reset();
             }
             break;
         case RAK4270_ERROR_RECV_RX1:
-            comms_debug("Error receiving message in RX1.");
+            osm_comms_debug("Error receiving message in RX1.");
             _rak4270_retry_write();
             break;
         case RAK4270_ERROR_RECV_RX2:
-            comms_debug("Error receiving message in RX2.");
+            osm_comms_debug("Error receiving message in RX2.");
             _rak4270_retry_write();
             break;
         case RAK4270_ERROR_DUP_DOWNLINK:
-            comms_debug("Duplicate downlink.");
+            osm_comms_debug("Duplicate downlink.");
             break;
         case RAK4270_ERROR_PAYLOAD_SIZE:
-            comms_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
+            osm_comms_debug("Packet size not valid for current data rate, reducing limit throwing data and resetting chip.");
             _rak4270_packet_max_size -= 2;
             osm_on_protocol_sent_ack(false);
             osm_rak4270_reset();
             break;
         case RAK4270_ERROR_INVLD_MIC:
-            comms_debug("Invalid MIC in LoRa message.");
+            osm_comms_debug("Invalid MIC in LoRa message.");
             break;
         default:
-            comms_debug("Error Code %"PRIu8", resetting chip.", err_no);
+            osm_comms_debug("Error Code %"PRIu8", resetting chip.", err_no);
             osm_rak4270_reset();
             break;
     }
@@ -830,7 +830,7 @@ static void _rak4270_process_wait_init_ok(char* message)
     if (_rak4270_msg_is_ok(message))
     {
         _rak4270_msg_delay();
-        if (_rak4270_state_machine.init_step == ARRAY_SIZE(_init_msgs))
+        if (_rak4270_state_machine.init_step == OSM_ARRAY_SIZE(_init_msgs))
         {
             _rak4270_state_machine.state = RAK4270_STATE_WAIT_REINIT;
             _rak4270_soft_reset();
@@ -943,7 +943,7 @@ void osm_rak4270_process(char* message)
     if (recv_type == RAK4270_RECV_ACK &&
         _rak4270_state_machine.state != RAK4270_STATE_WAIT_ACK)
     {
-        comms_debug("Unexpected ACK");
+        osm_comms_debug("Unexpected ACK");
         return;
     }
 
@@ -1041,12 +1041,12 @@ bool osm_rak4270_send(int8_t* hex_arr, uint16_t arr_len)
         if (sent != expected)
             osm_log_error("Failed to send all bytes over LoRaWAN (%u != %u)", sent, expected);
         else
-            comms_debug("Sent %u bytes", sent);
+            osm_comms_debug("Sent %u bytes", sent);
         return true;
     }
     else
     {
-        comms_debug("Incorrect state to send : %u", (unsigned)_rak4270_state_machine.state);
+        osm_comms_debug("Incorrect state to send : %u", (unsigned)_rak4270_state_machine.state);
         return false;
     }
 }
@@ -1088,7 +1088,7 @@ void osm_rak4270_loop_iteration(void)
                 {
                     osm_on_protocol_sent_ack(false);
                 }
-                comms_debug("LoRa chip timed out, resetting.");
+                osm_comms_debug("LoRa chip timed out, resetting.");
                 osm_rak4270_reset();
             }
             break;

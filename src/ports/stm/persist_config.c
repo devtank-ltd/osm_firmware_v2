@@ -134,11 +134,11 @@ void osm_persist_commit()
     {
         persist_data.config_count += 1;
         if (osm_platform_persist_commit(&persist_data, &persist_measurements))
-            log_sys_debug("Flash successfully written.");
+            osm_log_sys_debug("Flash successfully written.");
         else
             osm_log_error("Flash write failed");
     }
-    else log_sys_debug("No changes to write to flash.");
+    else osm_log_sys_debug("No changes to write to flash.");
 }
 
 void osm_persist_set_fw_ready(uint32_t size)

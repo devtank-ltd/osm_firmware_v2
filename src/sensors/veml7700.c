@@ -205,8 +205,8 @@ static const veml7700_it_ms_t   _veml7700_integration_times[]   = { { VEML7700_C
                                                                     { VEML7700_CONF_ALS_IT_400,  2, 400 } ,
                                                                     { VEML7700_CONF_ALS_IT_800,  1, 800 } };
 
-#define VEML7700_GAINS_COUNT (ARRAY_SIZE(_veml7700_gains))
-#define VEML7700_INT_COUNT (ARRAY_SIZE(_veml7700_integration_times))
+#define VEML7700_GAINS_COUNT (OSM_ARRAY_SIZE(_veml7700_gains))
+#define VEML7700_INT_COUNT (OSM_ARRAY_SIZE(_veml7700_integration_times))
 
 static const veml7700_conf_t    _veml7700_default_ctx   = {.config={.als_sd     = VEML7700_CONF_ALS_SD_OFF,
                                                                     .als_int_en = VEML7700_CONF_ALS_INT_EN_DIABLED,
@@ -233,7 +233,7 @@ static veml7700_time_t          _veml7700_time          = {.start_time=0,
 static void _veml7700_get_u16(uint8_t d[2], uint16_t *r)
 {
     *r = (d[1] << 8) | d[0];
-    light_debug("Got [0x%"PRIx8", 0x%"PRIx8"] = %"PRIu16, d[0], d[1], *r);
+    osm_light_debug("Got [0x%"PRIx8", 0x%"PRIx8"] = %"PRIu16, d[0], d[1], *r);
 }
 
 
@@ -245,10 +245,10 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
     }
     uint8_t reg8 = reg;
     uint8_t d[2] = {0};
-    light_debug("Read command 0x%"PRIx8, reg8);
+    osm_light_debug("Read command 0x%"PRIx8, reg8);
     if (!osm_i2c_transfer_timeout(OSM_VEML7700_I2C, I2C_VEML7700_ADDR, &reg8, 1, d, 2, 100))
     {
-        light_debug("Read timed out.");
+        osm_light_debug("Read timed out.");
         return false;
     }
     _veml7700_get_u16(d, r);
@@ -259,10 +259,10 @@ static bool _veml7700_read_reg16(veml7700_cmd_t reg, uint16_t * r)
 static bool _veml7700_write_reg16(veml7700_cmd_t reg, uint16_t data)
 {
     uint8_t payload[3] = { reg, data & 0xFF, data >> 8 };
-    light_debug("Send command 0x%"PRIx8" [0x%"PRIx8" 0x%"PRIx8"].", payload[0], payload[1], payload[2]);
+    osm_light_debug("Send command 0x%"PRIx8" [0x%"PRIx8" 0x%"PRIx8"].", payload[0], payload[1], payload[2]);
     if (!osm_i2c_transfer_timeout(OSM_VEML7700_I2C, I2C_VEML7700_ADDR, payload, 3, NULL, 0, 100))
     {
-        light_debug("Write timed out.");
+        osm_light_debug("Write timed out.");
         return false;
     }
     return true;
@@ -302,7 +302,7 @@ static bool _veml7700_set_config(void)
     if (!_veml7700_write_reg16(VEML7700_CMD_POWER_SAVING, _veml7700_ctx.power.raw ) ||
         !_veml7700_write_reg16(VEML7700_CMD_ALS_CONF_0,   _veml7700_ctx.config.raw) )
     {
-        light_debug("Set config failed.");
+        osm_light_debug("Set config failed.");
         return false;
     }
     _veml7700_ctx.resolution_scaled = _veml7700_get_resolution();
@@ -342,7 +342,7 @@ static bool _veml7700_conv(uint32_t* lux_corrected, uint16_t counts)
            where x = lux
      */
     uint64_t lux = (counts * _veml7700_ctx.resolution_scaled) / VEML7700_RES_SCALE;
-    light_debug("Lux before correction = %"PRIu64, lux);
+    osm_light_debug("Lux before correction = %"PRIu64, lux);
     const float A = +6.0135E-13f;
     const float B = -9.3924E-09f;
     const float C = +8.1488E-05f;
@@ -351,10 +351,10 @@ static bool _veml7700_conv(uint32_t* lux_corrected, uint16_t counts)
           + (B * lux * lux * lux)
           + (C * lux * lux)
           + (D * lux);
-    light_debug("Lux after correction = %"PRIu64, lux);
+    osm_light_debug("Lux after correction = %"PRIu64, lux);
     if (lux > UINT32_MAX)
     {
-        light_debug("Cannot downsize the lux.");
+        osm_light_debug("Cannot downsize the lux.");
         return false;
     }
     *lux_corrected = (uint32_t)lux;
@@ -377,7 +377,7 @@ static bool _veml7700_conv(uint32_t* lux_dt, uint16_t counts)
                 + (C * inter_val * inter_val)
                 + (D * inter_val);
     *lux_dt = (uint32_t)inter_val;
-    light_debug("Lux after dt correction = %"PRIu32, *lux_dt);
+    osm_light_debug("Lux after dt correction = %"PRIu32, *lux_dt);
     return true;
 }
 #endif
@@ -387,21 +387,21 @@ static bool _veml7700_increase_integration_time(void)
 {
     if (_veml7700_ctx.int_index + 1 == VEML7700_INT_COUNT)
     {
-        light_debug("Cannot increase the integration time any more.");
+        osm_light_debug("Cannot increase the integration time any more.");
         return false;
     }
     _veml7700_ctx.int_index++;
-    light_debug("Increasing the integration time. (mode = %"PRIu8")", _veml7700_ctx.int_index);
+    osm_light_debug("Increasing the integration time. (mode = %"PRIu8")", _veml7700_ctx.int_index);
     return true;
 }
 
 
 static bool _veml7700_increase_gain(void)
 {
-    light_debug("Increasing the gain.");
+    osm_light_debug("Increasing the gain.");
     if (_veml7700_ctx.gain_index + 1 == VEML7700_GAINS_COUNT)
     {
-        light_debug("Cannot increase the gain any more.");
+        osm_light_debug("Cannot increase the gain any more.");
         return false;
     }
     _veml7700_ctx.gain_index++;
@@ -415,7 +415,7 @@ static bool _veml7700_increase_settings(void)
     {
         if (!_veml7700_increase_integration_time())
         {
-            light_debug("Cannot increase count any more.");
+            osm_light_debug("Cannot increase count any more.");
             return false;
         }
         _veml7700_ctx.gain_index = 0;
@@ -453,7 +453,7 @@ static bool _veml7700_check_state(void)
 {
     bool r = osm_since_boot_delta(osm_get_since_boot_ms(), _veml7700_time.start_time) <= VEML7700_MAX_READ_TIME;
     if (!r)
-        light_debug("Request timed out.");
+        osm_light_debug("Request timed out.");
     return r;
 }
 
@@ -473,7 +473,7 @@ static bool _veml7700_iteration_reading(void)
         uint16_t counts;
         if (!_veml7700_get_counts_collect(&counts))
         {
-            light_debug("Could not collect counts.");
+            osm_light_debug("Could not collect counts.");
             goto bad_exit;
         }
         if (counts > VEML7700_COUNT_LOWER_THRESHOLD)
@@ -483,7 +483,7 @@ static bool _veml7700_iteration_reading(void)
             _veml7700_reading.is_valid = true;
             if (!_veml7700_conv(&_veml7700_reading.lux, counts))
             {
-                light_debug("Could not convert light.");
+                osm_light_debug("Could not convert light.");
                 goto bad_exit;
             }
             return true;
@@ -495,7 +495,7 @@ static bool _veml7700_iteration_reading(void)
             _veml7700_reading.is_valid = true;
             if (!_veml7700_conv(&_veml7700_reading.lux, counts))
             {
-                light_debug("Could not convert light.");
+                osm_light_debug("Could not convert light.");
                 goto bad_exit;
             }
             return true;
@@ -503,7 +503,7 @@ static bool _veml7700_iteration_reading(void)
         _veml7700_state_machine.last_read = osm_get_since_boot_ms();
         if (!_veml7700_get_counts_begin())
         {
-            light_debug("Could not restart counts.");
+            osm_light_debug("Could not restart counts.");
             goto bad_exit;
         }
     }
@@ -593,7 +593,7 @@ static measurements_sensor_state_t _veml7700_light_measurements_get(char* name, 
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     _veml7700_reading.is_valid = false;
-    light_debug("Final lux = %"PRIu32, _veml7700_reading.lux);
+    osm_light_debug("Final lux = %"PRIu32, _veml7700_reading.lux);
     value->v_i64 = (int64_t)_veml7700_reading.lux;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }

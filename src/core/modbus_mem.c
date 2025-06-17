@@ -46,7 +46,7 @@ static void* _modbus_allocate_block(void)
 {
     if (!modbus_bus || !modbus_bus->first_free_offset)
     {
-        modbus_debug("Modbus memory full.");
+        osm_modbus_debug("Modbus memory full.");
         return NULL;
     }
 
@@ -334,7 +334,7 @@ void           osm_modbus_dev_del(modbus_dev_t * dev)
         }
         mem_dev = next_dev;
     }
-    modbus_debug("Failed to find device!");
+    osm_modbus_debug("Failed to find device!");
 }
 
 
@@ -364,7 +364,7 @@ void osm_modbus_reg_del(modbus_reg_t * reg)
     modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
     if (!dev)
-        modbus_debug("Failed to find device of register!");
+        osm_modbus_debug("Failed to find device of register!");
 
     modbus_reg_t * dev_reg = _modbus_get_first_reg(dev);
 
@@ -389,7 +389,7 @@ void osm_modbus_reg_del(modbus_reg_t * reg)
         dev_reg = next_reg;
     }
 
-    modbus_debug("Failed to find register in device!");
+    osm_modbus_debug("Failed to find register in device!");
 }
 
 
@@ -417,7 +417,7 @@ modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, modbus_byte_o
     dev->word_order = word_order;
     dev->next_dev_offset = modbus_bus->first_dev_offset;
     modbus_bus->first_dev_offset = _modbus_get_offset(dev);
-    modbus_debug("Added device 0x%"PRIx16" \"%."STR(OSM_MODBUS_NAME_LEN)"s\"", unit_id, name);
+    osm_modbus_debug("Added device 0x%"PRIx16" \"%."STR(OSM_MODBUS_NAME_LEN)"s\"", unit_id, name);
     return dev;
 }
 
@@ -431,13 +431,13 @@ bool           osm_modbus_dev_add_reg(modbus_dev_t * dev, char * name, modbus_re
 
     if (name_len > OSM_MODBUS_NAME_LEN)
     {
-        modbus_debug("Name too long");
+        osm_modbus_debug("Name too long");
         return false;
     }
 
     if (func != OSM_MODBUS_READ_HOLDING_FUNC && func != OSM_MODBUS_READ_INPUT_FUNC)
     {
-        modbus_debug("Unsupported func");
+        osm_modbus_debug("Unsupported func");
         return false;
     }
 
@@ -558,11 +558,11 @@ void osm_modbus_bus_init(modbus_bus_t * bus)
 
     if (modbus_bus->version == OSM_MODBUS_BLOB_VERSION)
     {
-        modbus_debug("Loaded modbus defs");
+        osm_modbus_debug("Loaded modbus defs");
     }
     else
     {
-        modbus_debug("Failed to load modbus defs");
+        osm_modbus_debug("Failed to load modbus defs");
         memset(modbus_bus, 0, sizeof(modbus_bus_t));
         modbus_bus->version = OSM_MODBUS_BLOB_VERSION;
         modbus_bus->baudrate    = MODBUS_SPEED;
@@ -814,7 +814,7 @@ static const char* _modbus_get_type_str(modbus_reg_type_t type)
         case MODBUS_REG_TYPE_FLOAT:
             return float_str;
         default:
-            modbus_debug("Could not get type string.");
+            osm_modbus_debug("Could not get type string.");
             break;
     }
     return unknown_str;
@@ -845,7 +845,7 @@ static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, modbus_r
             func = OSM_MODBUS_WRITE_MULTIPLE_HOLDING_FUNC;
             break;
         default:
-            modbus_debug("Could not get modbus function from type (%d).", type);
+            osm_modbus_debug("Could not get modbus function from type (%d).", type);
             return false;
     }
     return osm_modbus_set_reg(dev->unit_id, reg_addr, func, type, dev->byte_order, dev->word_order, value);
@@ -922,7 +922,7 @@ static command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
 
     if (osm_modbus_has_pending())
     {
-        modbus_debug("Currently undergoing transaction.");
+        osm_modbus_debug("Currently undergoing transaction.");
         return false;
     }
 
@@ -1000,5 +1000,5 @@ struct cmd_link_t* osm_modbus_add_mem_commands(struct cmd_link_t* tail)
         { "mb_dev_del",   "Delete modbus dev",        _modbus_measurement_del_dev_cb , false , NULL },
         { "mb_reg_set",   "Set modbus reg",           _modbus_set_reg_cb             , false , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

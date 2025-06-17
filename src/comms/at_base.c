@@ -44,7 +44,7 @@ void osm_at_base_init(at_base_ctx_t* ctx)
     }
     else
     {
-        comms_debug("Handed NULL pointer for context.");
+        osm_comms_debug("Handed NULL pointer for context.");
     }
 }
 

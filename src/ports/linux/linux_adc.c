@@ -98,9 +98,9 @@ static uint16_t _adcs_calculate_ac_wave(adcs_wave_t* wave, float x)
 
 static void _adcs_fill_buffer(void)
 {
-    adc_debug("Active:");
+    osm_adc_debug("Active:");
     for (uint8_t i = 0; i < _adcs_num_active_channels; i++)
-        adc_debug("- %"PRIu8, _adcs_active_channels[i]);
+        osm_adc_debug("- %"PRIu8, _adcs_active_channels[i]);
 
     for (unsigned i = 0; i < _adcs_num_data; i++)
     {
@@ -133,7 +133,7 @@ static void _adcs_fill_buffer(void)
                 wave = &_adcs_waves[ADC_INDEX_FTMA_4];
                 break;
             default:
-                adc_debug("Fake ADC failed, unknown channel type.");
+                osm_adc_debug("Fake ADC failed, unknown channel type.");
                 continue;
         }
         switch(wave->type)
@@ -145,7 +145,7 @@ static void _adcs_fill_buffer(void)
                 _adcs_buf[i] = _adcs_calculate_dc_wave(wave);
                 break;
             default:
-                adc_debug("Fake ADC failed, unknown wave type.");
+                osm_adc_debug("Fake ADC failed, unknown wave type.");
                 continue;
         }
     }

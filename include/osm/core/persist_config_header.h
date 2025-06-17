@@ -37,11 +37,11 @@ typedef struct
 } __attribute__((__packed__)) persist_storage_t;
 
 
-STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, model_name);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, serial_number);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, human_name);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, model_config);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, config_count);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, model_name);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, serial_number);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, human_name);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, model_config);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, config_count);
 
 
 typedef struct

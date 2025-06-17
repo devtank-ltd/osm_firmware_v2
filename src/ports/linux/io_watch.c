@@ -59,7 +59,7 @@ void osm_io_watch_init(void)
         {
             _ios_watch_measurements_def[i] = NULL;
             _ios_watch_measurements_data[i] = NULL;
-            io_debug("Could not find measurements data for '%s'", name);
+            osm_io_debug("Could not find measurements data for '%s'", name);
         }
     }
 }

@@ -40,7 +40,7 @@ static bat_on_battery_t _bat_on_battery         = {false, false, 0};
 
 static bool _bat_wait(void)
 {
-    adc_debug("Waiting for ADC BAT");
+    osm_adc_debug("Waiting for ADC BAT");
     adcs_resp_t resp = osm_adcs_wait_done(BAT_TIMEOUT_MS, ADCS_KEY_BAT);
     switch (resp)
     {
@@ -51,7 +51,7 @@ static bool _bat_wait(void)
         case ADCS_RESP_OK:
             return true;
     }
-    adc_debug("Timed out waiting for BAT ADC.");
+    osm_adc_debug("Timed out waiting for BAT ADC.");
     return false;
 }
 
@@ -67,7 +67,7 @@ static void _bat_update_on_battery(bool on_battery)
     _bat_on_battery.on_battery = on_battery;
     _bat_on_battery.is_valid = true;
     _bat_on_battery.last_checked = osm_get_since_boot_ms();
-    adc_debug("BAT status updated.");
+    osm_adc_debug("BAT status updated.");
 }
 
 
@@ -75,7 +75,7 @@ static bool _bat_check_request(void)
 {
     if (osm_since_boot_delta(osm_get_since_boot_ms(), _bat_starting_time) > BAT_TIMEOUT_MS)
     {
-        adc_debug("BAT Request timed out.");
+        osm_adc_debug("BAT Request timed out.");
         _bat_running = false;
         _bat_release();
         return false;
@@ -125,7 +125,7 @@ static measurements_sensor_state_t _bat_begin(char* name, bool in_isolation)
 {
     if (_bat_running && _bat_check_request())
     {
-        adc_debug("Already beginning BAT ADC.");
+        osm_adc_debug("Already beginning BAT ADC.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -134,14 +134,14 @@ static measurements_sensor_state_t _bat_begin(char* name, bool in_isolation)
     switch(resp)
     {
         case ADCS_RESP_FAIL:
-            adc_debug("Failed to begin BAT ADC.");
+            osm_adc_debug("Failed to begin BAT ADC.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
         case ADCS_RESP_OK:
             break;
     }
-    adc_debug("Started ADC reading for BAT.");
+    osm_adc_debug("Started ADC reading for BAT.");
     _bat_running = true;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -151,13 +151,13 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
 {
     if (!_bat_running)
     {
-        adc_debug("ADC for Bat not running!");
+        osm_adc_debug("ADC for Bat not running!");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!value)
     {
-        adc_debug("Handed NULL Pointer.");
+        osm_adc_debug("Handed NULL Pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -168,7 +168,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
         case ADCS_RESP_FAIL:
             _bat_running = false;
             _bat_release();
-            adc_debug("ADC for Bat not complete!");
+            osm_adc_debug("ADC for Bat not complete!");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         case ADCS_RESP_WAIT:
             return MEASUREMENTS_SENSOR_STATE_BUSY;
@@ -178,7 +178,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
             break;
     }
 
-    adc_debug("Bat raw ADC:%"PRIu32".%03"PRIu32, raw/1000, raw%1000);
+    osm_adc_debug("Bat raw ADC:%"PRIu32".%03"PRIu32, raw/1000, raw%1000);
 
     uint16_t perc = _bat_conv(raw);
 
@@ -186,7 +186,7 @@ static measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* 
 
     value->v_f32 = osm_to_f32_from_float((float)perc / 100.f);
 
-    adc_debug("Bat %u.%02u", perc / 100, perc %100);
+    osm_adc_debug("Bat %u.%02u", perc / 100, perc %100);
 
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -196,17 +196,17 @@ bool osm_bat_get_blocking(char* name, measurements_reading_t* value)
 {
     if (_bat_begin(name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        adc_debug("Could not start BAT.");
+        osm_adc_debug("Could not start BAT.");
         return false;
     }
     if (!_bat_wait())
     {
-        adc_debug("BAT Wait failed.");
+        osm_adc_debug("BAT Wait failed.");
         return false;
     }
     if (!_bat_get(name, value) == MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        adc_debug("Failed get BAT.");
+        osm_adc_debug("Failed get BAT.");
         return false;
     }
     return true;
@@ -217,7 +217,7 @@ static bool _bat_get_on_battery(bool* on_battery)
 {
     if (!on_battery)
     {
-        adc_debug("Handed a NULL pointer.");
+        osm_adc_debug("Handed a NULL pointer.");
         return false;
     }
 
@@ -231,13 +231,13 @@ static bool _bat_get_on_battery(bool* on_battery)
     }
     if (!_bat_wait())
     {
-        adc_debug("Couldn't wait for the battery adc value to be ready.");
+        osm_adc_debug("Couldn't wait for the battery adc value to be ready.");
         return false;
     }
 
     if (!_bat_running)
     {
-        adc_debug("ADC for Bat not running!");
+        osm_adc_debug("ADC for Bat not running!");
         return false;
     }
 
@@ -251,7 +251,7 @@ static bool _bat_get_on_battery(bool* on_battery)
         case ADCS_RESP_OK:
             break;
         default:
-            adc_debug("ADC for Bat not complete!");
+            osm_adc_debug("ADC for Bat not complete!");
             return false;
     }
     uint16_t perc = _bat_conv(raw);
@@ -265,7 +265,7 @@ bool osm_bat_on_battery(bool* on_battery)
 {
     if (!on_battery)
     {
-        adc_debug("Handed a NULL pointer.");
+        osm_adc_debug("Handed a NULL pointer.");
         return false;
     }
 
@@ -275,7 +275,7 @@ bool osm_bat_on_battery(bool* on_battery)
         *on_battery = _bat_on_battery.on_battery;
         return true;
     }
-    adc_debug("Valid battery status timed out. Getting new one.");
+    osm_adc_debug("Valid battery status timed out. Getting new one.");
     if (!_bat_get_on_battery(on_battery))
     {
         /* Assumes on battery */
@@ -318,5 +318,5 @@ static command_response_t _bat_cb(char* args, cmd_ctx_t * ctx)
 struct cmd_link_t* osm_bat_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = { { "bat",          "Get battery level.",      _bat_cb                        , false , NULL } };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

@@ -28,7 +28,7 @@ bool osm_can_impl_send(uint32_t id, uint8_t* data, unsigned len)
 void osm_can_impl_send_example(void)
 {
     uint8_t some_data[] = { 1, 2, 3, 4, 5, 6 };
-    osm_can_impl_send(123, some_data, ARRAY_SIZE(some_data));
+    osm_can_impl_send(123, some_data, OSM_ARRAY_SIZE(some_data));
 }
 
 
@@ -64,5 +64,5 @@ static command_response_t _can_impl_cb(char* args, cmd_ctx_t * ctx)
 struct cmd_link_t* osm_can_impl_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "can_impl",     "Send example CAN message", _can_impl_cb                  , false , NULL }};
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

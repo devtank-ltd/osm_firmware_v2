@@ -165,5 +165,5 @@ struct cmd_link_t* osm_comms_identify_add_commands(struct cmd_link_t* tail)
         { "comms_ident_write"   , "Set COMMS EEPROM"    , _comms_ident_write_cb , true  , NULL },
         { "comms_ident_wipe"    , "Wipe COMMS EEPROM"   , _comms_ident_wipe_cb  , true  , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

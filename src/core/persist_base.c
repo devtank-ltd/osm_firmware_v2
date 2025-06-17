@@ -97,7 +97,7 @@ struct cmd_link_t* osm_persist_config_add_commands(struct cmd_link_t* tail)
     static struct cmd_link_t cmds[] = {{ "save",         "Save config",             _persist_commit_cb             , false , NULL },
                                        { "reset",        "Reset device.",           _reset_cb                      , false , NULL },
                                        { "wipe",         "Factory Reset",           _wipe_cb                       , false , NULL }};
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
 

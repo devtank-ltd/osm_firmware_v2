@@ -20,9 +20,9 @@
 #endif
 
 #ifndef DOXYGEN
-#define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)  __attribute__ ((format (printf, _fmt_arg, _el_arg)))
+#define OSM_PRINTF_FMT_CHECK(_fmt_arg, _el_arg)  __attribute__ ((format (printf, _fmt_arg, _el_arg)))
 #else
-#define PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
+#define OSM_PRINTF_FMT_CHECK(_fmt_arg, _el_arg)
 #endif
 
 
@@ -52,13 +52,13 @@
 #define OSM_UART_ERR_NU 0
 
 #define CONCAT2(a, b) a##b
-#define CONCAT(a, b) CONCAT2(a, b)
+#define OSM_CONCAT(a, b) CONCAT2(a, b)
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
+#define OSM_MIN(a,b) (((a)<(b))?(a):(b))
+#define OSM_MAX(a,b) (((a)>(b))?(a):(b))
 
 #ifndef ARRAY_SIZE
-#define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
+#define OSM_ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 #endif
 
 #define OSM_MODBUS_BLOB_VERSION 2
@@ -70,9 +70,9 @@
 
 #define STR_EXPAND(tok) #tok            ///< Convert macro value to a string.
 #define STR(tok) STR_EXPAND(tok)        ///< Convert macro value to a string.
-#define STRLEN(x) (sizeof(x) / sizeof(char) - 1)
+#define OSM_STRLEN(x) (sizeof(x) / sizeof(char) - 1)
 
-#define STATIC_ASSERT_16BYTE_ALIGNED(_type_, _member_)  _Static_assert((offsetof(_type_, _member_) % 16) == 0, STR(_type_)"->"STR(_member_)" not on 16 byte boundary")
+#define OSM_STATIC_ASSERT_16BYTE_ALIGNED(_type_, _member_)  _Static_assert((offsetof(_type_, _member_) % 16) == 0, STR(_type_)"->"STR(_member_)" not on 16 byte boundary")
 
 #define OSM_VEML7700_DEVTANK_CORRECTED 1
 

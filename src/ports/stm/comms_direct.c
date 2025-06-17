@@ -153,7 +153,7 @@ static void _comms_direct_preamble(void)
     bool done = false;
     while (!done)
     {
-        for (unsigned i = 0; i < ARRAY_SIZE(_comms_direct_default_uarts); i++)
+        for (unsigned i = 0; i < OSM_ARRAY_SIZE(_comms_direct_default_uarts); i++)
         {
             done = true;
             if (!usart_get_flag(_comms_direct_default_uarts[i].usart, USART_ISR_TC))
@@ -201,7 +201,7 @@ struct cmd_link_t* osm_comms_direct_add_commands(struct cmd_link_t* tail)
     {
         { "comms_direct",    "Enter comms_direct mode",       _comms_direct_enter_cb       , false , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
 

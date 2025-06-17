@@ -189,7 +189,7 @@ void osm_uart_ring_in_drain(unsigned uart)
         len = osm_ring_buf_readline(ring, line_buffer, CMD_LINELEN);
         if (len)
         {
-            comms_debug(" >> %s", line_buffer);
+            osm_comms_debug(" >> %s", line_buffer);
             osm_protocol_process(line_buffer);
         }
     }

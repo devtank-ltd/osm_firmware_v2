@@ -141,7 +141,7 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
 {
     if (!def || !inf)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
     // Optional callbacks: get is not optional, neither is collection
@@ -237,7 +237,7 @@ void osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled)
         }
     }
 
-    rcc_periph_clock_enable(PORT_TO_RCC(w1_pupd_en_pnp.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(w1_pupd_en_pnp.port));
     gpio_mode_setup(w1_pupd_en_pnp.port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, w1_pupd_en_pnp.pins);
     if (enabled)
         gpio_set(w1_pupd_en_pnp.port, w1_pupd_en_pnp.pins);

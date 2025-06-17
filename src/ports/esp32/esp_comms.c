@@ -87,7 +87,7 @@ static bool _mqtt_send(const char * topic, const char * value, unsigned len)
     }
     else
     {
-        comms_debug("Sent MQTT \"%s\" (%d)", topic, msg_id);
+        osm_comms_debug("Sent MQTT \"%s\" (%d)", topic, msg_id);
         return true;
     }
 }
@@ -109,7 +109,7 @@ static osm_wifi_config_t* _wifi_get_config(void)
     comms_config_t* comms_config = &persist_data.model_config.comms_config;
     if (comms_config->type != COMMS_TYPE_WIFI)
     {
-        comms_debug("Tried to get config for WiFi but config is not for WiFi.");
+        osm_comms_debug("Tried to get config for WiFi but config is not for WiFi.");
         return NULL;
     }
     return (osm_wifi_config_t*)(comms_config);
@@ -136,7 +136,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
     {
         case MQTT_EVENT_CONNECTED:
             _has_mqtt = true;
-            comms_debug("MQTT connected.");
+            osm_comms_debug("MQTT connected.");
             char topic[32];
             snprintf(topic, sizeof(topic), "osm/%s/cmd", _mac_str);
             topic[sizeof(topic)-1] = 0;
@@ -144,13 +144,13 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
             break;
         case MQTT_EVENT_DISCONNECTED:
             _has_mqtt = false;
-            comms_debug("MQTT disconnected.");
+            osm_comms_debug("MQTT disconnected.");
             break;
         case MQTT_EVENT_DATA:
-            comms_debug("MQTT Data %.*s", event->topic_len, event->topic);
+            osm_comms_debug("MQTT Data %.*s", event->topic_len, event->topic);
             if (_cmd_ready)
             {
-                comms_debug("MQTT msg already pending.");
+                osm_comms_debug("MQTT msg already pending.");
                 break;
             }
             memset(_cmd, 0, sizeof(_cmd));
@@ -160,7 +160,7 @@ static void _mqtt_event_handler(void *handler_args, esp_event_base_t base, int32
                 _cmd_ready = true;
             }
             else
-                comms_debug("MQTT msg too long.");
+                osm_comms_debug("MQTT msg too long.");
             break;
         default:
             break;
@@ -176,17 +176,17 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
         switch(event_id)
         {
             case WIFI_EVENT_STA_START:
-                comms_debug("WiFi STA start event.");
+                osm_comms_debug("WiFi STA start event.");
                 esp_wifi_connect();
                 break;
             case WIFI_EVENT_STA_DISCONNECTED:
-                comms_debug("WiFi STA disconnect event.");
+                osm_comms_debug("WiFi STA disconnect event.");
                 _has_ip_addr = false;
                 _has_mqtt = false;
                 esp_wifi_connect();
                 break;
             default:
-                comms_debug("Unknown WiFi STA event :");
+                osm_comms_debug("Unknown WiFi STA event :");
                 break;
         }
     }
@@ -196,15 +196,15 @@ static void _wifi_event_handler(void* arg, esp_event_base_t event_base,
         {
             case IP_EVENT_STA_GOT_IP:
                 ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-                comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
+                osm_comms_debug("Got IP:"IPSTR, IP2STR(&event->ip_info.ip));
                 const uint8_t * mac = osm_esp_port_get_mac();
                 snprintf(_mac_str, sizeof(_mac_str), "%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8"%"PRIx8, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-                comms_debug("MAC: %s", _mac_str);
+                osm_comms_debug("MAC: %s", _mac_str);
 
                 _has_ip_addr = true;
                 break;
             default:
-                comms_debug("Unknown WiFi IP event :");
+                osm_comms_debug("Unknown WiFi IP event :");
                 break;
         }
     }
@@ -219,7 +219,7 @@ static void _mqtt_start(void)
     static char uri[5 + SSID_LEN + WFPW_LEN + SVR_LEN + SVRUSR_LEN + SVRPW_LEN];
 
     //mqtt://username:password@mqtt.eclipseprojects.io
-    comms_debug("Connecting to \"mqtt://%s@%s\"", osm_config->svr_user, osm_config->svr);
+    osm_comms_debug("Connecting to \"mqtt://%s@%s\"", osm_config->svr_user, osm_config->svr);
     snprintf(uri, sizeof(uri), "mqtt://%s:%s@%s", osm_config->svr_user, osm_config->svr_pw, osm_config->svr);
     uri[sizeof(uri)-1]=0;
 
@@ -405,7 +405,7 @@ static command_response_t _pw_cb(char *args, cmd_ctx_t * ctx)
 static void _print_ams(cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx, "Options:");
-    for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
+    for(unsigned n=0; n < OSM_ARRAY_SIZE(_authmodes); n++)
         osm_cmd_ctx_out(ctx, "  %s", _authmodes[n].name);
 }
 
@@ -417,7 +417,7 @@ static command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
     {
         osm_wifi_config_t* osm_config = _wifi_get_config();
         wifi_auth_mode_t authmode = (osm_config)?osm_config->authmode:WIFI_AUTH_OPEN;
-        for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
+        for(unsigned n=0; n < OSM_ARRAY_SIZE(_authmodes); n++)
         {
             if (_authmodes[n].authmode == authmode)
             {
@@ -435,7 +435,7 @@ static command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
         osm_wifi_config_t* osm_config = _wifi_get_config();
 
         char * am = p;
-        for(unsigned n=0; n < ARRAY_SIZE(_authmodes); n++)
+        for(unsigned n=0; n < OSM_ARRAY_SIZE(_authmodes); n++)
         {
             if (!strcmp(_authmodes[n].name, am))
             {
@@ -521,7 +521,7 @@ static command_response_t _esp_comms_cb(char *args, cmd_ctx_t * ctx)
             next = osm_skip_space(next);
             *t = 0;
         }
-        for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
+        for(unsigned n=0; n < OSM_ARRAY_SIZE(cmds); n++)
         {
             struct cmd_link_t * cmd = &cmds[n];
             if (!strcmp(cmd->key, args))
@@ -530,7 +530,7 @@ static command_response_t _esp_comms_cb(char *args, cmd_ctx_t * ctx)
     }
     else r = COMMAND_RESP_OK;
 
-    for(unsigned n=0; n < ARRAY_SIZE(cmds); n++)
+    for(unsigned n=0; n < OSM_ARRAY_SIZE(cmds); n++)
     {
         struct cmd_link_t * cmd = &cmds[n];
         osm_cmd_ctx_out(ctx, "%10s : %s", cmd->key, cmd->desc);
@@ -563,5 +563,5 @@ struct cmd_link_t* osm_comms_add_commands(struct cmd_link_t* tail)
         { "comms_config", "Config comms", _esp_comms_cb, false , NULL },
         { "comms_conn", "Get if connected or not", _esp_conn_cb, false , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

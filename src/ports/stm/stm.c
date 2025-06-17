@@ -54,8 +54,8 @@ static void _stm_setup_rs485(void)
     port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
     port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
 
-    rcc_periph_clock_enable(PORT_TO_RCC(re_port_n_pin.port));
-    rcc_periph_clock_enable(PORT_TO_RCC(de_port_n_pin.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(re_port_n_pin.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(de_port_n_pin.port));
 
     gpio_mode_setup(re_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, re_port_n_pin.pins);
     gpio_mode_setup(de_port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, de_port_n_pin.pins);
@@ -178,7 +178,7 @@ void osm_platform_init(void)
     comms_type_t type = osm_comms_identify();
     if (type == COMMS_TYPE_UNKNOWN && osm_comms_set_identity())
     {
-        log_sys_debug("Failed write COMMS identity");
+        osm_log_sys_debug("Failed write COMMS identity");
     }
 }
 
@@ -204,13 +204,13 @@ void osm_platform_set_rs485_mode(bool driver_enable)
     port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
     if (driver_enable)
     {
-        modbus_debug("driver:enable receiver:disable");
+        osm_modbus_debug("driver:enable receiver:disable");
         gpio_set(re_port_n_pin.port, re_port_n_pin.pins);
         gpio_set(de_port_n_pin.port, de_port_n_pin.pins);
     }
     else
     {
-        modbus_debug("driver:disable receiver:enable");
+        osm_modbus_debug("driver:disable receiver:enable");
         gpio_clear(re_port_n_pin.port, re_port_n_pin.pins);
         gpio_clear(de_port_n_pin.port, de_port_n_pin.pins);
     }
@@ -326,9 +326,9 @@ void osm_platform_setup_adc(adc_setup_config_t* config)
     // Setup the clock and gpios
     const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
     rcc_periph_clock_enable(RCC_ADC1);
-    for(unsigned n = 0; n < ARRAY_SIZE(port_n_pins); n++)
+    for(unsigned n = 0; n < OSM_ARRAY_SIZE(port_n_pins); n++)
     {
-        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pins[n].port));
+        rcc_periph_clock_enable(OSM_PORT_TO_RCC(port_n_pins[n].port));
         gpio_mode_setup(port_n_pins[n].port,
                         GPIO_MODE_ANALOG,
                         GPIO_PUPD_NONE,
@@ -384,7 +384,7 @@ void osm_platform_hpm_enable(bool enable)
     port_n_pins_t port_n_pin = OSM_HPM_EN_PIN;
     if (enable)
     {
-        rcc_periph_clock_enable(PORT_TO_RCC(port_n_pin.port));
+        rcc_periph_clock_enable(OSM_PORT_TO_RCC(port_n_pin.port));
         gpio_mode_setup(port_n_pin.port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLUP, port_n_pin.pins);
         gpio_set(port_n_pin.port, port_n_pin.pins);
     }
@@ -423,7 +423,7 @@ void sys_tick_handler(void)
 
 void osm_platform_gpio_init(const port_n_pins_t * gpio_pin)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(gpio_pin->port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(gpio_pin->port));
 }
 
 

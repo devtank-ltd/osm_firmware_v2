@@ -186,5 +186,5 @@ struct cmd_link_t* osm_linux_comms_add_commands(struct cmd_link_t* tail)
         { "osm_comms_send"  ,  "Send linux_comms message"   , _linux_comms_send_cb          , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"            , _linux_comms_dbg_cb           , false , NULL }
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

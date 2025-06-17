@@ -28,7 +28,7 @@ static bool _ios_append_special_str(char special_str[IOS_SPECIAL_STR_LEN+1], con
     uint16_t space = IOS_SPECIAL_STR_LEN - strnlen(special_str, IOS_SPECIAL_STR_LEN);
     if (space < strnlen(new_str, IOS_SPECIAL_INDIV_STR_LEN))
     {
-        io_debug("Out of space for line.");
+        osm_io_debug("Out of space for line.");
         return false;
     }
     strncat(special_str, new_str, space);
@@ -68,7 +68,7 @@ static char* _ios_get_type_possible(unsigned io)
         int16_t space = IOS_SPECIAL_STR_LEN - strnlen(special_str, IOS_SPECIAL_STR_LEN);
         if (space < 3)
         {
-            io_debug("Out of space for line.");
+            osm_io_debug("Out of space for line.");
             return special_str;
         }
         if (count)
@@ -116,12 +116,12 @@ bool osm_ios_get_pupd(unsigned io, uint8_t* pupd)
 {
     if (!pupd)
     {
-        io_debug("Handed NULL pointer.");
+        osm_io_debug("Handed NULL pointer.");
         return false;
     }
     if (io >= IOS_COUNT)
     {
-        io_debug("IO '%u' out of range.", io);
+        osm_io_debug("IO '%u' out of range.", io);
         return false;
     }
     *pupd = ios_state[io] & OSM_IO_PULL_MASK;
@@ -131,7 +131,7 @@ bool osm_ios_get_pupd(unsigned io, uint8_t* pupd)
 
 static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
     char * type = _ios_get_type_possible(io);
@@ -142,7 +142,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     ios_state[io] = (ios_state[io] & (OSM_IO_ACTIVE_SPECIAL_MASK)) | io_state;
 
-    io_debug("%02u set to %s %s%s%s%s",
+    osm_io_debug("%02u set to %s %s%s%s%s",
             io,
             (io_state & OSM_IO_AS_INPUT)?"IN":"OUT",
             osm_io_get_pull_str(io_state),
@@ -156,12 +156,12 @@ void     osm_ios_init(void)
 
     if (ios_state[0] == 0 || ios_state[0] == 0xFFFF)
     {
-        io_debug("No IOs state, setting to default.");
-        uint16_t ios_init_state[ARRAY_SIZE(ios_pins)] = IOS_STATE;
+        osm_io_debug("No IOs state, setting to default.");
+        uint16_t ios_init_state[OSM_ARRAY_SIZE(ios_pins)] = IOS_STATE;
         memcpy(ios_state, ios_init_state, sizeof(ios_init_state));
     }
 
-    for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
+    for(unsigned n = 0; n < OSM_ARRAY_SIZE(ios_pins); n++)
     {
         osm_platform_gpio_init(&ios_pins[n]);
 
@@ -177,7 +177,7 @@ void     osm_ios_init(void)
             {
                 osm_pulsecount_enable(n, true, io_state & OSM_IO_PULL_MASK, io_state & OSM_IO_ACTIVE_SPECIAL_MASK);
             }
-            io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
+            osm_io_debug("%02u : USED %s", n, _ios_get_type_active(io_state));
         }
         else
             _ios_setup_gpio(n, io_state);
@@ -187,13 +187,13 @@ void     osm_ios_init(void)
 
 unsigned osm_ios_get_count(void)
 {
-    return ARRAY_SIZE(ios_pins);
+    return OSM_ARRAY_SIZE(ios_pins);
 }
 
 
 bool osm_io_enable_w1(unsigned io)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     if (!osm_model_can_io_be_special(io, IO_SPECIAL_ONEWIRE))
@@ -207,7 +207,7 @@ bool osm_io_enable_w1(unsigned io)
     osm_pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
     osm_io_watch_enable(io, false, IO_PUPD_NONE);
     osm_w1_enable(io, true);
-    io_debug("%02u : USED W1", io);
+    osm_io_debug("%02u : USED W1", io);
     return true;
 }
 
@@ -229,7 +229,7 @@ static unsigned io_pull(io_pupd_t pull)
 
 bool osm_io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     if (!osm_model_can_io_be_special(io, edge))
@@ -247,14 +247,14 @@ bool osm_io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge)
     osm_w1_enable(io, false);
     osm_io_watch_enable(io, false, pupd);
     osm_pulsecount_enable(io, true, pupd, edge);
-    io_debug("%02u : USED PLSCNT", io);
+    osm_io_debug("%02u : USED PLSCNT", io);
     return true;
 }
 
 
 static bool io_enable_watch(unsigned io, io_pupd_t pupd)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     if (!osm_model_can_io_be_special(io, IO_SPECIAL_WATCH))
@@ -272,14 +272,14 @@ static bool io_enable_watch(unsigned io, io_pupd_t pupd)
     osm_w1_enable(io, false);
     osm_pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
     osm_io_watch_enable(io, true, pupd);
-    io_debug("%02u : USED WATCH", io);
+    osm_io_debug("%02u : USED WATCH", io);
     return true;
 }
 
 
 void     osm_io_configure(unsigned io, bool as_input, io_pupd_t pull)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
     uint16_t io_state = ios_state[io];
@@ -289,13 +289,13 @@ void     osm_io_configure(unsigned io, bool as_input, io_pupd_t pull)
         ios_state[io] &= ~OSM_IO_ACTIVE_SPECIAL_MASK;
         osm_w1_enable(io, false);
         osm_pulsecount_enable(io, false, IO_PUPD_NONE, IO_SPECIAL_NONE);
-        io_debug("%02u : NO LONGER SPECIAL", io);
+        osm_io_debug("%02u : NO LONGER SPECIAL", io);
         return;
     }
 
     if (io_state & OSM_IO_DIR_LOCKED)
     {
-        io_debug("GPIO %02u locked but change attempted.", io);
+        osm_io_debug("GPIO %02u locked but change attempted.", io);
         return;
     }
 
@@ -315,7 +315,7 @@ void     osm_io_configure(unsigned io, bool as_input, io_pupd_t pull)
 
 bool osm_io_is_input(unsigned io)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     return ios_state[io] & OSM_IO_AS_INPUT;
@@ -324,7 +324,7 @@ bool osm_io_is_input(unsigned io)
 
 bool osm_io_is_w1_now(unsigned io)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     return (ios_state[io] & OSM_IO_ACTIVE_SPECIAL_MASK) == IO_SPECIAL_ONEWIRE;
@@ -333,7 +333,7 @@ bool osm_io_is_w1_now(unsigned io)
 
 bool osm_io_is_pulsecount_now(unsigned io)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     uint16_t special = ios_state[io] & OSM_IO_ACTIVE_SPECIAL_MASK;
@@ -345,7 +345,7 @@ bool osm_io_is_pulsecount_now(unsigned io)
 
 bool osm_io_is_watch_now(unsigned io)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
     return (ios_state[io] & OSM_IO_ACTIVE_SPECIAL_MASK) == IO_SPECIAL_WATCH;
 }
@@ -353,7 +353,7 @@ bool osm_io_is_watch_now(unsigned io)
 
 unsigned osm_io_get_bias(unsigned io)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return false;
 
     return (ios_state[io] & OSM_IO_PULL_MASK);
@@ -362,7 +362,7 @@ unsigned osm_io_get_bias(unsigned io)
 
 void     osm_io_on(unsigned io, bool on_off)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
     const port_n_pins_t * output = &ios_pins[io];
@@ -370,7 +370,7 @@ void     osm_io_on(unsigned io, bool on_off)
     if (ios_state[io] & OSM_IO_AS_INPUT)
         return;
 
-    io_debug("%02u = %s", io, (on_off)?"ON":"OFF");
+    osm_io_debug("%02u = %s", io, (on_off)?"ON":"OFF");
 
     if (on_off)
     {
@@ -387,7 +387,7 @@ void     osm_io_on(unsigned io, bool on_off)
 
 void     osm_io_log(unsigned io, cmd_ctx_t * ctx)
 {
-    if (io >= ARRAY_SIZE(ios_pins))
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
     const port_n_pins_t * gpio_pin = &ios_pins[io];
@@ -441,7 +441,7 @@ void     osm_io_log(unsigned io, cmd_ctx_t * ctx)
 
 void     osm_ios_log(cmd_ctx_t * ctx)
 {
-    for(unsigned n = 0; n < ARRAY_SIZE(ios_pins); n++)
+    for(unsigned n = 0; n < OSM_ARRAY_SIZE(ios_pins); n++)
         osm_io_log(n, ctx);
 }
 
@@ -649,7 +649,7 @@ struct cmd_link_t* osm_ios_add_commands(struct cmd_link_t* tail)
                                        { "en_pulse",     "Enable Pulsecount IO.",    _io_cmd_enable_pulsecount_cb      , false , NULL },
                                        { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL },
                                        { "en_watch",     "Enable Watch IO.",         _io_cmd_enable_watch_cb           , false , NULL }};
-    tail = osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    tail = osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
     return osm_pulsecount_add_commands(tail);
 }
 
@@ -667,13 +667,13 @@ void osm_ios_measurements_init(void)
     {
         unsigned io = ios_watch_ios[i];
         snprintf(def.name, OSM_MEASURE_NAME_NULLED_LEN, OSM_IOS_MEASUREMENT_NAME_PRE"%02u", io);
-        io_debug("Adding '%s' measurement...", def.name);
+        osm_io_debug("Adding '%s' measurement...", def.name);
         if (!osm_measurements_add(&def))
         {
-            io_debug("Failed to add IO measurement '%s'", def.name);
+            osm_io_debug("Failed to add IO measurement '%s'", def.name);
             return;
         }
-        io_debug("Added '%s' measurement.", def.name);
+        osm_io_debug("Added '%s' measurement.", def.name);
     }
 #endif
 }
@@ -702,13 +702,13 @@ static measurements_sensor_state_t _ios_collect(char* name, measurements_reading
     unsigned index;
     if (!_ios_name_to_index(name, &index))
     {
-        io_debug("Unable to get index from name.");
+        osm_io_debug("Unable to get index from name.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     uint16_t state = ios_state[index];
     if (!(state && OSM_IO_AS_INPUT))
     {
-        io_debug("IO is not input.");
+        osm_io_debug("IO is not input.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     value->v_i64 = osm_platform_gpio_get(&ios_pins[index]) ? 1 : 0;

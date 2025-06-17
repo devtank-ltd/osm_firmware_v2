@@ -45,7 +45,7 @@ static void _w1_stop_interrupt(void) {}
 
 static bool _w1_check_index(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_ios))
+    if (index >= OSM_ARRAY_SIZE(_w1_ios))
     {
         osm_log_error("W1 index references uninitialised memory.");
         return false;
@@ -211,12 +211,12 @@ void osm_w1_send_byte(uint8_t index, uint8_t byte)
 
 void osm_w1_init(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_ios))
+    if (index >= OSM_ARRAY_SIZE(_w1_ios))
     {
         osm_log_error("Tried to init w1 from uninitialised memory.");
         return;
     }
-    rcc_periph_clock_enable(PORT_TO_RCC(_w1_ios[index].pnp.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(_w1_ios[index].pnp.port));
 }
 
 

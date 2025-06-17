@@ -108,7 +108,7 @@ static void uart_up(const uart_channel_t * channel)
 
 static void uart_setup(uart_channel_t * channel)
 {
-    rcc_periph_clock_enable(PORT_TO_RCC(channel->gpioport));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(channel->gpioport));
     rcc_periph_clock_enable(channel->uart_clk);
     if (channel->dma_unit)
         rcc_periph_clock_enable(channel->dma_rcc);
@@ -140,7 +140,7 @@ void osm_uart_enable(unsigned uart, bool enable)
     if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
-    uart_debug(uart, "%s", (enable)?"Enable":"Disable");
+    osm_uart_debug(uart, "%s", (enable)?"Enable":"Disable");
 
     uart_channel_t * channel = &uart_channels[uart];
 
@@ -202,7 +202,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
     gpio_mode_setup( channel->gpioport, GPIO_MODE_AF, GPIO_PUPD_NONE, channel->tx_pin | channel->rx_pin );
     gpio_set_af( channel->gpioport, channel->alt_func_num, channel->tx_pin | channel->rx_pin );
 
-    uart_debug(uart, "%u %"PRIu8"%c%s",
+    osm_uart_debug(uart, "%u %"PRIu8"%c%s",
             (unsigned)channel->baud, channel->databits, osm_uart_parity_as_char(channel->parity), osm_uart_stop_bits_as_str(channel->stop));
 }
 
@@ -286,7 +286,7 @@ static void process_serial(unsigned uart)
     osm_uart_ring_in(uart, &c, 1);
     if (c == '\n' || c == '\r')
     {
-        sleep_debug("Waking up.");
+        osm_sleep_debug("Waking up.");
         osm_sleep_exit_sleep_mode();
     }
 }
@@ -345,13 +345,13 @@ unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
     if (size == 1)
     {
         if (uart)
-            uart_debug(uart, "single out.");
+            osm_uart_debug(uart, "single out.");
         usart_send(channel->usart, *data);
         return true;
     }
 
     if (uart)
-        uart_debug(uart, "%u out on DMA channel %u", size, channel->dma_channel);
+        osm_uart_debug(uart, "%u out on DMA channel %u", size, channel->dma_channel);
 
     uart_doing_dma[uart] = true;
 

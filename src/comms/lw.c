@@ -23,7 +23,7 @@ lw_config_t* osm_lw_get_config(void)
     comms_config_t* comms_config = &persist_data.model_config.comms_config;
     if (comms_config->type != COMMS_TYPE_LW)
     {
-        comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
+        osm_comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
         return NULL;
     }
     return (lw_config_t*)comms_config;
@@ -189,7 +189,7 @@ static bool _lw_region(char* name, unsigned len, lw_region_t* region)
     }
     else
     {
-        comms_debug("HACK");
+        osm_comms_debug("HACK");
         ret = false;
     }
     return ret;

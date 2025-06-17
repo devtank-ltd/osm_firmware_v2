@@ -5,7 +5,7 @@
 #include <libopencm3/stm32/rcc.h>
 
 
-#define PORT_TO_RCC(_port_)   (RCC_GPIOA + ((_port_ - GPIO_PORT_A_BASE) / 0x400))
+#define OSM_PORT_TO_RCC(_port_)   (RCC_GPIOA + ((_port_ - GPIO_PORT_A_BASE) / 0x400))
 
 
 typedef struct

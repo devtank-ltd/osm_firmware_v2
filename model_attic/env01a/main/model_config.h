@@ -8,7 +8,7 @@
 #include "esp_comms.h"
 
 #define PERSIST_MODEL_VERSION       3
-#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
+#define PERSIST_VERSION             OSM_PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 #define FLASH_PAGE_SIZE             2048
 

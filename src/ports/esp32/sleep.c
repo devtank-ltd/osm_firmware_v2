@@ -62,5 +62,5 @@ struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

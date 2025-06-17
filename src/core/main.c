@@ -34,8 +34,8 @@ int osm_main(void)
     osm_uart_rings_init();
 
     osm_platform_raw_msg("----start----");
-    log_sys_debug("Frequency : %"PRIu32, osm_platform_get_frequency());
-    log_sys_debug("Version : %s", GIT_VERSION);
+    osm_log_sys_debug("Frequency : %"PRIu32, osm_platform_get_frequency());
+    osm_log_sys_debug("Version : %s", GIT_VERSION);
 
     osm_persistent_init();
     osm_log_init();

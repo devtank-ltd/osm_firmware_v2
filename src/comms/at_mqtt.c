@@ -39,12 +39,12 @@ bool osm_at_mqtt_mem_is_valid(void)
 {
     if (!_at_mqtt_ctx)
     {
-        comms_debug("Not given context");
+        osm_comms_debug("Not given context");
         return false;
     }
     else if (!_at_mqtt_ctx->mem)
     {
-        comms_debug("Not given memory");
+        osm_comms_debug("Not given memory");
         return false;
     }
     return (osm_str_is_valid_ascii(_at_mqtt_ctx->mem->addr  , OSM_AT_MQTT_ADDR_MAX_LEN       , true  ) &&
@@ -85,7 +85,7 @@ at_base_cmd_t* osm_at_mqtt_publish_prep(const char* topic, char* message, unsign
     }
     else
     {
-        comms_debug("Not given context");
+        osm_comms_debug("Not given context");
     }
     return ret;
 }
@@ -104,11 +104,11 @@ void osm_at_mqtt_init(at_mqtt_ctx_t* ctx)
             osm_platform_get_hw_id()
             );
         _at_mqtt_ctx->topic_header[topic_header_len] = 0;
-        comms_debug("MQTT Topic : %s", _at_mqtt_ctx->topic_header);
+        osm_comms_debug("MQTT Topic : %s", _at_mqtt_ctx->topic_header);
     }
     else
     {
-        comms_debug("Handed NULL pointer for context.");
+        osm_comms_debug("Handed NULL pointer for context.");
     }
 }
 
@@ -142,7 +142,7 @@ at_base_cmd_t* osm_at_mqtt_get_mqtt_user_cfg(void)
         enum at_mqtt_scheme_t mqtt_scheme = _at_mqtt_ctx->mem->scheme;
         if (!_at_mqtt_ctx->mem->scheme || AT_MQTT_SCHEME_COUNT <= _at_mqtt_ctx->mem->scheme)
         {
-            comms_debug("Invalid MQTT scheme, assuming Websocket no cert");
+            osm_comms_debug("Invalid MQTT scheme, assuming Websocket no cert");
             mqtt_scheme = AT_MQTT_SCHEME_WSS_NO_CERT;
         }
 
@@ -232,7 +232,7 @@ bool osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigne
     }
     if (np[0] != ',')
     {
-        comms_debug("Unexpected character found in MQTT topic.");
+        osm_comms_debug("Unexpected character found in MQTT topic.");
         return false;
     }
     char* curr_topic = strchr(p, '"');
@@ -240,7 +240,7 @@ bool osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigne
     unsigned int curr_topic_len = curr_topic_last - curr_topic;
     if (curr_topic[curr_topic_len] != '"')
     {
-        comms_debug("Unexpected last character in MQTT topic.");
+        osm_comms_debug("Unexpected last character in MQTT topic.");
         return false;
     }
     curr_topic_len--;
@@ -249,7 +249,7 @@ bool osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigne
     {
         return true;
     }
-    comms_debug("MQTT topics do not match.");
+    osm_comms_debug("MQTT topics do not match.");
     return false;
 }
 
@@ -330,7 +330,7 @@ static int _at_mqtt_parse_payload(char* topic, unsigned topic_len, char* payload
         }
     }
     /* leave room for potential broadcast messages */
-    comms_debug("Command from OTA");
+    osm_comms_debug("Command from OTA");
     return len;
 }
 
@@ -509,7 +509,7 @@ struct cmd_link_t* osm_at_mqtt_add_commands(struct cmd_link_t* tail)
         { "mqtt_path",      "Set/get MQTT PATH",        _at_mqtt_config_path_cb        , false , NULL },
         { "mqtt_port",      "Set/get MQTT port",        _at_mqtt_config_port_cb        , false , NULL }
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
 

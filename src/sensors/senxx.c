@@ -217,7 +217,7 @@ static bool _senxx_get_val(senxx_measurement_t meas, float* val)
     senxx_readings_t* r = &_senxx_ctx.last_reading;
     if (!SENxx_MODEL_HAS_MEASUREMENT(_senxx_ctx.model, meas))
     {
-        particulate_debug("Not relevant for this sensor.");
+        osm_particulate_debug("Not relevant for this sensor.");
         return false;
     }
     switch (meas)
@@ -269,7 +269,7 @@ senxx_model_t _senxx_get_product(char* name, unsigned name_size)
         error = sen66_get_product_name(buf, buf_size);
         if (error)
         {
-            particulate_debug("Error executing sen66_get_product_name(): %"PRIu16, error);
+            osm_particulate_debug("Error executing sen66_get_product_name(): %"PRIu16, error);
             return SENxx_MODEL_NONE;
         }
     }
@@ -278,7 +278,7 @@ senxx_model_t _senxx_get_product(char* name, unsigned name_size)
         error = sen5x_get_product_name((unsigned char*)buf, buf_size);
         if (error)
         {
-            particulate_debug("Error executing sen5x_get_product_name(): %"PRIu16, error);
+            osm_particulate_debug("Error executing sen5x_get_product_name(): %"PRIu16, error);
             return SENxx_MODEL_NONE;
         }
     }
@@ -291,12 +291,12 @@ senxx_model_t _senxx_get_product(char* name, unsigned name_size)
             uint16_t error_5x = sen5x_get_product_name((unsigned char*)buf, buf_size);
             if (error_5x)
             {
-                particulate_debug("Error executing _senxx_get_product_name(): %"PRIu16":%"PRIu16, error, error_5x);
+                osm_particulate_debug("Error executing _senxx_get_product_name(): %"PRIu16":%"PRIu16, error, error_5x);
                 return SENxx_MODEL_NONE;
             }
         }
     }
-    particulate_debug("Product name: %s", buf);
+    osm_particulate_debug("Product name: %s", buf);
     if (name && name_size)
     {
         unsigned len = buf_size > name_size ? name_size : buf_size;
@@ -305,7 +305,7 @@ senxx_model_t _senxx_get_product(char* name, unsigned name_size)
     }
     if ('S' != buf[0] || 'E' != buf[1] || 'N' != buf[2])
     {
-        particulate_debug("Could not parse product name");
+        osm_particulate_debug("Could not parse product name");
         return SENxx_MODEL_NONE;
     }
     char model_number_str[4];
@@ -338,7 +338,7 @@ senxx_model_t _senxx_get_product(char* name, unsigned name_size)
         default:
             break;
     }
-    particulate_debug("Could not parse model number: '%.2s'", model_number_str);
+    osm_particulate_debug("Could not parse model number: '%.2s'", model_number_str);
     return SENxx_MODEL_NONE;
 }
 
@@ -386,22 +386,22 @@ void osm_senxx_init(void)
     senxx_model_t model = _senxx_get_product(NULL, 0);
     if (SENxx_MODEL_NONE == model)
     {
-        particulate_debug("Model could not be read");
+        osm_particulate_debug("Model could not be read");
         return;
     }
     _senxx_ctx.model = model;
     int16_t error = _senxx_device_reset();
     if (error)
     {
-        particulate_debug("Error executing senxx_device_reset(): %"PRIi16, error);
+        osm_particulate_debug("Error executing senxx_device_reset(): %"PRIi16, error);
         return;
     }
 
-    particulate_debug("Starting measurement");
+    osm_particulate_debug("Starting measurement");
     error = _senxx_start_measurement();
     if (error)
     {
-        particulate_debug("Error executing senxx_start_measurement(): %"PRIi16, error);
+        osm_particulate_debug("Error executing senxx_start_measurement(): %"PRIi16, error);
         return;
     }
     _senxx_ctx.active = true;
@@ -454,7 +454,7 @@ void osm_senxx_iterate(void)
 
             if (error)
             {
-                particulate_debug("Error executing senxx_read_measured_values(): %"PRIi16, error);
+                osm_particulate_debug("Error executing senxx_read_measured_values(): %"PRIi16, error);
                 _senxx_ctx.active = false;
             }
         }
@@ -483,27 +483,27 @@ static measurements_sensor_state_t _senxx_collect(char* name, measurements_readi
 {
     if (!name || !val)
     {
-        particulate_debug("Handed NULL pointer.");
+        osm_particulate_debug("Handed NULL pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     senxx_measurement_t meas;
     if (!_senxx_get_meas_from_name(name, &meas))
     {
-        particulate_debug("Couldn't get measurement name from '%s'", name);
+        osm_particulate_debug("Couldn't get measurement name from '%s'", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!_senxx_ctx.active)
     {
-        particulate_debug("SENxx not active");
+        osm_particulate_debug("SENxx not active");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     float val_f;
     if (!_senxx_get_val(meas, &val_f))
     {
-        particulate_debug("Failed conversion %s.", name);
+        osm_particulate_debug("Failed conversion %s.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -577,5 +577,5 @@ struct cmd_link_t* osm_senxx_add_commands(struct cmd_link_t* tail)
         { "senxx_pwr",      "Control PWR for SENxx",    _senxx_pwr_cb, false , NULL },
         { "senxx_name",     "Get name for SENxx",       _senxx_name_cb, false , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

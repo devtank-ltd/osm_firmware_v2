@@ -35,7 +35,7 @@ void osm_linux_uart_proc(unsigned uart, char* in, unsigned len)
         {
             if (in[i] == '\n' || in[i] == '\r')
             {
-                sleep_debug("Waking up on command.");
+                osm_sleep_debug("Waking up on command.");
                 osm_sleep_exit_sleep_mode();
             }
         }
@@ -43,7 +43,7 @@ void osm_linux_uart_proc(unsigned uart, char* in, unsigned len)
     else
     {
         osm_linux_port_debug("UART:%u now has %u", uart, osm_uart_ring_in_get_len(uart));
-        sleep_debug("Waking up on receive data.");
+        osm_sleep_debug("Waking up on receive data.");
         osm_sleep_exit_sleep_mode();
     }
 }
@@ -98,7 +98,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
     chan->parity    = parity;
     chan->stop      = stop;
 
-    uart_debug(uart, "%u %"PRIu8"%c%s",
+    osm_uart_debug(uart, "%u %"PRIu8"%c%s",
             (unsigned)chan->baud, chan->databits, osm_uart_parity_as_char(chan->parity), osm_uart_stop_bits_as_str(chan->stop));
 }
 

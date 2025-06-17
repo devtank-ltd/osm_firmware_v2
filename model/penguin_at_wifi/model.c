@@ -119,7 +119,7 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
 {
     if (!def || !inf)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
     // Optional callbacks: get is not optional, neither is collection
@@ -285,7 +285,7 @@ void osm_model_linux_spawn_fakes(void)
 
 void osm_model_linux_close_fakes(void)
 {
-    osm_peripherals_close(_model_pids, ARRAY_SIZE(_model_pids));
+    osm_peripherals_close(_model_pids, OSM_ARRAY_SIZE(_model_pids));
 }
 
 

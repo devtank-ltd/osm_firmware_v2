@@ -37,7 +37,7 @@ void hard_fault_handler(void)
 static void uart_setup(void)
 {
     rcc_periph_clock_enable(ERR_UART_RCC);
-    rcc_periph_clock_enable(PORT_TO_RCC(ERR_UART_GPIO));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(ERR_UART_GPIO));
 
     gpio_mode_setup(ERR_UART_GPIO, GPIO_MODE_AF, GPIO_PUPD_NONE, ERR_UART_PINS);
     gpio_set_af(ERR_UART_GPIO, ERR_UART_GPIO_AF, ERR_UART_PINS);
@@ -98,7 +98,7 @@ int main(void)
 
     uart_send_str("Bootloader");
 
-    rcc_periph_clock_enable(PORT_TO_RCC(OSM_LED_PORT));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(OSM_LED_PORT));
     gpio_mode_setup(OSM_LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, OSM_LED_PIN);
     gpio_clear(OSM_LED_PORT, OSM_LED_PIN);
 

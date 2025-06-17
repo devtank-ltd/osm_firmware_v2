@@ -36,14 +36,14 @@ static void uart_event_task(void *arg)
         {
             if (event.type == UART_DATA)
             {
-                int read = uart_read_bytes(channel->uart, tmp, MIN(event.size,sizeof(tmp)), portMAX_DELAY);
+                int read = uart_read_bytes(channel->uart, tmp, OSM_MIN(event.size,sizeof(tmp)), portMAX_DELAY);
                 for(int i=0; i < read; i++)
                 {
                     char c = tmp[i];
                     osm_uart_ring_in(uart, &c, 1);
                     if (c == '\n' || c == '\r')
                     {
-                        sleep_debug("Waking up.");
+                        osm_sleep_debug("Waking up.");
                         osm_sleep_exit_sleep_mode();
                     }
                 }
@@ -75,7 +75,7 @@ void osm_uart_enable(unsigned uart, bool enable)
     if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
-    uart_debug(uart, "%s", (enable)?"Enable":"Disable");
+    osm_uart_debug(uart, "%s", (enable)?"Enable":"Disable");
 
     uart_channel_t * channel = &uart_channels[uart];
 
@@ -169,7 +169,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
     }
 
     uart_param_config(channel->uart, &channel->config);
-    uart_debug(uart, "%u %"PRIu8"%c%s",
+    osm_uart_debug(uart, "%u %"PRIu8"%c%s",
             (unsigned)channel->config.baud_rate,
             databits,
             osm_uart_parity_as_char(_osm_uart_parity_get(channel->config.parity)),
@@ -260,12 +260,12 @@ void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
             }
             else if (sent < 0)
             {
-                uart_debug(uart, "Error writing to UART");
+                osm_uart_debug(uart, "Error writing to UART");
             }
         }
         else
         {
-            uart_debug(uart, "Trouble %s writing to the UART.", esp_err_to_name(err));
+            osm_uart_debug(uart, "Trouble %s writing to the UART.", esp_err_to_name(err));
         }
     }
 }

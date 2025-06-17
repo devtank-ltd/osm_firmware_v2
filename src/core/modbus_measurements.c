@@ -27,7 +27,7 @@ static measurements_sensor_state_t _modbus_measurements_init(char* name, bool in
     {
         if (osm_modbus_has_pending())
         {
-            modbus_debug("Unable to get modbus reg in isolation as bus is busy.");
+            osm_modbus_debug("Unable to get modbus reg in isolation as bus is busy.");
             return MEASUREMENTS_SENSOR_STATE_ERROR;
         }
     }
@@ -130,7 +130,7 @@ static measurements_value_type_t _modbus_measurements_value_type(char* name)
         case MODBUS_REG_TYPE_I32:
             return MEASUREMENTS_VALUE_TYPE_I64;
         default:
-            modbus_debug("Unknown modbus register type.");
+            osm_modbus_debug("Unknown modbus register type.");
             break;
     }
     return MEASUREMENTS_VALUE_TYPE_I64;

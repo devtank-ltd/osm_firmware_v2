@@ -104,13 +104,13 @@ bool osm_measurements_send_test(char * name)
 {
     if (!osm_protocol_get_connected() || !osm_protocol_send_ready())
     {
-        measurements_debug("LW not ready.");
+        osm_measurements_debug("LW not ready.");
         return false;
     }
 
     if (!_measurements_send_start())
     {
-        measurements_debug("Failed to send start.");
+        osm_measurements_debug("Failed to send start.");
         return false;
     }
 
@@ -119,7 +119,7 @@ bool osm_measurements_send_test(char * name)
 
     if (!osm_measurements_get_reading(name, &v, &v_type))
     {
-        measurements_debug("Failed to get reading of %s.", name);
+        osm_measurements_debug("Failed to get reading of %s.", name);
         return false;
     }
 
@@ -127,7 +127,7 @@ bool osm_measurements_send_test(char * name)
     measurements_data_t* data;
     if (!osm_measurements_get_measurements_def(name, &def, &data))
     {
-        measurements_debug("Unable to get measurements definition.");
+        osm_measurements_debug("Unable to get measurements definition.");
         return false;
     }
 
@@ -135,10 +135,10 @@ bool osm_measurements_send_test(char * name)
 
     if (r)
     {
-        measurements_debug("Sending test array.");
+        osm_measurements_debug("Sending test array.");
         osm_protocol_send();
     }
-    else measurements_debug("Failed to add to array.");
+    else osm_measurements_debug("Failed to add to array.");
 
     return r;
 }
@@ -146,7 +146,7 @@ bool osm_measurements_send_test(char * name)
 
 static void _measurements_reset_send(void)
 {
-    measurements_debug("Protocol reset");
+    osm_measurements_debug("Protocol reset");
     osm_protocol_reset();
     _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
     _pending_send = false;
@@ -165,7 +165,7 @@ static void _measurements_send(void)
     {
         if (!has_printed_no_con)
         {
-            measurements_debug("Not connected to send, dropping readings");
+            osm_measurements_debug("Not connected to send, dropping readings");
             has_printed_no_con = true;
             _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
         }
@@ -186,7 +186,7 @@ static void _measurements_send(void)
         {
             if (osm_since_boot_delta(osm_get_since_boot_ms(), _last_sent_ms) > INTERVAL_TRANSMIT_MS/4)
             {
-                measurements_debug("Pending send timed out.");
+                osm_measurements_debug("Pending send timed out.");
                 _measurements_reset_send();
             }
             return;
@@ -205,7 +205,7 @@ static void _measurements_send(void)
     unsigned i = _measurements_chunk_start_pos;
 
     if (_measurements_chunk_start_pos)
-        measurements_debug("Resuming previous measurements send.");
+        osm_measurements_debug("Resuming previous measurements send.");
 
     for (; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
@@ -222,7 +222,7 @@ static void _measurements_send(void)
             }
             if (!osm_protocol_append_measurement(def, data))
             {
-                measurements_debug("Failed to queue send of  \"%s\".", def->name);
+                osm_measurements_debug("Failed to queue send of  \"%s\".", def->name);
                 _measurements_chunk_prev_start_pos = _measurements_chunk_start_pos;
                 _measurements_chunk_start_pos = i;
                 break;
@@ -254,14 +254,14 @@ static void _measurements_send(void)
         bool send_ret = osm_protocol_send();
         if (!send_ret)
         {
-            measurements_debug("Protocol send failed, resetting protocol");
+            osm_measurements_debug("Protocol send failed, resetting protocol");
             _measurements_reset_send();
             return;
         }
         if (is_max)
-            measurements_debug("Complete send");
+            osm_measurements_debug("Complete send");
         else
-            measurements_debug("Fragment send, wait to send more.");
+            osm_measurements_debug("Fragment send, wait to send more.");
     }
 }
 
@@ -278,7 +278,7 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
             // If no init is required, neither is a collection time cb.
             return 0;
         }
-        measurements_debug("%s has no collection time iteration, using default of %"PRIu32" ms.", def->name, MEASUREMENTS_DEFAULT_COLLECTION_TIME);
+        osm_measurements_debug("%s has no collection time iteration, using default of %"PRIu32" ms.", def->name, MEASUREMENTS_DEFAULT_COLLECTION_TIME);
         return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
     }
     uint32_t collection_time;
@@ -288,10 +288,10 @@ static uint32_t _measurements_get_collection_time(measurements_def_t* def, measu
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("Encountered an error retrieving collection time, using default.");
+            osm_measurements_debug("Encountered an error retrieving collection time, using default.");
             return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
-            measurements_debug("Sensor is busy, using default.");
+            osm_measurements_debug("Sensor is busy, using default.");
             return MEASUREMENTS_DEFAULT_COLLECTION_TIME;
     }
     return collection_time;
@@ -340,7 +340,7 @@ static measurements_sensor_state_t _measurements_sample_init_iteration(measureme
     measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
-        measurements_debug("Failed to get the interface for %s.", def->name);
+        osm_measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
         data->is_collecting = 0;
@@ -348,7 +348,7 @@ static measurements_sensor_state_t _measurements_sample_init_iteration(measureme
     }
     if (data->is_collecting)
     {
-        measurements_debug("Measurement %s already collecting.", def->name);
+        osm_measurements_debug("Measurement %s already collecting.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
         return MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -358,19 +358,19 @@ static measurements_sensor_state_t _measurements_sample_init_iteration(measureme
         // Init functions are optional
         data->num_samples_init++;
         data->is_collecting = 1;
-        measurements_debug("%s has no init function (optional).", def->name);
+        osm_measurements_debug("%s has no init function (optional).", def->name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     measurements_sensor_state_t resp = inf.init_cb(def->name, false);
     switch(resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            measurements_debug("%s successfully init'd.", def->name);
+            osm_measurements_debug("%s successfully init'd.", def->name);
             data->num_samples_init++;
             data->is_collecting = 1;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s could not init, will not collect.", def->name);
+            osm_measurements_debug("%s could not init, will not collect.", def->name);
             data->num_samples_init++;
             data->num_samples_collected++;
             break;
@@ -387,7 +387,7 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
     measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
-        measurements_debug("Failed to get the interface for %s.", def->name);
+        osm_measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_init++;
         data->num_samples_collected++;
         data->is_collecting = 0;
@@ -404,7 +404,7 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s errored on iterate, will not collect.", def->name);
+            osm_measurements_debug("%s errored on iterate, will not collect.", def->name);
             data->num_samples_init++;
             data->num_samples_collected++;
             data->is_collecting = 0;
@@ -420,7 +420,7 @@ static measurements_sensor_state_t _measurements_sample_get_resp(measurements_de
 {
     if (!def || !data || !inf || !new_value)
     {
-        measurements_debug("Handed a NULL pointer.");
+        osm_measurements_debug("Handed a NULL pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     /* Each function should check if this has been initialised */
@@ -429,11 +429,11 @@ static measurements_sensor_state_t _measurements_sample_get_resp(measurements_de
     switch (resp)
     {
         case MEASUREMENTS_SENSOR_STATE_SUCCESS:
-            measurements_debug("%s successfully collect'd.", def->name);
+            osm_measurements_debug("%s successfully collect'd.", def->name);
             data->num_samples_collected++;
             break;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("%s could not collect.", def->name);
+            osm_measurements_debug("%s could not collect.", def->name);
             data->num_samples_collected++;
             break;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
@@ -446,7 +446,7 @@ static measurements_sensor_state_t _measurements_sample_get_resp(measurements_de
 
 static void _measurements_sample_proc_i64(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    measurements_debug("Value : %"PRIi64, new_value->v_i64);
+    osm_measurements_debug("Value : %"PRIi64, new_value->v_i64);
 
     if (data->num_samples == 0)
     {
@@ -469,9 +469,9 @@ static void _measurements_sample_proc_i64(measurements_data_t* data, measurement
             data->value.value_64.min = new_value->v_i64;
     }
 
-    measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
-    measurements_debug("Min : %"PRIi64, data->value.value_64.min);
-    measurements_debug("Max : %"PRIi64, data->value.value_64.max);
+    osm_measurements_debug("Sum : %"PRIi64, data->value.value_64.sum);
+    osm_measurements_debug("Min : %"PRIi64, data->value.value_64.min);
+    osm_measurements_debug("Max : %"PRIi64, data->value.value_64.max);
 }
 
 
@@ -480,14 +480,14 @@ static void _measurements_sample_proc_str(measurements_data_t* data, measurement
     uint8_t new_len = strnlen(new_value->v_str, OSM_MEASUREMENTS_VALUE_STR_LEN - 1);
     strncpy(data->value.value_s.str, new_value->v_str, new_len);
     data->value.value_s.str[new_len] = 0;
-    measurements_debug("Value : %s", data->value.value_s.str);
+    osm_measurements_debug("Value : %s", data->value.value_s.str);
     data->num_samples++;
 }
 
 
 static void _measurements_sample_proc_float(measurements_data_t* data, measurements_reading_t * new_value)
 {
-    measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value->v_f32/1000, (uint32_t)abs(new_value->v_f32)%1000);
+    osm_measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value->v_f32/1000, (uint32_t)abs(new_value->v_f32)%1000);
 
     if (data->num_samples == 0)
     {
@@ -510,9 +510,9 @@ static void _measurements_sample_proc_float(measurements_data_t* data, measureme
             data->value.value_f.min = new_value->v_f32;
     }
 
-    measurements_debug("Sum : %"PRIi32".%03"PRIu32, data->value.value_f.sum/1000, (uint32_t)abs(data->value.value_f.sum)%1000);
-    measurements_debug("Min : %"PRIi32".%03"PRIu32, data->value.value_f.min/1000, (uint32_t)abs(data->value.value_f.min)%1000);
-    measurements_debug("Max : %"PRIi32".%03"PRIu32, data->value.value_f.max/1000, (uint32_t)abs(data->value.value_f.max)%1000);
+    osm_measurements_debug("Sum : %"PRIi32".%03"PRIu32, data->value.value_f.sum/1000, (uint32_t)abs(data->value.value_f.sum)%1000);
+    osm_measurements_debug("Min : %"PRIi32".%03"PRIu32, data->value.value_f.min/1000, (uint32_t)abs(data->value.value_f.min)%1000);
+    osm_measurements_debug("Max : %"PRIi32".%03"PRIu32, data->value.value_f.max/1000, (uint32_t)abs(data->value.value_f.max)%1000);
 }
 
 
@@ -521,7 +521,7 @@ static measurements_sensor_state_t _measurements_sample_get_iteration(measuremen
     measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
-        measurements_debug("Failed to get the interface for %s.", def->name);
+        osm_measurements_debug("Failed to get the interface for %s.", def->name);
         data->num_samples_collected++;
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
@@ -529,7 +529,7 @@ static measurements_sensor_state_t _measurements_sample_get_iteration(measuremen
     {
         // Get function is non-optional
         data->num_samples_collected++;
-        measurements_debug("%s has no collect function.", def->name);
+        osm_measurements_debug("%s has no collect function.", def->name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
@@ -550,7 +550,7 @@ static measurements_sensor_state_t _measurements_sample_get_iteration(measuremen
                 _measurements_sample_proc_float(data, &new_value);
                 break;
             default:
-                measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
+                osm_measurements_debug("Unknown type '%"PRIu8"'. Don't know what to do.", data->value_type);
                 return false;
         }
 
@@ -614,7 +614,7 @@ static void _measurements_sample(void)
             if (data->num_samples_collected < data->num_samples_init)
             {
                 data->num_samples_collected++;
-                measurements_debug("Could not collect before next init.");
+                osm_measurements_debug("Could not collect before next init.");
             }
             /* If the init function returned false, then the sensor is
              * busy, so the wait time should be 0 */
@@ -938,7 +938,7 @@ void _measurements_check_instant_send(void)
 
     if (!osm_protocol_init())
     {
-        measurements_debug("Could not initialise the hex array for the protocol.");
+        osm_measurements_debug("Could not initialise the hex array for the protocol.");
         return;
     }
 
@@ -955,12 +955,12 @@ void _measurements_check_instant_send(void)
             measurements_value_type_t type;
             if (!_measurements_get_reading2(def, data, &reading, &type))
             {
-                measurements_debug("Could not get measurement '%s' for instant send.", def->name);
+                osm_measurements_debug("Could not get measurement '%s' for instant send.", def->name);
                 continue;
             }
             if (!_protocol_append_instant_measurement(def, &reading, type))
             {
-                measurements_debug("Could not add measurement '%s' to array.", def->name);
+                osm_measurements_debug("Could not add measurement '%s' to array.", def->name);
                 break;
             }
             count++;
@@ -968,19 +968,19 @@ void _measurements_check_instant_send(void)
     }
     if (!count)
     {
-        measurements_debug("No measurements were added, not sending.");
+        osm_measurements_debug("No measurements were added, not sending.");
         return;
     }
     if (_measurements_chunk_start_pos != OSM_MEASUREMENTS_MAX_NUMBER && _measurements_chunk_start_pos != 0)
     {
-        measurements_debug("Cannot instant send, there is a measurement send underway.");
+        osm_measurements_debug("Cannot instant send, there is a measurement send underway.");
         return;
     }
     uint32_t now = osm_get_since_boot_ms();
     /* Add +10 as this is called before measurements_send and to ensure no negative overflow. */
     if (osm_since_boot_delta(_last_sent_ms + INTERVAL_TRANSMIT_MS + 10, now) <= MEASUREMENTS_MIN_TRANSMIT_MS + 10)
     {
-        measurements_debug("Cannot send instant send, scheduled uplink soon.");
+        osm_measurements_debug("Cannot send instant send, scheduled uplink soon.");
         return;
     }
     osm_protocol_send();
@@ -998,7 +998,7 @@ void osm_measurements_loop_iteration(void)
     {
         if (!has_printed_no_con)
         {
-            measurements_debug("Not connected to send, not taking readings.");
+            osm_measurements_debug("Not connected to send, not taking readings.");
             has_printed_no_con = true;
             _measurements_chunk_start_pos = _measurements_chunk_prev_start_pos = 0;
             _pending_send = false;
@@ -1010,7 +1010,7 @@ void osm_measurements_loop_iteration(void)
 
     if (has_printed_no_con)
     {
-        measurements_debug("Connected to send, starting readings.");
+        osm_measurements_debug("Connected to send, starting readings.");
         _last_sent_ms = now;
         has_printed_no_con = false;
         return;
@@ -1084,7 +1084,7 @@ void osm_measurements_init(void)
         osm_model_measurements_add_defaults(_measurements_arr.def);
         osm_ios_measurements_init();
     }
-    else measurements_debug("Loading measurements.");
+    else osm_measurements_debug("Loading measurements.");
 
     for(unsigned n = 0; n < OSM_MEASUREMENTS_MAX_NUMBER; n++)
     {
@@ -1108,9 +1108,9 @@ void osm_measurements_init(void)
     transmit_interval = persist_data.model_config.mins_interval;
 
     if (transmit_interval % 1000)
-        measurements_debug("Loading interval of %"PRIu32".%03"PRIu32" minutes", transmit_interval/1000, transmit_interval%1000);
+        osm_measurements_debug("Loading interval of %"PRIu32".%03"PRIu32" minutes", transmit_interval/1000, transmit_interval%1000);
     else
-        measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval/1000);
+        osm_measurements_debug("Loading interval of %"PRIu32" minutes", transmit_interval/1000);
 }
 
 
@@ -1151,13 +1151,13 @@ static bool _measurements_get_reading_collection(void* userdata)
             info->func_success = true;
             return true;
         case MEASUREMENTS_SENSOR_STATE_ERROR:
-            measurements_debug("Collect function returned an error.");
+            osm_measurements_debug("Collect function returned an error.");
             *(info->type) = MEASUREMENTS_VALUE_TYPE_INVALID;
             return true;
         case MEASUREMENTS_SENSOR_STATE_BUSY:
             break;
         default:
-            measurements_debug("Unknown response from collect function.");
+            osm_measurements_debug("Unknown response from collect function.");
             return true;
     }
     return false;
@@ -1168,20 +1168,20 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
 {
     if (!def|| !data || !reading)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
 
     if (data->is_collecting)
     {
-        measurements_debug("Measurement already being collected.");
+        osm_measurements_debug("Measurement already being collected.");
         return false;
     }
 
     measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
-        measurements_debug("Could not get measurement interface.");
+        osm_measurements_debug("Could not get measurement interface.");
         return false;
     }
 
@@ -1191,7 +1191,7 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
 
     if (inf.init_cb && inf.init_cb(def->name, true) != MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
-        measurements_debug("Could not begin the measurement.");
+        osm_measurements_debug("Could not begin the measurement.");
         goto bad_exit;
     }
     data->collection_time_cache = _measurements_get_collection_time(def, &inf);
@@ -1203,16 +1203,16 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     bool iterate_success = osm_main_loop_iterate_for(data->collection_time_cache, _measurements_get_reading_iteration, &info);
     if (inf.iteration_cb && !iterate_success)
     {
-        measurements_debug("Failed on iterate.");
+        osm_measurements_debug("Failed on iterate.");
         goto bad_exit;
     }
 
     uint32_t time_taken = osm_since_boot_delta(osm_get_since_boot_ms(), init_time);
     uint32_t time_remaining = (time_taken > data->collection_time_cache)? 0 :(data->collection_time_cache - time_taken);
 
-    measurements_debug("Time taken: %"PRIu32, time_taken);
+    osm_measurements_debug("Time taken: %"PRIu32, time_taken);
 
-    measurements_debug("Waiting for collection.");
+    osm_measurements_debug("Waiting for collection.");
     info.func_success = false;
     init_time = osm_get_since_boot_ms();
     bool collect_success = osm_main_loop_iterate_for(time_remaining, _measurements_get_reading_collection, &info);
@@ -1220,16 +1220,16 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
     time_taken = osm_since_boot_delta(osm_get_since_boot_ms(), init_time);
     time_remaining = (time_taken > data->collection_time_cache)?0:(data->collection_time_cache - time_taken);
 
-    measurements_debug("Time taken: %"PRIu32, time_taken);
+    osm_measurements_debug("Time taken: %"PRIu32, time_taken);
 
     if (!collect_success)
     {
-        measurements_debug("Failed on collect.");
+        osm_measurements_debug("Failed on collect.");
         goto bad_exit;
     }
 
     if (!info.func_success)
-        measurements_debug("Collect is timed out...");
+        osm_measurements_debug("Collect is timed out...");
 
     if (was_not_enabled)
         inf.enable_cb(def->name, false);
@@ -1247,14 +1247,14 @@ bool osm_measurements_get_reading(char* measurement_name, measurements_reading_t
 {
     if (!measurement_name || !reading)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
     measurements_def_t* def;
     measurements_data_t* data;
     if (!osm_measurements_get_measurements_def(measurement_name, &def, &data))
     {
-        measurements_debug("Could not get measurement definition and data.");
+        osm_measurements_debug("Could not get measurement definition and data.");
         return false;
     }
     return _measurements_get_reading2(def, data, reading, type);
@@ -1292,20 +1292,20 @@ bool osm_measurements_rename(char* orig_name, char* new_name_raw)
 {
     if (!orig_name || !new_name_raw)
     {
-        measurements_debug("Handed a NULL pointer.");
+        osm_measurements_debug("Handed a NULL pointer.");
         return false;
     }
     char new_name[OSM_MEASURE_NAME_NULLED_LEN] = {0};
     strncpy(new_name, new_name_raw, OSM_MEASURE_NAME_LEN);
     if (osm_measurements_get_measurements_def(new_name, NULL, NULL))
     {
-        measurements_debug("Measurement with new name already exists.");
+        osm_measurements_debug("Measurement with new name already exists.");
         return false;
     }
     measurements_def_t* def;
     if (!osm_measurements_get_measurements_def(orig_name, &def, NULL))
     {
-        measurements_debug("Can not get the measurements def.");
+        osm_measurements_debug("Can not get the measurements def.");
         return false;
     }
     strncpy(def->name, new_name, OSM_MEASURE_NAME_NULLED_LEN);
@@ -1659,5 +1659,5 @@ struct cmd_link_t* osm_measurements_add_commands(struct cmd_link_t* tail)
         { "repop",        "Repopulate measurements.",            _measurements_repop_cb          , false , NULL },
         { "is_immediate", "Set/unset immediate measurements.",   _measurements_is_immediate_cb   , false , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

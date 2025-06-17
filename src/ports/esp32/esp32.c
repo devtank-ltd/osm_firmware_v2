@@ -96,12 +96,12 @@ void osm_platform_set_rs485_mode(bool driver_enable)
     gpio_set_level(SW_SEL, 1);
     if (driver_enable)
     {
-        modbus_debug("driver:enable");
+        osm_modbus_debug("driver:enable");
         gpio_set_level(OSM_DE_485_PIN, 1);
     }
     else
     {
-        modbus_debug("driver:disable");
+        osm_modbus_debug("driver:disable");
         gpio_set_level(OSM_DE_485_PIN, 0);
     }
 }

@@ -127,7 +127,7 @@ static bool _at_poe_mem_is_valid(void)
 
 static unsigned _at_poe_printf(const char* fmt, ...)
 {
-    comms_debug("Command when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
+    osm_comms_debug("Command when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
     char* buf = _at_poe_ctx.mqtt_ctx.at_base_ctx.last_cmd.str;
     va_list args;
     va_start(args, fmt);
@@ -135,7 +135,7 @@ static unsigned _at_poe_printf(const char* fmt, ...)
     va_end(args);
     buf[len] = 0;
     _at_poe_ctx.mqtt_ctx.at_base_ctx.last_sent = osm_get_since_boot_ms();
-    comms_debug(" << %s", buf);
+    osm_comms_debug(" << %s", buf);
     buf[len] = '\r';
     buf[len+1] = 0;
     len = osm_at_base_raw_send(buf, len+1);
@@ -152,7 +152,7 @@ static void _at_poe_start(void)
 
 static void _at_poe_reset(void)
 {
-    comms_debug("AT POE reset");
+    osm_comms_debug("AT POE reset");
     _at_poe_ctx.mqtt_ctx.at_base_ctx.off_since = osm_get_since_boot_ms();
     _at_poe_printf("AT+RESTORE");
     _at_poe_ctx.state = AT_POE_STATE_OFF;
@@ -170,7 +170,7 @@ static unsigned _at_poe_mqtt_publish(const char* topic, char* message, unsigned 
             at_base_cmd_t* cmd = osm_at_mqtt_publish_prep(topic, message, message_len);
             if (!cmd)
             {
-                comms_debug("Failed to prep MQTT");
+                osm_comms_debug("Failed to prep MQTT");
             }
             else
             {
@@ -181,7 +181,7 @@ static unsigned _at_poe_mqtt_publish(const char* topic, char* message, unsigned 
             break;
         }
         default:
-            comms_debug("Wrong state to publish packet: %u", _at_poe_ctx.state);
+            osm_comms_debug("Wrong state to publish packet: %u", _at_poe_ctx.state);
             break;
     }
     return ret_len;
@@ -217,7 +217,7 @@ bool osm_at_poe_send(char* data, uint16_t len)
     bool ret = _at_poe_mqtt_publish_measurements(data, len);
     if (!ret)
     {
-        comms_debug("Failed to send measurement");
+        osm_comms_debug("Failed to send measurement");
     }
     return ret;
 }
@@ -229,7 +229,7 @@ void osm_at_poe_init(void)
     {
         { "_",      "_",     NULL        , true , NULL },
     };
-    struct cmd_link_t* tail = &config_cmds[ARRAY_SIZE(config_cmds)-1];
+    struct cmd_link_t* tail = &config_cmds[OSM_ARRAY_SIZE(config_cmds)-1];
     osm_at_mqtt_add_commands(tail);
     _at_poe_config_cmds = config_cmds;
 
@@ -280,7 +280,7 @@ static void _at_poe_send_sntp(void)
     at_base_cmd_t* cmd = osm_at_mqtt_get_ntp_cfg();
     if (!cmd)
     {
-        comms_debug("Failed to get the NTP config");
+        osm_comms_debug("Failed to get the NTP config");
     }
     else
     {
@@ -349,7 +349,7 @@ static void _at_poe_do_mqtt_user_conf(void)
     at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_user_cfg();
     if (!cmd)
     {
-        comms_debug("Failed to get MQTT user config");
+        osm_comms_debug("Failed to get MQTT user config");
     }
     else
     {
@@ -403,7 +403,7 @@ static void _at_poe_do_mqtt_sub(void)
     at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_sub_cfg();
     if (!cmd)
     {
-        comms_debug("Failed to get MQTT sub config.");
+        osm_comms_debug("Failed to get MQTT sub config.");
     }
     else
     {
@@ -420,7 +420,7 @@ static void _at_poe_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
         at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_conn_cfg();
         if (!cmd)
         {
-            comms_debug("Failed to get MQTT connection config.");
+            osm_comms_debug("Failed to get MQTT connection config.");
         }
         else
         {
@@ -477,7 +477,7 @@ static void _at_poe_process_state_mqtt_wait_conf(char* msg, unsigned len)
         at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_conn();
         if (!cmd)
         {
-            comms_debug("Failed to get MQTT connection info.");
+            osm_comms_debug("Failed to get MQTT connection info.");
         }
         else
         {
@@ -573,12 +573,12 @@ static void _at_poe_process_state_mqtt_publishing(char* msg, unsigned len)
     if (osm_is_str(pub_ok, msg, len))
     {
         _at_poe_ctx.state = AT_POE_STATE_IDLE;
-        comms_debug("Successful send, propagating ACK");
+        osm_comms_debug("Successful send, propagating ACK");
         osm_on_protocol_sent_ack(true);
     }
     else if (osm_at_base_is_error(msg, len))
     {
-        comms_debug("Failed send (ERROR), propagating NACK");
+        osm_comms_debug("Failed send (ERROR), propagating NACK");
         osm_on_protocol_sent_ack(false);
         _at_poe_reset();
     }
@@ -636,7 +636,7 @@ void osm_at_poe_process(char* msg)
 
     _at_poe_ctx.mqtt_ctx.at_base_ctx.last_recv = osm_get_since_boot_ms();
 
-    comms_debug("Message when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
+    osm_comms_debug("Message when in state:%s", _at_poe_get_state_str(_at_poe_ctx.state));
 
     if (_at_poe_process_event(msg, len))
     {
@@ -714,7 +714,7 @@ static void _at_poe_check_mqtt_timeout(void)
     {
         if (_at_poe_ctx.state == AT_POE_STATE_MQTT_PUBLISHING)
         {
-            comms_debug("Failed send (TIMEOUT), propagating NACK");
+            osm_comms_debug("Failed send (TIMEOUT), propagating NACK");
             osm_on_protocol_sent_ack(false);
         }
         _at_poe_printf("AT+MQTTCONN?");
@@ -905,7 +905,7 @@ struct cmd_link_t* osm_at_poe_add_commands(struct cmd_link_t* tail)
         { "comms_state" , "Get Comms state"             , _at_poe_state_cb         , false , NULL },
         { "comms_restart", "Comms restart"              , _at_poe_restart_cb       , false , NULL }
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
 
@@ -947,14 +947,14 @@ bool osm_at_poe_get_unix_time(int64_t * ts)
     if (!osm_main_loop_iterate_for(AT_POE_TS_TIMEOUT, _at_poe_ts_loop_iteration, NULL))
     {
         /* Timed out - Not sure what to do with the chip really... */
-        comms_debug("Timed out");
+        osm_comms_debug("Timed out");
         return false;
     }
     at_base_time_t* time = &_at_poe_ctx.mqtt_ctx.at_base_ctx.time;
     if (!time->sys ||
         osm_since_boot_delta(osm_get_since_boot_ms(), time->sys) > AT_POE_TS_TIMEOUT)
     {
-        comms_debug("Old timestamp; invalid");
+        osm_comms_debug("Old timestamp; invalid");
         time->sys = 0;
         time->ts_unix = 0;
         return false;
@@ -973,7 +973,7 @@ static bool _at_poe_get_mac_address(char* buf, unsigned buflen)
     if (strnlen(src, mac_len) != mac_len ||
         !osm_str_is_valid_ascii(src, mac_len, true))
     {
-        comms_debug("Don't have MAC address, retrieving");
+        osm_comms_debug("Don't have MAC address, retrieving");
         return false;
     }
     if (buflen > OSM_AT_BASE_MAC_ADDRESS_LEN)

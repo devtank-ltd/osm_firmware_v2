@@ -13,7 +13,7 @@ static measurements_sensor_state_t _fw_version_get(char* name, measurements_read
 {
     if (!value)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     value->v_str = fw_sha1;

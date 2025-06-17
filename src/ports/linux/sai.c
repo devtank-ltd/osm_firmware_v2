@@ -84,5 +84,5 @@ static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 struct cmd_link_t* osm_sai_add_commands(struct cmd_link_t* tail)
 {
     static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL }};
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

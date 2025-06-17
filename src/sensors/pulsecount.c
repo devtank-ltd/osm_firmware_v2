@@ -86,7 +86,7 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 {
     if (!inst || !pupd)
     {
-        pulsecount_debug("Handed NULL pointer.");
+        osm_pulsecount_debug("Handed NULL pointer.");
         return false;
     }
     return osm_ios_get_pupd(inst->info.io, pupd);
@@ -190,7 +190,7 @@ void pulsecount_2_debounce_isr(void)
 
 void osm_pulsecount_isr(uint32_t exti_group)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         /* Check IO is in pulsecount mode. */
@@ -211,22 +211,22 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 {
     if (!instance)
     {
-        pulsecount_debug("Handed NULL instance.");
+        osm_pulsecount_debug("Handed NULL instance.");
         return;
     }
     if (!osm_io_is_pulsecount_now(instance->info.io))
     {
-        pulsecount_debug("IO is already pulsecount.");
+        osm_pulsecount_debug("IO is already pulsecount.");
         return;
     }
 
     uint8_t pupd;
     if (!_pulsecount_get_pupd(instance, &pupd))
     {
-        pulsecount_debug("Could not get pull.");
+        osm_pulsecount_debug("Could not get pull.");
         return;
     }
-    pulsecount_debug("PUPD = %"PRIu8, pupd);
+    osm_pulsecount_debug("PUPD = %"PRIu8, pupd);
 
     osm_model_setup_pulse_pupd(&pupd);
 
@@ -243,12 +243,12 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
             trig = EXTI_TRIGGER_BOTH;
             break;
         default:
-            pulsecount_debug("Cannot find a trigger for '%"PRIu8"' pull configuration.", instance->edge);
+            osm_pulsecount_debug("Cannot find a trigger for '%"PRIu8"' pull configuration.", instance->edge);
             return;
     }
 
     /* SETUP EXTI */
-    rcc_periph_clock_enable(PORT_TO_RCC(instance->pnp.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(instance->pnp.port));
     gpio_mode_setup(instance->pnp.port, GPIO_MODE_INPUT, pupd, instance->pnp.pins);
 
     exti_select_source(instance->exti, instance->pnp.port);
@@ -271,7 +271,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     uint32_t period = _pulsecount_debounces_ms[index] * 10;
     if (!period)
     {
-        pulsecount_debug("Set period is 0ms, using 50ms");
+        osm_pulsecount_debug("Set period is 0ms, using 50ms");
         period = 500;
     }
     timer_set_period(instance->tim, period);
@@ -283,7 +283,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
 
 #if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
     /* SETUP TIMERS - LED */
-    rcc_periph_clock_enable(PORT_TO_RCC(instance->led_pnp.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(instance->led_pnp.port));
     gpio_mode_setup(instance->led_pnp.port,
                     GPIO_MODE_OUTPUT,
                     IO_PUPD_NONE,
@@ -306,13 +306,13 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     nvic_enable_irq(instance->tim_irq);
     nvic_enable_irq(instance->exti_irq);
 
-    pulsecount_debug("Pulsecount '%s' enabled", instance->info.name);
+    osm_pulsecount_debug("Pulsecount '%s' enabled", instance->info.name);
 }
 
 
 static void _pulsecount_init(unsigned io, io_special_t edge)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         if (inst->info.io == io)
@@ -334,12 +334,12 @@ static void _pulsecount_shutdown_instance(pulsecount_instance_t* instance)
 {
     if (!instance)
     {
-        pulsecount_debug("Handed NULL instance.");
+        osm_pulsecount_debug("Handed NULL instance.");
         return;
     }
     if (osm_io_is_pulsecount_now(instance->info.io))
     {
-        pulsecount_debug("IO is not pulsecount.");
+        osm_pulsecount_debug("IO is not pulsecount.");
         return;
     }
     nvic_disable_irq(instance->tim_irq);
@@ -348,13 +348,13 @@ static void _pulsecount_shutdown_instance(pulsecount_instance_t* instance)
     nvic_disable_irq(instance->exti_irq);
     instance->count = 0;
     instance->send_count = 0;
-    pulsecount_debug("Pulsecount '%s' disabled", instance->info.name);
+    osm_pulsecount_debug("Pulsecount '%s' disabled", instance->info.name);
 }
 
 
 static void _pulsecount_shutdown(unsigned io)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_pulsecount_instances); i++)
     {
         pulsecount_instance_t* inst = &_pulsecount_instances[i];
         if (inst->info.io == io)
@@ -367,13 +367,13 @@ void osm_pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_
 {
     if (enable)
     {
-        pulsecount_debug("Initialising pulsecount");
+        osm_pulsecount_debug("Initialising pulsecount");
         osm_model_w1_pulse_enable_pupd(io, pupd == IO_PUPD_UP);
         _pulsecount_init(io, edge);
     }
     else
     {
-        pulsecount_debug("Shutting-down pulsecount.");
+        osm_pulsecount_debug("Shutting-down pulsecount.");
         _pulsecount_shutdown(io);
     }
 }
@@ -394,11 +394,11 @@ static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* nam
 {
     if (!instance)
     {
-        pulsecount_debug("Handed a NULL pointer.");
+        osm_pulsecount_debug("Handed a NULL pointer.");
         return false;
     }
     pulsecount_instance_t* inst;
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_pulsecount_instances); i++)
     {
         inst = &_pulsecount_instances[i];
         if (strncmp(name, inst->info.name, sizeof(inst->info.name) * sizeof(char)) == 0)
@@ -407,7 +407,7 @@ static bool _pulsecount_get_instance(pulsecount_instance_t** instance, char* nam
             return true;
         }
     }
-    pulsecount_debug("Could not find name in instances.");
+    osm_pulsecount_debug("Could not find name in instances.");
     return false;
 }
 
@@ -419,7 +419,7 @@ static measurements_sensor_state_t _pulsecount_begin(char* name, bool in_isolati
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!osm_io_is_pulsecount_now(instance->info.io))
         return MEASUREMENTS_SENSOR_STATE_ERROR;
-    pulsecount_debug("%s at start %"PRIu32, instance->info.name, instance->count);
+    osm_pulsecount_debug("%s at start %"PRIu32, instance->info.name, instance->count);
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -428,23 +428,23 @@ static measurements_sensor_state_t _pulsecount_get(char* name, measurements_read
 {
     if (!value)
     {
-        pulsecount_debug("Handed a NULL pointer.");
+        osm_pulsecount_debug("Handed a NULL pointer.");
         return false;
     }
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))
     {
-        pulsecount_debug("Not an instance.");
+        osm_pulsecount_debug("Not an instance.");
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!osm_io_is_pulsecount_now(instance->info.io))
     {
-        pulsecount_debug("IO %s not set up.", name);
+        osm_pulsecount_debug("IO %s not set up.", name);
         return MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     instance->send_count = instance->count;
-    pulsecount_debug("%s at end %"PRIu32, instance->info.name, instance->send_count);
+    osm_pulsecount_debug("%s at end %"PRIu32, instance->info.name, instance->send_count);
     value->v_i64 = (int64_t)instance->send_count;
     return MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -455,7 +455,7 @@ static void _pulsecount_ack(char* name)
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))
         return;
-    pulsecount_debug("%s ack'ed", instance->info.name);
+    osm_pulsecount_debug("%s ack'ed", instance->info.name);
     __sync_sub_and_fetch(&instance->count, instance->send_count);
     instance->send_count = 0;
 }
@@ -509,7 +509,7 @@ syntax_exit:
 
 static bool _pulsecount_index_from_io(unsigned* index, unsigned io)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(_pulsecount_instances); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(_pulsecount_instances); i++)
     {
         if (_pulsecount_instances[i].info.io == io)
         {
@@ -568,5 +568,5 @@ struct cmd_link_t* osm_pulsecount_add_commands(struct cmd_link_t* tail)
         { "hw_pupd",      "Print all IOs.",                 _hw_pupd_cb                 , false , NULL },
         { "pulse_dbnc",   "Get/set pulse debounce (ms)",    _pulsecount_pulse_dbnc_cb   , false , NULL },
     };
-    return osm_add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

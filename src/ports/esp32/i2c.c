@@ -14,7 +14,7 @@ static uint8_t         i2c_buses_ready = 0;
 
 static void i2c_init(unsigned i2c_index)
 {
-/*    if (i2c_index > ARRAY_SIZE(i2c_buses))
+/*    if (i2c_index > OSM_ARRAY_SIZE(i2c_buses))
     {
         osm_log_error("Tried to init I2C bus with uninitialised memory.");
         return;
@@ -71,7 +71,7 @@ bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsi
 
 static void i2c_deinit(unsigned i2c_index)
 {
-    if (i2c_index > ARRAY_SIZE(i2c_buses))
+    if (i2c_index > OSM_ARRAY_SIZE(i2c_buses))
     {
         osm_log_error("Tried to deinit I2C bus with uninitialised memory.");
         return;
@@ -93,13 +93,13 @@ static void i2c_deinit(unsigned i2c_index)
 
 void osm_i2cs_init(void)
 {
-    for (uint8_t i = 0; i < ARRAY_SIZE(i2c_buses); i++)
+    for (uint8_t i = 0; i < OSM_ARRAY_SIZE(i2c_buses); i++)
         i2c_init(i);
 }
 
 
 void osm_i2cs_deinit(void)
 {
-    for (uint8_t i = 0; i < ARRAY_SIZE(i2c_buses); i++)
+    for (uint8_t i = 0; i < OSM_ARRAY_SIZE(i2c_buses); i++)
         i2c_deinit(i);
 }
