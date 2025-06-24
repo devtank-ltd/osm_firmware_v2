@@ -25,7 +25,7 @@ typedef uint16_t adcs_all_buf_t[OSM_ADCS_NUM_SAMPLES];
 
 static adcs_all_buf_t       _adcs_buffer;
 static volatile bool        _adcs_in_use        = false;
-static adcs_keys_t          _adcs_active_key    = ADCS_KEY_NONE;
+static osm_adcs_keys_t          _adcs_active_key    = OSM_ADCS_KEY_NONE;
 static uint32_t             _adcs_start_time    = 0;
 static volatile uint32_t    _adcs_end_time      = 0;
 
@@ -147,24 +147,24 @@ void osm_adcs_dma_complete(void)
 }
 
 
-adcs_resp_t osm_adcs_begin(adcs_type_t* channels, unsigned num_channels, unsigned num_samples, adcs_keys_t key)
+osm_adcs_resp_t osm_adcs_begin(osm_adcs_type_t* channels, unsigned num_channels, unsigned num_samples, osm_adcs_keys_t key)
 {
     if (!channels || !num_channels)
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
 
     if (_adcs_in_use)
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
 
-    if (_adcs_active_key != ADCS_KEY_NONE)
+    if (_adcs_active_key != OSM_ADCS_KEY_NONE)
     {
         //osm_adc_debug("Still locked.");
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     }
 
     if (num_samples > OSM_ADCS_NUM_SAMPLES)
     {
         osm_adc_debug("ADC buffer too small for that many samples.");
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
 
     _adcs_in_use = true;
@@ -174,121 +174,121 @@ adcs_resp_t osm_adcs_begin(adcs_type_t* channels, unsigned num_channels, unsigne
     osm_platform_adc_set_num_data(num_samples);
     osm_platform_adc_set_regular_sequence(num_channels, channels);
     osm_platform_adc_start_conversion_regular();
-    return ADCS_RESP_OK;
+    return OSM_ADCS_RESP_OK;
 }
 
 
-adcs_resp_t osm_adcs_collect_rms(uint32_t* rms, uint32_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, adcs_keys_t key, uint32_t* time_taken)
+osm_adcs_resp_t osm_adcs_collect_rms(uint32_t* rms, uint32_t midpoint, unsigned num_channels, unsigned num_samples, unsigned cc_index, osm_adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rms)
     {
         osm_adc_debug("Handed NULL pointer.");
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     if (!_adcs_get_rms(_adcs_buffer, num_samples, rms, cc_index, num_channels, midpoint))
     {
         osm_adc_debug("Could not get RMS value for pos %u", cc_index);
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
     if (time_taken)
         *time_taken = osm_since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return ADCS_RESP_OK;
+    return OSM_ADCS_RESP_OK;
 }
 
 
-adcs_resp_t osm_adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
+osm_adcs_resp_t osm_adcs_collect_rmss(uint32_t* rmss, uint32_t* midpoints, unsigned num_channels, unsigned num_samples, osm_adcs_keys_t key, uint32_t* time_taken)
 {
     if (!rmss || !midpoints)
     {
         osm_adc_debug("Handed NULL pointer.");
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     for (unsigned i = 0; i < num_channels; i++)
     {
         if (!rmss || !midpoints)
         {
             osm_adc_debug("Handed NULL pointer.");
-            return ADCS_RESP_FAIL;
+            return OSM_ADCS_RESP_FAIL;
         }
         if (!_adcs_get_rms(_adcs_buffer, num_samples, &rmss[i], i, num_channels, midpoints[i]))
         {
             osm_adc_debug("Could not get RMS value for pos %u", i);
-            return ADCS_RESP_FAIL;
+            return OSM_ADCS_RESP_FAIL;
         }
     }
     if (time_taken)
         *time_taken = osm_since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return ADCS_RESP_OK;
+    return OSM_ADCS_RESP_OK;
 }
 
 
-adcs_resp_t osm_adcs_collect_avg(uint32_t* avg, unsigned num_channels, unsigned num_samples, unsigned index, adcs_keys_t key, uint32_t* time_taken)
+osm_adcs_resp_t osm_adcs_collect_avg(uint32_t* avg, unsigned num_channels, unsigned num_samples, unsigned index, osm_adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avg)
     {
         osm_adc_debug("Handed NULL pointer.");
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
 
     if (!_adcs_get_avg(_adcs_buffer, num_samples, avg, index, num_channels))
     {
         osm_adc_debug("Could not get AVG value for pos %u", index);
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
 
     if (time_taken)
         *time_taken = osm_since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return ADCS_RESP_OK;
+    return OSM_ADCS_RESP_OK;
 }
 
 
-adcs_resp_t osm_adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned num_samples, adcs_keys_t key, uint32_t* time_taken)
+osm_adcs_resp_t osm_adcs_collect_avgs(uint32_t* avgs, unsigned num_channels, unsigned num_samples, osm_adcs_keys_t key, uint32_t* time_taken)
 {
     if (!avgs)
     {
         osm_adc_debug("Handed NULL pointer.");
-        return ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
     }
     if (_adcs_in_use)
     {
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     }
     if (_adcs_active_key != key)
-        return ADCS_RESP_WAIT;
+        return OSM_ADCS_RESP_WAIT;
     for (unsigned i = 0; i < num_channels; i++)
     {
         if (!avgs)
         {
             osm_adc_debug("Handed NULL pointer.");
-            return ADCS_RESP_FAIL;
+            return OSM_ADCS_RESP_FAIL;
         }
         if (!_adcs_get_avg(_adcs_buffer, num_samples, avgs++, i, num_channels))
         {
             osm_adc_debug("Could not get AVG value for pos %u", i);
-            return ADCS_RESP_FAIL;
+            return OSM_ADCS_RESP_FAIL;
         }
     }
     if (time_taken)
         *time_taken = osm_since_boot_delta(_adcs_end_time, _adcs_start_time);
-    return ADCS_RESP_OK;
+    return OSM_ADCS_RESP_OK;
 }
 
 
@@ -298,19 +298,19 @@ static bool _adcs_wait_loop_iteration(void* userdata)
 }
 
 
-adcs_resp_t osm_adcs_wait_done(uint32_t timeout, adcs_keys_t key)
+osm_adcs_resp_t osm_adcs_wait_done(uint32_t timeout, osm_adcs_keys_t key)
 {
     if (_adcs_active_key != key)
-        return ADCS_RESP_FAIL;
-    return osm_main_loop_iterate_for(timeout, _adcs_wait_loop_iteration, NULL) ? ADCS_RESP_OK : ADCS_RESP_FAIL;
+        return OSM_ADCS_RESP_FAIL;
+    return osm_main_loop_iterate_for(timeout, _adcs_wait_loop_iteration, NULL) ? OSM_ADCS_RESP_OK : OSM_ADCS_RESP_FAIL;
 }
 
 
-void osm_adcs_release(adcs_keys_t key)
+void osm_adcs_release(osm_adcs_keys_t key)
 {
     if (_adcs_active_key != key)
         return;
-    _adcs_active_key = ADCS_KEY_NONE;
+    _adcs_active_key = OSM_ADCS_KEY_NONE;
 }
 
 

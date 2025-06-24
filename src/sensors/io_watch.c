@@ -61,20 +61,20 @@ static io_watch_instance_t* _io_watch_get_inst(unsigned io)
 }
 
 
-static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t pupd)
+static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, osm_io_pupd_t pupd)
 {
     if (enabled)
     {
         uint8_t pupd8;
         switch (pupd)
         {
-            case IO_PUPD_DOWN:
+            case OSM_IO_PUPD_DOWN:
                 pupd8 = GPIO_PUPD_PULLDOWN;
                 break;
-            case IO_PUPD_UP:
+            case OSM_IO_PUPD_UP:
                 pupd8 = GPIO_PUPD_PULLUP;
                 break;
-            case IO_PUPD_NONE:
+            case OSM_IO_PUPD_NONE:
                 pupd8 = GPIO_PUPD_NONE;
                 break;
             default:
@@ -104,7 +104,7 @@ static bool _io_watch_enable2(io_watch_instance_t* inst, bool enabled, io_pupd_t
 }
 
 
-bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
+bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd)
 {
     io_watch_instance_t* inst = _io_watch_get_inst(io);
     if (!inst)
@@ -112,7 +112,7 @@ bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
         osm_io_debug("Could not get the instance for '%u'", io);
         return false;
     }
-    osm_model_w1_pulse_enable_pupd(io, pupd == IO_PUPD_UP);
+    osm_model_w1_pulse_enable_pupd(io, pupd == OSM_IO_PUPD_UP);
     return _io_watch_enable2(inst, enabled, pupd);
 }
 

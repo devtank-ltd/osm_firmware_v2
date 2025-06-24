@@ -29,15 +29,15 @@
 
 #define ADC_COUNT       4
 
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
+#define ADC_TYPES_ALL_CC { OSM_ADCS_TYPE_CC_CLAMP1,  \
+                           OSM_ADCS_TYPE_CC_CLAMP2,  \
+                           OSM_ADCS_TYPE_CC_CLAMP3   }
 
 #define ADC_FTMA_COUNT  1
 
 #define ADC_FTMA_CHANNELS { ADC1_CHANNEL_FTMA_1,  }
 
-#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    }
+#define ADC_TYPES_ALL_FTMA { OSM_ADCS_TYPE_FTMA1,    }
 
 #define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
 #define IOS_WATCH_COUNT 2
@@ -115,9 +115,9 @@
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
-    IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,             /* GPIO 0   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,             /* GPIO 1   */ \
+    OSM_IO_SPECIAL_ONEWIRE,                             /* GPIO 2   */ \
     OSM_IO_DIR_LOCKED,                                  /* GPIO 3   */ \
 }
 
@@ -146,7 +146,7 @@
 }
 
 
-#define SEN5x_I2C                           I2C1
+#define OSM_SENxx_I2C                           I2C1
 #define E_24LC00T_I2C                       I2C1
 
 #define COMMS_LED                   { GPIOC, GPIO1 }

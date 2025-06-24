@@ -13,10 +13,10 @@
 
 typedef enum
 {
-    IO_PUPD_NONE    = 0,
-    IO_PUPD_UP      = 1,
-    IO_PUPD_DOWN    = 2,
-} io_pupd_t;
+    OSM_IO_PUPD_NONE    = 0,
+    OSM_IO_PUPD_UP      = 1,
+    OSM_IO_PUPD_DOWN    = 2,
+} osm_io_pupd_t;
 
 
 extern const port_n_pins_t ios_pins[IOS_COUNT];
@@ -28,10 +28,10 @@ bool     osm_ios_get_pupd(unsigned io, uint8_t* pupd);
 void     osm_ios_init(void);
 void     osm_ios_post_init(void);
 unsigned osm_ios_get_count(void);
-void     osm_io_configure(unsigned io, bool as_input, io_pupd_t pull);
+void     osm_io_configure(unsigned io, bool as_input, osm_io_pupd_t pull);
 
 
-bool     osm_io_enable_pulsecount(unsigned io, io_pupd_t pupd, io_special_t edge);
+bool     osm_io_enable_pulsecount(unsigned io, osm_io_pupd_t pupd, osm_io_special_t edge);
 bool     osm_io_enable_w1(unsigned io);
 
 bool     osm_io_is_pulsecount_now(unsigned io);

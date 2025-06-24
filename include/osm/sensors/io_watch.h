@@ -8,6 +8,6 @@
 
 extern const unsigned ios_watch_ios[IOS_WATCH_COUNT];
 
-bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd);
+bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd);
 void osm_io_watch_isr(uint32_t exti_group);
 void osm_io_watch_init(void);

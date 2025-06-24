@@ -8,8 +8,8 @@ void osm_uarts_setup();
 void osm_uart_enable(unsigned uart, bool enable);
 bool osm_uart_is_enabled(unsigned uart);
 
-void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx);
-bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop);
+void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, cmd_ctx_t * ctx);
+bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_osm_uart_parity_t * parity, osm_osm_uart_stop_bits_t * stop);
 bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx);
 
 bool osm_uart_is_tx_empty(unsigned uart);

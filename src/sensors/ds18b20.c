@@ -115,33 +115,33 @@ static bool _ds18b20_get_instance(ds18b20_instance_t** instance, char* name)
 }
 
 
-static measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _ds18b20_measurements_init(char* name, bool in_isolation)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
     if (!osm_w1_reset(instance->w1_index))
     {
         osm_exttemp_debug("Temperature probe did not respond");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     osm_w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
     osm_w1_send_byte(instance->w1_index, DS18B20_CMD_CONV_T);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _ds18b20_measurements_collect(char* name, measurements_reading_t* value)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     ds18b20_memory_t d;
     if (!osm_w1_reset(instance->w1_index))
     {
         osm_exttemp_debug("Temperature probe did not respond");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     osm_w1_send_byte(instance->w1_index, DS18B20_CMD_SKIP_ROM);
     osm_w1_send_byte(instance->w1_index, DS18B20_CMD_READ_SCP);
@@ -150,13 +150,13 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
     if (!_ds18b20_crc_check(d.raw, 8))
     {
         osm_exttemp_debug("Data not confirmed by CRC");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!_ds18b20_empty_check(d.raw, 9))
     {
         osm_exttemp_debug("Empty memory.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     int16_t integer_bits = d.t >> 4;
@@ -170,24 +170,24 @@ static measurements_sensor_state_t _ds18b20_measurements_collect(char* name, mea
     }
     float temperature = (float)integer_bits + (float)decimal_bits / 16.f;
     value->v_f32 = osm_to_f32_from_float(temperature);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _ds18b20_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _ds18b20_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = DS18B20_DEFAULT_COLLECTION_TIME_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_value_type_t _ds18b20_value_type(char* name)
+static osm_measurements_value_type_t _ds18b20_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+    return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 

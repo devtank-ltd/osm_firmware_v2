@@ -178,7 +178,7 @@ static bool _senxx_get_meas_from_name(char* name, senxx_measurement_t* meas)
         *meas = SENxx_MEASUREMENT_REL_HUM;
         return true;
     }
-    if (strncmp(name, MEASUREMENTS_SEN5x_TEMP_NAME, len) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_SEN5x_TEMP_NAME, len) == 0)
     {
         *meas = SENxx_MEASUREMENT_TEMP;
         return true;
@@ -467,7 +467,7 @@ void osm_senxx_iterate(void)
 }
 
 
-static measurements_sensor_state_t _senxx_start(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _senxx_start(char* name, bool in_isolation)
 {
     uint32_t now = osm_get_since_boot_ms();
     if (!_senxx_ctx.active && osm_since_boot_delta(now, _senxx_ctx.last_reading.time) >= SENxx_WAIT_DELAY)
@@ -475,57 +475,57 @@ static measurements_sensor_state_t _senxx_start(char* name, bool in_isolation)
         _senxx_ctx.last_reading.time = now;
         osm_senxx_init();
     }
-    return _senxx_ctx.active ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
+    return _senxx_ctx.active ? OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS : OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-static measurements_sensor_state_t _senxx_collect(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _senxx_collect(char* name, measurements_reading_t* val)
 {
     if (!name || !val)
     {
         osm_particulate_debug("Handed NULL pointer.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     senxx_measurement_t meas;
     if (!_senxx_get_meas_from_name(name, &meas))
     {
         osm_particulate_debug("Couldn't get measurement name from '%s'", name);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!_senxx_ctx.active)
     {
         osm_particulate_debug("SENxx not active");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     float val_f;
     if (!_senxx_get_val(meas, &val_f))
     {
         osm_particulate_debug("Failed conversion %s.", name);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     val->v_f32 = osm_to_f32_from_float(val_f);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_value_type_t _senxx_value_type(char* name)
+static osm_measurements_value_type_t _senxx_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+    return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
-static measurements_sensor_state_t _senxx_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _senxx_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = SENxx_COLLECTION_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -538,7 +538,7 @@ void osm_senxx_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _senxx_pwr_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _senxx_pwr_cb(char* args, cmd_ctx_t * ctx)
 {
     uint8_t enable = strtoul(args, NULL, 10);
     osm_platform_hpm_enable(enable);
@@ -550,11 +550,11 @@ static command_response_t _senxx_pwr_cb(char* args, cmd_ctx_t * ctx)
     {
         osm_cmd_ctx_out(ctx,"SENxx PWR DISABLED");
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
 {
     char product_name[32];
     uint8_t product_name_size = 32;
@@ -562,10 +562,10 @@ static command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
     if (SENxx_MODEL_NONE == model)
     {
         osm_cmd_ctx_out(ctx,"Error executing _senxx_get_product()");
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
     }
     osm_cmd_ctx_out(ctx,"Product name: %s\n", product_name);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

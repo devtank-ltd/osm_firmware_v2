@@ -39,9 +39,9 @@
 #define CORE_3V3_EN_PORT_N_PINS     {GPIOB, GPIO3}
 
 
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
+#define ADC_TYPES_ALL_CC { OSM_ADCS_TYPE_CC_CLAMP1,  \
+                           OSM_ADCS_TYPE_CC_CLAMP2,  \
+                           OSM_ADCS_TYPE_CC_CLAMP3   }
 
 #define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
 #define IOS_WATCH_COUNT 2

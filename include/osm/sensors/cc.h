@@ -23,7 +23,7 @@ void                         osm_cc_init(void);
 bool                         osm_cc_get_blocking(char* name, measurements_reading_t* value);
 bool                         osm_cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3);
 
-bool                         osm_cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
+bool                         osm_cc_set_active_clamps(osm_adcs_type_t* clamps, unsigned len);
 
 void                         osm_cc_inf_init(measurements_inf_t* inf);
 

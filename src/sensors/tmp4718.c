@@ -97,7 +97,7 @@ typedef union
 
 static bool _tmp4718_read_reg(uint8_t addr, uint8_t* value)
 {
-    return osm_i2c_transfer_timeout(TMP4718_I2C, TMP4718_ADDR, &addr, 1, value, 1, TMP4718_TIMEOUT_MS);
+    return osm_i2c_transfer_timeout(OSM_TMP4718_I2C, TMP4718_ADDR, &addr, 1, value, 1, TMP4718_TIMEOUT_MS);
 }
 
 
@@ -163,23 +163,23 @@ static tmp4718_measurement_t _tmp4718_name_to_enum(char* name)
 }
 
 
-static measurements_value_type_t _tmp4718_value_type(char* name)
+static osm_measurements_value_type_t _tmp4718_value_type(char* name)
 {
     tmp4718_measurement_t meas = _tmp4718_name_to_enum(name);
     switch (meas)
     {
         case TMP4718_MEASUREMENT_REMOTE:
-            return MEASUREMENTS_VALUE_TYPE_FLOAT;
+            return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
         case TMP4718_MEASUREMENT_LOCAL:
-            return MEASUREMENTS_VALUE_TYPE_I64;
+            return OSM_MEASUREMENTS_VALUE_TYPE_I64;
         default:
             break;
     }
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return OSM_MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 
-static measurements_sensor_state_t _tmp4718_collect(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _tmp4718_collect(char* name, measurements_reading_t* value)
 {
     tmp4718_measurement_t meas = _tmp4718_name_to_enum(name);
     switch (meas)
@@ -189,7 +189,7 @@ static measurements_sensor_state_t _tmp4718_collect(char* name, measurements_rea
             uint8_t temp8 = 0;
             if (!_tmp4718_read_local_temperature(&temp8))
             {
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
             }
             value->v_i64 = (int64_t)temp8;
             break;
@@ -199,15 +199,15 @@ static measurements_sensor_state_t _tmp4718_collect(char* name, measurements_rea
             float tempf = 0.f;
             if (!_tmp4718_read_remote_temperature(&tempf))
             {
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
             }
             value->v_f32 = osm_to_f32_from_float(tempf);
             break;
         }
         default:
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 

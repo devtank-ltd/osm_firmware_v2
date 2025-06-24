@@ -375,11 +375,11 @@ bool osm_at_wifi_send(char* data, uint16_t len)
 }
 
 
-static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx);
-static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx);
-static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx);
-static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx);
-static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx);
+static osm_command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx);
+static osm_command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx);
+static osm_command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx);
+static osm_command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx);
+static osm_command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx);
 
 
 void osm_at_wifi_init(void)
@@ -411,7 +411,7 @@ void osm_at_wifi_init(void)
 #ifdef COMMS_LED
     const port_n_pins_t comms_led = COMMS_LED;
     osm_platform_gpio_init(&comms_led);
-    osm_platform_gpio_setup(&comms_led, false, IO_PUPD_NONE);
+    osm_platform_gpio_setup(&comms_led, false, OSM_IO_PUPD_NONE);
 #endif // COMMS_LED
     _at_wifi_comms_led_set(false);
 }
@@ -727,7 +727,7 @@ static void _at_wifi_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_is_connected(char* msg, unsigned len)
 {
-    static enum at_mqtt_conn_states_t conn = AT_MQTT_CONN_STATE_NOT_INIT;
+    static enum osm_at_mqtt_conn_states_t conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
     const char mqtt_conn_msg[] = "+MQTTCONN:";
     unsigned mqtt_conn_msg_len = strlen(mqtt_conn_msg);
     if (osm_is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
@@ -736,25 +736,25 @@ static void _at_wifi_process_state_mqtt_is_connected(char* msg, unsigned len)
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
         if (!osm_at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn))
         {
-            conn = AT_MQTT_CONN_STATE_NOT_INIT;
+            conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
         }
     }
     else if (osm_at_base_is_ok(msg, len))
     {
         switch (conn)
         {
-            case AT_MQTT_CONN_STATE_CONN_EST:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST:
                 /* fall through */
-            case AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
                 /* fall through */
-            case AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
                 _at_wifi_is_mqtt_subscribed();
                 break;
             default:
                 _at_wifi_do_mqtt_user_conf();
                 break;
         }
-        conn = AT_MQTT_CONN_STATE_NOT_INIT;
+        conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
     }
     else if (osm_at_base_is_error(msg, len))
     {
@@ -998,9 +998,9 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        enum at_mqtt_conn_states_t conn;
+        enum osm_at_mqtt_conn_states_t conn;
         if (osm_at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn) &&
-            conn >= AT_MQTT_CONN_STATE_CONN_EST && conn < AT_MQTT_CONN_STATE_COUNT)
+            conn >= OSM_AT_MQTT_CONN_STATE_CONN_EST && conn < OSM_AT_MQTT_CONN_STATE_COUNT)
         {
             _at_wifi_retry_command();
         }
@@ -1435,56 +1435,56 @@ static void _at_wifi_config_get_set_str(const char* name, char* dest, unsigned m
 }
 
 
-static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx)
 {
     _at_wifi_config_get_set_str(
         "SSID",
         _at_wifi_ctx.mem->wifi.ssid,
         OSM_AT_WIFI_MAX_SSID_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx)
 {
     _at_wifi_config_get_set_str(
         "PWD",
         _at_wifi_ctx.mem->wifi.pwd,
         OSM_AT_WIFI_MAX_PWD_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx)
+static osm_command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx)
 {
     _at_wifi_config_get_set_str(
         "COUNTRY",
         _at_wifi_ctx.mem->country_code,
         OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx)
+static osm_command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx)
 {
     osm_at_base_config_get_set_u16(
         "SCHAN",
         &_at_wifi_ctx.mem->channel_start,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx)
+static osm_command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx)
 {
     osm_at_base_config_get_set_u16(
         "NCHAN",
         &_at_wifi_ctx.mem->channel_count,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
@@ -1501,18 +1501,18 @@ bool osm_at_wifi_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _at_wifi_send_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_send_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = osm_skip_space(args);
-    return osm_at_base_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return osm_at_base_send_str(pos) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-command_response_t osm_at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
     at_wifi_config_t before_config;
     memcpy(&before_config, _at_wifi_ctx.mem, sizeof(at_wifi_config_t));
-    command_response_t ret = osm_at_base_config_setup_str(_at_wifi_config_cmds, osm_skip_space(args), ctx);
+    osm_command_response_t ret = osm_at_base_config_setup_str(_at_wifi_config_cmds, osm_skip_space(args), ctx);
     if (_at_wifi_mem_is_valid())
     {
         if (AT_WIFI_STATE_NO_CONF == _at_wifi_ctx.state)
@@ -1530,7 +1530,7 @@ command_response_t osm_at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 
 static bool _at_wifi_get_mac_address(char* buf, unsigned buflen);
 
-command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
     char mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
     if (!_at_wifi_get_mac_address(mac_address, OSM_AT_BASE_MAC_ADDRESS_LEN))
@@ -1548,11 +1548,11 @@ command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address                       , OSM_AT_BASE_MAC_ADDRESS_LEN   );
     osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_TAIL);
     osm_cmd_ctx_flush(ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t osm_at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 {
     if (osm_at_wifi_get_connected())
     {
@@ -1562,42 +1562,42 @@ command_response_t osm_at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
     {
         osm_cmd_ctx_out(ctx,"0 | Disconnected");
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_dbg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_uart_ring_out(COMMS_UART, args, strlen(args));
     osm_uart_ring_out(COMMS_UART, "\r\n", 2);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_boot_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_boot_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_boot(args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_reset_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_reset(args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_state_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_state_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"State: %s(%u)", _at_wifi_get_state_str(_at_wifi_ctx.state), (unsigned)_at_wifi_ctx.state);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
-static command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx)
 {
     _at_wifi_reset();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
@@ -1719,7 +1719,7 @@ static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
 }
 
 
-static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 {
     switch (_at_wifi_ctx.state)
     {
@@ -1742,7 +1742,7 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
         default:
             osm_comms_debug("Illegal state for listing AP: %s", _at_wifi_get_state_str(_at_wifi_ctx.state));
             osm_cmd_ctx_out(ctx,"Busy");
-            return COMMAND_RESP_ERR;
+            return OSM_COMMAND_RESP_ERR;
     }
     bool is_connected = osm_at_wifi_get_connected();
     bool prev_measements_enabled = measurements_enabled;
@@ -1753,12 +1753,12 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
     _at_wifi_ctx.before_ap_list_state = _at_wifi_ctx.state;
     _at_wifi_ctx.ap_info_len = 0;
     _at_start_station_scan();
-    command_response_t ret = COMMAND_RESP_OK;
+    osm_command_response_t ret = OSM_COMMAND_RESP_OK;
     if (!osm_main_loop_iterate_for(AT_WIFI_LIST_TIMEOUT, _at_wifi_list_iteration, NULL))
     {
         osm_cmd_ctx_out(ctx,"Timed out waiting for AP list");
         _at_wifi_reset();
-        ret = COMMAND_RESP_ERR;
+        ret = OSM_COMMAND_RESP_ERR;
     }
     else
     {
@@ -1772,7 +1772,7 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static command_response_t _at_wifi_autoconnect_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_autoconnect_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p = osm_skip_space(args);
     char* np = NULL;
@@ -1782,7 +1782,7 @@ static command_response_t _at_wifi_autoconnect_cb(char* args, cmd_ctx_t * ctx)
         _at_wifi_ctx.autoconnect = !!en;
     }
     osm_cmd_ctx_out(ctx,"AUTOCONNECT:%u", (unsigned)_at_wifi_ctx.autoconnect);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
@@ -1816,8 +1816,8 @@ bool osm_at_wifi_persist_config_cmp(void* d0, void* d1)
 static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
 {
     memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
-    at_wifi_config->type = COMMS_TYPE_WIFI;
-    at_wifi_config->mqtt.scheme = AT_MQTT_SCHEME_BARE;
+    at_wifi_config->type = OSM_COMMS_TYPE_WIFI;
+    at_wifi_config->mqtt.scheme = OSM_AT_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
     strncpy(at_wifi_config->country_code, "GB", OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
     at_wifi_config->country_code[OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN] = 0;

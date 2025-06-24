@@ -8,7 +8,7 @@
 
 void     osm_pulsecount_init(void);
 
-void     osm_pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge);
+void     osm_pulsecount_enable(unsigned io, bool enable, osm_io_pupd_t pupd, osm_io_special_t edge);
 
 void     osm_pulsecount_inf_init(measurements_inf_t* inf);
 

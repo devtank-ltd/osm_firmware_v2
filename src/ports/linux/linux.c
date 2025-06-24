@@ -1875,11 +1875,11 @@ bool osm_socket_connect(char* path, int* _socketfd)
 }
 
 
-static command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"Starting Linux OSM exit.");
     _linux_running = false;
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

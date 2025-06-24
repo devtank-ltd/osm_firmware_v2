@@ -16,7 +16,7 @@ static measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
 static measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
 
 
-bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
+bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd)
 {
     if (enabled)
     {

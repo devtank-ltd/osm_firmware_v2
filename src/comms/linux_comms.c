@@ -129,21 +129,21 @@ bool osm_linux_comms_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _linux_comms_send_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _linux_comms_send_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = osm_skip_space(args);
-    return osm_linux_comms_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return osm_linux_comms_send_str(pos) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-command_response_t osm_linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
     osm_linux_comms_config_setup_str(osm_skip_space(args), ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 {
     if (osm_linux_comms_get_connected())
     {
@@ -153,11 +153,11 @@ command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
     {
         osm_cmd_ctx_out(ctx,"0 | Disconnected");
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_HEADER);
     osm_cmd_ctx_flush(ctx);
@@ -167,15 +167,15 @@ command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     osm_cmd_ctx_flush(ctx);
     osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_TAIL);
     osm_cmd_ctx_flush(ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_uart_ring_out(COMMS_UART, args, strlen(args));
     osm_uart_ring_out(COMMS_UART, "\r\n", 2);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

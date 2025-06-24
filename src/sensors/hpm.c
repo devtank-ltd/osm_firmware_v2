@@ -299,60 +299,60 @@ void hpm_enable(bool enable)
 
 
 
-static measurements_sensor_state_t _hpm_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _hpm_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = _hpm_last_collect_time * 1.1f;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_reading_t* val)
 {
     if (!val)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!_hpm_is_valid_now())
     {
         if (osm_since_boot_delta(osm_get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
         hpm_enable(false);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     val->v_i64 = (int64_t)pm10_entry.d;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_reading_t* val)
 {
     if (!val)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!_hpm_is_valid_now())
     {
         if (osm_since_boot_delta(osm_get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
         hpm_enable(false);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     val->v_i64 = (int64_t)pm25_entry.d;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
 {
     osm_uart_enable(HPM_UART, true);
     hpm_enable(true);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_value_type_t _hpm_value_type(char* name)
+static osm_measurements_value_type_t _hpm_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return OSM_MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 

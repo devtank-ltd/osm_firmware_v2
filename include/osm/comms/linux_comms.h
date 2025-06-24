@@ -7,7 +7,7 @@
 
 #ifndef comms_name
 #define comms_name          linux_comms
-#define OSM_COMMS_BUILD_TYPE    COMMS_TYPE_LW
+#define OSM_COMMS_BUILD_TYPE    OSM_COMMS_TYPE_LW
 #endif //comms_name
 
 uint16_t osm_linux_comms_get_mtu(void);
@@ -34,6 +34,6 @@ struct cmd_link_t* osm_linux_comms_add_commands(struct cmd_link_t* tail);
 
 void     osm_linux_comms_power_down(void);
 
-command_response_t osm_linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx);
-command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
-command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
+osm_command_response_t osm_linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx);
+osm_command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
+osm_command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx);

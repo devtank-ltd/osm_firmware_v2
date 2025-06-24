@@ -29,15 +29,15 @@
 #define ADC_INDEX_FTMA_4          7
 
 
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
+#define ADC_TYPES_ALL_CC { OSM_ADCS_TYPE_CC_CLAMP1,  \
+                           OSM_ADCS_TYPE_CC_CLAMP2,  \
+                           OSM_ADCS_TYPE_CC_CLAMP3   }
 
 
-#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
-                             ADCS_TYPE_FTMA2,    \
-                             ADCS_TYPE_FTMA3,    \
-                             ADCS_TYPE_FTMA4     }
+#define ADC_TYPES_ALL_FTMA { OSM_ADCS_TYPE_FTMA1,    \
+                             OSM_ADCS_TYPE_FTMA2,    \
+                             OSM_ADCS_TYPE_FTMA3,    \
+                             OSM_ADCS_TYPE_FTMA4     }
 
 
 #define ADC_FTMA_CHANNELS { ADC1_CHANNEL_FTMA_1,  \
@@ -87,19 +87,10 @@ char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
-    IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
+    OSM_IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
 }
-
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
-
-#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
-                             ADCS_TYPE_FTMA2,    \
-                             ADCS_TYPE_FTMA3,    \
-                             ADCS_TYPE_FTMA4     }
 
 #define W1_PULSE_1_IO               0
 #define W1_PULSE_2_IO               1
@@ -123,4 +114,4 @@ char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 #define COMMS_RESET_PORT_N_PINS     { 10 }
 #define COMMS_BOOT_PORT_N_PINS      { 11 }
 
-#define SEN5x_I2C                           0
+#define OSM_SENxx_I2C                           0

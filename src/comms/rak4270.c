@@ -299,39 +299,39 @@ static const char* _rak4270_region_name(uint8_t region)
     const char* name;
     switch (region)
     {
-        case LW_REGION_EU433:
+        case OSM_LW_REGION_EU433:
             name = OSM_LW_REGION_NAME_EU433;
             break;
-        case LW_REGION_CN470:
+        case OSM_LW_REGION_CN470:
             name = OSM_LW_REGION_NAME_CN470;
             break;
-        case LW_REGION_IN865:
+        case OSM_LW_REGION_IN865:
             name = OSM_LW_REGION_NAME_IN865;
             break;
-        case LW_REGION_EU868:
+        case OSM_LW_REGION_EU868:
             name = OSM_LW_REGION_NAME_EU868;
             break;
-        case LW_REGION_US915:
+        case OSM_LW_REGION_US915:
             name = OSM_LW_REGION_NAME_US915;
             break;
-        case LW_REGION_AU915:
+        case OSM_LW_REGION_AU915:
             name = OSM_LW_REGION_NAME_AU915;
             break;
-        case LW_REGION_KR920:
+        case OSM_LW_REGION_KR920:
             name = OSM_LW_REGION_NAME_KR920;
             break;
-        case LW_REGION_AS923_2:
+        case OSM_LW_REGION_AS923_2:
             /* fall through */
-        case LW_REGION_AS923_3:
+        case OSM_LW_REGION_AS923_3:
             /* fall through */
-        case LW_REGION_AS923_4:
+        case OSM_LW_REGION_AS923_4:
             osm_comms_debug("Not capable of set region, defaulting to LW_REGION_AS923_1");
             /* fall through */
-        case LW_REGION_AS923_1:
+        case OSM_LW_REGION_AS923_1:
             /* Different from default */
             name = RAK4270_REGION_NAME_AS923;
             break;
-        case LW_REGION_RU864:
+        case OSM_LW_REGION_RU864:
             osm_comms_debug("Not capable of set region.");
             /* fall through */
         default:
@@ -357,7 +357,7 @@ static bool _rak4270_load_config(cmd_ctx_t * ctx)
     if (!region_name)
     {
         osm_cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
-        region_name = _rak4270_region_name(LW_REGION_EU868);
+        region_name = _rak4270_region_name(OSM_LW_REGION_EU868);
     }
 
     snprintf(_init_msgs[OSM_ARRAY_SIZE(_init_msgs)-4], sizeof(rak4270_msg_buf_t), "at+set_config=lora:region:%.*s",  OSM_LW_REGION_LEN,  region_name    );
@@ -1096,26 +1096,26 @@ void osm_rak4270_loop_iteration(void)
 }
 
 
-command_response_t osm_rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 {
     if (osm_rak4270_get_connected())
     {
         osm_cmd_ctx_out(ctx,"1 | Connected");
-        return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_OK;
     }
     osm_cmd_ctx_out(ctx,"0 | Disconnected");
-    return COMMAND_RESP_ERR;
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
-command_response_t osm_rak4270_cmd_config_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak4270_cmd_config_cb(char* str, cmd_ctx_t * ctx)
 {
     if (osm_lw_config_setup_str(str, ctx))
     {
         _rak4270_reload_config(ctx);
-        return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_OK;
     }
-    return COMMAND_RESP_ERR;
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
@@ -1125,10 +1125,10 @@ bool osm_rak4270_get_id(char* str, uint8_t len)
 }
 
 
-command_response_t osm_rak4270_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak4270_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
 {
     osm_lw_print_config(ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

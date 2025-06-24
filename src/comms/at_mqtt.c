@@ -139,11 +139,11 @@ at_base_cmd_t* osm_at_mqtt_get_mqtt_user_cfg(void)
     if (_at_mqtt_ctx)
     {
         ret = &_at_mqtt_ctx->at_base_ctx.cmd_line;
-        enum at_mqtt_scheme_t mqtt_scheme = _at_mqtt_ctx->mem->scheme;
-        if (!_at_mqtt_ctx->mem->scheme || AT_MQTT_SCHEME_COUNT <= _at_mqtt_ctx->mem->scheme)
+        enum osm_at_mqtt_scheme_t mqtt_scheme = _at_mqtt_ctx->mem->scheme;
+        if (!_at_mqtt_ctx->mem->scheme || OSM_AT_MQTT_SCHEME_COUNT <= _at_mqtt_ctx->mem->scheme)
         {
             osm_comms_debug("Invalid MQTT scheme, assuming Websocket no cert");
-            mqtt_scheme = AT_MQTT_SCHEME_WSS_NO_CERT;
+            mqtt_scheme = OSM_AT_MQTT_SCHEME_WSS_NO_CERT;
         }
 
         char user[2*OSM_AT_MQTT_USER_MAX_LEN+1];
@@ -291,7 +291,7 @@ static int _at_mqtt_do_command(char* payload, unsigned payload_len, char* resp_b
 {
     cmd_ctx_t debug_cmd_ctx = { .output_cb = _debug_cmd_ctx_output, .error_cb = _debug_cmd_ctx_error };
     osm_log_debug(OSM_DEBUG_COMMS, "Command output:");
-    command_response_t ret_code = osm_cmds_process(payload, payload_len, &debug_cmd_ctx);
+    osm_command_response_t ret_code = osm_cmds_process(payload, payload_len, &debug_cmd_ctx);
     int resp_payload_len = snprintf(
         resp_buf,
         resp_buflen,
@@ -403,7 +403,7 @@ int osm_at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned 
 }
 
 
-bool osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn)
+bool osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum osm_at_mqtt_conn_states_t* conn)
 {
     if (!msg || !conn)
     {
@@ -427,7 +427,7 @@ bool osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_stat
     {
         return false;
     }
-    if (conn8 >= AT_MQTT_CONN_STATE_COUNT)
+    if (conn8 >= OSM_AT_MQTT_CONN_STATE_COUNT)
     {
         return false;
     }
@@ -436,65 +436,65 @@ bool osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_stat
 }
 
 
-static command_response_t _at_mqtt_config_addr_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_mqtt_config_addr_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_config_get_set_str(
         "ADDR",
         _at_mqtt_ctx->mem->addr,
         OSM_AT_MQTT_ADDR_MAX_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_mqtt_config_user_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_mqtt_config_user_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_config_get_set_str(
         "USER",
         _at_mqtt_ctx->mem->user,
         OSM_AT_MQTT_USER_MAX_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_mqtt_config_pwd_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_mqtt_config_pwd_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_config_get_set_str(
         "PWD",
         _at_mqtt_ctx->mem->pwd,
         OSM_AT_MQTT_PWD_MAX_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_mqtt_config_scheme_cb(char* args, cmd_ctx_t * ctx)
 {
     return osm_at_base_config_get_set_u16(
         "SCHEME",
         &_at_mqtt_ctx->mem->scheme,
-        args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+        args, ctx) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _at_mqtt_config_path_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_mqtt_config_path_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_config_get_set_str(
         "PATH",
         _at_mqtt_ctx->mem->path,
         OSM_AT_MQTT_PATH_MAX_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_mqtt_config_port_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_mqtt_config_port_cb(char* args, cmd_ctx_t * ctx)
 {
     return osm_at_base_config_get_set_u16(
         "PORT",
         &_at_mqtt_ctx->mem->port,
-        args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+        args, ctx) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
@@ -534,6 +534,6 @@ void osm_at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx)
 void osm_at_mqtt_config_init(at_mqtt_config_t* conf)
 {
     memset(conf, 0, sizeof(at_mqtt_config_t));
-    conf->scheme = AT_MQTT_SCHEME_WSS_NO_CERT;
+    conf->scheme = OSM_AT_MQTT_SCHEME_WSS_NO_CERT;
     conf->port = 443;
 }

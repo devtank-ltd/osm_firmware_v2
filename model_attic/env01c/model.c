@@ -34,14 +34,14 @@
 #include "comms_direct.h"
 
 
-uint8_t osm_model_stm_adcs_get_channel(adcs_type_t adcs_type)
+uint8_t osm_model_stm_adcs_get_channel(osm_adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_BAT: return ADC1_CHANNEL_BAT_MON;
-        case ADCS_TYPE_CC_CLAMP1: return ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2: return ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3: return ADC1_CHANNEL_CURRENT_CLAMP_3;
+        case OSM_ADCS_TYPE_BAT: return ADC1_CHANNEL_BAT_MON;
+        case OSM_ADCS_TYPE_CC_CLAMP1: return ADC1_CHANNEL_CURRENT_CLAMP_1;
+        case OSM_ADCS_TYPE_CC_CLAMP2: return ADC1_CHANNEL_CURRENT_CLAMP_2;
+        case OSM_ADCS_TYPE_CC_CLAMP3: return ADC1_CHANNEL_CURRENT_CLAMP_3;
         default:
             break;
     }
@@ -82,7 +82,7 @@ bool osm_model_persist_config_cmp(persist_model_config_t* d0, persist_model_conf
 static void _model_core_3v3_init(void)
 {
     const port_n_pins_t core_3v3_port_n_pins = CORE_3V3_EN_PORT_N_PINS;
-    osm_platform_gpio_setup(&core_3v3_port_n_pins, false, IO_PUPD_NONE);
+    osm_platform_gpio_setup(&core_3v3_port_n_pins, false, OSM_IO_PUPD_NONE);
     osm_platform_gpio_set(&core_3v3_port_n_pins, true);
 }
 
@@ -149,20 +149,20 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
     memset(inf, 0, sizeof(measurements_inf_t));
     switch(def->type)
     {
-        case FW_VERSION:    osm_fw_version_inf_init(inf);  break;
-        case CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
-        case PM10:          osm_hpm_pm10_inf_init(inf);    break;
-        case PM25:          osm_hpm_pm25_inf_init(inf);    break;
-        case MODBUS:        osm_modbus_inf_init(inf);      break;
-        case CURRENT_CLAMP: osm_cc_inf_init(inf);          break;
-        case W1_PROBE:      osm_ds18b20_inf_init(inf);     break;
-        case HTU21D_TMP:    osm_htu21d_temp_inf_init(inf); break;
-        case HTU21D_HUM:    osm_htu21d_humi_inf_init(inf); break;
-        case BAT_MON:       osm_bat_inf_init(inf);         break;
-        case PULSE_COUNT:   osm_pulsecount_inf_init(inf);  break;
-        case LIGHT:         osm_veml7700_inf_init(inf);    break;
-        case SOUND:         osm_sai_inf_init(inf);         break;
-        case IO_READING:    osm_ios_inf_init(inf);         break;
+        case OSM_FW_VERSION:    osm_fw_version_inf_init(inf);  break;
+        case OSM_CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
+        case OSM_PM10:          osm_hpm_pm10_inf_init(inf);    break;
+        case OSM_PM25:          osm_hpm_pm25_inf_init(inf);    break;
+        case OSM_MODBUS:        osm_modbus_inf_init(inf);      break;
+        case OSM_CURRENT_CLAMP: osm_cc_inf_init(inf);          break;
+        case OSM_W1_PROBE:      osm_ds18b20_inf_init(inf);     break;
+        case OSM_HTU21D_TMP:    osm_htu21d_temp_inf_init(inf); break;
+        case OSM_HTU21D_HUM:    osm_htu21d_humi_inf_init(inf); break;
+        case OSM_BAT_MON:       osm_bat_inf_init(inf);         break;
+        case OSM_PULSE_COUNT:   osm_pulsecount_inf_init(inf);  break;
+        case OSM_LIGHT:         osm_veml7700_inf_init(inf);    break;
+        case OSM_SOUND:         osm_sai_inf_init(inf);         break;
+        case OSM_IO_READING:    osm_ios_inf_init(inf);         break;
         default:
             osm_log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -177,22 +177,22 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
 
 void osm_model_measurements_repopulate(void)
 {
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_BATMON_NAME,          1,  5,  BAT_MON         );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM10_NAME,            0,  5,  OSM_PM10            );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM25_NAME,            0,  5,  OSM_PM25            );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  OSM_W1_PROBE        );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  OSM_W1_PROBE        );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_HTU21D_TEMP,          1,  2,  OSM_HTU21D_TMP      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_HTU21D_HUMI,          1,  2,  OSM_HTU21D_HUM      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_BATMON_NAME,          1,  5,  OSM_BAT_MON         );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_LIGHT_NAME,           1,  5,  OSM_LIGHT           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SOUND_NAME,           1,  5,  OSM_SOUND           );
 }
 
 
@@ -246,12 +246,12 @@ void osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled)
 }
 
 
-bool osm_model_can_io_be_special(unsigned io, io_special_t special)
+bool osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
-            ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
-              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
-              special == IO_SPECIAL_WATCH                   ));
+            ( special == OSM_IO_SPECIAL_ONEWIRE                 || special == OSM_IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
+              special == OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == OSM_IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
+              special == OSM_IO_SPECIAL_WATCH                   ));
 }
 
 
@@ -282,12 +282,12 @@ void osm_model_setup_pulse_pupd(uint8_t* pupd)
      */
     switch (*pupd)
     {
-        case IO_PUPD_DOWN:
+        case OSM_IO_PUPD_DOWN:
             break;
-        case IO_PUPD_UP:
-        case IO_PUPD_NONE:
+        case OSM_IO_PUPD_UP:
+        case OSM_IO_PUPD_NONE:
         default:
-            *pupd = IO_PUPD_NONE;
+            *pupd = OSM_IO_PUPD_NONE;
             break;
     }
 }
@@ -298,22 +298,22 @@ unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_a
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM10_NAME,            0,  5,  PM10            );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM25_NAME,            0,  5,  PM25            );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, CURRENT_CLAMP   );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, CURRENT_CLAMP   );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, CURRENT_CLAMP   );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  W1_PROBE        );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  W1_PROBE        );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_HTU21D_TEMP,          1,  2,  HTU21D_TMP      );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_HTU21D_HUMI,          1,  2,  HTU21D_HUM      );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_BATMON_NAME,          1,  5,  BAT_MON         );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_LIGHT_NAME,           1,  5,  LIGHT           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SOUND_NAME,           1,  5,  SOUND           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM10_NAME,            0,  5,  OSM_PM10            );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM25_NAME,            0,  5,  OSM_PM25            );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  25, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  25, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  25, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  5,  OSM_W1_PROBE        );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_2,      0,  5,  OSM_W1_PROBE        );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_HTU21D_TEMP,          1,  2,  OSM_HTU21D_TMP      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_HTU21D_HUMI,          1,  2,  OSM_HTU21D_HUM      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_BATMON_NAME,          1,  5,  OSM_BAT_MON         );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_LIGHT_NAME,           1,  5,  OSM_LIGHT           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SOUND_NAME,           1,  5,  OSM_SOUND           );
     return pos;
 }
 
@@ -324,7 +324,7 @@ void osm_model_main_loop_iterate(void)
 }
 
 
-comms_type_t osm_comms_identify(void)
+osm_comms_type_t osm_comms_identify(void)
 {
-    return COMMS_TYPE_LW;
+    return OSM_COMMS_TYPE_LW;
 }

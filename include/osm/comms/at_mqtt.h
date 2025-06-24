@@ -36,32 +36,32 @@
 #define OSM_AT_ERROR_CODE                                       -1
 
 
-enum at_mqtt_scheme_t
+enum osm_at_mqtt_scheme_t
 {
-    AT_MQTT_SCHEME_BARE                                = 1,  /* MQTT over TCP. */
-    AT_MQTT_SCHEME_TLS_NO_CERT                         = 2,  /* MQTT over TLS (no certificate verify). */
-    AT_MQTT_SCHEME_TLS_VERIFY_SERVER                   = 3,  /* MQTT over TLS (verify server certificate). */
-    AT_MQTT_SCHEME_TLS_PROVIDE_CLIENT                  = 4,  /* MQTT over TLS (provide client certificate). */
-    AT_MQTT_SCHEME_TLS_VERIFY_SERVER_PROVIDE_CLIENT    = 5,  /* MQTT over TLS (verify server certificate and provide client certificate). */
-    AT_MQTT_SCHEME_WS                                  = 6,  /* MQTT over Websocket (TCP) */
-    AT_MQTT_SCHEME_WSS_NO_CERT                         = 7,  /* MQTT over Websocket Secure (TLS no certificate verify). */
-    AT_MQTT_SCHEME_WSS_VERIFY_SERVER                   = 8,  /* MQTT over Websocket Secure (TLS verify server certificate). */
-    AT_MQTT_SCHEME_WSS_PROVIDE_CLIENT                  = 9,  /* MQTT over Websocket Secure (TLS provide client certificate). */
-    AT_MQTT_SCHEME_WSS_VERIFY_SERVER_PROVIDE_CLIENT    = 10, /* MQTT over Websocket Secure (TLS verify server certificate and provide client certificate). */
-    AT_MQTT_SCHEME_COUNT,
+    OSM_AT_MQTT_SCHEME_BARE                                = 1,  /* MQTT over TCP. */
+    OSM_AT_MQTT_SCHEME_TLS_NO_CERT                         = 2,  /* MQTT over TLS (no certificate verify). */
+    OSM_AT_MQTT_SCHEME_TLS_VERIFY_SERVER                   = 3,  /* MQTT over TLS (verify server certificate). */
+    OSM_AT_MQTT_SCHEME_TLS_PROVIDE_CLIENT                  = 4,  /* MQTT over TLS (provide client certificate). */
+    OSM_AT_MQTT_SCHEME_TLS_VERIFY_SERVER_PROVIDE_CLIENT    = 5,  /* MQTT over TLS (verify server certificate and provide client certificate). */
+    OSM_AT_MQTT_SCHEME_WS                                  = 6,  /* MQTT over Websocket (TCP) */
+    OSM_AT_MQTT_SCHEME_WSS_NO_CERT                         = 7,  /* MQTT over Websocket Secure (TLS no certificate verify). */
+    OSM_AT_MQTT_SCHEME_WSS_VERIFY_SERVER                   = 8,  /* MQTT over Websocket Secure (TLS verify server certificate). */
+    OSM_AT_MQTT_SCHEME_WSS_PROVIDE_CLIENT                  = 9,  /* MQTT over Websocket Secure (TLS provide client certificate). */
+    OSM_AT_MQTT_SCHEME_WSS_VERIFY_SERVER_PROVIDE_CLIENT    = 10, /* MQTT over Websocket Secure (TLS verify server certificate and provide client certificate). */
+    OSM_AT_MQTT_SCHEME_COUNT,
 };
 
 
-enum at_mqtt_conn_states_t
+enum osm_at_mqtt_conn_states_t
 {
-    AT_MQTT_CONN_STATE_NOT_INIT             = 0,
-    AT_MQTT_CONN_STATE_SET_USR_CFG          = 1,
-    AT_MQTT_CONN_STATE_SET_CONN_CFG         = 2,
-    AT_MQTT_CONN_STATE_DISCONNECTED         = 3,
-    AT_MQTT_CONN_STATE_CONN_EST             = 4,
-    AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC    = 5,
-    AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC  = 6,
-    AT_MQTT_CONN_STATE_COUNT,
+    OSM_AT_MQTT_CONN_STATE_NOT_INIT             = 0,
+    OSM_AT_MQTT_CONN_STATE_SET_USR_CFG          = 1,
+    OSM_AT_MQTT_CONN_STATE_SET_CONN_CFG         = 2,
+    OSM_AT_MQTT_CONN_STATE_DISCONNECTED         = 3,
+    OSM_AT_MQTT_CONN_STATE_CONN_EST             = 4,
+    OSM_AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC    = 5,
+    OSM_AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC  = 6,
+    OSM_AT_MQTT_CONN_STATE_COUNT,
 };
 
 
@@ -112,7 +112,7 @@ at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn_cfg(void);
 bool                osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len);
 at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn(void);
 int                 osm_at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen);
-bool                osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum at_mqtt_conn_states_t* conn);
+bool                osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum osm_at_mqtt_conn_states_t* conn);
 struct cmd_link_t*  osm_at_mqtt_add_commands(struct cmd_link_t* tail);
 bool                osm_at_mqtt_get_id(char* str, uint8_t len);
 void                osm_at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx);

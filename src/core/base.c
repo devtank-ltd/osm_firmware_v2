@@ -48,8 +48,8 @@ bool osm_io_is_special(uint16_t io_state)
 bool osm_decompose_uart_str(char             * str,
                         uint32_t         * speed,
                         uint8_t          * databits,
-                        osm_uart_parity_t    * parity,
-                        osm_uart_stop_bits_t * stop)
+                        osm_osm_uart_parity_t    * parity,
+                        osm_osm_uart_stop_bits_t * stop)
 {
     if (!str || !speed || !databits || !parity || !stop)
         return false;
@@ -74,9 +74,9 @@ bool osm_decompose_uart_str(char             * str,
 
     switch(*pos)
     {
-        case 'N' : *parity = uart_parity_none; break;
-        case 'E' : *parity = uart_parity_even; break;
-        case 'O' : *parity = uart_parity_odd; break;
+        case 'N' : *parity = osm_uart_parity_none; break;
+        case 'E' : *parity = osm_uart_parity_even; break;
+        case 'O' : *parity = osm_uart_parity_odd; break;
         default:
         {
             osm_log_error("Unknown parity type");
@@ -96,12 +96,12 @@ bool osm_decompose_uart_str(char             * str,
                     osm_log_error("Unknown stop bits count.");
                     return false;
                 }
-                else *stop = uart_stop_bits_1_5;
+                else *stop = osm_uart_stop_bits_1_5;
             }
-            else *stop = uart_stop_bits_1;
+            else *stop = osm_uart_stop_bits_1;
             break;
         }
-        case '2' : *stop = uart_stop_bits_2; break;
+        case '2' : *stop = osm_uart_stop_bits_2; break;
         default:
         {
             osm_log_error("Unknown stop bits count.");

@@ -233,13 +233,13 @@ bool osm_protocol_append_measurement(measurements_def_t* def, measurements_data_
 
     switch(data->value_type)
     {
-        case MEASUREMENTS_VALUE_TYPE_I64:
+        case OSM_MEASUREMENTS_VALUE_TYPE_I64:
             r |= !_protocol_append_value_type_i64(data, single);
             break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
+        case OSM_MEASUREMENTS_VALUE_TYPE_STR:
             r |= !_protocol_append_value_type_str(data);
             break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+        case OSM_MEASUREMENTS_VALUE_TYPE_FLOAT:
             r |= !_protocol_append_value_type_float(data, single);
             break;
         default:

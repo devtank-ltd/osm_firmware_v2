@@ -54,10 +54,10 @@ void osm_can_drain_array(void)
 }
 
 
-static command_response_t _can_impl_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _can_impl_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_can_impl_send_example();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

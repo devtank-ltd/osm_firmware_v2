@@ -9,7 +9,7 @@
 #define comms_name          rak3172
 #endif //comms_name
 
-#define OSM_COMMS_BUILD_TYPE    COMMS_TYPE_LW
+#define OSM_COMMS_BUILD_TYPE    OSM_COMMS_TYPE_LW
 
 uint16_t osm_rak3172_get_mtu(void);
 
@@ -32,6 +32,6 @@ void     osm_rak3172_power_down(void);
 
 bool     osm_rak3172_persist_config_cmp(void* d0, void* d1);
 
-command_response_t osm_rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx);
-command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx);
-command_response_t osm_rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx);
+osm_command_response_t osm_rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx);
+osm_command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx);
+osm_command_response_t osm_rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx);

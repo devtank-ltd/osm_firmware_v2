@@ -65,8 +65,8 @@ static void _comms_direct_setup(void)
 {
     unsigned speed;
     uint8_t databits;
-    osm_uart_parity_t parity;
-    osm_uart_stop_bits_t stop_bits;
+    osm_osm_uart_parity_t parity;
+    osm_osm_uart_stop_bits_t stop_bits;
     uart_channel_t* cmd_uart = &_comms_direct_ctx.prev_cmd_uart;
     uart_channel_t* comms_uart = &_comms_direct_ctx.prev_comms_uart;
     if (osm_uart_get_setup(CMD_UART, &speed, &databits, &parity, &stop_bits))
@@ -95,10 +95,10 @@ static void _comms_direct_setup(void)
     osm_uart_enable(CMD_UART, false);
     osm_uart_enable(COMMS_UART, false);
 
-    osm_platform_gpio_setup(&_comms_direct_ctx.cmd_rx_ports_n_pins, true, IO_PUPD_NONE);
-    osm_platform_gpio_setup(&_comms_direct_ctx.cmd_tx_ports_n_pins, false, IO_PUPD_UP);
-    osm_platform_gpio_setup(&_comms_direct_ctx.comms_rx_ports_n_pins, true, IO_PUPD_NONE);
-    osm_platform_gpio_setup(&_comms_direct_ctx.comms_tx_ports_n_pins, false, IO_PUPD_UP);
+    osm_platform_gpio_setup(&_comms_direct_ctx.cmd_rx_ports_n_pins, true, OSM_IO_PUPD_NONE);
+    osm_platform_gpio_setup(&_comms_direct_ctx.cmd_tx_ports_n_pins, false, OSM_IO_PUPD_UP);
+    osm_platform_gpio_setup(&_comms_direct_ctx.comms_rx_ports_n_pins, true, OSM_IO_PUPD_NONE);
+    osm_platform_gpio_setup(&_comms_direct_ctx.comms_tx_ports_n_pins, false, OSM_IO_PUPD_UP);
 }
 
 
@@ -183,15 +183,15 @@ static void _comms_direct_enter(void)
 }
 
 
-static command_response_t _comms_direct_enter_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _comms_direct_enter_cb(char* args, cmd_ctx_t * ctx)
 {
     if (ctx != &uart_cmd_ctx)
     {
         osm_cmd_ctx_error(ctx, "Only works on Command UART.");
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
     }
     _comms_direct_ctx.begin = true;
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

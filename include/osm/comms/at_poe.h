@@ -11,7 +11,7 @@
 #define comms_name          at_poe
 #endif //comms_name
 
-#define OSM_COMMS_BUILD_TYPE    COMMS_TYPE_POE
+#define OSM_COMMS_BUILD_TYPE    OSM_COMMS_TYPE_POE
 
 typedef struct
 {
@@ -49,8 +49,8 @@ void     osm_at_poe_power_down(void);
 bool     osm_at_poe_persist_config_cmp(void* d0, void* d1);
 void     osm_at_poe_config_init(comms_config_t* comms_config);
 
-command_response_t osm_at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx);
-command_response_t osm_at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
-command_response_t osm_at_poe_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
+osm_command_response_t osm_at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx);
+osm_command_response_t osm_at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
+osm_command_response_t osm_at_poe_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
 
 bool osm_at_poe_get_unix_time(int64_t * ts);

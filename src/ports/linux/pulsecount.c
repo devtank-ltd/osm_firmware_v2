@@ -11,7 +11,7 @@ void osm_pulsecount_init(void)
 }
 
 
-void osm_pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge)
+void osm_pulsecount_enable(unsigned io, bool enable, osm_io_pupd_t pupd, osm_io_special_t edge)
 {
     if (enable)
         osm_pulsecount_init();
@@ -23,26 +23,26 @@ void pulsecount_log()
 }
 
 
-static measurements_sensor_state_t _pulsecount_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _pulsecount_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = PULSECOUNT_COLLECTION_TIME_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _pulsecount_begin(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _pulsecount_begin(char* name, bool in_isolation)
 {
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _pulsecount_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _pulsecount_get(char* name, measurements_reading_t* value)
 {
-    return MEASUREMENTS_SENSOR_STATE_ERROR;
+    return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
@@ -51,9 +51,9 @@ static void _pulsecount_ack(char* name)
 }
 
 
-static measurements_value_type_t _pulsecount_value_type(char* name)
+static osm_measurements_value_type_t _pulsecount_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return OSM_MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 

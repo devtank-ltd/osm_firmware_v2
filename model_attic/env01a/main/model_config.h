@@ -28,9 +28,9 @@
 #define EXT_UART    1
 
 #define MODBUS_SPEED        9600
-#define MODBUS_PARITY       uart_parity_none
+#define MODBUS_PARITY       osm_uart_parity_none
 #define MODBUS_DATABITS     8
-#define MODBUS_STOP         uart_stop_bits_1
+#define MODBUS_STOP         osm_uart_stop_bits_1
 
 #define ADC_MAX_MV          3300
 

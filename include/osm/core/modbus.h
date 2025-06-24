@@ -10,7 +10,7 @@ bool osm_modbus_requires_echo_removal(void) __attribute__((weak));
 
 uint16_t osm_modbus_crc(uint8_t * buf, unsigned length);
 
-bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, float value);
+bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, osm_modbus_reg_type_t type, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order, float value);
 
 bool osm_modbus_start_read(modbus_reg_t * reg);
 

@@ -5,7 +5,7 @@
 #include <osm/core/base_types.h>
 
 
-comms_type_t osm_comms_identify(void);
+osm_comms_type_t osm_comms_identify(void);
 bool osm_comms_set_identity(void);
 
 /* To be implemented by caller.*/

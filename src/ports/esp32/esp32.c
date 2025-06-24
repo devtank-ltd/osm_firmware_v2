@@ -158,7 +158,7 @@ void osm_platform_setup_adc(adc_setup_config_t* config)
 }
 
 
-void osm_platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
+void osm_platform_adc_set_regular_sequence(uint8_t num_adcs_types, osm_adcs_type_t* adcs_types)
 {
 }
 

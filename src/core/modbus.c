@@ -88,23 +88,23 @@ static struct
 bool osm_modbus_requires_echo_removal() { return false; }
 
 
-static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
+static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop)
 {
     databits *= 10; /* *10 to support half bit. */
     databits += 10; /* One start bit */
 
     switch(stop)
     {
-        case uart_stop_bits_1   : databits += 10; break;
-        case uart_stop_bits_1_5 : databits += 5;  break;
-        case uart_stop_bits_2   : databits += 20; break;
+        case osm_uart_stop_bits_1   : databits += 10; break;
+        case osm_uart_stop_bits_1_5 : databits += 5;  break;
+        case osm_uart_stop_bits_2   : databits += 20; break;
         default:
             osm_modbus_debug("Stop bits unknown...assuming 1.");
             databits += 10;
             break;
     }
 
-    if (parity != uart_parity_none)
+    if (parity != osm_uart_parity_none)
         databits += 10;
 
     unsigned bits = deci_char * databits;
@@ -113,7 +113,7 @@ static uint32_t _modbus_get_deci_char_time(unsigned deci_char, unsigned speed, u
 }
 
 
-static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop)
+static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop)
 {
     if (modbus_bus->binary_protocol)
     {
@@ -168,8 +168,8 @@ bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
 
     unsigned speed;
     uint8_t databits;
-    osm_uart_parity_t parity;
-    osm_uart_stop_bits_t stop;
+    osm_osm_uart_parity_t parity;
+    osm_osm_uart_stop_bits_t stop;
 
     osm_uart_get_setup(EXT_UART, &speed, &databits, &parity, &stop);
 
@@ -220,11 +220,11 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
 
     switch (reg->type)
     {
-        case MODBUS_REG_TYPE_U16    : reg_count = 1; break;
-        case MODBUS_REG_TYPE_I16    : reg_count = 1; break;
-        case MODBUS_REG_TYPE_U32    : reg_count = 2; break;
-        case MODBUS_REG_TYPE_I32    : reg_count = 2; break;
-        case MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
+        case OSM_MODBUS_REG_TYPE_U16    : reg_count = 1; break;
+        case OSM_MODBUS_REG_TYPE_I16    : reg_count = 1; break;
+        case OSM_MODBUS_REG_TYPE_U32    : reg_count = 2; break;
+        case OSM_MODBUS_REG_TYPE_I32    : reg_count = 2; break;
+        case OSM_MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
         default: break;
     }
 
@@ -282,11 +282,11 @@ static void _modbus_do_start_read(modbus_reg_t * reg)
         if (osm_modbus_requires_echo_removal())
             _echo_bytes = 8;
     }
-    reg->value_state = MB_REG_WAITING;
+    reg->value_state = OSM_MB_REG_WAITING;
 }
 
 
-static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_byte_orders_t byte_order)
+static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, osm_modbus_byte_orders_t byte_order)
 {
     if (len <= 2)
     {
@@ -294,12 +294,12 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
         return false;
     }
     /* TODO: Figure out which order is which */
-    if (byte_order == MODBUS_BYTE_ORDER_MSB)
+    if (byte_order == OSM_MODBUS_BYTE_ORDER_MSB)
     {
         arr[0] = v >> 8;
         arr[1] = v & 0xFF;
     }
-    else if (byte_order == MODBUS_BYTE_ORDER_LSB)
+    else if (byte_order == OSM_MODBUS_BYTE_ORDER_LSB)
         memcpy(arr, &v, 2);
     else
     {
@@ -320,21 +320,21 @@ static bool _modbus_append_u16(uint8_t* arr, unsigned len, uint16_t v, modbus_by
  */
 
 
-static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (len <= 4)
     {
         osm_modbus_debug("Ran out of space in array for appending u32.");
         return false;
     }
-    if (word_order == MODBUS_WORD_ORDER_MSW)
+    if (word_order == OSM_MODBUS_WORD_ORDER_MSW)
     {
         if (!_modbus_append_u16(&arr[0], len, v >> 16, byte_order))
             return false;
         if (!_modbus_append_u16(&arr[2], len - 2, v & 0xFFFF, byte_order))
             return false;
     }
-    else if (word_order == MODBUS_WORD_ORDER_LSW)
+    else if (word_order == OSM_MODBUS_WORD_ORDER_LSW)
     {
         if (!_modbus_append_u16(&arr[0], len, v & 0xFFFF, byte_order))
             return false;
@@ -350,30 +350,30 @@ static bool _modbus_append_u32(uint8_t* arr, unsigned len, uint32_t v, modbus_by
 }
 
 
-static bool _modbus_append_value(uint8_t* arr, unsigned len, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, uint32_t* value, unsigned* body_size)
+static bool _modbus_append_value(uint8_t* arr, unsigned len, osm_modbus_reg_type_t type, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order, uint32_t* value, unsigned* body_size)
 {
     switch (type)
     {
-        case MODBUS_REG_TYPE_U16:
+        case OSM_MODBUS_REG_TYPE_U16:
         {
             *body_size = *body_size + 2;
             return _modbus_append_u16(arr, len, *value, byte_order);
         }
-        case MODBUS_REG_TYPE_I16:
+        case OSM_MODBUS_REG_TYPE_I16:
         {
             *body_size = *body_size + 2;
             int16_t vi16 = *value;
             uint16_t vu16 = *((uint16_t*)&vi16);
             return _modbus_append_u16(arr, len, vu16, byte_order);
         }
-        case MODBUS_REG_TYPE_U32:
+        case OSM_MODBUS_REG_TYPE_U32:
         {
             *body_size = *body_size + 4;
             return _modbus_append_u32(arr, len, *value, byte_order, word_order);
         }
-        case MODBUS_REG_TYPE_FLOAT:
+        case OSM_MODBUS_REG_TYPE_FLOAT:
         /* Fall through */
-        case MODBUS_REG_TYPE_I32:
+        case OSM_MODBUS_REG_TYPE_I32:
         {
             *body_size = *body_size + 4;
             int32_t vi32 = *value;
@@ -387,17 +387,17 @@ static bool _modbus_append_value(uint8_t* arr, unsigned len, modbus_reg_type_t t
 }
 
 
-bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, float value)
+bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, osm_modbus_reg_type_t type, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order, float value)
 {
     unsigned reg_count = 1;
 
     switch (type)
     {
-        case MODBUS_REG_TYPE_U16    : reg_count = 1; break;
-        case MODBUS_REG_TYPE_I16    : reg_count = 1; break;
-        case MODBUS_REG_TYPE_U32    : reg_count = 2; break;
-        case MODBUS_REG_TYPE_I32    : reg_count = 2; break;
-        case MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
+        case OSM_MODBUS_REG_TYPE_U16    : reg_count = 1; break;
+        case OSM_MODBUS_REG_TYPE_I16    : reg_count = 1; break;
+        case OSM_MODBUS_REG_TYPE_U32    : reg_count = 2; break;
+        case OSM_MODBUS_REG_TYPE_I32    : reg_count = 2; break;
+        case OSM_MODBUS_REG_TYPE_FLOAT  : reg_count = 2; break;
         default:
             osm_modbus_debug("Unknown type.");
             return false;
@@ -433,18 +433,18 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbu
     /* If larger sizes than type u32 and i32 are required, this will
      * need to be changed. Mainly do this so floats can be set */
     uint32_t value32;
-    if (type == MODBUS_REG_TYPE_I16 ||
-        type == MODBUS_REG_TYPE_I32 )
+    if (type == OSM_MODBUS_REG_TYPE_I16 ||
+        type == OSM_MODBUS_REG_TYPE_I32 )
     {
         int32_t valuei32 = value;
         value32 = *((uint32_t*)&valuei32);
     }
-    else if (type == MODBUS_REG_TYPE_U16 ||
-             type == MODBUS_REG_TYPE_U32 )
+    else if (type == OSM_MODBUS_REG_TYPE_U16 ||
+             type == OSM_MODBUS_REG_TYPE_U32 )
     {
         value32 = value;
     }
-    else if (type == MODBUS_REG_TYPE_FLOAT)
+    else if (type == OSM_MODBUS_REG_TYPE_FLOAT)
     {
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wstrict-aliasing"
@@ -507,11 +507,11 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
 
     if (!dev ||
         !(reg->func == OSM_MODBUS_READ_HOLDING_FUNC || reg->func == OSM_MODBUS_READ_INPUT_FUNC) ||
-        !(reg->type == MODBUS_REG_TYPE_U16  ||
-          reg->type == MODBUS_REG_TYPE_I16  ||
-          reg->type == MODBUS_REG_TYPE_U32  ||
-          reg->type == MODBUS_REG_TYPE_I32  ||
-          reg->type == MODBUS_REG_TYPE_FLOAT))
+        !(reg->type == OSM_MODBUS_REG_TYPE_U16  ||
+          reg->type == OSM_MODBUS_REG_TYPE_I16  ||
+          reg->type == OSM_MODBUS_REG_TYPE_U32  ||
+          reg->type == OSM_MODBUS_REG_TYPE_I32  ||
+          reg->type == OSM_MODBUS_REG_TYPE_FLOAT))
     {
         osm_log_error("Modbus register \"%."STR(OSM_MODBUS_NAME_LEN)"s\" unable to start read.", reg->name);
         return false;
@@ -545,7 +545,7 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
         return false;
     }
 
-    reg->value_state = MB_REG_WAITING;
+    reg->value_state = OSM_MB_REG_WAITING;
 
     if (modbus_want_rx)
     {
@@ -606,7 +606,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     return true;
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order);
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order);
 
 void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
 {
@@ -851,10 +851,10 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         return;
     }
 
-    if (current_reg->value_state != MB_REG_WAITING)
+    if (current_reg->value_state != OSM_MB_REG_WAITING)
         osm_modbus_debug("Reg :%."STR(OSM_MODBUS_NAME_LEN)"s not waiting!", current_reg->name);
 
-    current_reg->value_state = MB_REG_INVALID;
+    current_reg->value_state = OSM_MB_REG_INVALID;
 
     modbus_read_last_good = osm_get_since_boot_ms();
 
@@ -879,7 +879,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
 }
 
 
-static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order)
+static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t size, osm_modbus_byte_orders_t byte_order)
 {
     if (!value)
     {
@@ -893,10 +893,10 @@ static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t si
     }
     switch (byte_order)
     {
-        case MODBUS_BYTE_ORDER_MSB:
+        case OSM_MODBUS_BYTE_ORDER_MSB:
             *value = ((data[0] << 8) | data[1]);
             return true;
-        case MODBUS_BYTE_ORDER_LSB:
+        case OSM_MODBUS_BYTE_ORDER_LSB:
             *value = ((data[1] << 8) | data[0]);
             return true;
         default:
@@ -906,7 +906,7 @@ static bool _modbus_data_to_u16(uint16_t* value, const uint8_t* data, uint8_t si
 }
 
 
-static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (!value)
     {
@@ -925,10 +925,10 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
         return false;
     switch (word_order)
     {
-        case MODBUS_WORD_ORDER_MSW:
+        case OSM_MODBUS_WORD_ORDER_MSW:
             *value = (word_1 << 16) | word_2;
             return true;
-        case MODBUS_WORD_ORDER_LSW:
+        case OSM_MODBUS_WORD_ORDER_LSW:
             *value = (word_2 << 16) | word_1;
             return true;
         default:
@@ -941,10 +941,10 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, mo
 static void _modbus_reg_set(modbus_reg_t * reg, uint32_t v)
 {
     reg->value_data = v;
-    reg->value_state = MB_REG_READY;
+    reg->value_state = OSM_MB_REG_READY;
 }
 
-static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)
+static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order)
 {
     if (size != 2)
         return;
@@ -955,7 +955,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
-static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order)
+static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order)
 {
     if (size != 2)
         return;
@@ -966,7 +966,7 @@ static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
 }
 
-static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
@@ -977,7 +977,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
-static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
@@ -988,7 +988,7 @@ static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
 }
 
-static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
@@ -1002,15 +1002,15 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
     _modbus_reg_set(reg, v);
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order)
+static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     switch(reg->type)
     {
-        case MODBUS_REG_TYPE_U16:    _modbus_reg_u16_cb(reg, data, size, byte_order); break;
-        case MODBUS_REG_TYPE_I16:    _modbus_reg_i16_cb(reg, data, size, byte_order); break;
-        case MODBUS_REG_TYPE_U32:    _modbus_reg_u32_cb(reg, data, size, byte_order, word_order); break;
-        case MODBUS_REG_TYPE_I32:    _modbus_reg_i32_cb(reg, data, size, byte_order, word_order); break;
-        case MODBUS_REG_TYPE_FLOAT:  _modbus_reg_float_cb(reg, data, size, byte_order, word_order); break;
+        case OSM_MODBUS_REG_TYPE_U16:    _modbus_reg_u16_cb(reg, data, size, byte_order); break;
+        case OSM_MODBUS_REG_TYPE_I16:    _modbus_reg_i16_cb(reg, data, size, byte_order); break;
+        case OSM_MODBUS_REG_TYPE_U32:    _modbus_reg_u32_cb(reg, data, size, byte_order, word_order); break;
+        case OSM_MODBUS_REG_TYPE_I32:    _modbus_reg_i32_cb(reg, data, size, byte_order, word_order); break;
+        case OSM_MODBUS_REG_TYPE_FLOAT:  _modbus_reg_float_cb(reg, data, size, byte_order, word_order); break;
         default: osm_log_error("Unknown modbus reg type."); break;
     }
 }
@@ -1084,19 +1084,19 @@ void osm_modbus_init(void)
 }
 
 
-static command_response_t _modbus_setup_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_setup_cb(char *args, cmd_ctx_t * ctx)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
      */
-    return modbus_setup_from_str(args, ctx) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return modbus_setup_from_str(args, ctx) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _modbus_log_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_log_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_modbus_print(ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

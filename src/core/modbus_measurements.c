@@ -11,129 +11,129 @@
 #define MODBUS_COLLECTION_MS 4000
 
 
-static measurements_sensor_state_t _modbus_measurements_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _modbus_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = MODBUS_COLLECTION_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
-static measurements_sensor_state_t _modbus_measurements_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _modbus_measurements_init(char* name, bool in_isolation)
 {
     if (in_isolation)
     {
         if (osm_modbus_has_pending())
         {
             osm_modbus_debug("Unable to get modbus reg in isolation as bus is busy.");
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         }
     }
 
     modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
-    return (osm_modbus_start_read(reg) ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
+    return (osm_modbus_start_read(reg) ? OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS : OSM_MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
-static measurements_sensor_state_t _modbus_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _modbus_measurements_get(char* name, measurements_reading_t* value)
 {
     if (!value)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
-    modbus_reg_state_t state = osm_modbus_reg_get_state(reg);
+    osm_modbus_reg_state_t state = osm_modbus_reg_get_state(reg);
 
-    if (state == MB_REG_WAITING)
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+    if (state == OSM_MB_REG_WAITING)
+        return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
 
-    if (state != MB_REG_READY)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+    if (state != OSM_MB_REG_READY)
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
     switch(osm_modbus_reg_get_type(reg))
     {
-        case MODBUS_REG_TYPE_U16:
+        case OSM_MODBUS_REG_TYPE_U16:
         {
             uint16_t v;
 
             if (!osm_modbus_reg_get_u16(reg, &v))
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
-        case MODBUS_REG_TYPE_I16:
+        case OSM_MODBUS_REG_TYPE_I16:
         {
             int16_t v;
 
             if (!osm_modbus_reg_get_i16(reg, &v))
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
-        case MODBUS_REG_TYPE_U32:
+        case OSM_MODBUS_REG_TYPE_U32:
         {
             uint32_t v;
 
             if (!osm_modbus_reg_get_u32(reg, &v))
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
-        case MODBUS_REG_TYPE_I32:
+        case OSM_MODBUS_REG_TYPE_I32:
         {
             int32_t v;
 
             if (!osm_modbus_reg_get_i32(reg, &v))
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_i64 = (int64_t)v;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
-        case MODBUS_REG_TYPE_FLOAT:
+        case OSM_MODBUS_REG_TYPE_FLOAT:
         {
             float v;
 
             if (!osm_modbus_reg_get_float(reg, &v))
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
             value->v_f32 = osm_to_f32_from_float(v);
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
         default: break;
     }
-   return MEASUREMENTS_SENSOR_STATE_ERROR;
+   return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-static measurements_value_type_t _modbus_measurements_value_type(char* name)
+static osm_measurements_value_type_t _modbus_measurements_value_type(char* name)
 {
     modbus_reg_t* reg = osm_modbus_get_reg(name);
-    modbus_reg_type_t reg_type = osm_modbus_reg_get_type(reg);
+    osm_modbus_reg_type_t reg_type = osm_modbus_reg_get_type(reg);
     switch(reg_type)
     {
-        case MODBUS_REG_TYPE_FLOAT:
-            return MEASUREMENTS_VALUE_TYPE_FLOAT;
-        case MODBUS_REG_TYPE_U16:
-            return MEASUREMENTS_VALUE_TYPE_I64;
-        case MODBUS_REG_TYPE_I16:
-            return MEASUREMENTS_VALUE_TYPE_I64;
-        case MODBUS_REG_TYPE_U32:
-            return MEASUREMENTS_VALUE_TYPE_I64;
-        case MODBUS_REG_TYPE_I32:
-            return MEASUREMENTS_VALUE_TYPE_I64;
+        case OSM_MODBUS_REG_TYPE_FLOAT:
+            return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
+        case OSM_MODBUS_REG_TYPE_U16:
+            return OSM_MEASUREMENTS_VALUE_TYPE_I64;
+        case OSM_MODBUS_REG_TYPE_I16:
+            return OSM_MEASUREMENTS_VALUE_TYPE_I64;
+        case OSM_MODBUS_REG_TYPE_U32:
+            return OSM_MEASUREMENTS_VALUE_TYPE_I64;
+        case OSM_MODBUS_REG_TYPE_I32:
+            return OSM_MEASUREMENTS_VALUE_TYPE_I64;
         default:
             osm_modbus_debug("Unknown modbus register type.");
             break;
     }
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return OSM_MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 
@@ -160,7 +160,7 @@ bool osm_modbus_measurement_add(modbus_reg_t * reg)
     meas_def.name[OSM_MODBUS_NAME_LEN] = 0;
     meas_def.samplecount = 1;
     meas_def.interval    = 1;
-    meas_def.type        = MODBUS;
+    meas_def.type        = OSM_MODBUS;
     meas_def.is_immediate = 0;
 
     return osm_measurements_add(&meas_def);

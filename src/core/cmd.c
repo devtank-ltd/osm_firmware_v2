@@ -21,21 +21,21 @@
 static struct cmd_link_t* _cmds;
 
 
-static command_response_t _cmd_count_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_count_cb(char * args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"IOs     : %u", osm_ios_get_count());
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _cmd_version_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_version_cb(char * args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"Version : %s-%s", osm_persist_get_model(), GIT_VERSION);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _cmd_debug_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_debug_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = osm_skip_space(args);
 
@@ -54,18 +54,18 @@ static command_response_t _cmd_debug_cb(char * args, cmd_ctx_t * ctx)
         osm_persist_set_log_debug_mask(mask);
         osm_cmd_ctx_out(ctx,"Setting debug mask to 0x%x", mask);
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _cmd_timer_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_timer_cb(char* args, cmd_ctx_t * ctx)
 {
     char* pos = osm_skip_space(args);
     uint32_t delay_ms = strtoul(pos, NULL, 10);
     uint32_t start_time = osm_get_since_boot_ms();
     osm_timer_delay_us_64(delay_ms * 1000);
     osm_cmd_ctx_out(ctx,"Time elapsed: %"PRIu32, osm_since_boot_delta(osm_get_since_boot_ms(), start_time));
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
@@ -88,43 +88,43 @@ print_exit:
 }
 
 
-static command_response_t _cmd_serial_num_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_serial_num_cb(char* args, cmd_ctx_t * ctx)
 {
     return _cmd_get_set_str("Serial Number", osm_persist_get_serial_number(), OSM_SERIAL_NUM_LEN, osm_skip_space(args), ctx) ?
-        COMMAND_RESP_OK : COMMAND_RESP_ERR;
+        OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _cmd_human_name_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_human_name_cb(char* args, cmd_ctx_t * ctx)
 {
     return _cmd_get_set_str("Name", osm_persist_get_human_name(), OSM_HUMAN_NAME_LEN, osm_skip_space(args), ctx) ?
-        COMMAND_RESP_OK : COMMAND_RESP_ERR;
+        OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _cmd_hw_id_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cmd_hw_id_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"hw_id: 0x%"PRIX32, osm_platform_get_hw_id());
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ctx)
+osm_command_response_t osm_cmds_process(char * command, unsigned len, cmd_ctx_t * ctx)
 {
     if (!_cmds)
     {
         osm_cmd_ctx_out(ctx,"Commands not filled.");
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
     }
 
     if (!len)
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
 
     osm_log_sys_debug("Command \"%s\"", command);
 
     bool found = false;
     osm_cmd_ctx_out(ctx,OSM_LOG_START_SPACER);
-    command_response_t resp = COMMAND_RESP_ERR;
+    osm_command_response_t resp = OSM_COMMAND_RESP_ERR;
     char * args;
     for(struct cmd_link_t * cmd = _cmds; cmd; cmd = cmd->next)
     {

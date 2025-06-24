@@ -175,8 +175,8 @@ void osm_platform_init(void)
     _stm_setup_systick();
     _stm_setup_rs485();
 
-    comms_type_t type = osm_comms_identify();
-    if (type == COMMS_TYPE_UNKNOWN && osm_comms_set_identity())
+    osm_comms_type_t type = osm_comms_identify();
+    if (type == OSM_COMMS_TYPE_UNKNOWN && osm_comms_set_identity())
     {
         osm_log_sys_debug("Failed write COMMS identity");
     }
@@ -339,7 +339,7 @@ void osm_platform_setup_adc(adc_setup_config_t* config)
 }
 
 
-void osm_platform_adc_set_regular_sequence(uint8_t num_adcs_types, adcs_type_t* adcs_types)
+void osm_platform_adc_set_regular_sequence(uint8_t num_adcs_types, osm_adcs_type_t* adcs_types)
 {
     uint8_t channels[ADC_COUNT];
     for (uint8_t i = 0; i < num_adcs_types; i++)

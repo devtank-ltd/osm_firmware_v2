@@ -55,4 +55,4 @@ void        osm_at_base_config_get_set_str(const char* name, char* dest, unsigne
 bool        osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx);
 void        osm_at_base_boot(char* args, cmd_ctx_t * ctx);
 void        osm_at_base_reset(char* args, cmd_ctx_t * ctx);
-command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);
+osm_command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);

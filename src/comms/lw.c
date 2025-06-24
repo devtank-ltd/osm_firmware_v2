@@ -21,7 +21,7 @@
 lw_config_t* osm_lw_get_config(void)
 {
     comms_config_t* comms_config = &persist_data.model_config.comms_config;
-    if (comms_config->type != COMMS_TYPE_LW)
+    if (comms_config->type != OSM_COMMS_TYPE_LW)
     {
         osm_comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
         return NULL;
@@ -64,49 +64,49 @@ bool osm_lw_persist_data_is_valid(void)
             return false;
         }
     }
-    return config->region <= LW_REGION_MAX;
+    return config->region <= OSM_LW_REGION_MAX;
 }
 
 
-static const char* _lw_region_name(lw_region_t region)
+static const char* _lw_region_name(osm_lw_region_t region)
 {
     const char* name;
     switch (region)
     {
-        case LW_REGION_EU433:
+        case OSM_LW_REGION_EU433:
             name = OSM_LW_REGION_NAME_EU433;
             break;
-        case LW_REGION_CN470:
+        case OSM_LW_REGION_CN470:
             name = OSM_LW_REGION_NAME_CN470;
             break;
-        case LW_REGION_RU864:
+        case OSM_LW_REGION_RU864:
             name = OSM_LW_REGION_NAME_RU864;
             break;
-        case LW_REGION_IN865:
+        case OSM_LW_REGION_IN865:
             name = OSM_LW_REGION_NAME_IN865;
             break;
-        case LW_REGION_EU868:
+        case OSM_LW_REGION_EU868:
             name = OSM_LW_REGION_NAME_EU868;
             break;
-        case LW_REGION_US915:
+        case OSM_LW_REGION_US915:
             name = OSM_LW_REGION_NAME_US915;
             break;
-        case LW_REGION_AU915:
+        case OSM_LW_REGION_AU915:
             name = OSM_LW_REGION_NAME_AU915;
             break;
-        case LW_REGION_KR920:
+        case OSM_LW_REGION_KR920:
             name = OSM_LW_REGION_NAME_KR920;
             break;
-        case LW_REGION_AS923_1:
+        case OSM_LW_REGION_AS923_1:
             name = OSM_LW_REGION_NAME_AS923_1;
             break;
-        case LW_REGION_AS923_2:
+        case OSM_LW_REGION_AS923_2:
             name = OSM_LW_REGION_NAME_AS923_2;
             break;
-        case LW_REGION_AS923_3:
+        case OSM_LW_REGION_AS923_3:
             name = OSM_LW_REGION_NAME_AS923_3;
             break;
-        case LW_REGION_AS923_4:
+        case OSM_LW_REGION_AS923_4:
             name = OSM_LW_REGION_NAME_AS923_4;
             break;
         default:
@@ -117,7 +117,7 @@ static const char* _lw_region_name(lw_region_t region)
 }
 
 
-static bool _lw_region(char* name, unsigned len, lw_region_t* region)
+static bool _lw_region(char* name, unsigned len, osm_lw_region_t* region)
 {
     bool ret = true;
     if (len <= OSM_LW_REGION_LEN)
@@ -125,62 +125,62 @@ static bool _lw_region(char* name, unsigned len, lw_region_t* region)
         if (strlen(OSM_LW_REGION_NAME_EU433) == len &&
             strncmp(OSM_LW_REGION_NAME_EU433, name, len) == 0)
         {
-            *region = LW_REGION_EU433;
+            *region = OSM_LW_REGION_EU433;
         }
         else if (strlen(OSM_LW_REGION_NAME_CN470) == len &&
             strncmp(OSM_LW_REGION_NAME_CN470, name, len) == 0)
         {
-            *region = LW_REGION_CN470;
+            *region = OSM_LW_REGION_CN470;
         }
         else if (strlen(OSM_LW_REGION_NAME_RU864) == len &&
             strncmp(OSM_LW_REGION_NAME_RU864, name, len) == 0)
         {
-            *region = LW_REGION_RU864;
+            *region = OSM_LW_REGION_RU864;
         }
         else if (strlen(OSM_LW_REGION_NAME_IN865) == len &&
             strncmp(OSM_LW_REGION_NAME_IN865, name, len) == 0)
         {
-            *region = LW_REGION_IN865;
+            *region = OSM_LW_REGION_IN865;
         }
         else if (strlen(OSM_LW_REGION_NAME_EU868) == len &&
             strncmp(OSM_LW_REGION_NAME_EU868, name, len) == 0)
         {
-            *region = LW_REGION_EU868;
+            *region = OSM_LW_REGION_EU868;
         }
         else if (strlen(OSM_LW_REGION_NAME_US915) == len &&
             strncmp(OSM_LW_REGION_NAME_US915, name, len) == 0)
         {
-            *region = LW_REGION_US915;
+            *region = OSM_LW_REGION_US915;
         }
         else if (strlen(OSM_LW_REGION_NAME_AU915) == len &&
             strncmp(OSM_LW_REGION_NAME_AU915, name, len) == 0)
         {
-            *region = LW_REGION_AU915;
+            *region = OSM_LW_REGION_AU915;
         }
         else if (strlen(OSM_LW_REGION_NAME_KR920) == len &&
             strncmp(OSM_LW_REGION_NAME_KR920, name, len) == 0)
         {
-            *region = LW_REGION_KR920;
+            *region = OSM_LW_REGION_KR920;
         }
         else if (strlen(OSM_LW_REGION_NAME_AS923_1) == len &&
             strncmp(OSM_LW_REGION_NAME_AS923_1, name, len) == 0)
         {
-            *region = LW_REGION_AS923_1;
+            *region = OSM_LW_REGION_AS923_1;
         }
         else if (strlen(OSM_LW_REGION_NAME_AS923_2) == len &&
             strncmp(OSM_LW_REGION_NAME_AS923_2, name, len) == 0)
         {
-            *region = LW_REGION_AS923_2;
+            *region = OSM_LW_REGION_AS923_2;
         }
         else if (strlen(OSM_LW_REGION_NAME_AS923_3) == len &&
             strncmp(OSM_LW_REGION_NAME_AS923_3, name, len) == 0)
         {
-            *region = LW_REGION_AS923_3;
+            *region = OSM_LW_REGION_AS923_3;
         }
         else if (strlen(OSM_LW_REGION_NAME_AS923_4) == len &&
             strncmp(OSM_LW_REGION_NAME_AS923_4, name, len) == 0)
         {
-            *region = LW_REGION_AS923_4;
+            *region = OSM_LW_REGION_AS923_4;
         }
         else
         {
@@ -286,7 +286,7 @@ bool osm_lw_config_setup_str(char * str, cmd_ctx_t * ctx)
             return false;
         }
         /* Set Region */
-        lw_region_t region;
+        osm_lw_region_t region;
         if (!_lw_region(p, lenrem, &region))
         {
             osm_cmd_ctx_error(ctx,"Failed to find a region matching name %*.s", OSM_LW_REGION_LEN, p);
@@ -327,7 +327,7 @@ bool osm_lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1)
 
 static void _lw_config_init2(lw_config_t* lw_config)
 {
-    lw_config->region = LW_REGION_EU868;
+    lw_config->region = OSM_LW_REGION_EU868;
     lw_config->version = OSM_LW_CONFIG_VERSION;
     memset(lw_config->dev_eui, 0, OSM_LW_DEV_EUI_LEN);
     memset(lw_config->app_key, 0, OSM_LW_APP_KEY_LEN);
@@ -336,7 +336,7 @@ static void _lw_config_init2(lw_config_t* lw_config)
 
 void osm_lw_config_init(comms_config_t* comms_config)
 {
-    comms_config->type = COMMS_TYPE_LW;
+    comms_config->type = OSM_COMMS_TYPE_LW;
     _lw_config_init2((lw_config_t*)comms_config);
 }
 

@@ -36,20 +36,20 @@
 
 typedef enum
 {
-    LW_REGION_EU433    = 0 ,
-    LW_REGION_CN470    = 1 ,
-    LW_REGION_RU864    = 2 ,
-    LW_REGION_IN865    = 3 ,
-    LW_REGION_EU868    = 4 ,
-    LW_REGION_US915    = 5 ,
-    LW_REGION_AU915    = 6 ,
-    LW_REGION_KR920    = 7 ,
-    LW_REGION_AS923_1  = 8 ,
-    LW_REGION_AS923_2  = 9 ,
-    LW_REGION_AS923_3  = 10,
-    LW_REGION_AS923_4  = 11,
-    LW_REGION_MAX      = LW_REGION_AS923_4,
-} lw_region_t;
+    OSM_LW_REGION_EU433    = 0 ,
+    OSM_LW_REGION_CN470    = 1 ,
+    OSM_LW_REGION_RU864    = 2 ,
+    OSM_LW_REGION_IN865    = 3 ,
+    OSM_LW_REGION_EU868    = 4 ,
+    OSM_LW_REGION_US915    = 5 ,
+    OSM_LW_REGION_AU915    = 6 ,
+    OSM_LW_REGION_KR920    = 7 ,
+    OSM_LW_REGION_AS923_1  = 8 ,
+    OSM_LW_REGION_AS923_2  = 9 ,
+    OSM_LW_REGION_AS923_3  = 10,
+    OSM_LW_REGION_AS923_4  = 11,
+    OSM_LW_REGION_MAX      = OSM_LW_REGION_AS923_4,
+} osm_lw_region_t;
 
 
 typedef struct
@@ -58,7 +58,7 @@ typedef struct
     uint8_t _[15];
     char    dev_eui[OSM_LW_DEV_EUI_LEN];
     char    app_key[OSM_LW_APP_KEY_LEN];
-    uint8_t region; /* lw_region_t */
+    uint8_t region; /* osm_lw_region_t */
     uint8_t version;
 } __attribute__((__packed__)) lw_config_t;
 

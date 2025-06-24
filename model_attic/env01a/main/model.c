@@ -43,9 +43,9 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
     memset(inf, 0, sizeof(measurements_inf_t));
     switch(def->type)
     {
-        case FW_VERSION:      osm_fw_version_inf_init(inf);  break;
-        case MODBUS:          osm_modbus_inf_init(inf);      break;
-        case CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
+        case OSM_FW_VERSION:      osm_fw_version_inf_init(inf);  break;
+        case OSM_MODBUS:          osm_modbus_inf_init(inf);      break;
+        case OSM_CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
         default:
             osm_log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -67,8 +67,8 @@ bool osm_model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 
 void osm_model_measurements_repopulate(void)
 {
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
 }
 
 
@@ -82,7 +82,7 @@ void osm_model_cmds_add_all(struct cmd_link_t* tail)
 }
 
 
-bool osm_model_can_io_be_special(unsigned io, io_special_t special)
+bool osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 {
     return false;
 }
@@ -96,8 +96,8 @@ unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_a
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
     return pos;
 }
 
@@ -116,18 +116,18 @@ void osm_can_impl_send_example(void) {}
 
 bool osm_bat_on_battery(void) { return false; }
 
-bool osm_io_watch_enable(unsigned io, bool enabled, io_pupd_t pupd)
+bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd)
 {
     return false;
 }
 
-void     osm_pulsecount_enable(unsigned io, bool enable, io_pupd_t pupd, io_special_t edge) {}
+void     osm_pulsecount_enable(unsigned io, bool enable, osm_io_pupd_t pupd, osm_io_special_t edge) {}
 
 struct cmd_link_t* osm_pulsecount_add_commands(struct cmd_link_t* tail)
 { return tail; }
 
 
-comms_type_t osm_comms_identify(void)
+osm_comms_type_t osm_comms_identify(void)
 {
-    return COMMS_TYPE_LW;
+    return OSM_COMMS_TYPE_LW;
 }

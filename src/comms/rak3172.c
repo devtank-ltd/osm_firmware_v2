@@ -405,12 +405,12 @@ static bool _rak3172_load_config(cmd_ctx_t * ctx)
     if (!config)
         return false;
 
-    /* If outside range, default to LW_REGION_EU868 */
-    lw_region_t region;
-    if (config->region > LW_REGION_MAX)
+    /* If outside range, default to OSM_LW_REGION_EU868 */
+    osm_lw_region_t region;
+    if (config->region > OSM_LW_REGION_MAX)
     {
         osm_cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
-        region = LW_REGION_EU868;
+        region = OSM_LW_REGION_EU868;
     }
     else
     {
@@ -469,7 +469,7 @@ void osm_rak3172_init(void)
 #ifdef COMMS_LED
     const port_n_pins_t comms_led = COMMS_LED;
     osm_platform_gpio_init(&comms_led);
-    osm_platform_gpio_setup(&comms_led, false, IO_PUPD_NONE);
+    osm_platform_gpio_setup(&comms_led, false, OSM_IO_PUPD_NONE);
 #endif // COMMS_LED
     _rak3172_comms_led_set(false);
 }
@@ -873,7 +873,7 @@ void _rak3172_send_alive(void)
 }
 
 
-command_response_t osm_rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx)
 {
     if (osm_lw_config_setup_str(str, ctx))
     {
@@ -883,9 +883,9 @@ command_response_t osm_rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx)
             _rak3172_ctx.reset_count = 0;
             osm_rak3172_reset();
         }
-        return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_OK;
     }
-    return COMMAND_RESP_ERR;
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
@@ -895,15 +895,15 @@ bool osm_rak3172_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
     osm_cmd_ctx_out(ctx,"RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -926,7 +926,7 @@ static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
 {
     bool enabled = strtoul(args, NULL, 10);
     _rak3172_reset_line_set(enabled);
@@ -967,7 +967,7 @@ static const char* _rak3172_init_count_to_str(uint8_t init_count)
 }
 
 
-static command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
     switch (_rak3172_ctx.state)
@@ -998,106 +998,106 @@ static command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
         default:
             break;
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_restart_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_restart_cb(char* args, cmd_ctx_t * ctx)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
     _rak3172_reset_now();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_join(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_join(char* str, cmd_ctx_t * ctx)
 {
     _rak3172_send_alive();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t osm_rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 {
     if (osm_rak3172_get_connected())
     {
         osm_cmd_ctx_out(ctx,"1 | Connected");
-        return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_OK;
     }
     osm_cmd_ctx_out(ctx,"0 | Disconnected");
-    return COMMAND_RESP_ERR;
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _rak3172_tx_power_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_tx_power_cb(char* str, cmd_ctx_t * ctx)
 {
     char* np;
     unsigned pwr = strtoul(str, &np, 10);
-    command_response_t status = COMMAND_RESP_OK;
+    osm_command_response_t status = OSM_COMMAND_RESP_OK;
     if (str != np)
     {
-        status = _rak3172_printf("AT+TXP=%u", pwr) ? COMMAND_RESP_OK  :
-                                                     COMMAND_RESP_ERR ;
+        status = _rak3172_printf("AT+TXP=%u", pwr) ? OSM_COMMAND_RESP_OK  :
+                                                     OSM_COMMAND_RESP_ERR ;
     }
     else
     {
         osm_cmd_ctx_out(ctx,"Enter a valid number.");
-        status = COMMAND_RESP_ERR;
+        status = OSM_COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-static command_response_t _rak3172_trssi_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_trssi_cb(char* str, cmd_ctx_t * ctx)
 {
-    return _rak3172_printf("AT+TRSSI=?") ? COMMAND_RESP_OK  :
-                                           COMMAND_RESP_ERR ;
+    return _rak3172_printf("AT+TRSSI=?") ? OSM_COMMAND_RESP_OK  :
+                                           OSM_COMMAND_RESP_ERR ;
 }
 
 
-static command_response_t _rak3172_ttx_cb(char* str, cmd_ctx_t * ctx)
-{
-    char* np;
-    unsigned inp = strtoul(str, &np, 10);
-    command_response_t status = COMMAND_RESP_OK;
-    if (str != np)
-    {
-        status = _rak3172_printf("AT+TTX=%u", inp) ? COMMAND_RESP_OK  :
-                                                     COMMAND_RESP_ERR ;
-    }
-    else
-    {
-        osm_cmd_ctx_out(ctx,"Enter a valid number.");
-        status = COMMAND_RESP_ERR;
-    }
-    return status;
-}
-
-
-static command_response_t _rak3172_trx_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_ttx_cb(char* str, cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
-    command_response_t status = COMMAND_RESP_OK;
+    osm_command_response_t status = OSM_COMMAND_RESP_OK;
     if (str != np)
     {
-        status = _rak3172_printf("AT+TRX=%u", inp) ? COMMAND_RESP_OK  :
-                                                     COMMAND_RESP_ERR ;
+        status = _rak3172_printf("AT+TTX=%u", inp) ? OSM_COMMAND_RESP_OK  :
+                                                     OSM_COMMAND_RESP_ERR ;
     }
     else
     {
         osm_cmd_ctx_out(ctx,"Enter a valid number.");
-        status = COMMAND_RESP_ERR;
+        status = OSM_COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_trx_cb(char* str, cmd_ctx_t * ctx)
+{
+    char* np;
+    unsigned inp = strtoul(str, &np, 10);
+    osm_command_response_t status = OSM_COMMAND_RESP_OK;
+    if (str != np)
+    {
+        status = _rak3172_printf("AT+TRX=%u", inp) ? OSM_COMMAND_RESP_OK  :
+                                                     OSM_COMMAND_RESP_ERR ;
+    }
+    else
+    {
+        osm_cmd_ctx_out(ctx,"Enter a valid number.");
+        status = OSM_COMMAND_RESP_ERR;
+    }
+    return status;
+}
+
+
+osm_command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
 {
     osm_lw_print_config(ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

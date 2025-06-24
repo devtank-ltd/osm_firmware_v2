@@ -24,25 +24,25 @@
 #define OSM_MEASUREMENTS_PULSE_COUNT_NAME_2     "CNT2" /* int    - Pulse count for water or gas flow meters */
 #define OSM_MEASUREMENTS_LIGHT_NAME             "LGHT" /* int    - Illuminance in Lux */
 #define OSM_MEASUREMENTS_SOUND_NAME             "SND"  /* float  - Noise level in Decibels, A weighted (dBA) */
-#define OSM_MEASUREMENTS_FTMA_1_NAME            "FTA1" /* float  - FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
-#define OSM_MEASUREMENTS_FTMA_2_NAME            "FTA2" /* float  - FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
-#define OSM_MEASUREMENTS_FTMA_3_NAME            "FTA3" /* float  - FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
-#define OSM_MEASUREMENTS_FTMA_4_NAME            "FTA4" /* float  - FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
+#define OSM_MEASUREMENTS_FTMA_1_NAME            "FTA1" /* float  - OSM_FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
+#define OSM_MEASUREMENTS_FTMA_2_NAME            "FTA2" /* float  - OSM_FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
+#define OSM_MEASUREMENTS_FTMA_3_NAME            "FTA3" /* float  - OSM_FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
+#define OSM_MEASUREMENTS_FTMA_4_NAME            "FTA4" /* float  - OSM_FTMA = Four to Twenty Milli Amps, i.e. 4-20mA*/
 #define OSM_MEASUREMENTS_PM1_0_NAME             "PM1"  /* float  - Particulate matter, less than 1 micrometres in diameter */
 #define OSM_MEASUREMENTS_PM4_NAME               "PM4"  /* float  - Particulate matter, less than 4 micrometres in diameter */
-#define OSM_MEASUREMENTS_REL_HUM_NAME           "HUM2" /* float  - Relative Humanity from SENxx chip (RevD and above) */
-#define MEASUREMENTS_SEN5x_TEMP_NAME        "TMP5" /* float  - Temperature from SENxx chip (RevD and above)*/
+#define OSM_MEASUREMENTS_REL_HUM_NAME           "HUM2" /* float  - Relative Humanity from OSM_SENxx chip (RevD and above) */
+#define OSM_MEASUREMENTS_SEN5x_TEMP_NAME        "TMP5" /* float  - Temperature from OSM_SENxx chip (RevD and above)*/
 #define OSM_MEASUREMENTS_VOC_NAME               "VOC"  /* float  - Volatile organic compounds from SENxx. */
 #define OSM_MEASUREMENTS_NOX_NAME               "NOX"  /* float  - Nitrogen Oxide from SENxx. */
 #define OSM_MEASUREMENTS_CO2_NAME               "CO2"  /* float  - Carbon Dioxide from SENxx. */
-#define OSM_MEASUREMENTS_HCHO_NAME              "HCHO" /* float  - Formaldehyde from SENxx */
-#define OSM_MEASUREMENTS_EXAMPLE_RS232_NAME     "R232" /* string - EXAMPLE_RS232 response from command */
+#define OSM_MEASUREMENTS_HCHO_NAME              "HCHO" /* float  - Formaldehyde from OSM_SENxx */
+#define OSM_MEASUREMENTS_EXAMPLE_RS232_NAME     "R232" /* string - OSM_EXAMPLE_RS232 response from command */
 #define OSM_MEASUREMENTS_TMP4718_LOCAL_NAME     "TMP6" /* float  - Temperature on POE/Ethernet module, local */
 #define OSM_MEASUREMENTS_TMP4718_REMOTE_NAME    "TMP7" /* float  - Temperature on POE/Ethernet module, remote */
 
 #define OSM_MEASUREMENTS_LEGACY_PULSE_COUNT_NAME "PCNT"
 
-void osm_measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
-void osm_measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, measurements_def_type_t type);
+void osm_measurements_setup_default(measurements_def_t* def, char* name, uint8_t interval, uint8_t samplecount, osm_measurements_def_type_t type);
+void osm_measurements_repop_indiv(char* name, uint8_t interval, uint8_t samplecount, osm_measurements_def_type_t type);
 
 measurements_def_t*  osm_measurements_array_find(measurements_def_t * measurements_arr, char* name);

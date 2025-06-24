@@ -522,33 +522,33 @@ static bool _veml7700_iteration_off(void)
 }
 
 
-static measurements_sensor_state_t _veml7700_iteration(char* name)
+static osm_measurements_sensor_state_t _veml7700_iteration(char* name)
 {
     switch (_veml7700_state_machine.state)
     {
         case VEML7700_STATE_DONE:
-            return _veml7700_iteration_done()    ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
+            return _veml7700_iteration_done()    ? OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS : OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_READING:
-            return _veml7700_iteration_reading() ? MEASUREMENTS_SENSOR_STATE_BUSY    : MEASUREMENTS_SENSOR_STATE_ERROR;
+            return _veml7700_iteration_reading() ? OSM_MEASUREMENTS_SENSOR_STATE_BUSY    : OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_OFF:
-            return _veml7700_iteration_off()     ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR;
+            return _veml7700_iteration_off()     ? OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS : OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return MEASUREMENTS_SENSOR_STATE_ERROR;
+    return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 }
 
 
-static measurements_sensor_state_t _veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _veml7700_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = _veml7700_time.last_time_taken + VEML7700_COLLECTION_TIME_OFFSET_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _veml7700_light_measurements_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _veml7700_light_measurements_init(char* name, bool in_isolation)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -561,41 +561,41 @@ static measurements_sensor_state_t _veml7700_light_measurements_init(char* name,
                 _veml7700_state_machine.state = VEML7700_STATE_OFF;
                 break;
             }
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
         case VEML7700_STATE_DONE:
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     uint32_t now = osm_get_since_boot_ms();
     _veml7700_time.start_time = now;
     _veml7700_state_machine.state = VEML7700_STATE_READING;
     _veml7700_state_machine.last_read = now;
     _veml7700_reset_ctx();
-    return (_veml7700_get_counts_begin() ? MEASUREMENTS_SENSOR_STATE_SUCCESS : MEASUREMENTS_SENSOR_STATE_ERROR);
+    return (_veml7700_get_counts_begin() ? OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS : OSM_MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
-static measurements_sensor_state_t _veml7700_light_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _veml7700_light_measurements_get(char* name, measurements_reading_t* value)
 {
     switch (_veml7700_state_machine.state)
     {
         case VEML7700_STATE_OFF:
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         case VEML7700_STATE_READING:
             if (!_veml7700_check_state())
-                return MEASUREMENTS_SENSOR_STATE_ERROR;
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
+                return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
         case VEML7700_STATE_DONE:
             break;
     }
     _veml7700_state_machine.state = VEML7700_STATE_OFF;
     if (!_veml7700_reading.is_valid)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     _veml7700_reading.is_valid = false;
     osm_light_debug("Final lux = %"PRIu32, _veml7700_reading.lux);
     value->v_i64 = (int64_t)_veml7700_reading.lux;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -604,9 +604,9 @@ void osm_veml7700_init(void)
 }
 
 
-static measurements_value_type_t _veml7700_value_type(char* name)
+static osm_measurements_value_type_t _veml7700_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return OSM_MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 

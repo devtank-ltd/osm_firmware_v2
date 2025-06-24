@@ -128,14 +128,14 @@ bool osm_fw_ota_complete(uint16_t crc)
 }
 
 
-static command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
 {
     args = osm_skip_space(args);
     unsigned len = strlen(args);
     if (len%2)
     {
         osm_cmd_ctx_out(ctx,"Invalid fw chunk.");
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
     }
     char * end = args + len;
     while(args < end)
@@ -149,33 +149,33 @@ static command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
         if (!osm_fw_ota_add_chunk(&d, 1, ctx))
         {
             osm_cmd_ctx_out(ctx,"Invalid fw.");
-            return COMMAND_RESP_ERR;
+            return OSM_COMMAND_RESP_ERR;
         }
     }
     osm_cmd_ctx_out(ctx,"FW %u chunk added", len/2);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
 {
     args = osm_skip_space(args);
     uint16_t crc = strtoul(args, NULL, 16);
     if (osm_fw_ota_complete(crc))
     {
         osm_cmd_ctx_out(ctx,"FW added");
-        return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_OK;
     }
     osm_cmd_ctx_out(ctx,"FW adding failed.");
-    return COMMAND_RESP_ERR;
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _fw_reset(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fw_reset(char *args, cmd_ctx_t * ctx)
 {
     osm_persist_commit();
     osm_platform_hard_reset_sys();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

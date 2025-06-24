@@ -57,30 +57,30 @@
 #define RS232_UART          2
 #define EXT_UART            3
 
-#define UART_1_SPEED        9600    /* EXAMPLE_RS232 */
+#define UART_1_SPEED        9600    /* OSM_EXAMPLE_RS232 */
 #define UART_2_SPEED        115200  /* DEBUG */
 #define UART_3_SPEED        115200  /* COMMS */
 #define UART_4_SPEED        9600    /* RS485 */
 
-#define UART_1_PARITY       uart_parity_none
-#define UART_2_PARITY       uart_parity_none
-#define UART_3_PARITY       uart_parity_none
-#define UART_4_PARITY       uart_parity_none
+#define UART_1_PARITY       osm_uart_parity_none
+#define UART_2_PARITY       osm_uart_parity_none
+#define UART_3_PARITY       osm_uart_parity_none
+#define UART_4_PARITY       osm_uart_parity_none
 
 #define UART_1_DATABITS     8
 #define UART_2_DATABITS     8
 #define UART_3_DATABITS     8
 #define UART_4_DATABITS     8
 
-#define UART_1_STOP         uart_stop_bits_1
-#define UART_2_STOP         uart_stop_bits_1
-#define UART_3_STOP         uart_stop_bits_1
-#define UART_4_STOP         uart_stop_bits_1
+#define UART_1_STOP         osm_uart_stop_bits_1
+#define UART_2_STOP         osm_uart_stop_bits_1
+#define UART_3_STOP         osm_uart_stop_bits_1
+#define UART_4_STOP         osm_uart_stop_bits_1
 
-#define MODBUS_SPEED        UART_4_SPEED
-#define MODBUS_PARITY       UART_4_PARITY
-#define MODBUS_DATABITS     UART_4_DATABITS
-#define MODBUS_STOP         UART_4_STOP
+#define OSM_MODBUS_SPEED        UART_4_SPEED
+#define OSM_MODBUS_PARITY       UART_4_PARITY
+#define OSM_MODBUS_DATABITS     UART_4_DATABITS
+#define OSM_MODBUS_STOP         UART_4_STOP
 
 #define IOS_COUNT           3
 
@@ -88,7 +88,7 @@
 #define ADC_CC_COUNT        3
 #define CC_DEFAULT_TYPE     OSM_CC_TYPE_A
 
-#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_LW
+#define COMMS_IDENTITY_DEFAULT  OSM_COMMS_TYPE_LW
 
 
 typedef struct

@@ -361,7 +361,7 @@ static void _at_poe_do_mqtt_user_conf(void)
 
 static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
 {
-    static enum at_mqtt_conn_states_t conn = AT_MQTT_CONN_STATE_NOT_INIT;
+    static enum osm_at_mqtt_conn_states_t conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
     const char mqtt_conn_msg[] = "+MQTTCONN:";
     unsigned mqtt_conn_msg_len = strlen(mqtt_conn_msg);
     if (osm_is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
@@ -370,18 +370,18 @@ static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
         if (!osm_at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn))
         {
-            conn = AT_MQTT_CONN_STATE_NOT_INIT;
+            conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
         }
     }
     else if (osm_at_base_is_ok(msg, len))
     {
         switch (conn)
         {
-            case AT_MQTT_CONN_STATE_CONN_EST:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST:
                 /* fall through */
-            case AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
                 /* fall through */
-            case AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
                 _at_poe_printf("AT+MQTTSUB?");
                 _at_poe_ctx.state = AT_POE_STATE_MQTT_IS_SUBSCRIBED;
                 break;
@@ -389,7 +389,7 @@ static void _at_poe_process_state_mqtt_is_connected(char* msg, unsigned len)
                 _at_poe_do_mqtt_user_conf();
                 break;
         }
-        conn = AT_MQTT_CONN_STATE_NOT_INIT;
+        conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
     }
     else if (osm_at_base_is_error(msg, len))
     {
@@ -600,9 +600,9 @@ static void _at_poe_process_state_timedout_wait_mqtt_state(char* msg, unsigned l
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        enum at_mqtt_conn_states_t conn;
+        enum osm_at_mqtt_conn_states_t conn;
         if (osm_at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn) &&
-            conn >= AT_MQTT_CONN_STATE_CONN_EST && conn < AT_MQTT_CONN_STATE_COUNT)
+            conn >= OSM_AT_MQTT_CONN_STATE_CONN_EST && conn < OSM_AT_MQTT_CONN_STATE_COUNT)
         {
             _at_poe_retry_command();
         }
@@ -800,19 +800,19 @@ bool osm_at_poe_get_id(char* str, uint8_t len)
 }
 
 
-static command_response_t _at_poe_send_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_poe_send_cb(char * args, cmd_ctx_t * ctx)
 {
     char * pos = osm_skip_space(args);
-    return osm_at_base_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    return osm_at_base_send_str(pos) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-command_response_t osm_at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 {
 
     at_poe_config_t before_config;
     memcpy(&before_config, _at_poe_ctx.mem, sizeof(at_poe_config_t));
-    command_response_t ret = osm_at_base_config_setup_str(_at_poe_config_cmds, osm_skip_space(args), ctx);
+    osm_command_response_t ret = osm_at_base_config_setup_str(_at_poe_config_cmds, osm_skip_space(args), ctx);
     if (_at_poe_mem_is_valid())
     {
         if (AT_POE_STATE_NO_CONF == _at_poe_ctx.state)
@@ -829,7 +829,7 @@ command_response_t osm_at_poe_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 
 static bool _at_poe_get_mac_address(char* buf, unsigned buflen);
 
-command_response_t osm_at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 {
     char mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
     if (!_at_poe_get_mac_address(mac_address, OSM_AT_BASE_MAC_ADDRESS_LEN))
@@ -842,11 +842,11 @@ command_response_t osm_at_poe_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
     COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address   , OSM_AT_BASE_MAC_ADDRESS_LEN   );
     osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_TAIL);
     osm_cmd_ctx_flush(ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t osm_at_poe_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_poe_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 {
     if (osm_at_poe_get_connected())
     {
@@ -856,41 +856,41 @@ command_response_t osm_at_poe_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
     {
         osm_cmd_ctx_out(ctx,"0 | Disconnected");
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_poe_dbg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_poe_dbg_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_raw_send(args, strlen(args));
     osm_at_base_raw_send("\r\n", 2);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_poe_boot_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_poe_boot_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_boot(args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_poe_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_poe_reset_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_at_base_reset(args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_poe_state_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_poe_state_cb(char* args, cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"State: %s(%u)", _at_poe_get_state_str(_at_poe_ctx.state), (unsigned)_at_poe_ctx.state);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
-static command_response_t _at_poe_restart_cb(char* args, cmd_ctx_t * ctx) {
+static osm_command_response_t _at_poe_restart_cb(char* args, cmd_ctx_t * ctx) {
     _at_poe_reset();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
@@ -921,7 +921,7 @@ bool osm_at_poe_persist_config_cmp(void* d0, void* d1)
 
 void osm_at_poe_config_init(comms_config_t* comms_config)
 {
-    comms_config->type = COMMS_TYPE_POE;
+    comms_config->type = OSM_COMMS_TYPE_POE;
     osm_at_mqtt_config_init(&((at_poe_config_t*)comms_config)->mqtt);
 }
 

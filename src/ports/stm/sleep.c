@@ -158,34 +158,34 @@ void lptim1_isr(void)
 }
 
 
-static command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t sleep_ms = strtoul(args, &p, 10);
     if (p == args)
     {
         osm_cmd_ctx_out(ctx, "<TIME(MS)>");
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
     }
     osm_cmd_ctx_out(ctx, "Sleeping for %"PRIu32"ms.", sleep_ms);
     osm_sleep_for_ms(sleep_ms);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
 {
-    measurements_power_mode_t mode;
+    osm_measurements_power_mode_t mode;
     if (args[0] == 'A')
-        mode = MEASUREMENTS_POWER_MODE_AUTO;
+        mode = OSM_MEASUREMENTS_POWER_MODE_AUTO;
     else if (args[0] == 'B')
-        mode = MEASUREMENTS_POWER_MODE_BATTERY;
+        mode = OSM_MEASUREMENTS_POWER_MODE_BATTERY;
     else if (args[0] == 'P')
-        mode = MEASUREMENTS_POWER_MODE_PLUGGED;
+        mode = OSM_MEASUREMENTS_POWER_MODE_PLUGGED;
     else
-        return COMMAND_RESP_ERR;
+        return OSM_COMMAND_RESP_ERR;
     osm_measurements_power_mode(mode);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 

@@ -35,14 +35,14 @@
 #include <osm/sensors/ftma.h>
 
 
-uint8_t osm_model_stm_adcs_get_channel(adcs_type_t adcs_type)
+uint8_t osm_model_stm_adcs_get_channel(osm_adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_CC_CLAMP1: return ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2: return ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3: return ADC1_CHANNEL_CURRENT_CLAMP_3;
-        case ADCS_TYPE_FTMA1: return ADC1_CHANNEL_FTMA_1;
+        case OSM_ADCS_TYPE_CC_CLAMP1: return ADC1_CHANNEL_CURRENT_CLAMP_1;
+        case OSM_ADCS_TYPE_CC_CLAMP2: return ADC1_CHANNEL_CURRENT_CLAMP_2;
+        case OSM_ADCS_TYPE_CC_CLAMP3: return ADC1_CHANNEL_CURRENT_CLAMP_3;
+        case OSM_ADCS_TYPE_FTMA1: return ADC1_CHANNEL_FTMA_1;
         default:
             break;
     }
@@ -148,18 +148,18 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
     memset(inf, 0, sizeof(measurements_inf_t));
     switch(def->type)
     {
-        case FW_VERSION:    osm_fw_version_inf_init(inf);  break;
-        case CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
-        case MODBUS:        osm_modbus_inf_init(inf);      break;
-        case CURRENT_CLAMP: osm_cc_inf_init(inf);          break;
-        case W1_PROBE:      osm_ds18b20_inf_init(inf);     break;
-        case PULSE_COUNT:   osm_pulsecount_inf_init(inf);  break;
-        case LIGHT:         osm_veml7700_inf_init(inf);    break;
-        case SOUND:         osm_sai_inf_init(inf);         break;
-        case IO_READING:    osm_ios_inf_init(inf);         break;
-        case SENxx:         osm_senxx_inf_init(inf);       break;
-        case EXAMPLE_RS232:         osm_example_rs232_inf_init(inf);       break;
-        case FTMA:          osm_ftma_inf_init(inf);        break;
+        case OSM_FW_VERSION:    osm_fw_version_inf_init(inf);  break;
+        case OSM_CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
+        case OSM_MODBUS:        osm_modbus_inf_init(inf);      break;
+        case OSM_CURRENT_CLAMP: osm_cc_inf_init(inf);          break;
+        case OSM_W1_PROBE:      osm_ds18b20_inf_init(inf);     break;
+        case OSM_PULSE_COUNT:   osm_pulsecount_inf_init(inf);  break;
+        case OSM_LIGHT:         osm_veml7700_inf_init(inf);    break;
+        case OSM_SOUND:         osm_sai_inf_init(inf);         break;
+        case OSM_IO_READING:    osm_ios_inf_init(inf);         break;
+        case OSM_SENxx:         osm_senxx_inf_init(inf);       break;
+        case OSM_EXAMPLE_RS232:         osm_example_rs232_inf_init(inf);       break;
+        case OSM_FTMA:          osm_ftma_inf_init(inf);        break;
         default:
             osm_log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
@@ -174,27 +174,27 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
 
 void osm_model_measurements_repopulate(void)
 {
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,         100,  1,  FW_VERSION      );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,    100,  1,  CONFIG_REVISION );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM1_0_NAME,           0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM25_NAME,            0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM4_NAME,             0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM10_NAME,            0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_REL_HUM_NAME,         0,  5,  SENxx           );
-    osm_measurements_repop_indiv(MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_VOC_NAME,             0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_NOX_NAME,             0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CO2_NAME,             0,  5,  SENxx           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  CURRENT_CLAMP   );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  CURRENT_CLAMP   );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  CURRENT_CLAMP   );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  W1_PROBE        );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SOUND_NAME,           1,  1,  SOUND           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  EXAMPLE_RS232           );
-    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FTMA_1_NAME,          1,  1,  FTMA            );}
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,         100,  1,  OSM_FW_VERSION      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,    100,  1,  OSM_CONFIG_REVISION );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM1_0_NAME,           0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM25_NAME,            0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM4_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM10_NAME,            0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_REL_HUM_NAME,         0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_VOC_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_NOX_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CO2_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  OSM_W1_PROBE        );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_LIGHT_NAME,           1,  1,  OSM_LIGHT           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SOUND_NAME,           1,  1,  OSM_SOUND           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  OSM_EXAMPLE_RS232           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FTMA_1_NAME,          1,  1,  OSM_FTMA            );}
 
 
 void osm_model_cmds_add_all(struct cmd_link_t* tail)
@@ -220,12 +220,12 @@ void osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled)
 }
 
 
-bool osm_model_can_io_be_special(unsigned io, io_special_t special)
+bool osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
-            ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
-              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
-              special == IO_SPECIAL_WATCH                   ));
+            ( special == OSM_IO_SPECIAL_ONEWIRE                 || special == OSM_IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
+              special == OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == OSM_IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
+              special == OSM_IO_SPECIAL_WATCH                   ));
 }
 
 
@@ -246,27 +246,27 @@ unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_a
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,         100,  1, FW_VERSION      );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,    100,  1, CONFIG_REVISION );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM1_0_NAME,           0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM25_NAME,            0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM4_NAME,             0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM10_NAME,            0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_REL_HUM_NAME,         0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_VOC_NAME,             0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_NOX_NAME,             0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CO2_NAME,             0,  5, SENxx           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, CURRENT_CLAMP   );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, CURRENT_CLAMP   );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, CURRENT_CLAMP   );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  1, W1_PROBE        );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1, PULSE_COUNT     );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, PULSE_COUNT     );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SOUND_NAME,           1,  1, SOUND           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1, EXAMPLE_RS232           );
-    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FTMA_1_NAME,          1,  1,  FTMA           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,         100,  1, OSM_FW_VERSION      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,    100,  1, OSM_CONFIG_REVISION );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM1_0_NAME,           0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM25_NAME,            0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM4_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM10_NAME,            0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_REL_HUM_NAME,         0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_VOC_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_NOX_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CO2_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  1, OSM_W1_PROBE        );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1, OSM_PULSE_COUNT     );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, OSM_PULSE_COUNT     );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_LIGHT_NAME,           1,  1, OSM_LIGHT           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SOUND_NAME,           1,  1, OSM_SOUND           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1, OSM_EXAMPLE_RS232           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FTMA_1_NAME,          1,  1,  OSM_FTMA           );
     return pos;
 }
 

@@ -26,22 +26,22 @@ static uart_channel_t uart_channels[OSM_UART_CHANNELS_COUNT] = UART_CHANNELS;
 static volatile bool uart_doing_dma[OSM_UART_CHANNELS_COUNT] = {0};
 
 
-static uint32_t _uart_get_parity(osm_uart_parity_t parity)
+static uint32_t _uart_get_parity(osm_osm_uart_parity_t parity)
 {
     switch(parity)
     {
-        case uart_parity_odd  : return USART_PARITY_ODD;
-        case uart_parity_even : return USART_PARITY_EVEN;
+        case osm_uart_parity_odd  : return USART_PARITY_ODD;
+        case osm_uart_parity_even : return USART_PARITY_EVEN;
         default : return USART_PARITY_NONE;
     }
 }
 
-static uint32_t _uart_get_stop(osm_uart_stop_bits_t stop)
+static uint32_t _uart_get_stop(osm_osm_uart_stop_bits_t stop)
 {
     switch(stop)
     {
-        case uart_stop_bits_1_5: return USART_STOPBITS_1_5;
-        case uart_stop_bits_2  : return USART_STOPBITS_2;
+        case osm_uart_stop_bits_1_5: return USART_STOPBITS_1_5;
+        case osm_uart_stop_bits_2  : return USART_STOPBITS_2;
         default : return USART_CR2_STOPBITS_1;
     }
 }
@@ -164,7 +164,7 @@ bool osm_uart_is_enabled(unsigned uart)
 }
 
 
-void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
+void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
 {
     if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
@@ -185,7 +185,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
     if (parity && databits == 9)
     {
         osm_cmd_ctx_error(ctx, "Invalid UART databits:9 + parity, using 9N");
-        parity = uart_parity_none;
+        parity = osm_uart_parity_none;
     }
 
     channel->baud = speed;
@@ -207,7 +207,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_
 }
 
 
-extern bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
+extern bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_osm_uart_parity_t * parity, osm_osm_uart_stop_bits_t * stop)
 {
     if (uart >= OSM_UART_CHANNELS_COUNT )
         return false;
@@ -234,8 +234,8 @@ bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
 {
     uint32_t         speed;
     uint8_t          databits;
-    osm_uart_parity_t    parity;
-    osm_uart_stop_bits_t stop;
+    osm_osm_uart_parity_t    parity;
+    osm_osm_uart_stop_bits_t stop;
 
     if (uart >= OSM_UART_CHANNELS_COUNT )
     {

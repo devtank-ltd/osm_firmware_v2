@@ -17,7 +17,7 @@ bool     osm_model_measurements_get_inf(measurements_def_t * def, measurements_d
 void     osm_model_measurements_repopulate(void);
 void     osm_model_cmds_add_all(struct cmd_link_t* tail);
 void     osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled);
-bool     osm_model_can_io_be_special(unsigned io, io_special_t special);
+bool     osm_model_can_io_be_special(unsigned io, osm_io_special_t special);
 unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_arr);
 void     osm_model_linux_spawn_fakes(void);
 void     osm_model_linux_close_fakes(void);

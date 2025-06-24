@@ -7,7 +7,7 @@
 #include "model_config.h"
 
 
-uint8_t  osm_model_stm_adcs_get_channel(adcs_type_t adcs_type);
+uint8_t  osm_model_stm_adcs_get_channel(osm_adcs_type_t adcs_type);
 void     osm_model_sensors_init(void);
 void     osm_model_persist_config_model_init(persist_model_config_t * config);
 bool     osm_model_persist_config_cmp(persist_model_config_t* d0, persist_model_config_t* d1);
@@ -18,7 +18,7 @@ bool     osm_model_measurements_get_inf(measurements_def_t * def, measurements_d
 void     osm_model_measurements_repopulate(void);
 void     osm_model_cmds_add_all(struct cmd_link_t* tail);
 void     osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled);
-bool     osm_model_can_io_be_special(unsigned io, io_special_t special);
+bool     osm_model_can_io_be_special(unsigned io, osm_io_special_t special);
 void     osm_model_uarts_setup(void);
 void     osm_model_setup_pulse_pupd(uint8_t* pupd);
 unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_arr);

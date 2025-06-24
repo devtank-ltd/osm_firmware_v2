@@ -72,8 +72,8 @@ typedef struct
 static uint16_t*    _adcs_buf                           = NULL;         /* sizeof OSM_ADCS_NUM_SAMPLES */
 static unsigned     _adcs_num_data                      = 0;
 static uint8_t      _adcs_num_active_channels           = 0;
-static adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
-static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=OSM_ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
+static osm_adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
+static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=OSM_ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* OSM_BAT_MON         */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=2*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_2 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=4*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_3 */
@@ -104,32 +104,32 @@ static void _adcs_fill_buffer(void)
 
     for (unsigned i = 0; i < _adcs_num_data; i++)
     {
-        adcs_type_t* chan = (adcs_type_t*)&_adcs_active_channels[i % _adcs_num_active_channels];
+        osm_adcs_type_t* chan = (osm_adcs_type_t*)&_adcs_active_channels[i % _adcs_num_active_channels];
         adcs_wave_t* wave;
         switch(*chan)
         {
-            case ADCS_TYPE_BAT:
+            case OSM_ADCS_TYPE_BAT:
                 wave = &_adcs_waves[ADC_INDEX_BAT_MON];
                 break;
-            case ADCS_TYPE_CC_CLAMP1:
+            case OSM_ADCS_TYPE_CC_CLAMP1:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_1];
                 break;
-            case ADCS_TYPE_CC_CLAMP2:
+            case OSM_ADCS_TYPE_CC_CLAMP2:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_2];
                 break;
-            case ADCS_TYPE_CC_CLAMP3:
+            case OSM_ADCS_TYPE_CC_CLAMP3:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_3];
                 break;
-            case ADCS_TYPE_FTMA1:
+            case OSM_ADCS_TYPE_FTMA1:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_1];
                 break;
-            case ADCS_TYPE_FTMA2:
+            case OSM_ADCS_TYPE_FTMA2:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_2];
                 break;
-            case ADCS_TYPE_FTMA3:
+            case OSM_ADCS_TYPE_FTMA3:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_3];
                 break;
-            case ADCS_TYPE_FTMA4:
+            case OSM_ADCS_TYPE_FTMA4:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_4];
                 break;
             default:
@@ -266,10 +266,10 @@ void osm_platform_setup_adc(adc_setup_config_t* config)
 }
 
 
-void osm_platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
+void osm_platform_adc_set_regular_sequence(uint8_t num_channels, osm_adcs_type_t* channels)
 {
     _adcs_num_active_channels = num_channels;
-    memcpy((adcs_type_t*)_adcs_active_channels, channels, sizeof(adcs_type_t) * num_channels);
+    memcpy((osm_adcs_type_t*)_adcs_active_channels, channels, sizeof(osm_adcs_type_t) * num_channels);
 }
 
 

@@ -36,10 +36,10 @@ void osm_at_base_init(at_base_ctx_t* ctx)
         _at_base_ctx = ctx;
 
         osm_platform_gpio_init(&_at_base_ctx->reset_pin);
-        osm_platform_gpio_setup(&_at_base_ctx->reset_pin, false, IO_PUPD_UP);
+        osm_platform_gpio_setup(&_at_base_ctx->reset_pin, false, OSM_IO_PUPD_UP);
         osm_platform_gpio_set(&_at_base_ctx->reset_pin, true);
         osm_platform_gpio_init(&_at_base_ctx->boot_pin);
-        osm_platform_gpio_setup(&_at_base_ctx->boot_pin, false, IO_PUPD_UP);
+        osm_platform_gpio_setup(&_at_base_ctx->boot_pin, false, OSM_IO_PUPD_UP);
         osm_platform_gpio_set(&_at_base_ctx->boot_pin, true);
     }
     else
@@ -130,9 +130,9 @@ void osm_at_base_reset(char* args, cmd_ctx_t * ctx)
 }
 
 
-command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx)
 {
-    command_response_t r = COMMAND_RESP_ERR;
+    osm_command_response_t r = OSM_COMMAND_RESP_ERR;
     if (str[0])
     {
         char * next = osm_skip_to_space(str);
@@ -165,7 +165,7 @@ command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char *
                 return cmd->cb(next, ctx);
         }
     }
-    else r = COMMAND_RESP_OK;
+    else r = OSM_COMMAND_RESP_OK;
 
     for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
     {
