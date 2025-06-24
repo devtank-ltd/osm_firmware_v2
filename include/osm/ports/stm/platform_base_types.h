@@ -29,14 +29,14 @@ typedef struct
     uint8_t               priority;
     uint8_t               enabled;
     uint8_t               dma_req;
-} uart_channel_t;
+} osm_uart_channel_t;
 
 
 typedef struct
 {
     uint32_t port;
     uint32_t pins;
-} port_n_pins_t;
+} osm_port_n_pins_t;
 
 
 typedef struct
@@ -46,11 +46,11 @@ typedef struct
     uint32_t speed;
     uint32_t clock_megahz;
     uint32_t gpio_func;
-    port_n_pins_t port_n_pins;
-} i2c_def_t;
+    osm_port_n_pins_t port_n_pins;
+} osm_i2c_def_t;
 
 
 typedef struct
 {
     uint32_t mem_addr;
-} adc_setup_config_t;
+} osm_adc_setup_config_t;

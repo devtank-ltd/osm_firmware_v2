@@ -26,4 +26,4 @@ void osm_uart_rings_out_wipe(unsigned uart);
 
 extern char line_buffer[CMD_LINELEN];
 
-extern cmd_ctx_t uart_cmd_ctx;
+extern osm_cmd_ctx_t uart_cmd_ctx;

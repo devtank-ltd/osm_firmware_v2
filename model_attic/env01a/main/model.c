@@ -20,7 +20,7 @@ void osm_model_sensors_init(void)
 }
 
 
-bool osm_model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
@@ -31,7 +31,7 @@ bool osm_model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
     return false;
 }
 
-bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool osm_model_measurements_get_inf(osm_measurements_def_t * def, osm_measurements_data_t* data, osm_measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -40,7 +40,7 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
     }
     // Optional callbacks: get is not optional, neither is collection
     // time if init given are not optional.
-    memset(inf, 0, sizeof(measurements_inf_t));
+    memset(inf, 0, sizeof(osm_measurements_inf_t));
     switch(def->type)
     {
         case OSM_FW_VERSION:      osm_fw_version_inf_init(inf);  break;
@@ -58,7 +58,7 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
 }
 
 
-bool osm_model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_do_out_drain(unsigned uart, osm_ring_buf_t * ring)
 {
     if (uart == EXT_UART)
         return osm_modbus_uart_ring_do_out_drain(ring);
@@ -72,7 +72,7 @@ void osm_model_measurements_repopulate(void)
 }
 
 
-void osm_model_cmds_add_all(struct cmd_link_t* tail)
+void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
 {
     tail = osm_ios_add_commands(tail);
     tail = osm_modbus_add_commands(tail);
@@ -91,7 +91,7 @@ bool osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 void osm_model_uarts_setup(void) {}
 
 
-unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;
@@ -102,7 +102,7 @@ unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_a
 }
 
 
-void osm_model_persist_config_model_init(persist_model_config_v1_t* model_config)
+void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
 {
     model_config->mins_interval = OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
 }
@@ -123,7 +123,7 @@ bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd)
 
 void     osm_pulsecount_enable(unsigned io, bool enable, osm_io_pupd_t pupd, osm_io_special_t edge) {}
 
-struct cmd_link_t* osm_pulsecount_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_pulsecount_add_commands(struct osm_cmd_link_t* tail)
 { return tail; }
 
 

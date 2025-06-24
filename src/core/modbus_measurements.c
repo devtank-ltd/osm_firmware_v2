@@ -32,18 +32,18 @@ static osm_measurements_sensor_state_t _modbus_measurements_init(char* name, boo
         }
     }
 
-    modbus_reg_t * reg = osm_modbus_get_reg(name);
+    osm_modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     return (osm_modbus_start_read(reg) ? OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS : OSM_MEASUREMENTS_SENSOR_STATE_ERROR);
 }
 
 
-static osm_measurements_sensor_state_t _modbus_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _modbus_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     if (!value)
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
-    modbus_reg_t * reg = osm_modbus_get_reg(name);
+    osm_modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 
@@ -115,7 +115,7 @@ static osm_measurements_sensor_state_t _modbus_measurements_get(char* name, meas
 
 static osm_measurements_value_type_t _modbus_measurements_value_type(char* name)
 {
-    modbus_reg_t* reg = osm_modbus_get_reg(name);
+    osm_modbus_reg_t* reg = osm_modbus_get_reg(name);
     osm_modbus_reg_type_t reg_type = osm_modbus_reg_get_type(reg);
     switch(reg_type)
     {
@@ -137,7 +137,7 @@ static osm_measurements_value_type_t _modbus_measurements_value_type(char* name)
 }
 
 
-void osm_modbus_inf_init(measurements_inf_t* inf)
+void osm_modbus_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _modbus_measurements_collection_time;
     inf->init_cb            = _modbus_measurements_init;
@@ -146,12 +146,12 @@ void osm_modbus_inf_init(measurements_inf_t* inf)
 }
 
 
-bool osm_modbus_measurement_add(modbus_reg_t * reg)
+bool osm_modbus_measurement_add(osm_modbus_reg_t * reg)
 {
     if (!reg)
         return false;
 
-    measurements_def_t meas_def;
+    osm_measurements_def_t meas_def;
 
     osm_modbus_reg_get_name(reg, meas_def.name);
 
@@ -169,7 +169,7 @@ bool osm_modbus_measurement_add(modbus_reg_t * reg)
 
 bool osm_modbus_measurement_del_reg(char * name)
 {
-    modbus_reg_t * reg = osm_modbus_get_reg(name);
+    osm_modbus_reg_t * reg = osm_modbus_get_reg(name);
     if (!reg)
         return false;
     bool r = osm_measurements_del(name);
@@ -178,7 +178,7 @@ bool osm_modbus_measurement_del_reg(char * name)
 }
 
 
-static bool _modbus_measurement_del_dev_reg(modbus_reg_t * reg, void * userdata)
+static bool _modbus_measurement_del_dev_reg(osm_modbus_reg_t * reg, void * userdata)
 {
     char name[OSM_MODBUS_NAME_LEN+1];
     if (osm_modbus_reg_get_name(reg, name))
@@ -189,7 +189,7 @@ static bool _modbus_measurement_del_dev_reg(modbus_reg_t * reg, void * userdata)
 
 bool osm_modbus_measurement_del_dev(char * dev_name)
 {
-    modbus_dev_t * dev = osm_modbus_get_device_by_name(dev_name);
+    osm_modbus_dev_t * dev = osm_modbus_get_device_by_name(dev_name);
     if (!dev)
         return false;
 

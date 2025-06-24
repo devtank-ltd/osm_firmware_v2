@@ -23,36 +23,36 @@ typedef struct
 {
     char        str[OSM_AT_BASE_MAX_CMD_LEN];
     unsigned    len;
-} at_base_cmd_t;
+} osm_at_base_cmd_t;
 
 typedef struct
 {
     uint64_t ts_unix;
     uint32_t sys;
-} at_base_time_t;
+} osm_at_base_time_t;
 
 typedef struct
 {
     uint32_t        last_sent;
     uint32_t        last_recv;
     uint32_t        off_since;
-    at_base_cmd_t    last_cmd;
-    port_n_pins_t   reset_pin;
-    port_n_pins_t   boot_pin;
-    at_base_time_t   time;
-    at_base_cmd_t    cmd_line;
+    osm_at_base_cmd_t    last_cmd;
+    osm_port_n_pins_t   reset_pin;
+    osm_port_n_pins_t   boot_pin;
+    osm_at_base_time_t   time;
+    osm_at_base_cmd_t    cmd_line;
     char            mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
-} at_base_ctx_t;
+} osm_at_base_ctx_t;
 
 
 unsigned    osm_at_base_raw_send(char* msg, unsigned len);
 bool        osm_at_base_send_str(char* str);
-void        osm_at_base_init(at_base_ctx_t* ctx);
+void        osm_at_base_init(osm_at_base_ctx_t* ctx);
 bool        osm_at_base_is_ok(char* msg, unsigned len);
 bool        osm_at_base_is_error(char* msg, unsigned len);
 void        osm_at_base_sleep(void);
-void        osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx);
-bool        osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx);
-void        osm_at_base_boot(char* args, cmd_ctx_t * ctx);
-void        osm_at_base_reset(char* args, cmd_ctx_t * ctx);
-osm_command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);
+void        osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, osm_cmd_ctx_t * ctx);
+bool        osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, osm_cmd_ctx_t * ctx);
+void        osm_at_base_boot(char* args, osm_cmd_ctx_t * ctx);
+void        osm_at_base_reset(char* args, osm_cmd_ctx_t * ctx);
+osm_command_response_t osm_at_base_config_setup_str(struct osm_cmd_link_t * cmds, char * str, osm_cmd_ctx_t * ctx);

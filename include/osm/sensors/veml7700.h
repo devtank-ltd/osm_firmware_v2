@@ -8,4 +8,4 @@
 
 void osm_veml7700_init(void);
 
-void osm_veml7700_inf_init(measurements_inf_t* inf);
+void osm_veml7700_inf_init(osm_measurements_inf_t* inf);

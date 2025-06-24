@@ -198,7 +198,7 @@ static void process_ack_response(const uint8_t *data)
 }
 
 
-void osm_hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
+void osm_hpm_ring_process(osm_ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 {
     static hpm_packet_header_t header;
     static bool header_active = false;
@@ -310,7 +310,7 @@ static osm_measurements_sensor_state_t _hpm_collection_time(char* name, uint32_t
 }
 
 
-static osm_measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _hpm_get_pm10(char* name, osm_measurements_reading_t* val)
 {
     if (!val)
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -326,7 +326,7 @@ static osm_measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_re
 }
 
 
-static osm_measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _hpm_get_pm25(char* name, osm_measurements_reading_t* val)
 {
     if (!val)
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
@@ -356,7 +356,7 @@ static osm_measurements_value_type_t _hpm_value_type(char* name)
 }
 
 
-void osm_hpm_pm10_inf_init(measurements_inf_t* inf)
+void osm_hpm_pm10_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _hpm_collection_time;
     inf->init_cb            = _hpm_init;
@@ -365,7 +365,7 @@ void osm_hpm_pm10_inf_init(measurements_inf_t* inf)
 }
 
 
-void osm_hpm_pm25_inf_init(measurements_inf_t* inf)
+void osm_hpm_pm25_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _hpm_collection_time;
     inf->init_cb            = _hpm_init;

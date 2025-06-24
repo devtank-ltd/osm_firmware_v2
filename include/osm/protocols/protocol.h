@@ -9,7 +9,7 @@
 void        osm_protocol_system_init(void);
 
 bool        osm_protocol_init(void);
-bool        osm_protocol_append_measurement(measurements_def_t* def, measurements_data_t* data);
+bool        osm_protocol_append_measurement(osm_measurements_def_t* def, osm_measurements_data_t* data);
 bool        osm_protocol_send(void);
 void        osm_protocol_send_error_code(uint8_t err_code);
 
@@ -24,7 +24,7 @@ void        osm_protocol_loop_iteration(void);
 
 bool        osm_protocol_get_id(char* str, uint8_t len);
 
-struct cmd_link_t* osm_protocol_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_protocol_add_commands(struct osm_cmd_link_t* tail);
 
 void        osm_protocol_power_down(void);
 

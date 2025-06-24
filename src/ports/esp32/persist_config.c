@@ -16,8 +16,8 @@
 #define OSM_MEAS "osm_meas"
 
 
-persist_storage_t               persist_data __attribute__((aligned (16))) = {0};
-persist_measurements_storage_t  persist_measurements __attribute__((aligned (16))) = {0};
+osm_persist_storage_t               persist_data __attribute__((aligned (16))) = {0};
+osm_persist_measurements_storage_t  persist_measurements __attribute__((aligned (16))) = {0};
 
 
 static void _persistent_wipe(void)

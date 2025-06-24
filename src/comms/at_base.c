@@ -12,7 +12,7 @@
 #define AT_BASE_MAC_ADDR_LEN            18
 
 
-static at_base_ctx_t* _at_base_ctx = NULL;
+static osm_at_base_ctx_t* _at_base_ctx = NULL;
 
 
 unsigned osm_at_base_raw_send(char* msg, unsigned len)
@@ -29,7 +29,7 @@ bool osm_at_base_send_str(char* str)
 }
 
 
-void osm_at_base_init(at_base_ctx_t* ctx)
+void osm_at_base_init(osm_at_base_ctx_t* ctx)
 {
     if (ctx)
     {
@@ -75,7 +75,7 @@ void osm_at_base_sleep(void)
 }
 
 
-void osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx)
+void osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, osm_cmd_ctx_t * ctx)
 {
     unsigned len = strlen(src);
     if (len)
@@ -91,7 +91,7 @@ void osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_d
 }
 
 
-bool osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx)
+bool osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, osm_cmd_ctx_t * ctx)
 {
     bool ret = true;
     unsigned len = strlen(src);
@@ -114,7 +114,7 @@ bool osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src,
 }
 
 
-void osm_at_base_boot(char* args, cmd_ctx_t * ctx)
+void osm_at_base_boot(char* args, osm_cmd_ctx_t * ctx)
 {
     bool is_out = (bool)strtoul(args, NULL, 10);
     osm_platform_gpio_set(&_at_base_ctx->boot_pin, is_out);
@@ -122,7 +122,7 @@ void osm_at_base_boot(char* args, cmd_ctx_t * ctx)
 }
 
 
-void osm_at_base_reset(char* args, cmd_ctx_t * ctx)
+void osm_at_base_reset(char* args, osm_cmd_ctx_t * ctx)
 {
     bool is_out = (bool)strtoul(args, NULL, 10);
     osm_platform_gpio_set(&_at_base_ctx->reset_pin, is_out);
@@ -130,7 +130,7 @@ void osm_at_base_reset(char* args, cmd_ctx_t * ctx)
 }
 
 
-osm_command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_base_config_setup_str(struct osm_cmd_link_t * cmds, char * str, osm_cmd_ctx_t * ctx)
 {
     osm_command_response_t r = OSM_COMMAND_RESP_ERR;
     if (str[0])
@@ -159,7 +159,7 @@ osm_command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, ch
                     *end_name = 0;
             }
         }
-        for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
+        for(struct osm_cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
         {
             if (!strcmp(cmd->key, str) && cmd->cb)
                 return cmd->cb(next, ctx);
@@ -167,7 +167,7 @@ osm_command_response_t osm_at_base_config_setup_str(struct cmd_link_t * cmds, ch
     }
     else r = OSM_COMMAND_RESP_OK;
 
-    for(struct cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
+    for(struct osm_cmd_link_t * cmd = cmds; cmd; cmd = cmd->next)
     {
         if (!cmd->hidden)
             osm_cmd_ctx_out(ctx,"%10s : %s", cmd->key, cmd->desc);

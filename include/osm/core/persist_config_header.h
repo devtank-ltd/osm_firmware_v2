@@ -31,20 +31,20 @@ typedef struct
     /* 16 byte boundary ---- */
     char                    human_name[OSM_HUMAN_NAME_LEN_NULLED];
     /* 16 byte boundary ---- */
-    persist_model_config_t  model_config;
+    osm_persist_model_config_t  model_config;
     /* 16 byte boundary ---- */
     uint64_t                config_count;
-} __attribute__((__packed__)) persist_storage_t;
+} __attribute__((__packed__)) osm_persist_storage_t;
 
 
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, model_name);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, serial_number);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, human_name);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, model_config);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_storage_t, config_count);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_storage_t, model_name);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_storage_t, serial_number);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_storage_t, human_name);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_storage_t, model_config);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_storage_t, config_count);
 
 
 typedef struct
 {
-    measurements_def_t      measurements_arr[OSM_MEASUREMENTS_MAX_NUMBER];
-} __attribute__((__packed__)) persist_measurements_storage_t;
+    osm_measurements_def_t      measurements_arr[OSM_MEASUREMENTS_MAX_NUMBER];
+} __attribute__((__packed__)) osm_persist_measurements_storage_t;

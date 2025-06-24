@@ -10,7 +10,7 @@
 #include <osm/core/uart_rings.h>
 
 
-static const i2c_def_t i2c_buses[]     = OSM_I2C_BUSES;
+static const osm_i2c_def_t i2c_buses[]     = OSM_I2C_BUSES;
 static uint8_t         i2c_buses_ready = 0;
 
 
@@ -46,7 +46,7 @@ static void i2c_init(unsigned i2c_index)
 
     i2c_buses_ready |= (1 << i2c_index);
 
-    const i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
+    const osm_i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
 
     RCC_CCIPR |= (RCC_CCIPR_I2CxSEL_APB << RCC_CCIPR_I2C1SEL_SHIFT);
     rcc_periph_clock_enable(i2c_bus->rcc);
@@ -162,7 +162,7 @@ static void i2c_deinit(unsigned i2c_index)
 
     i2c_buses_ready &= ~(1 << i2c_index);
 
-    const i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
+    const osm_i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
     i2c_peripheral_disable(i2c_bus->i2c);
     rcc_periph_clock_disable(i2c_bus->rcc);
 }

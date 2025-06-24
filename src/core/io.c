@@ -15,7 +15,7 @@
 #include "platform_model.h"
 #include <osm/sensors/io_watch.h>
 
-const port_n_pins_t ios_pins[IOS_COUNT]      = IOS_PORT_N_PINS;
+const osm_port_n_pins_t ios_pins[IOS_COUNT]      = IOS_PORT_N_PINS;
 static uint16_t * ios_state;
 
 #define IOS_SPECIAL_STR_LEN                         64
@@ -136,7 +136,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
     char * type = _ios_get_type_possible(io);
 
-    const port_n_pins_t * gpio_pin = &ios_pins[io];
+    const osm_port_n_pins_t * gpio_pin = &ios_pins[io];
 
     osm_platform_gpio_setup(gpio_pin, io_state & OSM_IO_AS_INPUT, io_state & OSM_IO_PULL_MASK);
 
@@ -365,7 +365,7 @@ void     osm_io_on(unsigned io, bool on_off)
     if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
-    const port_n_pins_t * output = &ios_pins[io];
+    const osm_port_n_pins_t * output = &ios_pins[io];
 
     if (ios_state[io] & OSM_IO_AS_INPUT)
         return;
@@ -385,12 +385,12 @@ void     osm_io_on(unsigned io, bool on_off)
 }
 
 
-void     osm_io_log(unsigned io, cmd_ctx_t * ctx)
+void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
 {
     if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
-    const port_n_pins_t * gpio_pin = &ios_pins[io];
+    const osm_port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
     char * pretype = "";
     char * posttype = "";
@@ -439,21 +439,21 @@ void     osm_io_log(unsigned io, cmd_ctx_t * ctx)
 }
 
 
-void     osm_ios_log(cmd_ctx_t * ctx)
+void     osm_ios_log(osm_cmd_ctx_t * ctx)
 {
     for(unsigned n = 0; n < OSM_ARRAY_SIZE(ios_pins); n++)
         osm_io_log(n, ctx);
 }
 
 
-static osm_command_response_t _io_log_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _io_log_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_ios_log(ctx);
     return OSM_COMMAND_RESP_OK;
 }
 
 
-static osm_command_response_t _io_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _io_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     /* io 0 : OUT = NONE
      * io 1 : IN = DOWN
@@ -555,7 +555,7 @@ static osm_command_response_t _io_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _io_cmd_enable_pulsecount_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _io_cmd_enable_pulsecount_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     /* <io> <R/F/B> <U/D/N>
      */
@@ -596,7 +596,7 @@ bad_exit:
 }
 
 
-static osm_command_response_t _io_cmd_enable_onewire_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _io_cmd_enable_onewire_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     char * pos = NULL;
     unsigned io = strtoul(args, &pos, 10);
@@ -612,7 +612,7 @@ static osm_command_response_t _io_cmd_enable_onewire_cb(char * args, cmd_ctx_t *
 }
 
 
-static osm_command_response_t _io_cmd_enable_watch_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _io_cmd_enable_watch_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     /* <io> <U/D/N>
      */
@@ -642,9 +642,9 @@ bad_exit:
 }
 
 
-struct cmd_link_t* osm_ios_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_ios_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           _io_log_cb                        , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           _io_log_cb                        , false , NULL },
                                        { "io",           "Get/set IO set.",          _io_cb                            , false , NULL },
                                        { "en_pulse",     "Enable Pulsecount IO.",    _io_cmd_enable_pulsecount_cb      , false , NULL },
                                        { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL },
@@ -657,7 +657,7 @@ struct cmd_link_t* osm_ios_add_commands(struct cmd_link_t* tail)
 void osm_ios_measurements_init(void)
 {
 #if IOS_WATCH_COUNT > 0
-    measurements_def_t def;
+    osm_measurements_def_t def;
     def.interval    = 0;
     def.samplecount = 0;
     def.type        = OSM_IO_READING;
@@ -697,7 +697,7 @@ static bool _ios_name_to_index(char* name, unsigned* io)
 }
 
 
-static osm_measurements_sensor_state_t _ios_collect(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _ios_collect(char* name, osm_measurements_reading_t* value)
 {
     unsigned index;
     if (!_ios_name_to_index(name, &index))
@@ -722,7 +722,7 @@ static osm_measurements_value_type_t _ios_value_type(char* name)
 }
 
 
-void osm_ios_inf_init(measurements_inf_t* inf)
+void osm_ios_inf_init(osm_measurements_inf_t* inf)
 {
     inf->get_cb             = _ios_collect;
     inf->value_type_cb      = _ios_value_type;

@@ -124,9 +124,9 @@ struct fd_t
 
 typedef struct
 {
-    persist_measurements_storage_t  persist_measurements;
-    persist_storage_t               persist_data;
-    uint8_t                         __[2048 - sizeof(persist_storage_t)];
+    osm_persist_measurements_storage_t  persist_measurements;
+    osm_persist_storage_t               persist_data;
+    uint8_t                         __[2048 - sizeof(osm_persist_storage_t)];
 }  __attribute__((__packed__)) persist_mem_t;
 
 
@@ -150,7 +150,7 @@ static bool _ios_enabled[IOS_COUNT] = {0};
 
 static char _socket_buf[1024];
 
-static ring_buf_t _socket_in_ring = RING_BUF_INIT(_socket_buf, sizeof(_socket_buf));
+static osm_ring_buf_t _socket_in_ring = RING_BUF_INIT(_socket_buf, sizeof(_socket_buf));
 
 static fd_t fd_list[LINUX_MAX_NFDS] = {
     {
@@ -1534,7 +1534,7 @@ static persist_mem_t* _linux_get_persist(void)
 }
 
 
-persist_storage_t* osm_platform_get_raw_persist(void)
+osm_persist_storage_t* osm_platform_get_raw_persist(void)
 {
     persist_mem_t* persist = _linux_get_persist();
     if (!persist)
@@ -1543,7 +1543,7 @@ persist_storage_t* osm_platform_get_raw_persist(void)
 }
 
 
-persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
+osm_persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 {
     persist_mem_t* persist = _linux_get_persist();
     if (!persist)
@@ -1552,7 +1552,7 @@ persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 }
 
 
-bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(osm_persist_storage_t* persist_data, osm_persist_measurements_storage_t* persist_measurements)
 {
     char osm_img_loc[OSM_LOCATION_LEN];
     osm_concat_osm_location(osm_img_loc, OSM_LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
@@ -1560,9 +1560,9 @@ bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measur
     if (!mem_file)
         return false;
     if (persist_data != &_linux_persist_mem.persist_data)
-        memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(persist_storage_t));
+        memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(osm_persist_storage_t));
     if (persist_measurements != &_linux_persist_mem.persist_measurements)
-        memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(persist_measurements_storage_t));
+        memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(osm_persist_measurements_storage_t));
     fwrite(&_linux_persist_mem, sizeof(_linux_persist_mem), 1, mem_file);
     fclose(mem_file);
     return true;
@@ -1737,20 +1737,20 @@ void __attribute__((weak)) osm_model_main_loop_iterate(void) {}
 
 typedef struct
 {
-    cmd_ctx_t base;
+    osm_cmd_ctx_t base;
     int sock;
-} socket_cmd_ctx_t;
+} socket_osm_cmd_ctx_t;
 
 
-static void _socket_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+static void _socket_cmd_ctx_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
-    socket_cmd_ctx_t * socket_cmd_ctx = (socket_cmd_ctx_t*)ctx;
+    socket_osm_cmd_ctx_t * socket_cmd_ctx = (socket_osm_cmd_ctx_t*)ctx;
     vdprintf(socket_cmd_ctx->sock, fmt, ap);
     dprintf(socket_cmd_ctx->sock, "\n\r");
 }
 
 
-static void _socket_cmd_ctx_flush(cmd_ctx_t * ctx)
+static void _socket_cmd_ctx_flush(osm_cmd_ctx_t * ctx)
 {
 }
 
@@ -1759,7 +1759,7 @@ void osm_platform_main_loop_iterate(void)
 {
     if (_sock_line_used_len)
     {
-        socket_cmd_ctx_t ctx = {{.output_cb = _socket_cmd_ctx_out,
+        socket_osm_cmd_ctx_t ctx = {{.output_cb = _socket_cmd_ctx_out,
                                   .error_cb = _socket_cmd_ctx_out,
                                   .flush_cb = _socket_cmd_ctx_flush},
                                  .sock = _sock_cmd_sock};
@@ -1810,17 +1810,17 @@ void osm_linux_awaken(void)
 }
 
 
-void osm_platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin)
 {
 }
 
 
-void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
 }
 
 
-void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
 {
     _ios_enabled[gpio_pin->index] = is_on;
 
@@ -1846,7 +1846,7 @@ void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 }
 
 
-bool osm_platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     return _ios_enabled[gpio_pin->index];
 }
@@ -1875,7 +1875,7 @@ bool osm_socket_connect(char* path, int* _socketfd)
 }
 
 
-static osm_command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _quit_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"Starting Linux OSM exit.");
     _linux_running = false;
@@ -1883,8 +1883,8 @@ static osm_command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_linux_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_linux_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
+    static struct osm_cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

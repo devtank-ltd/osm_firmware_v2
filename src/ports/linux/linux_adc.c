@@ -260,7 +260,7 @@ void osm_linux_adc_generate(void)
 }
 
 
-void osm_platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(osm_adc_setup_config_t* config)
 {
     _adcs_buf = (uint16_t*)config->mem_addr;
 }

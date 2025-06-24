@@ -179,7 +179,7 @@ static osm_measurements_value_type_t _tmp4718_value_type(char* name)
 }
 
 
-static osm_measurements_sensor_state_t _tmp4718_collect(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _tmp4718_collect(char* name, osm_measurements_reading_t* value)
 {
     tmp4718_measurement_t meas = _tmp4718_name_to_enum(name);
     switch (meas)
@@ -211,7 +211,7 @@ static osm_measurements_sensor_state_t _tmp4718_collect(char* name, measurements
 }
 
 
-void osm_tmp4718_inf_init(measurements_inf_t* inf)
+void osm_tmp4718_inf_init(osm_measurements_inf_t* inf)
 {
     inf->get_cb             = _tmp4718_collect;
     inf->value_type_cb      = _tmp4718_value_type;

@@ -18,15 +18,15 @@
 #define LW_PRINT_CFG_JSON_TAIL                          "  }\n\r}"
 
 
-lw_config_t* osm_lw_get_config(void)
+osm_lw_config_t* osm_lw_get_config(void)
 {
-    comms_config_t* comms_config = &persist_data.model_config.comms_config;
+    osm_comms_config_t* comms_config = &persist_data.model_config.comms_config;
     if (comms_config->type != OSM_COMMS_TYPE_LW)
     {
         osm_comms_debug("Tried to get config for LORAWAN but config is not for LORAWAN.");
         return NULL;
     }
-    return (lw_config_t*)comms_config;
+    return (osm_lw_config_t*)comms_config;
 }
 
 
@@ -34,7 +34,7 @@ bool osm_lw_get_id(char* str, uint8_t len)
 {
     if (len < OSM_LW_DEV_EUI_LEN + 1)
         return false;
-    lw_config_t* config = osm_lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
     if (!config)
         return false;
     strncpy(str, config->dev_eui, OSM_LW_DEV_EUI_LEN);
@@ -45,7 +45,7 @@ bool osm_lw_get_id(char* str, uint8_t len)
 
 bool osm_lw_persist_data_is_valid(void)
 {
-    lw_config_t* config = osm_lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
     if (OSM_LW_CONFIG_VERSION != config->version)
     {
         return false;
@@ -196,7 +196,7 @@ static bool _lw_region(char* name, unsigned len, osm_lw_region_t* region)
 }
 
 
-bool osm_lw_config_setup_str(char * str, cmd_ctx_t * ctx)
+bool osm_lw_config_setup_str(char * str, osm_cmd_ctx_t * ctx)
 {
     // CMD  : "lora_config dev-eui 118f875d6994bbfd"
     // ARGS : "dev-eui 118f875d6994bbfd"
@@ -211,7 +211,7 @@ bool osm_lw_config_setup_str(char * str, cmd_ctx_t * ctx)
         np = p + lenrem;
     uint8_t wordlen = np - p;
 
-    lw_config_t* config = osm_lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
 
     if (!config)
     {
@@ -317,15 +317,15 @@ uint64_t osm_lw_consume(char *p, unsigned len)
 
 /* Return true  if different
  *        false if same      */
-bool osm_lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1)
+bool osm_lw_persist_config_cmp(osm_lw_config_t* d0, osm_lw_config_t* d1)
 {
     return !(
         d0 && d1 &&
-        memcmp(d0, d1, sizeof(lw_config_t)) == 0);
+        memcmp(d0, d1, sizeof(osm_lw_config_t)) == 0);
 }
 
 
-static void _lw_config_init2(lw_config_t* lw_config)
+static void _lw_config_init2(osm_lw_config_t* lw_config)
 {
     lw_config->region = OSM_LW_REGION_EU868;
     lw_config->version = OSM_LW_CONFIG_VERSION;
@@ -334,17 +334,17 @@ static void _lw_config_init2(lw_config_t* lw_config)
 }
 
 
-void osm_lw_config_init(comms_config_t* comms_config)
+void osm_lw_config_init(osm_comms_config_t* comms_config)
 {
     comms_config->type = OSM_COMMS_TYPE_LW;
-    _lw_config_init2((lw_config_t*)comms_config);
+    _lw_config_init2((osm_lw_config_t*)comms_config);
 }
 
 
-void osm_lw_print_config(cmd_ctx_t * ctx)
+void osm_lw_print_config(osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,LW_PRINT_CFG_JSON_HEADER);
-    lw_config_t* config = osm_lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
     osm_cmd_ctx_flush(ctx);
     osm_cmd_ctx_out(ctx,LW_PRINT_CFG_JSON_DEV_EUI(config->dev_eui));
     osm_cmd_ctx_flush(ctx);

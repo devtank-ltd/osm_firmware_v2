@@ -6,7 +6,7 @@
 
 
 
-bool osm_ring_buf_add(ring_buf_t * ring_buf, char c)
+bool osm_ring_buf_add(osm_ring_buf_t * ring_buf, char c)
 {
     /* So we know it's got data, we never let write pos catch read pos*/
     unsigned w_pos = ring_buf->w_pos;
@@ -23,7 +23,7 @@ bool osm_ring_buf_add(ring_buf_t * ring_buf, char c)
 }
 
 
-bool     osm_ring_buf_add_data(ring_buf_t * ring_buf, void * data, unsigned size)
+bool     osm_ring_buf_add_data(osm_ring_buf_t * ring_buf, void * data, unsigned size)
 {
     char * pos = (char*)data;
     while(size--)
@@ -33,7 +33,7 @@ bool     osm_ring_buf_add_data(ring_buf_t * ring_buf, void * data, unsigned size
 }
 
 
-void osm_ring_buf_add_str(ring_buf_t * ring_buf, char * s)
+void osm_ring_buf_add_str(osm_ring_buf_t * ring_buf, char * s)
 {
     while(*s)
         osm_ring_buf_add(ring_buf, *s++);
@@ -41,7 +41,7 @@ void osm_ring_buf_add_str(ring_buf_t * ring_buf, char * s)
 
 
 
-unsigned osm_ring_buf_get_pending(ring_buf_t * ring_buf)
+unsigned osm_ring_buf_get_pending(osm_ring_buf_t * ring_buf)
 {
     unsigned r_pos = ring_buf->r_pos;
     unsigned w_pos = ring_buf->w_pos;
@@ -52,7 +52,7 @@ unsigned osm_ring_buf_get_pending(ring_buf_t * ring_buf)
 }
 
 
-bool      osm_ring_buf_is_full(ring_buf_t * ring_buf)
+bool      osm_ring_buf_is_full(osm_ring_buf_t * ring_buf)
 {
     /* So we know it's got data, we never let write pos catch read pos*/
     unsigned w_next = (ring_buf->w_pos + 1) % ring_buf->size;
@@ -60,7 +60,7 @@ bool      osm_ring_buf_is_full(ring_buf_t * ring_buf)
 }
 
 
-unsigned  osm_ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
+unsigned  osm_ring_buf_read(osm_ring_buf_t * ring_buf, char * buf, unsigned len)
 {
     for(unsigned n = 0; n < len; n++)
     {
@@ -76,7 +76,7 @@ unsigned  osm_ring_buf_read(ring_buf_t * ring_buf, char * buf, unsigned len)
 }
 
 
-unsigned osm_ring_buf_discard(ring_buf_t * ring_buf, unsigned len)
+unsigned osm_ring_buf_discard(osm_ring_buf_t * ring_buf, unsigned len)
 {
     unsigned r_pos = ring_buf->r_pos;
 
@@ -93,7 +93,7 @@ unsigned osm_ring_buf_discard(ring_buf_t * ring_buf, unsigned len)
 }
 
 
-unsigned osm_ring_buf_peek(ring_buf_t * ring_buf, char * buf, unsigned len)
+unsigned osm_ring_buf_peek(osm_ring_buf_t * ring_buf, char * buf, unsigned len)
 {
     unsigned r_pos = ring_buf->r_pos;
 
@@ -110,7 +110,7 @@ unsigned osm_ring_buf_peek(ring_buf_t * ring_buf, char * buf, unsigned len)
 
 
 
-unsigned  osm_ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
+unsigned  osm_ring_buf_readline(osm_ring_buf_t * ring_buf, char * buf, unsigned len)
 {
     unsigned toread = osm_ring_buf_get_pending(ring_buf);
 
@@ -159,7 +159,7 @@ unsigned  osm_ring_buf_readline(ring_buf_t * ring_buf, char * buf, unsigned len)
 }
 
 
-unsigned     osm_ring_buf_consume(ring_buf_t * ring_buf, ring_buf_consume_cb cb, char * tmp_buf, unsigned len, void * data)
+unsigned     osm_ring_buf_consume(osm_ring_buf_t * ring_buf, ring_buf_consume_cb cb, char * tmp_buf, unsigned len, void * data)
 {
     unsigned r_pos = ring_buf->r_pos;
 

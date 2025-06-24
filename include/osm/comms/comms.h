@@ -35,5 +35,5 @@
     osm_cmd_ctx_flush(ctx)
 
 
-struct cmd_link_t* osm_comms_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_comms_add_commands(struct osm_cmd_link_t* tail);
 char* osm_comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char* escaped_char_list, const unsigned escaped_char_count);

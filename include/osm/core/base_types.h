@@ -138,7 +138,7 @@ typedef struct
     uint8_t  samplecount;                               // Number of samples in the interval set. Must be greater than or equal to 1
     uint8_t  type:7;                                    // measurement_def_type_t
     uint8_t  is_immediate:1;                            // Should collect as soon to sending as possible.
-} measurements_def_t;
+} osm_measurements_def_t;
 
 #define OSM_MODBUS_BLOCK_SIZE 16
 #define OSM_MODBUS_BLOCKS  ((OSM_MODBUS_MEMORY_SIZE / OSM_MODBUS_BLOCK_SIZE) - 1) /* We have 1k and the first block is the bus description.*/
@@ -192,7 +192,7 @@ typedef struct
     uint16_t          reg_addr;
     uint16_t          unit_id;
     uint16_t          next_reg_offset;
-} __attribute__((__packed__)) modbus_reg_t;
+} __attribute__((__packed__)) osm_modbus_reg_t;
 
 
 typedef struct
@@ -206,14 +206,14 @@ typedef struct
     uint16_t       first_reg_offset;
     uint16_t       next_dev_offset;
     uint16_t       __;
-} __attribute__((__packed__)) modbus_dev_t;
+} __attribute__((__packed__)) osm_modbus_dev_t;
 
 typedef struct
 {
     uint64_t _;
     uint32_t __;
     uint32_t next_free_offset;
-} __attribute__((__packed__)) modbus_free_t;
+} __attribute__((__packed__)) osm_modbus_free_t;
 
 typedef struct
 {
@@ -227,13 +227,13 @@ typedef struct
     uint16_t first_dev_offset;
     uint16_t first_free_offset;
     uint32_t _;
-    modbus_free_t  blocks[OSM_MODBUS_BLOCKS];
-} __attribute__((__packed__)) modbus_bus_t;
+    osm_modbus_free_t  blocks[OSM_MODBUS_BLOCKS];
+} __attribute__((__packed__)) osm_modbus_bus_t;
 
-_Static_assert(((sizeof(modbus_bus_t) % OSM_MODBUS_BLOCK_SIZE) == 0) &&
-               (sizeof(modbus_free_t) == OSM_MODBUS_BLOCK_SIZE) &&
-               (sizeof(modbus_dev_t) == OSM_MODBUS_BLOCK_SIZE) &&
-               (sizeof(modbus_reg_t) == OSM_MODBUS_BLOCK_SIZE),
+_Static_assert(((sizeof(osm_modbus_bus_t) % OSM_MODBUS_BLOCK_SIZE) == 0) &&
+               (sizeof(osm_modbus_free_t) == OSM_MODBUS_BLOCK_SIZE) &&
+               (sizeof(osm_modbus_dev_t) == OSM_MODBUS_BLOCK_SIZE) &&
+               (sizeof(osm_modbus_reg_t) == OSM_MODBUS_BLOCK_SIZE),
                "Modbus blocks broken.");
 
 typedef enum
@@ -264,7 +264,7 @@ typedef struct
 {
     uint8_t type;           /* osm_comms_type_t */
     uint8_t _[511];
-} __attribute__((__packed__)) comms_config_t;
+} __attribute__((__packed__)) osm_comms_config_t;
 
 
 typedef enum
@@ -280,7 +280,7 @@ typedef union
     int64_t v_i64;
     int32_t v_f32;
     char*   v_str;
-} measurements_reading_t;
+} osm_measurements_reading_t;
 
 
 typedef enum
@@ -290,20 +290,20 @@ typedef enum
 } osm_command_response_t;
 
 
-typedef struct cmd_ctx_t cmd_ctx_t;
-struct cmd_ctx_t
+typedef struct osm_cmd_ctx_t osm_cmd_ctx_t;
+struct osm_cmd_ctx_t
 {
-    void (*output_cb)(cmd_ctx_t * ctx, const char * fmt, va_list ap);
-    void (*error_cb)(cmd_ctx_t * ctx, const char * fmt, va_list ap);
-    void (*flush_cb)(cmd_ctx_t * ctx);
+    void (*output_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*error_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*flush_cb)(osm_cmd_ctx_t * ctx);
 };
 
 
-struct cmd_link_t
+struct osm_cmd_link_t
 {
     const char * key;
     const char * desc;
-    osm_command_response_t (*cb)(char * args, cmd_ctx_t * ctx);
+    osm_command_response_t (*cb)(char * args, osm_cmd_ctx_t * ctx);
     bool hidden;
-    struct cmd_link_t * next;
+    struct osm_cmd_link_t * next;
 };

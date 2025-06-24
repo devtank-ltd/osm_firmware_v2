@@ -8,7 +8,7 @@
 #include <osm/core/uart_rings.h>
 
 
-static const i2c_def_t i2c_buses[]     = OSM_I2C_BUSES;
+static const osm_i2c_def_t i2c_buses[]     = OSM_I2C_BUSES;
 static uint8_t         i2c_buses_ready = 0;
 
 
@@ -25,7 +25,7 @@ static void i2c_init(unsigned i2c_index)
 
     i2c_buses_ready |= (1 << i2c_index);
 
-    const i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
+    const osm_i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
 
     esp_err_t err = i2c_param_config(i2c_bus->port, &i2c_bus->config);
 
@@ -47,7 +47,7 @@ static void i2c_init(unsigned i2c_index)
 
 bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsigned wn, uint8_t *r, unsigned rn, unsigned timeout_ms)
 {
-    const i2c_def_t * i2c_bus = &i2c_buses[i2c];
+    const osm_i2c_def_t * i2c_bus = &i2c_buses[i2c];
     esp_err_t err = ESP_OK;
 
     if (wn)
@@ -82,7 +82,7 @@ static void i2c_deinit(unsigned i2c_index)
 
     i2c_buses_ready &= ~(1 << i2c_index);
 
-    const i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
+    const osm_i2c_def_t * i2c_bus = &i2c_buses[i2c_index];
 
     esp_err_t err = i2c_driver_delete(i2c_bus->port);
 

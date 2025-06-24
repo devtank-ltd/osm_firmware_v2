@@ -26,12 +26,12 @@ void     osm_rak4270_loop_iteration(void);
 
 bool     osm_rak4270_get_id(char* str, uint8_t len);
 
-struct cmd_link_t* osm_rak4270_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_rak4270_add_commands(struct osm_cmd_link_t* tail);
 
 void     osm_rak4270_power_down(void);
 
 bool     osm_rak4270_persist_config_cmp(void* d0, void* d1);
 
-osm_command_response_t osm_rak4270_cmd_config_cb(char* str, cmd_ctx_t * ctx);
-osm_command_response_t osm_rak4270_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx);
-osm_command_response_t osm_rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx);
+osm_command_response_t osm_rak4270_cmd_config_cb(char* str, osm_cmd_ctx_t * ctx);
+osm_command_response_t osm_rak4270_cmd_j_cfg_cb(char* str, osm_cmd_ctx_t * ctx);
+osm_command_response_t osm_rak4270_cmd_conn_cb(char* str, osm_cmd_ctx_t * ctx);

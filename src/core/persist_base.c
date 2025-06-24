@@ -12,13 +12,13 @@
 #include "model.h"
 
 
-bool osm_persist_config_update(const persist_storage_t* from_config, persist_storage_t* to_config)
+bool osm_persist_config_update(const osm_persist_storage_t* from_config, osm_persist_storage_t* to_config)
 {
     uint16_t base_version = from_config->version >> 8;
     uint16_t model_version = from_config->version & 0xFF;
     if (OSM_PERSIST_BASE_VERSION == base_version)
     {
-        memcpy(to_config, from_config, sizeof(persist_storage_t));
+        memcpy(to_config, from_config, sizeof(osm_persist_storage_t));
     }
     else
     {
@@ -67,14 +67,14 @@ void osm_persistent_wipe(void)
 }
 
 
-static osm_command_response_t _persist_commit_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _persist_commit_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_persist_commit();
     return OSM_COMMAND_RESP_OK;
 }
 
 
-static osm_command_response_t _reset_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _reset_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"Resetting...");
     osm_cmd_ctx_out(ctx,OSM_LOG_END_SPACER);
@@ -84,7 +84,7 @@ static osm_command_response_t _reset_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _wipe_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _wipe_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,OSM_LOG_END_SPACER);
     osm_persistent_wipe();
@@ -92,16 +92,16 @@ static osm_command_response_t _wipe_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_persist_config_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_persist_config_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "save",         "Save config",             _persist_commit_cb             , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "save",         "Save config",             _persist_commit_cb             , false , NULL },
                                        { "reset",        "Reset device.",           _reset_cb                      , false , NULL },
                                        { "wipe",         "Factory Reset",           _wipe_cb                       , false , NULL }};
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
 
-static osm_measurements_sensor_state_t _persist_config_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _persist_config_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     if (!value)
     {
@@ -119,7 +119,7 @@ static osm_measurements_value_type_t _persist_config_value_type(char* name)
 }
 
 
-void osm_persist_config_inf_init(measurements_inf_t* inf)
+void osm_persist_config_inf_init(osm_measurements_inf_t* inf)
 {
     inf->get_cb             = _persist_config_measurements_get;
     inf->value_type_cb      = _persist_config_value_type;

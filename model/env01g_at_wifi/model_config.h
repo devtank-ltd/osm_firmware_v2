@@ -99,15 +99,15 @@ typedef struct
     uint32_t                mins_interval;
     uint8_t                 _[12];
     /* 16 byte boundary ---- */
-    modbus_bus_t            modbus_bus;
+    osm_modbus_bus_t            modbus_bus;
     /* 16 byte boundary ---- */
-    comms_config_t          comms_config;
+    osm_comms_config_t          comms_config;
     /* 16 byte boundary ---- */
-    cc_config_t             cc_configs[ADC_CC_COUNT];
-    uint8_t                 __[16-(ADC_CC_COUNT * sizeof(cc_config_t)%16)];
+    osm_cc_config_t             cc_configs[ADC_CC_COUNT];
+    uint8_t                 __[16-(ADC_CC_COUNT * sizeof(osm_cc_config_t)%16)];
     /* 16 byte boundary ---- */
-    ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
-    uint8_t                 ___[16-(ADC_FTMA_COUNT * sizeof(ftma_config_t)%16)];
+    osm_ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
+    uint8_t                 ___[16-(ADC_FTMA_COUNT * sizeof(osm_ftma_config_t)%16)];
     /* 16 byte boundary ---- */
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ____[16-((IOS_COUNT * sizeof(uint16_t))%16)];
@@ -121,17 +121,17 @@ typedef struct
     uint32_t                sai_no_buf;
     uint8_t                 _______[16-(sizeof(uint32_t)%16)];
     /* 7 x 16 bytes          */
-} persist_model_config_v1_t;
+} osm_persist_model_config_v1_t;
 
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, modbus_bus);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, comms_config);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, cc_configs);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ftma_configs);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ios_state);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, pulsecount_debounces_ms);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, sai_cal_coeffs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, modbus_bus);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, comms_config);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, cc_configs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, ftma_configs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, ios_state);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, pulsecount_debounces_ms);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, sai_cal_coeffs);
 
-#define persist_model_config_t        persist_model_config_v1_t
+#define osm_persist_model_config_t        osm_persist_model_config_v1_t
 
 #define OSM_FTMA_RESISTOR_S_OHM                                 30
 #define OSM_FTMA_RESISTOR_0_OHM                                 50000

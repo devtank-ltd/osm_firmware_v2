@@ -188,7 +188,7 @@ static bool _protocol_append_data_type_float(int32_t* value)
 }
 
 
-static bool _protocol_append_value_type_i64(measurements_data_t* data, bool single)
+static bool _protocol_append_value_type_i64(osm_measurements_data_t* data, bool single)
 {
     if (single)
         return _protocol_append_data_type_i64(&data->value.value_64.sum);
@@ -201,13 +201,13 @@ static bool _protocol_append_value_type_i64(measurements_data_t* data, bool sing
 }
 
 
-static bool _protocol_append_value_type_str(measurements_data_t* data)
+static bool _protocol_append_value_type_str(osm_measurements_data_t* data)
 {
     return _protocol_append_data_type_str(data->value.value_s.str);
 }
 
 
-static bool _protocol_append_value_type_float(measurements_data_t* data, bool single)
+static bool _protocol_append_value_type_float(osm_measurements_data_t* data, bool single)
 {
     if (single)
         return _protocol_append_data_type_float(&data->value.value_f.sum);
@@ -220,7 +220,7 @@ static bool _protocol_append_value_type_float(measurements_data_t* data, bool si
 }
 
 
-bool osm_protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
+bool osm_protocol_append_measurement(osm_measurements_def_t* def, osm_measurements_data_t* data)
 {
     bool single = def->samplecount == 1;
 

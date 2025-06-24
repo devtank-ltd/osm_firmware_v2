@@ -57,8 +57,8 @@
 
 typedef struct
 {
-    special_io_info_t   info;
-    port_n_pins_t       pnp;
+    osm_special_io_info_t   info;
+    osm_port_n_pins_t       pnp;
     uint32_t            exti;
     uint8_t             exti_irq;
     osm_io_special_t        edge;
@@ -69,7 +69,7 @@ typedef struct
     uint32_t            tim_rst;
     uint32_t            tim_irq;
 #if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
-    port_n_pins_t       led_pnp;
+    osm_port_n_pins_t   led_pnp;
     uint32_t            led_tim;
     uint32_t            led_tim_rcc;
     uint32_t            led_tim_rst;
@@ -326,7 +326,7 @@ static void _pulsecount_init(unsigned io, osm_io_special_t edge)
 
 void osm_pulsecount_init(void)
 {
-    _pulsecount_debounces_ms = ((persist_model_config_t*)&persist_data.model_config)->pulsecount_debounces_ms;
+    _pulsecount_debounces_ms = ((osm_persist_model_config_t*)&persist_data.model_config)->pulsecount_debounces_ms;
 }
 
 
@@ -424,7 +424,7 @@ static osm_measurements_sensor_state_t _pulsecount_begin(char* name, bool in_iso
 }
 
 
-static osm_measurements_sensor_state_t _pulsecount_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _pulsecount_get(char* name, osm_measurements_reading_t* value)
 {
     if (!value)
     {
@@ -467,7 +467,7 @@ static osm_measurements_value_type_t _pulsecount_value_type(char* name)
 }
 
 
-void     osm_pulsecount_inf_init(measurements_inf_t* inf)
+void     osm_pulsecount_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _pulsecount_collection_time;
     inf->init_cb            = _pulsecount_begin;
@@ -477,7 +477,7 @@ void     osm_pulsecount_inf_init(measurements_inf_t* inf)
 }
 
 
-static osm_command_response_t _hw_pupd_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _hw_pupd_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     unsigned io = strtoul(args, &p, 10);
@@ -521,7 +521,7 @@ static bool _pulsecount_index_from_io(unsigned* index, unsigned io)
 }
 
 
-static osm_command_response_t _pulsecount_pulse_dbnc_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _pulsecount_pulse_dbnc_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_pulsecount_debounces_ms)
     {
@@ -561,9 +561,9 @@ syntax_exit:
 }
 
 
-struct cmd_link_t* osm_pulsecount_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_pulsecount_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "hw_pupd",      "Print all IOs.",                 _hw_pupd_cb                 , false , NULL },
         { "pulse_dbnc",   "Get/set pulse debounce (ms)",    _pulsecount_pulse_dbnc_cb   , false , NULL },

@@ -69,13 +69,13 @@ bool osm_linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
 
 
 
-void     osm_linux_comms_config_init(comms_config_t* config)
+void     osm_linux_comms_config_init(osm_comms_config_t* config)
 {
     config->type = OSM_COMMS_BUILD_TYPE;
 }
 
 
-bool     osm_linux_comms_persist_config_cmp(comms_config_t* d0, comms_config_t* d1)
+bool     osm_linux_comms_persist_config_cmp(osm_comms_config_t* d0, osm_comms_config_t* d1)
 {
     return (d0->type == d1->type);
 }
@@ -109,7 +109,7 @@ void osm_linux_comms_loop_iteration(void)
 }
 
 
-void osm_linux_comms_config_setup_str(char * str, cmd_ctx_t * ctx)
+void osm_linux_comms_config_setup_str(char * str, osm_cmd_ctx_t * ctx)
 {
     if (strstr(str, "dev-eui"))
     {
@@ -129,21 +129,21 @@ bool osm_linux_comms_get_id(char* str, uint8_t len)
 }
 
 
-static osm_command_response_t _linux_comms_send_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _linux_comms_send_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     char * pos = osm_skip_space(args);
     return osm_linux_comms_send_str(pos) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-osm_command_response_t osm_linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_config_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     osm_linux_comms_config_setup_str(osm_skip_space(args), ctx);
     return OSM_COMMAND_RESP_OK;
 }
 
 
-osm_command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_conn_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (osm_linux_comms_get_connected())
     {
@@ -157,7 +157,7 @@ osm_command_response_t osm_linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-osm_command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_HEADER);
     osm_cmd_ctx_flush(ctx);
@@ -171,7 +171,7 @@ osm_command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _linux_comms_dbg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_uart_ring_out(COMMS_UART, args, strlen(args));
     osm_uart_ring_out(COMMS_UART, "\r\n", 2);
@@ -179,9 +179,9 @@ static osm_command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_linux_comms_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_linux_comms_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "osm_comms_send"  ,  "Send linux_comms message"   , _linux_comms_send_cb          , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"            , _linux_comms_dbg_cb           , false , NULL }

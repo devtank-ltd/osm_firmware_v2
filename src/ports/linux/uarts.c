@@ -12,7 +12,7 @@
 #include "pinmap.h"
 #include <osm/core/common.h>
 
-static uart_channel_t uart_channels[] = UART_CHANNELS;
+static osm_uart_channel_t uart_channels[] = UART_CHANNELS;
 
 
 void osm_linux_uart_proc(unsigned uart, char* in, unsigned len)
@@ -70,7 +70,7 @@ bool osm_uart_is_enabled(unsigned uart)
 }
 
 
-void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
+void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, osm_cmd_ctx_t * ctx)
 {
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
@@ -92,7 +92,7 @@ void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_u
         parity = osm_uart_parity_none;
     }
 
-    uart_channel_t* chan = &uart_channels[uart];
+    osm_uart_channel_t* chan = &uart_channels[uart];
     chan->baud      = speed;
     chan->databits  = databits;
     chan->parity    = parity;
@@ -107,7 +107,7 @@ bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm
 {
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
-    uart_channel_t* chan = &uart_channels[uart];
+    osm_uart_channel_t* chan = &uart_channels[uart];
     *speed      = chan->baud;
     *databits   = chan->databits;
     *parity     = chan->parity;
@@ -116,7 +116,7 @@ bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm
 }
 
 
-bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
+bool osm_uart_resetup_str(unsigned uart, char * str, osm_cmd_ctx_t * ctx)
 {
         return true;
     uint32_t         speed;

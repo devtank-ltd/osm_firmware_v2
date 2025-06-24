@@ -51,8 +51,8 @@ static void _stm_setup_systick(void)
 
 static void _stm_setup_rs485(void)
 {
-    port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
-    port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
+    osm_port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
+    osm_port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
 
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(re_port_n_pin.port));
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(de_port_n_pin.port));
@@ -94,7 +94,7 @@ static void _stm_setup_adc_unit(void)
 }
 
 
-static void _stm_setup_adc_dma(adc_setup_config_t* config)
+static void _stm_setup_adc_dma(osm_adc_setup_config_t* config)
 {
     rcc_periph_clock_enable(RCC_DMA1);
 
@@ -200,8 +200,8 @@ void osm_platform_set_rs485_mode(bool driver_enable)
      *
      * */
 
-    port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
-    port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
+    osm_port_n_pins_t re_port_n_pin = OSM_RE_485_PIN;
+    osm_port_n_pins_t de_port_n_pin = OSM_DE_485_PIN;
     if (driver_enable)
     {
         osm_modbus_debug("driver:enable receiver:disable");
@@ -236,29 +236,29 @@ void osm_platform_hard_reset_sys(void)
 }
 
 
-persist_storage_t* osm_platform_get_raw_persist(void)
+osm_persist_storage_t* osm_platform_get_raw_persist(void)
 {
-    return (persist_storage_t*)PERSIST_RAW_DATA;
+    return (osm_persist_storage_t*)PERSIST_RAW_DATA;
 }
 
 
-persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
+osm_persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 {
-    return (persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
+    return (osm_persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
 }
 
 
-bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(osm_persist_storage_t* persist_data, osm_persist_measurements_storage_t* persist_measurements)
 {
     flash_unlock();
     flash_erase_page(FLASH_CONFIG_PAGE);
     flash_erase_page(FLASH_MEASUREMENTS_PAGE);
-    flash_set_data(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t));
-    flash_set_data(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(persist_measurements_storage_t));
+    flash_set_data(PERSIST_RAW_DATA, persist_data, sizeof(osm_persist_storage_t));
+    flash_set_data(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(osm_persist_measurements_storage_t));
     flash_lock();
 
-    return (memcmp(PERSIST_RAW_DATA, persist_data, sizeof(persist_storage_t)) == 0 &&
-            memcmp(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(persist_measurements_storage_t)) == 0);
+    return (memcmp(PERSIST_RAW_DATA, persist_data, sizeof(osm_persist_storage_t)) == 0 &&
+            memcmp(PERSIST_RAW_MEASUREMENTS, persist_measurements, sizeof(osm_persist_measurements_storage_t)) == 0);
 }
 
 void osm_platform_persist_wipe(void)
@@ -321,10 +321,10 @@ void osm_platform_deinit(void)
 }
 
 
-void osm_platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(osm_adc_setup_config_t* config)
 {
     // Setup the clock and gpios
-    const port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
+    const osm_port_n_pins_t port_n_pins[] = ADCS_PORT_N_PINS;
     rcc_periph_clock_enable(RCC_ADC1);
     for(unsigned n = 0; n < OSM_ARRAY_SIZE(port_n_pins); n++)
     {
@@ -381,7 +381,7 @@ void osm_platform_adc_set_num_data(unsigned num_data)
 
 void osm_platform_hpm_enable(bool enable)
 {
-    port_n_pins_t port_n_pin = OSM_HPM_EN_PIN;
+    osm_port_n_pins_t port_n_pin = OSM_HPM_EN_PIN;
     if (enable)
     {
         rcc_periph_clock_enable(OSM_PORT_TO_RCC(port_n_pin.port));
@@ -421,13 +421,13 @@ void sys_tick_handler(void)
 }
 
 
-void osm_platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin)
 {
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(gpio_pin->port));
 }
 
 
-void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
     gpio_mode_setup(gpio_pin->port,
                     (is_input)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT,
@@ -435,7 +435,7 @@ void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint
                     gpio_pin->pins);
 }
 
-void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
 {
     if (is_on)
         gpio_set(gpio_pin->port, gpio_pin->pins);
@@ -443,7 +443,7 @@ void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
         gpio_clear(gpio_pin->port, gpio_pin->pins);
 }
 
-bool osm_platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     return gpio_get(gpio_pin->port, gpio_pin->pins) != 0;
 }

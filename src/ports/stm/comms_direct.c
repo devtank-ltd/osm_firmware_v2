@@ -13,21 +13,21 @@
 #define COMMS_DIRECT_TIMEOUT_MS                  3000
 
 
-static const uart_channel_t _comms_direct_default_uarts[] = UART_CHANNELS;
+static const osm_uart_channel_t _comms_direct_default_uarts[] = UART_CHANNELS;
 
 static struct
 {
-    const uart_channel_t*       default_cmd_uart;
-    const uart_channel_t*       default_comms_uart;
-    port_n_pins_t               cmd_rx_ports_n_pins;
-    port_n_pins_t               cmd_tx_ports_n_pins;
-    port_n_pins_t               comms_rx_ports_n_pins;
-    port_n_pins_t               comms_tx_ports_n_pins;
+    const osm_uart_channel_t*       default_cmd_uart;
+    const osm_uart_channel_t*       default_comms_uart;
+    osm_port_n_pins_t               cmd_rx_ports_n_pins;
+    osm_port_n_pins_t               cmd_tx_ports_n_pins;
+    osm_port_n_pins_t               comms_rx_ports_n_pins;
+    osm_port_n_pins_t               comms_tx_ports_n_pins;
     uint32_t                    last_msg_time;
     bool                        prev_cmd_rx;
     bool                        prev_comms_rx;
-    uart_channel_t              prev_cmd_uart;
-    uart_channel_t              prev_comms_uart;
+    osm_uart_channel_t              prev_cmd_uart;
+    osm_uart_channel_t              prev_comms_uart;
     bool                        begin;
 }  _comms_direct_ctx =
 {
@@ -42,8 +42,8 @@ static struct
 
 void osm_comms_direct_init(void)
 {
-    const uart_channel_t* cmd_uart = &_comms_direct_default_uarts[CMD_UART];
-    const uart_channel_t* comms_uart = &_comms_direct_default_uarts[COMMS_UART];
+    const osm_uart_channel_t* cmd_uart = &_comms_direct_default_uarts[CMD_UART];
+    const osm_uart_channel_t* comms_uart = &_comms_direct_default_uarts[COMMS_UART];
     _comms_direct_ctx.default_cmd_uart = cmd_uart;
     _comms_direct_ctx.default_comms_uart = comms_uart;
 
@@ -67,8 +67,8 @@ static void _comms_direct_setup(void)
     uint8_t databits;
     osm_osm_uart_parity_t parity;
     osm_osm_uart_stop_bits_t stop_bits;
-    uart_channel_t* cmd_uart = &_comms_direct_ctx.prev_cmd_uart;
-    uart_channel_t* comms_uart = &_comms_direct_ctx.prev_comms_uart;
+    osm_uart_channel_t* cmd_uart = &_comms_direct_ctx.prev_cmd_uart;
+    osm_uart_channel_t* comms_uart = &_comms_direct_ctx.prev_comms_uart;
     if (osm_uart_get_setup(CMD_UART, &speed, &databits, &parity, &stop_bits))
     {
         cmd_uart->baud       = speed;
@@ -78,7 +78,7 @@ static void _comms_direct_setup(void)
     }
     else
     {
-        memcpy(cmd_uart, _comms_direct_ctx.default_cmd_uart, sizeof(uart_channel_t));
+        memcpy(cmd_uart, _comms_direct_ctx.default_cmd_uart, sizeof(osm_uart_channel_t));
     }
 
     if (osm_uart_get_setup(COMMS_UART, &speed, &databits, &parity, &stop_bits))
@@ -90,7 +90,7 @@ static void _comms_direct_setup(void)
     }
     else
     {
-        memcpy(comms_uart, _comms_direct_ctx.default_comms_uart, sizeof(uart_channel_t));
+        memcpy(comms_uart, _comms_direct_ctx.default_comms_uart, sizeof(osm_uart_channel_t));
     }
     osm_uart_enable(CMD_UART, false);
     osm_uart_enable(COMMS_UART, false);
@@ -104,8 +104,8 @@ static void _comms_direct_setup(void)
 
 static void _comms_direct_exit(void)
 {
-    uart_channel_t* cmd = &_comms_direct_ctx.prev_cmd_uart;
-    uart_channel_t* comms = &_comms_direct_ctx.prev_comms_uart;
+    osm_uart_channel_t* cmd = &_comms_direct_ctx.prev_cmd_uart;
+    osm_uart_channel_t* comms = &_comms_direct_ctx.prev_comms_uart;
     osm_uart_resetup(CMD_UART, cmd->baud, cmd->databits, cmd->parity, cmd->stop, &uart_cmd_ctx);
     osm_uart_resetup(COMMS_UART, comms->baud, comms->databits, comms->parity, comms->stop, &uart_cmd_ctx);
     osm_uarts_setup();
@@ -183,7 +183,7 @@ static void _comms_direct_enter(void)
 }
 
 
-static osm_command_response_t _comms_direct_enter_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _comms_direct_enter_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (ctx != &uart_cmd_ctx)
     {
@@ -195,9 +195,9 @@ static osm_command_response_t _comms_direct_enter_cb(char* args, cmd_ctx_t * ctx
 }
 
 
-struct cmd_link_t* osm_comms_direct_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_comms_direct_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "comms_direct",    "Enter comms_direct mode",       _comms_direct_enter_cb       , false , NULL },
     };

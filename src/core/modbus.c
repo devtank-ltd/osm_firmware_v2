@@ -46,9 +46,9 @@ static uint8_t tx_modbuspacket[MODBUS_PACKET_BUF_SIZ];
 
 static unsigned modbuspacket_len = 0;
 
-static char _message_queue_regs[1 + sizeof(modbus_reg_t*) * MODBUS_SLOTS] = {0};
+static char _message_queue_regs[1 + sizeof(osm_modbus_reg_t*) * MODBUS_SLOTS] = {0};
 
-static ring_buf_t _message_queue = RING_BUF_INIT(_message_queue_regs, sizeof(_message_queue_regs));
+static osm_ring_buf_t _message_queue = RING_BUF_INIT(_message_queue_regs, sizeof(_message_queue_regs));
 
 
 static uint32_t modbus_read_timing_init = 0;
@@ -134,7 +134,7 @@ static void _modbus_setup_delays(unsigned speed, uint8_t databits, osm_osm_uart_
 }
 
 
-bool modbus_setup_from_str(char * str, cmd_ctx_t * ctx)
+bool modbus_setup_from_str(char * str, osm_cmd_ctx_t * ctx)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
@@ -212,7 +212,7 @@ bool osm_modbus_get_reg_set_expected_done(bool * passfail)
 }
 
 
-static void _modbus_do_start_read(modbus_reg_t * reg)
+static void _modbus_do_start_read(osm_modbus_reg_t * reg)
 {
     uint8_t unit_id = osm_modbus_reg_get_unit_id(reg);
 
@@ -501,9 +501,9 @@ bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, osm_m
 }
 
 
-bool osm_modbus_start_read(modbus_reg_t * reg)
+bool osm_modbus_start_read(osm_modbus_reg_t * reg)
 {
-    modbus_dev_t * dev = modbus_reg_get_dev(reg);
+    osm_modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
     if (!dev ||
         !(reg->func == OSM_MODBUS_READ_HOLDING_FUNC || reg->func == OSM_MODBUS_READ_INPUT_FUNC) ||
@@ -524,7 +524,7 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
             uint32_t delta = osm_since_boot_delta(osm_get_since_boot_ms(), modbus_cur_send_time);
             if (delta < OSM_MODBUS_RESP_TIMEOUT_MS)
             {
-                osm_modbus_debug("No slot free.. sending to fast?? (%u/%u)", (unsigned)(osm_ring_buf_get_pending(&_message_queue)/sizeof(modbus_reg_t*)), (unsigned)(_message_queue.size/sizeof(modbus_reg_t*)) );
+                osm_modbus_debug("No slot free.. sending to fast?? (%u/%u)", (unsigned)(osm_ring_buf_get_pending(&_message_queue)/sizeof(osm_modbus_reg_t*)), (unsigned)(_message_queue.size/sizeof(osm_modbus_reg_t*)) );
                 return false;
             }
         }
@@ -538,7 +538,7 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
         modbus_want_rx = false;
     }
 
-    if (!osm_ring_buf_add_data(&_message_queue, &reg, sizeof(modbus_reg_t*)))
+    if (!osm_ring_buf_add_data(&_message_queue, &reg, sizeof(osm_modbus_reg_t*)))
     {
         osm_log_error("Modbus queue error");
         ring_buf_clear(&_message_queue);
@@ -561,7 +561,7 @@ bool osm_modbus_start_read(modbus_reg_t * reg)
 
 static void _modbus_next_message(void)
 {
-    modbus_reg_t * current_reg = NULL;
+    osm_modbus_reg_t * current_reg = NULL;
 
     if (osm_ring_buf_peek(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg))
         return;
@@ -571,7 +571,7 @@ static void _modbus_next_message(void)
 }
 
 
-static bool _modbus_has_timedout(ring_buf_t * ring)
+static bool _modbus_has_timedout(osm_ring_buf_t * ring)
 {
     uint32_t delta = (modbus_read_timing_init)?
                     osm_since_boot_delta(osm_get_since_boot_ms(), modbus_read_timing_init)
@@ -591,7 +591,7 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
         _modbus_next_message();
     else
     {
-        modbus_reg_t * current_reg = NULL;
+        osm_modbus_reg_t * current_reg = NULL;
 
         osm_modbus_debug("Dropping message in queue.");
         modbus_retransmit_count = 0;
@@ -606,9 +606,9 @@ static bool _modbus_has_timedout(ring_buf_t * ring)
     return true;
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order);
+static void _modbus_reg_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order);
 
-void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
+void osm_modbus_uart_ring_in_process(osm_ring_buf_t * ring)
 {
     static unsigned _header_size = 0;
     if (!modbus_want_rx)
@@ -843,7 +843,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
     }
 
     // Good or bad, we think we have the whole message for current register, so remove it from queue.
-    modbus_reg_t * current_reg = NULL;
+    osm_modbus_reg_t * current_reg = NULL;
 
     if (osm_ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
     {
@@ -867,7 +867,7 @@ void osm_modbus_uart_ring_in_process(ring_buf_t * ring)
         return;
     }
 
-    modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
+    osm_modbus_dev_t * dev = modbus_reg_get_dev(current_reg);
 
     if (dev->unit_id != modbuspacket[0])
     {
@@ -938,13 +938,13 @@ static bool _modbus_data_to_u32(uint32_t* value, uint8_t* data, uint8_t size, os
 }
 
 
-static void _modbus_reg_set(modbus_reg_t * reg, uint32_t v)
+static void _modbus_reg_set(osm_modbus_reg_t * reg, uint32_t v)
 {
     reg->value_data = v;
     reg->value_state = OSM_MB_REG_READY;
 }
 
-static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order)
+static void _modbus_reg_u16_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order)
 {
     if (size != 2)
         return;
@@ -955,7 +955,7 @@ static void _modbus_reg_u16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U16:%"PRIu16, reg->name, v);
 }
 
-static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order)
+static void _modbus_reg_i16_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order)
 {
     if (size != 2)
         return;
@@ -966,7 +966,7 @@ static void _modbus_reg_i16_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I16:%"PRIi16, reg->name, v);
 }
 
-static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
+static void _modbus_reg_u32_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
@@ -977,7 +977,7 @@ static void _modbus_reg_u32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s U32:%"PRIu32, reg->name, v);
 }
 
-static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
+static void _modbus_reg_i32_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
@@ -988,7 +988,7 @@ static void _modbus_reg_i32_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size,
     osm_modbus_debug("reg:%."STR(OSM_MODBUS_NAME_LEN)"s I32:%"PRIi32, reg->name, v);
 }
 
-static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
+static void _modbus_reg_float_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (size != 4)
         return;
@@ -1002,7 +1002,7 @@ static void _modbus_reg_float_cb(modbus_reg_t * reg, uint8_t * data, uint8_t siz
     _modbus_reg_set(reg, v);
 }
 
-static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
+static void _modbus_reg_cb(osm_modbus_reg_t * reg, uint8_t * data, uint8_t size, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     switch(reg->type)
     {
@@ -1016,7 +1016,7 @@ static void _modbus_reg_cb(modbus_reg_t * reg, uint8_t * data, uint8_t size, osm
 }
 
 
-bool osm_modbus_uart_ring_do_out_drain(ring_buf_t * ring)
+bool osm_modbus_uart_ring_do_out_drain(osm_ring_buf_t * ring)
 {
     unsigned len = osm_ring_buf_get_pending(ring);
 
@@ -1066,7 +1066,7 @@ bool osm_modbus_uart_ring_do_out_drain(ring_buf_t * ring)
 
 void osm_modbus_init(void)
 {
-    modbus_bus_t * bus = &persist_data.model_config.modbus_bus;
+    osm_modbus_bus_t * bus = &persist_data.model_config.modbus_bus;
     osm_modbus_bus_init(bus);
 
     osm_uart_resetup(EXT_UART,
@@ -1084,7 +1084,7 @@ void osm_modbus_init(void)
 }
 
 
-static osm_command_response_t _modbus_setup_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_setup_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     /*<BIN/RTU> <SPEED> <BITS><PARITY><STOP>
      * EXAMPLE: RTU 115200 8N1
@@ -1093,16 +1093,16 @@ static osm_command_response_t _modbus_setup_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _modbus_log_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_log_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_modbus_print(ctx);
     return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* osm_modbus_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_modbus_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "mb_setup",     "Change Modbus comms",      _modbus_setup_cb               , false , NULL },
         { "mb_log",       "Show modbus setup",        _modbus_log_cb                 , false , NULL },

@@ -17,7 +17,7 @@ bool osm_sai_set_coeff(uint8_t index, float coeff)
 }
 
 
-void osm_sai_print_coeffs(cmd_ctx_t * ctx)
+void osm_sai_print_coeffs(osm_cmd_ctx_t * ctx)
 {
 }
 
@@ -39,7 +39,7 @@ static osm_measurements_sensor_state_t _sai_measurements_init(char* name, bool i
 }
 
 
-static osm_measurements_sensor_state_t _sai_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _sai_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 }
@@ -51,7 +51,7 @@ static osm_measurements_value_type_t _pulsecount_value_type(char* name)
 }
 
 
-void  osm_sai_inf_init(measurements_inf_t* inf)
+void  osm_sai_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _sai_collection_time;
     inf->init_cb            = _sai_measurements_init;
@@ -61,7 +61,7 @@ void  osm_sai_inf_init(measurements_inf_t* inf)
 }
 
 
-static osm_command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sound_cal_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
@@ -81,8 +81,8 @@ static osm_command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_sai_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_sai_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL }};
+    static struct osm_cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL }};
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

@@ -60,19 +60,19 @@ typedef struct
     char    app_key[OSM_LW_APP_KEY_LEN];
     uint8_t region; /* osm_lw_region_t */
     uint8_t version;
-} __attribute__((__packed__)) lw_config_t;
+} __attribute__((__packed__)) osm_lw_config_t;
 
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(lw_config_t, dev_eui);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(lw_config_t, app_key);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_lw_config_t, dev_eui);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_lw_config_t, app_key);
 
-_Static_assert(sizeof(lw_config_t) < sizeof(comms_config_t), "LoRaWAN config too big.");
+_Static_assert(sizeof(osm_lw_config_t) < sizeof(osm_comms_config_t), "LoRaWAN config too big.");
 
 
 bool            osm_lw_get_id(char* str, uint8_t len);
-lw_config_t*    osm_lw_get_config(void);
+osm_lw_config_t*    osm_lw_get_config(void);
 bool            osm_lw_persist_data_is_valid(void);
-bool            osm_lw_config_setup_str(char * str, cmd_ctx_t * ctx);
+bool            osm_lw_config_setup_str(char * str, osm_cmd_ctx_t * ctx);
 uint64_t        osm_lw_consume(char *p, unsigned len);
-void            osm_lw_config_init(comms_config_t* config);
-bool            osm_lw_persist_config_cmp(lw_config_t* d0, lw_config_t* d1);
-void            osm_lw_print_config(cmd_ctx_t * ctx);
+void            osm_lw_config_init(osm_comms_config_t* config);
+bool            osm_lw_persist_config_cmp(osm_lw_config_t* d0, osm_lw_config_t* d1);
+void            osm_lw_print_config(osm_cmd_ctx_t * ctx);

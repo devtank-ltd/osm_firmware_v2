@@ -162,7 +162,7 @@ int32_t osm_to_f32_from_double(double in)
 }
 
 
-struct cmd_link_t* osm_add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds)
+struct osm_cmd_link_t* osm_add_commands(struct osm_cmd_link_t* tail, struct osm_cmd_link_t* cmds, unsigned num_cmds)
 {
     if (!tail | !cmds)
     {
@@ -225,19 +225,19 @@ bool osm_log_out_drain(uint32_t timeout)
     }
 
 
-void osm_cmd_ctx_out(cmd_ctx_t* ctx, const char* fmt, ...)
+void osm_cmd_ctx_out(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 {
     __CMD_CTX_PRINT(ctx->output_cb)
 }
 
 
-void osm_cmd_ctx_error(cmd_ctx_t* ctx, const char* fmt, ...)
+void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 {
     __CMD_CTX_PRINT(ctx->error_cb)
 }
 
 
-void osm_cmd_ctx_flush(cmd_ctx_t* ctx)
+void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx)
 {
     if (ctx && ctx->flush_cb)
     {
@@ -270,7 +270,7 @@ bool osm_is_str(const char* ref, char* cmp, unsigned cmplen)
 }
 
 
-bool __attribute__((weak)) osm_model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
+bool __attribute__((weak)) osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version)
 {
     return false;
 }

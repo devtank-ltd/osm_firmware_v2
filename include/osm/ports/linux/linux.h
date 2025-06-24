@@ -45,4 +45,4 @@ char osm_concat_osm_location(char* new_loc, unsigned loc_len, char* global);
 
 int64_t osm_linux_get_current_us(void);
 
-struct cmd_link_t* osm_linux_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_linux_add_commands(struct osm_cmd_link_t* tail);

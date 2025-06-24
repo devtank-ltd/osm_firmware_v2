@@ -19,7 +19,7 @@ typedef enum
 } osm_io_pupd_t;
 
 
-extern const port_n_pins_t ios_pins[IOS_COUNT];
+extern const osm_port_n_pins_t ios_pins[IOS_COUNT];
 
 
 bool     osm_ios_get_pupd(unsigned io, uint8_t* pupd);
@@ -41,10 +41,10 @@ bool     osm_io_is_watch_now(unsigned io);
 bool     osm_io_is_input(unsigned io);
 unsigned osm_io_get_bias(unsigned io);
 void     osm_io_on(unsigned io, bool on_off);
-void     osm_io_log(unsigned io, cmd_ctx_t * ctx);
-void     osm_ios_log(cmd_ctx_t * ctx);
+void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx);
+void     osm_ios_log(osm_cmd_ctx_t * ctx);
 
-struct cmd_link_t* osm_ios_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_ios_add_commands(struct osm_cmd_link_t* tail);
 
-void     osm_ios_inf_init(measurements_inf_t* inf);
+void     osm_ios_inf_init(osm_measurements_inf_t* inf);
 void     osm_ios_measurements_init(void);

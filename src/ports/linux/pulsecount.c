@@ -40,7 +40,7 @@ static osm_measurements_sensor_state_t _pulsecount_begin(char* name, bool in_iso
 }
 
 
-static osm_measurements_sensor_state_t _pulsecount_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _pulsecount_get(char* name, osm_measurements_reading_t* value)
 {
     return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
 }
@@ -57,7 +57,7 @@ static osm_measurements_value_type_t _pulsecount_value_type(char* name)
 }
 
 
-void     osm_pulsecount_inf_init(measurements_inf_t* inf)
+void     osm_pulsecount_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _pulsecount_collection_time;
     inf->init_cb            = _pulsecount_begin;
@@ -67,7 +67,7 @@ void     osm_pulsecount_inf_init(measurements_inf_t* inf)
 }
 
 
-struct cmd_link_t* osm_pulsecount_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_pulsecount_add_commands(struct osm_cmd_link_t* tail)
 {
     return tail;
 }

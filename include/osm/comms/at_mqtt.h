@@ -79,41 +79,41 @@ typedef struct
     uint16_t    port;
     uint8_t     _[12];
     /* 16 byte boundary ---- */
-} __attribute__((__packed__)) at_mqtt_config_t; /* 5 x 16 bytes = 80 bytes */
+} __attribute__((__packed__)) osm_at_mqtt_config_t; /* 5 x 16 bytes = 80 bytes */
 
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, addr);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, user);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, pwd);
-OSM_STATIC_ASSERT_16BYTE_ALIGNED(at_mqtt_config_t, path);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_at_mqtt_config_t, addr);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_at_mqtt_config_t, user);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_at_mqtt_config_t, pwd);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_at_mqtt_config_t, path);
 
 
 typedef struct
 {
-    at_base_ctx_t        at_base_ctx;
-    at_mqtt_config_t*   mem;
+    osm_at_base_ctx_t        at_base_ctx;
+    osm_at_mqtt_config_t*   mem;
     char                topic_header[OSM_AT_MQTT_TOPIC_LEN + 1];
     struct
     {
         char message[OSM_COMMS_DEFAULT_MTU];
         unsigned len;
     } publish_packet;
-} at_mqtt_ctx_t;
+} osm_at_mqtt_ctx_t;
 
 
 
 
 bool                osm_at_mqtt_mem_is_valid(void);
-at_base_cmd_t*       osm_at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len);
-void                osm_at_mqtt_init(at_mqtt_ctx_t* ctx);
-at_base_cmd_t*       osm_at_mqtt_get_ntp_cfg(void);
-at_base_cmd_t*       osm_at_mqtt_get_mqtt_user_cfg(void);
-at_base_cmd_t*       osm_at_mqtt_get_mqtt_sub_cfg(void);
-at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn_cfg(void);
+osm_at_base_cmd_t*       osm_at_mqtt_publish_prep(const char* topic, char* message, unsigned message_len);
+void                osm_at_mqtt_init(osm_at_mqtt_ctx_t* ctx);
+osm_at_base_cmd_t*       osm_at_mqtt_get_ntp_cfg(void);
+osm_at_base_cmd_t*       osm_at_mqtt_get_mqtt_user_cfg(void);
+osm_at_base_cmd_t*       osm_at_mqtt_get_mqtt_sub_cfg(void);
+osm_at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn_cfg(void);
 bool                osm_at_mqtt_topic_match(char* topic, unsigned topic_len, char* msg, unsigned len);
-at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn(void);
+osm_at_base_cmd_t*       osm_at_mqtt_get_mqtt_conn(void);
 int                 osm_at_mqtt_process_event(char* msg, unsigned len, char* resp_buf, unsigned resp_buflen);
 bool                osm_at_mqtt_parse_mqtt_conn(char* msg, unsigned len, enum osm_at_mqtt_conn_states_t* conn);
-struct cmd_link_t*  osm_at_mqtt_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t*  osm_at_mqtt_add_commands(struct osm_cmd_link_t* tail);
 bool                osm_at_mqtt_get_id(char* str, uint8_t len);
-void                osm_at_mqtt_cmd_j_cfg(cmd_ctx_t * ctx);
-void                osm_at_mqtt_config_init(at_mqtt_config_t* conf);
+void                osm_at_mqtt_cmd_j_cfg(osm_cmd_ctx_t * ctx);
+void                osm_at_mqtt_config_init(osm_at_mqtt_config_t* conf);

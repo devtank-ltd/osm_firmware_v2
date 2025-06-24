@@ -14,9 +14,9 @@
 static char comms_common_buf[COMMS_COMMON_BUF_SIZ];
 
 
-struct cmd_link_t* osm_comms_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_comms_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "comms_config", "Set comms config"        , osm_comms_cmd_config_cb       , false , NULL },
         { "j_comms_cfg" , "Print comms config"      , osm_comms_cmd_j_cfg_cb        , false , NULL },

@@ -71,7 +71,7 @@ bool osm_model_persist_config_cmp(persist_model_config_t* d0, persist_model_conf
         d0->mins_interval == d1->mins_interval &&
         !osm_modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
         !osm_comms_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
-        memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
+        memcmp(d0->cc_configs, d1->cc_configs, sizeof(osm_cc_config_t) * ADC_CC_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
         memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * OSM_SAI_NUM_CAL_COEFFS) == 0 &&
         d0->sai_no_buf == d1->sai_no_buf &&
@@ -81,7 +81,7 @@ bool osm_model_persist_config_cmp(persist_model_config_t* d0, persist_model_conf
 
 static void _model_core_3v3_init(void)
 {
-    const port_n_pins_t core_3v3_port_n_pins = CORE_3V3_EN_PORT_N_PINS;
+    const osm_port_n_pins_t core_3v3_port_n_pins = CORE_3V3_EN_PORT_N_PINS;
     osm_platform_gpio_setup(&core_3v3_port_n_pins, false, OSM_IO_PUPD_NONE);
     osm_platform_gpio_set(&core_3v3_port_n_pins, true);
 }
@@ -112,7 +112,7 @@ void osm_model_post_init(void)
 }
 
 
-bool osm_model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
@@ -129,7 +129,7 @@ bool osm_model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool osm_model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_do_out_drain(unsigned uart, osm_ring_buf_t * ring)
 {
     if (uart == EXT_UART)
         return osm_modbus_uart_ring_do_out_drain(ring);
@@ -137,7 +137,7 @@ bool osm_model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool osm_model_measurements_get_inf(osm_measurements_def_t * def, osm_measurements_data_t* data, osm_measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
@@ -146,7 +146,7 @@ bool osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_
     }
     // Optional callbacks: get is not optional, neither is collection
     // time if init given are not optional.
-    memset(inf, 0, sizeof(measurements_inf_t));
+    memset(inf, 0, sizeof(osm_measurements_inf_t));
     switch(def->type)
     {
         case OSM_FW_VERSION:    osm_fw_version_inf_init(inf);  break;
@@ -196,7 +196,7 @@ void osm_model_measurements_repopulate(void)
 }
 
 
-void osm_model_cmds_add_all(struct cmd_link_t* tail)
+void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
 {
     tail = osm_bat_add_commands(tail);
     tail = osm_cc_add_commands(tail);
@@ -215,19 +215,19 @@ void osm_model_cmds_add_all(struct cmd_link_t* tail)
 
 void osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled)
 {
-    port_n_pins_t w1_pupd_en_pnp;
+    osm_port_n_pins_t w1_pupd_en_pnp;
     switch (io)
     {
         case W1_PULSE_1_IO:
         {
-            port_n_pins_t t = W1_PULSE_1_PULLUP_EN_PORT_N_PINS;
-            memcpy(&w1_pupd_en_pnp, &t, sizeof(port_n_pins_t));
+            osm_port_n_pins_t t = W1_PULSE_1_PULLUP_EN_PORT_N_PINS;
+            memcpy(&w1_pupd_en_pnp, &t, sizeof(osm_port_n_pins_t));
             break;
         }
         case W1_PULSE_2_IO:
         {
-            port_n_pins_t t = W1_PULSE_2_PULLUP_EN_PORT_N_PINS;
-            memcpy(&w1_pupd_en_pnp, &t, sizeof(port_n_pins_t));
+            osm_port_n_pins_t t = W1_PULSE_2_PULLUP_EN_PORT_N_PINS;
+            memcpy(&w1_pupd_en_pnp, &t, sizeof(osm_port_n_pins_t));
             break;
         }
         default:
@@ -293,7 +293,7 @@ void osm_model_setup_pulse_pupd(uint8_t* pupd)
 }
 
 
-unsigned osm_model_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;

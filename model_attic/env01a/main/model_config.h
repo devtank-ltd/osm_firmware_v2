@@ -40,13 +40,13 @@ typedef struct
     uint32_t                mins_interval;
     uint8_t                 _[12];
     /* 16 byte boundary ---- */
-    modbus_bus_t            modbus_bus;
+    osm_modbus_bus_t            modbus_bus;
     /* 16 byte boundary ---- */
-    comms_config_t          comms_config;
+    osm_comms_config_t          comms_config;
     /* 16 byte boundary ---- */
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ___[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
-} persist_model_config_v1_t;
+} osm_persist_model_config_v1_t;
 
-#define persist_model_config_t        persist_model_config_v1_t
+#define persist_model_config_t        osm_persist_model_config_v1_t

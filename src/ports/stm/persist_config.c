@@ -13,12 +13,12 @@
 #include <osm/core/common.h>
 #include <osm/core/io.h>
 
-_Static_assert(sizeof(persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
-_Static_assert(sizeof(persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");
+_Static_assert(sizeof(osm_persist_storage_t) <= FLASH_PAGE_SIZE, "Persistent memory too large.");
+_Static_assert(sizeof(osm_persist_measurements_storage_t) <= FLASH_PAGE_SIZE, "Persistent measurements too large.");
 
 
-persist_storage_t               persist_data __attribute__((aligned (16)));
-persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));
+osm_persist_storage_t               persist_data __attribute__((aligned (16)));
+osm_persist_measurements_storage_t  persist_measurements __attribute__((aligned (16)));
 
 
 static void _persist_wipe(void)
@@ -41,8 +41,8 @@ static void _persist_wipe(void)
 
 bool osm_persistent_init(void)
 {
-    const persist_storage_t* persist_data_raw = osm_platform_get_raw_persist();
-    const persist_measurements_storage_t* persist_measurements_raw = osm_platform_get_measurements_raw_persist();
+    const osm_persist_storage_t* persist_data_raw = osm_platform_get_raw_persist();
+    const osm_persist_measurements_storage_t* persist_measurements_raw = osm_platform_get_measurements_raw_persist();
 
     bool wipe = false;
 
@@ -92,7 +92,7 @@ bool osm_persistent_init(void)
  *        false if same      */
 static bool _persist_data_cmp(void)
 {
-    persist_storage_t* persist_data_raw = osm_platform_get_raw_persist();
+    osm_persist_storage_t* persist_data_raw = osm_platform_get_raw_persist();
     return !(
         persist_data_raw                                                &&
         persist_data.log_debug_mask == persist_data_raw->log_debug_mask &&
@@ -118,7 +118,7 @@ static bool _persist_data_cmp(void)
  *        false if same      */
 static bool _persist_measurements_cmp(void)
 {
-    persist_measurements_storage_t* persist_measurements_raw = osm_platform_get_measurements_raw_persist();
+    osm_persist_measurements_storage_t* persist_measurements_raw = osm_platform_get_measurements_raw_persist();
     return !(
         persist_measurements_raw                                        &&
         memcmp(&persist_measurements,

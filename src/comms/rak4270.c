@@ -193,7 +193,7 @@ typedef struct
 
 
 static rak4270_state_machine_t   _rak4270_state_machine                   = {.state=RAK4270_STATE_OFF, .init_step=0, .last_message_time=0, .resend_count=0, .reset_count=0};
-static port_n_pins_t        _rak4270_reset_gpio                      = COMMS_RESET_PORT_N_PINS;
+static osm_port_n_pins_t        _rak4270_reset_gpio                      = COMMS_RESET_PORT_N_PINS;
 static char                 _rak4270_out_buffer[RAK4270_BUFFER_SIZE]      = {0};
 static uint8_t              _rak4270_port                            = 0;
 static uint32_t             _rak4270_chip_off_time                   = 0;
@@ -342,7 +342,7 @@ static const char* _rak4270_region_name(uint8_t region)
 }
 
 
-static bool _rak4270_load_config(cmd_ctx_t * ctx)
+static bool _rak4270_load_config(osm_cmd_ctx_t * ctx)
 {
     if (!osm_lw_persist_data_is_valid())
     {
@@ -350,7 +350,7 @@ static bool _rak4270_load_config(cmd_ctx_t * ctx)
         return false;
     }
 
-    lw_config_t* config = osm_lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
     if (!config)
         return false;
     const char* region_name = _rak4270_region_name(config->region);
@@ -730,7 +730,7 @@ void osm_rak4270_reset(void)
 }
 
 
-static bool _rak4270_reload_config(cmd_ctx_t * ctx)
+static bool _rak4270_reload_config(osm_cmd_ctx_t * ctx)
 {
     if (!_rak4270_load_config(ctx))
     {
@@ -1096,7 +1096,7 @@ void osm_rak4270_loop_iteration(void)
 }
 
 
-osm_command_response_t osm_rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak4270_cmd_conn_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     if (osm_rak4270_get_connected())
     {
@@ -1108,7 +1108,7 @@ osm_command_response_t osm_rak4270_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 }
 
 
-osm_command_response_t osm_rak4270_cmd_config_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak4270_cmd_config_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     if (osm_lw_config_setup_str(str, ctx))
     {
@@ -1125,14 +1125,14 @@ bool osm_rak4270_get_id(char* str, uint8_t len)
 }
 
 
-osm_command_response_t osm_rak4270_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak4270_cmd_j_cfg_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     osm_lw_print_config(ctx);
     return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* osm_rak4270_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_rak4270_add_commands(struct osm_cmd_link_t* tail)
 {
     return tail;
 }
@@ -1149,6 +1149,6 @@ void osm_rak4270_power_down(void)
 bool osm_rak4270_persist_config_cmp(void* d0, void* d1)
 {
     return osm_lw_persist_config_cmp(
-        (lw_config_t*)((comms_config_t*)d0),
-        (lw_config_t*)((comms_config_t*)d1));
+        (osm_lw_config_t*)((osm_comms_config_t*)d0),
+        (osm_lw_config_t*)((osm_comms_config_t*)d1));
 }

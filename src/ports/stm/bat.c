@@ -147,7 +147,7 @@ static osm_measurements_sensor_state_t _bat_begin(char* name, bool in_isolation)
 }
 
 
-static osm_measurements_sensor_state_t _bat_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _bat_get(char* name, osm_measurements_reading_t* value)
 {
     if (!_bat_running)
     {
@@ -192,7 +192,7 @@ static osm_measurements_sensor_state_t _bat_get(char* name, measurements_reading
 }
 
 
-bool osm_bat_get_blocking(char* name, measurements_reading_t* value)
+bool osm_bat_get_blocking(char* name, osm_measurements_reading_t* value)
 {
     if (_bat_begin(name, true) != OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS)
     {
@@ -292,7 +292,7 @@ static osm_measurements_value_type_t _bat_value_type(char* name)
 }
 
 
-void                         osm_bat_inf_init(measurements_inf_t* inf)
+void                         osm_bat_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _bat_collection_time_cb;
     inf->init_cb            = _bat_begin;
@@ -301,9 +301,9 @@ void                         osm_bat_inf_init(measurements_inf_t* inf)
 }
 
 
-static osm_command_response_t _bat_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _bat_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    measurements_reading_t value;
+    osm_measurements_reading_t value;
     if (!osm_bat_get_blocking(NULL, &value))
     {
         osm_cmd_ctx_out(ctx,"Could not get bat value.");
@@ -315,8 +315,8 @@ static osm_command_response_t _bat_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_bat_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_bat_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = { { "bat",          "Get battery level.",      _bat_cb                        , false , NULL } };
+    static struct osm_cmd_link_t cmds[] = { { "bat",          "Get battery level.",      _bat_cb                        , false , NULL } };
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

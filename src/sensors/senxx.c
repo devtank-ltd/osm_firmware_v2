@@ -479,7 +479,7 @@ static osm_measurements_sensor_state_t _senxx_start(char* name, bool in_isolatio
 }
 
 
-static osm_measurements_sensor_state_t _senxx_collect(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _senxx_collect(char* name, osm_measurements_reading_t* val)
 {
     if (!name || !val)
     {
@@ -529,7 +529,7 @@ static osm_measurements_sensor_state_t _senxx_collection_time(char* name, uint32
 }
 
 
-void osm_senxx_inf_init(measurements_inf_t* inf)
+void osm_senxx_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _senxx_collection_time;
     inf->init_cb            = _senxx_start;
@@ -538,7 +538,7 @@ void osm_senxx_inf_init(measurements_inf_t* inf)
 }
 
 
-static osm_command_response_t _senxx_pwr_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _senxx_pwr_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     uint8_t enable = strtoul(args, NULL, 10);
     osm_platform_hpm_enable(enable);
@@ -554,7 +554,7 @@ static osm_command_response_t _senxx_pwr_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _senxx_name_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char product_name[32];
     uint8_t product_name_size = 32;
@@ -569,10 +569,10 @@ static osm_command_response_t _senxx_name_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_senxx_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_senxx_add_commands(struct osm_cmd_link_t* tail)
 {
 
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "senxx_pwr",      "Control PWR for SENxx",    _senxx_pwr_cb, false , NULL },
         { "senxx_name",     "Get name for SENxx",       _senxx_name_cb, false , NULL },

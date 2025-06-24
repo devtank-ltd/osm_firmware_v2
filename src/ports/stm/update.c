@@ -53,7 +53,7 @@ void osm_fw_ota_reset(void)
 }
 
 
-bool osm_fw_ota_add_chunk(void * data, unsigned size, cmd_ctx_t * ctx)
+bool osm_fw_ota_add_chunk(void * data, unsigned size, osm_cmd_ctx_t * ctx)
 {
     if (_fw_ota_pos < 0)
     {
@@ -128,7 +128,7 @@ bool osm_fw_ota_complete(uint16_t crc)
 }
 
 
-static osm_command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fw_add(char *args, osm_cmd_ctx_t * ctx)
 {
     args = osm_skip_space(args);
     unsigned len = strlen(args);
@@ -157,7 +157,7 @@ static osm_command_response_t _fw_add(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fw_fin(char *args, osm_cmd_ctx_t * ctx)
 {
     args = osm_skip_space(args);
     uint16_t crc = strtoul(args, NULL, 16);
@@ -171,7 +171,7 @@ static osm_command_response_t _fw_fin(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _fw_reset(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fw_reset(char *args, osm_cmd_ctx_t * ctx)
 {
     osm_persist_commit();
     osm_platform_hard_reset_sys();
@@ -179,9 +179,9 @@ static osm_command_response_t _fw_reset(char *args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_update_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_update_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     _fw_add                       , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "fw+",          "Add chunk of new fw.",     _fw_add                       , false , NULL },
                                        { "fw@",          "Finishing crc of new fw.", _fw_fin                       , false , NULL },
                                        { "fw_reset",     "Reset into new firmware.", _fw_reset                     , false , NULL }};
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));

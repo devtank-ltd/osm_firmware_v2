@@ -335,7 +335,7 @@ static bool _sai_load_coeffs(void)
 
 void osm_sai_init(void)
 {
-    const port_n_pins_t sai_pins[]  = OSM_SAI_PORT_N_PINS;
+    const osm_port_n_pins_t sai_pins[]  = OSM_SAI_PORT_N_PINS;
     const uint32_t      sai_pin_funcs[] = OSM_SAI_PORT_N_PINS_AF;
 
     rcc_periph_clock_enable(SCC_SAI1);
@@ -373,7 +373,7 @@ void osm_sai_init(void)
 
     for(unsigned n = 0; n < OSM_ARRAY_SIZE(sai_pins); n++)
     {
-        port_n_pins_t sai_pin = sai_pins[n];
+        osm_port_n_pins_t sai_pin = sai_pins[n];
 
         rcc_periph_clock_enable(OSM_PORT_TO_RCC(sai_pin.port));
         gpio_mode_setup(sai_pins[n].port,
@@ -619,7 +619,7 @@ static osm_measurements_sensor_state_t _sai_measurements_init(char* name, bool i
 }
 
 
-static osm_measurements_sensor_state_t _sai_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _sai_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     _sai_dma_off();
     if (_sai_sample.num_rms == 0)
@@ -640,7 +640,7 @@ static osm_measurements_sensor_state_t _sai_measurements_get(char* name, measure
 }
 
 
-void osm_sai_print_coeffs(cmd_ctx_t * ctx)
+void osm_sai_print_coeffs(osm_cmd_ctx_t * ctx)
 {
     for (unsigned i = 0; i < OSM_SAI_NUM_CAL_COEFFS; i++)
     {
@@ -664,7 +664,7 @@ static osm_measurements_value_type_t _sai_value_type(char* name)
 }
 
 
-void  osm_sai_inf_init(measurements_inf_t* inf)
+void  osm_sai_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _sai_collection_time;
     inf->init_cb            = _sai_measurements_init;
@@ -674,7 +674,7 @@ void  osm_sai_inf_init(measurements_inf_t* inf)
 }
 
 
-static osm_command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sound_cal_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
@@ -694,7 +694,7 @@ static osm_command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _sai_set_target_no_buf(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sai_set_target_no_buf(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t no_buf = strtoul(args, &p, 10);
@@ -719,9 +719,9 @@ static osm_command_response_t _sai_set_target_no_buf(char* args, cmd_ctx_t * ctx
 }
 
 
-struct cmd_link_t* osm_sai_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_sai_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL },
                                        { "sound_no_buf", "Set the cal num buffers.", _sai_set_target_no_buf        , false , NULL }};
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

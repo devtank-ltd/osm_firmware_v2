@@ -6,4 +6,4 @@
 
 bool osm_sleep_for_ms(uint32_t ms);
 void osm_sleep_exit_sleep_mode(void);
-struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_sleep_add_commands(struct osm_cmd_link_t* tail);

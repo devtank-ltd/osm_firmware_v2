@@ -84,8 +84,8 @@ struct
     rak3172_state_t     state;
     uint32_t            cmd_last_sent;
     uint32_t            sleep_from_time;
-    port_n_pins_t       reset_pin;
-    port_n_pins_t       boot_pin;
+    osm_port_n_pins_t       reset_pin;
+    osm_port_n_pins_t       boot_pin;
     bool                config_is_valid;
     char                last_sent_msg[RAK3172_MAX_CMD_LEN+1];
     uint8_t             err_code;
@@ -125,7 +125,7 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
 static void _rak3172_comms_led_set(bool on)
 {
 #ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
+    const osm_port_n_pins_t comms_led = COMMS_LED;
     osm_platform_gpio_set(&comms_led, !on);
 #endif // COMMS_LED
 }
@@ -394,14 +394,14 @@ bool osm_rak3172_send_allowed(void)
 }
 
 
-static bool _rak3172_load_config(cmd_ctx_t * ctx)
+static bool _rak3172_load_config(osm_cmd_ctx_t * ctx)
 {
     if (!osm_lw_persist_data_is_valid())
     {
         return false;
     }
 
-    lw_config_t* config = osm_lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
     if (!config)
         return false;
 
@@ -467,7 +467,7 @@ void osm_rak3172_init(void)
                     _rak3172_ctx.boot_pin.pins);
     _rak3172_ctx.state = RAK3172_STATE_OFF;
 #ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
+    const osm_port_n_pins_t comms_led = COMMS_LED;
     osm_platform_gpio_init(&comms_led);
     osm_platform_gpio_setup(&comms_led, false, OSM_IO_PUPD_NONE);
 #endif // COMMS_LED
@@ -873,7 +873,7 @@ void _rak3172_send_alive(void)
 }
 
 
-osm_command_response_t osm_rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_config_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     if (osm_lw_config_setup_str(str, ctx))
     {
@@ -895,7 +895,7 @@ bool osm_rak3172_get_id(char* str, uint8_t len)
 }
 
 
-static osm_command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_print_boot_reset_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
     osm_cmd_ctx_out(ctx,"RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
@@ -903,7 +903,7 @@ static osm_command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t
 }
 
 
-static osm_command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_boot_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -926,7 +926,7 @@ static osm_command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_reset_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     bool enabled = strtoul(args, NULL, 10);
     _rak3172_reset_line_set(enabled);
@@ -967,7 +967,7 @@ static const char* _rak3172_init_count_to_str(uint8_t init_count)
 }
 
 
-static osm_command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_state_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx,"STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
     switch (_rak3172_ctx.state)
@@ -1002,7 +1002,7 @@ static osm_command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _rak3172_restart_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_restart_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
@@ -1011,14 +1011,14 @@ static osm_command_response_t _rak3172_restart_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _rak3172_join(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_join(char* str, osm_cmd_ctx_t * ctx)
 {
     _rak3172_send_alive();
     return OSM_COMMAND_RESP_OK;
 }
 
 
-osm_command_response_t osm_rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_conn_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     if (osm_rak3172_get_connected())
     {
@@ -1030,7 +1030,7 @@ osm_command_response_t osm_rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _rak3172_tx_power_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_tx_power_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     char* np;
     unsigned pwr = strtoul(str, &np, 10);
@@ -1049,14 +1049,14 @@ static osm_command_response_t _rak3172_tx_power_cb(char* str, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _rak3172_trssi_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_trssi_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     return _rak3172_printf("AT+TRSSI=?") ? OSM_COMMAND_RESP_OK  :
                                            OSM_COMMAND_RESP_ERR ;
 }
 
 
-static osm_command_response_t _rak3172_ttx_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_ttx_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
@@ -1075,7 +1075,7 @@ static osm_command_response_t _rak3172_ttx_cb(char* str, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _rak3172_trx_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_trx_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
@@ -1094,16 +1094,16 @@ static osm_command_response_t _rak3172_trx_cb(char* str, cmd_ctx_t * ctx)
 }
 
 
-osm_command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     osm_lw_print_config(ctx);
     return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* osm_rak3172_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_rak3172_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
         { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
@@ -1130,6 +1130,6 @@ void osm_rak3172_power_down(void)
 bool osm_rak3172_persist_config_cmp(void* d0, void* d1)
 {
     return osm_lw_persist_config_cmp(
-        (lw_config_t*)((comms_config_t*)d0),
-        (lw_config_t*)((comms_config_t*)d1));
+        (osm_lw_config_t*)((osm_comms_config_t*)d0),
+        (osm_lw_config_t*)((osm_comms_config_t*)d1));
 }

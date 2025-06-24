@@ -24,10 +24,10 @@ typedef struct
 {
     uint32_t        unit;
     uint32_t        rcc;
-    port_n_pins_t   stdby;
-    port_n_pins_t   rx;
+    osm_port_n_pins_t   stdby;
+    osm_port_n_pins_t   rx;
     uint8_t         rx_af;
-    port_n_pins_t   tx;
+    osm_port_n_pins_t   tx;
     uint8_t         tx_af;
 } can_comm_config_t;
 
@@ -36,7 +36,7 @@ static can_comm_config_t _can_comm_config                       = CAN_CONFIG;
 
 
 static can_comm_data_t  _can_comm_data_arr[CAN_COMM_BUFFER_NUM] = {0};
-ring_buf_t              can_comm_ring_data                      = RING_BUF_INIT((volatile char *)_can_comm_data_arr, sizeof(can_comm_data_t));
+osm_ring_buf_t              can_comm_ring_data                      = RING_BUF_INIT((volatile char *)_can_comm_data_arr, sizeof(can_comm_data_t));
 static bool             _can_comm_enabled                       = false;
 
 
@@ -61,9 +61,9 @@ static void _can_comm_clk_init(void)
 
 void osm_can_comm_init(void)
 {
-    port_n_pins_t* can_stdby = &_can_comm_config.stdby;
-    port_n_pins_t* can_rx    = &_can_comm_config.rx;
-    port_n_pins_t* can_tx    = &_can_comm_config.tx;
+    osm_port_n_pins_t* can_stdby = &_can_comm_config.stdby;
+    osm_port_n_pins_t* can_rx    = &_can_comm_config.rx;
+    osm_port_n_pins_t* can_tx    = &_can_comm_config.tx;
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(can_stdby->port));
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(can_rx->port));
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(can_tx->port));
@@ -154,10 +154,10 @@ void osm_can_comm_init(void)
 }
 
 
-static bool _can_comm_new_data(can_comm_packet_t* pkt)
+static bool _can_comm_new_data(osm_can_comm_packet_t* pkt)
 {
     // Need to check if length is size of packet or the size of data.
-    if (!osm_ring_buf_add_data(&can_comm_ring_data, &pkt->header, sizeof(can_comm_header_t)))
+    if (!osm_ring_buf_add_data(&can_comm_ring_data, &pkt->header, sizeof(osm_can_comm_header_t)))
         return false;
     return osm_ring_buf_add_data(&can_comm_ring_data, pkt->data, pkt->header.length);
 }
@@ -167,7 +167,7 @@ void tim3_isr(void)
 {
     timer_clear_flag(OSM_CAN_TIM, TIM_SR_CC1IF);
 
-    can_comm_packet_t pkt;
+    osm_can_comm_packet_t pkt;
     uint8_t data[OSM_CAN_COMM_MAX_DATA_SIZE];
     pkt.data = data;
 
@@ -193,7 +193,7 @@ void osm_can_comm_enable(bool enabled)
 }
 
 
-void osm_can_comm_send(can_comm_packet_t* pkt)
+void osm_can_comm_send(osm_can_comm_packet_t* pkt)
 {
     osm_can_debug("Sending %"PRIu32" len:%u ext:%"PRIu8" rtr:%"PRIu8, pkt->header.id, pkt->header.length, (uint8_t)pkt->header.ext, (uint8_t)pkt->header.rtr);
     osm_log_debug_data(OSM_DEBUG_CAN, pkt->data, pkt->header.length);

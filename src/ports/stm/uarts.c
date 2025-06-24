@@ -21,7 +21,7 @@
 #include <osm/core/common.h>
 
 
-static uart_channel_t uart_channels[OSM_UART_CHANNELS_COUNT] = UART_CHANNELS;
+static osm_uart_channel_t uart_channels[OSM_UART_CHANNELS_COUNT] = UART_CHANNELS;
 
 static volatile bool uart_doing_dma[OSM_UART_CHANNELS_COUNT] = {0};
 
@@ -59,7 +59,7 @@ static void usart_set_baudrate2(uint32_t usart, uint32_t baud)
 }
 
 
-static void uart_up(const uart_channel_t * channel)
+static void uart_up(const osm_uart_channel_t * channel)
 {
     uint32_t parity = _uart_get_parity(channel->parity);
 
@@ -106,7 +106,7 @@ static void uart_up(const uart_channel_t * channel)
 }
 
 
-static void uart_setup(uart_channel_t * channel)
+static void uart_setup(osm_uart_channel_t * channel)
 {
     rcc_periph_clock_enable(OSM_PORT_TO_RCC(channel->gpioport));
     rcc_periph_clock_enable(channel->uart_clk);
@@ -142,7 +142,7 @@ void osm_uart_enable(unsigned uart, bool enable)
 
     osm_uart_debug(uart, "%s", (enable)?"Enable":"Disable");
 
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (!enable)
     {
@@ -164,12 +164,12 @@ bool osm_uart_is_enabled(unsigned uart)
 }
 
 
-void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
+void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, osm_cmd_ctx_t * ctx)
 {
     if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (databits < 7)
     {
@@ -212,7 +212,7 @@ extern bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databi
     if (uart >= OSM_UART_CHANNELS_COUNT )
         return false;
 
-    const uart_channel_t * channel = &uart_channels[uart];
+    const osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (speed)
         *speed = channel->baud;
@@ -230,7 +230,7 @@ extern bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databi
 }
 
 
-bool osm_uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
+bool osm_uart_resetup_str(unsigned uart, char * str, osm_cmd_ctx_t * ctx)
 {
     uint32_t         speed;
     uint8_t          databits;
@@ -273,7 +273,7 @@ static void process_serial(unsigned uart)
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (!channel->enabled)
         return;
@@ -319,7 +319,7 @@ void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
-    const uart_channel_t * channel = &uart_channels[uart];
+    const osm_uart_channel_t * channel = &uart_channels[uart];
 
     while(size--)
         usart_send_blocking(channel->usart, *data++);
@@ -334,7 +334,7 @@ unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
     if (uart_doing_dma[uart])
         return 0;
 
-    const uart_channel_t * channel = &uart_channels[uart];
+    const osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (!channel->enabled)
         return size; /* Drop the data */
@@ -381,7 +381,7 @@ static void process_complete_dma(unsigned index)
     if (index >= OSM_UART_CHANNELS_COUNT)
         return;
 
-    const uart_channel_t * channel = &uart_channels[index];
+    const osm_uart_channel_t * channel = &uart_channels[index];
 
     if ((DMA_ISR(channel->dma_unit) & DMA_ISR_TCIF(channel->dma_channel)) != 0)
     {

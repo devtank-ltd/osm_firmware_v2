@@ -11,19 +11,19 @@ typedef struct
     uint32_t              tx_pin;
     uint32_t              rx_pin;
     uart_config_t         config;
-} uart_channel_t;
+} osm_uart_channel_t;
 
 /* No port on this platform */
-#define port_n_pins_t uint32_t
+#define osm_port_n_pins_t uint32_t
 
 typedef struct
 {
     int          port; 
     i2c_config_t config;
-} i2c_def_t;
+} osm_i2c_def_t;
 
 
 typedef struct
 {
     uint32_t mem_addr;
-} adc_setup_config_t;
+} osm_adc_setup_config_t;

@@ -16,7 +16,7 @@
 
 #define FAULT_STR  "----big fat bootloader crash -----"
 
-static persist_storage_t _config;
+static osm_persist_storage_t _config;
 
 
 static void uart_send_str(char *s)
@@ -102,7 +102,7 @@ int main(void)
     gpio_mode_setup(OSM_LED_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, OSM_LED_PIN);
     gpio_clear(OSM_LED_PORT, OSM_LED_PIN);
 
-    persist_storage_t * config = (persist_storage_t*)PERSIST_RAW_DATA;
+    osm_persist_storage_t * config = (osm_persist_storage_t*)PERSIST_RAW_DATA;
 
     if (config->pending_fw && config->pending_fw != 0xFFFFFFFF)
     {

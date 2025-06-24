@@ -36,13 +36,13 @@ typedef struct
 {
     osm_measurements_sensor_state_t     (* collection_time_cb)(char* name, uint32_t* collection_time);  // Function to retrieve the time in ms between calling the init function (init_cb) and collecting the value (get_cb)
     osm_measurements_sensor_state_t     (* init_cb)(char* name, bool in_isolation);                     // Function to start the process of retrieving the data
-    osm_measurements_sensor_state_t     (* get_cb)(char* name, measurements_reading_t* value);          // Function to collect the value
+    osm_measurements_sensor_state_t     (* get_cb)(char* name, osm_measurements_reading_t* value);          // Function to collect the value
     void                            (* acked_cb)(char* name);                                       // Function to tell subsystem measurement was successfully sent.
     osm_measurements_sensor_state_t     (* iteration_cb)(char* name);                                   // Function that iterates between init and get.
     void                            (* enable_cb)(char* name, bool enabled);                        // Function to inform measurement if active or not.
     bool                            (* is_enabled_cb)(char* name);                                  // Function to get if it is already enabled.
     osm_measurements_value_type_t       (* value_type_cb)(char* name);                                  // Function to inform measurement of the value type.
-} measurements_inf_t;
+} osm_measurements_inf_t;
 
 
 typedef struct
@@ -66,12 +66,12 @@ typedef struct
             char    str[OSM_MEASUREMENTS_VALUE_STR_LEN];
         } value_s;
     };
-} measurements_value_t;
+} osm_measurements_value_t;
 
 
 typedef struct
 {
-    measurements_value_t    value;
+    osm_measurements_value_t    value;
     uint8_t                 value_type:6;                                 /* osm_measurements_value_type_t */
     uint8_t                 instant_send:1;
     uint8_t                 is_collecting:1;
@@ -83,16 +83,16 @@ typedef struct
     uint8_t                 __:1;
     uint32_t                collection_time_cache;
 
-} measurements_data_t;
+} osm_measurements_data_t;
 
 
-typedef bool (*measurements_for_each_cb_t)(measurements_def_t* def, void * data);
+typedef bool (*measurements_for_each_cb_t)(osm_measurements_def_t* def, void * data);
 
 
-bool     osm_measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data);
+bool     osm_measurements_get_measurements_def(char* name, osm_measurements_def_t ** measurements_def, osm_measurements_data_t ** measurements_data);
 bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data);
 
-bool     osm_measurements_add(measurements_def_t* measurement);
+bool     osm_measurements_add(osm_measurements_def_t* measurement);
 bool     osm_measurements_del(char* name);
 
 bool     measurements_set_interval(char* name, uint8_t interval);       // Interval is time in multiples of transmit interval (default 5m) for the measurements to be sent.
@@ -108,13 +108,13 @@ void     osm_measurements_derive_cc_phase(void);
 bool     osm_measurements_send_test(char * name);
 
 extern bool     measurements_enabled;
-bool     osm_measurements_get_reading(char* measurement_name, measurements_reading_t* reading, osm_measurements_value_type_t* type);
-bool     osm_measurements_reading_to_str(measurements_reading_t* reading, osm_measurements_value_type_t type, char* text, uint8_t len);
+bool     osm_measurements_get_reading(char* measurement_name, osm_measurements_reading_t* reading, osm_measurements_value_type_t* type);
+bool     osm_osm_measurements_reading_to_str(osm_measurements_reading_t* reading, osm_measurements_value_type_t type, char* text, uint8_t len);
 
 
-bool     osm_model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf);
+bool     osm_model_measurements_get_inf(osm_measurements_def_t * def, osm_measurements_data_t* data, osm_measurements_inf_t* inf);
 void     osm_model_measurements_repopulate(void);
 
 bool     osm_measurements_rename(char* orig_name, char* new_name_raw);
 
-struct cmd_link_t* osm_measurements_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_measurements_add_commands(struct osm_cmd_link_t* tail);

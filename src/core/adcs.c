@@ -29,7 +29,7 @@ static osm_adcs_keys_t          _adcs_active_key    = OSM_ADCS_KEY_NONE;
 static uint32_t             _adcs_start_time    = 0;
 static volatile uint32_t    _adcs_end_time      = 0;
 
-static adc_setup_config_t _adcs_config = {.mem_addr = (uintptr_t)_adcs_buffer};
+static osm_adc_setup_config_t _adcs_config = {.mem_addr = (uintptr_t)_adcs_buffer};
 
 
 bool osm_adcs_to_mV(uint32_t value, uint32_t* mV)

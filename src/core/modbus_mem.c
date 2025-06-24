@@ -14,7 +14,7 @@
 #define MODBUS_REG_DESC_BUF_LEN             48
 
 
-modbus_bus_t * modbus_bus = NULL;
+osm_modbus_bus_t * modbus_bus = NULL;
 
 
 static uintptr_t _modbus_get_offset(void * ptr)
@@ -31,9 +31,9 @@ static void * _modbus_get_from_offset(uintptr_t offset)
 
 static void _modbus_free(void * block)
 {
-    modbus_free_t * freed = block;
+    osm_modbus_free_t * freed = block;
 
-    memset(freed, 0, sizeof(modbus_free_t));
+    memset(freed, 0, sizeof(osm_modbus_free_t));
 
     if (modbus_bus->first_free_offset)
         freed->next_free_offset = modbus_bus->first_free_offset;
@@ -50,7 +50,7 @@ static void* _modbus_allocate_block(void)
         return NULL;
     }
 
-    modbus_free_t * freed = _modbus_get_from_offset(modbus_bus->first_free_offset);
+    osm_modbus_free_t * freed = _modbus_get_from_offset(modbus_bus->first_free_offset);
 
     modbus_bus->first_free_offset = freed->next_free_offset;
 
@@ -58,7 +58,7 @@ static void* _modbus_allocate_block(void)
 }
 
 
-static modbus_dev_t * _modbus_get_first_dev2(modbus_bus_t* bus)
+static osm_modbus_dev_t * _modbus_get_first_dev2(osm_modbus_bus_t* bus)
 {
     if (!bus || !bus->first_dev_offset)
         return NULL;
@@ -67,13 +67,13 @@ static modbus_dev_t * _modbus_get_first_dev2(modbus_bus_t* bus)
 }
 
 
-static modbus_dev_t * _modbus_get_first_dev(void)
+static osm_modbus_dev_t * _modbus_get_first_dev(void)
 {
     return _modbus_get_first_dev2(modbus_bus);
 }
 
 
-static modbus_dev_t * _modbus_get_next_dev(modbus_dev_t * dev)
+static osm_modbus_dev_t * _modbus_get_next_dev(osm_modbus_dev_t * dev)
 {
     if (!dev || !dev->next_dev_offset)
         return NULL;
@@ -82,7 +82,7 @@ static modbus_dev_t * _modbus_get_next_dev(modbus_dev_t * dev)
 }
 
 
-static modbus_reg_t * _modbus_get_first_reg(modbus_dev_t * dev)
+static osm_modbus_reg_t * _modbus_get_first_reg(osm_modbus_dev_t * dev)
 {
     if (!dev || !dev->first_reg_offset)
         return NULL;
@@ -91,7 +91,7 @@ static modbus_reg_t * _modbus_get_first_reg(modbus_dev_t * dev)
 }
 
 
-static modbus_reg_t * _modbus_get_next_reg(modbus_reg_t * reg)
+static osm_modbus_reg_t * _modbus_get_next_reg(osm_modbus_reg_t * reg)
 {
     if (!reg || !reg->next_reg_offset)
         return NULL;
@@ -100,14 +100,14 @@ static modbus_reg_t * _modbus_get_next_reg(modbus_reg_t * reg)
 }
 
 
-void osm_modbus_print(cmd_ctx_t * ctx)
+void osm_modbus_print(osm_cmd_ctx_t * ctx)
 {
     if (!modbus_bus)
         return;
 
     osm_cmd_ctx_out(ctx,"Modbus @ %s %"PRIu32" %u%c%s", (modbus_bus->binary_protocol)?"BIN":"RTU", modbus_bus->baudrate, modbus_bus->databits, osm_uart_parity_as_char(modbus_bus->parity), osm_uart_stop_bits_as_str(modbus_bus->stopbits));
 
-    modbus_dev_t * dev = _modbus_get_first_dev();
+    osm_modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
     {
         char byte_char = 'M';
@@ -117,7 +117,7 @@ void osm_modbus_print(cmd_ctx_t * ctx)
         if (dev->word_order == OSM_MODBUS_WORD_ORDER_LSW)
             word_char = 'L';
         osm_cmd_ctx_out(ctx,"- Device - 0x%"PRIx16" \"%."STR(OSM_MODBUS_NAME_LEN)"s\" %cSB %cSW", dev->unit_id, dev->name, byte_char, word_char);
-        modbus_reg_t * reg = _modbus_get_first_reg(dev);
+        osm_modbus_reg_t * reg = _modbus_get_first_reg(dev);
         while(reg)
         {
             osm_cmd_ctx_out(ctx,"  - Reg - 0x%"PRIx16" (F:%"PRIu8") \"%."STR(OSM_MODBUS_NAME_LEN)"s\" %s", reg->reg_addr, reg->func, reg->name, osm_modbus_reg_type_get_str(reg->type));
@@ -127,7 +127,7 @@ void osm_modbus_print(cmd_ctx_t * ctx)
     }
 }
 
-static osm_modbus_reg_type_t _modbus_reg_type_from_str(const char * type, const char ** pos, cmd_ctx_t * ctx)
+static osm_modbus_reg_type_t _modbus_reg_type_from_str(const char * type, const char ** pos, osm_cmd_ctx_t * ctx)
 {
     if (!type)
         return OSM_MODBUS_REG_TYPE_INVALID;
@@ -187,21 +187,21 @@ char * osm_modbus_reg_type_get_str(osm_modbus_reg_type_t type)
 }
 
 
-static bool _modbus_reg_is_valid(modbus_reg_t * reg)
+static bool _modbus_reg_is_valid(osm_modbus_reg_t * reg)
 {
     return (reg->value_state == OSM_MB_REG_READY);
 }
 
 
-static uint32_t _modbus_reg_get(modbus_reg_t * reg)
+static uint32_t _modbus_reg_get(osm_modbus_reg_t * reg)
 {
     return reg->value_data;
 }
 
 
-modbus_dev_t * osm_modbus_get_device_by_id(unsigned unit_id)
+osm_modbus_dev_t * osm_modbus_get_device_by_id(unsigned unit_id)
 {
-    modbus_dev_t * dev = _modbus_get_first_dev();
+    osm_modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
     {
         if (dev->unit_id == unit_id)
@@ -212,14 +212,14 @@ modbus_dev_t * osm_modbus_get_device_by_id(unsigned unit_id)
 }
 
 
-static modbus_dev_t * _modbus_get_device_by_name(modbus_bus_t* bus, char * name)
+static osm_modbus_dev_t * _modbus_get_device_by_name(osm_modbus_bus_t* bus, char * name)
 {
     if (!name)
         return NULL;
     unsigned name_len = strlen(name);
     if (name_len > OSM_MODBUS_NAME_LEN)
         return NULL;
-    modbus_dev_t * dev = _modbus_get_first_dev2(bus);
+    osm_modbus_dev_t * dev = _modbus_get_first_dev2(bus);
     while(dev)
     {
         if (strncmp(name, dev->name, OSM_MODBUS_NAME_LEN) == 0)
@@ -230,13 +230,13 @@ static modbus_dev_t * _modbus_get_device_by_name(modbus_bus_t* bus, char * name)
 }
 
 
-modbus_dev_t * osm_modbus_get_device_by_name(char * name)
+osm_modbus_dev_t * osm_modbus_get_device_by_name(char * name)
 {
     return _modbus_get_device_by_name(modbus_bus, name);
 }
 
 
-modbus_reg_t * osm_modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
+osm_modbus_reg_t * osm_modbus_dev_get_reg_by_name(osm_modbus_dev_t * dev, char * name)
 {
     if (!dev || !name)
         return NULL;
@@ -245,7 +245,7 @@ modbus_reg_t * osm_modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
     if (name_len > OSM_MODBUS_NAME_LEN)
         return NULL;
 
-    modbus_reg_t * reg = _modbus_get_first_reg(dev);
+    osm_modbus_reg_t * reg = _modbus_get_first_reg(dev);
     while(reg)
     {
         if (strncmp(name, reg->name, OSM_MODBUS_NAME_LEN) == 0)
@@ -257,7 +257,7 @@ modbus_reg_t * osm_modbus_dev_get_reg_by_name(modbus_dev_t * dev, char * name)
 }
 
 
-uint16_t       osm_modbus_dev_get_unit_id(modbus_dev_t * dev)
+uint16_t       osm_modbus_dev_get_unit_id(osm_modbus_dev_t * dev)
 {
     if (!dev)
         return 0;
@@ -265,9 +265,9 @@ uint16_t       osm_modbus_dev_get_unit_id(modbus_dev_t * dev)
 }
 
 
-bool           osm_modbus_for_each_dev(bool (exit_cb)(modbus_dev_t * dev, void * userdata), void * userdata)
+bool           osm_modbus_for_each_dev(bool (exit_cb)(osm_modbus_dev_t * dev, void * userdata), void * userdata)
 {
-    modbus_dev_t * dev = _modbus_get_first_dev();
+    osm_modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
     {
         if (exit_cb(dev, userdata))
@@ -278,9 +278,9 @@ bool           osm_modbus_for_each_dev(bool (exit_cb)(modbus_dev_t * dev, void *
 }
 
 
-bool           osm_modbus_dev_for_each_reg(modbus_dev_t * dev, bool (exit_cb)(modbus_reg_t * reg, void * userdata), void * userdata)
+bool           osm_modbus_dev_for_each_reg(osm_modbus_dev_t * dev, bool (exit_cb)(osm_modbus_reg_t * reg, void * userdata), void * userdata)
 {
-    modbus_reg_t * reg = _modbus_get_first_reg(dev);
+    osm_modbus_reg_t * reg = _modbus_get_first_reg(dev);
     while(reg)
     {
         if (exit_cb(reg, userdata))
@@ -291,7 +291,7 @@ bool           osm_modbus_dev_for_each_reg(modbus_dev_t * dev, bool (exit_cb)(mo
 }
 
 
-uint16_t          osm_modbus_reg_get_unit_id(modbus_reg_t * reg)
+uint16_t          osm_modbus_reg_get_unit_id(osm_modbus_reg_t * reg)
 {
     if (!reg)
         return 0;
@@ -300,22 +300,22 @@ uint16_t          osm_modbus_reg_get_unit_id(modbus_reg_t * reg)
 
 
 
-void           osm_modbus_dev_del(modbus_dev_t * dev)
+void           osm_modbus_dev_del(osm_modbus_dev_t * dev)
 {
     if (!dev)
         return;
 
-    modbus_reg_t * reg = _modbus_get_first_reg(dev);
+    osm_modbus_reg_t * reg = _modbus_get_first_reg(dev);
     while(reg)
     {
-        modbus_reg_t * next_reg = _modbus_get_next_reg(reg);
+        osm_modbus_reg_t * next_reg = _modbus_get_next_reg(reg);
 
         _modbus_free(reg);
 
         reg = next_reg;
     }
 
-    modbus_dev_t * mem_dev = _modbus_get_first_dev();
+    osm_modbus_dev_t * mem_dev = _modbus_get_first_dev();
     if (dev == mem_dev)
     {
         modbus_bus->first_dev_offset = dev->next_dev_offset;
@@ -325,7 +325,7 @@ void           osm_modbus_dev_del(modbus_dev_t * dev)
 
     while (mem_dev->next_dev_offset)
     {
-        modbus_dev_t* next_dev = _modbus_get_next_dev(mem_dev);
+        osm_modbus_dev_t* next_dev = _modbus_get_next_dev(mem_dev);
         if (next_dev == dev)
         {
             mem_dev->next_dev_offset = dev->next_dev_offset;
@@ -338,15 +338,15 @@ void           osm_modbus_dev_del(modbus_dev_t * dev)
 }
 
 
-modbus_reg_t* osm_modbus_get_reg(char * name)
+osm_modbus_reg_t* osm_modbus_get_reg(char * name)
 {
     if (!name)
         return NULL;
 
-    modbus_dev_t * dev = _modbus_get_first_dev();
+    osm_modbus_dev_t * dev = _modbus_get_first_dev();
     while(dev)
     {
-        modbus_reg_t * reg = osm_modbus_dev_get_reg_by_name(dev, name);
+        osm_modbus_reg_t * reg = osm_modbus_dev_get_reg_by_name(dev, name);
         if (reg)
             return reg;
 
@@ -356,17 +356,17 @@ modbus_reg_t* osm_modbus_get_reg(char * name)
 }
 
 
-void osm_modbus_reg_del(modbus_reg_t * reg)
+void osm_modbus_reg_del(osm_modbus_reg_t * reg)
 {
     if (!reg)
         return;
 
-    modbus_dev_t * dev = modbus_reg_get_dev(reg);
+    osm_modbus_dev_t * dev = modbus_reg_get_dev(reg);
 
     if (!dev)
         osm_modbus_debug("Failed to find device of register!");
 
-    modbus_reg_t * dev_reg = _modbus_get_first_reg(dev);
+    osm_modbus_reg_t * dev_reg = _modbus_get_first_reg(dev);
 
     if (dev_reg == reg)
     {
@@ -377,7 +377,7 @@ void osm_modbus_reg_del(modbus_reg_t * reg)
 
     while(dev_reg)
     {
-        modbus_reg_t * next_reg = _modbus_get_next_reg(dev_reg);
+        osm_modbus_reg_t * next_reg = _modbus_get_next_reg(dev_reg);
 
         if (next_reg == reg)
         {
@@ -393,7 +393,7 @@ void osm_modbus_reg_del(modbus_reg_t * reg)
 }
 
 
-modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
+osm_modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
     if (!name || !unit_id)
         return NULL;
@@ -406,11 +406,11 @@ modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, osm_modbus_by
     if (osm_modbus_get_device_by_name(name))
         return NULL;
 
-    modbus_dev_t * dev = _modbus_allocate_block();
+    osm_modbus_dev_t * dev = _modbus_allocate_block();
     if (!dev)
         return NULL;
 
-    memset(dev, 0, sizeof(modbus_dev_t));
+    memset(dev, 0, sizeof(osm_modbus_dev_t));
     memcpy(dev->name, name, len);
     dev->unit_id = unit_id;
     dev->byte_order = byte_order;
@@ -422,7 +422,7 @@ modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, osm_modbus_by
 }
 
 
-bool           osm_modbus_dev_add_reg(modbus_dev_t * dev, char * name, osm_modbus_reg_type_t type, uint8_t func, uint16_t reg_addr)
+bool           osm_modbus_dev_add_reg(osm_modbus_dev_t * dev, char * name, osm_modbus_reg_type_t type, uint8_t func, uint16_t reg_addr)
 {
     if (!dev || !name)
         return false;
@@ -444,11 +444,11 @@ bool           osm_modbus_dev_add_reg(modbus_dev_t * dev, char * name, osm_modbu
     if (osm_modbus_dev_get_reg_by_name(dev, name))
         return false;
 
-    modbus_reg_t * dst_reg = _modbus_allocate_block();
+    osm_modbus_reg_t * dst_reg = _modbus_allocate_block();
     if (!dst_reg)
         return false;
 
-    memset(dst_reg, 0, sizeof(modbus_reg_t));
+    memset(dst_reg, 0, sizeof(osm_modbus_reg_t));
     memcpy(dst_reg->name, name, name_len);
     dst_reg->reg_addr    = reg_addr;
     dst_reg->type        = type;
@@ -464,7 +464,7 @@ bool           osm_modbus_dev_add_reg(modbus_dev_t * dev, char * name, osm_modbu
 }
 
 
-bool              osm_modbus_reg_get_name(modbus_reg_t * reg, char name[OSM_MODBUS_NAME_LEN + 1])
+bool              osm_modbus_reg_get_name(osm_modbus_reg_t * reg, char name[OSM_MODBUS_NAME_LEN + 1])
 {
     if (!reg)
         return false;
@@ -475,7 +475,7 @@ bool              osm_modbus_reg_get_name(modbus_reg_t * reg, char name[OSM_MODB
 }
 
 
-osm_modbus_reg_type_t osm_modbus_reg_get_type(modbus_reg_t * reg)
+osm_modbus_reg_type_t osm_modbus_reg_get_type(osm_modbus_reg_t * reg)
 {
     if (!reg)
         return OSM_MODBUS_REG_TYPE_INVALID;
@@ -483,7 +483,7 @@ osm_modbus_reg_type_t osm_modbus_reg_get_type(modbus_reg_t * reg)
 }
 
 
-bool              osm_modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value)
+bool              osm_modbus_reg_get_u16(osm_modbus_reg_t * reg, uint16_t * value)
 {
     if (!reg || !value)
         return false;
@@ -495,13 +495,13 @@ bool              osm_modbus_reg_get_u16(modbus_reg_t * reg, uint16_t * value)
 }
 
 
-bool              osm_modbus_reg_get_i16(modbus_reg_t * reg, int16_t * value)
+bool              osm_modbus_reg_get_i16(osm_modbus_reg_t * reg, int16_t * value)
 {
     return osm_modbus_reg_get_u16(reg, (uint16_t * )value);
 }
 
 
-bool              osm_modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value)
+bool              osm_modbus_reg_get_u32(osm_modbus_reg_t * reg, uint32_t * value)
 {
     if (!reg || !value)
         return false;
@@ -512,13 +512,13 @@ bool              osm_modbus_reg_get_u32(modbus_reg_t * reg, uint32_t * value)
 }
 
 
-bool              osm_modbus_reg_get_i32(modbus_reg_t * reg, int32_t * value)
+bool              osm_modbus_reg_get_i32(osm_modbus_reg_t * reg, int32_t * value)
 {
     return osm_modbus_reg_get_u32(reg, (uint32_t * )value);
 }
 
 
-bool              osm_modbus_reg_get_float(modbus_reg_t * reg, float * value)
+bool              osm_modbus_reg_get_float(osm_modbus_reg_t * reg, float * value)
 {
     if (!reg || !value)
         return false;
@@ -535,7 +535,7 @@ bool              osm_modbus_reg_get_float(modbus_reg_t * reg, float * value)
 }
 
 
-modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
+osm_modbus_dev_t    * modbus_reg_get_dev(osm_modbus_reg_t * reg)
 {
     if (!reg)
         return NULL;
@@ -544,7 +544,7 @@ modbus_dev_t    * modbus_reg_get_dev(modbus_reg_t * reg)
 }
 
 
-osm_modbus_reg_state_t osm_modbus_reg_get_state(modbus_reg_t * reg)
+osm_modbus_reg_state_t osm_modbus_reg_get_state(osm_modbus_reg_t * reg)
 {
     if (!reg)
         return OSM_MB_REG_INVALID;
@@ -552,7 +552,7 @@ osm_modbus_reg_state_t osm_modbus_reg_get_state(modbus_reg_t * reg)
 }
 
 
-void osm_modbus_bus_init(modbus_bus_t * bus)
+void osm_modbus_bus_init(osm_modbus_bus_t * bus)
 {
     modbus_bus = bus;
 
@@ -563,7 +563,7 @@ void osm_modbus_bus_init(modbus_bus_t * bus)
     else
     {
         osm_modbus_debug("Failed to load modbus defs");
-        memset(modbus_bus, 0, sizeof(modbus_bus_t));
+        memset(modbus_bus, 0, sizeof(osm_modbus_bus_t));
         modbus_bus->version = OSM_MODBUS_BLOB_VERSION;
         modbus_bus->baudrate    = OSM_MODBUS_SPEED;
         modbus_bus->databits    = OSM_MODBUS_DATABITS;
@@ -579,7 +579,7 @@ void osm_modbus_bus_init(modbus_bus_t * bus)
 
 /* Return true  if different
  *        false if same      */
-bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
+bool osm_modbus_persist_config_cmp(osm_modbus_bus_t* d0, osm_modbus_bus_t* d1)
 {
     /* Is bus different */
     if (d0->version                 != d1->version              ||
@@ -595,10 +595,10 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
         return true;
     }
 
-    modbus_dev_t* d0dev = (modbus_dev_t*)_modbus_get_first_dev2(d0);
-    modbus_dev_t* d1dev = (modbus_dev_t*)_modbus_get_first_dev2(d1);
-    modbus_reg_t* d0reg;
-    modbus_reg_t* d1reg;
+    osm_modbus_dev_t* d0dev = (osm_modbus_dev_t*)_modbus_get_first_dev2(d0);
+    osm_modbus_dev_t* d1dev = (osm_modbus_dev_t*)_modbus_get_first_dev2(d1);
+    osm_modbus_reg_t* d0reg;
+    osm_modbus_reg_t* d1reg;
     unsigned recursion_count = 0;
     while (recursion_count < OSM_MODBUS_BLOCKS)
     {
@@ -611,7 +611,7 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
             return true;
         }
         /* Only remaining is both d0dev and d1dev exist */
-        if (!(d0dev && d1dev && memcmp(d0dev, d1dev, sizeof(modbus_dev_t)) == 0))
+        if (!(d0dev && d1dev && memcmp(d0dev, d1dev, sizeof(osm_modbus_dev_t)) == 0))
         {
             return true;
         }
@@ -650,7 +650,7 @@ bool osm_modbus_persist_config_cmp(modbus_bus_t* d0, modbus_bus_t* d1)
 }
 
 
-static bool _modbus_add_dev_from_str(char* str, cmd_ctx_t * ctx)
+static bool _modbus_add_dev_from_str(char* str, osm_cmd_ctx_t * ctx)
 {
     /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
      * (name can only be 4 char long)
@@ -704,7 +704,7 @@ bad_exit:
 }
 
 
-static osm_command_response_t _modbus_add_dev_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_add_dev_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     /*<unit_id> <LSB/MSB> <LSW/MSW> <name>
      * (name can only be 4 char long)
@@ -720,7 +720,7 @@ static osm_command_response_t _modbus_add_dev_cb(char * args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _modbus_add_reg_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_add_reg_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     /*<unit_id> <reg_addr> <modbus_func> <type> <name>
      * (name can only be 4 char long)
@@ -758,7 +758,7 @@ static osm_command_response_t _modbus_add_reg_cb(char * args, cmd_ctx_t * ctx)
 
     char * name = pos;
 
-    modbus_dev_t * dev = osm_modbus_get_device_by_id(unit_id);
+    osm_modbus_dev_t * dev = osm_modbus_get_device_by_id(unit_id);
     if (!dev)
     {
         osm_cmd_ctx_error(ctx,"Unknown modbus device.");
@@ -781,13 +781,13 @@ static osm_command_response_t _modbus_add_reg_cb(char * args, cmd_ctx_t * ctx)
 
 
 
-static osm_command_response_t _modbus_measurement_del_reg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_measurement_del_reg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     return osm_modbus_measurement_del_reg(args) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-static osm_command_response_t _modbus_measurement_del_dev_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_measurement_del_dev_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     return osm_modbus_measurement_del_dev(args) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
@@ -827,7 +827,7 @@ static bool _modbus_reg_set_value_is_done(void* userdata)
 }
 
 
-static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, osm_modbus_reg_type_t type, float value)
+static bool _modbus_reg_set_value(osm_modbus_dev_t* dev, uint16_t reg_addr, osm_modbus_reg_type_t type, float value)
 {
     uint8_t func;
     switch (type)
@@ -852,7 +852,7 @@ static bool _modbus_reg_set_value(modbus_dev_t* dev, uint16_t reg_addr, osm_modb
 }
 
 
-static osm_command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _modbus_set_reg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     /* mb_reg_set <reg_name> <value> */
     /* mb_reg_set <device_name> <reg_addr> <type> <value> */
@@ -877,8 +877,8 @@ static osm_command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
 
     uint16_t            reg_addr;
     osm_modbus_reg_type_t   type;
-    modbus_dev_t*       dev;
-    modbus_reg_t*       reg = osm_modbus_get_reg(name);
+    osm_modbus_dev_t*       dev;
+    osm_modbus_reg_t*       reg = osm_modbus_get_reg(name);
     if (reg)
     {
         reg_addr    = reg->reg_addr;
@@ -990,9 +990,9 @@ static osm_command_response_t _modbus_set_reg_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_modbus_add_mem_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_modbus_add_mem_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "mb_dev_add",   "Add modbus dev",           _modbus_add_dev_cb             , false , NULL },
         { "mb_reg_add",   "Add modbus reg",           _modbus_add_reg_cb             , false , NULL },

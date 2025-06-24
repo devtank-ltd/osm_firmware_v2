@@ -55,7 +55,7 @@ typedef struct
     char svr_pw[SVRPW_LEN];
 } __attribute__((__packed__)) osm_wifi_config_t;
 
-_Static_assert(sizeof(osm_wifi_config_t) < sizeof(comms_config_t), "WiFi config too big.");
+_Static_assert(sizeof(osm_wifi_config_t) < sizeof(osm_comms_config_t), "WiFi config too big.");
 
 
 static struct
@@ -106,7 +106,7 @@ bool osm_esp_comms_send(char * data, uint16_t len)
 
 static osm_wifi_config_t* _wifi_get_config(void)
 {
-    comms_config_t* comms_config = &persist_data.model_config.comms_config;
+    osm_comms_config_t* comms_config = &persist_data.model_config.comms_config;
     if (comms_config->type != OSM_COMMS_TYPE_WIFI)
     {
         osm_comms_debug("Tried to get config for WiFi but config is not for WiFi.");
@@ -350,16 +350,16 @@ bool        osm_esp_comms_get_id(char* str, uint8_t len) { return false; }
 
 static void _prep_config(void)
 {
-    comms_config_t* comms_config = &persist_data.model_config.comms_config;
+    osm_comms_config_t* comms_config = &persist_data.model_config.comms_config;
     if (comms_config->type != OSM_COMMS_TYPE_WIFI)
     {
-        memset(comms_config, 0, sizeof(comms_config_t));
+        memset(comms_config, 0, sizeof(osm_comms_config_t));
         comms_config->type = OSM_COMMS_TYPE_WIFI;
     }
 }
 
 
-static osm_command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len, char * src, char * name, bool show, cmd_ctx_t * ctx)
+static osm_command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len, char * src, char * name, bool show, osm_cmd_ctx_t * ctx)
 {
     char * p = osm_skip_space(src);
     if (!(*p))
@@ -390,19 +390,19 @@ static osm_command_response_t _get_set_str(unsigned dst_offset, unsigned dst_len
 }
 
 
-static osm_command_response_t _ssid_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _ssid_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     return _get_set_str(GETOFFSET(osm_wifi_config_t, ssid), SSID_LEN, args, "SSID", true, ctx);
 }
 
 
-static osm_command_response_t _pw_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _pw_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     return _get_set_str(GETOFFSET(osm_wifi_config_t, password), WFPW_LEN, args, "Password", false, ctx);
 }
 
 
-static void _print_ams(cmd_ctx_t * ctx)
+static void _print_ams(osm_cmd_ctx_t * ctx)
 {
     osm_cmd_ctx_out(ctx, "Options:");
     for(unsigned n=0; n < OSM_ARRAY_SIZE(_authmodes); n++)
@@ -410,7 +410,7 @@ static void _print_ams(cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _am_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     char * p = osm_skip_space(args);
     if (!(*p))
@@ -452,25 +452,25 @@ static osm_command_response_t _am_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _mqtt_svr_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _mqtt_svr_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     return _get_set_str(GETOFFSET(osm_wifi_config_t, svr), SVR_LEN, args, "MQTT Broker", true, ctx);
 }
 
 
-static osm_command_response_t _mqtt_usr_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _mqtt_usr_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_user), SVRUSR_LEN, args, "MQTT User", true, ctx);
 }
 
 
-static osm_command_response_t _mqtt_pw_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _mqtt_pw_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     return _get_set_str(GETOFFSET(osm_wifi_config_t, svr_pw), SVRPW_LEN, args, "MQTT Password", false, ctx);
 }
 
 
-static osm_command_response_t _auto_start_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _auto_start_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     osm_wifi_config_t* osm_config = _wifi_get_config();
     if (*args && osm_config)
@@ -484,7 +484,7 @@ static osm_command_response_t _auto_start_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _fwd_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _fwd_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     osm_wifi_config_t* osm_config = _wifi_get_config();
     if (*args && osm_config)
@@ -498,9 +498,9 @@ static osm_command_response_t _fwd_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _esp_comms_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _esp_comms_cb(char *args, osm_cmd_ctx_t * ctx)
 {
-    struct cmd_link_t cmds[] =
+    struct osm_cmd_link_t cmds[] =
     {
         { "wifi_ssid", "Get/Set WiFi SSID",      _ssid_cb             , false , NULL },
         { "wifi_pw",   "Get/Set WiFi Password.", _pw_cb                      , false , NULL },
@@ -523,7 +523,7 @@ static osm_command_response_t _esp_comms_cb(char *args, cmd_ctx_t * ctx)
         }
         for(unsigned n=0; n < OSM_ARRAY_SIZE(cmds); n++)
         {
-            struct cmd_link_t * cmd = &cmds[n];
+            struct osm_cmd_link_t * cmd = &cmds[n];
             if (!strcmp(cmd->key, args))
                 return cmd->cb(next, ctx);
         }
@@ -532,14 +532,14 @@ static osm_command_response_t _esp_comms_cb(char *args, cmd_ctx_t * ctx)
 
     for(unsigned n=0; n < OSM_ARRAY_SIZE(cmds); n++)
     {
-        struct cmd_link_t * cmd = &cmds[n];
+        struct osm_cmd_link_t * cmd = &cmds[n];
         osm_cmd_ctx_out(ctx, "%10s : %s", cmd->key, cmd->desc);
     }
     return r;
 }
 
 
-static osm_command_response_t _esp_conn_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _esp_conn_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     _wifi_start();
     _mqtt_start();
@@ -556,9 +556,9 @@ static osm_command_response_t _esp_conn_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_comms_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_comms_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "comms_config", "Config comms", _esp_comms_cb, false , NULL },
         { "comms_conn", "Get if connected or not", _esp_conn_cb, false , NULL },

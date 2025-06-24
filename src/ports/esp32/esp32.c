@@ -119,7 +119,7 @@ void osm_platform_reset_sys(void)
 }
 
 
-bool osm_platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(osm_persist_storage_t* persist_data, osm_persist_measurements_storage_t* persist_measurements)
 {
     return false;
 }
@@ -153,7 +153,7 @@ void osm_platform_deinit(void)
 }
 
 
-void osm_platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(osm_adc_setup_config_t* config)
 {
 }
 
@@ -192,12 +192,12 @@ uint32_t osm_get_since_boot_ms(void)
 }
 
 
-void osm_platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin)
 {
 }
 
 
-void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
     gpio_set_direction(*gpio_pin, (is_input)?GPIO_MODE_INPUT:GPIO_MODE_OUTPUT);
 
@@ -212,12 +212,12 @@ void osm_platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint
     gpio_set_pull_mode(*gpio_pin, pull_mode);
 }
 
-void osm_platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
 {
     gpio_set_level(*gpio_pin, (int)is_on);
 }
 
-bool osm_platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     return (bool)gpio_get_level(*gpio_pin);
 }

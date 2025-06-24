@@ -41,7 +41,7 @@ typedef union
 
 typedef struct
 {
-    special_io_info_t   info;
+    osm_special_io_info_t   info;
     uint8_t             w1_index;
 } ds18b20_instance_t;
 
@@ -132,7 +132,7 @@ static osm_measurements_sensor_state_t _ds18b20_measurements_init(char* name, bo
 }
 
 
-static osm_measurements_sensor_state_t _ds18b20_measurements_collect(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _ds18b20_measurements_collect(char* name, osm_measurements_reading_t* value)
 {
     ds18b20_instance_t* instance;
     if (!_ds18b20_get_instance(&instance, name))
@@ -191,7 +191,7 @@ static osm_measurements_value_type_t _ds18b20_value_type(char* name)
 }
 
 
-void                         osm_ds18b20_inf_init(measurements_inf_t* inf)
+void                         osm_ds18b20_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _ds18b20_collection_time;
     inf->init_cb            = _ds18b20_measurements_init;

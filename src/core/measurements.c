@@ -23,8 +23,8 @@
 
 typedef struct
 {
-    measurements_def_t * def;
-    measurements_data_t  data[OSM_MEASUREMENTS_MAX_NUMBER];
+    osm_measurements_def_t * def;
+    osm_measurements_data_t  data[OSM_MEASUREMENTS_MAX_NUMBER];
 } measurements_arr_t;
 
 
@@ -37,9 +37,9 @@ typedef struct
 
 typedef struct
 {
-    measurements_def_t* def;
-    measurements_data_t* data;
-    measurements_inf_t* inf;
+    osm_measurements_def_t* def;
+    osm_measurements_data_t* data;
+    osm_measurements_inf_t* inf;
 } measurements_info_t;
 
 
@@ -64,15 +64,15 @@ uint32_t transmit_interval = OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL; /* in m
 #define MEASUREMENTS_MIN_TRANSMIT_MS                (15 * 1000)
 
 
-bool osm_measurements_get_measurements_def(char* name, measurements_def_t ** measurements_def, measurements_data_t ** measurements_data)
+bool osm_measurements_get_measurements_def(char* name, osm_measurements_def_t ** measurements_def, osm_measurements_data_t ** measurements_data)
 {
     if (!name || strlen(name) > OSM_MEASURE_NAME_LEN || !name[0])
         return false;
 
     for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t * def   = &_measurements_arr.def[i];
-        measurements_data_t * data = &_measurements_arr.data[i];
+        osm_measurements_def_t * def   = &_measurements_arr.def[i];
+        osm_measurements_data_t * data = &_measurements_arr.data[i];
         if (strncmp(def->name, name, OSM_MEASURE_NAME_LEN) == 0)
         {
             if (measurements_def)
@@ -114,7 +114,7 @@ bool osm_measurements_send_test(char * name)
         return false;
     }
 
-    measurements_reading_t v;
+    osm_measurements_reading_t v;
     osm_measurements_value_type_t v_type;
 
     if (!osm_measurements_get_reading(name, &v, &v_type))
@@ -123,8 +123,8 @@ bool osm_measurements_send_test(char * name)
         return false;
     }
 
-    measurements_def_t* def;
-    measurements_data_t* data;
+    osm_measurements_def_t* def;
+    osm_measurements_data_t* data;
     if (!osm_measurements_get_measurements_def(name, &def, &data))
     {
         osm_measurements_debug("Unable to get measurements definition.");
@@ -209,8 +209,8 @@ static void _measurements_send(void)
 
     for (; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t*  def  = &_measurements_arr.def[i];
-        measurements_data_t* data = &_measurements_arr.data[i];
+        osm_measurements_def_t*  def  = &_measurements_arr.def[i];
+        osm_measurements_data_t* data = &_measurements_arr.data[i];
         if (def->interval && (_interval_count % def->interval == 0))
         {
             if (data->num_samples == 0)
@@ -229,7 +229,7 @@ static void _measurements_send(void)
             }
             data->has_sent = true;
             num_qd++;
-            memset(&data->value, 0, sizeof(measurements_value_t));
+            memset(&data->value, 0, sizeof(osm_measurements_value_t));
             data->num_samples = 0;
             data->num_samples_init = 0;
             data->num_samples_collected = 0;
@@ -266,7 +266,7 @@ static void _measurements_send(void)
 }
 
 
-static uint32_t _measurements_get_collection_time(measurements_def_t* def, measurements_inf_t* inf)
+static uint32_t _measurements_get_collection_time(osm_measurements_def_t* def, osm_measurements_inf_t* inf)
 {
     if (!def || !inf)
         // Doesnt exist
@@ -310,10 +310,10 @@ void osm_on_protocol_sent_ack(bool ack)
     unsigned end = _measurements_chunk_start_pos ? _measurements_chunk_start_pos : OSM_MEASUREMENTS_MAX_NUMBER;
     for (unsigned i = start; i < end; i++)
     {
-        measurements_def_t*  def  = &_measurements_arr.def[i];
+        osm_measurements_def_t*  def  = &_measurements_arr.def[i];
         if (!def->name[0] || !def->interval || (_interval_count % def->interval != 0))
             continue;
-        measurements_inf_t inf;
+        osm_measurements_inf_t inf;
         if (!osm_model_measurements_get_inf(def, NULL, &inf))
             continue;
 
@@ -328,16 +328,16 @@ void osm_on_protocol_sent_ack(bool ack)
 }
 
 
-static bool _measurements_def_is_active(measurements_def_t* def)
+static bool _measurements_def_is_active(osm_measurements_def_t* def)
 {
     return !(def->interval == 0 || def->samplecount == 0 || !def->name[0]);
 }
 
 
-static osm_measurements_sensor_state_t _measurements_sample_init_iteration(measurements_def_t* def, measurements_data_t* data)
+static osm_measurements_sensor_state_t _measurements_sample_init_iteration(osm_measurements_def_t* def, osm_measurements_data_t* data)
 {
     /* returns boolean of not busy/waiting for measurement */
-    measurements_inf_t inf;
+    osm_measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         osm_measurements_debug("Failed to get the interface for %s.", def->name);
@@ -382,9 +382,9 @@ static osm_measurements_sensor_state_t _measurements_sample_init_iteration(measu
 }
 
 
-static bool _measurements_sample_iteration_iteration(measurements_def_t* def, measurements_data_t* data)
+static bool _measurements_sample_iteration_iteration(osm_measurements_def_t* def, osm_measurements_data_t* data)
 {
-    measurements_inf_t inf;
+    osm_measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         osm_measurements_debug("Failed to get the interface for %s.", def->name);
@@ -416,7 +416,7 @@ static bool _measurements_sample_iteration_iteration(measurements_def_t* def, me
 }
 
 
-static osm_measurements_sensor_state_t _measurements_sample_get_resp(measurements_def_t* def, measurements_data_t* data, measurements_inf_t* inf, measurements_reading_t* new_value)
+static osm_measurements_sensor_state_t _measurements_sample_get_resp(osm_measurements_def_t* def, osm_measurements_data_t* data, osm_measurements_inf_t* inf, osm_measurements_reading_t* new_value)
 {
     if (!def || !data || !inf || !new_value)
     {
@@ -444,7 +444,7 @@ static osm_measurements_sensor_state_t _measurements_sample_get_resp(measurement
 }
 
 
-static void _measurements_sample_proc_i64(measurements_data_t* data, measurements_reading_t * new_value)
+static void _measurements_sample_proc_i64(osm_measurements_data_t* data, osm_measurements_reading_t * new_value)
 {
     osm_measurements_debug("Value : %"PRIi64, new_value->v_i64);
 
@@ -475,7 +475,7 @@ static void _measurements_sample_proc_i64(measurements_data_t* data, measurement
 }
 
 
-static void _measurements_sample_proc_str(measurements_data_t* data, measurements_reading_t * new_value)
+static void _measurements_sample_proc_str(osm_measurements_data_t* data, osm_measurements_reading_t * new_value)
 {
     uint8_t new_len = strnlen(new_value->v_str, OSM_MEASUREMENTS_VALUE_STR_LEN - 1);
     strncpy(data->value.value_s.str, new_value->v_str, new_len);
@@ -485,7 +485,7 @@ static void _measurements_sample_proc_str(measurements_data_t* data, measurement
 }
 
 
-static void _measurements_sample_proc_float(measurements_data_t* data, measurements_reading_t * new_value)
+static void _measurements_sample_proc_float(osm_measurements_data_t* data, osm_measurements_reading_t * new_value)
 {
     osm_measurements_debug("Value : %"PRIi32".%03"PRIu32, new_value->v_f32/1000, (uint32_t)abs(new_value->v_f32)%1000);
 
@@ -516,9 +516,9 @@ static void _measurements_sample_proc_float(measurements_data_t* data, measureme
 }
 
 
-static osm_measurements_sensor_state_t _measurements_sample_get_iteration(measurements_def_t* def, measurements_data_t* data)
+static osm_measurements_sensor_state_t _measurements_sample_get_iteration(osm_measurements_def_t* def, osm_measurements_data_t* data)
 {
-    measurements_inf_t inf;
+    osm_measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         osm_measurements_debug("Failed to get the interface for %s.", def->name);
@@ -533,7 +533,7 @@ static osm_measurements_sensor_state_t _measurements_sample_get_iteration(measur
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
-    measurements_reading_t new_value;
+    osm_measurements_reading_t new_value;
     osm_measurements_sensor_state_t rsp = _measurements_sample_get_resp(def, data, &inf, &new_value);
 
     if (rsp == OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS)
@@ -577,8 +577,8 @@ static void _measurements_sample(void)
 
     for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t*  def  = &_measurements_arr.def[i];
-        measurements_data_t* data = &_measurements_arr.data[i];
+        osm_measurements_def_t*  def  = &_measurements_arr.def[i];
+        osm_measurements_data_t* data = &_measurements_arr.data[i];
 
         // Breakout if the interval or samplecount is 0 or has no name
         if (!_measurements_def_is_active(def))
@@ -685,7 +685,7 @@ bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data)
 {
     for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t*  def  = &_measurements_arr.def[i];
+        osm_measurements_def_t*  def  = &_measurements_arr.def[i];
 
         if (def->interval == 0 || !def->name[0])
             continue;
@@ -697,12 +697,12 @@ bool     osm_measurements_for_each(measurements_for_each_cb_t cb, void * data)
 }
 
 
-bool osm_measurements_add(measurements_def_t* measurements_def)
+bool osm_measurements_add(osm_measurements_def_t* measurements_def)
 {
     bool                    found_space = false;
     unsigned                space = OSM_MEASUREMENTS_MAX_NUMBER - 1;
-    measurements_def_t*     def;
-    measurements_data_t*    data;
+    osm_measurements_def_t*     def;
+    osm_measurements_data_t*    data;
     for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
         def = &_measurements_arr.def[i];
@@ -726,15 +726,15 @@ bool osm_measurements_add(measurements_def_t* measurements_def)
     {
         def = &_measurements_arr.def[space];
         data = &_measurements_arr.data[space];
-        memcpy(def, measurements_def, sizeof(measurements_def_t));
-        memset(data, 0, sizeof(measurements_data_t));
+        memcpy(def, measurements_def, sizeof(osm_measurements_def_t));
+        memset(data, 0, sizeof(osm_measurements_data_t));
         {
-            measurements_inf_t inf;
+            osm_measurements_inf_t inf;
             if (!osm_model_measurements_get_inf(def, data, &inf))
             {
                 osm_log_error("Could not get measurement interface.");
-                memset(def, 0, sizeof(measurements_def_t));
-                memset(data, 0, sizeof(measurements_data_t));
+                memset(def, 0, sizeof(osm_measurements_def_t));
+                memset(data, 0, sizeof(osm_measurements_data_t));
                 return false;
             }
             data->collection_time_cache = _measurements_get_collection_time(def, &inf);
@@ -766,15 +766,15 @@ bool osm_measurements_del(char* name)
     {
         if (strcmp(name, _measurements_arr.def[i].name) == 0)
         {
-            measurements_def_t*  def = &_measurements_arr.def[i];
-            measurements_data_t* data = &_measurements_arr.data[i];
-            measurements_inf_t inf;
+            osm_measurements_def_t*  def = &_measurements_arr.def[i];
+            osm_measurements_data_t* data = &_measurements_arr.data[i];
+            osm_measurements_inf_t inf;
             if (!osm_model_measurements_get_inf(def, data, &inf))
                 return false;
             if (inf.enable_cb)
                 inf.enable_cb(def->name, false);
-            memset(def, 0, sizeof(measurements_def_t));
-            memset(data, 0, sizeof(measurements_data_t));
+            memset(def, 0, sizeof(osm_measurements_def_t));
+            memset(data, 0, sizeof(osm_measurements_data_t));
             return true;
         }
     }
@@ -784,14 +784,14 @@ bool osm_measurements_del(char* name)
 
 bool measurements_set_interval(char* name, uint8_t interval)
 {
-    measurements_def_t* def = NULL;
-    measurements_data_t* data;
+    osm_measurements_def_t* def = NULL;
+    osm_measurements_data_t* data;
     if (!osm_measurements_get_measurements_def(name, &def, &data))
     {
         return false;
     }
 
-    measurements_inf_t inf;
+    osm_measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
         return false;
 
@@ -805,7 +805,7 @@ bool measurements_set_interval(char* name, uint8_t interval)
 
 bool measurements_get_interval(char* name, uint8_t * interval)
 {
-    measurements_def_t* measurements_def = NULL;
+    osm_measurements_def_t* measurements_def = NULL;
     if (!interval || !osm_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
@@ -822,7 +822,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
         osm_log_error("Cannot set the samplecount to 0.");
         return false;
     }
-    measurements_def_t* measurements_def = NULL;
+    osm_measurements_def_t* measurements_def = NULL;
     if (!osm_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
@@ -834,7 +834,7 @@ bool measurements_set_samplecount(char* name, uint8_t samplecount)
 
 bool measurements_get_samplecount(char* name, uint8_t * samplecount)
 {
-    measurements_def_t* measurements_def = NULL;
+    osm_measurements_def_t* measurements_def = NULL;
     if (!samplecount || !osm_measurements_get_measurements_def(name, &measurements_def, NULL))
     {
         return false;
@@ -909,12 +909,12 @@ static void _measurements_sleep_iteration(void)
 }
 
 
-static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, osm_measurements_value_type_t* type);
+static bool _measurements_get_reading2(osm_measurements_def_t* def, osm_measurements_data_t* data, osm_measurements_reading_t* reading, osm_measurements_value_type_t* type);
 
 
-static bool _protocol_append_instant_measurement(measurements_def_t* def, measurements_reading_t* reading, osm_measurements_value_type_t type)
+static bool _protocol_append_instant_measurement(osm_measurements_def_t* def, osm_measurements_reading_t* reading, osm_measurements_value_type_t type)
 {
-    measurements_data_t data =
+    osm_measurements_data_t data =
     {
         .value_type     = type,
         .num_samples    = 1,
@@ -945,13 +945,13 @@ void _measurements_check_instant_send(void)
     unsigned count = 0;
     for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
     {
-        measurements_def_t* def = &_measurements_arr.def[i];
-        measurements_data_t* data = &_measurements_arr.data[i];
+        osm_measurements_def_t* def = &_measurements_arr.def[i];
+        osm_measurements_data_t* data = &_measurements_arr.data[i];
         if (data->instant_send)
         {
             data->instant_send = 0;
             /* TODO: Add a check to ensure last sent wasn't 0 seconds ago */
-            measurements_reading_t reading;
+            osm_measurements_reading_t reading;
             osm_measurements_value_type_t type;
             if (!_measurements_get_reading2(def, data, &reading, &type))
             {
@@ -1050,7 +1050,7 @@ static void _measurements_replace_name_if_legacy(char* dest_name, char* old_name
 }
 
 
-static void _measurements_update_def(measurements_def_t* def)
+static void _measurements_update_def(osm_measurements_def_t* def)
 {
     if (def->type == OSM_PULSE_COUNT)
         _measurements_replace_name_if_legacy(def->name, OSM_MEASUREMENTS_LEGACY_PULSE_COUNT_NAME, OSM_MEASUREMENTS_PULSE_COUNT_NAME_1);
@@ -1065,7 +1065,7 @@ void osm_measurements_init(void)
 
     for(unsigned n = 0; n < OSM_MEASUREMENTS_MAX_NUMBER; n++)
     {
-        measurements_def_t* def = &_measurements_arr.def[n];
+        osm_measurements_def_t* def = &_measurements_arr.def[n];
         unsigned char id_start = def->name[0];
 
         if (!id_start || id_start == 0xFF)
@@ -1088,13 +1088,13 @@ void osm_measurements_init(void)
 
     for(unsigned n = 0; n < OSM_MEASUREMENTS_MAX_NUMBER; n++)
     {
-        measurements_def_t* def = &_measurements_arr.def[n];
-        measurements_data_t* data = &_measurements_arr.data[n];
+        osm_measurements_def_t* def = &_measurements_arr.def[n];
+        osm_measurements_data_t* data = &_measurements_arr.data[n];
 
         if (!def->name[0])
             continue;
 
-        measurements_inf_t inf;
+        osm_measurements_inf_t inf;
         if (!osm_model_measurements_get_inf(def, data, &inf))
             continue;
         _measurements_arr.data[n].collection_time_cache = _measurements_get_collection_time(def, &inf);
@@ -1122,7 +1122,7 @@ void osm_measurements_power_mode(osm_measurements_power_mode_t mode)
 typedef struct
 {
     measurements_info_t        base;
-    measurements_reading_t*    reading;
+    osm_measurements_reading_t*    reading;
     osm_measurements_value_type_t* type;
     bool                       func_success;
 } _measurements_get_reading_packet_t;
@@ -1164,7 +1164,7 @@ static bool _measurements_get_reading_collection(void* userdata)
 }
 
 
-static bool _measurements_get_reading2(measurements_def_t* def, measurements_data_t* data, measurements_reading_t* reading, osm_measurements_value_type_t* type)
+static bool _measurements_get_reading2(osm_measurements_def_t* def, osm_measurements_data_t* data, osm_measurements_reading_t* reading, osm_measurements_value_type_t* type)
 {
     if (!def|| !data || !reading)
     {
@@ -1178,7 +1178,7 @@ static bool _measurements_get_reading2(measurements_def_t* def, measurements_dat
         return false;
     }
 
-    measurements_inf_t inf;
+    osm_measurements_inf_t inf;
     if (!osm_model_measurements_get_inf(def, data, &inf))
     {
         osm_measurements_debug("Could not get measurement interface.");
@@ -1243,15 +1243,15 @@ bad_exit:
 }
 
 
-bool osm_measurements_get_reading(char* measurement_name, measurements_reading_t* reading, osm_measurements_value_type_t* type)
+bool osm_measurements_get_reading(char* measurement_name, osm_measurements_reading_t* reading, osm_measurements_value_type_t* type)
 {
     if (!measurement_name || !reading)
     {
         osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
-    measurements_def_t* def;
-    measurements_data_t* data;
+    osm_measurements_def_t* def;
+    osm_measurements_data_t* data;
     if (!osm_measurements_get_measurements_def(measurement_name, &def, &data))
     {
         osm_measurements_debug("Could not get measurement definition and data.");
@@ -1261,7 +1261,7 @@ bool osm_measurements_get_reading(char* measurement_name, measurements_reading_t
 }
 
 
-bool osm_measurements_reading_to_str(measurements_reading_t* reading, osm_measurements_value_type_t type, char* text, uint8_t len)
+bool osm_osm_measurements_reading_to_str(osm_measurements_reading_t* reading, osm_measurements_value_type_t type, char* text, uint8_t len)
 {
     if (!reading || !text)
         return false;
@@ -1302,7 +1302,7 @@ bool osm_measurements_rename(char* orig_name, char* new_name_raw)
         osm_measurements_debug("Measurement with new name already exists.");
         return false;
     }
-    measurements_def_t* def;
+    osm_measurements_def_t* def;
     if (!osm_measurements_get_measurements_def(orig_name, &def, NULL))
     {
         osm_measurements_debug("Can not get the measurements def.");
@@ -1313,9 +1313,9 @@ bool osm_measurements_rename(char* orig_name, char* new_name_raw)
 }
 
 
-static osm_command_response_t _measurements_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_cb(char *args, osm_cmd_ctx_t * ctx)
 {
-    measurements_def_t* measurements_def;
+    osm_measurements_def_t* measurements_def;
     osm_cmd_ctx_out(ctx,"Loaded Measurements");
     osm_cmd_ctx_out(ctx,"Name\tInterval\tSample Count");
     for (unsigned i = 0; i < OSM_MEASUREMENTS_MAX_NUMBER; i++)
@@ -1333,7 +1333,7 @@ static osm_command_response_t _measurements_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _measurements_enable_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_enable_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     bool was_enabled = measurements_enabled;
     if (args[0])
@@ -1345,7 +1345,7 @@ static osm_command_response_t _measurements_enable_cb(char *args, cmd_ctx_t * ct
 }
 
 
-static osm_command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_get_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char * p = osm_skip_space(args);
     char name[OSM_MEASURE_NAME_NULLED_LEN];
@@ -1355,7 +1355,7 @@ static osm_command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
         len = end_first_word - p;
     strncpy(name, p, len);
     name[len] = 0;
-    measurements_reading_t reading;
+    osm_measurements_reading_t reading;
     osm_measurements_value_type_t type;
     if (!osm_measurements_get_reading(name, &reading, &type))
     {
@@ -1363,7 +1363,7 @@ static osm_command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
         return OSM_COMMAND_RESP_ERR;
     }
     char text[16];
-    if (!osm_measurements_reading_to_str(&reading, type, text, 16))
+    if (!osm_osm_measurements_reading_to_str(&reading, type, text, 16))
     {
         osm_cmd_ctx_error(ctx,"Could not convert the reading to a string.");
         return OSM_COMMAND_RESP_ERR;
@@ -1373,12 +1373,12 @@ static osm_command_response_t _measurements_get_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _measurements_get_to_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_get_to_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char * p = osm_skip_space(args);
 
-    measurements_def_t* def;
-    measurements_inf_t inf;
+    osm_measurements_def_t* def;
+    osm_measurements_inf_t inf;
     if (!osm_measurements_get_measurements_def(p, &def, NULL) ||
         !osm_model_measurements_get_inf(def, NULL, &inf))
     {
@@ -1454,7 +1454,7 @@ static const char* measurements_type_to_str(osm_measurements_def_type_t type)
 }
 
 
-static osm_command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_get_type_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p = osm_skip_space(args);
     char name[OSM_MEASURE_NAME_NULLED_LEN];
@@ -1470,7 +1470,7 @@ static osm_command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * 
     }
     strncpy(name, p, len+1);
 
-    measurements_def_t* def;
+    osm_measurements_def_t* def;
     if (!osm_measurements_get_measurements_def(name, &def, NULL))
     {
         osm_cmd_ctx_error(ctx,"Failed to get measurement details of \"%s\"", p);
@@ -1487,7 +1487,7 @@ static osm_command_response_t _measurements_get_type_cb(char* args, cmd_ctx_t * 
 }
 
 
-static osm_command_response_t _measurements_interval_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_interval_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     char* name = args;
     char* p = osm_skip_space(args);
@@ -1529,7 +1529,7 @@ static osm_command_response_t _measurements_interval_cb(char * args, cmd_ctx_t *
 }
 
 
-static osm_command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_samplecount_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     char* p = osm_skip_space(args);
     char* name = p;
@@ -1571,7 +1571,7 @@ static osm_command_response_t _measurements_samplecount_cb(char * args, cmd_ctx_
 }
 
 
-static osm_command_response_t _measurements_repop_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_repop_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_model_measurements_repopulate();
     osm_cmd_ctx_out(ctx,"Repopulated measurements.");
@@ -1579,7 +1579,7 @@ static osm_command_response_t _measurements_repop_cb(char* args, cmd_ctx_t * ctx
 }
 
 
-static osm_command_response_t _measurements_interval_mins_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_interval_mins_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (args[0])
     {
@@ -1607,7 +1607,7 @@ static osm_command_response_t _measurements_interval_mins_cb(char* args, cmd_ctx
 }
 
 
-static osm_command_response_t _measurements_is_immediate_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _measurements_is_immediate_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char name[OSM_MEASURE_NAME_NULLED_LEN];
     char* p = strchr(args, ' ');
@@ -1618,7 +1618,7 @@ static osm_command_response_t _measurements_is_immediate_cb(char* args, cmd_ctx_
         len = p - args;
     strncpy(name, args, len);
     name[len] = 0;
-    measurements_def_t* def;
+    osm_measurements_def_t* def;
     if (!osm_measurements_get_measurements_def(name, &def, NULL))
     {
         osm_cmd_ctx_error(ctx,"Could not get measurement '%s'", name);
@@ -1644,9 +1644,9 @@ print_out:
 }
 
 
-struct cmd_link_t* osm_measurements_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_measurements_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "measurements", "Print measurements",                  _measurements_cb                , false , NULL },
         { "meas_enable",  "Enable measuremnts.",                 _measurements_enable_cb         , false , NULL },

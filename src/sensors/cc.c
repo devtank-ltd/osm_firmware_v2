@@ -47,7 +47,7 @@ static cc_active_clamps_t   _cc_adc_active_clamps               = {0};
 static osm_adcs_type_t          _cc_running_isolated                = OSM_ADCS_TYPE_INVALID;
 static bool                 _cc_running[ADC_CC_COUNT]           = {false};
 static uint32_t             _cc_collection_time                 = CC_DEFAULT_COLLECTION_TIME;
-static cc_config_t*         _configs = NULL;
+static osm_cc_config_t*         _configs = NULL;
 
 
 static bool _cc_conv(uint32_t adc_val, uint32_t* cc_mA, uint32_t midpoint, uint32_t scale_factor, bool is_iv_ct)
@@ -353,7 +353,7 @@ static osm_measurements_sensor_state_t _cc_begin(char* name, bool in_isolation)
 }
 
 
-static osm_measurements_sensor_state_t _cc_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _cc_get(char* name, osm_measurements_reading_t* value)
 {
     uint8_t index, active_index;
     if (!_cc_get_info(name, &index, &active_index, NULL))
@@ -563,7 +563,7 @@ static bool _cc_calibrate(void)
 }
 
 
-bool osm_cc_get_blocking(char* name, measurements_reading_t* value)
+bool osm_cc_get_blocking(char* name, osm_measurements_reading_t* value)
 {
     if (!_configs)
     {
@@ -583,7 +583,7 @@ bool osm_cc_get_blocking(char* name, measurements_reading_t* value)
 }
 
 
-bool osm_cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3)
+bool osm_cc_get_all_blocking(osm_measurements_reading_t* value_1, osm_measurements_reading_t* value_2, osm_measurements_reading_t* value_3)
 {
     if (!_configs)
     {
@@ -708,7 +708,7 @@ static bool _cc_is_enabled(char* name)
 }
 
 
-void osm_cc_inf_init(measurements_inf_t* inf)
+void osm_cc_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _cc_get_collection_time;
     inf->init_cb            = _cc_begin;
@@ -719,13 +719,13 @@ void osm_cc_inf_init(measurements_inf_t* inf)
 }
 
 
-void osm_cc_setup_default_mem(cc_config_t* memory, unsigned size)
+void osm_cc_setup_default_mem(osm_cc_config_t* memory, unsigned size)
 {
     uint8_t num_cc_configs = ADC_CC_COUNT;
-    if (sizeof(cc_config_t) * ADC_CC_COUNT > size)
+    if (sizeof(osm_cc_config_t) * ADC_CC_COUNT > size)
     {
         osm_log_error("CC config is larger than the size of memory given.");
-        num_cc_configs = size / sizeof(cc_config_t);
+        num_cc_configs = size / sizeof(osm_cc_config_t);
     }
     for (uint8_t i = 0; i < num_cc_configs; i++)
     {
@@ -743,14 +743,14 @@ void osm_cc_init(void)
     if (!_configs)
     {
         osm_adc_debug("Failed to load persistent midpoint.");
-        static cc_config_t default_configs[ADC_CC_COUNT];
-        osm_cc_setup_default_mem(default_configs, sizeof(cc_config_t) * ADC_CC_COUNT);
+        static osm_cc_config_t default_configs[ADC_CC_COUNT];
+        osm_cc_setup_default_mem(default_configs, sizeof(osm_cc_config_t) * ADC_CC_COUNT);
         _configs = default_configs;
     }
 }
 
 
-static osm_command_response_t _cc_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cc_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
@@ -759,10 +759,10 @@ static osm_command_response_t _cc_cb(char* args, cmd_ctx_t * ctx)
     }
     char* p;
     uint8_t cc_num = strtoul(args, &p, 10);
-    measurements_reading_t value_1;
+    osm_measurements_reading_t value_1;
     if (p == args)
     {
-        measurements_reading_t value_2, value_3;
+        osm_measurements_reading_t value_2, value_3;
         if (!osm_cc_get_all_blocking(&value_1, &value_2, &value_3))
         {
             osm_cmd_ctx_out(ctx,"Could not get CC values.");
@@ -791,7 +791,7 @@ static osm_command_response_t _cc_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _cc_calibrate_cb(char *args, cmd_ctx_t * ctx)
+static osm_command_response_t _cc_calibrate_cb(char *args, osm_cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
@@ -802,7 +802,7 @@ static osm_command_response_t _cc_calibrate_cb(char *args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _cc_mp_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cc_mp_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
@@ -828,7 +828,7 @@ static osm_command_response_t _cc_mp_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _cc_gain(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cc_gain(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
@@ -875,7 +875,7 @@ syntax_exit:
 }
 
 
-static osm_command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _cc_type_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_configs)
     {
@@ -926,9 +926,9 @@ static osm_command_response_t _cc_type_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_cc_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_cc_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "cc"          , "CC value"                , _cc_cb                         , false , NULL },
         { "cc_cal"      , "Calibrate the cc"        , _cc_calibrate_cb               , false , NULL },

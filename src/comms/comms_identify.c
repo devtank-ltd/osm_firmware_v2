@@ -80,7 +80,7 @@ bool osm_comms_set_identity(void)
 }
 
 
-static osm_command_response_t _comms_ident_set_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _comms_ident_set_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p = osm_skip_space(args);
     unsigned len = strlen(p);
@@ -108,7 +108,7 @@ static osm_command_response_t _comms_ident_set_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _comms_ident_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _comms_ident_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_comms_type_t type = osm_comms_identify();
     switch (type)
@@ -132,7 +132,7 @@ static osm_command_response_t _comms_ident_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _comms_ident_write_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _comms_ident_write_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_comms_identify_write())
     {
@@ -144,7 +144,7 @@ static osm_command_response_t _comms_ident_write_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _comms_ident_wipe_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _comms_ident_wipe_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     if (!_comms_identify_wipe())
     {
@@ -156,9 +156,9 @@ static osm_command_response_t _comms_ident_wipe_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_comms_identify_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_comms_identify_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "comms_ident_set"     , "Set COMMS type"      , _comms_ident_set_cb   , true  , NULL },
         { "comms_ident"         , "Intentify COMMS"     , _comms_ident_cb       , false , NULL },

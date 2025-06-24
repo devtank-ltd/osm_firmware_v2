@@ -32,7 +32,7 @@
 
 typedef struct
 {
-    port_n_pins_t   pnp;
+    osm_port_n_pins_t   pnp;
     unsigned        io;
 } w1_ios_t;
 

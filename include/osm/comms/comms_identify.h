@@ -12,4 +12,4 @@ bool osm_comms_set_identity(void);
 bool osm_comms_eeprom_read(void* mem, unsigned len) __attribute__((weak));
 bool osm_comms_eeprom_write(void* mem, unsigned len) __attribute__((weak));
 
-struct cmd_link_t* osm_comms_identify_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_comms_identify_add_commands(struct osm_cmd_link_t* tail);

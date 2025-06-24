@@ -41,7 +41,7 @@ static unsigned _example_rs232_send(char* msg, unsigned len)
 }
 
 
-static bool _example_rs232_process(ring_buf_t* ring, char* buf, unsigned buflen, unsigned* len)
+static bool _example_rs232_process(osm_ring_buf_t* ring, char* buf, unsigned buflen, unsigned* len)
 {
     unsigned len_l = osm_ring_buf_get_pending(ring);
     if (!len_l)
@@ -65,7 +65,7 @@ static bool _example_rs232_process(ring_buf_t* ring, char* buf, unsigned buflen,
 }
 
 
-void osm_example_rs232_process(ring_buf_t* ring)
+void osm_example_rs232_process(osm_ring_buf_t* ring)
 {
     unsigned len = 0;
     char buf[EXAMPLE_RS232_MSG_LEN];
@@ -91,7 +91,7 @@ static osm_measurements_sensor_state_t _example_rs232_start(char* name, bool in_
 }
 
 
-static osm_measurements_sensor_state_t _example_rs232_collect(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _example_rs232_collect(char* name, osm_measurements_reading_t* value)
 {
     static char msg[EXAMPLE_RS232_MSG_LEN];
     if (_example_rs232_ctx.has_errored || !_example_rs232_ctx.stored_msg.len || !_example_rs232_ctx.stored_msg.time || !*_example_rs232_ctx.stored_msg.msg)
@@ -125,7 +125,7 @@ static osm_measurements_sensor_state_t _example_rs232_get_collection_time(char* 
 }
 
 
-void osm_example_rs232_inf_init(measurements_inf_t* inf)
+void osm_example_rs232_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _example_rs232_get_collection_time;
     inf->init_cb            = _example_rs232_start;

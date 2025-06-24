@@ -12,8 +12,8 @@
 
 
 const unsigned              ios_watch_ios[IOS_WATCH_COUNT]                  = IOS_WATCH_IOS;
-static measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
-static measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
+static osm_measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
+static osm_measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
 
 
 bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd)
@@ -33,8 +33,8 @@ void osm_io_watch_isr(uint32_t exti_group)
     for (unsigned i = 0; i < IOS_WATCH_COUNT; i++)
     {
 
-        measurements_def_t* def = _ios_watch_measurements_def[i];
-        measurements_data_t* data = _ios_watch_measurements_data[i];
+        osm_measurements_def_t* def = _ios_watch_measurements_def[i];
+        osm_measurements_data_t* data = _ios_watch_measurements_data[i];
         if (!def || !data)
             return;
 

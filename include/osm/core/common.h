@@ -12,7 +12,7 @@ typedef struct
 {
     char        name[OSM_MEASURE_NAME_LEN];
     unsigned    io;
-} special_io_info_t;
+} osm_special_io_info_t;
 
 
 bool     osm_msg_is(const char* ref, char* message);
@@ -33,12 +33,12 @@ int32_t  osm_to_f32_from_double(double in);
 
 bool osm_log_out_drain(uint32_t timeout);
 
-struct cmd_link_t* osm_add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds);
+struct osm_cmd_link_t* osm_add_commands(struct osm_cmd_link_t* tail, struct osm_cmd_link_t* cmds, unsigned num_cmds);
 
 
-void osm_cmd_ctx_out(cmd_ctx_t* ctx, const char* fmt, ...);
-void osm_cmd_ctx_error(cmd_ctx_t* ctx, const char* fmt, ...);
-void osm_cmd_ctx_flush(cmd_ctx_t* ctx);
+void osm_cmd_ctx_out(osm_cmd_ctx_t* ctx, const char* fmt, ...);
+void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...);
+void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx);
 
 bool osm_str_is_valid_ascii(char* str, unsigned max_len, bool required);
 bool osm_is_str(const char* ref, char* cmp, unsigned cmplen);

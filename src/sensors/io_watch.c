@@ -22,15 +22,15 @@
 typedef struct
 {
     unsigned        io;
-    port_n_pins_t   pnp;
+    osm_port_n_pins_t   pnp;
     uint32_t        exti;
     uint8_t         exti_irq;
 } io_watch_instance_t;
 
 
 const unsigned              ios_watch_ios[IOS_WATCH_COUNT]                  = IOS_WATCH_IOS;
-static measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
-static measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
+static osm_measurements_def_t*  _ios_watch_measurements_def[IOS_WATCH_COUNT];
+static osm_measurements_data_t* _ios_watch_measurements_data[IOS_WATCH_COUNT];
 
 
 static io_watch_instance_t _io_watch_instances[IOS_WATCH_COUNT] =
@@ -134,8 +134,8 @@ void osm_io_watch_isr(uint32_t exti_group)
 
         exti_reset_request(inst->exti);
 
-        measurements_def_t* def = _ios_watch_measurements_def[i];
-        measurements_data_t* data = _ios_watch_measurements_data[i];
+        osm_measurements_def_t* def = _ios_watch_measurements_def[i];
+        osm_measurements_data_t* data = _ios_watch_measurements_data[i];
         if (!def || !data)
             continue;
 

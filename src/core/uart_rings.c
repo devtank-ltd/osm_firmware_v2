@@ -23,35 +23,35 @@ typedef char dma_uart_buf_t[OSM_DMA_DATA_PCK_SZ];
 
 OSM_UART_BUFFERS_INIT
 
-static ring_buf_t ring_in_bufs[OSM_UART_CHANNELS_COUNT]=OSM_UART_IN_RINGS;
-static ring_buf_t ring_out_bufs[OSM_UART_CHANNELS_COUNT]=OSM_UART_OUT_RINGS;
+static osm_ring_buf_t ring_in_bufs[OSM_UART_CHANNELS_COUNT]=OSM_UART_IN_RINGS;
+static osm_ring_buf_t ring_out_bufs[OSM_UART_CHANNELS_COUNT]=OSM_UART_OUT_RINGS;
 
 char line_buffer[CMD_LINELEN];
 
 static dma_uart_buf_t uart_dma_buf[OSM_UART_CHANNELS_COUNT];
 
-static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, va_list ap);
-static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, va_list ap);
-static void _uart_cmd_flush(cmd_ctx_t * ctx);
+static void _uart_cmd_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+static void _uart_cmd_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+static void _uart_cmd_flush(osm_cmd_ctx_t * ctx);
 
-cmd_ctx_t uart_cmd_ctx = {.output_cb = _uart_cmd_out,
+osm_cmd_ctx_t uart_cmd_ctx = {.output_cb = _uart_cmd_out,
                           .error_cb = _uart_cmd_error,
                           .flush_cb = _uart_cmd_flush };
 
 
-static void _uart_cmd_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+static void _uart_cmd_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
     osm_log_outv(fmt, ap);
 }
 
 
-static void _uart_cmd_error(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+static void _uart_cmd_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
     osm_log_errorv(fmt, ap);
 }
 
 
-static void _uart_cmd_flush(cmd_ctx_t * ctx)
+static void _uart_cmd_flush(osm_cmd_ctx_t * ctx)
 {
     osm_log_out_drain(1000);
 }
@@ -80,7 +80,7 @@ unsigned osm_uart_ring_in(unsigned uart, const char* s, unsigned len)
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
 
-    ring_buf_t * ring = &ring_in_bufs[uart];
+    osm_ring_buf_t * ring = &ring_in_bufs[uart];
 
     for (unsigned n = 0; n < len; n++)
         if (!osm_ring_buf_add(ring, s[n]))
@@ -97,7 +97,7 @@ unsigned osm_uart_ring_out(unsigned uart, const char* s, unsigned len)
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
 
-    ring_buf_t * ring = &ring_out_bufs[uart];
+    osm_ring_buf_t * ring = &ring_out_bufs[uart];
 
     if (ring->size == 1)
     {
@@ -163,7 +163,7 @@ void osm_uart_ring_in_drain(unsigned uart)
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
-    ring_buf_t * ring = &ring_in_bufs[uart];
+    osm_ring_buf_t * ring = &ring_in_bufs[uart];
 
     unsigned len = osm_ring_buf_get_pending(ring);
 
@@ -210,7 +210,7 @@ static void uart_ring_out_drain(unsigned uart)
     if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
-    ring_buf_t * ring = &ring_out_bufs[uart];
+    osm_ring_buf_t * ring = &ring_out_bufs[uart];
 
     if(!osm_model_uart_ring_do_out_drain(uart, ring))
         return;
@@ -255,7 +255,7 @@ void osm_uart_rings_drain_all_out(void)
 }
 
 
-static void uart_ring_check(ring_buf_t * ring, char * name, unsigned index)
+static void uart_ring_check(osm_ring_buf_t * ring, char * name, unsigned index)
 {
     osm_log_debug(DEBUG_UART(index), "UART %u %s r_pos %u", index, name, ring->r_pos);
     osm_log_debug(DEBUG_UART(index), "UART %u %s w_pos %u", index, name, ring->w_pos);
@@ -270,8 +270,8 @@ void osm_uart_rings_check()
 {
     for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
     {
-        ring_buf_t * in_ring  = &ring_in_bufs[n];
-        ring_buf_t * out_ring = &ring_out_bufs[n];
+        osm_ring_buf_t * in_ring  = &ring_in_bufs[n];
+        osm_ring_buf_t * out_ring = &ring_out_bufs[n];
 
         uart_ring_check(in_ring, "in", n);
         uart_ring_check(out_ring, "out", n);
@@ -284,7 +284,7 @@ void osm_uart_rings_init(void)
 }
 
 
-static void _uart_rings_wipe(ring_buf_t * ring)
+static void _uart_rings_wipe(osm_ring_buf_t * ring)
 {
     memset((void*)ring->buf, 0, sizeof(ring->size));
     ring->r_pos = 0;

@@ -27,7 +27,7 @@ bool osm_sleep_for_ms(uint32_t ms)
 }
 
 
-static osm_command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sleep_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t sleep_ms = strtoul(args, &p, 10);
@@ -42,7 +42,7 @@ static osm_command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static osm_command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sleep_power_mode_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     osm_measurements_power_mode_t mode;
     if (args[0] == 'A')
@@ -58,9 +58,9 @@ static osm_command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-struct cmd_link_t* osm_sleep_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_sleep_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

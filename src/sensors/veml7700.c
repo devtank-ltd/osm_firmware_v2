@@ -574,7 +574,7 @@ static osm_measurements_sensor_state_t _veml7700_light_measurements_init(char* n
 }
 
 
-static osm_measurements_sensor_state_t _veml7700_light_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _veml7700_light_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     switch (_veml7700_state_machine.state)
     {
@@ -610,7 +610,7 @@ static osm_measurements_value_type_t _veml7700_value_type(char* name)
 }
 
 
-void osm_veml7700_inf_init(measurements_inf_t* inf)
+void osm_veml7700_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _veml7700_measurements_collection_time;
     inf->init_cb            = _veml7700_light_measurements_init;

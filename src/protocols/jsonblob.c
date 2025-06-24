@@ -70,7 +70,7 @@ static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 }
 
 
-static bool _protocol_append_value_type_float(const char * name, measurements_data_t* data)
+static bool _protocol_append_value_type_float(const char * name, osm_measurements_data_t* data)
 {
     if (data->num_samples == 1)
         return _protocol_append_data_type_float(name, data->value.value_f.sum);
@@ -86,7 +86,7 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
 }
 
 
-static bool _protocol_append_value_type_i64(const char * name, measurements_data_t* data)
+static bool _protocol_append_value_type_i64(const char * name, osm_measurements_data_t* data)
 {
     if (data->num_samples == 1)
         return _protocol_append_data_type_i64(name, data->value.value_f.sum);
@@ -103,13 +103,13 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
 
 
 
-static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
+static bool _protocol_append_value_type_str(const char * name, osm_measurements_data_t* data)
 {
     return _protocol_append_meas("\"%s\":\"%s\"", name, data->value.value_s.str);
 }
 
 
-bool        osm_protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
+bool        osm_protocol_append_measurement(osm_measurements_def_t* def, osm_measurements_data_t* data)
 {
     char * name = def->name;
     unsigned before_pos = _json_buf_pos;
