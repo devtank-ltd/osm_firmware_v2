@@ -77,6 +77,7 @@ bool model_persist_config_cmp(persist_model_config_t* d0, persist_model_config_t
 void model_sensors_init(void)
 {
     timers_init();
+    pulsecount_init();
     ios_init();
     sai_init();
     adcs_init();
@@ -85,7 +86,6 @@ void model_sensors_init(void)
     veml7700_init();
     ds18b20_temp_init();
     sai_init();
-    pulsecount_init();
     modbus_init();
     can_impl_init();
 }
