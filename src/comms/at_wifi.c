@@ -278,8 +278,18 @@ static void _at_wifi_is_mqtt_subscribed(void)
 }
 
 
+static void _at_wifi_comms_led_set(bool on)
+{
+#ifdef COMMS_LED
+    const port_n_pins_t comms_led = COMMS_LED;
+    platform_gpio_set(&comms_led, !on);
+#endif // COMMS_LED
+}
+
+
 static void _at_wifi_reset(void)
 {
+    _at_wifi_comms_led_set(false);
     comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
     comms_debug("AT wifi reset");
     _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
@@ -350,15 +360,6 @@ bool at_wifi_send_allowed(void)
 static bool _at_wifi_mqtt_publish_measurements(char* data, uint16_t len)
 {
     return _at_wifi_mqtt_publish(AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
-}
-
-
-static void _at_wifi_comms_led_set(bool on)
-{
-#ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
-    platform_gpio_set(&comms_led, !on);
-#endif // COMMS_LED
 }
 
 

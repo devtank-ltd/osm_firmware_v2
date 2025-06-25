@@ -121,6 +121,15 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
 };
 
 
+static void _rak3172_comms_led_set(bool on)
+{
+#ifdef COMMS_LED
+    const port_n_pins_t comms_led = COMMS_LED;
+    platform_gpio_set(&comms_led, !on);
+#endif // COMMS_LED
+}
+
+
 static uint8_t _rak3172_get_port(void)
 {
     return 1;
@@ -175,6 +184,7 @@ static void _rak3172_reset_line_set(bool enabled)
 
 static void _rak3172_hard_reset(void)
 {
+    _rak3172_comms_led_set(false);
     comms_debug("HARD RESET");
     _rak3172_reset_line_set(false);
     spin_blocking_ms(1);
@@ -302,6 +312,7 @@ static void _rak3172_process_state_join_wait_join(char* msg)
         comms_debug("READ JOIN");
         _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
+        _rak3172_comms_led_set(true);
     }
     else if (msg_is(RAK3172_MSG_JOIN_FAILED, msg))
     {
@@ -339,10 +350,7 @@ static void _rak3172_process_state_send_ack(char* msg)
         _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
         on_protocol_sent_ack(true);
-#ifdef COMMS_LED
-        const port_n_pins_t comms_led = COMMS_LED;
-        platform_gpio_set(&comms_led, false);
-#endif // COMMS_LED
+        _rak3172_comms_led_set(true);
         return;
     }
     if (msg_is(RAK3172_MSG_NACK, msg))
@@ -461,8 +469,8 @@ void rak3172_init(void)
     const port_n_pins_t comms_led = COMMS_LED;
     platform_gpio_init(&comms_led);
     platform_gpio_setup(&comms_led, false, IO_PUPD_NONE);
-    platform_gpio_set(&comms_led, false);
 #endif // COMMS_LED
+    _rak3172_comms_led_set(false);
 }
 
 
@@ -741,10 +749,7 @@ bool rak3172_send(int8_t* hex_arr, uint16_t arr_len)
         return false;
     }
 
-#ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
-    platform_gpio_set(&comms_led, true);
-#endif // COMMS_LED
+    _rak3172_comms_led_set(false);
 
     char send_header[RAK3172_MSG_SEND_HEADER_LEN];
 
@@ -759,9 +764,7 @@ bool rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     if (!_rak3172_write(send_header))
     {
         comms_debug("Could not write SEND header.");
-#ifdef COMMS_LED
-        platform_gpio_set(&comms_led, false);
-#endif // COMMS_LED
+        _rak3172_comms_led_set(true);
         return false;
     }
     char hex_str[5];
@@ -829,10 +832,7 @@ void rak3172_loop_iteration(void)
             {
                 comms_debug("TIMED OUT WAITING FOR ACK");
                 on_protocol_sent_ack(false);
-#ifdef COMMS_LED
-                const port_n_pins_t comms_led = COMMS_LED;
-                platform_gpio_set(&comms_led, false);
-#endif // COMMS_LED
+                _rak3172_comms_led_set(true);
                 rak3172_reset();
             }
             break;
