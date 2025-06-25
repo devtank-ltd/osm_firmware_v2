@@ -18,6 +18,24 @@
 
 #define PULSECOUNT_COLLECTION_TIME_MS       10
 
+#if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
+#define PULSECOUNT_INSTANCES   {                                       \
+    { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
+        W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
+        W1_PULSE_1_EXTI_IRQ,                                           \
+        IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
+        0, 0,                                                          \
+        W1_PULSE_1_TIM, W1_PULSE_1_TIM_RCC, W1_PULSE_1_TIM_RST, W1_PULSE_1_TIM_IRQ, \
+        W1_PULSE_1_LED_PORT_N_PINS, W1_PULSE_1_LED_TIM, W1_PULSE_1_LED_TIM_RCC, W1_PULSE_1_LED_TIM_RST, W1_PULSE_1_LED_IRQ }, \
+    { { MEASUREMENTS_PULSE_COUNT_NAME_2, W1_PULSE_2_IO} ,              \
+        W1_PULSE_2_PORT_N_PINS , W1_PULSE_2_EXTI,                      \
+        W1_PULSE_2_EXTI_IRQ,                                           \
+        IO_SPECIAL_PULSECOUNT_RISING_EDGE,                             \
+        0, 0,                                                          \
+        W1_PULSE_2_TIM, W1_PULSE_2_TIM_RCC, W1_PULSE_2_TIM_RST, W1_PULSE_2_TIM_IRQ, \
+        W1_PULSE_2_LED_PORT_N_PINS, W1_PULSE_2_LED_TIM, W1_PULSE_2_LED_TIM_RCC, W1_PULSE_2_LED_TIM_RST, W1_PULSE_2_LED_IRQ }, \
+}
+#else
 #define PULSECOUNT_INSTANCES   {                                       \
     { { MEASUREMENTS_PULSE_COUNT_NAME_1, W1_PULSE_1_IO} ,              \
         W1_PULSE_1_PORT_N_PINS , W1_PULSE_1_EXTI,                      \
@@ -32,6 +50,7 @@
         0, 0,                                                          \
         W1_PULSE_2_TIM, W1_PULSE_2_TIM_RCC, W1_PULSE_2_TIM_RST, W1_PULSE_2_TIM_IRQ }, \
 }
+#endif // W1_PULSE_1_LED_PORT_N_PINS && W1_PULSE_2_LED_PORT_N_PINS
 
 #define PULSECOUNT_INDEX_FROM_INST(_inst, _arr)         ((_inst - _arr) / sizeof(pulsecount_instance_t))
 
@@ -49,6 +68,13 @@ typedef struct
     uint32_t            tim_rcc;
     uint32_t            tim_rst;
     uint32_t            tim_irq;
+#if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
+    port_n_pins_t       led_pnp;
+    uint32_t            led_tim;
+    uint32_t            led_tim_rcc;
+    uint32_t            led_tim_rst;
+    uint32_t            led_tim_irq;
+#endif // W1_PULSE_1_LED_PORT_N_PINS && W1_PULSE_2_LED_PORT_N_PINS
 } pulsecount_instance_t;
 
 
@@ -67,7 +93,54 @@ static bool _pulsecount_get_pupd(pulsecount_instance_t* inst, uint8_t* pupd)
 }
 
 
-static void _pulsecount_debounce_isr(volatile pulsecount_instance_t* inst)
+#if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
+static void _pulsecound_led_set(pulsecount_instance_t* inst, bool on)
+{
+    if (on)
+    {
+        gpio_clear(inst->led_pnp.port, inst->led_pnp.pins);
+    }
+    else
+    {
+        gpio_set(inst->led_pnp.port, inst->led_pnp.pins);
+    }
+}
+
+
+static void _pulsecount_led_timer_isr(pulsecount_instance_t* inst)
+{
+    if (inst)
+    {
+        timer_clear_flag(inst->led_tim, TIM_SR_UIF);
+        _pulsecound_led_set(inst, false);
+    }
+}
+
+
+void pulsecount_1_led_timer_isr(void)
+{
+    _pulsecount_led_timer_isr(&_pulsecount_instances[0]);
+}
+
+
+void pulsecount_2_led_timer_isr(void)
+{
+    _pulsecount_led_timer_isr(&_pulsecount_instances[1]);
+}
+#endif // W1_PULSE_1_LED_PORT_N_PINS && W1_PULSE_2_LED_PORT_N_PINS
+
+
+static void _pulsecount_count_pulse(pulsecount_instance_t* inst)
+{
+    __sync_add_and_fetch(&inst->count, 1);
+#if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
+    _pulsecound_led_set(inst, true);
+    timer_enable_counter(inst->led_tim);
+#endif // W1_PULSE_1_LED_PORT_N_PINS && W1_PULSE_2_LED_PORT_N_PINS
+}
+
+
+static void _pulsecount_debounce_isr(pulsecount_instance_t* inst)
 {
     if (inst)
     {
@@ -80,18 +153,18 @@ static void _pulsecount_debounce_isr(volatile pulsecount_instance_t* inst)
         switch(inst->edge)
         {
             case IO_SPECIAL_PULSECOUNT_BOTH_EDGE:
-                __sync_add_and_fetch(&inst->count, 1);
+                _pulsecount_count_pulse(inst);
                 break;
             case IO_SPECIAL_PULSECOUNT_RISING_EDGE:
                 if (gpio_get(inst->pnp.port, inst->pnp.pins))
                 {
-                    __sync_add_and_fetch(&inst->count, 1);
+                    _pulsecount_count_pulse(inst);
                 }
                 break;
             case IO_SPECIAL_PULSECOUNT_FALLING_EDGE:
                 if (!gpio_get(inst->pnp.port, inst->pnp.pins))
                 {
-                    __sync_add_and_fetch(&inst->count, 1);
+                    _pulsecount_count_pulse(inst);
                 }
                 break;
             default:
@@ -185,7 +258,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     instance->count = 0;
     instance->send_count = 0;
 
-    /* SETUP TIMER */
+    /* SETUP TIMERS - DEBOUNCE */
     rcc_periph_clock_enable(instance->tim_rcc);
 
     timer_disable_counter(instance->tim);
@@ -207,6 +280,27 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     timer_enable_update_event(instance->tim); /* default at reset! */
     timer_clear_flag(instance->tim, TIM_SR_UIF);
     timer_enable_irq(instance->tim, TIM_DIER_UIE);
+
+#if defined(W1_PULSE_1_LED_PORT_N_PINS) && defined(W1_PULSE_2_LED_PORT_N_PINS)
+    /* SETUP TIMERS - LED */
+    rcc_periph_clock_enable(PORT_TO_RCC(instance->led_pnp.port));
+    gpio_mode_setup(instance->led_pnp.port,
+                    GPIO_MODE_OUTPUT,
+                    IO_PUPD_NONE,
+                    instance->led_pnp.pins);
+    _pulsecound_led_set(instance, false);
+
+    rcc_periph_clock_enable(instance->led_tim_rcc);
+    timer_disable_counter(instance->led_tim);
+    timer_set_prescaler(instance->led_tim, rcc_apb1_frequency / 10000 -1);
+    timer_set_period(instance->led_tim, 500);
+    timer_one_shot_mode(instance->led_tim);
+    timer_enable_update_event(instance->led_tim);
+    timer_clear_flag(instance->led_tim, TIM_SR_UIF);
+    timer_enable_irq(instance->led_tim, TIM_DIER_UIE);
+
+    nvic_enable_irq(instance->led_tim_irq);
+#endif // W1_PULSE_1_LED_PORT_N_PINS && W1_PULSE_2_LED_PORT_N_PINS
 
     /* ENABLE INTERRUPTS */
     nvic_enable_irq(instance->tim_irq);

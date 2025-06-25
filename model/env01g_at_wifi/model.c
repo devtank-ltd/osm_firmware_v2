@@ -90,6 +90,7 @@ void model_sensors_init(void)
 {
     _model_core_3v3_init();
     timers_init();
+    pulsecount_init();
     ios_init();
     sai_init();
     adcs_init();
@@ -97,7 +98,6 @@ void model_sensors_init(void)
     ftma_init();
     veml7700_init();
     ds18b20_temp_init();
-    pulsecount_init();
     modbus_init();
     senxx_init();
     comms_direct_init();

@@ -68,6 +68,12 @@
 #define W1_PULSE_1_TIM_RST                  RST_TIM6
 #define W1_PULSE_1_TIM_IRQ                  NVIC_TIM6_DACUNDER_IRQ
 #define pulsecount_1_debounce_isr           tim6_dacunder_isr
+#define W1_PULSE_1_LED_PORT_N_PINS          { GPIOB, GPIO13 }
+#define W1_PULSE_1_LED_TIM                  TIM15
+#define W1_PULSE_1_LED_TIM_RCC              RCC_TIM15
+#define W1_PULSE_1_LED_TIM_RST              RST_TIM15
+#define W1_PULSE_1_LED_IRQ                  NVIC_TIM1_BRK_TIM15_IRQ
+#define pulsecount_1_led_timer_isr          tim1_brk_tim15_isr
 
 
 #define W1_PULSE_2_PORT_N_PINS              { GPIOC, GPIO11  }
@@ -80,6 +86,12 @@
 #define W1_PULSE_2_TIM_RST                  RST_TIM7
 #define W1_PULSE_2_TIM_IRQ                  NVIC_TIM7_IRQ
 #define pulsecount_2_debounce_isr           tim7_isr
+#define W1_PULSE_2_LED_PORT_N_PINS          { GPIOB, GPIO12 }
+#define W1_PULSE_2_LED_TIM                  TIM16
+#define W1_PULSE_2_LED_TIM_RCC              RCC_TIM16
+#define W1_PULSE_2_LED_TIM_RST              RST_TIM16
+#define W1_PULSE_2_LED_IRQ                  NVIC_TIM1_UP_TIM16_IRQ
+#define pulsecount_2_led_timer_isr          tim1_up_tim16_isr
 
 
 #define DS18B20_INSTANCES   {                                          \
