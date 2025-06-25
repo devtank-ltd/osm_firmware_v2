@@ -20,6 +20,7 @@
 #include <osm/core/cmd.h>
 #include <osm/core/update.h>
 #include <osm/protocols/protocol.h>
+#include <osm/core/platform.h>
 
 
 #define RAK3172_TIMEOUT_MS              15000
