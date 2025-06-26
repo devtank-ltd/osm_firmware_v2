@@ -184,6 +184,7 @@ void model_measurements_repopulate(void)
     measurements_repop_indiv(MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5,  SENxx           );
     measurements_repop_indiv(MEASUREMENTS_VOC_NAME,             0,  5,  SENxx           );
     measurements_repop_indiv(MEASUREMENTS_NOX_NAME,             0,  5,  SENxx           );
+    measurements_repop_indiv(MEASUREMENTS_CO2_NAME,             0,  5,  SENxx           );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  CURRENT_CLAMP   );
     measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  CURRENT_CLAMP   );
@@ -255,6 +256,7 @@ unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5, SENxx           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             0,  5, SENxx           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             0,  5, SENxx           );
+    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CO2_NAME,             0,  5, SENxx           );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, CURRENT_CLAMP   );
     measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, CURRENT_CLAMP   );
