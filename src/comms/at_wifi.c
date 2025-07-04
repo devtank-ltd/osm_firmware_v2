@@ -278,8 +278,18 @@ static void _at_wifi_is_mqtt_subscribed(void)
 }
 
 
+static void _at_wifi_comms_led_set(bool on)
+{
+#ifdef COMMS_LED
+    const port_n_pins_t comms_led = COMMS_LED;
+    platform_gpio_set(&comms_led, !on);
+#endif // COMMS_LED
+}
+
+
 static void _at_wifi_reset(void)
 {
+    _at_wifi_comms_led_set(false);
     comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
     comms_debug("AT wifi reset");
     _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
@@ -355,6 +365,7 @@ static bool _at_wifi_mqtt_publish_measurements(char* data, uint16_t len)
 
 bool at_wifi_send(char* data, uint16_t len)
 {
+    _at_wifi_comms_led_set(false);
     bool ret = _at_wifi_mqtt_publish_measurements(data, len);
     if (!ret)
     {
@@ -396,6 +407,13 @@ void at_wifi_init(void)
 
     at_mqtt_init(&_at_wifi_ctx.mqtt_ctx);
     _at_wifi_ctx.state = AT_WIFI_STATE_OFF;
+
+#ifdef COMMS_LED
+    const port_n_pins_t comms_led = COMMS_LED;
+    platform_gpio_init(&comms_led);
+    platform_gpio_setup(&comms_led, false, IO_PUPD_NONE);
+#endif // COMMS_LED
+    _at_wifi_comms_led_set(false);
 }
 
 
@@ -821,11 +839,13 @@ static void _at_wifi_process_state_mqtt_wait_sub(char* msg, unsigned len)
     if (at_base_is_ok(msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
+        _at_wifi_comms_led_set(true);
     }
     else if (is_str(already_subscribe_str, msg, len))
     {
         /* Already subscribed, assume everything fine */
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
+        _at_wifi_comms_led_set(true);
     }
     else if (at_base_is_error(msg, len))
     {
@@ -883,11 +903,13 @@ static void _at_wifi_process_state_mqtt_publishing(char* msg, unsigned len)
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
         comms_debug("Successful send, propagating ACK");
+        _at_wifi_comms_led_set(true);
         on_protocol_sent_ack(true);
     }
     else if (at_base_is_error(msg, len))
     {
         comms_debug("Failed send (ERROR), propagating NACK");
+        _at_wifi_comms_led_set(true);
         on_protocol_sent_ack(false);
         _at_wifi_reset();
     }
@@ -1304,6 +1326,7 @@ static void _at_wifi_check_mqtt_timeout(void)
         if (_at_wifi_ctx.state == AT_WIFI_STATE_MQTT_PUBLISHING)
         {
             comms_debug("Failed send (TIMEOUT), propagating NACK");
+            _at_wifi_comms_led_set(true);
             on_protocol_sent_ack(false);
         }
         _at_wifi_timedout_start_wifi_status();

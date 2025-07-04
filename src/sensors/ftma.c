@@ -17,11 +17,6 @@
 #define FTMA_NUM_SAMPLES                                    ADCS_NUM_SAMPLES
 #define FTMA_TIMEOUT_MS                                     3000
 
-#define FTMA_RESISTOR_S_OHM                                 30
-#define FTMA_RESISTOR_0_OHM                                 50000
-#define FTMA_RESISTOR_G_OHM                                 12400
-#define FTMA_HARDWARD_GAIN                                  (1.f / ((float)FTMA_RESISTOR_S_OHM * (((float)FTMA_RESISTOR_0_OHM / (float)FTMA_RESISTOR_G_OHM) + 1.f)))
-
 #define FTMA_MIN_MA                                         4.f
 #define FTMA_MAX_MA                                         20.f
 
