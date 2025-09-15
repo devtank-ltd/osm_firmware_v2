@@ -14,20 +14,20 @@
 static char comms_common_buf[COMMS_COMMON_BUF_SIZ];
 
 
-struct cmd_link_t* comms_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_comms_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
-        { "comms_config", "Set comms config"        , comms_cmd_config_cb       , false , NULL },
-        { "j_comms_cfg" , "Print comms config"      , comms_cmd_j_cfg_cb        , false , NULL },
-        { "comms_conn"  , "Comms connected"         , comms_cmd_conn_cb         , false , NULL },
+        { "comms_config", "Set comms config"        , osm_comms_cmd_config_cb       , false , NULL },
+        { "j_comms_cfg" , "Print comms config"      , osm_comms_cmd_j_cfg_cb        , false , NULL },
+        { "comms_conn"  , "Comms connected"         , osm_comms_cmd_conn_cb         , false , NULL },
     };
 
-    return comms_add_extra_commands(add_commands(tail, cmds, ARRAY_SIZE(cmds)));
+    return osm_comms_add_extra_commands(osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds)));
 }
 
 
-char* comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char* escaped_char_list, const unsigned escaped_char_count)
+char* osm_comms_common_json_escape(char* buf, unsigned bufsiz, const char escape_char, const char* escaped_char_list, const unsigned escaped_char_count)
 {
     unsigned len = strnlen(buf, bufsiz-1);
     char* p = comms_common_buf;

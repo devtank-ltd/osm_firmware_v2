@@ -6,26 +6,26 @@
 #include <osm/core/modbus_mem.h>
 
 
-bool modbus_requires_echo_removal(void) __attribute__((weak));
+bool osm_modbus_requires_echo_removal(void) __attribute__((weak));
 
-uint16_t modbus_crc(uint8_t * buf, unsigned length);
+uint16_t osm_modbus_crc(uint8_t * buf, unsigned length);
 
-bool modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, modbus_reg_type_t type, modbus_byte_orders_t byte_order, modbus_word_orders_t word_order, float value);
+bool osm_modbus_set_reg(uint16_t unit_id, uint16_t reg_addr, uint8_t func, osm_modbus_reg_type_t type, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order, float value);
 
-bool modbus_start_read(modbus_reg_t * reg);
+bool osm_modbus_start_read(osm_modbus_reg_t * reg);
 
-uint32_t modbus_start_delay(void);
-uint32_t modbus_stop_delay(void);
+uint32_t osm_modbus_start_delay(void);
+uint32_t osm_modbus_stop_delay(void);
 
-bool modbus_has_pending(void);
-bool modbus_get_reg_set_expected_done(bool * passfail);
+bool osm_modbus_has_pending(void);
+bool osm_modbus_get_reg_set_expected_done(bool * passfail);
 
-void modbus_log(cmd_ctx_t * ctx);
+void osm_modbus_log(osm_cmd_ctx_t * ctx);
 
-void modbus_uart_ring_in_process(ring_buf_t * ring);
-bool modbus_uart_ring_do_out_drain(ring_buf_t * ring);
+void osm_modbus_uart_ring_in_process(osm_ring_buf_t * ring);
+bool osm_modbus_uart_ring_do_out_drain(osm_ring_buf_t * ring);
 
-void modbus_bus_init(modbus_bus_t * bus);
-void modbus_init(void);
+void osm_modbus_bus_init(osm_modbus_bus_t * bus);
+void osm_modbus_init(void);
 
-struct cmd_link_t* modbus_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_modbus_add_commands(struct osm_cmd_link_t* tail);

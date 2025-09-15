@@ -12,7 +12,7 @@
 #include <osm/core/cmd.h>
 
 
-#define COMMS_DEFAULT_MTU       256
+#define OSM_COMMS_DEFAULT_MTU       256
 #define COMMS_ID_STR            "LINUX_COMMS"
 
 #define LINUX_COMMS_DEV_EUI     "LINUX-DEV"
@@ -24,167 +24,167 @@
 #define LINUX_COMMS_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
 
 
-uint16_t linux_comms_get_mtu(void)
+uint16_t osm_linux_comms_get_mtu(void)
 {
-    return COMMS_DEFAULT_MTU;
+    return OSM_COMMS_DEFAULT_MTU;
 }
 
 
-bool linux_comms_send_ready(void)
+bool osm_linux_comms_send_ready(void)
 {
     return true;
 }
 
 
-bool linux_comms_send_str(char* str)
+bool osm_linux_comms_send_str(char* str)
 {
-    if(!uart_ring_out(COMMS_UART, str, strlen(str)))
+    if(!osm_uart_ring_out(COMMS_UART, str, strlen(str)))
         return false;
-    return uart_ring_out(COMMS_UART, "\r\n", 2);
+    return osm_uart_ring_out(COMMS_UART, "\r\n", 2);
 }
 
 
-bool linux_comms_send_allowed(void)
+bool osm_linux_comms_send_allowed(void)
 {
     return true;
 }
 
 
-bool linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
+bool osm_linux_comms_send(int8_t* hex_arr, uint16_t arr_len)
 {
     char buf[3];
     for (uint16_t i = 0; i < arr_len; i++)
     {
         snprintf(buf, 3, "%.2"PRIx32, hex_arr[i]);
-        uart_ring_out(COMMS_UART, buf, 2);
+        osm_uart_ring_out(COMMS_UART, buf, 2);
     }
-    uart_ring_out(COMMS_UART, "\r\n", 2);
-    while (uart_ring_out_busy(COMMS_UART))
+    osm_uart_ring_out(COMMS_UART, "\r\n", 2);
+    while (osm_uart_ring_out_busy(COMMS_UART))
     {
-        uart_rings_out_drain();
+        osm_uart_rings_out_drain();
     }
-    on_protocol_sent_ack(true);
+    osm_on_protocol_sent_ack(true);
     return true;
 }
 
 
 
-void     linux_comms_config_init(comms_config_t* config)
+void     osm_linux_comms_config_init(osm_comms_config_t* config)
 {
-    config->type = COMMS_BUILD_TYPE;
+    config->type = OSM_COMMS_BUILD_TYPE;
 }
 
 
-bool     linux_comms_persist_config_cmp(comms_config_t* d0, comms_config_t* d1)
+bool     osm_linux_comms_persist_config_cmp(osm_comms_config_t* d0, osm_comms_config_t* d1)
 {
     return (d0->type == d1->type);
 }
 
 
-void linux_comms_init(void)
+void osm_linux_comms_init(void)
 {
 }
 
 
-void linux_comms_reset(void)
+void osm_linux_comms_reset(void)
 {
 }
 
 
-void linux_comms_process(char* message)
+void osm_linux_comms_process(char* message)
 {
     unsigned msg_len = strnlen(message, CMD_LINELEN);
-    cmds_process(message, msg_len, NULL);
+    osm_cmds_process(message, msg_len, NULL);
 }
 
 
-bool linux_comms_get_connected(void)
+bool osm_linux_comms_get_connected(void)
 {
     return true;
 }
 
 
-void linux_comms_loop_iteration(void)
+void osm_linux_comms_loop_iteration(void)
 {
 }
 
 
-void linux_comms_config_setup_str(char * str, cmd_ctx_t * ctx)
+void osm_linux_comms_config_setup_str(char * str, osm_cmd_ctx_t * ctx)
 {
     if (strstr(str, "dev-eui"))
     {
-        cmd_ctx_out(ctx,"Dev EUI: "LINUX_COMMS_DEV_EUI);
+        osm_cmd_ctx_out(ctx,"Dev EUI: "LINUX_COMMS_DEV_EUI);
     }
     else if (strstr(str, "app-key"))
     {
-        cmd_ctx_out(ctx,"App Key: LINUX-APP");
+        osm_cmd_ctx_out(ctx,"App Key: LINUX-APP");
     }
 }
 
 
-bool linux_comms_get_id(char* str, uint8_t len)
+bool osm_linux_comms_get_id(char* str, uint8_t len)
 {
     strncpy(str, COMMS_ID_STR, len);
     return true;
 }
 
 
-static command_response_t _linux_comms_send_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _linux_comms_send_cb(char * args, osm_cmd_ctx_t * ctx)
 {
-    char * pos = skip_space(args);
-    return linux_comms_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    char * pos = osm_skip_space(args);
+    return osm_linux_comms_send_str(pos) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-command_response_t linux_comms_cmd_config_cb(char * args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_config_cb(char * args, osm_cmd_ctx_t * ctx)
 {
-    linux_comms_config_setup_str(skip_space(args), ctx);
-    return COMMAND_RESP_OK;
+    osm_linux_comms_config_setup_str(osm_skip_space(args), ctx);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t linux_comms_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_conn_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    if (linux_comms_get_connected())
+    if (osm_linux_comms_get_connected())
     {
-        cmd_ctx_out(ctx,"1 | Connected");
+        osm_cmd_ctx_out(ctx,"1 | Connected");
     }
     else
     {
-        cmd_ctx_out(ctx,"0 | Disconnected");
+        osm_cmd_ctx_out(ctx,"0 | Disconnected");
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t linux_comms_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_linux_comms_cmd_j_cfg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_HEADER);
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
-    cmd_ctx_flush(ctx);
-    cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_TAIL);
-    cmd_ctx_flush(ctx);
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_HEADER);
+    osm_cmd_ctx_flush(ctx);
+    osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_DEV_EUI);
+    osm_cmd_ctx_flush(ctx);
+    osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_APP_KEY);
+    osm_cmd_ctx_flush(ctx);
+    osm_cmd_ctx_out(ctx,LINUX_COMMS_PRINT_CFG_JSON_TAIL);
+    osm_cmd_ctx_flush(ctx);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _linux_comms_dbg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _linux_comms_dbg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    uart_ring_out(COMMS_UART, args, strlen(args));
-    uart_ring_out(COMMS_UART, "\r\n", 2);
-    return COMMAND_RESP_OK;
+    osm_uart_ring_out(COMMS_UART, args, strlen(args));
+    osm_uart_ring_out(COMMS_UART, "\r\n", 2);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* linux_comms_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_linux_comms_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
-        { "comms_send"  ,  "Send linux_comms message"   , _linux_comms_send_cb          , false , NULL },
+        { "osm_comms_send"  ,  "Send linux_comms message"   , _linux_comms_send_cb          , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"            , _linux_comms_dbg_cb           , false , NULL }
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

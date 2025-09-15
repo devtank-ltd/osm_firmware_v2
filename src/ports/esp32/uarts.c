@@ -16,16 +16,16 @@
 #include "mqtt.h"
 #include <osm/core/common.h>
 
-static uart_channel_t uart_channels[UART_CHANNELS_COUNT] = UART_CHANNELS;
+static osm_uart_channel_t uart_channels[OSM_UART_CHANNELS_COUNT] = UART_CHANNELS;
 
-static QueueHandle_t uart_queues[UART_CHANNELS_COUNT];
+static QueueHandle_t uart_queues[OSM_UART_CHANNELS_COUNT];
 
-static TaskHandle_t uart_task_handles[UART_CHANNELS_COUNT];
+static TaskHandle_t uart_task_handles[OSM_UART_CHANNELS_COUNT];
 
 static void uart_event_task(void *arg)
 {
     unsigned uart = (uintptr_t)arg;
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
     QueueHandle_t * uart_queue = &uart_queues[uart];
     char tmp[128];
 
@@ -36,15 +36,15 @@ static void uart_event_task(void *arg)
         {
             if (event.type == UART_DATA)
             {
-                int read = uart_read_bytes(channel->uart, tmp, MIN(event.size,sizeof(tmp)), portMAX_DELAY);
+                int read = uart_read_bytes(channel->uart, tmp, OSM_MIN(event.size,sizeof(tmp)), portMAX_DELAY);
                 for(int i=0; i < read; i++)
                 {
                     char c = tmp[i];
-                    uart_ring_in(uart, &c, 1);
+                    osm_uart_ring_in(uart, &c, 1);
                     if (c == '\n' || c == '\r')
                     {
-                        sleep_debug("Waking up.");
-                        sleep_exit_sleep_mode();
+                        osm_sleep_debug("Waking up.");
+                        osm_sleep_exit_sleep_mode();
                     }
                 }
             }
@@ -56,7 +56,7 @@ static void uart_event_task(void *arg)
 
 static void uart_setup(unsigned uart)
 {
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
     const int uart_buffer_size = 2 * 1024;
 
     ESP_ERROR_CHECK(uart_driver_install(channel->uart, uart_buffer_size, uart_buffer_size, 20, &uart_queues[uart], 0));
@@ -70,14 +70,14 @@ static void uart_setup(unsigned uart)
 }
 
 
-void uart_enable(unsigned uart, bool enable)
+void osm_uart_enable(unsigned uart, bool enable)
 {
-    if (uart >= UART_CHANNELS_COUNT || !uart)
+    if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
-    uart_debug(uart, "%s", (enable)?"Enable":"Disable");
+    osm_uart_debug(uart, "%s", (enable)?"Enable":"Disable");
 
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (!enable)
     {
@@ -88,55 +88,55 @@ void uart_enable(unsigned uart, bool enable)
 }
 
 
-bool uart_is_enabled(unsigned uart)
+bool osm_uart_is_enabled(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
 
     return (uart_channels[uart].enabled)?true:false;
 }
 
-static osm_uart_parity_t _osm_uart_parity_get(uart_parity_t parity)
+static osm_osm_uart_parity_t _osm_uart_parity_get(uart_parity_t parity)
 {
     switch(parity)
     {
-        case UART_PARITY_EVEN: return uart_parity_even;
-        case UART_PARITY_ODD: return uart_parity_odd;
+        case UART_PARITY_EVEN: return osm_uart_parity_even;
+        case UART_PARITY_ODD: return osm_uart_parity_odd;
         default: break;
     }
 
-    return uart_parity_none;
+    return osm_uart_parity_none;
 }
 
 
-static osm_uart_stop_bits_t _osm_uart_stop_bits_get(uart_stop_bits_t stop)
+static osm_osm_uart_stop_bits_t _osm_uart_stop_bits_get(uart_stop_bits_t stop)
 {
     switch(stop)
     {
-        case UART_STOP_BITS_2: return uart_stop_bits_2;
-        case UART_STOP_BITS_1_5: return uart_stop_bits_1_5;
+        case UART_STOP_BITS_2: return osm_uart_stop_bits_2;
+        case UART_STOP_BITS_1_5: return osm_uart_stop_bits_1_5;
         default: break;
     }
 
-    return uart_stop_bits_1;
+    return osm_uart_stop_bits_1;
 }
 
 
-void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_parity_t parity, osm_uart_stop_bits_t stop, cmd_ctx_t * ctx)
+void osm_uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_osm_uart_parity_t parity, osm_osm_uart_stop_bits_t stop, osm_cmd_ctx_t * ctx)
 {
-    if (uart >= UART_CHANNELS_COUNT || !uart)
+    if (uart >= OSM_UART_CHANNELS_COUNT || !uart)
         return;
 
-    uart_channel_t * channel = &uart_channels[uart];
+    osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (databits < 5)
     {
-        cmd_ctx_error(ctx, "Invalid low UART databits, using 7");
+        osm_cmd_ctx_error(ctx, "Invalid low UART databits, using 7");
         databits = 5;
     }
     else if (databits > 8)
     {
-        cmd_ctx_error(ctx, "Invalid high UART databits, using 9");
+        osm_cmd_ctx_error(ctx, "Invalid high UART databits, using 9");
         databits = 8;
     }
     channel->config.baud_rate = speed;
@@ -144,10 +144,10 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
 
     switch(parity)
     {
-        case uart_parity_even:
+        case osm_uart_parity_even:
             channel->config.parity = UART_PARITY_EVEN;
             break;
-        case uart_parity_odd:
+        case osm_uart_parity_odd:
             channel->config.parity = UART_PARITY_ODD;
             break;
         default:
@@ -157,10 +157,10 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
 
     switch(stop)
     {
-        case uart_stop_bits_2:
+        case osm_uart_stop_bits_2:
             channel->config.stop_bits = UART_STOP_BITS_2;
             break;
-        case uart_stop_bits_1_5:
+        case osm_uart_stop_bits_1_5:
             channel->config.stop_bits = UART_STOP_BITS_1_5;
             break;
         default:
@@ -169,7 +169,7 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
     }
 
     uart_param_config(channel->uart, &channel->config);
-    uart_debug(uart, "%u %"PRIu8"%c%s",
+    osm_uart_debug(uart, "%u %"PRIu8"%c%s",
             (unsigned)channel->config.baud_rate,
             databits,
             osm_uart_parity_as_char(_osm_uart_parity_get(channel->config.parity)),
@@ -177,12 +177,12 @@ void uart_resetup(unsigned uart, unsigned speed, uint8_t databits, osm_uart_pari
 }
 
 
-bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uart_parity_t * parity, osm_uart_stop_bits_t * stop)
+bool osm_uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_osm_uart_parity_t * parity, osm_osm_uart_stop_bits_t * stop)
 {
-    if (uart >= UART_CHANNELS_COUNT )
+    if (uart >= OSM_UART_CHANNELS_COUNT )
         return false;
 
-    const uart_channel_t * channel = &uart_channels[uart];
+    const osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (speed)
         *speed = channel->config.baud_rate;
@@ -200,52 +200,52 @@ bool uart_get_setup(unsigned uart, unsigned * speed, uint8_t * databits, osm_uar
 }
 
 
-bool uart_resetup_str(unsigned uart, char * str, cmd_ctx_t * ctx)
+bool osm_uart_resetup_str(unsigned uart, char * str, osm_cmd_ctx_t * ctx)
 {
     uint32_t         speed;
     uint8_t          databits;
-    osm_uart_parity_t    parity;
-    osm_uart_stop_bits_t stop;
+    osm_osm_uart_parity_t    parity;
+    osm_osm_uart_stop_bits_t stop;
 
-    if (uart >= UART_CHANNELS_COUNT )
+    if (uart >= OSM_UART_CHANNELS_COUNT )
     {
-        cmd_ctx_error(ctx, "INVALID UART GIVEN");
+        osm_cmd_ctx_error(ctx, "INVALID UART GIVEN");
         return false;
     }
 
     if (!osm_decompose_uart_str(str, &speed, &databits, &parity, &stop))
         return false;
 
-    uart_resetup(uart, speed, databits, parity, stop, ctx);
+    osm_uart_resetup(uart, speed, databits, parity, stop, ctx);
     return true;
 }
 
 
 
 
-void uarts_setup(void)
+void osm_uarts_setup(void)
 {
-    model_uarts_setup();
+    osm_model_uarts_setup();
 
-    for(unsigned n = 0; n < UART_CHANNELS_COUNT; n++)
+    for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
         uart_setup(n);
 }
 
-bool uart_is_tx_empty(unsigned uart)
+bool osm_uart_is_tx_empty(unsigned uart)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return false;
 
     return (uart_wait_tx_done(uart_channels[uart].uart, 0) == ESP_OK);
 }
 
 
-void uart_blocking(unsigned uart, const char *data, unsigned size)
+void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return;
 
-    const uart_channel_t * channel = &uart_channels[uart];
+    const osm_uart_channel_t * channel = &uart_channels[uart];
 
     while(size)
     {
@@ -260,32 +260,32 @@ void uart_blocking(unsigned uart, const char *data, unsigned size)
             }
             else if (sent < 0)
             {
-                uart_debug(uart, "Error writing to UART");
+                osm_uart_debug(uart, "Error writing to UART");
             }
         }
         else
         {
-            uart_debug(uart, "Trouble %s writing to the UART.", esp_err_to_name(err));
+            osm_uart_debug(uart, "Trouble %s writing to the UART.", esp_err_to_name(err));
         }
     }
 }
 
 
-unsigned uart_dma_out(unsigned uart, char *data, unsigned size)
+unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
 {
-    if (uart >= UART_CHANNELS_COUNT)
+    if (uart >= OSM_UART_CHANNELS_COUNT)
         return 0;
 
-    const uart_channel_t * channel = &uart_channels[uart];
+    const osm_uart_channel_t * channel = &uart_channels[uart];
 
     if (!channel->enabled)
         return size; /* Drop the data */
 
-    if (!uart_is_tx_empty(uart))
+    if (!osm_uart_is_tx_empty(uart))
         return 0;
 
     if (uart == CMD_UART)
-        mqtt_uart_forward(data, size);
+        osm_mqtt_uart_forward(data, size);
 
     int sent = uart_tx_chars(uart_channels[uart].uart, data, size);
     if (sent <= 0)

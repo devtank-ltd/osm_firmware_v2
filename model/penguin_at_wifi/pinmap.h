@@ -15,7 +15,7 @@
     { UART_5_SPEED, UART_5_DATABITS, UART_5_PARITY, UART_5_STOP, true, 0}, /* UART 4 RS232 */   \
 }
 
-#define UART_CHANNELS_COUNT 5
+#define OSM_UART_CHANNELS_COUNT 5
 
 #define ADC_COUNT 10
 
@@ -29,15 +29,15 @@
 #define ADC_INDEX_FTMA_4          7
 
 
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
+#define ADC_TYPES_ALL_CC { OSM_ADCS_TYPE_CC_CLAMP1,  \
+                           OSM_ADCS_TYPE_CC_CLAMP2,  \
+                           OSM_ADCS_TYPE_CC_CLAMP3   }
 
 
-#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
-                             ADCS_TYPE_FTMA2,    \
-                             ADCS_TYPE_FTMA3,    \
-                             ADCS_TYPE_FTMA4     }
+#define ADC_TYPES_ALL_FTMA { OSM_ADCS_TYPE_FTMA1,    \
+                             OSM_ADCS_TYPE_FTMA2,    \
+                             OSM_ADCS_TYPE_FTMA3,    \
+                             OSM_ADCS_TYPE_FTMA4     }
 
 
 #define ADC_FTMA_CHANNELS { ADC1_CHANNEL_FTMA_1,  \
@@ -46,7 +46,7 @@
                             ADC1_CHANNEL_FTMA_4   }
 
 
-#define UART_BUFFERS_INIT                \
+#define OSM_UART_BUFFERS_INIT                \
 char uart_0_in_buf[UART_0_IN_BUF_SIZE];  \
 char uart_0_out_buf[UART_0_OUT_BUF_SIZE];\
 char uart_1_in_buf[UART_1_IN_BUF_SIZE];  \
@@ -60,7 +60,7 @@ char uart_4_out_buf[UART_5_OUT_BUF_SIZE];\
 char uart_5_in_buf[UART_5_IN_BUF_SIZE];  \
 char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 
-#define UART_IN_RINGS                                   \
+#define OSM_UART_IN_RINGS                                   \
 {                                                       \
     RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),\
     RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),\
@@ -69,7 +69,7 @@ char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
     RING_BUF_INIT(uart_4_in_buf, sizeof(uart_4_in_buf)),\
 }
 
-#define UART_OUT_RINGS                                    \
+#define OSM_UART_OUT_RINGS                                    \
 {                                                         \
     RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),\
     RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
@@ -87,19 +87,10 @@ char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
-    IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
+    OSM_IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
 }
-
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
-
-#define ADC_TYPES_ALL_FTMA { ADCS_TYPE_FTMA1,    \
-                             ADCS_TYPE_FTMA2,    \
-                             ADCS_TYPE_FTMA3,    \
-                             ADCS_TYPE_FTMA4     }
 
 #define W1_PULSE_1_IO               0
 #define W1_PULSE_2_IO               1
@@ -107,13 +98,13 @@ char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 #define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
 #define IOS_WATCH_COUNT 2
 
-#define HTU21D_I2C                  1
-#define HTU21D_I2C_INDEX            0
-#define VEML7700_I2C                1
-#define VEML7700_I2C_INDEX          0
+#define OSM_HTU21D_I2C                  1
+#define OSM_HTU21D_I2C_INDEX            0
+#define OSM_VEML7700_I2C                1
+#define OSM_VEML7700_I2C_INDEX          0
 
 #define DS18B20_INSTANCES   {                                          \
-    { { MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
+    { { OSM_MEASUREMENTS_W1_PROBE_NAME_1, W1_PULSE_1_IO} ,                 \
         0 },                                                           \
 }
 
@@ -123,4 +114,4 @@ char uart_5_out_buf[UART_5_OUT_BUF_SIZE];
 #define COMMS_RESET_PORT_N_PINS     { 10 }
 #define COMMS_BOOT_PORT_N_PINS      { 11 }
 
-#define SEN5x_I2C                           0
+#define OSM_SENxx_I2C                           0

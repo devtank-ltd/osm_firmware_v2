@@ -16,8 +16,8 @@
 #define OSM_MEAS "osm_meas"
 
 
-persist_storage_t               persist_data __attribute__((aligned (16))) = {0};
-persist_measurements_storage_t  persist_measurements __attribute__((aligned (16))) = {0};
+osm_persist_storage_t               persist_data __attribute__((aligned (16))) = {0};
+osm_persist_measurements_storage_t  persist_measurements __attribute__((aligned (16))) = {0};
 
 
 static void _persistent_wipe(void)
@@ -25,19 +25,19 @@ static void _persistent_wipe(void)
     memset(&persist_data, 0, sizeof(persist_data));
     memset(&persist_measurements, 0, sizeof(persist_measurements));
     persist_data.version = PERSIST_VERSION;
-    persist_data.log_debug_mask = DEBUG_SYS;
+    persist_data.log_debug_mask = OSM_DEBUG_SYS;
     persist_data.config_count = 0;
-    if (strlen(MODEL_NAME) > MODEL_NAME_LEN)
-        memcpy(&persist_data.model_name[0], MODEL_NAME, MODEL_NAME_LEN);
+    if (strlen(OSM_MODEL_NAME) > OSM_MODEL_NAME_LEN)
+        memcpy(&persist_data.model_name[0], OSM_MODEL_NAME, OSM_MODEL_NAME_LEN);
     else
-        snprintf(persist_data.model_name, MODEL_NAME_LEN, MODEL_NAME);
-    unsigned human_name_len = snprintf(persist_data.human_name, HUMAN_NAME_LEN, "0x%08"PRIX32, platform_get_hw_id());
+        snprintf(persist_data.model_name, OSM_MODEL_NAME_LEN, OSM_MODEL_NAME);
+    unsigned human_name_len = snprintf(persist_data.human_name, OSM_HUMAN_NAME_LEN, "0x%08"PRIX32, osm_platform_get_hw_id());
     persist_data.human_name[human_name_len] = 0;
-    model_persist_config_model_init(&persist_data.model_config);
+    osm_model_persist_config_model_init(&persist_data.model_config);
 }
 
 
-void     persist_commit()
+void     osm_persist_commit()
 {
     esp_err_t err;
     nvs_handle_t config_handle;
@@ -45,7 +45,7 @@ void     persist_commit()
     err = nvs_open(OSM_NS, NVS_READWRITE, &config_handle);
     if (err != ESP_OK)
     {
-        log_error("Failed to open %s to write : %s", OSM_NS, esp_err_to_name(err));
+        osm_log_error("Failed to open %s to write : %s", OSM_NS, esp_err_to_name(err));
         return;
     }
 
@@ -53,11 +53,11 @@ void     persist_commit()
 
     err = nvs_set_blob(config_handle, OSM_DATA, &persist_data, sizeof(persist_data));
     if (err != ESP_OK)
-        log_error("Failed write persist_data : %s", esp_err_to_name(err));
+        osm_log_error("Failed write persist_data : %s", esp_err_to_name(err));
 
     err = nvs_set_blob(config_handle, OSM_MEAS, &persist_measurements, sizeof(persist_measurements));
     if (err != ESP_OK)
-        log_error("Failed write persist_measurements : %s", esp_err_to_name(err));
+        osm_log_error("Failed write persist_measurements : %s", esp_err_to_name(err));
     nvs_commit(config_handle);
     nvs_close(config_handle);
 
@@ -65,7 +65,7 @@ void     persist_commit()
 }
 
 
-bool persistent_init(void)
+bool osm_persistent_init(void)
 {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -80,7 +80,7 @@ bool persistent_init(void)
     err = nvs_open(OSM_NS, NVS_READONLY, &config_handle);
     if (err != ESP_OK)
     {
-        log_error("Failed to open %s to read : %s", OSM_NS, esp_err_to_name(err));
+        osm_log_error("Failed to open %s to read : %s", OSM_NS, esp_err_to_name(err));
         goto setup_exit;
     }
 
@@ -95,13 +95,13 @@ bool persistent_init(void)
 
     if (!persist_data_read || !persist_measurements_read)
     {
-        log_error("No config loaded");
+        osm_log_error("No config loaded");
         goto setup_exit;
     }
 
     if (persist_data.version != PERSIST_VERSION)
     {
-        log_error("Invalid config loaded (version %u)", persist_data.version);
+        osm_log_error("Invalid config loaded (version %u)", persist_data.version);
         goto setup_exit;
     }
 
@@ -112,13 +112,13 @@ setup_exit:
 }
 
 
-void platform_persist_wipe(void)
+void osm_platform_persist_wipe(void)
 {
     ESP_ERROR_CHECK(nvs_flash_erase());
     ESP_ERROR_CHECK(nvs_flash_init());
 
     _persistent_wipe();
-    persist_commit();
+    osm_persist_commit();
 }
 
 

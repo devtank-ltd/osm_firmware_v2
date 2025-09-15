@@ -1,3 +1,3 @@
 #pragma once
 
-void mqtt_uart_forward(const char * data, unsigned size);
+void osm_mqtt_uart_forward(const char * data, unsigned size);

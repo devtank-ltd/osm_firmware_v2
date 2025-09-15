@@ -37,9 +37,9 @@
 #define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START            "    \"CHANNEL START\": %"PRIu16","
 #define AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT            "    \"CHANNEL COUNT\": %"PRIu16","
 
-#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , AT_WIFI_MAX_SSID_LEN          ,_wifi_ssid
-#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , AT_WIFI_MAX_PWD_LEN           , _wifi_pwd
-#define AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_country_code)  AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE , AT_WIFI_MAX_COUNTRY_CODE_LEN  , _country_code
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_SSID(_wifi_ssid)        AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_SSID    , OSM_AT_WIFI_MAX_SSID_LEN          ,_wifi_ssid
+#define AT_WIFI_PRINT_CFG_JSON_WIFI_PWD(_wifi_pwd)          AT_WIFI_PRINT_CFG_JSON_FMT_WIFI_PWD     , OSM_AT_WIFI_MAX_PWD_LEN           , _wifi_pwd
+#define AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE(_country_code)  AT_WIFI_PRINT_CFG_JSON_FMT_COUNTRY_CODE , OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN  , _country_code
 #define AT_WIFI_PRINT_CFG_JSON_CHANNEL_START(_schan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_START, _schan
 #define AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT(_nchan)        AT_WIFI_PRINT_CFG_JSON_FMT_CHANNEL_COUNT, _nchan
 
@@ -124,7 +124,7 @@ typedef enum
 typedef struct
 {
     at_wifi_ap_ecn_t    ecn;
-    char                ssid[AT_WIFI_MAX_SSID_LEN + 1];
+    char                ssid[OSM_AT_WIFI_MAX_SSID_LEN + 1];
     int                 rssi;
     uint8_t             mac[6];
     unsigned            channel;
@@ -142,10 +142,10 @@ static struct
 {
     enum at_wifi_states_t    state;
     enum at_wifi_states_t    before_timedout_state;
-    char                    before_timedout_last_cmd[AT_BASE_MAX_CMD_LEN];
-    at_wifi_config_t*       mem;
+    char                    before_timedout_last_cmd[OSM_AT_BASE_MAX_CMD_LEN];
+    osm_at_wifi_config_t*       mem;
     uint32_t                ip;
-    at_mqtt_ctx_t           mqtt_ctx;
+    osm_at_mqtt_ctx_t           mqtt_ctx;
     at_wifi_ap_info_t       ap_info_list[AT_WIFI_AP_LIST_LEN];
     unsigned                ap_info_len;
     enum at_wifi_states_t   before_ap_list_state;
@@ -177,7 +177,7 @@ static struct
 };
 
 
-static struct cmd_link_t* _at_wifi_config_cmds;
+static struct osm_cmd_link_t* _at_wifi_config_cmds;
 
 
 static const char * _at_wifi_get_state_str(enum at_wifi_states_t state)
@@ -228,26 +228,26 @@ static bool _at_wifi_mem_is_valid(void)
 {
 
     return _at_wifi_ctx.mem &&
-        at_mqtt_mem_is_valid() &&
-        str_is_valid_ascii(_at_wifi_ctx.mem->wifi.ssid   , AT_WIFI_MAX_SSID_LEN          , true  ) &&
-        str_is_valid_ascii(_at_wifi_ctx.mem->wifi.pwd    , AT_WIFI_MAX_PWD_LEN           , false );
+        osm_at_mqtt_mem_is_valid() &&
+        osm_str_is_valid_ascii(_at_wifi_ctx.mem->wifi.ssid   , OSM_AT_WIFI_MAX_SSID_LEN          , true  ) &&
+        osm_str_is_valid_ascii(_at_wifi_ctx.mem->wifi.pwd    , OSM_AT_WIFI_MAX_PWD_LEN           , false );
 }
 
 
 static unsigned _at_wifi_printf(const char* fmt, ...)
 {
-    comms_debug("Command when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+    osm_comms_debug("Command when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
     char* buf = _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_cmd.str;
     va_list args;
     va_start(args, fmt);
-    int len = vsnprintf(buf, AT_BASE_MAX_CMD_LEN - 2, fmt, args);
+    int len = vsnprintf(buf, OSM_AT_BASE_MAX_CMD_LEN - 2, fmt, args);
     va_end(args);
     buf[len] = 0;
-    _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent = get_since_boot_ms();
-    comms_debug(" << %s", buf);
+    _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent = osm_get_since_boot_ms();
+    osm_comms_debug(" << %s", buf);
     buf[len] = '\r';
     buf[len+1] = 0;
-    len = at_base_raw_send(buf, len+1);
+    len = osm_at_base_raw_send(buf, len+1);
     return len;
 }
 
@@ -256,7 +256,7 @@ static void _at_wifi_start(void)
 {
     if (AT_WIFI_STATE_RESTORE == _at_wifi_ctx.state)
     {
-        comms_debug("Already resetting, nop");
+        osm_comms_debug("Already resetting, nop");
     }
     else
     {
@@ -281,8 +281,8 @@ static void _at_wifi_is_mqtt_subscribed(void)
 static void _at_wifi_comms_led_set(bool on)
 {
 #ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
-    platform_gpio_set(&comms_led, !on);
+    const osm_port_n_pins_t comms_led = COMMS_LED;
+    osm_platform_gpio_set(&comms_led, !on);
 #endif // COMMS_LED
 }
 
@@ -290,9 +290,9 @@ static void _at_wifi_comms_led_set(bool on)
 static void _at_wifi_reset(void)
 {
     _at_wifi_comms_led_set(false);
-    comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
-    comms_debug("AT wifi reset");
-    _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = get_since_boot_ms();
+    osm_comms_debug("RESET when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+    osm_comms_debug("AT wifi reset");
+    _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since = osm_get_since_boot_ms();
     _at_wifi_printf("AT+RESTORE");
     _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
 }
@@ -300,12 +300,12 @@ static void _at_wifi_reset(void)
 
 static void _at_wifi_hw_reset(void)
 {
-    comms_debug("AT wifi HW reset");
-    at_base_ctx_t* base_ctx = &_at_wifi_ctx.mqtt_ctx.at_base_ctx;
-    base_ctx->off_since = get_since_boot_ms();
-    platform_gpio_set(&base_ctx->reset_pin, false);
-    spin_blocking_ms(1);
-    platform_gpio_set(&base_ctx->reset_pin, true);
+    osm_comms_debug("AT wifi HW reset");
+    osm_at_base_ctx_t* base_ctx = &_at_wifi_ctx.mqtt_ctx.at_base_ctx;
+    base_ctx->off_since = osm_get_since_boot_ms();
+    osm_platform_gpio_set(&base_ctx->reset_pin, false);
+    osm_spin_blocking_ms(1);
+    osm_platform_gpio_set(&base_ctx->reset_pin, true);
     _at_wifi_ctx.state = AT_WIFI_STATE_RESTORE;
 }
 
@@ -317,11 +317,11 @@ static unsigned _at_wifi_mqtt_publish(const char* topic, char* message, unsigned
     {
         case AT_WIFI_STATE_IDLE:
         {
-            message_len = message_len < COMMS_DEFAULT_MTU ? message_len : COMMS_DEFAULT_MTU;
-            at_base_cmd_t* cmd = at_mqtt_publish_prep(topic, message, message_len);
+            message_len = message_len < OSM_COMMS_DEFAULT_MTU ? message_len : OSM_COMMS_DEFAULT_MTU;
+            osm_at_base_cmd_t* cmd = osm_at_mqtt_publish_prep(topic, message, message_len);
             if (!cmd)
             {
-                comms_debug("Failed to prep MQTT");
+                osm_comms_debug("Failed to prep MQTT");
             }
             else
             {
@@ -332,26 +332,26 @@ static unsigned _at_wifi_mqtt_publish(const char* topic, char* message, unsigned
             break;
         }
         default:
-            comms_debug("Wrong state to publish packet: %u", _at_wifi_ctx.state);
+            osm_comms_debug("Wrong state to publish packet: %u", _at_wifi_ctx.state);
             break;
     }
     return ret_len;
 }
 
 
-uint16_t at_wifi_get_mtu(void)
+uint16_t osm_at_wifi_get_mtu(void)
 {
-    return COMMS_DEFAULT_MTU;
+    return OSM_COMMS_DEFAULT_MTU;
 }
 
 
-bool at_wifi_send_ready(void)
+bool osm_at_wifi_send_ready(void)
 {
     return _at_wifi_ctx.state == AT_WIFI_STATE_IDLE;
 }
 
 
-bool at_wifi_send_allowed(void)
+bool osm_at_wifi_send_allowed(void)
 {
     return false;
 }
@@ -359,32 +359,32 @@ bool at_wifi_send_allowed(void)
 
 static bool _at_wifi_mqtt_publish_measurements(char* data, uint16_t len)
 {
-    return _at_wifi_mqtt_publish(AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
+    return _at_wifi_mqtt_publish(OSM_AT_MQTT_TOPIC_MEASUREMENTS, data, len) > 0;
 }
 
 
-bool at_wifi_send(char* data, uint16_t len)
+bool osm_at_wifi_send(char* data, uint16_t len)
 {
     _at_wifi_comms_led_set(false);
     bool ret = _at_wifi_mqtt_publish_measurements(data, len);
     if (!ret)
     {
-        comms_debug("Failed to send measurement");
+        osm_comms_debug("Failed to send measurement");
     }
     return ret;
 }
 
 
-static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx);
-static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx);
-static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx);
-static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx);
-static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx);
+static osm_command_response_t _at_wifi_config_wifi_ssid_cb(char* args, osm_cmd_ctx_t * ctx);
+static osm_command_response_t _at_wifi_config_wifi_pwd_cb(char* args, osm_cmd_ctx_t * ctx);
+static osm_command_response_t _at_wifi_config_country_cb(char* args, osm_cmd_ctx_t* ctx);
+static osm_command_response_t _at_wifi_config_channel_start_cb(char* args, osm_cmd_ctx_t* ctx);
+static osm_command_response_t _at_wifi_config_channel_count_cb(char* args, osm_cmd_ctx_t* ctx);
 
 
-void at_wifi_init(void)
+void osm_at_wifi_init(void)
 {
-    static struct cmd_link_t config_cmds[] =
+    static struct osm_cmd_link_t config_cmds[] =
     {
         { "wifi_ssid",      "Set/get SSID",                 _at_wifi_config_wifi_ssid_cb        , false , NULL },
         { "wifi_pwd",       "Set/get password",             _at_wifi_config_wifi_pwd_cb         , false , NULL },
@@ -393,31 +393,31 @@ void at_wifi_init(void)
         { "nchan",          "Set/get number of channels",   _at_wifi_config_channel_count_cb    , false , NULL },
     };
 
-    struct cmd_link_t* tail = &config_cmds[ARRAY_SIZE(config_cmds)-1];
+    struct osm_cmd_link_t* tail = &config_cmds[OSM_ARRAY_SIZE(config_cmds)-1];
 
-    for (struct cmd_link_t* cur = config_cmds; cur != tail; cur++)
+    for (struct osm_cmd_link_t* cur = config_cmds; cur != tail; cur++)
         cur->next = cur + 1;
 
-    at_mqtt_add_commands(tail);
+    osm_at_mqtt_add_commands(tail);
     _at_wifi_config_cmds = config_cmds;
 
-    _at_wifi_ctx.mem = (at_wifi_config_t*)&persist_data.model_config.comms_config;
+    _at_wifi_ctx.mem = (osm_at_wifi_config_t*)&persist_data.model_config.comms_config;
 
     _at_wifi_ctx.mqtt_ctx.mem = &_at_wifi_ctx.mem->mqtt;
 
-    at_mqtt_init(&_at_wifi_ctx.mqtt_ctx);
+    osm_at_mqtt_init(&_at_wifi_ctx.mqtt_ctx);
     _at_wifi_ctx.state = AT_WIFI_STATE_OFF;
 
 #ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
-    platform_gpio_init(&comms_led);
-    platform_gpio_setup(&comms_led, false, IO_PUPD_NONE);
+    const osm_port_n_pins_t comms_led = COMMS_LED;
+    osm_platform_gpio_init(&comms_led);
+    osm_platform_gpio_setup(&comms_led, false, OSM_IO_PUPD_NONE);
 #endif // COMMS_LED
     _at_wifi_comms_led_set(false);
 }
 
 
-void at_wifi_reset(void)
+void osm_at_wifi_reset(void)
 {
     _at_wifi_reset();
 }
@@ -426,7 +426,7 @@ void at_wifi_reset(void)
 static void _at_wifi_process_state_off(char* msg, unsigned len)
 {
     const char ready_msg[] = "ready";
-    if (is_str(ready_msg, msg, len))
+    if (osm_is_str(ready_msg, msg, len))
     {
         _at_wifi_start();
     }
@@ -442,7 +442,7 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
     const char cwstate_msg[] = "+CWSTATE:";
     unsigned cwstate_msg_len = strlen(cwstate_msg);
     static enum at_wifi_cw_states_t _wifi_state = AT_WIFI_CW_STATE_NOT_CONN;
-    if (is_str(cwstate_msg, msg, cwstate_msg_len))
+    if (osm_is_str(cwstate_msg, msg, cwstate_msg_len))
     {
         char* p, * np;
         unsigned len_rem = len - cwstate_msg_len;
@@ -462,7 +462,7 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
                     unsigned ssid_len = (msg + len) > (ssid + 1) ? msg + len - ssid - 1 : 0;
                     /* Probably should check if saved has trailing spaces */
                     char* cmp_ssid = _at_wifi_ctx.mem->wifi.ssid;
-                    unsigned cmp_ssid_len = strnlen(cmp_ssid, AT_WIFI_MAX_SSID_LEN);
+                    unsigned cmp_ssid_len = strnlen(cmp_ssid, OSM_AT_WIFI_MAX_SSID_LEN);
                     if (ssid_len == cmp_ssid_len &&
                         strncmp(cmp_ssid, ssid, cmp_ssid_len) == 0)
                     {
@@ -476,13 +476,13 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
                     _wifi_state = state;
                     break;
                 default:
-                    comms_debug("Unknown CWSTATE:%"PRIu8, state);
+                    osm_comms_debug("Unknown CWSTATE:%"PRIu8, state);
                     _at_wifi_reset();
                     break;
             }
         }
     }
-    else if (at_base_is_ok(msg, len))
+    else if (osm_at_base_is_ok(msg, len))
     {
         switch (_wifi_state)
         {
@@ -504,7 +504,7 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
         }
         _wifi_state = AT_WIFI_CW_STATE_NOT_CONN;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _wifi_state = AT_WIFI_CW_STATE_NOT_CONN;
         _at_wifi_reset();
@@ -515,12 +515,12 @@ static void _at_wifi_process_state_is_connected(char* msg, unsigned len)
 static void _at_wifi_process_state_restore(char* msg, unsigned len)
 {
     const char ready[] = "ready";
-    if (is_str(ready, msg, len))
+    if (osm_is_str(ready, msg, len))
     {
         _at_wifi_printf("ATE0");
         _at_wifi_ctx.state = AT_WIFI_STATE_DISABLE_ECHO;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -529,12 +529,12 @@ static void _at_wifi_process_state_restore(char* msg, unsigned len)
 
 static void _at_wifi_process_state_disable_echo(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
         _at_wifi_printf("AT+CIPSTAMAC?");
         _at_wifi_ctx.state = AT_WIFI_STATE_WAIT_MAC_ADDRESS;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -557,16 +557,16 @@ static void _at_wifi_process_state_wait_mac_address(char* msg, unsigned len)
 {
     const char mac_msg[] = "+CIPSTAMAC:\"";
     unsigned mac_msg_len = strlen(mac_msg);
-    if (is_str(mac_msg, msg, mac_msg_len))
+    if (osm_is_str(mac_msg, msg, mac_msg_len))
     {
         unsigned len_rem = len - mac_msg_len;
-        const unsigned maxstrlen = AT_BASE_MAC_ADDRESS_LEN - 1;
+        const unsigned maxstrlen = OSM_AT_BASE_MAC_ADDRESS_LEN - 1;
         len_rem = len_rem > maxstrlen ? maxstrlen : len_rem;
         char* dest = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
         memcpy(dest, msg + mac_msg_len, len_rem);
         dest[maxstrlen] = 0;
     }
-    else if (at_base_is_ok(msg, len))
+    else if (osm_at_base_is_ok(msg, len))
     {
         if (_at_wifi_mem_is_valid())
         {
@@ -582,13 +582,13 @@ static void _at_wifi_process_state_wait_mac_address(char* msg, unsigned len)
 
 static void _at_wifi_process_state_rf_region(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        at_base_sleep();
+        osm_at_base_sleep();
         _at_wifi_printf("AT+CWMODE=1");
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_SETTING_MODE;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -597,12 +597,12 @@ static void _at_wifi_process_state_rf_region(char* msg, unsigned len)
 
 static void _at_wifi_process_state_wifi_setting_mode(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
         _at_wifi_printf("AT+CWINIT=1");
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_INIT;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -611,12 +611,12 @@ static void _at_wifi_process_state_wifi_setting_mode(char* msg, unsigned len)
 
 static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        at_base_sleep();
-        char ssid[2*AT_WIFI_MAX_SSID_LEN+1];
+        osm_at_base_sleep();
+        char ssid[2*OSM_AT_WIFI_MAX_SSID_LEN+1];
         char* san_ssid = AT_BASE_SANIT_STR(_at_wifi_ctx.mem->wifi.ssid);
-        strncpy(ssid, san_ssid, 2*AT_WIFI_MAX_SSID_LEN+1);
+        strncpy(ssid, san_ssid, 2*OSM_AT_WIFI_MAX_SSID_LEN+1);
         _at_wifi_printf(
             "AT+CWJAP=\"%s\",\"%s\"",
             ssid,
@@ -624,7 +624,7 @@ static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
             );
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_CONNECTING;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -634,12 +634,12 @@ static void _at_wifi_process_state_wifi_init(char* msg, unsigned len)
 static void _at_wifi_process_state_wifi_conn(char* msg, unsigned len)
 {
     const char error_msg[] = "ERROR";
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        at_base_cmd_t* cmd = at_mqtt_get_ntp_cfg();
+        osm_at_base_cmd_t* cmd = osm_at_mqtt_get_ntp_cfg();
         if (!cmd)
         {
-            comms_debug("Failed to get the NTP config");
+            osm_comms_debug("Failed to get the NTP config");
         }
         else
         {
@@ -647,11 +647,11 @@ static void _at_wifi_process_state_wifi_conn(char* msg, unsigned len)
             _at_wifi_ctx.state = AT_WIFI_STATE_SNTP_WAIT_SET;
         }
     }
-    else if (is_str(error_msg, msg, len))
+    else if (osm_is_str(error_msg, msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_WIFI_FAIL_CONNECT;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -660,10 +660,10 @@ static void _at_wifi_process_state_wifi_conn(char* msg, unsigned len)
 
 static void _at_wifi_do_mqtt_user_conf(void)
 {
-    at_base_cmd_t* cmd = at_mqtt_get_mqtt_user_cfg();
+    osm_at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_user_cfg();
     if (!cmd)
     {
-        comms_debug("Failed to get MQTT user config.");
+        osm_comms_debug("Failed to get MQTT user config.");
     }
     else
     {
@@ -675,10 +675,10 @@ static void _at_wifi_do_mqtt_user_conf(void)
 
 static void _at_wifi_do_mqtt_sub(void)
 {
-    at_base_cmd_t* cmd = at_mqtt_get_mqtt_sub_cfg();
+    osm_at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_sub_cfg();
     if (!cmd)
     {
-        comms_debug("Failed to get MQTT sub config.");
+        osm_comms_debug("Failed to get MQTT sub config.");
     }
     else
     {
@@ -691,12 +691,12 @@ static void _at_wifi_do_mqtt_sub(void)
 static void _at_wifi_process_state_sntp(char* msg, unsigned len)
 {
     const char time_updated_msg[] = "+TIME_UPDATED";
-    if (is_str(time_updated_msg, msg, len))
+    if (osm_is_str(time_updated_msg, msg, len))
     {
-        at_base_sleep();
+        osm_at_base_sleep();
         _at_wifi_do_mqtt_user_conf();
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -705,12 +705,12 @@ static void _at_wifi_process_state_sntp(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        at_base_cmd_t* cmd = at_mqtt_get_mqtt_conn_cfg();
+        osm_at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_conn_cfg();
         if (!cmd)
         {
-            comms_debug("Failed to get MQTT connection config.");
+            osm_comms_debug("Failed to get MQTT connection config.");
         }
         else
         {
@@ -718,7 +718,7 @@ static void _at_wifi_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
             _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_WAIT_CONF;
         }
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -727,36 +727,36 @@ static void _at_wifi_process_state_mqtt_wait_usr_conf(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_is_connected(char* msg, unsigned len)
 {
-    static enum at_mqtt_conn_states_t conn = AT_MQTT_CONN_STATE_NOT_INIT;
+    static enum osm_at_mqtt_conn_states_t conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
     const char mqtt_conn_msg[] = "+MQTTCONN:";
     unsigned mqtt_conn_msg_len = strlen(mqtt_conn_msg);
-    if (is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
+    if (osm_is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        if (!at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn))
+        if (!osm_at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn))
         {
-            conn = AT_MQTT_CONN_STATE_NOT_INIT;
+            conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
         }
     }
-    else if (at_base_is_ok(msg, len))
+    else if (osm_at_base_is_ok(msg, len))
     {
         switch (conn)
         {
-            case AT_MQTT_CONN_STATE_CONN_EST:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST:
                 /* fall through */
-            case AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST_NO_TOPIC:
                 /* fall through */
-            case AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
+            case OSM_AT_MQTT_CONN_STATE_CONN_EST_WITH_TOPIC:
                 _at_wifi_is_mqtt_subscribed();
                 break;
             default:
                 _at_wifi_do_mqtt_user_conf();
                 break;
         }
-        conn = AT_MQTT_CONN_STATE_NOT_INIT;
+        conn = OSM_AT_MQTT_CONN_STATE_NOT_INIT;
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -768,16 +768,16 @@ static void _at_wifi_process_state_mqtt_is_subscribed(char* msg, unsigned len)
     static bool is_subbed = false;
     const char mqtt_sub_msg[] = "+MQTTSUB:";
     const unsigned mqtt_sub_msg_len = strlen(mqtt_sub_msg);
-    if (is_str(mqtt_sub_msg, msg, mqtt_sub_msg_len))
+    if (osm_is_str(mqtt_sub_msg, msg, mqtt_sub_msg_len))
     {
         char* sub_msg = msg + mqtt_sub_msg_len;
         unsigned sub_msg_len = len - mqtt_sub_msg_len;
-        if (at_mqtt_topic_match(sub_msg, sub_msg_len, msg, len))
+        if (osm_at_mqtt_topic_match(sub_msg, sub_msg_len, msg, len))
         {
             is_subbed = true;
         }
     }
-    else if (at_base_is_ok(msg, len))
+    else if (osm_at_base_is_ok(msg, len))
     {
         if (is_subbed)
         {
@@ -789,7 +789,7 @@ static void _at_wifi_process_state_mqtt_is_subscribed(char* msg, unsigned len)
             _at_wifi_do_mqtt_sub();
         }
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -798,13 +798,13 @@ static void _at_wifi_process_state_mqtt_is_subscribed(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_wait_conf(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        at_base_sleep();
-        at_base_cmd_t* cmd = at_mqtt_get_mqtt_conn();
+        osm_at_base_sleep();
+        osm_at_base_cmd_t* cmd = osm_at_mqtt_get_mqtt_conn();
         if (!cmd)
         {
-            comms_debug("Failed to get MQTT connection info.");
+            osm_comms_debug("Failed to get MQTT connection info.");
         }
         else
         {
@@ -812,7 +812,7 @@ static void _at_wifi_process_state_mqtt_wait_conf(char* msg, unsigned len)
             _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_CONNECTING;
         }
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -821,12 +821,12 @@ static void _at_wifi_process_state_mqtt_wait_conf(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_connecting(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        at_base_sleep();
+        osm_at_base_sleep();
         _at_wifi_do_mqtt_sub();
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -836,18 +836,18 @@ static void _at_wifi_process_state_mqtt_connecting(char* msg, unsigned len)
 static void _at_wifi_process_state_mqtt_wait_sub(char* msg, unsigned len)
 {
     const char already_subscribe_str[] = "ALREADY SUBSCRIBE";
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
         _at_wifi_comms_led_set(true);
     }
-    else if (is_str(already_subscribe_str, msg, len))
+    else if (osm_is_str(already_subscribe_str, msg, len))
     {
         /* Already subscribed, assume everything fine */
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
         _at_wifi_comms_led_set(true);
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -856,10 +856,10 @@ static void _at_wifi_process_state_mqtt_wait_sub(char* msg, unsigned len)
 
 static bool _at_wifi_process_event(char* msg, unsigned len)
 {
-    char resp_payload[AT_MQTT_RESP_PAYLOAD_LEN + 1];
-    int resp_payload_len = at_mqtt_process_event(msg, len, resp_payload, AT_MQTT_RESP_PAYLOAD_LEN + 1);
-    return (AT_ERROR_CODE != resp_payload_len) &&
-        _at_wifi_mqtt_publish(AT_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len);
+    char resp_payload[OSM_AT_MQTT_RESP_PAYLOAD_LEN + 1];
+    int resp_payload_len = osm_at_mqtt_process_event(msg, len, resp_payload, OSM_AT_MQTT_RESP_PAYLOAD_LEN + 1);
+    return (OSM_AT_ERROR_CODE != resp_payload_len) &&
+        _at_wifi_mqtt_publish(OSM_AT_MQTT_TOPIC_COMMAND_RESP, resp_payload, resp_payload_len);
 }
 
 
@@ -870,16 +870,16 @@ static void _at_wifi_process_state_idle(char* msg, unsigned len)
 
 static void _at_wifi_process_state_mqtt_wait_pub(char* msg, unsigned len)
 {
-    if (at_base_is_ok(msg, len))
+    if (osm_at_base_is_ok(msg, len))
     {
-        comms_debug("Sending pub data %.*s", _at_wifi_ctx.mqtt_ctx.publish_packet.len,  _at_wifi_ctx.mqtt_ctx.publish_packet.message);
+        osm_comms_debug("Sending pub data %.*s", _at_wifi_ctx.mqtt_ctx.publish_packet.len,  _at_wifi_ctx.mqtt_ctx.publish_packet.message);
         _at_wifi_ctx.state = AT_WIFI_STATE_MQTT_PUBLISHING;
-        at_base_raw_send(
+        osm_at_base_raw_send(
             _at_wifi_ctx.mqtt_ctx.publish_packet.message,
             _at_wifi_ctx.mqtt_ctx.publish_packet.len
             );
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
         _at_wifi_reset();
     }
@@ -899,18 +899,18 @@ static void _at_wifi_process_state_mqtt_publishing(char* msg, unsigned len)
         len--;
     }
     const char pub_ok[] = "+MQTTPUB:OK";
-    if (is_str(pub_ok, msg, len))
+    if (osm_is_str(pub_ok, msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
-        comms_debug("Successful send, propagating ACK");
+        osm_comms_debug("Successful send, propagating ACK");
         _at_wifi_comms_led_set(true);
-        on_protocol_sent_ack(true);
+        osm_on_protocol_sent_ack(true);
     }
-    else if (at_base_is_error(msg, len))
+    else if (osm_at_base_is_error(msg, len))
     {
-        comms_debug("Failed send (ERROR), propagating NACK");
+        osm_comms_debug("Failed send (ERROR), propagating NACK");
         _at_wifi_comms_led_set(true);
-        on_protocol_sent_ack(false);
+        osm_on_protocol_sent_ack(false);
         _at_wifi_reset();
     }
 }
@@ -934,7 +934,7 @@ static bool _at_wifi_is_cw_state(char* msg, unsigned len, char** end)
 {
     const char cw_state_msg[] = "+CWSTATE:";
     unsigned cw_state_msg_len = strnlen(cw_state_msg, len);
-    bool ret = is_str(cw_state_msg, msg, cw_state_msg_len);
+    bool ret = osm_is_str(cw_state_msg, msg, cw_state_msg_len);
     if (end)
     {
         *end = msg + cw_state_msg_len;
@@ -963,7 +963,7 @@ static void _at_wifi_process_state_timedout_wifi_wait_state(char* msg, unsigned 
         }
         else
         {
-            comms_debug("Failed CW state (wifi)");
+            osm_comms_debug("Failed CW state (wifi)");
             _at_wifi_hw_reset();
         }
     }
@@ -983,7 +983,7 @@ static void _at_wifi_process_state_timedout_mqtt_wait_wifi_state(char* msg, unsi
         }
         else
         {
-            comms_debug("Failed CW state (mqtt)");
+            osm_comms_debug("Failed CW state (mqtt)");
             _at_wifi_hw_reset();
         }
     }
@@ -994,19 +994,19 @@ static void _at_wifi_process_state_timedout_mqtt_wait_mqtt_state(char* msg, unsi
 {
     const char mqtt_conn_msg[] = "+MQTTCONN:";
     unsigned mqtt_conn_msg_len = strlen(mqtt_conn_msg);
-    if (is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
+    if (osm_is_str(mqtt_conn_msg, msg, mqtt_conn_msg_len))
     {
         char* conn_msg = msg + mqtt_conn_msg_len;
         unsigned conn_msg_len = len - mqtt_conn_msg_len;
-        enum at_mqtt_conn_states_t conn;
-        if (at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn) &&
-            conn >= AT_MQTT_CONN_STATE_CONN_EST && conn < AT_MQTT_CONN_STATE_COUNT)
+        enum osm_at_mqtt_conn_states_t conn;
+        if (osm_at_mqtt_parse_mqtt_conn(conn_msg, conn_msg_len, &conn) &&
+            conn >= OSM_AT_MQTT_CONN_STATE_CONN_EST && conn < OSM_AT_MQTT_CONN_STATE_COUNT)
         {
             _at_wifi_retry_command();
         }
         else
         {
-            comms_debug("Failed MQTT state (mqtt)");
+            osm_comms_debug("Failed MQTT state (mqtt)");
             _at_wifi_reset();
         }
     }
@@ -1017,12 +1017,12 @@ static void _at_wifi_process_state_wait_timestamp(char* msg, unsigned len)
 {
     const char sys_ts_msg[] = "+SYSTIMESTAMP:";
     unsigned sys_ts_msg_len = strlen(sys_ts_msg);
-    if (is_str(sys_ts_msg, msg, sys_ts_msg_len))
+    if (osm_is_str(sys_ts_msg, msg, sys_ts_msg_len))
     {
         _at_wifi_ctx.mqtt_ctx.at_base_ctx.time.ts_unix = strtoull(&msg[sys_ts_msg_len], NULL, 10);
-        _at_wifi_ctx.mqtt_ctx.at_base_ctx.time.sys = get_since_boot_ms();
+        _at_wifi_ctx.mqtt_ctx.at_base_ctx.time.sys = osm_get_since_boot_ms();
     }
-    else if (at_base_is_ok(msg, len))
+    else if (osm_at_base_is_ok(msg, len))
     {
         _at_wifi_ctx.state = AT_WIFI_STATE_IDLE;
     }
@@ -1035,21 +1035,21 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     char* np;
     if (*p != '(')
     {
-        comms_debug("Bad format (start)");
+        osm_comms_debug("Bad format (start)");
         return false;
     }
     p++;
     unsigned enc_type = strtoul(p, &np, 10);
     if (p == np || *np != ',' || AT_WIFI_AP_ECN_COUNT <= enc_type || np > msg + len)
     {
-        comms_debug("Bad format (encryption method)");
+        osm_comms_debug("Bad format (encryption method)");
         return false;
     }
     ap_info->ecn = enc_type;
     p = np + 1;
     if (*p != '"')
     {
-        comms_debug("Bad format (SSID start)");
+        osm_comms_debug("Bad format (SSID start)");
         return false;
     }
     p++;
@@ -1059,14 +1059,14 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     {
         np = strchr(np + 1, '"');
     }
-    if (np <= p || AT_WIFI_MAX_SSID_LEN < np - p || np + 1 > msg + len)
+    if (np <= p || OSM_AT_WIFI_MAX_SSID_LEN < np - p || np + 1 > msg + len)
     {
-        comms_debug("Bad format (SSID)");
+        osm_comms_debug("Bad format (SSID)");
         return false;
     }
     if (*np != '"' && *(np + 1) != ',')
     {
-        comms_debug("Bad format (SSID end)");
+        osm_comms_debug("Bad format (SSID end)");
         return false;
     }
     unsigned ssid_len = np - p;
@@ -1076,13 +1076,13 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     ap_info->rssi = strtoul(p, &np, 10);
     if (p == np || *np != ',' || np > msg + len)
     {
-        comms_debug("Bad format (RSSI)");
+        osm_comms_debug("Bad format (RSSI)");
         return false;
     }
     p = np + 1;
     if (*p != '"')
     {
-        comms_debug("Bad format (MAC start)");
+        osm_comms_debug("Bad format (MAC start)");
         return false;
     }
     p++;
@@ -1093,42 +1093,42 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
             ((i == 5 && *np != '"') || (i != 5 && *np != ':'))
             || np + 1 > msg + len)
         {
-            comms_debug("Bad format (MAC)");
+            osm_comms_debug("Bad format (MAC)");
             return false;
         }
         p = np + 1;
     }
     if (*p != ',')
     {
-        comms_debug("Bad format (MAC end)");
+        osm_comms_debug("Bad format (MAC end)");
         return false;
     }
     p++;
     ap_info->channel = strtoul(p, &np, 10);
     if (p == np || *np != ',' || np > msg + len)
     {
-        comms_debug("Bad format (channel)");
+        osm_comms_debug("Bad format (channel)");
         return false;
     }
     p = np + 1;
     ap_info->freq_offset = strtoul(p, &np, 10);
     if (p == np || *np != ',' || np > msg + len)
     {
-        comms_debug("Bad format (freq offset)");
+        osm_comms_debug("Bad format (freq offset)");
         return false;
     }
     p = np + 1;
     ap_info->freqcal_val = strtoul(p, &np, 10);
     if (p == np || *np != ',' || np > msg + len)
     {
-        comms_debug("Bad format (freq cal)");
+        osm_comms_debug("Bad format (freq cal)");
         return false;
     }
     p = np + 1;
     unsigned pairwise_cipher = strtoul(p, &np, 10);
     if (p == np || *np != ',' || AT_WIFI_AP_CIPHER_COUNT <= pairwise_cipher || np > msg + len)
     {
-        comms_debug("Bad format (pairwise cipher)");
+        osm_comms_debug("Bad format (pairwise cipher)");
         return false;
     }
     ap_info->pairwise_cipher = pairwise_cipher;
@@ -1136,7 +1136,7 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     unsigned group_cipher = strtoul(p, &np, 10);
     if (p == np || *np != ',' || AT_WIFI_AP_CIPHER_COUNT <= group_cipher || np > msg + len)
     {
-        comms_debug("Bad format (group cipher)");
+        osm_comms_debug("Bad format (group cipher)");
         return false;
     }
     ap_info->group_cipher = group_cipher;
@@ -1144,7 +1144,7 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     unsigned bgn = strtoul(p, &np, 10);
     if (p == np || *np != ',' || bgn & ~(0xFF & 0x7) || np > msg + len)
     {
-        comms_debug("Bad format (bgn)");
+        osm_comms_debug("Bad format (bgn)");
         return false;
     }
     ap_info->bgn = bgn;
@@ -1152,13 +1152,13 @@ static bool _at_wifi_process_stat_ap_scan_parse(char* msg, unsigned len, at_wifi
     unsigned wps = strtoul(p, &np, 10);
     if (p == np || wps > 1 || np > msg + len)
     {
-        comms_debug("Bad format (wps)");
+        osm_comms_debug("Bad format (wps)");
         return false;
     }
     ap_info->wps = wps;
     if (*np != ')')
     {
-        comms_debug("Bad format (end)");
+        osm_comms_debug("Bad format (end)");
         return false;
     }
     return true;
@@ -1171,11 +1171,11 @@ static void _at_wifi_process_state_ap_scan(char* msg, unsigned len)
     */
     const char cwlap_msg[] = "+CWLAP:";
     unsigned cwlap_msg_len = strlen(cwlap_msg);
-    if (is_str(cwlap_msg, msg, cwlap_msg_len))
+    if (osm_is_str(cwlap_msg, msg, cwlap_msg_len))
     {
         if (AT_WIFI_AP_LIST_LEN <= _at_wifi_ctx.ap_info_len)
         {
-            comms_debug("Already filled list");
+            osm_comms_debug("Already filled list");
             return;
         }
         at_wifi_ap_info_t* ap_info = &_at_wifi_ctx.ap_info_list[_at_wifi_ctx.ap_info_len++];
@@ -1184,25 +1184,25 @@ static void _at_wifi_process_state_ap_scan(char* msg, unsigned len)
         unsigned p_len = msg + len - p;
         if (!_at_wifi_process_stat_ap_scan_parse(p, p_len, ap_info))
         {
-            comms_debug("Failed to parse AP message");
+            osm_comms_debug("Failed to parse AP message");
             _at_wifi_ctx.ap_info_len--;
         }
     }
-    else if (at_base_is_ok(msg, len))
+    else if (osm_at_base_is_ok(msg, len))
     {
-        comms_debug("Finished parsing APs");
+        osm_comms_debug("Finished parsing APs");
         _at_wifi_ctx.state = _at_wifi_ctx.before_ap_list_state;
     }
 }
 
 
-void at_wifi_process(char* msg)
+void osm_at_wifi_process(char* msg)
 {
     unsigned len = strlen(msg);
 
-    _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_recv = get_since_boot_ms();
+    _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_recv = osm_get_since_boot_ms();
 
-    comms_debug("Message when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+    osm_comms_debug("Message when in state:%s", _at_wifi_get_state_str(_at_wifi_ctx.state));
 
     if (_at_wifi_process_event(msg, len))
     {
@@ -1292,7 +1292,7 @@ void at_wifi_process(char* msg)
 }
 
 
-bool at_wifi_get_connected(void)
+bool osm_at_wifi_get_connected(void)
 {
     return _at_wifi_ctx.state == AT_WIFI_STATE_IDLE ||
            _at_wifi_ctx.state == AT_WIFI_STATE_MQTT_WAIT_PUB ||
@@ -1303,7 +1303,7 @@ bool at_wifi_get_connected(void)
 
 static void _at_wifi_timedout_start_wifi_status(void)
 {
-    strncpy(_at_wifi_ctx.before_timedout_last_cmd, _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_cmd.str, AT_BASE_MAX_CMD_LEN);
+    strncpy(_at_wifi_ctx.before_timedout_last_cmd, _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_cmd.str, OSM_AT_BASE_MAX_CMD_LEN);
     _at_wifi_printf("AT+CWSTATE?");
     _at_wifi_ctx.before_timedout_state = _at_wifi_ctx.state;
 }
@@ -1311,7 +1311,7 @@ static void _at_wifi_timedout_start_wifi_status(void)
 
 static void _at_wifi_check_wifi_timeout(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_WIFI_TIMEOUT_MS_WIFI)
+    if (osm_since_boot_delta(osm_get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_WIFI_TIMEOUT_MS_WIFI)
     {
         _at_wifi_timedout_start_wifi_status();
         _at_wifi_ctx.state = AT_WIFI_STATE_TIMEDOUT_WIFI_WAIT_STATE;
@@ -1321,13 +1321,13 @@ static void _at_wifi_check_wifi_timeout(void)
 
 static void _at_wifi_check_mqtt_timeout(void)
 {
-    if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_WIFI_TIMEOUT_MS_MQTT)
+    if (osm_since_boot_delta(osm_get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > AT_WIFI_TIMEOUT_MS_MQTT)
     {
         if (_at_wifi_ctx.state == AT_WIFI_STATE_MQTT_PUBLISHING)
         {
-            comms_debug("Failed send (TIMEOUT), propagating NACK");
+            osm_comms_debug("Failed send (TIMEOUT), propagating NACK");
             _at_wifi_comms_led_set(true);
-            on_protocol_sent_ack(false);
+            osm_on_protocol_sent_ack(false);
         }
         _at_wifi_timedout_start_wifi_status();
         _at_wifi_ctx.state = AT_WIFI_STATE_TIMEDOUT_MQTT_WAIT_WIFI_STATE;
@@ -1336,7 +1336,7 @@ static void _at_wifi_check_mqtt_timeout(void)
 
 
 #define __AT_WIFI_TIMEOUT_TEMPLATE(_timeout, _cb)                      \
-    if (since_boot_delta(get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > _timeout) \
+    if (osm_since_boot_delta(osm_get_since_boot_ms(), _at_wifi_ctx.mqtt_ctx.at_base_ctx.last_sent) > _timeout) \
     {                                                                  \
         _cb();                                                         \
     }
@@ -1360,9 +1360,9 @@ static void _at_wifi_check_default_timeout(void)
 }
 
 
-void at_wifi_loop_iteration(void)
+void osm_at_wifi_loop_iteration(void)
 {
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
 
     /* Check timeout */
     switch (_at_wifi_ctx.state)
@@ -1371,7 +1371,7 @@ void at_wifi_loop_iteration(void)
             /* fall through */
         case AT_WIFI_STATE_OFF:
         {
-            uint32_t delta = since_boot_delta(now, _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since);
+            uint32_t delta = osm_since_boot_delta(now, _at_wifi_ctx.mqtt_ctx.at_base_ctx.off_since);
             if (delta > AT_WIFI_STILL_OFF_TIMEOUT)
             {
                 _at_wifi_hw_reset();
@@ -1419,7 +1419,7 @@ void at_wifi_loop_iteration(void)
 }
 
 
-static void _at_wifi_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx)
+static void _at_wifi_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, osm_cmd_ctx_t * ctx)
 {
     unsigned len = strlen(src);
     if (len)
@@ -1431,88 +1431,88 @@ static void _at_wifi_config_get_set_str(const char* name, char* dest, unsigned m
         memcpy(dest, src, len);
     }
     /* Get */
-    cmd_ctx_out(ctx,"%s: %.*s", name, max_dest_len, dest);
+    osm_cmd_ctx_out(ctx,"%s: %.*s", name, max_dest_len, dest);
 }
 
 
-static command_response_t _at_wifi_config_wifi_ssid_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_config_wifi_ssid_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     _at_wifi_config_get_set_str(
         "SSID",
         _at_wifi_ctx.mem->wifi.ssid,
-        AT_WIFI_MAX_SSID_LEN,
+        OSM_AT_WIFI_MAX_SSID_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_wifi_pwd_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_config_wifi_pwd_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     _at_wifi_config_get_set_str(
         "PWD",
         _at_wifi_ctx.mem->wifi.pwd,
-        AT_WIFI_MAX_PWD_LEN,
+        OSM_AT_WIFI_MAX_PWD_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_country_cb(char* args, cmd_ctx_t* ctx)
+static osm_command_response_t _at_wifi_config_country_cb(char* args, osm_cmd_ctx_t* ctx)
 {
     _at_wifi_config_get_set_str(
         "COUNTRY",
         _at_wifi_ctx.mem->country_code,
-        AT_WIFI_MAX_COUNTRY_CODE_LEN,
+        OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_channel_start_cb(char* args, cmd_ctx_t* ctx)
+static osm_command_response_t _at_wifi_config_channel_start_cb(char* args, osm_cmd_ctx_t* ctx)
 {
-    at_base_config_get_set_u16(
+    osm_at_base_config_get_set_u16(
         "SCHAN",
         &_at_wifi_ctx.mem->channel_start,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_config_channel_count_cb(char* args, cmd_ctx_t* ctx)
+static osm_command_response_t _at_wifi_config_channel_count_cb(char* args, osm_cmd_ctx_t* ctx)
 {
-    at_base_config_get_set_u16(
+    osm_at_base_config_get_set_u16(
         "NCHAN",
         &_at_wifi_ctx.mem->channel_count,
         args, ctx);
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-void at_wifi_config_setup_str(char * str, cmd_ctx_t * ctx)
+void at_wifi_config_setup_str(char * str, osm_cmd_ctx_t * ctx)
 {
-    at_base_config_setup_str(_at_wifi_config_cmds, str, ctx);
+    osm_at_base_config_setup_str(_at_wifi_config_cmds, str, ctx);
 }
 
 
-bool at_wifi_get_id(char* str, uint8_t len)
+bool osm_at_wifi_get_id(char* str, uint8_t len)
 {
     strncpy(str, _at_wifi_ctx.mqtt_ctx.topic_header, len);
     return true;
 }
 
 
-static command_response_t _at_wifi_send_cb(char * args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_send_cb(char * args, osm_cmd_ctx_t * ctx)
 {
-    char * pos = skip_space(args);
-    return at_base_send_str(pos) ? COMMAND_RESP_OK : COMMAND_RESP_ERR;
+    char * pos = osm_skip_space(args);
+    return osm_at_base_send_str(pos) ? OSM_COMMAND_RESP_OK : OSM_COMMAND_RESP_ERR;
 }
 
 
-command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_wifi_cmd_config_cb(char * args, osm_cmd_ctx_t * ctx)
 {
-    at_wifi_config_t before_config;
-    memcpy(&before_config, _at_wifi_ctx.mem, sizeof(at_wifi_config_t));
-    command_response_t ret = at_base_config_setup_str(_at_wifi_config_cmds, skip_space(args), ctx);
+    osm_at_wifi_config_t before_config;
+    memcpy(&before_config, _at_wifi_ctx.mem, sizeof(osm_at_wifi_config_t));
+    osm_command_response_t ret = osm_at_base_config_setup_str(_at_wifi_config_cmds, osm_skip_space(args), ctx);
     if (_at_wifi_mem_is_valid())
     {
         if (AT_WIFI_STATE_NO_CONF == _at_wifi_ctx.state)
@@ -1520,7 +1520,7 @@ command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
             _at_wifi_send_rf_region();
         }
         else if (_at_wifi_ctx.autoconnect &&
-            at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
+            osm_at_wifi_persist_config_cmp(&before_config, _at_wifi_ctx.mem))
         {
             _at_wifi_reset();
         }
@@ -1530,74 +1530,74 @@ command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx)
 
 static bool _at_wifi_get_mac_address(char* buf, unsigned buflen);
 
-command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    char mac_address[AT_BASE_MAC_ADDRESS_LEN];
-    if (!_at_wifi_get_mac_address(mac_address, AT_BASE_MAC_ADDRESS_LEN))
+    char mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
+    if (!_at_wifi_get_mac_address(mac_address, OSM_AT_BASE_MAC_ADDRESS_LEN))
     {
-        strncpy(mac_address, "UNKNOWN", AT_BASE_MAC_ADDRESS_LEN-1);
+        strncpy(mac_address, "UNKNOWN", OSM_AT_BASE_MAC_ADDRESS_LEN-1);
     }
-    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_HEADER);
-    cmd_ctx_flush(ctx);
-    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_SSID      , _at_wifi_ctx.mem->wifi.ssid       , AT_WIFI_MAX_SSID_LEN      );
-    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_PWD       , _at_wifi_ctx.mem->wifi.pwd        , AT_WIFI_MAX_PWD_LEN       );
+    osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_HEADER);
+    osm_cmd_ctx_flush(ctx);
+    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_SSID      , _at_wifi_ctx.mem->wifi.ssid       , OSM_AT_WIFI_MAX_SSID_LEN      );
+    COMMS_COMMON_JSON_OUT_STR(AT_WIFI_PRINT_CFG_JSON_WIFI_PWD       , _at_wifi_ctx.mem->wifi.pwd        , OSM_AT_WIFI_MAX_PWD_LEN       );
     COMMS_COMMON_JSON_OUT_INT(AT_WIFI_PRINT_CFG_JSON_COUNTRY_CODE   , _at_wifi_ctx.mem->country_code                                );
     COMMS_COMMON_JSON_OUT_INT(AT_WIFI_PRINT_CFG_JSON_CHANNEL_START  , _at_wifi_ctx.mem->channel_start                               );
     COMMS_COMMON_JSON_OUT_INT(AT_WIFI_PRINT_CFG_JSON_CHANNEL_COUNT  , _at_wifi_ctx.mem->channel_count                               );
-    at_mqtt_cmd_j_cfg(ctx);
-    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address                       , AT_BASE_MAC_ADDRESS_LEN   );
-    cmd_ctx_out(ctx,AT_BASE_PRINT_CFG_JSON_TAIL);
-    cmd_ctx_flush(ctx);
-    return COMMAND_RESP_OK;
+    osm_at_mqtt_cmd_j_cfg(ctx);
+    COMMS_COMMON_JSON_OUT_STR(AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS    , mac_address                       , OSM_AT_BASE_MAC_ADDRESS_LEN   );
+    osm_cmd_ctx_out(ctx,OSM_AT_BASE_PRINT_CFG_JSON_TAIL);
+    osm_cmd_ctx_flush(ctx);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx)
+osm_command_response_t osm_at_wifi_cmd_conn_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    if (at_wifi_get_connected())
+    if (osm_at_wifi_get_connected())
     {
-        cmd_ctx_out(ctx,"1 | Connected");
+        osm_cmd_ctx_out(ctx,"1 | Connected");
     }
     else
     {
-        cmd_ctx_out(ctx,"0 | Disconnected");
+        osm_cmd_ctx_out(ctx,"0 | Disconnected");
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_dbg_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_dbg_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    uart_ring_out(COMMS_UART, args, strlen(args));
-    uart_ring_out(COMMS_UART, "\r\n", 2);
-    return COMMAND_RESP_OK;
+    osm_uart_ring_out(COMMS_UART, args, strlen(args));
+    osm_uart_ring_out(COMMS_UART, "\r\n", 2);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_boot_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_boot_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    at_base_boot(args, ctx);
-    return COMMAND_RESP_OK;
+    osm_at_base_boot(args, ctx);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_reset_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    at_base_reset(args, ctx);
-    return COMMAND_RESP_OK;
+    osm_at_base_reset(args, ctx);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _at_wifi_state_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_state_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,"State: %s(%u)", _at_wifi_get_state_str(_at_wifi_ctx.state), (unsigned)_at_wifi_ctx.state);
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx,"State: %s(%u)", _at_wifi_get_state_str(_at_wifi_ctx.state), (unsigned)_at_wifi_ctx.state);
+    return OSM_COMMAND_RESP_OK;
 }
 
-static command_response_t _at_wifi_restart_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_restart_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     _at_wifi_reset();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
@@ -1691,35 +1691,35 @@ static void _at_wifi_bgn_text(uint8_t bgn, char* buf, unsigned buflen)
 }
 
 
-static void _at_wifi_print_ap_list(cmd_ctx_t * ctx)
+static void _at_wifi_print_ap_list(osm_cmd_ctx_t * ctx)
 {
-    uart_rings_out_drain();
-    cmd_ctx_out(ctx,"[");
+    osm_uart_rings_out_drain();
+    osm_cmd_ctx_out(ctx,"[");
     for (unsigned i = 0; i < _at_wifi_ctx.ap_info_len; i++)
     {
         at_wifi_ap_info_t* ap_info = &_at_wifi_ctx.ap_info_list[i];
         char bgn[4];
         _at_wifi_bgn_text(ap_info->bgn, bgn, 4);
-        cmd_ctx_out(ctx,"  {");
-        cmd_ctx_out(ctx,"    \"SSID\":\"%.*s\",", AT_WIFI_MAX_SSID_LEN, ap_info->ssid);
-        cmd_ctx_out(ctx,"    \"encryption\":\"%s\",", _at_wifi_encryption_text(ap_info->ecn));
-        cmd_ctx_out(ctx,"    \"RSSI\":%d,", ap_info->rssi);
-        cmd_ctx_out(ctx,"    \"MAC\":\"%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\",", ap_info->mac[0],ap_info->mac[1],ap_info->mac[2],ap_info->mac[3],ap_info->mac[4],ap_info->mac[5]);
-        cmd_ctx_out(ctx,"    \"channel\":%u,", ap_info->channel);
-        cmd_ctx_out(ctx,"    \"freq_offset\":%d,", ap_info->freq_offset);
-        cmd_ctx_out(ctx,"    \"freqcal_val\":%d,", ap_info->freqcal_val);
-        cmd_ctx_out(ctx,"    \"pairwise_cipher\":\"%s\",", _at_wifi_cipher_text(ap_info->pairwise_cipher));
-        cmd_ctx_out(ctx,"    \"group_cipher\":\"%s\",", _at_wifi_cipher_text(ap_info->group_cipher));
-        cmd_ctx_out(ctx,"    \"bgn\":\"802.11%s\",", bgn);
-        cmd_ctx_out(ctx,"    \"WPS\":\"%s\"", ap_info->wps ? "enabled" : "disabled");
-        cmd_ctx_out(ctx,"  }%c", i != _at_wifi_ctx.ap_info_len - 1 ? ',' : ' ');
-        uart_rings_out_drain();
+        osm_cmd_ctx_out(ctx,"  {");
+        osm_cmd_ctx_out(ctx,"    \"SSID\":\"%.*s\",", OSM_AT_WIFI_MAX_SSID_LEN, ap_info->ssid);
+        osm_cmd_ctx_out(ctx,"    \"encryption\":\"%s\",", _at_wifi_encryption_text(ap_info->ecn));
+        osm_cmd_ctx_out(ctx,"    \"RSSI\":%d,", ap_info->rssi);
+        osm_cmd_ctx_out(ctx,"    \"MAC\":\"%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\",", ap_info->mac[0],ap_info->mac[1],ap_info->mac[2],ap_info->mac[3],ap_info->mac[4],ap_info->mac[5]);
+        osm_cmd_ctx_out(ctx,"    \"channel\":%u,", ap_info->channel);
+        osm_cmd_ctx_out(ctx,"    \"freq_offset\":%d,", ap_info->freq_offset);
+        osm_cmd_ctx_out(ctx,"    \"freqcal_val\":%d,", ap_info->freqcal_val);
+        osm_cmd_ctx_out(ctx,"    \"pairwise_cipher\":\"%s\",", _at_wifi_cipher_text(ap_info->pairwise_cipher));
+        osm_cmd_ctx_out(ctx,"    \"group_cipher\":\"%s\",", _at_wifi_cipher_text(ap_info->group_cipher));
+        osm_cmd_ctx_out(ctx,"    \"bgn\":\"802.11%s\",", bgn);
+        osm_cmd_ctx_out(ctx,"    \"WPS\":\"%s\"", ap_info->wps ? "enabled" : "disabled");
+        osm_cmd_ctx_out(ctx,"  }%c", i != _at_wifi_ctx.ap_info_len - 1 ? ',' : ' ');
+        osm_uart_rings_out_drain();
     }
-    cmd_ctx_out(ctx,"]");
+    osm_cmd_ctx_out(ctx,"]");
 }
 
 
-static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_list_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     switch (_at_wifi_ctx.state)
     {
@@ -1740,11 +1740,11 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
         case AT_WIFI_STATE_WIFI_FAIL_CONNECT:
             break;
         default:
-            comms_debug("Illegal state for listing AP: %s", _at_wifi_get_state_str(_at_wifi_ctx.state));
-            cmd_ctx_out(ctx,"Busy");
-            return COMMAND_RESP_ERR;
+            osm_comms_debug("Illegal state for listing AP: %s", _at_wifi_get_state_str(_at_wifi_ctx.state));
+            osm_cmd_ctx_out(ctx,"Busy");
+            return OSM_COMMAND_RESP_ERR;
     }
-    bool is_connected = at_wifi_get_connected();
+    bool is_connected = osm_at_wifi_get_connected();
     bool prev_measements_enabled = measurements_enabled;
     if (is_connected)
     {
@@ -1753,12 +1753,12 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
     _at_wifi_ctx.before_ap_list_state = _at_wifi_ctx.state;
     _at_wifi_ctx.ap_info_len = 0;
     _at_start_station_scan();
-    command_response_t ret = COMMAND_RESP_OK;
-    if (!main_loop_iterate_for(AT_WIFI_LIST_TIMEOUT, _at_wifi_list_iteration, NULL))
+    osm_command_response_t ret = OSM_COMMAND_RESP_OK;
+    if (!osm_main_loop_iterate_for(AT_WIFI_LIST_TIMEOUT, _at_wifi_list_iteration, NULL))
     {
-        cmd_ctx_out(ctx,"Timed out waiting for AP list");
+        osm_cmd_ctx_out(ctx,"Timed out waiting for AP list");
         _at_wifi_reset();
-        ret = COMMAND_RESP_ERR;
+        ret = OSM_COMMAND_RESP_ERR;
     }
     else
     {
@@ -1772,63 +1772,63 @@ static command_response_t _at_list_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static command_response_t _at_wifi_autoconnect_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _at_wifi_autoconnect_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    char* p = skip_space(args);
+    char* p = osm_skip_space(args);
     char* np = NULL;
     unsigned en = strtoul(p, &np, 10);
     if (p != np)
     {
         _at_wifi_ctx.autoconnect = !!en;
     }
-    cmd_ctx_out(ctx,"AUTOCONNECT:%u", (unsigned)_at_wifi_ctx.autoconnect);
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx,"AUTOCONNECT:%u", (unsigned)_at_wifi_ctx.autoconnect);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_at_wifi_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
-        { "comms_send"  , "Send at_wifi message"        , _at_wifi_send_cb          , false , NULL },
+        { "osm_comms_send"  , "Send at_wifi message"        , _at_wifi_send_cb          , false , NULL },
         { "comms_dbg"   , "Comms Chip Debug"            , _at_wifi_dbg_cb           , false , NULL },
         { "comms_boot",   "Enable/disable boot line"    , _at_wifi_boot_cb          , false , NULL },
-        { "comms_reset",  "Enable/disable reset line"   , _at_wifi_reset_cb         , false , NULL },
+        { "osm_comms_reset",  "Enable/disable reset line"   , _at_wifi_reset_cb         , false , NULL },
         { "comms_state" , "Get Comms state"             , _at_wifi_state_cb         , false , NULL },
         { "comms_restart", "Comms restart"              , _at_wifi_restart_cb       , false , NULL },
         { "comms_list",   "List stations"               , _at_list_cb               , false , NULL },
         { "comms_autoconnect", "Enable/disable autoconnect", _at_wifi_autoconnect_cb , false , NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
 
 /* Return true  if different
  *        false if same      */
-bool at_wifi_persist_config_cmp(void* d0, void* d1)
+bool osm_at_wifi_persist_config_cmp(void* d0, void* d1)
 {
     return !(
         d0 && d1 &&
-        memcmp(d0, d1, sizeof(at_wifi_config_t)) == 0);
+        memcmp(d0, d1, sizeof(osm_at_wifi_config_t)) == 0);
 }
 
 
-static void _at_wifi_config_init2(at_wifi_config_t* at_wifi_config)
+static void _at_wifi_config_init2(osm_at_wifi_config_t* at_wifi_config)
 {
-    memset(at_wifi_config, 0, sizeof(at_wifi_config_t));
-    at_wifi_config->type = COMMS_TYPE_WIFI;
-    at_wifi_config->mqtt.scheme = AT_MQTT_SCHEME_BARE;
+    memset(at_wifi_config, 0, sizeof(osm_at_wifi_config_t));
+    at_wifi_config->type = OSM_COMMS_TYPE_WIFI;
+    at_wifi_config->mqtt.scheme = OSM_AT_MQTT_SCHEME_BARE;
     at_wifi_config->mqtt.port = 1883;
-    strncpy(at_wifi_config->country_code, "GB", AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
-    at_wifi_config->country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN] = 0;
+    strncpy(at_wifi_config->country_code, "GB", OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN + 1);
+    at_wifi_config->country_code[OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN] = 0;
     at_wifi_config->channel_start = 1;
     at_wifi_config->channel_count = 13;
 }
 
 
-void at_wifi_config_init(comms_config_t* comms_config)
+void osm_at_wifi_config_init(osm_comms_config_t* comms_config)
 {
-    _at_wifi_config_init2((at_wifi_config_t*)comms_config);
+    _at_wifi_config_init2((osm_at_wifi_config_t*)comms_config);
 }
 
 
@@ -1842,7 +1842,7 @@ static bool _at_wifi_ts_loop_iteration(void* userdata)
 }
 
 
-bool at_wifi_get_unix_time(int64_t * ts)
+bool osm_at_wifi_get_unix_time(int64_t * ts)
 {
     if (!ts || _at_wifi_ctx.state != AT_WIFI_STATE_IDLE)
     {
@@ -1850,17 +1850,17 @@ bool at_wifi_get_unix_time(int64_t * ts)
     }
     _at_wifi_printf("AT+SYSTIMESTAMP?");
     _at_wifi_ctx.state = AT_WIFI_STATE_WAIT_TIMESTAMP;
-    if (!main_loop_iterate_for(AT_WIFI_TS_TIMEOUT, _at_wifi_ts_loop_iteration, NULL))
+    if (!osm_main_loop_iterate_for(AT_WIFI_TS_TIMEOUT, _at_wifi_ts_loop_iteration, NULL))
     {
         /* Timed out - Not sure what to do with the chip really... */
-        comms_debug("Timed out");
+        osm_comms_debug("Timed out");
         return false;
     }
-    at_base_time_t* time = &_at_wifi_ctx.mqtt_ctx.at_base_ctx.time;
+    osm_at_base_time_t* time = &_at_wifi_ctx.mqtt_ctx.at_base_ctx.time;
     if (!time->sys ||
-        since_boot_delta(get_since_boot_ms(), time->sys) > AT_WIFI_TS_TIMEOUT)
+        osm_since_boot_delta(osm_get_since_boot_ms(), time->sys) > AT_WIFI_TS_TIMEOUT)
     {
-        comms_debug("Old timestamp; invalid");
+        osm_comms_debug("Old timestamp; invalid");
         time->sys = 0;
         time->ts_unix = 0;
         return false;
@@ -1875,16 +1875,16 @@ bool at_wifi_get_unix_time(int64_t * ts)
 static bool _at_wifi_get_mac_address(char* buf, unsigned buflen)
 {
     char* src = _at_wifi_ctx.mqtt_ctx.at_base_ctx.mac_address;
-    const unsigned mac_len = AT_BASE_MAC_ADDRESS_LEN-1;
+    const unsigned mac_len = OSM_AT_BASE_MAC_ADDRESS_LEN-1;
     if (strnlen(src, mac_len) != mac_len ||
-        !str_is_valid_ascii(src, mac_len, true))
+        !osm_str_is_valid_ascii(src, mac_len, true))
     {
-        comms_debug("Don't have MAC address");
+        osm_comms_debug("Don't have MAC address");
         return false;
     }
-    if (buflen > AT_BASE_MAC_ADDRESS_LEN)
+    if (buflen > OSM_AT_BASE_MAC_ADDRESS_LEN)
     {
-        buflen = AT_BASE_MAC_ADDRESS_LEN;
+        buflen = OSM_AT_BASE_MAC_ADDRESS_LEN;
     }
     memcpy(buf, src, buflen-1);
     buf[buflen-1] = 0;

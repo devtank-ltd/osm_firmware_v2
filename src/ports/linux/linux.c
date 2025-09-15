@@ -49,9 +49,9 @@
 #define LINUX_NEW_FW_LOC_BUF_SIZ                128
 #define LINUX_REBOOT_FILE_TIMEOUT_S 60
 
-#define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
-#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32"\n"
-#define LINUX_FD_SAVE_FMT_SOCKET_CLIENT                                 "%d %"STR(LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"STR(LINUX_PTY_NAME_STR_SIZE)"s\n"
+#define LINUX_FD_SAVE_FMT_PTY                                           "%d %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"PRIi32" %u\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_SERVER                                 "%d %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32"\n"
+#define LINUX_FD_SAVE_FMT_SOCKET_CLIENT                                 "%d %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s %"PRIi32" %"STR(OSM_LINUX_PTY_NAME_STR_SIZE)"s\n"
 
 #define LINUX_FD_SAVE_PTY(_name, _master_fd, _slave_fd, _uart)          LINUX_FD_SAVE_FMT_PTY           , LINUX_FD_TYPE_PTY, _name, _master_fd, _slave_fd, _uart
 #define LINUX_FD_SAVE_SOCKET_SERVER(_name, _fd)                  LINUX_FD_SAVE_FMT_SOCKET_SERVER , LINUX_FD_TYPE_SOCKET_SERVER, _name, _fd
@@ -117,16 +117,16 @@ struct fd_t
             fd_t* server;
         } socket_client;
     };
-    char            name[LINUX_PTY_NAME_SIZE];
+    char            name[OSM_LINUX_PTY_NAME_SIZE];
     void            (*cb)();
 };
 
 
 typedef struct
 {
-    persist_measurements_storage_t  persist_measurements;
-    persist_storage_t               persist_data;
-    uint8_t                         __[2048 - sizeof(persist_storage_t)];
+    osm_persist_measurements_storage_t  persist_measurements;
+    osm_persist_storage_t               persist_data;
+    uint8_t                         __[2048 - sizeof(osm_persist_storage_t)];
 }  __attribute__((__packed__)) persist_mem_t;
 
 
@@ -150,31 +150,31 @@ static bool _ios_enabled[IOS_COUNT] = {0};
 
 static char _socket_buf[1024];
 
-static ring_buf_t _socket_in_ring = RING_BUF_INIT(_socket_buf, sizeof(_socket_buf));
+static osm_ring_buf_t _socket_in_ring = RING_BUF_INIT(_socket_buf, sizeof(_socket_buf));
 
 static fd_t fd_list[LINUX_MAX_NFDS] = {
     {
         .type = LINUX_FD_TYPE_PTY,
         .name = {"UART_DEBUG"},
         .pty  = {.uart = CMD_UART},
-        .cb   =linux_uart_proc,
+        .cb   =osm_linux_uart_proc,
     },
     {
         .type = LINUX_FD_TYPE_PTY,
         .name = {"UART_COMMS"},
         .pty  = {.uart = COMMS_UART},
-        .cb   = linux_uart_proc,
+        .cb   = osm_linux_uart_proc,
     },
     {
         .type = LINUX_FD_TYPE_EVENT,
         .name = {"ADC_GEN_EVENT"},
-        .cb   = linux_adc_generate,
+        .cb   = osm_linux_adc_generate,
     },
     {
         .type = LINUX_FD_TYPE_PTY,
         .name = {"UART_EXAMPLE_RS232"},
         .pty  = {.uart = RS232_UART},
-        .cb   = linux_uart_proc,
+        .cb   = osm_linux_uart_proc,
     }
 };
 
@@ -184,7 +184,7 @@ static char _sock_line_buf[CMD_LINELEN];
 static int _sock_cmd_sock = -1;
 
 
-uint32_t platform_get_frequency(void)
+uint32_t osm_platform_get_frequency(void)
 {
     static uint32_t freq = 0;
     if (!freq)
@@ -196,7 +196,7 @@ uint32_t platform_get_frequency(void)
             fclose(f);
             if (i != 1)
             {
-                linux_error("Did not match frequency.");
+                osm_linux_error("Did not match frequency.");
             }
         }
     }
@@ -204,7 +204,7 @@ uint32_t platform_get_frequency(void)
 }
 
 
-uint32_t platform_get_hw_id(void)
+uint32_t osm_platform_get_hw_id(void)
 {
     static uint32_t hw_id = 0;
     if (!hw_id)
@@ -222,14 +222,14 @@ uint32_t platform_get_hw_id(void)
 }
 
 
-void linux_port_debug(char * fmt, ...)
+void osm_linux_port_debug(char * fmt, ...)
 {
     if (!_linux_in_debug)
         return;
 
     va_list va;
     va_start(va, fmt);
-    fprintf(stderr, "%010u:", (unsigned)get_since_boot_ms());
+    fprintf(stderr, "%010u:", (unsigned)osm_get_since_boot_ms());
     vfprintf(stderr, fmt, va);
     fprintf(stderr, "\n");
     va_end(va);
@@ -242,7 +242,7 @@ static void _linux_sig_handler(int signo)
     {
         fprintf(stderr, "Caught signal, exiting gracefully.\n");
         _linux_running = false;
-        linux_awaken();
+        osm_linux_awaken();
     }
     else if (signo == SIGUSR1)
     {
@@ -251,7 +251,7 @@ static void _linux_sig_handler(int signo)
     else
     {
         fprintf(stderr, "Fatal Signal : %s\n", strsignal(signo));
-        model_linux_close_fakes();
+        osm_model_linux_close_fakes();
         exit(-1);
     }
 }
@@ -264,12 +264,12 @@ static void _linux_error(char * fmt, va_list v, int error)
     va_end(v);
     fprintf(stderr, " (%s)", strerror(errno));
     fprintf(stderr, "\n");
-    model_linux_close_fakes();
+    osm_model_linux_close_fakes();
     exit(-1);
 }
 
 
-void linux_error(char* fmt, ...)
+void osm_linux_error(char* fmt, ...)
 {
     va_list v;
     va_start(v, fmt);
@@ -278,7 +278,7 @@ void linux_error(char* fmt, ...)
 }
 
 
-void linux_error2(int error, char* fmt, ...)
+void osm_linux_error2(int error, char* fmt, ...)
 {
     va_list v;
     va_start(v, fmt);
@@ -287,13 +287,13 @@ void linux_error2(int error, char* fmt, ...)
 }
 
 
-unsigned linux_spawn(const char * rel_path)
+unsigned osm_linux_spawn(const char * rel_path)
 {
     static char full_path[PATH_MAX];
     memset(full_path, 0, PATH_MAX);
     if (readlink("/proc/self/exe", full_path, PATH_MAX) < 0)
     {
-        linux_error("Failed start spawn : %s", rel_path);
+        osm_linux_error("Failed start spawn : %s", rel_path);
         return 0;
     }
     const char *exec_dir = dirname(full_path);
@@ -306,20 +306,20 @@ unsigned linux_spawn(const char * rel_path)
     int r = posix_spawn(&pid, full_path, NULL, NULL, argv, environ);
     if (r)
     {
-        linux_error("Spawn failed %s : %s", full_path, strerror(r));
+        osm_linux_error("Spawn failed %s : %s", full_path, strerror(r));
         return 0;
     }
-    linux_port_debug("Spawned %s pid: %i", full_path, pid);
+    osm_linux_port_debug("Spawned %s pid: %i", full_path, pid);
     return (unsigned)pid;
 }
 
 
-int64_t linux_get_current_us(void)
+int64_t osm_linux_get_current_us(void)
 {
     struct timespec ts;
 
     if (clock_gettime(CLOCK_REALTIME, &ts))
-        linux_error("Failed to get the realtime of the clock.");
+        osm_linux_error("Failed to get the realtime of the clock.");
 
     return (int64_t)(ts.tv_nsec / 1000LL) + (int64_t)(ts.tv_sec * 1000000);
 }
@@ -329,27 +329,27 @@ static void _linux_socket_client(int sock, char * buf, unsigned len)
 {
     if (_sock_line_used_len)
     {
-        linux_error("Too command already in process!");
+        osm_linux_error("Too command already in process!");
         return;
     }
 
-    if (!ring_buf_add_data(&_socket_in_ring, buf, len))
+    if (!osm_ring_buf_add_data(&_socket_in_ring, buf, len))
     {
-        linux_error("Too much socket!");
+        osm_linux_error("Too much socket!");
     }
 
-    _sock_line_used_len = ring_buf_readline(&_socket_in_ring, _sock_line_buf, CMD_LINELEN);
+    _sock_line_used_len = osm_ring_buf_readline(&_socket_in_ring, _sock_line_buf, CMD_LINELEN);
     if (_sock_line_used_len)
     {
         _sock_cmd_sock = sock;
-        linux_port_debug("Socket command");
+        osm_linux_port_debug("Socket command");
     }
 }
 
 
 static fd_t* _linux_get_fd_handler(int32_t fd)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         if (!fd_list[i].name[0])
             return NULL;
@@ -385,19 +385,19 @@ static fd_t* _linux_get_fd_handler(int32_t fd)
 }
 
 
-static void _linux_remove_symlink(char name[LINUX_PTY_NAME_SIZE])
+static void _linux_remove_symlink(char name[OSM_LINUX_PTY_NAME_SIZE])
 {
 
     pty_buf_t buf;
-    char* file_loc = ret_static_file_location();
+    char* file_loc = osm_ret_static_file_location();
     unsigned len = strnlen(file_loc, sizeof(pty_buf_t) -1);
     strncpy(buf, file_loc, len + 1);
     strncat(buf, "/", 2);
     strncat(buf, name, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     strncat(buf, LINUX_SLAVE_SUFFIX, sizeof(pty_buf_t) - strnlen(buf, sizeof(pty_buf_t) -1));
     if (remove(buf))
-        linux_error("FAIL PTY SYMLINK CLEANUP: %s", buf);
-    linux_port_debug("Removed symlink \"%s\"", buf);
+        osm_linux_error("FAIL PTY SYMLINK CLEANUP: %s", buf);
+    osm_linux_port_debug("Removed symlink \"%s\"", buf);
 }
 
 
@@ -408,35 +408,35 @@ static void _linux_pty_symlink(int32_t fd, char* new_tty_name)
     if (ttyname_r(fd, initial_tty, sizeof(initial_tty)))
     {
         close(fd);
-        linux_error("FAIL - PTY FIND TTY FOR \"%s\"", new_tty_name);
+        osm_linux_error("FAIL - PTY FIND TTY FOR \"%s\"", new_tty_name);
     }
 
     if (access(new_tty_name, F_OK) == 0)
     {
         close(fd);
-        linux_error("FAIL - SYMLINK \"%s\" ALREADY EXISTS", new_tty_name);
+        osm_linux_error("FAIL - SYMLINK \"%s\" ALREADY EXISTS", new_tty_name);
     }
 
     if (!access(new_tty_name, F_OK) && remove(new_tty_name))
     {
         close(fd);
-        linux_error("FAIL - REMOVE OLD SYMLINK \"%s\"", new_tty_name);
+        osm_linux_error("FAIL - REMOVE OLD SYMLINK \"%s\"", new_tty_name);
     }
 
     if (symlink(initial_tty, new_tty_name))
     {
         close(fd);
-        linux_error("FAIL - SYMLINK TTY \"%s\"", new_tty_name);
+        osm_linux_error("FAIL - SYMLINK TTY \"%s\"", new_tty_name);
     }
 }
 
 
-static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd, int32_t* slave_fd)
+static void _linux_setup_pty(char name[OSM_LINUX_PTY_NAME_SIZE], int32_t* master_fd, int32_t* slave_fd)
 {
     if (openpty(master_fd, slave_fd, NULL, NULL, NULL))
         goto bad_exit;
     pty_buf_t dir_loc;
-    char* file_loc = ret_static_file_location();
+    char* file_loc = osm_ret_static_file_location();
     unsigned len = strnlen(file_loc, sizeof(pty_buf_t) -1);
     strncpy(dir_loc, file_loc, len + 1);
 
@@ -455,21 +455,21 @@ static void _linux_setup_pty(char name[LINUX_PTY_NAME_SIZE], int32_t* master_fd,
 
 bad_exit:
     if (master_fd && !close(*master_fd))
-        linux_error("Fail to close master fd when couldnt open PTY %s", name);
+        osm_linux_error("Fail to close master fd when couldnt open PTY %s", name);
     if (slave_fd && !close(*slave_fd))
-        linux_error("Fail to close slave fd when couldnt open PTY %s", name);
-    linux_error("Fail to setup PTY.");
+        osm_linux_error("Fail to close slave fd when couldnt open PTY %s", name);
+    osm_linux_error("Fail to setup PTY.");
 }
 
 
 static void _linux_save_fd_file(void)
 {
-    char osm_reboot_loc[LOCATION_LEN];
-    concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    char osm_reboot_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_reboot_loc, OSM_LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     FILE* osm_reboot_file = fopen(osm_reboot_loc, "w");
     if (!osm_reboot_file)
-        linux_error("Could not make a OSM reboot file.");
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+        osm_linux_error("Could not make a OSM reboot file.");
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (fd->name[0] && isascii(fd->name[0]))
@@ -478,17 +478,17 @@ static void _linux_save_fd_file(void)
             {
                 case LINUX_FD_TYPE_PTY:
                     fprintf(osm_reboot_file, LINUX_FD_SAVE_PTY(fd->name, fd->pty.master_fd, fd->pty.slave_fd, fd->pty.uart));
-                    linux_port_debug("Save FD %i \"%s\" PTY (%d) - UART:%u", i, fd->name, fd->type, fd->pty.uart);
+                    osm_linux_port_debug("Save FD %i \"%s\" PTY (%d) - UART:%u", i, fd->name, fd->type, fd->pty.uart);
                     break;
                 case LINUX_FD_TYPE_SOCKET_SERVER:
                     fprintf(osm_reboot_file, LINUX_FD_SAVE_SOCKET_SERVER(fd->name, fd->socket_server.fd));
-                    linux_port_debug("Save FD %i \"%s\" SOCKET SERVER (%d)", i, fd->name, fd->type);
+                    osm_linux_port_debug("Save FD %i \"%s\" SOCKET SERVER (%d)", i, fd->name, fd->type);
                     break;
                 case LINUX_FD_TYPE_SOCKET_CLIENT:
                 {
                     char* server_name = fd->socket_client.server->name;
                     fprintf(osm_reboot_file, LINUX_FD_SAVE_SOCKET_CLIENT(fd->name, fd->socket_client.fd, server_name));
-                    linux_port_debug("Save FD %i \"%s\" SOCKET CLIENT (%d) - SERVER: \"%s\"", i, fd->name, fd->type, server_name);
+                    osm_linux_port_debug("Save FD %i \"%s\" SOCKET CLIENT (%d) - SERVER: \"%s\"", i, fd->name, fd->type, server_name);
                     break;
                 }
                 default:
@@ -510,10 +510,10 @@ static bool _linux_check_fd_exists(int fd)
 
     if (access(path, F_OK) != 0)
     {
-        linux_port_debug("FD %d no longer exists.", fd);
+        osm_linux_port_debug("FD %d no longer exists.", fd);
         return false;
     }
-    linux_port_debug("FD (%d) exists for this PID (%d)", fd, pid);
+    osm_linux_port_debug("FD (%d) exists for this PID (%d)", fd, pid);
     return true;
 }
 
@@ -522,23 +522,23 @@ static bool _linux_load_fd_pty(char* line, fd_t* fd)
 {
     if (!line || !fd)
     {
-        linux_error("Handed NULL pointer");
+        osm_linux_error("Handed NULL pointer");
         return false;
     }
     fd->type = LINUX_FD_TYPE_PTY;
-    fd->cb = linux_uart_proc;
+    fd->cb = osm_linux_uart_proc;
     int type;
     if (sscanf(line, LINUX_FD_SAVE_FMT_PTY, &type, fd->name, &fd->pty.master_fd, &fd->pty.slave_fd, &fd->pty.uart) != 5)
     {
-        linux_error("Failed to read PTY saved FD line!");
+        osm_linux_error("Failed to read PTY saved FD line!");
         return false;
     }
     if (!_linux_check_fd_exists(fd->socket_server.fd))
     {
-        linux_error("FD missing for \"%s\" (PTY)", fd->name);
+        osm_linux_error("FD missing for \"%s\" (PTY)", fd->name);
         return false;
     }
-    linux_port_debug("Load \"%s\" PTY (%d) - UART:%u", fd->name, fd->type, fd->pty.uart);
+    osm_linux_port_debug("Load \"%s\" PTY (%d) - UART:%u", fd->name, fd->type, fd->pty.uart);
     return true;
 }
 
@@ -547,29 +547,29 @@ static bool _linux_load_fd_socket_server(char* line, fd_t* fd)
 {
     if (!line || !fd)
     {
-        linux_error("Handed NULL pointer");
+        osm_linux_error("Handed NULL pointer");
         return false;
     }
     fd->type = LINUX_FD_TYPE_SOCKET_SERVER;
-    fd->cb = linux_uart_proc;
+    fd->cb = osm_linux_uart_proc;
     int type;
     if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_SERVER, &type, fd->name, &fd->socket_server.fd) != 3)
     {
-        linux_error("Failed to read SOCKET SERVER saved FD line!");
+        osm_linux_error("Failed to read SOCKET SERVER saved FD line!");
         return false;
     }
     if (!_linux_check_fd_exists(fd->socket_server.fd))
     {
-        linux_error("FD missing for \"%s\" (SOCKET SERVER)", fd->name);
+        osm_linux_error("FD missing for \"%s\" (SOCKET SERVER)", fd->name);
         return false;
     }
     if (type != LINUX_FD_TYPE_SOCKET_SERVER)
     {
-        linux_error("Bad socket server line");
+        osm_linux_error("Bad socket server line");
         return false;
     }
     fd->socket_server.client = NULL;
-    linux_port_debug("Load \"%s\" SOCKET SERVER (%d)", fd->name, fd->type);
+    osm_linux_port_debug("Load \"%s\" SOCKET SERVER (%d)", fd->name, fd->type);
     return true;
 }
 
@@ -578,54 +578,54 @@ static bool _linux_load_fd_socket_client(char* line, fd_t* fd)
 {
     if (!line || !fd)
     {
-        linux_error("Handed NULL pointer");
+        osm_linux_error("Handed NULL pointer");
         return false;
     }
     fd->type = LINUX_FD_TYPE_SOCKET_CLIENT;
-    fd->cb = linux_uart_proc;
-    char server_name[LINUX_PTY_NAME_SIZE] = {0};
+    fd->cb = osm_linux_uart_proc;
+    char server_name[OSM_LINUX_PTY_NAME_SIZE] = {0};
     int type;
     if (sscanf(line, LINUX_FD_SAVE_FMT_SOCKET_CLIENT, &type, fd->name, &fd->socket_client.fd, server_name) != 4)
     {
-        linux_error("Failed to read SOCKET CLIENT saved FD line!");
+        osm_linux_error("Failed to read SOCKET CLIENT saved FD line!");
         return false;
     }
     if (type != LINUX_FD_TYPE_SOCKET_CLIENT)
     {
-        linux_error("Bad socket client line");
+        osm_linux_error("Bad socket client line");
         return false;
     }
     if (!_linux_check_fd_exists(fd->socket_client.fd))
     {
-        linux_error("FD missing for \"%s\" (SOCKET CLIENT)", fd->name);
+        osm_linux_error("FD missing for \"%s\" (SOCKET CLIENT)", fd->name);
         return false;
     }
-    unsigned server_name_len = strnlen(server_name, LINUX_PTY_NAME_SIZE-1);
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    unsigned server_name_len = strnlen(server_name, OSM_LINUX_PTY_NAME_SIZE-1);
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd_n = &fd_list[i];
         if (!fd_n->name[0] || !isascii(fd_n->name[0]))
             continue;
-        if (strnlen(fd_n->name, LINUX_PTY_NAME_SIZE-1) != server_name_len)
+        if (strnlen(fd_n->name, OSM_LINUX_PTY_NAME_SIZE-1) != server_name_len)
             continue;
         if (strncmp(fd_n->name, server_name, server_name_len) != 0)
             continue;
         fd->socket_client.server = fd_n;
         fd->socket_client.server->socket_server.client = fd;
-        linux_port_debug("Load \"%s\" SOCKET CLIENT (%d) - SERVER: \"%s\"", fd->name, fd->type, server_name);
+        osm_linux_port_debug("Load \"%s\" SOCKET CLIENT (%d) - SERVER: \"%s\"", fd->name, fd->type, server_name);
         return true;
     }
-    linux_error("Failed to find server for socket client");
+    osm_linux_error("Failed to find server for socket client");
     return false;
 }
 
 
 static void _linux_insert_fd(fd_t new_fd)
 {
-    unsigned new_fw_name_len = strnlen(new_fd.name, LINUX_PTY_NAME_SIZE-1);
+    unsigned new_fw_name_len = strnlen(new_fd.name, OSM_LINUX_PTY_NAME_SIZE-1);
     bool found = false;
     int next_slot = -1;
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -634,7 +634,7 @@ static void _linux_insert_fd(fd_t new_fd)
                 next_slot = i;
             continue;
         }
-        if (strnlen(fd->name, LINUX_PTY_NAME_SIZE-1) != new_fw_name_len)
+        if (strnlen(fd->name, OSM_LINUX_PTY_NAME_SIZE-1) != new_fw_name_len)
         {
             continue;
         }
@@ -643,7 +643,7 @@ static void _linux_insert_fd(fd_t new_fd)
             continue;
         }
         memcpy(fd, &new_fd, sizeof(fd_t));
-        linux_port_debug("Loaded FD %u \"%s\" T:%d", i, fd->name, fd->type);
+        osm_linux_port_debug("Loaded FD %u \"%s\" T:%d", i, fd->name, fd->type);
         found = true;
         return;
     }
@@ -653,22 +653,22 @@ static void _linux_insert_fd(fd_t new_fd)
         {
             fd_t* fd = &fd_list[next_slot];
             memcpy(fd, &new_fd, sizeof(fd_t));
-            linux_port_debug("Loaded (new) FD %d \"%s\" T:%d", next_slot, fd->name, fd->type);
+            osm_linux_port_debug("Loaded (new) FD %d \"%s\" T:%d", next_slot, fd->name, fd->type);
             return;
         }
     }
-    linux_error("Failed to find slot");
+    osm_linux_error("Failed to find slot");
 }
 
 
 static void _linux_load_fd_file(void)
 {
-    char osm_reboot_loc[LOCATION_LEN];
-    concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    char osm_reboot_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_reboot_loc, OSM_LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     FILE* osm_reboot_file = fopen(osm_reboot_loc, "r");
     if (!osm_reboot_file)
     {
-        linux_port_debug("No saved file descriptors.");
+        osm_linux_port_debug("No saved file descriptors.");
         return;
     }
     /* Check last modified time */
@@ -677,11 +677,11 @@ static void _linux_load_fd_file(void)
     stat(osm_reboot_loc, &attr);
     if (utc_now - attr.st_mtime > LINUX_REBOOT_FILE_TIMEOUT_S)
     {
-        linux_port_debug("Reboot file is outdated.");
+        osm_linux_port_debug("Reboot file is outdated.");
         fclose(osm_reboot_file);
         return;
     }
-    linux_port_debug("Loading saved file descriptors.");
+    osm_linux_port_debug("Loading saved file descriptors.");
     char line[LINUX_LINE_BUF_SIZ];
     while (fgets(line, LINUX_LINE_BUF_SIZ-1, osm_reboot_file))
     {
@@ -689,7 +689,7 @@ static void _linux_load_fd_file(void)
         int fd_type = strtoul(line, &np, 10);
         if (line == np)
         {
-            linux_error("Could not read type \"%.*s\"", LINUX_LINE_BUF_SIZ, line);
+            osm_linux_error("Could not read type \"%.*s\"", LINUX_LINE_BUF_SIZ, line);
             continue;
         }
         bool loaded_fd = false;
@@ -706,12 +706,12 @@ static void _linux_load_fd_file(void)
                 /* make sure to do clients after server */
                 continue;
             default:
-                linux_error("Unexpected FD type: %d from line: \"%s\"", fd_type, line);
+                osm_linux_error("Unexpected FD type: %d from line: \"%s\"", fd_type, line);
                 continue;
         }
         if (!loaded_fd)
         {
-            linux_error("Failed to load FD");
+            osm_linux_error("Failed to load FD");
             continue;
         }
         _linux_insert_fd(new_fd);
@@ -724,7 +724,7 @@ static void _linux_load_fd_file(void)
         int fd_type = strtoul(line, &np, 10);
         if (line == np)
         {
-            linux_error("Could not read type \"%.*s\"", LINUX_LINE_BUF_SIZ, line);
+            osm_linux_error("Could not read type \"%.*s\"", LINUX_LINE_BUF_SIZ, line);
             continue;
         }
         fd_t new_fd;
@@ -732,7 +732,7 @@ static void _linux_load_fd_file(void)
         {
             if (!_linux_load_fd_socket_client(line, &new_fd))
             {
-                linux_error("Failed to load FD");
+                osm_linux_error("Failed to load FD");
                 continue;
             }
             _linux_insert_fd(new_fd);
@@ -745,8 +745,8 @@ static void _linux_load_fd_file(void)
 
 static void _linux_rm_fd_file(void)
 {
-    char osm_reboot_loc[LOCATION_LEN];
-    concat_osm_location(osm_reboot_loc, LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
+    char osm_reboot_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_reboot_loc, OSM_LOCATION_LEN, LINUX_REBOOT_FILE_LOC);
     remove(osm_reboot_loc);
 }
 
@@ -763,7 +763,7 @@ static void _linux_setup_systick(int32_t* fd)
     if (timerfd_settime(*fd, 0, &timerspec, NULL))
     {
         close(*fd);
-        linux_error("Failed set time of timer file descriptor");
+        osm_linux_error("Failed set time of timer file descriptor");
     }
 }
 
@@ -773,15 +773,15 @@ static void _linux_kick_event(int fd)
     uint64_t v = 0xC0FFEE;
     if (write(fd, &v, sizeof(uint64_t)) < 0)
     {
-        linux_error("Failed to write fd for kick event.");
+        osm_linux_error("Failed to write fd for kick event.");
     }
-    linux_port_debug("Requested ADCs.");
+    osm_linux_port_debug("Requested ADCs.");
 }
 
 
-bool linux_kick_adc_gen(void)
+bool osm_linux_kick_adc_gen(void)
 {
-    for (unsigned i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (unsigned i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         switch(fd->type)
@@ -805,7 +805,7 @@ static void _linux_setup_event(int* fd)
 {
     int _fd_ = eventfd(0, EFD_CLOEXEC);
     if (_fd_ < 0)
-        linux_error("Failed to create event fd.");
+        osm_linux_error("Failed to create event fd.");
     *fd = _fd_;
 }
 
@@ -815,7 +815,7 @@ static void _linux_setup_socket_server(int* fd)
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0)
     {
-        linux_error("Error opening socket");
+        osm_linux_error("Error opening socket");
     }
     struct sockaddr_in addr;
     addr.sin_port = htons(_linux_socket_port);
@@ -826,24 +826,24 @@ static void _linux_setup_socket_server(int* fd)
     int enable = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0)
     {
-        linux_error("Error setting socket reuse.");
+        osm_linux_error("Error setting socket reuse.");
     }
     struct timeval to;
     to.tv_sec = 1;
     to.tv_usec = 0;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, &to, sizeof(to)) < 0)
     {
-        linux_error("Error setting socket timeout.");
+        osm_linux_error("Error setting socket timeout.");
     }
 
     if(bind(socket_fd, (struct sockaddr *)&addr,sizeof(struct sockaddr_in) ) < 0)
     {
-        linux_error("Error binding socket");
+        osm_linux_error("Error binding socket");
     }
 
     if (listen(socket_fd, 1) < 0)
     {
-        linux_error("Error listening socket");
+        osm_linux_error("Error listening socket");
     }
     *fd = socket_fd;
 }
@@ -853,7 +853,7 @@ static void _linux_setup_fd_handlers(void)
 {
     _linux_load_fd_file();
     _linux_rm_fd_file();
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -879,7 +879,7 @@ static void _linux_setup_fd_handlers(void)
             case LINUX_FD_TYPE_SOCKET_CLIENT:
                 break;
             default:
-                linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
+                osm_linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
                 break;
         }
     }
@@ -888,7 +888,7 @@ static void _linux_setup_fd_handlers(void)
 
 static void _linux_cleanup_fd_handlers(void)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -897,35 +897,35 @@ static void _linux_cleanup_fd_handlers(void)
         {
             case LINUX_FD_TYPE_PTY:
                 if (close(fd->pty.master_fd))
-                    linux_error("Fail close PTY master '%s'.", fd->name);
+                    osm_linux_error("Fail close PTY master '%s'.", fd->name);
                 if (close(fd->pty.slave_fd))
-                    linux_error("Fail close PTY slave '%s'.", fd->name);
+                    osm_linux_error("Fail close PTY slave '%s'.", fd->name);
                 _linux_remove_symlink(fd->name);
                 break;
             case LINUX_FD_TYPE_TIMER:
                 if (close(fd->timer.fd))
-                    linux_error("Fail close TIMER '%s'", fd->name);
+                    osm_linux_error("Fail close TIMER '%s'", fd->name);
                 break;
             case LINUX_FD_TYPE_EVENT:
                 if (close(fd->event.fd))
-                    linux_error("Fail close EVENT '%s'", fd->name);
+                    osm_linux_error("Fail close EVENT '%s'", fd->name);
                 break;
             case LINUX_FD_TYPE_SOCKET_SERVER:
                 if (fd->socket_server.client)
                 {
                     if (!close(fd->socket_server.client->socket_client.fd))
-                        linux_error("Fail close SOCKET client '%s'", fd->name);
+                        osm_linux_error("Fail close SOCKET client '%s'", fd->name);
                     memset(fd->socket_server.client, 0, sizeof(fd_t));
                     fd->socket_server.client = NULL;
                 }
                 if (close(fd->socket_server.fd))
-                    linux_error("Fail close SOCKET server '%s'", fd->name);
+                    osm_linux_error("Fail close SOCKET server '%s'", fd->name);
                 break;
             case LINUX_FD_TYPE_SOCKET_CLIENT:
                 // Closed when server socket is closed.
                 break;
             default:
-                linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
+                osm_linux_error("Unknown type for %s : %"PRIi32".", fd->name, fd->type);
                 break;
         }
     }
@@ -938,17 +938,17 @@ static void _linux_exit(int err)
     linux_threads_deinit = true;
     pthread_join(_linux_listener_thread_id, NULL);
     fprintf(stdout, "Cleaning up before exit...\n");
-    i2c_linux_deinit();
-    w1_linux_deinit();
+    osm_i2c_linux_deinit();
+    osm_w1_linux_deinit();
     _linux_cleanup_fd_handlers();
-    model_linux_close_fakes();
+    osm_model_linux_close_fakes();
     fprintf(stdout, "Finished.\n");
 }
 
 
 static bool _safe_write(int fd, const void* data, size_t len, int64_t max_usecs)
 {
-    int64_t now = linux_get_current_us();
+    int64_t now = osm_linux_get_current_us();
     size_t written = 0;
     while(written < len)
     {
@@ -957,13 +957,13 @@ static bool _safe_write(int fd, const void* data, size_t len, int64_t max_usecs)
         {
             if (errno == EAGAIN)
                 continue;
-            linux_port_debug("Safe write failed : %s", strerror(errno));
+            osm_linux_port_debug("Safe write failed : %s", strerror(errno));
             return false;
         }
         else written += r;
-        if (written != len && (linux_get_current_us() - now) > max_usecs)
+        if (written != len && (osm_linux_get_current_us() - now) > max_usecs)
         {
-            linux_port_debug("Safe write timed out.");
+            osm_linux_port_debug("Safe write timed out.");
             return false;
         }
     }
@@ -978,14 +978,14 @@ static bool _safe_write(int fd, const void* data, size_t len, int64_t max_usecs)
     {
         return true;
     }
-    linux_port_debug("Failed to sync fd:%i : %s", fd, strerror(errno));
+    osm_linux_port_debug("Failed to sync fd:%i : %s", fd, strerror(errno));
     return false;
 }
 
 
-bool linux_write_pty(unsigned uart, const char *data, unsigned size)
+bool osm_linux_write_pty(unsigned uart, const char *data, unsigned size)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd_handler = &fd_list[i];
         if (!fd_handler->name[0] || !isascii(fd_handler->name[0]))
@@ -1001,9 +1001,9 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
                 {
                     char c = data[n];
                     if (isgraph(c))
-                        linux_port_debug("%s(%u) >> '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
+                        osm_linux_port_debug("%s(%u) >> '%c' (0x%02"PRIx8")", fd_handler->name, uart, c, (uint8_t)c);
                     else
-                        linux_port_debug("%s(%u) >> [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
+                        osm_linux_port_debug("%s(%u) >> [0x%02"PRIx8"]", fd_handler->name, uart, (uint8_t)c);
                 }
             }
             int fd;
@@ -1016,13 +1016,13 @@ bool linux_write_pty(unsigned uart, const char *data, unsigned size)
                     fd = fd_handler->socket_client.fd;
                     break;
                 default:
-                    linux_port_debug("Don't know what to do with fd_handler type.");
+                    osm_linux_port_debug("Don't know what to do with fd_handler type.");
                     return false;
             }
             return _safe_write(fd, data, size, 500);
         }
     }
-    linux_port_debug("No fd");
+    osm_linux_port_debug("No fd");
     return false;
 }
 
@@ -1031,7 +1031,7 @@ static void _linux_setup_poll(void)
 {
     memset(pfds, 0, sizeof(pfds));
     nfds = 0;
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -1059,7 +1059,7 @@ static void _linux_setup_poll(void)
                 pfds[i].events = POLLIN;
                 break;
             default:
-                linux_error("Not implemented.");
+                osm_linux_error("Not implemented.");
                 break;
         }
         nfds++;
@@ -1067,9 +1067,9 @@ static void _linux_setup_poll(void)
 }
 
 
-bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
+bool osm_peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
 {
-    for (uint32_t i = 0; i < ARRAY_SIZE(fd_list); i++)
+    for (uint32_t i = 0; i < OSM_ARRAY_SIZE(fd_list); i++)
     {
         fd_t* fd = &fd_list[i];
         if (!fd->name[0] || !isascii(fd->name[0]))
@@ -1077,12 +1077,12 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
             if (pty_name[0] == '/') /*Is it a path to an existing TTY? */
             {
                 char * pty_path = pty_name;
-                linux_port_debug("UART %u given path %s", uart, pty_path);
+                osm_linux_port_debug("UART %u given path %s", uart, pty_path);
                 pty_name = basename(pty_name);
                 int fd_id = open(pty_path, O_RDWR | O_NOCTTY | O_SYNC);
                 if (fd_id < 0)
                 {
-                    linux_error("Failed to open %s", pty_path);
+                    osm_linux_error("Failed to open %s", pty_path);
                     return false;
                 }
                 else
@@ -1092,33 +1092,33 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
                     if (name_len > 6 && strncmp(pty_name + name_len - 6, "_slave", 6) == 0)
                         name_len -= 6;
 
-                    if (name_len > (LINUX_PTY_NAME_SIZE - 1))
+                    if (name_len > (OSM_LINUX_PTY_NAME_SIZE - 1))
                     {
-                        linux_error2(EINVAL, "PTY name %s too long", pty_name);
+                        osm_linux_error2(EINVAL, "PTY name %s too long", pty_name);
                         return false;
                     }
                     strncpy(fd->name, pty_name, name_len);
                     fd->type = LINUX_FD_TYPE_PTY;
                     fd->pty.uart = uart;
-                    fd->cb = linux_uart_proc;
+                    fd->cb = osm_linux_uart_proc;
                     fd->pty.slave_fd = -1;
                     fd->pty.master_fd = fd_id;
-                    linux_port_debug("UART %u %s for %s", uart, fd->name, pty_path);
+                    osm_linux_port_debug("UART %u %s for %s", uart, fd->name, pty_path);
                 }
             }
             else
             {
-                if (strlen(pty_name) >    (LINUX_PTY_NAME_SIZE - 1))
+                if (strlen(pty_name) >    (OSM_LINUX_PTY_NAME_SIZE - 1))
                 {
-                    linux_error2(EINVAL, "PTY name %s too long", pty_name);
+                    osm_linux_error2(EINVAL, "PTY name %s too long", pty_name);
                     return false;
                 }
 
                 char tty_path[128];
-                unsigned tty_path_len = snprintf(tty_path, 128, "%s/%s"LINUX_SLAVE_SUFFIX, ret_static_file_location(), pty_name);
+                unsigned tty_path_len = snprintf(tty_path, 128, "%s/%s"LINUX_SLAVE_SUFFIX, osm_ret_static_file_location(), pty_name);
                 if (tty_path_len >= sizeof(tty_path))
                 {
-                    linux_error("Final tty name for %s too long.", pty_name);
+                    osm_linux_error("Final tty name for %s too long.", pty_name);
                     return false;
                 }
                 if (access(tty_path, F_OK) == 0)
@@ -1126,18 +1126,18 @@ bool peripherals_add_uart_tty_bridge(char * pty_name, unsigned uart)
                     return true;
                 }
 
-                strncpy(fd->name, pty_name, LINUX_PTY_NAME_SIZE);
+                strncpy(fd->name, pty_name, OSM_LINUX_PTY_NAME_SIZE);
                 fd->type = LINUX_FD_TYPE_PTY;
                 fd->pty.uart = uart;
-                fd->cb = linux_uart_proc;
+                fd->cb = osm_linux_uart_proc;
                 _linux_setup_pty(fd->name, &fd->pty.master_fd, &fd->pty.slave_fd);
-                linux_port_debug("UART %u is now %s%s_slave", uart, ret_static_file_location(), pty_name);
+                osm_linux_port_debug("UART %u is now %s%s_slave", uart, osm_ret_static_file_location(), pty_name);
             }
             _linux_setup_poll();
             return true;
         }
     }
-    linux_error2(ENOBUFS, "No spare PTY slot.");
+    osm_linux_error2(ENOBUFS, "No spare PTY slot.");
     return false;
 }
 
@@ -1168,15 +1168,15 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
         int r = read(fd, &c, len);
         if (r <= 0)
         {
-            linux_port_debug("Read of 1 failed");
+            osm_linux_port_debug("Read of 1 failed");
             return -1;
         }
         if (r != len)
-            linux_port_debug("In Len 1 Peak does not equal len");
+            osm_linux_port_debug("In Len 1 Peak does not equal len");
         if (isgraph(c))
-            linux_port_debug("%s << '%c' (0x%02"PRIx8")", name, c, (uint8_t)c);
+            osm_linux_port_debug("%s << '%c' (0x%02"PRIx8")", name, c, (uint8_t)c);
         else
-            linux_port_debug("%s << [0x%02"PRIx8"]", name, (uint8_t)c);
+            osm_linux_port_debug("%s << [0x%02"PRIx8"]", name, (uint8_t)c);
         buf[0] = c;
         return 1;
     }
@@ -1184,14 +1184,14 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
     {
         int r = read(fd, buf, buf_len);
         if (r != len)
-            linux_port_debug("Peak does not equal len");
+            osm_linux_port_debug("Peak does not equal len");
         if (r <= 0)
         {
-            linux_port_debug("Read of %u failed", buf_len);
+            osm_linux_port_debug("Read of %u failed", buf_len);
             return -1;
         }
         if (r != len)
-            linux_port_debug("Peak does not equal len");
+            osm_linux_port_debug("Peak does not equal len");
         char out_buf[1024]; // Max line displayed
         char* pos = out_buf;
         char* end_pos = (((unsigned)r + 1) < sizeof(out_buf))?(pos + r+1):pos + (sizeof(out_buf)-1);
@@ -1212,7 +1212,7 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
             }
         }
         *pos = 0;
-        linux_port_debug("%s << '%s'", name, out_buf);
+        osm_linux_port_debug("%s << '%s'", name, out_buf);
         return r;
     }
 }
@@ -1221,11 +1221,11 @@ static int _named_fd_read(int fd, char * name, char * buf, unsigned buf_len)
 void _linux_iterate(void)
 {
     int ready = poll(pfds, nfds, 1000);
-    linux_port_debug("Poll complete.");
+    osm_linux_port_debug("Poll complete.");
     if (linux_threads_deinit)
         return;
     if (ready == -1 && _linux_running)
-        linux_error("TIMEOUT");
+        osm_linux_error("TIMEOUT");
     char buf[1024];
     for (uint32_t i = 0; i < nfds; i++)
     {
@@ -1238,7 +1238,7 @@ void _linux_iterate(void)
 
             fd_t* fd_handler = _linux_get_fd_handler(pfds[i].fd);
             if (!fd_handler)
-                linux_error("PTY is NULL pointer");
+                osm_linux_error("PTY is NULL pointer");
             switch(fd_handler->type)
             {
                 case LINUX_FD_TYPE_PTY:
@@ -1253,7 +1253,7 @@ void _linux_iterate(void)
                     char buf[64];
                     if (read(fd_handler->timer.fd, buf, 64) < 0)
                     {
-                        linux_error("Failed to read timer fd.");
+                        osm_linux_error("Failed to read timer fd.");
                     }
                     if (fd_handler->cb)
                         fd_handler->cb();
@@ -1264,9 +1264,9 @@ void _linux_iterate(void)
                     uint64_t v;
                     if (read(fd_handler->event.fd, &v, sizeof(uint64_t)) < 0)
                     {
-                        linux_error("Failed to read event fd.");
+                        osm_linux_error("Failed to read event fd.");
                     }
-                    linux_port_debug("Received request ADCs.");
+                    osm_linux_port_debug("Received request ADCs.");
                     if (fd_handler->cb)
                         fd_handler->cb(fd_handler->event.fd);
                     break;
@@ -1278,13 +1278,13 @@ void _linux_iterate(void)
                     int client_sockfd = accept(fd_handler->socket_server.fd, (struct sockaddr*)&client_address, &client_len);
                     if (client_sockfd < 0)
                     {
-                        linux_error("Client socket connection accept failed.");
+                        osm_linux_error("Client socket connection accept failed.");
                         break;
                     }
                     if (fd_handler->socket_server.client)
                     {
                         close(client_sockfd);
-                        linux_error("Another socket connection attempted?");
+                        osm_linux_error("Another socket connection attempted?");
                         break;
                     }
                     bool slot_found = false;
@@ -1295,17 +1295,17 @@ void _linux_iterate(void)
                             continue;
                         if (!tfdh->name[0])
                         {
-                            strncpy(tfdh->name, fd_handler->name, LINUX_PTY_NAME_SIZE-1);
-                            unsigned rem_len = LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, LINUX_PTY_NAME_SIZE-1) - 1;
+                            strncpy(tfdh->name, fd_handler->name, OSM_LINUX_PTY_NAME_SIZE-1);
+                            unsigned rem_len = OSM_LINUX_PTY_NAME_SIZE - strnlen(tfdh->name, OSM_LINUX_PTY_NAME_SIZE-1) - 1;
                             strncat(tfdh->name, "_CLIENT", rem_len);
-                            tfdh->name[LINUX_PTY_NAME_SIZE-1] = 0;
+                            tfdh->name[OSM_LINUX_PTY_NAME_SIZE-1] = 0;
                             tfdh->type = LINUX_FD_TYPE_SOCKET_CLIENT;
                             tfdh->socket_client.fd = client_sockfd;
                             tfdh->socket_client.server = fd_handler;
                             tfdh->cb = _linux_socket_client;
                             fd_handler->socket_server.client = tfdh;
                             _linux_setup_poll();
-                            linux_port_debug("SOCKET CLIENT %s CONNECTED", tfdh->name);
+                            osm_linux_port_debug("SOCKET CLIENT %s CONNECTED", tfdh->name);
                             slot_found = true;
                             break;
                         }
@@ -1313,7 +1313,7 @@ void _linux_iterate(void)
                     if (!slot_found)
                     {
                         close(client_sockfd);
-                        linux_error("Client socket connection failed, no spare slot.");
+                        osm_linux_error("Client socket connection failed, no spare slot.");
                     }
                     break;
                 }
@@ -1331,7 +1331,7 @@ void _linux_iterate(void)
                         fd_handler->socket_client.server->socket_server.client = NULL;
                         memset(fd_handler, 0, sizeof(fd_t));
                         _linux_setup_poll();
-                        linux_port_debug("DISCONNECTED CLIENT");
+                        osm_linux_port_debug("DISCONNECTED CLIENT");
                     }
                     break;
                 }
@@ -1350,7 +1350,7 @@ void* thread_proc(void* vargp)
     return NULL;
 }
 
-char* ret_static_file_location(void)
+char* osm_ret_static_file_location(void)
 {
     char * loc = getenv(LINUX_ENVVAR_RUN_LOCATION);
     if (!loc)
@@ -1358,10 +1358,10 @@ char* ret_static_file_location(void)
     return loc;
 }
 
-void platform_init(void)
+void osm_platform_init(void)
 {
     memset(_linux_new_fw, 0, sizeof(_linux_new_fw));
-    _linux_boot_time_us = linux_get_current_us();
+    _linux_boot_time_us = osm_linux_get_current_us();
 
     if (setvbuf(stdout, NULL, _IOLBF, 1024) < 0)
         fprintf(stderr, "ERROR : %s\n", strerror(errno));
@@ -1369,7 +1369,7 @@ void platform_init(void)
     if (getenv(LINUX_ENVVAR_DEBUG))
     {
         _linux_in_debug = true;
-        linux_port_debug("Enabled Linux Debug");
+        osm_linux_port_debug("Enabled Linux Debug");
     }
 
     char* port = getenv(LINUX_ENVVAR_PORT);
@@ -1378,7 +1378,7 @@ void platform_init(void)
         int l_port = strtol(port, NULL, 10);
         if (l_port < 1000)
         {
-            linux_port_debug("Bad port, using default %d", _linux_socket_port);
+            osm_linux_port_debug("Bad port, using default %d", _linux_socket_port);
         }
         else
         {
@@ -1410,25 +1410,25 @@ void platform_init(void)
     _linux_setup_poll();
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 
-    model_linux_spawn_fakes();
+    osm_model_linux_spawn_fakes();
 }
 
 
-void platform_start(void)
+void osm_platform_start(void)
 {
     char * overloaded_log_debug_mask = getenv(LINUX_ENVVAR_DEBUG_MASK);
     if (overloaded_log_debug_mask)
     {
-        linux_port_debug("New debug mask: %s", overloaded_log_debug_mask);
-        log_debug_mask = DEBUG_SYS | strtoul(overloaded_log_debug_mask, NULL, 16);
-        persist_set_log_debug_mask(log_debug_mask);
+        osm_linux_port_debug("New debug mask: %s", overloaded_log_debug_mask);
+        log_debug_mask = OSM_DEBUG_SYS | strtoul(overloaded_log_debug_mask, NULL, 16);
+        osm_persist_set_log_debug_mask(log_debug_mask);
         log_debug_mask = log_debug_mask;
     }
     char * meas_interval = getenv(LINUX_ENVVAR_MEASUREMENT_INTERVAL);
     if (meas_interval)
     {
         unsigned mins = strtoul(meas_interval, NULL, 10);
-        linux_port_debug("New Measurement Interval: %u", mins);
+        osm_linux_port_debug("New Measurement Interval: %u", mins);
         persist_data.model_config.mins_interval = mins * 1000;
         transmit_interval = mins;
     }
@@ -1437,42 +1437,42 @@ void platform_start(void)
     {
         unsigned auto_meas_int = strtoul(auto_meas, NULL, 10);
         measurements_enabled = (auto_meas_int > 0);
-        linux_port_debug("Auto Measurements: %u", auto_meas_int);
+        osm_linux_port_debug("Auto Measurements: %u", auto_meas_int);
     }
 }
 
 
-void platform_watchdog_init(uint32_t ms)
+void osm_platform_watchdog_init(uint32_t ms)
 {
     ;
 }
 
 
-void platform_watchdog_reset(void)
+void osm_platform_watchdog_reset(void)
 {
     ;
 }
 
 
-void platform_blink_led_init(void)
+void osm_platform_blink_led_init(void)
 {
     ;
 }
 
 
-void platform_blink_led_toggle(void)
+void osm_platform_blink_led_toggle(void)
 {
     ;
 }
 
 
-void platform_deinit(void)
+void osm_platform_deinit(void)
 {
     _linux_exit(0);
 }
 
 
-void platform_set_rs485_mode(bool driver_enable)
+void osm_platform_set_rs485_mode(bool driver_enable)
 {
 }
 
@@ -1485,17 +1485,17 @@ static void _linux_reset_sys(char* link_addr)
     linux_threads_deinit = true;
     pthread_join(_linux_listener_thread_id, NULL);
     fprintf(stdout, "Cleaning up before exit...\n");
-    i2c_linux_deinit();
-    w1_linux_deinit();
-    model_linux_close_fakes();
+    osm_i2c_linux_deinit();
+    osm_w1_linux_deinit();
+    osm_model_linux_close_fakes();
 
     char *const __argv[2] = {link_addr, 0};
     if (execv(link_addr, __argv))
-        linux_error("Could not re-exec firmware");
+        osm_linux_error("Could not re-exec firmware");
 }
 
 
-void platform_reset_sys(void)
+void osm_platform_reset_sys(void)
 {
     char link_addr[128];
     char proc_ln[64];
@@ -1506,9 +1506,9 @@ void platform_reset_sys(void)
 }
 
 
-char concat_osm_location(char* new_loc, unsigned loc_len, char* global)
+char osm_concat_osm_location(char* new_loc, unsigned loc_len, char* global)
 {
-    unsigned len = snprintf(new_loc, loc_len - 1, "%s/%s", ret_static_file_location(), global);
+    unsigned len = snprintf(new_loc, loc_len - 1, "%s/%s", osm_ret_static_file_location(), global);
     if (!loc_len)
         len = 0;
     else if (len > loc_len)
@@ -1519,8 +1519,8 @@ char concat_osm_location(char* new_loc, unsigned loc_len, char* global)
 
 static persist_mem_t* _linux_get_persist(void)
 {
-    char osm_img_loc[LOCATION_LEN];
-    concat_osm_location(osm_img_loc, LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
+    char osm_img_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_img_loc, OSM_LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
     FILE* mem_file = fopen(osm_img_loc, "rb");
     if (!mem_file)
         return NULL;
@@ -1534,7 +1534,7 @@ static persist_mem_t* _linux_get_persist(void)
 }
 
 
-persist_storage_t* platform_get_raw_persist(void)
+osm_persist_storage_t* osm_platform_get_raw_persist(void)
 {
     persist_mem_t* persist = _linux_get_persist();
     if (!persist)
@@ -1543,7 +1543,7 @@ persist_storage_t* platform_get_raw_persist(void)
 }
 
 
-persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
+osm_persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 {
     persist_mem_t* persist = _linux_get_persist();
     if (!persist)
@@ -1552,46 +1552,46 @@ persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
 }
 
 
-bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(osm_persist_storage_t* persist_data, osm_persist_measurements_storage_t* persist_measurements)
 {
-    char osm_img_loc[LOCATION_LEN];
-    concat_osm_location(osm_img_loc, LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
+    char osm_img_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_img_loc, OSM_LOCATION_LEN, LINUX_PERSIST_FILE_LOC);
     FILE* mem_file = fopen(osm_img_loc, "wb");
     if (!mem_file)
         return false;
     if (persist_data != &_linux_persist_mem.persist_data)
-        memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(persist_storage_t));
+        memcpy(&_linux_persist_mem.persist_data, persist_data, sizeof(osm_persist_storage_t));
     if (persist_measurements != &_linux_persist_mem.persist_measurements)
-        memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(persist_measurements_storage_t));
+        memcpy(&_linux_persist_mem.persist_measurements, persist_measurements, sizeof(osm_persist_measurements_storage_t));
     fwrite(&_linux_persist_mem, sizeof(_linux_persist_mem), 1, mem_file);
     fclose(mem_file);
     return true;
 }
 
 
-void platform_persist_wipe(void)
+void osm_platform_persist_wipe(void)
 {
     memset(&_linux_persist_mem, 0, sizeof(persist_mem_t));
-    platform_persist_commit(&_linux_persist_mem.persist_data, &_linux_persist_mem.persist_measurements);
+    osm_platform_persist_commit(&_linux_persist_mem.persist_data, &_linux_persist_mem.persist_measurements);
 }
 
 
-void platform_hard_reset_sys(void)
+void osm_platform_hard_reset_sys(void)
 {
-    char* dir = ret_static_file_location();
+    char* dir = osm_ret_static_file_location();
     /* Dont think malloc would be okay as it can't be free'd */
     char fw_path[LINUX_NEW_FW_LOC_BUF_SIZ];
     snprintf(fw_path, LINUX_NEW_FW_LOC_BUF_SIZ, "%s%s", dir, LINUX_NEW_FW_LOC);
     fw_path[LINUX_NEW_FW_LOC_BUF_SIZ-1] = 0;
-    linux_port_debug("fw_path = %s", fw_path);
+    osm_linux_port_debug("fw_path = %s", fw_path);
     if (access(fw_path, F_OK) == 0)
     {
-        linux_port_debug("Booting into new firmware");
+        osm_linux_port_debug("Booting into new firmware");
         static char proc_path[PATH_MAX];
         memset(proc_path, 0, PATH_MAX);
         if (readlink("/proc/self/exe", proc_path, PATH_MAX) < 0)
         {
-            linux_error("Failed copy : %s", proc_path);
+            osm_linux_error("Failed copy : %s", proc_path);
             return;
         }
         const char *exec_dir = dirname(proc_path);
@@ -1602,35 +1602,35 @@ void platform_hard_reset_sys(void)
         int sysret = system(cmd);
         if (sysret < 0)
         {
-            linux_error("Shell cmd error");
+            osm_linux_error("Shell cmd error");
         }
         _linux_reset_sys(fw_path);
     }
-    linux_error("Error (%d): %s", errno, strerror(errno));
+    osm_linux_error("Error (%d): %s", errno, strerror(errno));
 }
 
 
-bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
+bool osm_platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {
     memcpy((void*)dst, fw_page, FLASH_PAGE_SIZE);
     return true;
 }
 
 
-uintptr_t platform_get_fw_addr(unsigned fw_page_index)
+uintptr_t osm_platform_get_fw_addr(unsigned fw_page_index)
 {
     return (uintptr_t)(_linux_new_fw + (fw_page_index * FLASH_PAGE_SIZE));
 }
 
 
-void platform_finish_fw(void)
+void osm_platform_finish_fw(void)
 {
-    char* dir = ret_static_file_location();
+    char* dir = osm_ret_static_file_location();
     unsigned len = snprintf(NULL, 0, "%s%s.xz", dir, LINUX_NEW_FW_LOC);
     char* new_fw_loc = malloc(len + 2);
     if (!new_fw_loc)
     {
-        linux_error("Failed to malloc new fw loc.");
+        osm_linux_error("Failed to malloc new fw loc.");
         /* will exit here */
         return;
     }
@@ -1640,7 +1640,7 @@ void platform_finish_fw(void)
     if (0 >= fd)
     {
         free(new_fw_loc);
-        linux_error("Failed to open new fw file");
+        osm_linux_error("Failed to open new fw file");
         /* will exit here */
         return;
     }
@@ -1650,7 +1650,7 @@ void platform_finish_fw(void)
         uint8_t dat = _linux_new_fw[size - 1];
         if (0x00 != dat && 0xFF != dat)
         {
-            linux_port_debug("Early exit on %"PRIu8", size: %d", dat, size);
+            osm_linux_port_debug("Early exit on %"PRIu8", size: %d", dat, size);
             break;
         }
     }
@@ -1658,7 +1658,7 @@ void platform_finish_fw(void)
     if (w != size)
     {
         free(new_fw_loc);
-        linux_error("Failed to write new fw");
+        osm_linux_error("Failed to write new fw");
         return;
     }
     close(fd);
@@ -1668,12 +1668,12 @@ void platform_finish_fw(void)
     if (!cmd)
     {
         free(new_fw_loc);
-        linux_error("Failed to malloc command for updating firmware");
+        osm_linux_error("Failed to malloc command for updating firmware");
         /* will exit here */
         return;
     }
     snprintf(cmd, cmdlen + 1, __LINUX_XZ_CMD_FMT, dir, LINUX_NEW_FW_LOC);
-    linux_port_debug(cmd);
+    osm_linux_port_debug(cmd);
     if (access(new_fw_loc, F_OK) == 0)
     {
         unlink(new_fw_loc);
@@ -1682,44 +1682,44 @@ void platform_finish_fw(void)
     int cmdret = system(cmd);
     if (cmdret < 0)
     {
-        linux_error("Shell cmd error");
+        osm_linux_error("Shell cmd error");
     }
     free(cmd);
 }
 
 
-void platform_clear_flash_flags(void)
+void osm_platform_clear_flash_flags(void)
 {
     ;
 }
 
 
-bool platform_running(void)
+bool osm_platform_running(void)
 {
     return _linux_running;
 }
 
-void platform_hpm_enable(bool enable)
+void osm_platform_hpm_enable(bool enable)
 #ifdef HPM_UART
 {
     const char* on_data = "ON\n";
     const char* off_data = "OFF\n";
     if (enable)
     {
-        uart_blocking(HPM_UART, on_data, strlen(on_data));
+        osm_uart_blocking(HPM_UART, on_data, strlen(on_data));
         return;
     }
-    uart_blocking(HPM_UART, off_data, strlen(off_data));
+    osm_uart_blocking(HPM_UART, off_data, strlen(off_data));
 }
 #else //HPM_UART
 {}
 #endif //HPM_UART
 
 
-void platform_tight_loop(void)
+void osm_platform_tight_loop(void)
 {
     static int64_t last_call = 0;
-    int64_t now = linux_get_current_us();
+    int64_t now = osm_linux_get_current_us();
     if (!last_call)
     {
         last_call = now;
@@ -1727,63 +1727,63 @@ void platform_tight_loop(void)
     }
     int64_t delta_time = (now - last_call);
     if (delta_time < 1000)
-        linux_usleep(1000 - delta_time);
+        osm_linux_usleep(1000 - delta_time);
     last_call = now;
 }
 
 
-void __attribute__((weak)) model_main_loop_iterate(void) {}
+void __attribute__((weak)) osm_model_main_loop_iterate(void) {}
 
 
 typedef struct
 {
-    cmd_ctx_t base;
+    osm_cmd_ctx_t base;
     int sock;
-} socket_cmd_ctx_t;
+} socket_osm_cmd_ctx_t;
 
 
-static void _socket_cmd_ctx_out(cmd_ctx_t * ctx, const char * fmt, va_list ap)
+static void _socket_cmd_ctx_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
-    socket_cmd_ctx_t * socket_cmd_ctx = (socket_cmd_ctx_t*)ctx;
+    socket_osm_cmd_ctx_t * socket_cmd_ctx = (socket_osm_cmd_ctx_t*)ctx;
     vdprintf(socket_cmd_ctx->sock, fmt, ap);
     dprintf(socket_cmd_ctx->sock, "\n\r");
 }
 
 
-static void _socket_cmd_ctx_flush(cmd_ctx_t * ctx)
+static void _socket_cmd_ctx_flush(osm_cmd_ctx_t * ctx)
 {
 }
 
 
-void platform_main_loop_iterate(void)
+void osm_platform_main_loop_iterate(void)
 {
     if (_sock_line_used_len)
     {
-        socket_cmd_ctx_t ctx = {{.output_cb = _socket_cmd_ctx_out,
+        socket_osm_cmd_ctx_t ctx = {{.output_cb = _socket_cmd_ctx_out,
                                   .error_cb = _socket_cmd_ctx_out,
                                   .flush_cb = _socket_cmd_ctx_flush},
                                  .sock = _sock_cmd_sock};
 
-        cmds_process(_sock_line_buf, _sock_line_used_len, &ctx.base);
+        osm_cmds_process(_sock_line_buf, _sock_line_used_len, &ctx.base);
         _sock_line_used_len = 0;
     }
 
-    model_main_loop_iterate();
+    osm_model_main_loop_iterate();
 }
 
 
-uint32_t get_since_boot_ms(void)
+uint32_t osm_get_since_boot_ms(void)
 {
-    int64_t t = (linux_get_current_us() - _linux_boot_time_us) / 1000;
+    int64_t t = (osm_linux_get_current_us() - _linux_boot_time_us) / 1000;
     return t;
 }
 
 
-void linux_usleep(unsigned usecs)
+void osm_linux_usleep(unsigned usecs)
 {
     if (!_linux_running)
         return; /* No sleep for the dying. */
-    int64_t end_time = linux_get_current_us() + usecs;
+    int64_t end_time = osm_linux_get_current_us() + usecs;
 
     struct timespec ts = {.tv_sec = end_time / 1000000,
                           .tv_nsec = (end_time % 1000000) * 1000};
@@ -1794,37 +1794,37 @@ void linux_usleep(unsigned usecs)
         if (!rc || rc == ETIMEDOUT)
             pthread_mutex_unlock(&_sleep_mutex);
     }
-    else linux_port_debug("FAILED to sleep.\n");
+    else osm_linux_port_debug("FAILED to sleep.\n");
 }
 
 
-void linux_awaken(void)
+void osm_linux_awaken(void)
 {
     if (!pthread_mutex_lock(&_sleep_mutex))
     {
-        linux_port_debug("Trigger end of Linux sleep");
+        osm_linux_port_debug("Trigger end of Linux sleep");
         pthread_cond_broadcast(&_sleep_cond);
         pthread_mutex_unlock(&_sleep_mutex);
     }
-    else linux_port_debug("Sleep Linux not kicked.\n");
+    else osm_linux_port_debug("Sleep Linux not kicked.\n");
 }
 
 
-void platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin)
 {
 }
 
 
-void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
 }
 
 
-void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
 {
     _ios_enabled[gpio_pin->index] = is_on;
 
-    char* dir = ret_static_file_location();
+    char* dir = osm_ret_static_file_location();
 
     unsigned mem_size = snprintf(NULL, 0, "%s/gpios/gpio_%u", dir, gpio_pin->index) + 1;
     char* mem = malloc(mem_size);
@@ -1846,13 +1846,13 @@ void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
 }
 
 
-bool platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     return _ios_enabled[gpio_pin->index];
 }
 
 
-bool socket_connect(char* path, int* _socketfd)
+bool osm_socket_connect(char* path, int* _socketfd)
 {
     if (!path || !_socketfd)
         return false;
@@ -1875,16 +1875,16 @@ bool socket_connect(char* path, int* _socketfd)
 }
 
 
-static command_response_t _quit_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _quit_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,"Starting Linux OSM exit.");
+    osm_cmd_ctx_out(ctx,"Starting Linux OSM exit.");
     _linux_running = false;
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* linux_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_linux_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    static struct osm_cmd_link_t cmds[] = { { "quit",   "Quit Linux OSM.", _quit_cb, false , NULL } };
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

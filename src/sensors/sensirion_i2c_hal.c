@@ -38,7 +38,7 @@
 #include <osm/core/platform.h>
 #include <osm/core/log.h>
 
-#define SEN5x_I2C_TIMEOUT_MS                            10
+#define SENxx_I2C_TIMEOUT_MS                            10
 
 /*
  * INSTRUCTIONS
@@ -67,14 +67,14 @@ int16_t sensirion_i2c_hal_select_bus(uint8_t bus_idx) {
  * communication.
  */
 void sensirion_i2c_hal_init(void) {
-    platform_hpm_enable(true);
+    osm_platform_hpm_enable(true);
 }
 
 /**
  * Release all resources initialized by sensirion_i2c_hal_init().
  */
 void sensirion_i2c_hal_free(void) {
-    platform_hpm_enable(false);
+    osm_platform_hpm_enable(false);
 }
 
 /**
@@ -88,9 +88,9 @@ void sensirion_i2c_hal_free(void) {
  * @returns 0 on success, error code otherwise
  */
 int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
-    int8_t err = i2c_transfer_timeout(SEN5x_I2C, address, NULL, 0, data, count, SEN5x_I2C_TIMEOUT_MS) ? NO_ERROR : NOT_IMPLEMENTED_ERROR;
-    particulate_debug("I2C Read %"PRIu16" - %s", count, (err == NO_ERROR)?"OK":"Failed");
-    log_debug_data(DEBUG_PARTICULATE, data, count);
+    int8_t err = osm_i2c_transfer_timeout(OSM_SENxx_I2C, address, NULL, 0, data, count, SENxx_I2C_TIMEOUT_MS) ? NO_ERROR : NOT_IMPLEMENTED_ERROR;
+    osm_particulate_debug("I2C Read %"PRIu16" - %s", count, (err == NO_ERROR)?"OK":"Failed");
+    osm_log_debug_data(OSM_DEBUG_PARTICULATE, data, count);
     return err;
 }
 
@@ -107,9 +107,9 @@ int8_t sensirion_i2c_hal_read(uint8_t address, uint8_t* data, uint16_t count) {
  */
 int8_t sensirion_i2c_hal_write(uint8_t address, const uint8_t* data,
                                uint16_t count) {
-    int8_t err = i2c_transfer_timeout(SEN5x_I2C, address, data, count, NULL, 0, SEN5x_I2C_TIMEOUT_MS) ? NO_ERROR : NOT_IMPLEMENTED_ERROR;
-    particulate_debug("I2C Write %"PRIu16" - %s", count, (err == NO_ERROR)?"OK":"Failed");
-    log_debug_data(DEBUG_PARTICULATE, data, count);
+    int8_t err = osm_i2c_transfer_timeout(OSM_SENxx_I2C, address, data, count, NULL, 0, SENxx_I2C_TIMEOUT_MS) ? NO_ERROR : NOT_IMPLEMENTED_ERROR;
+    osm_particulate_debug("I2C Write %"PRIu16" - %s", count, (err == NO_ERROR)?"OK":"Failed");
+    osm_log_debug_data(OSM_DEBUG_PARTICULATE, data, count);
     return err;
 }
 
@@ -128,9 +128,9 @@ static bool _sensirion_i2c_hal_iterate_for(void* userdata)
 }
 
 void sensirion_i2c_hal_sleep_usec(uint32_t useconds) {
-    particulate_debug("Sleeping for %"PRIu32".%06"PRIu32"s", useconds/1000000, useconds%1000000);
+    osm_particulate_debug("Sleeping for %"PRIu32".%06"PRIu32"s", useconds/1000000, useconds%1000000);
     uint32_t mseconds = useconds;
     mseconds /= 1000U;
     mseconds += 1U;
-    main_loop_iterate_for(mseconds, _sensirion_i2c_hal_iterate_for, NULL);
+    osm_main_loop_iterate_for(mseconds, _sensirion_i2c_hal_iterate_for, NULL);
 }

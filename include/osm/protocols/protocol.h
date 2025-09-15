@@ -6,27 +6,27 @@
 #include <osm/core/base_types.h>
 #include <osm/core/measurements.h>
 
-void        protocol_system_init(void);
+void        osm_protocol_system_init(void);
 
-bool        protocol_init(void);
-bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data);
-bool        protocol_send(void);
-void        protocol_send_error_code(uint8_t err_code);
+bool        osm_protocol_init(void);
+bool        osm_protocol_append_measurement(osm_measurements_def_t* def, osm_measurements_data_t* data);
+bool        osm_protocol_send(void);
+void        osm_protocol_send_error_code(uint8_t err_code);
 
-void        protocol_loop_iteration(void);
+void        osm_protocol_loop_iteration(void);
 
-bool        protocol_send_ready(void);
-bool        protocol_send_allowed(void);
-void        protocol_reset(void);
-void        protocol_process(char* message);
-bool        protocol_get_connected(void);
-void        protocol_loop_iteration(void);
+bool        osm_protocol_send_ready(void);
+bool        osm_protocol_send_allowed(void);
+void        osm_protocol_reset(void);
+void        osm_protocol_process(char* message);
+bool        osm_protocol_get_connected(void);
+void        osm_protocol_loop_iteration(void);
 
-bool        protocol_get_id(char* str, uint8_t len);
+bool        osm_protocol_get_id(char* str, uint8_t len);
 
-struct cmd_link_t* protocol_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_protocol_add_commands(struct osm_cmd_link_t* tail);
 
-void        protocol_power_down(void);
+void        osm_protocol_power_down(void);
 
 /* To be implemented by caller.*/
-void     on_protocol_sent_ack(bool acked) __attribute__((weak));
+void     osm_on_protocol_sent_ack(bool acked) __attribute__((weak));

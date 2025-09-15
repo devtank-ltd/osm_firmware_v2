@@ -310,7 +310,7 @@ static void _sai_dma_init(void)
 
     dma_set_peripheral_address(DMA2, DMA_CHANNEL1, (uint32_t)&SAI1_ADR);
     dma_set_memory_address(DMA2, DMA_CHANNEL1, (uint32_t)_sai_array);
-    dma_set_number_of_data(DMA2, DMA_CHANNEL1, ARRAY_SIZE(_sai_array));
+    dma_set_number_of_data(DMA2, DMA_CHANNEL1, OSM_ARRAY_SIZE(_sai_array));
     dma_set_read_from_peripheral(DMA2, DMA_CHANNEL1);
     dma_enable_memory_increment_mode(DMA2, DMA_CHANNEL1);
     dma_set_peripheral_size(DMA2, DMA_CHANNEL1, DMA_CCR_PSIZE_32BIT);
@@ -324,7 +324,7 @@ static void _sai_dma_init(void)
 static bool _sai_load_coeffs(void)
 {
     _sai_calibration_coeffs = persist_data.model_config.sai_cal_coeffs;
-    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    for (unsigned i = 0; i < OSM_SAI_NUM_CAL_COEFFS; i++)
     {
         if (_sai_calibration_coeffs[i] != 0)
             return true;
@@ -333,10 +333,10 @@ static bool _sai_load_coeffs(void)
 }
 
 
-void sai_init(void)
+void osm_sai_init(void)
 {
-    const port_n_pins_t sai_pins[]  = SAI_PORT_N_PINS;
-    const uint32_t      sai_pin_funcs[] = SAI_PORT_N_PINS_AF;
+    const osm_port_n_pins_t sai_pins[]  = OSM_SAI_PORT_N_PINS;
+    const uint32_t      sai_pin_funcs[] = OSM_SAI_PORT_N_PINS_AF;
 
     rcc_periph_clock_enable(SCC_SAI1);
 
@@ -371,11 +371,11 @@ void sai_init(void)
 
     _sai_clock_on();
 
-    for(unsigned n = 0; n < ARRAY_SIZE(sai_pins); n++)
+    for(unsigned n = 0; n < OSM_ARRAY_SIZE(sai_pins); n++)
     {
-        port_n_pins_t sai_pin = sai_pins[n];
+        osm_port_n_pins_t sai_pin = sai_pins[n];
 
-        rcc_periph_clock_enable(PORT_TO_RCC(sai_pin.port));
+        rcc_periph_clock_enable(OSM_PORT_TO_RCC(sai_pin.port));
         gpio_mode_setup(sai_pins[n].port,
                         GPIO_MODE_AF,
                         GPIO_PUPD_NONE,
@@ -390,8 +390,8 @@ void sai_init(void)
 
     if (!_sai_load_coeffs())
     {
-        const float _sai_default_calibration_coeffs[SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
-        sound_debug("No calibration values found, using default.");
+        const float _sai_default_calibration_coeffs[OSM_SAI_NUM_CAL_COEFFS] = SAI_DEFAULT_COEFFS;
+        osm_sound_debug("No calibration values found, using default.");
         memcpy(_sai_calibration_coeffs, _sai_default_calibration_coeffs, sizeof(_sai_default_calibration_coeffs));
     }
 
@@ -419,10 +419,10 @@ static bool _sai_rms(uint32_t* rms, const sai_arr_t arr, unsigned len, uint32_t 
         val /= downscale;
 
         // See if the square is larger than max uint64
-        uint64_t val_sqr = abs_i64(val);
+        uint64_t val_sqr = osm_abs_i64(val);
         if (val_sqr >= UINT64_MAX / val_sqr)
         {
-            sound_debug("Overflow with scale %"PRIu32, downscale);
+            osm_sound_debug("Overflow with scale %"PRIu32, downscale);
             return false;
         }
         val_sqr *= val_sqr;
@@ -430,14 +430,14 @@ static bool _sai_rms(uint32_t* rms, const sai_arr_t arr, unsigned len, uint32_t 
         // See if the sum is larger than max uint64
         if (sum > UINT64_MAX - val_sqr)
         {
-            sound_debug("Overflow with scale %"PRIu32, downscale);
+            osm_sound_debug("Overflow with scale %"PRIu32, downscale);
             return false;
         }
         sum = sum + val_sqr;
     }
     // Difference due to fast sqrt is +-0.1%. This is
     // +-(0.1 * 1/ln(10))% = 0.04% after logging the RMS.
-    *rms = 1/Q_rsqrt(sum/len) * downscale;
+    *rms = 1/osm_Q_rsqrt(sum/len) * downscale;
     return true;
 }
 
@@ -454,7 +454,7 @@ static bool _sai_rms_adaptive(uint32_t* rms, sai_arr_t arr, unsigned len)
     {
         if (overflow_scale_index >= SAI_NUM_OFLOW_SCALES)
         {
-            sound_debug("Cannot downscale any more.");
+            osm_sound_debug("Cannot downscale any more.");
             return false;
         }
         overflow_scale_index++;
@@ -522,29 +522,29 @@ static bool _sai_collect(void)
 
     _sai_sample.num_rms++;
 
-    if (!u64_multiply_overflow_check(&prev_rms_cmp, _sai_sample.rolling_rms, _sai_sample.rolling_rms))
+    if (!osm_u64_multiply_overflow_check(&prev_rms_cmp, _sai_sample.rolling_rms, _sai_sample.rolling_rms))
     {
         goto overflow_exit;
     }
 
-    if (!u64_multiply_overflow_check(&prev_rms_cmp, prev_rms_cmp, (_sai_sample.num_rms-1)))
+    if (!osm_u64_multiply_overflow_check(&prev_rms_cmp, prev_rms_cmp, (_sai_sample.num_rms-1)))
     {
         goto overflow_exit;
     }
 
     if (!_sai_rms_adaptive(&rms_32, _sai_array, SAI_ARRAY_SIZE))
     {
-        sound_debug("Cannot collect RMS.");
+        osm_sound_debug("Cannot collect RMS.");
         return false;
     }
     new_rms_cmp = rms_32;
 
-    if (!u64_multiply_overflow_check(&new_rms_cmp, new_rms_cmp, new_rms_cmp))
+    if (!osm_u64_multiply_overflow_check(&new_rms_cmp, new_rms_cmp, new_rms_cmp))
     {
         goto overflow_exit;
     }
 
-    if (!u64_addition_overflow_check(&rms, prev_rms_cmp, new_rms_cmp))
+    if (!osm_u64_addition_overflow_check(&rms, prev_rms_cmp, new_rms_cmp))
     {
         goto overflow_exit;
     }
@@ -554,11 +554,11 @@ static bool _sai_collect(void)
      * +-(0.1 * 1/ln(10))% = 0.04% after logging the RMS.
      * Companding of the errors are small enough to ignore.
      */
-    rms = 1/Q_rsqrt(rms);
+    rms = 1/osm_Q_rsqrt(rms);
     _sai_sample.rolling_rms = rms;
     return true;
 overflow_exit:
-    sound_debug("Overflow issue.");
+    osm_sound_debug("Overflow issue.");
     return false;
 }
 
@@ -583,10 +583,10 @@ static void _sai_set_no_buf(uint32_t new_no_buf)
 }
 
 
-static measurements_sensor_state_t _sai_iteration_callback(char* name)
+static osm_measurements_sensor_state_t _sai_iteration_callback(char* name)
 {
     if (_sai_sample.num_rms >= _sai_get_no_buf())
-        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+        return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 
     if (_sai_sample.finished)
     {
@@ -594,38 +594,38 @@ static measurements_sensor_state_t _sai_iteration_callback(char* name)
         if (_sai_collect())
         {
             if (_sai_sample.num_rms >= _sai_get_no_buf())
-                return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+                return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
             _sai_dma_init();
             _sai_dma_on();
         }
-        else sound_debug("Failed to collect.");
+        else osm_sound_debug("Failed to collect.");
     }
-    return MEASUREMENTS_SENSOR_STATE_BUSY;
+    return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
 }
 
 
-static measurements_sensor_state_t _sai_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _sai_collection_time(char* name, uint32_t* collection_time)
 {
     *collection_time = SAI_DEFAULT_COLLECTION_TIME;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _sai_measurements_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _sai_measurements_init(char* name, bool in_isolation)
 {
     _sai_dma_init();
     _sai_dma_on();
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _sai_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _sai_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     _sai_dma_off();
     if (_sai_sample.num_rms == 0)
     {
-        sound_debug("No samples computed.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_sound_debug("No samples computed.");
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     uint32_t num_samples = _sai_sample.num_rms * SAI_ARRAY_SIZE;
     uint32_t dB = _sai_conv_dB(_sai_sample.rolling_rms);
@@ -633,38 +633,38 @@ static measurements_sensor_state_t _sai_measurements_get(char* name, measurement
     // Reset the rolling RMS
     _sai_sample.num_rms = 0;
 
-    sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
-    sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
-    value->v_f32 = to_f32_from_float((float)dB / 10.f);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    osm_sound_debug("Total RMS = %"PRIu64, _sai_sample.rolling_rms);
+    osm_sound_debug("%"PRIu32".%"PRIu32" dB from %"PRIu32" samples.", dB/10, dB%10, num_samples);
+    value->v_f32 = osm_to_f32_from_float((float)dB / 10.f);
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-void sai_print_coeffs(cmd_ctx_t * ctx)
+void osm_sai_print_coeffs(osm_cmd_ctx_t * ctx)
 {
-    for (unsigned i = 0; i < SAI_NUM_CAL_COEFFS; i++)
+    for (unsigned i = 0; i < OSM_SAI_NUM_CAL_COEFFS; i++)
     {
-        cmd_ctx_out(ctx,"Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
+        osm_cmd_ctx_out(ctx,"Coeff[%u] = %f", i+1, _sai_calibration_coeffs[i]);
     }
 }
 
 
-bool sai_set_coeff(uint8_t index, float coeff)
+bool osm_sai_set_coeff(uint8_t index, float coeff)
 {
-    if (index > SAI_NUM_CAL_COEFFS)
+    if (index > OSM_SAI_NUM_CAL_COEFFS)
         return false;
     _sai_calibration_coeffs[index] = coeff;
     return true;
 }
 
 
-static measurements_value_type_t _sai_value_type(char* name)
+static osm_measurements_value_type_t _sai_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+    return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
-void  sai_inf_init(measurements_inf_t* inf)
+void  osm_sai_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _sai_collection_time;
     inf->init_cb            = _sai_measurements_init;
@@ -674,54 +674,54 @@ void  sai_inf_init(measurements_inf_t* inf)
 }
 
 
-static command_response_t _sound_cal_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sound_cal_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint8_t index = strtoul(args, &p, 10);
-    if (index < 1 || index > SAI_NUM_CAL_COEFFS)
+    if (index < 1 || index > OSM_SAI_NUM_CAL_COEFFS)
     {
-        cmd_ctx_out(ctx,"Index out of range.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Index out of range.");
+        return OSM_COMMAND_RESP_ERR;
     }
-    p = skip_space(p);
+    p = osm_skip_space(p);
     float coeff = strtof(p, NULL);
-    if (!sai_set_coeff(index-1, coeff))
+    if (!osm_sai_set_coeff(index-1, coeff))
     {
-        cmd_ctx_out(ctx,"Could not set the coefficient.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Could not set the coefficient.");
+        return OSM_COMMAND_RESP_ERR;
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _sai_set_target_no_buf(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sai_set_target_no_buf(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t no_buf = strtoul(args, &p, 10);
     if (p == args)
     {
-        cmd_ctx_out(ctx,"Target number of buffers: %"PRIu32, _sai_get_no_buf());
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Target number of buffers: %"PRIu32, _sai_get_no_buf());
+        return OSM_COMMAND_RESP_ERR;
     }
     if (no_buf > SAI_MAX_NO_BUF)
     {
-        cmd_ctx_out(ctx,"Largest target number of buffers is %d", SAI_MAX_NO_BUF);
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Largest target number of buffers is %d", SAI_MAX_NO_BUF);
+        return OSM_COMMAND_RESP_ERR;
     }
     if (no_buf <= SAI_MIN_NO_BUF)
     {
-        cmd_ctx_out(ctx,"Smallest target number of buffers is %d", SAI_MIN_NO_BUF);
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Smallest target number of buffers is %d", SAI_MIN_NO_BUF);
+        return OSM_COMMAND_RESP_ERR;
     }
     _sai_set_no_buf(no_buf);
-    cmd_ctx_out(ctx,"Set target number of buffers: %"PRIu32, _sai_get_no_buf());
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx,"Set target number of buffers: %"PRIu32, _sai_get_no_buf());
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* sai_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_sai_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "cal_sound",    "Set the cal coeffs.",      _sound_cal_cb                 , false , NULL },
                                        { "sound_no_buf", "Set the cal num buffers.", _sai_set_target_no_buf        , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

@@ -12,7 +12,7 @@
 #define MEASUREMENTS_COLLECT_TIME_HPM_MS         6000
 #define HPM_TIMEOUT_MS                           (uint32_t)(MEASUREMENTS_COLLECT_TIME_HPM_MS * 1.5)
 
-#define hpm_error(...) particulate_debug("ERROR: " __VA_ARGS__)
+#define hpm_error(...) osm_particulate_debug("ERROR: " __VA_ARGS__)
 
 
 typedef union
@@ -69,22 +69,22 @@ _Static_assert(CMD_LINELEN >= 32, "Buffer used too small for longest packet");
 static void _hpm_is_valid(void)
 {
     hpm_valid = true;
-    _hpm_last_collect_time = since_boot_delta(get_since_boot_ms(), _hpm_start_time);
+    _hpm_last_collect_time = osm_since_boot_delta(osm_get_since_boot_ms(), _hpm_start_time);
 }
 
 
 static bool _hpm_is_valid_now(void)
 {
-    uint32_t now = get_since_boot_ms();
+    uint32_t now = osm_get_since_boot_ms();
     if (hpm_valid)
     {
-        if (since_boot_delta(now, _hpm_start_time) > HPM_TIMEOUT_MS)
+        if (osm_since_boot_delta(now, _hpm_start_time) > HPM_TIMEOUT_MS)
         {
             hpm_valid = false;
         }
         else
         {
-            hpm_valid = (since_boot_delta(now, _hpm_start_time + _hpm_last_collect_time) < HPM_TIMEOUT_MS);
+            hpm_valid = (osm_since_boot_delta(now, _hpm_start_time + _hpm_last_collect_time) < HPM_TIMEOUT_MS);
         }
     }
     return hpm_valid;
@@ -121,10 +121,10 @@ static void process_part_measure_response(const uint8_t *data)
     _hpm_is_valid();
     if (hpm_is_on)
     {
-        uart_enable(HPM_UART, false);
+        osm_uart_enable(HPM_UART, false);
         hpm_enable(false);
-        uart_rings_in_wipe(HPM_UART);
-        uart_rings_out_wipe(HPM_UART);
+        osm_uart_rings_in_wipe(HPM_UART);
+        osm_uart_rings_out_wipe(HPM_UART);
     }
 }
 
@@ -164,10 +164,10 @@ static void process_part_measure_long_response(const uint8_t *data)
         _hpm_is_valid();
         if (hpm_is_on)
         {
-            uart_enable(HPM_UART, false);
+            osm_uart_enable(HPM_UART, false);
             hpm_enable(false);
-            uart_rings_in_wipe(HPM_UART);
-            uart_rings_out_wipe(HPM_UART);
+            osm_uart_rings_in_wipe(HPM_UART);
+            osm_uart_rings_out_wipe(HPM_UART);
         }
         message_count = 0;
     }
@@ -176,7 +176,7 @@ static void process_part_measure_long_response(const uint8_t *data)
         message_count++;
     }
 
-    particulate_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
+    osm_particulate_debug("PM10:%u, PM2.5:%u", (unsigned)pm10_entry.d, (unsigned)pm25_entry.d);
 }
 
 
@@ -185,25 +185,25 @@ static void process_nack_response(const uint8_t *data)
     if(data[1] == 0x96)
         hpm_error("Negative ACK");
     else
-        particulate_debug("NACK");
+        osm_particulate_debug("NACK");
 }
 
 
 static void process_ack_response(const uint8_t *data)
 {
     if (data[1] == 0xA5)
-        particulate_debug("ACK received");
+        osm_particulate_debug("ACK received");
     else
         hpm_error("ACK broken.");
 }
 
 
-void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
+void osm_hpm_ring_process(osm_ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 {
     static hpm_packet_header_t header;
     static bool header_active = false;
 
-    unsigned len = ring_buf_get_pending(ring);
+    unsigned len = osm_ring_buf_get_pending(ring);
 
     if (!len)
     {
@@ -213,7 +213,7 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
     if (!header_active)
     {
         uint8_t id;
-        ring_buf_read(ring, (char*)&id, 1);
+        osm_ring_buf_read(ring, (char*)&id, 1);
         len-=1;
 
         for (hpm_response_t * respond = responses; respond->header.id; respond++)
@@ -236,7 +236,7 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
         if (header.len <= tmpbuf_len)
         {
             tmpbuf[0] = header.id;
-            ring_buf_read(ring, (tmpbuf + 1), header.len);
+            osm_ring_buf_read(ring, (tmpbuf + 1), header.len);
 
             for (hpm_response_t * respond = responses; respond->header.id; respond++)
             {
@@ -258,7 +258,7 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
         {
             hpm_error("Packet type 0x%02"PRIx8" too long, dropping.", header.id);
             while(header.len)
-                header.len -= ring_buf_read(ring, tmpbuf, (header.len > tmpbuf_len)?tmpbuf_len:header.len);
+                header.len -= osm_ring_buf_read(ring, tmpbuf, (header.len > tmpbuf_len)?tmpbuf_len:header.len);
             header_active = false;
         }
     }
@@ -268,7 +268,7 @@ void hpm_ring_process(ring_buf_t * ring, char * tmpbuf, unsigned tmpbuf_len)
 void hpm_request(void)
 {
     // Send the request for the measurement, though it does send measurements on power up, and we power it up/down each time.
-    uart_ring_out(HPM_UART, (char*)(uint8_t[]){0x68, 0x01, 0x04, 0x93}, 4);
+    osm_uart_ring_out(HPM_UART, (char*)(uint8_t[]){0x68, 0x01, 0x04, 0x93}, 4);
 }*/
 
 
@@ -279,10 +279,10 @@ void hpm_enable(bool enable)
     hpm_is_on = enable;
     if (enable)
     {
-        platform_hpm_enable(true);
-        _hpm_start_time = get_since_boot_ms();
+        osm_platform_hpm_enable(true);
+        _hpm_start_time = osm_get_since_boot_ms();
         hpm_use_ref++;
-        particulate_debug("Power On (ref:%u)", hpm_use_ref);
+        osm_particulate_debug("Power On (ref:%u)", hpm_use_ref);
         return;
     }
 
@@ -290,73 +290,73 @@ void hpm_enable(bool enable)
         hpm_use_ref--;
     if (!hpm_use_ref)
     {
-        particulate_debug("Power Off");
-        platform_hpm_enable(false);
+        osm_particulate_debug("Power Off");
+        osm_platform_hpm_enable(false);
     }
     else
-        particulate_debug("Power Off deferred (ref:%u)", hpm_use_ref);
+        osm_particulate_debug("Power Off deferred (ref:%u)", hpm_use_ref);
 }
 
 
 
-static measurements_sensor_state_t _hpm_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _hpm_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = _hpm_last_collect_time * 1.1f;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _hpm_get_pm10(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _hpm_get_pm10(char* name, osm_measurements_reading_t* val)
 {
     if (!val)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!_hpm_is_valid_now())
     {
-        if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        if (osm_since_boot_delta(osm_get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
         hpm_enable(false);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     val->v_i64 = (int64_t)pm10_entry.d;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _hpm_get_pm25(char* name, measurements_reading_t* val)
+static osm_measurements_sensor_state_t _hpm_get_pm25(char* name, osm_measurements_reading_t* val)
 {
     if (!val)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!_hpm_is_valid_now())
     {
-        if (since_boot_delta(get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
+        if (osm_since_boot_delta(osm_get_since_boot_ms(), _hpm_start_time) < HPM_TIMEOUT_MS)
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
         hpm_enable(false);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     val->v_i64 = (int64_t)pm25_entry.d;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _hpm_init(char* name, bool in_isolation)
 {
-    uart_enable(HPM_UART, true);
+    osm_uart_enable(HPM_UART, true);
     hpm_enable(true);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_value_type_t _hpm_value_type(char* name)
+static osm_measurements_value_type_t _hpm_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_I64;
+    return OSM_MEASUREMENTS_VALUE_TYPE_I64;
 }
 
 
-void hpm_pm10_inf_init(measurements_inf_t* inf)
+void osm_hpm_pm10_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _hpm_collection_time;
     inf->init_cb            = _hpm_init;
@@ -365,7 +365,7 @@ void hpm_pm10_inf_init(measurements_inf_t* inf)
 }
 
 
-void hpm_pm25_inf_init(measurements_inf_t* inf)
+void osm_hpm_pm25_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _hpm_collection_time;
     inf->init_cb            = _hpm_init;

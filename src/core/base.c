@@ -5,7 +5,7 @@
 #include <osm/core/log.h>
 
 
-char * skip_space(char * pos)
+char * osm_skip_space(char * pos)
 {
     while(*pos == ' ')
         pos++;
@@ -13,7 +13,7 @@ char * skip_space(char * pos)
 }
 
 
-char * skip_to_space(char * pos)
+char * osm_skip_to_space(char * pos)
 {
     while(*pos && *pos != ' ')
         pos++;
@@ -26,9 +26,9 @@ char * skip_to_space(char * pos)
 #define IO_PULL_STR_DOWN "DOWN"
 
 
-char* io_get_pull_str(uint16_t io_state)
+char* osm_io_get_pull_str(uint16_t io_state)
 {
-    switch(io_state & IO_PULL_MASK)
+    switch(io_state & OSM_IO_PULL_MASK)
     {
         case GPIO_PUPD_PULLUP:   return IO_PULL_STR_UP;
         case GPIO_PUPD_PULLDOWN: return IO_PULL_STR_DOWN;
@@ -39,51 +39,51 @@ char* io_get_pull_str(uint16_t io_state)
 }
 
 
-bool io_is_special(uint16_t io_state)
+bool osm_io_is_special(uint16_t io_state)
 {
-    return (bool)(io_state & IO_ACTIVE_SPECIAL_MASK);
+    return (bool)(io_state & OSM_IO_ACTIVE_SPECIAL_MASK);
 }
 
 
 bool osm_decompose_uart_str(char             * str,
                         uint32_t         * speed,
                         uint8_t          * databits,
-                        osm_uart_parity_t    * parity,
-                        osm_uart_stop_bits_t * stop)
+                        osm_osm_uart_parity_t    * parity,
+                        osm_osm_uart_stop_bits_t * stop)
 {
     if (!str || !speed || !databits || !parity || !stop)
         return false;
     
     if (!isdigit((unsigned char)*str))
     {
-        log_error("Speed should be in decimal.");
+        osm_log_error("Speed should be in decimal.");
         return false;
     }
 
     char * pos = NULL;
     *speed = strtoul(str, &pos, 10);
-    pos = skip_space(++pos);
+    pos = osm_skip_space(++pos);
     if (!isdigit((unsigned char)*pos))
     {
-        log_error("Bits should be given.");
+        osm_log_error("Bits should be given.");
         return false;
     }
 
     *databits = (uint8_t)(*pos) - (uint8_t)'0';
-    pos = skip_space(++pos);
+    pos = osm_skip_space(++pos);
 
     switch(*pos)
     {
-        case 'N' : *parity = uart_parity_none; break;
-        case 'E' : *parity = uart_parity_even; break;
-        case 'O' : *parity = uart_parity_odd; break;
+        case 'N' : *parity = osm_uart_parity_none; break;
+        case 'E' : *parity = osm_uart_parity_even; break;
+        case 'O' : *parity = osm_uart_parity_odd; break;
         default:
         {
-            log_error("Unknown parity type");
+            osm_log_error("Unknown parity type");
             return false;
         }
     }
-    pos = skip_space(++pos);
+    pos = osm_skip_space(++pos);
 
     switch(*pos)
     {
@@ -93,18 +93,18 @@ bool osm_decompose_uart_str(char             * str,
             {
                 if (pos[1] != '.' || pos[2] != '5')
                 {
-                    log_error("Unknown stop bits count.");
+                    osm_log_error("Unknown stop bits count.");
                     return false;
                 }
-                else *stop = uart_stop_bits_1_5;
+                else *stop = osm_uart_stop_bits_1_5;
             }
-            else *stop = uart_stop_bits_1;
+            else *stop = osm_uart_stop_bits_1;
             break;
         }
-        case '2' : *stop = uart_stop_bits_2; break;
+        case '2' : *stop = osm_uart_stop_bits_2; break;
         default:
         {
-            log_error("Unknown stop bits count.");
+            osm_log_error("Unknown stop bits count.");
             return false;
         }
     }

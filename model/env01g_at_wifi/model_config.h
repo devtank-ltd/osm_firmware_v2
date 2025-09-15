@@ -27,7 +27,7 @@
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
 #define PERSIST_MODEL_VERSION       4
-#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
+#define PERSIST_VERSION             OSM_PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 #define CMD_LINELEN 256
 
@@ -63,35 +63,35 @@
 #define UART_3_SPEED        115200  /* COMMS */
 #define UART_4_SPEED        9600    /* RS485 */
 
-#define UART_1_PARITY       uart_parity_none
-#define UART_2_PARITY       uart_parity_none
-#define UART_3_PARITY       uart_parity_none
-#define UART_4_PARITY       uart_parity_none
+#define UART_1_PARITY       osm_uart_parity_none
+#define UART_2_PARITY       osm_uart_parity_none
+#define UART_3_PARITY       osm_uart_parity_none
+#define UART_4_PARITY       osm_uart_parity_none
 
 #define UART_1_DATABITS     8
 #define UART_2_DATABITS     8
 #define UART_3_DATABITS     8
 #define UART_4_DATABITS     8
 
-#define UART_1_STOP         uart_stop_bits_1
-#define UART_2_STOP         uart_stop_bits_1
-#define UART_3_STOP         uart_stop_bits_1
-#define UART_4_STOP         uart_stop_bits_1
+#define UART_1_STOP         osm_uart_stop_bits_1
+#define UART_2_STOP         osm_uart_stop_bits_1
+#define UART_3_STOP         osm_uart_stop_bits_1
+#define UART_4_STOP         osm_uart_stop_bits_1
 
-#define MODBUS_SPEED        UART_4_SPEED
-#define MODBUS_PARITY       UART_4_PARITY
-#define MODBUS_DATABITS     UART_4_DATABITS
-#define MODBUS_STOP         UART_4_STOP
+#define OSM_MODBUS_SPEED        UART_4_SPEED
+#define OSM_MODBUS_PARITY       UART_4_PARITY
+#define OSM_MODBUS_DATABITS     UART_4_DATABITS
+#define OSM_MODBUS_STOP         UART_4_STOP
 
 #define IOS_COUNT           4
 
 #define ADC_MAX_MV          3000 /* Set with stable voltage source */
 #define ADC_CC_COUNT        3
-#define CC_DEFAULT_TYPE     CC_TYPE_V
+#define CC_DEFAULT_TYPE     OSM_CC_TYPE_V
 
 #define JSON_BUF_SIZE  256
 
-#define COMMS_IDENTITY_DEFAULT  COMMS_TYPE_WIFI
+#define COMMS_IDENTITY_DEFAULT  OSM_COMMS_TYPE_WIFI
 
 
 typedef struct
@@ -99,15 +99,15 @@ typedef struct
     uint32_t                mins_interval;
     uint8_t                 _[12];
     /* 16 byte boundary ---- */
-    modbus_bus_t            modbus_bus;
+    osm_modbus_bus_t            modbus_bus;
     /* 16 byte boundary ---- */
-    comms_config_t          comms_config;
+    osm_comms_config_t          comms_config;
     /* 16 byte boundary ---- */
-    cc_config_t             cc_configs[ADC_CC_COUNT];
-    uint8_t                 __[16-(ADC_CC_COUNT * sizeof(cc_config_t)%16)];
+    osm_cc_config_t             cc_configs[ADC_CC_COUNT];
+    uint8_t                 __[16-(ADC_CC_COUNT * sizeof(osm_cc_config_t)%16)];
     /* 16 byte boundary ---- */
-    ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
-    uint8_t                 ___[16-(ADC_FTMA_COUNT * sizeof(ftma_config_t)%16)];
+    osm_ftma_config_t           ftma_configs[ADC_FTMA_COUNT];
+    uint8_t                 ___[16-(ADC_FTMA_COUNT * sizeof(osm_ftma_config_t)%16)];
     /* 16 byte boundary ---- */
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ____[16-((IOS_COUNT * sizeof(uint16_t))%16)];
@@ -115,40 +115,40 @@ typedef struct
     uint32_t                pulsecount_debounces_ms[W1_PULSE_COUNT];
     uint8_t                 _____[16-((W1_PULSE_COUNT * sizeof(uint32_t))%16)];
     /* 16 byte boundary ---- */
-    float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-    uint8_t                 ______[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    float                   sai_cal_coeffs[OSM_SAI_NUM_CAL_COEFFS];
+    uint8_t                 ______[16-((OSM_SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
     uint32_t                sai_no_buf;
     uint8_t                 _______[16-(sizeof(uint32_t)%16)];
     /* 7 x 16 bytes          */
-} persist_model_config_v1_t;
+} osm_persist_model_config_v1_t;
 
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, modbus_bus);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, comms_config);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, cc_configs);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ftma_configs);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, ios_state);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, pulsecount_debounces_ms);
-STATIC_ASSERT_16BYTE_ALIGNED(persist_model_config_v1_t, sai_cal_coeffs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, modbus_bus);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, comms_config);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, cc_configs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, ftma_configs);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, ios_state);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, pulsecount_debounces_ms);
+OSM_STATIC_ASSERT_16BYTE_ALIGNED(osm_persist_model_config_v1_t, sai_cal_coeffs);
 
-#define persist_model_config_t        persist_model_config_v1_t
+#define osm_persist_model_config_t        osm_persist_model_config_v1_t
 
-#define FTMA_RESISTOR_S_OHM                                 30
-#define FTMA_RESISTOR_0_OHM                                 50000
-#define FTMA_RESISTOR_G_OHM                                 13000
+#define OSM_FTMA_RESISTOR_S_OHM                                 30
+#define OSM_FTMA_RESISTOR_0_OHM                                 50000
+#define OSM_FTMA_RESISTOR_G_OHM                                 13000
 /*
  * Gain =          1
  *       ----------------------
  *       30 * ( 50k / 13k ) + 1
  */
-#define FTMA_HARDWARE_GAIN                                  (1.f / ((float)FTMA_RESISTOR_S_OHM * (((float)FTMA_RESISTOR_0_OHM / (float)FTMA_RESISTOR_G_OHM) + 1.f)))
+#define OSM_FTMA_HARDWARE_GAIN                                  (1.f / ((float)OSM_FTMA_RESISTOR_S_OHM * (((float)OSM_FTMA_RESISTOR_0_OHM / (float)OSM_FTMA_RESISTOR_G_OHM) + 1.f)))
 
-#define FTMA_DEFAULT_COEFF_A                                  0.f
-#define FTMA_DEFAULT_COEFF_B                                  FTMA_HARDWARE_GAIN
-#define FTMA_DEFAULT_COEFF_C                                  0.f
-#define FTMA_DEFAULT_COEFF_D                                  0.f
+#define OSM_FTMA_DEFAULT_COEFF_A                                  0.f
+#define OSM_FTMA_DEFAULT_COEFF_B                                  OSM_FTMA_HARDWARE_GAIN
+#define OSM_FTMA_DEFAULT_COEFF_C                                  0.f
+#define OSM_FTMA_DEFAULT_COEFF_D                                  0.f
 
-#define FTMA_DEFAULT_COEFFS                                 { FTMA_DEFAULT_COEFF_A , \
-                                                              FTMA_DEFAULT_COEFF_B , \
-                                                              FTMA_DEFAULT_COEFF_C , \
-                                                              FTMA_DEFAULT_COEFF_D   }
+#define OSM_FTMA_DEFAULT_COEFFS                                 { OSM_FTMA_DEFAULT_COEFF_A , \
+                                                              OSM_FTMA_DEFAULT_COEFF_B , \
+                                                              OSM_FTMA_DEFAULT_COEFF_C , \
+                                                              OSM_FTMA_DEFAULT_COEFF_D   }

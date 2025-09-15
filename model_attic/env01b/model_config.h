@@ -25,7 +25,7 @@
 #define PERSIST_RAW_MEASUREMENTS    ((const uint8_t*)PAGE2ADDR(FLASH_MEASUREMENTS_PAGE))
 
 #define PERSIST_MODEL_VERSION       4
-#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
+#define PERSIST_VERSION             OSM_PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 #define CMD_LINELEN 128
 
@@ -51,20 +51,20 @@
 #define UART_3_SPEED        115200  /* COMMS */
 #define UART_4_SPEED        9600    /* RS485 */
 
-#define UART_1_PARITY       uart_parity_none
-#define UART_2_PARITY       uart_parity_none
-#define UART_3_PARITY       uart_parity_none
-#define UART_4_PARITY       uart_parity_none
+#define UART_1_PARITY       osm_uart_parity_none
+#define UART_2_PARITY       osm_uart_parity_none
+#define UART_3_PARITY       osm_uart_parity_none
+#define UART_4_PARITY       osm_uart_parity_none
 
 #define UART_1_DATABITS     8
 #define UART_2_DATABITS     8
 #define UART_3_DATABITS     8
 #define UART_4_DATABITS     8
 
-#define UART_1_STOP         uart_stop_bits_1
-#define UART_2_STOP         uart_stop_bits_1
-#define UART_3_STOP         uart_stop_bits_1
-#define UART_4_STOP         uart_stop_bits_1
+#define UART_1_STOP         osm_uart_stop_bits_1
+#define UART_2_STOP         osm_uart_stop_bits_1
+#define UART_3_STOP         osm_uart_stop_bits_1
+#define UART_4_STOP         osm_uart_stop_bits_1
 
 #define MODBUS_SPEED        UART_4_SPEED
 #define MODBUS_PARITY       UART_4_PARITY
@@ -75,7 +75,7 @@
 
 #define ADC_MAX_MV          3300
 #define ADC_CC_COUNT        3
-#define CC_DEFAULT_TYPE     CC_TYPE_A
+#define CC_DEFAULT_TYPE     OSM_CC_TYPE_A
 
 
 typedef struct
@@ -83,12 +83,12 @@ typedef struct
     uint32_t                mins_interval;
     uint8_t                 _[12];
     /* 16 byte boundary ---- */
-    modbus_bus_t            modbus_bus;
+    osm_modbus_bus_t            modbus_bus;
     /* 16 byte boundary ---- */
-    comms_config_t          comms_config;
+    osm_comms_config_t          comms_config;
     /* 16 byte boundary ---- */
-    cc_config_t             cc_configs[ADC_CC_COUNT];
-    uint8_t                 __[16-(ADC_CC_COUNT * sizeof(cc_config_t)%16)];
+    osm_cc_config_t             cc_configs[ADC_CC_COUNT];
+    uint8_t                 __[16-(ADC_CC_COUNT * sizeof(osm_cc_config_t)%16)];
     /* 16 byte boundary ---- */
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 ___[16-((IOS_COUNT * sizeof(uint16_t))%16)];
@@ -96,13 +96,13 @@ typedef struct
     uint32_t                pulsecount_debounces_ms[W1_PULSE_COUNT];
     uint8_t                 ____[16-((W1_PULSE_COUNT * sizeof(uint32_t))%16)];
     /* 16 byte boundary ---- */
-    float                   sai_cal_coeffs[SAI_NUM_CAL_COEFFS];
-    uint8_t                 _____[16-((SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
+    float                   sai_cal_coeffs[OSM_SAI_NUM_CAL_COEFFS];
+    uint8_t                 _____[16-((OSM_SAI_NUM_CAL_COEFFS * sizeof(float))%16)];
     /* 16 byte boundary ---- */
     uint32_t                sai_no_buf;
     uint8_t                 ______[16-(sizeof(uint32_t)%16)];
     /* 16 byte boundary ---- */
     /* 7 x 16 bytes          */
-} persist_model_config_v4_t;
+} osm_persist_model_config_v4_t;
 
-#define persist_model_config_t        persist_model_config_v4_t
+#define persist_model_config_t        osm_persist_model_config_v4_t

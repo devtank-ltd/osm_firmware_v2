@@ -10,11 +10,11 @@
 #define comms_name          at_wifi
 #endif //comms_name
 
-#define COMMS_BUILD_TYPE    COMMS_TYPE_WIFI
+#define OSM_COMMS_BUILD_TYPE    OSM_COMMS_TYPE_WIFI
 
-#define AT_WIFI_MAX_SSID_LEN                    63
-#define AT_WIFI_MAX_PWD_LEN                     63
-#define AT_WIFI_MAX_COUNTRY_CODE_LEN            2
+#define OSM_AT_WIFI_MAX_SSID_LEN                    63
+#define OSM_AT_WIFI_MAX_PWD_LEN                     63
+#define OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN            2
 
 typedef struct
 {
@@ -23,47 +23,47 @@ typedef struct
     uint16_t    channel_count;
     uint8_t     _[11];
     /* 16 byte boundary ---- */
-    at_mqtt_config_t mqtt;
+    osm_at_mqtt_config_t mqtt;
     /* 16 byte boundary ---- */
     struct
     {
-        char        ssid[AT_WIFI_MAX_SSID_LEN + 1];
+        char        ssid[OSM_AT_WIFI_MAX_SSID_LEN + 1];
         /* 16 byte boundary ---- */
-        char        pwd[AT_WIFI_MAX_PWD_LEN + 1];
+        char        pwd[OSM_AT_WIFI_MAX_PWD_LEN + 1];
     } wifi;
     /* 16 byte boundary ---- */
-    char        country_code[AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
+    char        country_code[OSM_AT_WIFI_MAX_COUNTRY_CODE_LEN + 1];
     uint8_t     __[13];
     /* 16 byte boundary ---- */
-} __attribute__((__packed__)) at_wifi_config_t;
+} __attribute__((__packed__)) osm_at_wifi_config_t;
 
-_Static_assert(sizeof(at_wifi_config_t) <= sizeof(comms_config_t), "COMMS config too big.");
+_Static_assert(sizeof(osm_at_wifi_config_t) <= sizeof(osm_comms_config_t), "COMMS config too big.");
 
 
-uint16_t at_wifi_get_mtu(void);
+uint16_t osm_at_wifi_get_mtu(void);
 
-bool     at_wifi_send_ready(void);
-bool     at_wifi_send_str(char* str);
-bool     at_wifi_send_allowed(void);
-bool     at_wifi_send(char* data, uint16_t len);
+bool     osm_at_wifi_send_ready(void);
+bool     osm_at_wifi_send_str(char* str);
+bool     osm_at_wifi_send_allowed(void);
+bool     osm_at_wifi_send(char* data, uint16_t len);
 
-void     at_wifi_init(void);
-void     at_wifi_reset(void);
-void     at_wifi_process(char* message);
-bool     at_wifi_get_connected(void);
-void     at_wifi_loop_iteration(void);
+void     osm_at_wifi_init(void);
+void     osm_at_wifi_reset(void);
+void     osm_at_wifi_process(char* message);
+bool     osm_at_wifi_get_connected(void);
+void     osm_at_wifi_loop_iteration(void);
 
-bool     at_wifi_get_id(char* str, uint8_t len);
+bool     osm_at_wifi_get_id(char* str, uint8_t len);
 
-struct cmd_link_t* at_wifi_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t* osm_at_wifi_add_commands(struct osm_cmd_link_t* tail);
 
-void     at_wifi_power_down(void);
+void     osm_at_wifi_power_down(void);
 
-bool     at_wifi_persist_config_cmp(void* d0, void* d1);
-void     at_wifi_config_init(comms_config_t* comms_config);
+bool     osm_at_wifi_persist_config_cmp(void* d0, void* d1);
+void     osm_at_wifi_config_init(osm_comms_config_t* comms_config);
 
-command_response_t at_wifi_cmd_config_cb(char * args, cmd_ctx_t * ctx);
-command_response_t at_wifi_cmd_j_cfg_cb(char* args, cmd_ctx_t * ctx);
-command_response_t at_wifi_cmd_conn_cb(char* args, cmd_ctx_t * ctx);
+osm_command_response_t osm_at_wifi_cmd_config_cb(char * args, osm_cmd_ctx_t * ctx);
+osm_command_response_t osm_at_wifi_cmd_j_cfg_cb(char* args, osm_cmd_ctx_t * ctx);
+osm_command_response_t osm_at_wifi_cmd_conn_cb(char* args, osm_cmd_ctx_t * ctx);
 
-bool at_wifi_get_unix_time(int64_t * ts);
+bool osm_at_wifi_get_unix_time(int64_t * ts);

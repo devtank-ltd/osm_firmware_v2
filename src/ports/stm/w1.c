@@ -32,7 +32,7 @@
 
 typedef struct
 {
-    port_n_pins_t   pnp;
+    osm_port_n_pins_t   pnp;
     unsigned        io;
 } w1_ios_t;
 
@@ -45,14 +45,14 @@ static void _w1_stop_interrupt(void) {}
 
 static bool _w1_check_index(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_ios))
+    if (index >= OSM_ARRAY_SIZE(_w1_ios))
     {
-        log_error("W1 index references uninitialised memory.");
+        osm_log_error("W1 index references uninitialised memory.");
         return false;
     }
-    if (!io_is_w1_now(_w1_ios[index].io))
+    if (!osm_io_is_w1_now(_w1_ios[index].io))
     {
-        log_error("IO not set up for W1.");
+        osm_log_error("IO not set up for W1.");
         return false;
     }
     return true;
@@ -61,7 +61,7 @@ static bool _w1_check_index(uint8_t index)
 
 static void _w1_delay_us(uint64_t delay)
 {
-    timer_delay_us_64(delay);
+    osm_timer_delay_us_64(delay);
 }
 
 
@@ -155,7 +155,7 @@ static void _w1_send_bit(uint8_t index, int bit)
 }
 
 
-bool w1_reset(uint8_t index)
+bool osm_w1_reset(uint8_t index)
 {
     if (!_w1_check_index(index))
         return 0;
@@ -175,7 +175,7 @@ bool w1_reset(uint8_t index)
 }
 
 
-uint8_t w1_read_byte(uint8_t index)
+uint8_t osm_w1_read_byte(uint8_t index)
 {
     if (!_w1_check_index(index))
         return 0;
@@ -189,7 +189,7 @@ uint8_t w1_read_byte(uint8_t index)
 }
 
 
-void w1_send_byte(uint8_t index, uint8_t byte)
+void osm_w1_send_byte(uint8_t index, uint8_t byte)
 {
     if (!_w1_check_index(index))
         return;
@@ -209,18 +209,18 @@ void w1_send_byte(uint8_t index, uint8_t byte)
     _w1_set_direction(index, W1_DIRECTION_INPUT);
 }
 
-void w1_init(uint8_t index)
+void osm_w1_init(uint8_t index)
 {
-    if (index >= ARRAY_SIZE(_w1_ios))
+    if (index >= OSM_ARRAY_SIZE(_w1_ios))
     {
-        log_error("Tried to init w1 from uninitialised memory.");
+        osm_log_error("Tried to init w1 from uninitialised memory.");
         return;
     }
-    rcc_periph_clock_enable(PORT_TO_RCC(_w1_ios[index].pnp.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(_w1_ios[index].pnp.port));
 }
 
 
-void w1_enable(unsigned io, bool enabled)
+void osm_w1_enable(unsigned io, bool enabled)
 {
-    model_w1_pulse_enable_pupd(io, enabled);
+    osm_model_w1_pulse_enable_pupd(io, enabled);
 }

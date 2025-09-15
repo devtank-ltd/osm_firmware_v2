@@ -26,82 +26,82 @@
 #define FAKE_1W_SOCKET         "w1_socket"
 
 
-void peripherals_add_modbus(unsigned uart, unsigned* pid)
+void osm_peripherals_add_modbus(unsigned uart, unsigned* pid)
 {
-    peripherals_add_uart_tty_bridge(FAKE_MODBUS_TTY, uart);
-    *pid = linux_spawn(FAKE_MODBUS_SERVER);
+    osm_peripherals_add_uart_tty_bridge(FAKE_MODBUS_TTY, uart);
+    *pid = osm_linux_spawn(FAKE_MODBUS_SERVER);
 }
 
 
-void peripherals_add_hpm(unsigned uart, unsigned* pid)
+void osm_peripherals_add_hpm(unsigned uart, unsigned* pid)
 {
-    peripherals_add_uart_tty_bridge(FAKE_HPM_TTY, uart);
-    *pid = linux_spawn(FAKE_HPM_SERVER);
+    osm_peripherals_add_uart_tty_bridge(FAKE_HPM_TTY, uart);
+    *pid = osm_linux_spawn(FAKE_HPM_SERVER);
 }
 
-void peripherals_add_cmd(unsigned* pid)
+void osm_peripherals_add_cmd(unsigned* pid)
 {
-    *pid = linux_spawn(FAKE_CMD_SERVER);
+    *pid = osm_linux_spawn(FAKE_CMD_SERVER);
 }
 
-void peripherals_add_w1(unsigned timeout_us, unsigned* pid)
+void osm_peripherals_add_w1(unsigned timeout_us, unsigned* pid)
 {
-    char w1_socket[LOCATION_LEN];
-    concat_osm_location(w1_socket, LOCATION_LEN, FAKE_1W_SOCKET);
-    peripherals_add(FAKE_W1_SERVER, w1_socket, timeout_us, pid);
-}
-
-
-void peripherals_add_i2c(unsigned timeout_us, unsigned* pid)
-{
-    char i2c_socket[LOCATION_LEN];
-    concat_osm_location(i2c_socket, LOCATION_LEN, FAKE_I2C_SOCKET);
-    peripherals_add(FAKE_I2C_SERVER, i2c_socket, timeout_us, pid);
+    char w1_socket[OSM_LOCATION_LEN];
+    osm_concat_osm_location(w1_socket, OSM_LOCATION_LEN, FAKE_1W_SOCKET);
+    osm_peripherals_add(FAKE_W1_SERVER, w1_socket, timeout_us, pid);
 }
 
 
-void peripherals_add_example_rs232(unsigned uart, unsigned* pid)
+void osm_peripherals_add_i2c(unsigned timeout_us, unsigned* pid)
 {
-    peripherals_add_uart_tty_bridge(FAKE_EXAMPLE_RS232_TTY, uart);
-    *pid = linux_spawn(FAKE_EXAMPLE_RS232_SERVER);
+    char i2c_socket[OSM_LOCATION_LEN];
+    osm_concat_osm_location(i2c_socket, OSM_LOCATION_LEN, FAKE_I2C_SOCKET);
+    osm_peripherals_add(FAKE_I2C_SERVER, i2c_socket, timeout_us, pid);
 }
 
 
-bool peripherals_add(const char * app_rel_path, const char * ready_path, unsigned timeout_us, unsigned* pid)
+void osm_peripherals_add_example_rs232(unsigned uart, unsigned* pid)
+{
+    osm_peripherals_add_uart_tty_bridge(FAKE_EXAMPLE_RS232_TTY, uart);
+    *pid = osm_linux_spawn(FAKE_EXAMPLE_RS232_SERVER);
+}
+
+
+bool osm_peripherals_add(const char * app_rel_path, const char * ready_path, unsigned timeout_us, unsigned* pid)
 {
     unlink(ready_path);
-    *pid = linux_spawn(app_rel_path);
+    *pid = osm_linux_spawn(app_rel_path);
     char pid_path[PATH_MAX];
 
     snprintf(pid_path, PATH_MAX, "/proc/%u", *pid);
 
-    int64_t start_time = linux_get_current_us();
+    int64_t start_time = osm_linux_get_current_us();
 
-    while(linux_get_current_us() < (start_time + timeout_us))
+    while(osm_linux_get_current_us() < (start_time + timeout_us))
     {
         struct stat buf;
         if (stat(pid_path, &buf) != 0)
         {
-            linux_error("While, waiting for %s, PID:%u closed.", ready_path, *pid);
+            osm_linux_error("While, waiting for %s, PID:%u closed.", ready_path, *pid);
             return false;
         }
         if (stat(ready_path, &buf) == 0)
             return true;
         usleep(1000);
     }
-    linux_error("Wait of %u for %s failed", timeout_us, ready_path);
+    osm_linux_error("Wait of %u for %s failed", timeout_us, ready_path);
     return false;
 }
 
 
-void peripherals_close(unsigned* pids, unsigned count)
+void osm_peripherals_close(unsigned* pids, unsigned count)
 {
     for(unsigned n=0; n<count; n++)
     {
         unsigned pid = pids[n];
         if (pid)
         {
-            linux_port_debug("Killing child PID %u", pid);
+            osm_linux_port_debug("Killing child PID %u", pid);
             kill(pid, SIGINT);
             waitpid(pid, NULL, 0);
         }

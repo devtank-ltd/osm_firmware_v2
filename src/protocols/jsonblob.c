@@ -18,7 +18,7 @@
 static char _json_buf[JSON_BUF_SIZE];
 static unsigned _json_buf_pos = 0;
 
-static bool _protocol_append_meas(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
+static bool _protocol_append_meas(char * fmt, ...) OSM_PRINTF_FMT_CHECK(1, 2);
 
 
 static bool _protocol_append_v(char * fmt, va_list ap)
@@ -32,7 +32,7 @@ static bool _protocol_append_v(char * fmt, va_list ap)
 }
 
 
-static bool _protocol_append(char * fmt, ...) PRINTF_FMT_CHECK(1, 2);
+static bool _protocol_append(char * fmt, ...) OSM_PRINTF_FMT_CHECK(1, 2);
 static bool _protocol_append(char * fmt, ...)
 {
     va_list ap;
@@ -70,13 +70,13 @@ static bool _protocol_append_data_type_i64(const char * name, int64_t value)
 }
 
 
-static bool _protocol_append_value_type_float(const char * name, measurements_data_t* data)
+static bool _protocol_append_value_type_float(const char * name, osm_measurements_data_t* data)
 {
     if (data->num_samples == 1)
         return _protocol_append_data_type_float(name, data->value.value_f.sum);
     bool r = true;
     int32_t mean = data->value.value_f.sum / data->num_samples;
-    char tmp[MEASURE_NAME_NULLED_LEN + 4];
+    char tmp[OSM_MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_float(name, mean);
     snprintf(tmp, sizeof(tmp), "%s_min", name);
     r &= _protocol_append_data_type_float(tmp, data->value.value_f.min);
@@ -86,13 +86,13 @@ static bool _protocol_append_value_type_float(const char * name, measurements_da
 }
 
 
-static bool _protocol_append_value_type_i64(const char * name, measurements_data_t* data)
+static bool _protocol_append_value_type_i64(const char * name, osm_measurements_data_t* data)
 {
     if (data->num_samples == 1)
         return _protocol_append_data_type_i64(name, data->value.value_f.sum);
     bool r = true;
     int64_t mean = data->value.value_64.sum / data->num_samples;
-    char tmp[MEASURE_NAME_NULLED_LEN + 4];
+    char tmp[OSM_MEASURE_NAME_NULLED_LEN + 4];
     r &= _protocol_append_data_type_i64(name, mean);
     snprintf(tmp, sizeof(tmp), "%s_min", name);
     r &= _protocol_append_data_type_i64(tmp, data->value.value_64.min);
@@ -103,48 +103,48 @@ static bool _protocol_append_value_type_i64(const char * name, measurements_data
 
 
 
-static bool _protocol_append_value_type_str(const char * name, measurements_data_t* data)
+static bool _protocol_append_value_type_str(const char * name, osm_measurements_data_t* data)
 {
     return _protocol_append_meas("\"%s\":\"%s\"", name, data->value.value_s.str);
 }
 
 
-bool        protocol_append_measurement(measurements_def_t* def, measurements_data_t* data)
+bool        osm_protocol_append_measurement(osm_measurements_def_t* def, osm_measurements_data_t* data)
 {
     char * name = def->name;
     unsigned before_pos = _json_buf_pos;
     bool ret = false;
     switch(data->value_type)
     {
-        case MEASUREMENTS_VALUE_TYPE_I64:
+        case OSM_MEASUREMENTS_VALUE_TYPE_I64:
             ret = _protocol_append_value_type_i64(name, data);
             break;
-        case MEASUREMENTS_VALUE_TYPE_STR:
+        case OSM_MEASUREMENTS_VALUE_TYPE_STR:
             ret = _protocol_append_value_type_str(name, data);
             break;
-        case MEASUREMENTS_VALUE_TYPE_FLOAT:
+        case OSM_MEASUREMENTS_VALUE_TYPE_FLOAT:
             ret = _protocol_append_value_type_float(name, data );
             break;
         default:
-            log_error("Unknown type '%"PRIu8"'.", data->value_type);
+            osm_log_error("Unknown type '%"PRIu8"'.", data->value_type);
             break;
     }
     if (!ret)
     {
-        comms_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
+        osm_comms_debug("Early exit %u -> %u", _json_buf_pos, before_pos);
         _json_buf_pos = before_pos;
     }
     return ret;
 }
 
 
-bool protocol_send(void)
+bool osm_protocol_send(void)
 {
     unsigned available = JSON_BUF_SIZE - _json_buf_pos;
 
     if (available < JSON_CLOSE_SIZE)
     {
-        comms_debug("Space error");
+        osm_comms_debug("Space error");
         return false;
     }
 
@@ -152,25 +152,25 @@ bool protocol_send(void)
 
     _json_buf_pos += r;
 
-    comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
+    osm_comms_debug("_json_buf(%u) = %s", _json_buf_pos, _json_buf);
 
-    if (!comms_send(_json_buf, _json_buf_pos))
+    if (!osm_comms_send(_json_buf, _json_buf_pos))
     {
         return false;
     }
-    comms_debug("batch complete.");
+    osm_comms_debug("batch complete.");
     return true;
 }
 
 
-bool protocol_init(void)
+bool osm_protocol_init(void)
 {
     int64_t ts;
 
-    if (!comms_get_unix_time(&ts))
+    if (!osm_comms_get_unix_time(&ts))
         return false;
 
     _json_buf_pos = 0;
 
-    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, HUMAN_NAME_LEN, persist_get_human_name());
+    return _protocol_append("{\"UNIX\":%"PRIi64",\"NAME\":\"%.*s\",\"VALUES\":{", ts, OSM_HUMAN_NAME_LEN, osm_persist_get_human_name());
 }

@@ -104,7 +104,7 @@ uint8_t _crc8(const uint8_t* mem, uint8_t size)
 }
 
 
-#define htu21d_debug(...)  log_debug(DEBUG_TMP_HUM, "HTU21D: " __VA_ARGS__)
+#define htu21d_debug(...)  osm_log_debug(OSM_DEBUG_TMP_HUM, "HTU21D: " __VA_ARGS__)
 
 
 
@@ -124,8 +124,8 @@ static void _htu21d_send(htu21d_reg_t reg)
 {
     uint8_t reg8 = reg;
     htu21d_debug("Send command 0x%"PRIx8, reg8);
-    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
-        htu21d_init();
+    if (!osm_i2c_transfer_timeout(OSM_HTU21D_I2C, I2C_HTU21D_ADDR, &reg8, 1, NULL, 0, 100) && reg != HTU21D_SOFT_RESET)
+        osm_htu21d_init();
 }
 
 
@@ -133,10 +133,10 @@ static bool _htu21d_read_data(uint16_t *r, uint32_t timeout)
 {
     htu21d_debug("Try read");
     uint8_t d[3] = {0};
-    if (!i2c_transfer_timeout(HTU21D_I2C, I2C_HTU21D_ADDR, NULL, 0, d, 3, timeout))
+    if (!osm_i2c_transfer_timeout(OSM_HTU21D_I2C, I2C_HTU21D_ADDR, NULL, 0, d, 3, timeout))
     {
         htu21d_debug("Read timeout.");
-        htu21d_init();
+        osm_htu21d_init();
         return false;
     }
     return _htu21d_get_u16(d, r);
@@ -175,21 +175,21 @@ static bool _htu21d_humi_full(int32_t temp, uint16_t s_humi, int32_t* humi)
 }
 
 
-static measurements_sensor_state_t _htu21d_measurements_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _htu21d_measurements_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     *collection_time = MEASUREMENT_COLLECTION_MS;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
 static void _htu21d_iteration_loop_req_temp(void)
 {
     _htu21d_send(HTU21D_HOLD_TRIG_TEMP_MEAS);
-    _htu21d_reading.temperature.time_requested = get_since_boot_ms();
+    _htu21d_reading.temperature.time_requested = osm_get_since_boot_ms();
     _htu21d_reading.temperature.state = HTU21D_VALUE_STATE_REQ;
 }
 
@@ -197,46 +197,46 @@ static void _htu21d_iteration_loop_req_temp(void)
 static void _htu21d_iteration_loop_req_humi(void)
 {
     _htu21d_send(HTU21D_HOLD_TRIG_HUMI_MEAS);
-    _htu21d_reading.humidity.time_requested = get_since_boot_ms();
+    _htu21d_reading.humidity.time_requested = osm_get_since_boot_ms();
     _htu21d_reading.humidity.state = HTU21D_VALUE_STATE_REQ;
 }
 
 
-static measurements_sensor_state_t _htu21d_temp_measurements_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _htu21d_temp_measurements_init(char* name, bool in_isolation)
 {
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_TEMPERATURE)
     {
         htu21d_debug("Cannot queue temperature, already requested.");
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+        return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
     }
     _htu21d_state_machine.flags |= HTU21D_STATE_FLAG_TEMPERATURE;
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_HUMIDITY)
     {
         htu21d_debug("Queuing temperature.");
-        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+        return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
     }
     htu21d_debug("Requesting temperature.");
     _htu21d_iteration_loop_req_temp();
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _htu21d_humi_measurements_init(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _htu21d_humi_measurements_init(char* name, bool in_isolation)
 {
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_HUMIDITY)
     {
         htu21d_debug("Cannot queue humidity, already requested.");
-        return MEASUREMENTS_SENSOR_STATE_BUSY;
+        return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
     }
     _htu21d_state_machine.flags |= HTU21D_STATE_FLAG_HUMIDITY;
     if (_htu21d_state_machine.flags & HTU21D_STATE_FLAG_TEMPERATURE)
     {
         htu21d_debug("Queuing humidity.");
-        return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+        return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
     }
     htu21d_debug("Requesting humidity.");
     _htu21d_iteration_loop_req_temp();
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -286,14 +286,14 @@ static bool _htu21d_iteration_loop_collect_humi(void)
 }
 
 
-static measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
+static osm_measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     // Both
     if (flags & HTU21D_STATE_FLAG_TEMPERATURE && flags & HTU21D_STATE_FLAG_HUMIDITY)
     {
         if (_htu21d_reading.temperature.state == HTU21D_VALUE_STATE_REQ &&
-            since_boot_delta(get_since_boot_ms(), _htu21d_reading.temperature.time_requested) > HTU21D_PAUSE_TIME)
+            osm_since_boot_delta(osm_get_since_boot_ms(), _htu21d_reading.temperature.time_requested) > HTU21D_PAUSE_TIME)
         {
             if (!_htu21d_iteration_loop_collect_temp())
                 goto bad_temp_exit;
@@ -301,30 +301,30 @@ static measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
             _htu21d_iteration_loop_req_humi();
         }
         if (_htu21d_reading.humidity.state == HTU21D_VALUE_STATE_REQ &&
-            since_boot_delta(get_since_boot_ms(), _htu21d_reading.humidity.time_requested) > HTU21D_PAUSE_TIME)
+            osm_since_boot_delta(osm_get_since_boot_ms(), _htu21d_reading.humidity.time_requested) > HTU21D_PAUSE_TIME)
         {
             if (!_htu21d_iteration_loop_collect_humi())
                 goto bad_humi_exit;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
     // Temp
     else if (flags & HTU21D_STATE_FLAG_TEMPERATURE && !(flags & HTU21D_STATE_FLAG_HUMIDITY))
     {
         if (_htu21d_reading.temperature.state == HTU21D_VALUE_STATE_REQ &&
-            since_boot_delta(get_since_boot_ms(), _htu21d_reading.temperature.time_requested) > HTU21D_PAUSE_TIME)
+            osm_since_boot_delta(osm_get_since_boot_ms(), _htu21d_reading.temperature.time_requested) > HTU21D_PAUSE_TIME)
         {
             if (!_htu21d_iteration_loop_collect_temp())
                 goto bad_temp_exit;
             htu21d_debug("Collected temperature into buffer.");
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
     // Humi
     else if (flags & HTU21D_STATE_FLAG_HUMIDITY && !(flags & HTU21D_STATE_FLAG_TEMPERATURE))
     {
         if (_htu21d_reading.temperature.state == HTU21D_VALUE_STATE_REQ &&
-            since_boot_delta(get_since_boot_ms(), _htu21d_reading.temperature.time_requested) > HTU21D_PAUSE_TIME)
+            osm_since_boot_delta(osm_get_since_boot_ms(), _htu21d_reading.temperature.time_requested) > HTU21D_PAUSE_TIME)
         {
             if (!_htu21d_iteration_loop_collect_temp())
                 goto bad_temp_exit;
@@ -332,7 +332,7 @@ static measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
             _htu21d_iteration_loop_req_humi();
         }
         if (_htu21d_reading.humidity.state == HTU21D_VALUE_STATE_REQ &&
-            since_boot_delta(get_since_boot_ms(), _htu21d_reading.humidity.time_requested) > HTU21D_PAUSE_TIME)
+            osm_since_boot_delta(osm_get_since_boot_ms(), _htu21d_reading.humidity.time_requested) > HTU21D_PAUSE_TIME)
         {
             if (!_htu21d_iteration_loop_collect_humi())
             {
@@ -340,81 +340,81 @@ static measurements_sensor_state_t _htu21d_measurements_iteration(char* name)
                 goto bad_humi_exit;
             }
             _htu21d_reading.temperature.is_valid = false;
-            return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+            return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
         }
     }
-    return MEASUREMENTS_SENSOR_STATE_BUSY;
+    return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
 
 bad_temp_exit:
-    if (strncmp(name, MEASUREMENTS_HTU21D_TEMP, MEASURE_NAME_LEN) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_HTU21D_TEMP, OSM_MEASURE_NAME_LEN) == 0)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return MEASUREMENTS_SENSOR_STATE_BUSY;
+    return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
 bad_humi_exit:
-    if (strncmp(name, MEASUREMENTS_HTU21D_HUMI, MEASURE_NAME_LEN) == 0)
+    if (strncmp(name, OSM_MEASUREMENTS_HTU21D_HUMI, OSM_MEASURE_NAME_LEN) == 0)
     {
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    return MEASUREMENTS_SENSOR_STATE_BUSY;
+    return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
 }
 
 
-static measurements_sensor_state_t _htu21d_temp_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _htu21d_temp_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     _htu21d_state_machine.flags &= ~HTU21D_STATE_FLAG_TEMPERATURE;
     if (!value)
     {
         htu21d_debug("Handed NULL pointer.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!(flags & HTU21D_STATE_FLAG_TEMPERATURE))
     {
         htu21d_debug("Cannot get temperature, flag not set.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!_htu21d_reading.temperature.is_valid)
     {
         htu21d_debug("Temperature value is not valid (old).");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_f32 = to_f32_from_float((float)_htu21d_reading.temperature.value / 100.f);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    value->v_f32 = osm_to_f32_from_float((float)_htu21d_reading.temperature.value / 100.f);
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _htu21d_humi_measurements_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _htu21d_humi_measurements_get(char* name, osm_measurements_reading_t* value)
 {
     uint8_t flags = _htu21d_state_machine.flags;
     _htu21d_state_machine.flags &= ~HTU21D_STATE_FLAG_HUMIDITY;
     if (!value)
     {
         htu21d_debug("Handed NULL pointer.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!(flags & HTU21D_STATE_FLAG_HUMIDITY))
     {
         htu21d_debug("Cannot get humidity, flag not set.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (!_htu21d_reading.humidity.is_valid)
     {
         htu21d_debug("Temperature or humidity value is not valid (old).");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_f32 = to_f32_from_float((float)_htu21d_reading.humidity.value / 100.f);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    value->v_f32 = osm_to_f32_from_float((float)_htu21d_reading.humidity.value / 100.f);
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_value_type_t _htu21d_value_type(char* name)
+static osm_measurements_value_type_t _htu21d_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+    return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
-void htu21d_temp_inf_init(measurements_inf_t* inf)
+void osm_htu21d_temp_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _htu21d_measurements_collection_time;
     inf->init_cb            = _htu21d_temp_measurements_init;
@@ -424,7 +424,7 @@ void htu21d_temp_inf_init(measurements_inf_t* inf)
 }
 
 
-void htu21d_humi_inf_init(measurements_inf_t* inf)
+void osm_htu21d_humi_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _htu21d_measurements_collection_time;
     inf->init_cb            = _htu21d_humi_measurements_init;
@@ -434,7 +434,7 @@ void htu21d_humi_inf_init(measurements_inf_t* inf)
 }
 
 
-void htu21d_init(void)
+void osm_htu21d_init(void)
 {
     _htu21d_send(HTU21D_SOFT_RESET);
 }

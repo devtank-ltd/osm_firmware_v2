@@ -5,7 +5,7 @@
 #include <libopencm3/stm32/rcc.h>
 
 
-#define PORT_TO_RCC(_port_)   (RCC_GPIOA + ((_port_ - GPIO_PORT_A_BASE) / 0x400))
+#define OSM_PORT_TO_RCC(_port_)   (RCC_GPIOA + ((_port_ - GPIO_PORT_A_BASE) / 0x400))
 
 
 typedef struct
@@ -14,8 +14,8 @@ typedef struct
     enum rcc_periph_clken uart_clk;
     uint32_t              baud;
     uint8_t               databits:4;
-    uint8_t               parity:2 /*osm_uart_parity_t*/;
-    uint8_t               stop:2 /*osm_uart_stop_bits_t*/;
+    uint8_t               parity:2 /*osm_osm_uart_parity_t*/;
+    uint8_t               stop:2 /*osm_osm_uart_stop_bits_t*/;
     uint32_t              gpioport;
     uint16_t              tx_pin;
     uint16_t              rx_pin;
@@ -29,14 +29,14 @@ typedef struct
     uint8_t               priority;
     uint8_t               enabled;
     uint8_t               dma_req;
-} uart_channel_t;
+} osm_uart_channel_t;
 
 
 typedef struct
 {
     uint32_t port;
     uint32_t pins;
-} port_n_pins_t;
+} osm_port_n_pins_t;
 
 
 typedef struct
@@ -46,11 +46,11 @@ typedef struct
     uint32_t speed;
     uint32_t clock_megahz;
     uint32_t gpio_func;
-    port_n_pins_t port_n_pins;
-} i2c_def_t;
+    osm_port_n_pins_t port_n_pins;
+} osm_i2c_def_t;
 
 
 typedef struct
 {
     uint32_t mem_addr;
-} adc_setup_config_t;
+} osm_adc_setup_config_t;

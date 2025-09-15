@@ -4,10 +4,10 @@
 #include <osm/core/ring.h>
 
 
-#define CAN_COMM_MAX_DATA_SIZE                                      8
+#define OSM_CAN_COMM_MAX_DATA_SIZE                                      8
 
 
-typedef uint8_t can_comm_data_t[CAN_COMM_MAX_DATA_SIZE];
+typedef uint8_t can_comm_data_t[OSM_CAN_COMM_MAX_DATA_SIZE];
 
 typedef struct
 {
@@ -16,21 +16,21 @@ typedef struct
     bool                rtr;
     uint8_t             fmi;
     uint8_t             length;
-} can_comm_header_t;
+} osm_can_comm_header_t;
 
 typedef struct
 {
-    can_comm_header_t   header;
+    osm_can_comm_header_t   header;
     uint8_t*            data;
-} can_comm_packet_t;
+} osm_can_comm_packet_t;
 
 
-extern ring_buf_t can_comm_ring_data;
+extern osm_ring_buf_t can_comm_ring_data;
 
 
-void can_comm_init(void);
-void can_comm_send(can_comm_packet_t* pkt);
-void can_comm_enable(bool enabled);
+void osm_can_comm_init(void);
+void osm_can_comm_send(osm_can_comm_packet_t* pkt);
+void osm_can_comm_enable(bool enabled);
 
 /* To be implemented by caller.*/
-void can_drain_array(void) __attribute__((weak));
+void osm_can_drain_array(void) __attribute__((weak));

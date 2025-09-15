@@ -19,7 +19,7 @@
 #define ADCS_WAVE_TYPE_AC_STRING                "AC"
 #define ADCS_WAVE_TYPE_DC_STRING                "DC"
 
-#define ADCS_THEORETICAL_MIDPOINT               ((ADC_MAX_VAL + 1) / 2)
+#define ADCS_THEORETICAL_MIDPOINT               ((OSM_ADC_MAX_VAL + 1) / 2)
 #define ADCS_5A_AMPLITUDE                       96.54f
 #define ADCS_7_5A_AMPLITUDE                     144.81f
 #define ADCS_10A_AMPLITUDE                      193.09f
@@ -69,11 +69,11 @@ typedef struct
 } adcs_wave_t;
 
 
-static uint16_t*    _adcs_buf                           = NULL;         /* sizeof ADCS_NUM_SAMPLES */
+static uint16_t*    _adcs_buf                           = NULL;         /* sizeof OSM_ADCS_NUM_SAMPLES */
 static unsigned     _adcs_num_data                      = 0;
 static uint8_t      _adcs_num_active_channels           = 0;
-static adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
-static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* BAT_MON         */
+static osm_adcs_type_t  _adcs_active_channels[ADC_COUNT]    = {0};
+static adcs_wave_t  _adcs_waves[ADC_COUNT]              = { {.type=ADCS_WAVE_TYPE_DC, .dc={.amplitude=OSM_ADC_MAX_VAL,                    .random_amplitude=ADCS_WAVE_DC_DEFAULT_RANDOM_AMPLITUDE } } ,     /* OSM_BAT_MON         */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_5A_AMPLITUDE,   .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=0,        .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_1 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_7_5A_AMPLITUDE, .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=2*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_2 */
                                                             {.type=ADCS_WAVE_TYPE_AC, .ac={.amplitude=ADCS_10A_AMPLITUDE,  .amplitude_offset=ADCS_WAVE_AC_DEFAULT_AMPLITUDE_OFFSET, .phase=4*M_PI/3, .frequency=ADCS_WAVE_AC_DEFAULT_FREQUENCY} }, /* CURRENT_CLAMP_3 */
@@ -98,42 +98,42 @@ static uint16_t _adcs_calculate_ac_wave(adcs_wave_t* wave, float x)
 
 static void _adcs_fill_buffer(void)
 {
-    adc_debug("Active:");
+    osm_adc_debug("Active:");
     for (uint8_t i = 0; i < _adcs_num_active_channels; i++)
-        adc_debug("- %"PRIu8, _adcs_active_channels[i]);
+        osm_adc_debug("- %"PRIu8, _adcs_active_channels[i]);
 
     for (unsigned i = 0; i < _adcs_num_data; i++)
     {
-        adcs_type_t* chan = (adcs_type_t*)&_adcs_active_channels[i % _adcs_num_active_channels];
+        osm_adcs_type_t* chan = (osm_adcs_type_t*)&_adcs_active_channels[i % _adcs_num_active_channels];
         adcs_wave_t* wave;
         switch(*chan)
         {
-            case ADCS_TYPE_BAT:
+            case OSM_ADCS_TYPE_BAT:
                 wave = &_adcs_waves[ADC_INDEX_BAT_MON];
                 break;
-            case ADCS_TYPE_CC_CLAMP1:
+            case OSM_ADCS_TYPE_CC_CLAMP1:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_1];
                 break;
-            case ADCS_TYPE_CC_CLAMP2:
+            case OSM_ADCS_TYPE_CC_CLAMP2:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_2];
                 break;
-            case ADCS_TYPE_CC_CLAMP3:
+            case OSM_ADCS_TYPE_CC_CLAMP3:
                 wave = &_adcs_waves[ADC_INDEX_CURRENT_CLAMP_3];
                 break;
-            case ADCS_TYPE_FTMA1:
+            case OSM_ADCS_TYPE_FTMA1:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_1];
                 break;
-            case ADCS_TYPE_FTMA2:
+            case OSM_ADCS_TYPE_FTMA2:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_2];
                 break;
-            case ADCS_TYPE_FTMA3:
+            case OSM_ADCS_TYPE_FTMA3:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_3];
                 break;
-            case ADCS_TYPE_FTMA4:
+            case OSM_ADCS_TYPE_FTMA4:
                 wave = &_adcs_waves[ADC_INDEX_FTMA_4];
                 break;
             default:
-                adc_debug("Fake ADC failed, unknown channel type.");
+                osm_adc_debug("Fake ADC failed, unknown channel type.");
                 continue;
         }
         switch(wave->type)
@@ -145,7 +145,7 @@ static void _adcs_fill_buffer(void)
                 _adcs_buf[i] = _adcs_calculate_dc_wave(wave);
                 break;
             default:
-                adc_debug("Fake ADC failed, unknown wave type.");
+                osm_adc_debug("Fake ADC failed, unknown wave type.");
                 continue;
         }
     }
@@ -168,8 +168,8 @@ static bool _adcs_float_from_json(struct json_object * root, const char* name, f
 
 static bool _adcs_load_from_file(void)
 {
-    char osm_adc_loc[LOCATION_LEN];
-    concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    char osm_adc_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_adc_loc, OSM_LOCATION_LEN, ADCS_CONFIG_FILE);
     FILE* adcs_config_file = fopen(osm_adc_loc, "r");
     if (!adcs_config_file)
         return false;
@@ -244,47 +244,47 @@ static bool _adcs_load_from_file(void)
 
 static void _adcs_remove_file(void)
 {
-    char osm_adc_loc[LOCATION_LEN];
-    concat_osm_location(osm_adc_loc, LOCATION_LEN, ADCS_CONFIG_FILE);
+    char osm_adc_loc[OSM_LOCATION_LEN];
+    osm_concat_osm_location(osm_adc_loc, OSM_LOCATION_LEN, ADCS_CONFIG_FILE);
     remove(osm_adc_loc);
 }
 
 
-void linux_adc_generate(void)
+void osm_linux_adc_generate(void)
 {
     if (_adcs_load_from_file())
         _adcs_remove_file();
     _adcs_fill_buffer();
-    linux_usleep(900000); // FIXME: Set this to something closer to real use.
-    adcs_dma_complete();
+    osm_linux_usleep(900000); // FIXME: Set this to something closer to real use.
+    osm_adcs_dma_complete();
 }
 
 
-void platform_setup_adc(adc_setup_config_t* config)
+void osm_platform_setup_adc(osm_adc_setup_config_t* config)
 {
     _adcs_buf = (uint16_t*)config->mem_addr;
 }
 
 
-void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels)
+void osm_platform_adc_set_regular_sequence(uint8_t num_channels, osm_adcs_type_t* channels)
 {
     _adcs_num_active_channels = num_channels;
-    memcpy((adcs_type_t*)_adcs_active_channels, channels, sizeof(adcs_type_t) * num_channels);
+    memcpy((osm_adcs_type_t*)_adcs_active_channels, channels, sizeof(osm_adcs_type_t) * num_channels);
 }
 
 
-void platform_adc_start_conversion_regular(void)
+void osm_platform_adc_start_conversion_regular(void)
 {
-    linux_kick_adc_gen();
+    osm_linux_kick_adc_gen();
 }
 
 
-void platform_adc_power_off(void)
+void osm_platform_adc_power_off(void)
 {
 }
 
 
-void platform_adc_set_num_data(unsigned num_data)
+void osm_platform_adc_set_num_data(unsigned num_data)
 {
     _adcs_num_data = num_data;
 }

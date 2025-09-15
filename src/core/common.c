@@ -15,7 +15,7 @@
 #include "pinmap.h"
 
 
-bool msg_is(const char* ref, char* message)
+bool osm_msg_is(const char* ref, char* message)
 {
     return (bool)(strncmp(message, ref, strlen(ref)) == 0);
 }
@@ -23,7 +23,7 @@ bool msg_is(const char* ref, char* message)
 
 // Timing Functions
 
-uint32_t since_boot_delta(uint32_t newer, uint32_t older)
+uint32_t osm_since_boot_delta(uint32_t newer, uint32_t older)
 {
     if (newer < older)
         return (0xFFFFFFFF - older) + newer;
@@ -32,9 +32,9 @@ uint32_t since_boot_delta(uint32_t newer, uint32_t older)
 }
 
 
-void spin_blocking_ms(uint32_t ms)
+void osm_spin_blocking_ms(uint32_t ms)
 {
-    uint64_t num_loops = (platform_get_frequency() / 1e4) * ms;
+    uint64_t num_loops = (osm_platform_get_frequency() / 1e4) * ms;
     for (uint64_t i = 0; i < num_loops; i++)
     {
         asm("nop");
@@ -45,7 +45,7 @@ void spin_blocking_ms(uint32_t ms)
 // Maths Functions
 
 
-int32_t nlz(uint32_t x)
+int32_t osm_nlz(uint32_t x)
 {
     int32_t y, m, n;
 
@@ -75,17 +75,17 @@ int32_t nlz(uint32_t x)
 }
 
 
-int32_t ilog10(uint32_t x)
+int32_t osm_ilog10(uint32_t x)
 {
     int32_t y;
     static const uint32_t table2[11] = {0, 9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, 0xFFFFFFFF};
-    y = (19 * (31 - nlz(x))) >> 6;
+    y = (19 * (31 - osm_nlz(x))) >> 6;
     y = y + ((table2[y+1] - x) >> 31);
     return y;
 }
 
 
-uint64_t abs_i64(int64_t val)
+uint64_t osm_abs_i64(int64_t val)
 {
     if (val < 0)
         return -val;
@@ -93,7 +93,7 @@ uint64_t abs_i64(int64_t val)
 }
 
 
-bool u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2)
+bool osm_u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2)
 {
     if (arg_1 >= UINT64_MAX / arg_2)
     {
@@ -104,7 +104,7 @@ bool u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_
 }
 
 
-bool u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2)
+bool osm_u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2)
 {
     if (arg_1 >= UINT64_MAX - arg_2)
     {
@@ -115,58 +115,58 @@ bool u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_
 }
 
 
-bool main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
+bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
 {
-    uint32_t start_time = get_since_boot_ms();
-    uint32_t watch_dog_kick = IWDG_NORMAL_TIME_MS/2;
+    uint32_t start_time = osm_get_since_boot_ms();
+    uint32_t watch_dog_kick = OSM_IWDG_NORMAL_TIME_MS/2;
 
-    platform_watchdog_reset();
-    if (timeout > IWDG_NORMAL_TIME_MS)
-        log_debug(DEBUG_SYS, "Warning, timeout required watchdog kicking.");
+    osm_platform_watchdog_reset();
+    if (timeout > OSM_IWDG_NORMAL_TIME_MS)
+        osm_log_debug(OSM_DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 
     if (should_exit_db(userdata))
         return true;
 
-    while(since_boot_delta(get_since_boot_ms(), start_time) < timeout)
+    while(osm_since_boot_delta(osm_get_since_boot_ms(), start_time) < timeout)
     {
-        for(unsigned uart = 0; uart < UART_CHANNELS_COUNT; uart++)
+        for(unsigned uart = 0; uart < OSM_UART_CHANNELS_COUNT; uart++)
         {
             if (uart != CMD_UART)
-                uart_ring_in_drain(uart);
+                osm_uart_ring_in_drain(uart);
         }
 
-        uart_rings_out_drain();
-        platform_tight_loop();
+        osm_uart_rings_out_drain();
+        osm_platform_tight_loop();
         if (should_exit_db(userdata))
             return true;
-        if (since_boot_delta(get_since_boot_ms(), start_time) > watch_dog_kick)
+        if (osm_since_boot_delta(osm_get_since_boot_ms(), start_time) > watch_dog_kick)
         {
-            log_debug(DEBUG_SYS, "Kicking watchdog.");
-            platform_watchdog_reset();
-            watch_dog_kick += (IWDG_NORMAL_TIME_MS/2);
+            osm_log_debug(OSM_DEBUG_SYS, "Kicking watchdog.");
+            osm_platform_watchdog_reset();
+            watch_dog_kick += (OSM_IWDG_NORMAL_TIME_MS/2);
         }
     }
     return false;
 }
 
 
-int32_t to_f32_from_float(float in)
+int32_t osm_to_f32_from_float(float in)
 {
     return (int32_t)(in * 1000);
 }
 
 
-int32_t to_f32_from_double(double in)
+int32_t osm_to_f32_from_double(double in)
 {
     return (int32_t)(in * 1000);
 }
 
 
-struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds, unsigned num_cmds)
+struct osm_cmd_link_t* osm_add_commands(struct osm_cmd_link_t* tail, struct osm_cmd_link_t* cmds, unsigned num_cmds)
 {
     if (!tail | !cmds)
     {
-        log_error("Tail or command list is NULL");
+        osm_log_error("Tail or command list is NULL");
         return tail;
     }
     for (unsigned i = 0; i < num_cmds; i++)
@@ -178,7 +178,7 @@ struct cmd_link_t* add_commands(struct cmd_link_t* tail, struct cmd_link_t* cmds
 }
 
 
-uint16_t modbus_crc(uint8_t * buf, unsigned length)
+uint16_t osm_modbus_crc(uint8_t * buf, unsigned length)
 {
     uint16_t crc = 0xFFFF;
 
@@ -203,13 +203,13 @@ uint16_t modbus_crc(uint8_t * buf, unsigned length)
 
 static bool _log_out_drain_iteration(void* userdata)
 {
-    return !uart_ring_out_busy(CMD_UART);
+    return !osm_uart_ring_out_busy(CMD_UART);
 }
 
 
-bool log_out_drain(uint32_t timeout)
+bool osm_log_out_drain(uint32_t timeout)
 {
-    return main_loop_iterate_for(timeout, _log_out_drain_iteration, NULL);
+    return osm_main_loop_iterate_for(timeout, _log_out_drain_iteration, NULL);
 }
 
 
@@ -225,19 +225,19 @@ bool log_out_drain(uint32_t timeout)
     }
 
 
-void cmd_ctx_out(cmd_ctx_t* ctx, const char* fmt, ...)
+void osm_cmd_ctx_out(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 {
     __CMD_CTX_PRINT(ctx->output_cb)
 }
 
 
-void cmd_ctx_error(cmd_ctx_t* ctx, const char* fmt, ...)
+void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 {
     __CMD_CTX_PRINT(ctx->error_cb)
 }
 
 
-void cmd_ctx_flush(cmd_ctx_t* ctx)
+void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx)
 {
     if (ctx && ctx->flush_cb)
     {
@@ -246,7 +246,7 @@ void cmd_ctx_flush(cmd_ctx_t* ctx)
 }
 
 
-bool str_is_valid_ascii(char* str, unsigned max_len, bool required)
+bool osm_str_is_valid_ascii(char* str, unsigned max_len, bool required)
 {
     unsigned len = strnlen(str, max_len);
     if (required && !len)
@@ -263,14 +263,14 @@ bool str_is_valid_ascii(char* str, unsigned max_len, bool required)
     return true;
 }
 
-bool is_str(const char* ref, char* cmp, unsigned cmplen)
+bool osm_is_str(const char* ref, char* cmp, unsigned cmplen)
 {
     const unsigned reflen = strlen(ref);
     return (reflen == cmplen && strncmp(ref, cmp, reflen) == 0);
 }
 
 
-bool __attribute__((weak)) model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version)
+bool __attribute__((weak)) osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version)
 {
     return false;
 }

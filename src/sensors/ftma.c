@@ -14,16 +14,16 @@
 
 
 #define FTMA_DEFAULT_COLLECTION_TIME                        1000
-#define FTMA_NUM_SAMPLES                                    ADCS_NUM_SAMPLES
+#define FTMA_NUM_SAMPLES                                    OSM_ADCS_NUM_SAMPLES
 #define FTMA_TIMEOUT_MS                                     3000
 
 #define FTMA_MIN_MA                                         4.f
 #define FTMA_MAX_MA                                         20.f
 
-#define FTMA_DEFAULT_CONFIG                                 { { MEASUREMENTS_FTMA_1_NAME , FTMA_DEFAULT_COEFFS } , \
-                                                              { MEASUREMENTS_FTMA_2_NAME , FTMA_DEFAULT_COEFFS } , \
-                                                              { MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \
-                                                              { MEASUREMENTS_FTMA_4_NAME , FTMA_DEFAULT_COEFFS }   }
+#define FTMA_DEFAULT_CONFIG                                 { { OSM_MEASUREMENTS_FTMA_1_NAME , FTMA_DEFAULT_COEFFS } , \
+                                                              { OSM_MEASUREMENTS_FTMA_2_NAME , FTMA_DEFAULT_COEFFS } , \
+                                                              { OSM_MEASUREMENTS_FTMA_3_NAME , FTMA_DEFAULT_COEFFS } , \
+                                                              { OSM_MEASUREMENTS_FTMA_4_NAME , FTMA_DEFAULT_COEFFS }   }
 
 #define FTMA_LOWER_THRESHOLD                                2.f // mA
 
@@ -31,10 +31,10 @@
 
 
 
-static ftma_config_t*   _ftma_config                            = NULL;
+static osm_ftma_config_t*   _ftma_config                            = NULL;
 static uint32_t         _ftma_collection_time                   = FTMA_DEFAULT_COLLECTION_TIME;
-static adcs_type_t      _ftma_channels[ADC_FTMA_COUNT]          = ADC_TYPES_ALL_FTMA;
-static uint8_t          _ftma_num_channels                      = ARRAY_SIZE(_ftma_channels);
+static osm_adcs_type_t      _ftma_channels[ADC_FTMA_COUNT]          = ADC_TYPES_ALL_FTMA;
+static uint8_t          _ftma_num_channels                      = OSM_ARRAY_SIZE(_ftma_channels);
 static bool             _ftma_is_running                        = false;
 static uint32_t         _ftma_start_time                        = 0;
 static bool             _ftma_channel_inited[ADC_FTMA_COUNT]    = {false};
@@ -47,16 +47,16 @@ static void _ftma_auto_release(void)
         if (_ftma_channel_inited[i])
             return;
     }
-    adcs_release(ADCS_KEY_FTMA);
+    osm_adcs_release(OSM_ADCS_KEY_FTMA);
 }
 
 
-static measurements_sensor_state_t _ftma_get_collection_time(char* name, uint32_t* collection_time)
+static osm_measurements_sensor_state_t _ftma_get_collection_time(char* name, uint32_t* collection_time)
 {
     if (!collection_time)
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     *collection_time = _ftma_collection_time * 1.1;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -67,9 +67,9 @@ static bool _ftma_get_index_by_name(char* name, uint8_t* index)
 
     for (uint8_t i = 0; i < ADC_FTMA_COUNT; i++)
     {
-        ftma_config_t* conf = &_ftma_config[i];
+        osm_ftma_config_t* conf = &_ftma_config[i];
         uint8_t name_len = strlen(name);
-        uint8_t conf_name_len = strnlen(conf->name, MEASURE_NAME_NULLED_LEN);
+        uint8_t conf_name_len = strnlen(conf->name, OSM_MEASURE_NAME_NULLED_LEN);
         if (name_len != conf_name_len)
             continue;
         if (strncmp(conf->name, name, name_len) == 0)
@@ -88,7 +88,7 @@ static float _ftma_conv(uint32_t uV, uint8_t index)
     /* Coeffs: A + Bx + Cx^2 + Dx^3 + ... */
     float result = 0;
     float* coeffs = _ftma_config[index].coeffs;
-    for (uint8_t i = 0; i < FTMA_NUM_COEFFS; i++)
+    for (uint8_t i = 0; i < OSM_FTMA_NUM_COEFFS; i++)
     {
         float midval = 1.f;
         for (uint8_t j = 0; j < i; j++)
@@ -101,124 +101,124 @@ static float _ftma_conv(uint32_t uV, uint8_t index)
 }
 
 
-static measurements_sensor_state_t _ftma_begin(char* name, bool in_isolation)
+static osm_measurements_sensor_state_t _ftma_begin(char* name, bool in_isolation)
 {
     if (!name)
     {
-        adc_debug("Handed a NULL pointer.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("Handed a NULL pointer.");
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     uint8_t index;
     if (!_ftma_get_index_by_name(name, &index))
     {
-        adc_debug("'%s' does not match any FTMAs.", name);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("'%s' does not match any FTMAs.", name);
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (_ftma_channel_inited[index])
     {
-        adc_debug("FTMA is already inited.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("FTMA is already inited.");
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (_ftma_is_running)
     {
         /* Will return error if has been started for more then FTMA_TIMEOUT_MS, else return success. */
-        if (since_boot_delta(get_since_boot_ms(), _ftma_start_time) > FTMA_TIMEOUT_MS)
+        if (osm_since_boot_delta(osm_get_since_boot_ms(), _ftma_start_time) > FTMA_TIMEOUT_MS)
         {
-            adc_debug("ADC been running too long.");
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            osm_adc_debug("ADC been running too long.");
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         }
         goto good_exit;
     }
-    adcs_resp_t resp = adcs_begin(_ftma_channels, _ftma_num_channels, FTMA_NUM_SAMPLES, ADCS_KEY_FTMA);
+    osm_adcs_resp_t resp = osm_adcs_begin(_ftma_channels, _ftma_num_channels, FTMA_NUM_SAMPLES, OSM_ADCS_KEY_FTMA);
     switch (resp)
     {
-        case ADCS_RESP_FAIL:
+        case OSM_ADCS_RESP_FAIL:
         {
-            adc_debug("ADC begin failed.");
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            osm_adc_debug("ADC begin failed.");
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         }
-        case ADCS_RESP_WAIT:
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
-        case ADCS_RESP_OK:
+        case OSM_ADCS_RESP_WAIT:
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
+        case OSM_ADCS_RESP_OK:
             break;
         default:
         {
-            adc_debug("Unexpected response from ADC.");
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
+            osm_adc_debug("Unexpected response from ADC.");
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
         }
     }
     _ftma_is_running = true;
-    _ftma_start_time = get_since_boot_ms();
-    adc_debug("ADC successfully started for FTMA.");
+    _ftma_start_time = osm_get_since_boot_ms();
+    osm_adc_debug("ADC successfully started for FTMA.");
 good_exit:
     _ftma_channel_inited[index] = true;
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
-static measurements_sensor_state_t _ftma_get(char* name, measurements_reading_t* value)
+static osm_measurements_sensor_state_t _ftma_get(char* name, osm_measurements_reading_t* value)
 {
     if (!name || !value)
     {
-        adc_debug("Handed NULL pointer.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("Handed NULL pointer.");
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     uint8_t index;
     if (!_ftma_get_index_by_name(name, &index))
     {
-        adc_debug("Could not get index of '%s'.", name);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("Could not get index of '%s'.", name);
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     if (!_ftma_channel_inited[index])
     {
-        adc_debug("This channel is already init-ed.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("This channel is already init-ed.");
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
 
     uint32_t avg;
-    adcs_resp_t resp = adcs_collect_avg(&avg, _ftma_num_channels, FTMA_NUM_SAMPLES, index, ADCS_KEY_FTMA, &_ftma_collection_time);
+    osm_adcs_resp_t resp = osm_adcs_collect_avg(&avg, _ftma_num_channels, FTMA_NUM_SAMPLES, index, OSM_ADCS_KEY_FTMA, &_ftma_collection_time);
     switch(resp)
     {
-        case ADCS_RESP_FAIL:
+        case OSM_ADCS_RESP_FAIL:
             _ftma_is_running = false;
             _ftma_channel_inited[index] = false;
             _ftma_auto_release();
-            adc_debug("FTMA ADC failed on collecting AVG.");
-            return MEASUREMENTS_SENSOR_STATE_ERROR;
-        case ADCS_RESP_WAIT:
-            return MEASUREMENTS_SENSOR_STATE_BUSY;
-        case ADCS_RESP_OK:
+            osm_adc_debug("FTMA ADC failed on collecting AVG.");
+            return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
+        case OSM_ADCS_RESP_WAIT:
+            return OSM_MEASUREMENTS_SENSOR_STATE_BUSY;
+        case OSM_ADCS_RESP_OK:
             _ftma_is_running = false;
             _ftma_channel_inited[index] = false;
             _ftma_auto_release();
             break;
     }
-    adc_debug("FTMA Raw: %"PRIu32, avg);
+    osm_adc_debug("FTMA Raw: %"PRIu32, avg);
     uint32_t mV;
-    if (!adcs_to_mV(avg, &mV))
+    if (!osm_adcs_to_mV(avg, &mV))
     {
-        adc_debug("Unable to convert to mV.");
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("Unable to convert to mV.");
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    adc_debug("FTMA: %"PRIu32".%03"PRIu32"mV", mV/1000, mV%1000);
+    osm_adc_debug("FTMA: %"PRIu32".%03"PRIu32"mV", mV/1000, mV%1000);
     float fin_val = _ftma_conv(mV, index);
     if (fin_val < FTMA_LOWER_THRESHOLD)
     {
-        adc_debug("%s: %f < %f (short circuit?)", name, fin_val, FTMA_LOWER_THRESHOLD);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("%s: %f < %f (short circuit?)", name, fin_val, FTMA_LOWER_THRESHOLD);
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
     if (fin_val > FTMA_UPPER_THRESHOLD)
     {
-        adc_debug("%s: %f > %f", name, fin_val, FTMA_UPPER_THRESHOLD);
-        return MEASUREMENTS_SENSOR_STATE_ERROR;
+        osm_adc_debug("%s: %f > %f", name, fin_val, FTMA_UPPER_THRESHOLD);
+        return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     }
-    value->v_f32 = to_f32_from_float(fin_val);
-    return MEASUREMENTS_SENSOR_STATE_SUCCESS;
+    value->v_f32 = osm_to_f32_from_float(fin_val);
+    return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
 
@@ -228,9 +228,9 @@ static void _ftma_enable(char* name, bool enabled)
 }
 
 
-static measurements_value_type_t _ftma_value_type(char* name)
+static osm_measurements_value_type_t _ftma_value_type(char* name)
 {
-    return MEASUREMENTS_VALUE_TYPE_FLOAT;
+    return OSM_MEASUREMENTS_VALUE_TYPE_FLOAT;
 }
 
 
@@ -240,7 +240,7 @@ static bool _ftma_is_enabled(char* name)
 }
 
 
-void ftma_inf_init(measurements_inf_t* inf)
+void osm_ftma_inf_init(osm_measurements_inf_t* inf)
 {
     inf->collection_time_cb = _ftma_get_collection_time;
     inf->init_cb            = _ftma_begin;
@@ -250,38 +250,38 @@ void ftma_inf_init(measurements_inf_t* inf)
     inf->value_type_cb      = _ftma_value_type;
 }
 
-void ftma_setup_default_mem(ftma_config_t* memory, unsigned size)
+void osm_ftma_setup_default_mem(osm_ftma_config_t* memory, unsigned size)
 {
     uint8_t num_ftma_configs = ADC_FTMA_COUNT;
-    if (sizeof(ftma_config_t) * ADC_FTMA_COUNT > size)
+    if (sizeof(osm_ftma_config_t) * ADC_FTMA_COUNT > size)
     {
-        log_error("FTMA config is larger than the size of memory given.");
-        num_ftma_configs = size / sizeof(ftma_config_t);
+        osm_log_error("FTMA config is larger than the size of memory given.");
+        num_ftma_configs = size / sizeof(osm_ftma_config_t);
     }
-    float default_coeffs[FTMA_NUM_COEFFS] = FTMA_DEFAULT_COEFFS;
-    for (uint8_t i = 0; i < MIN(num_ftma_configs,9); i++)
+    float default_coeffs[OSM_FTMA_NUM_COEFFS] = OSM_FTMA_DEFAULT_COEFFS;
+    for (uint8_t i = 0; i < OSM_MIN(num_ftma_configs,9); i++)
     {
-        char name[MEASURE_NAME_NULLED_LEN+1];
-        snprintf(name, MEASURE_NAME_NULLED_LEN, "FTA%"PRIu8, i+1);
-        strncpy(memory[i].name, name, MEASURE_NAME_LEN);
-        memcpy(memory[i].coeffs, default_coeffs, sizeof(float) * FTMA_NUM_COEFFS);
+        char name[OSM_MEASURE_NAME_NULLED_LEN+1];
+        snprintf(name, OSM_MEASURE_NAME_NULLED_LEN, "FTA%"PRIu8, i+1);
+        strncpy(memory[i].name, name, OSM_MEASURE_NAME_LEN);
+        memcpy(memory[i].coeffs, default_coeffs, sizeof(float) * OSM_FTMA_NUM_COEFFS);
     }
 }
 
 
-void ftma_init(void)
+void osm_ftma_init(void)
 {
     _ftma_config = persist_data.model_config.ftma_configs;
     if (!_ftma_config)
     {
-        static ftma_config_t _default_conf[ADC_FTMA_COUNT];
-        ftma_setup_default_mem(_default_conf, sizeof(ftma_config_t) * ADC_FTMA_COUNT);
+        static osm_ftma_config_t _default_conf[ADC_FTMA_COUNT];
+        osm_ftma_setup_default_mem(_default_conf, sizeof(osm_ftma_config_t) * ADC_FTMA_COUNT);
         _ftma_config = _default_conf;
     }
 }
 
 
-static command_response_t _ftma_name_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _ftma_name_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     /* <original_name> <new_name>
      *      FTA1          TMP9
@@ -289,55 +289,55 @@ static command_response_t _ftma_name_cb(char* args, cmd_ctx_t * ctx)
     char* new_name = strchr(args, ' ');
     if (!new_name)
     {
-        cmd_ctx_out(ctx,"No new name given.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"No new name given.");
+        return OSM_COMMAND_RESP_ERR;
     }
     *new_name = '\0';
-    new_name = skip_space(++new_name);
+    new_name = osm_skip_space(++new_name);
     char* orig_name = args;
 
     uint8_t index;
     if (!_ftma_get_index_by_name(orig_name, &index))
     {
-        cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", orig_name);
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Failed to get OSM_FTMA with name '%s'.", orig_name);
+        return OSM_COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
-        cmd_ctx_out(ctx,"Index is out of range.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Index is out of range.");
+        return OSM_COMMAND_RESP_ERR;
     }
     unsigned new_len = strlen(new_name);
-    if (new_len > MEASURE_NAME_LEN)
+    if (new_len > OSM_MEASURE_NAME_LEN)
     {
-        cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", MEASURE_NAME_LEN, new_len);
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Max name length is %d, you tried length %u", OSM_MEASURE_NAME_LEN, new_len);
+        return OSM_COMMAND_RESP_ERR;
     }
     if (new_len == 0)
     {
-        cmd_ctx_out(ctx,"No new name given.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"No new name given.");
+        return OSM_COMMAND_RESP_ERR;
     }
     for (char* c = new_name; *c; c++)
     {
         if (!isascii(*c))
         {
-            cmd_ctx_out(ctx,"New name '%s' contains none ascii characters.", new_name);
-            return COMMAND_RESP_ERR;
+            osm_cmd_ctx_out(ctx,"New name '%s' contains none ascii characters.", new_name);
+            return OSM_COMMAND_RESP_ERR;
         }
     }
-    if (!measurements_rename(orig_name, new_name))
+    if (!osm_measurements_rename(orig_name, new_name))
     {
-        cmd_ctx_out(ctx,"Failed to rename the measurement.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Failed to rename the measurement.");
+        return OSM_COMMAND_RESP_ERR;
     }
-    strncpy(_ftma_config[index].name, new_name, MEASURE_NAME_LEN);
-    cmd_ctx_out(ctx,"Measurement '%s' is now called '%s'.", orig_name, new_name);
-    return COMMAND_RESP_OK;
+    strncpy(_ftma_config[index].name, new_name, OSM_MEASURE_NAME_LEN);
+    osm_cmd_ctx_out(ctx,"Measurement '%s' is now called '%s'.", orig_name, new_name);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _ftma_coeff_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     /* <name>  <A>  <B>    <C>      <D>
      *  FTA3  -2.1  13.2  -0.01  -0.00001
@@ -353,20 +353,20 @@ static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
     else
     {
         *p = '\0';
-        p = skip_space(++p);
+        p = osm_skip_space(++p);
     }
     uint8_t index;
     if (!_ftma_get_index_by_name(args, &index))
     {
-        cmd_ctx_out(ctx,"Failed to get FTMA with name '%s'.", args);
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Failed to get OSM_FTMA with name '%s'.", args);
+        return OSM_COMMAND_RESP_ERR;
     }
     if (index > ADC_FTMA_COUNT)
     {
-        cmd_ctx_out(ctx,"Index is out of range.");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Index is out of range.");
+        return OSM_COMMAND_RESP_ERR;
     }
-    ftma_config_t* ftma = &_ftma_config[index];
+    osm_ftma_config_t* ftma = &_ftma_config[index];
 
     if (!just_print)
     {
@@ -376,26 +376,26 @@ static command_response_t _ftma_coeff_cb(char* args, cmd_ctx_t * ctx)
         {
             p = np;
             unsigned i = 0;
-            if (FTMA_NUM_COEFFS > i)
+            if (OSM_FTMA_NUM_COEFFS > i)
                 ftma->coeffs[i++] = A;
-            for (; i < FTMA_NUM_COEFFS; i++)
+            for (; i < OSM_FTMA_NUM_COEFFS; i++)
                 ftma->coeffs[i] = strtod(p, &p);
-            cmd_ctx_out(ctx,"Set new coefficients for '%s'", args);
+            osm_cmd_ctx_out(ctx,"Set new coefficients for '%s'", args);
         }
     }
 
-    cmd_ctx_out(ctx,"Coeffients for '%s':", args);
-    for (unsigned i = 0; i < FTMA_NUM_COEFFS; i++)
+    osm_cmd_ctx_out(ctx,"Coeffients for '%s':", args);
+    for (unsigned i = 0; i < OSM_FTMA_NUM_COEFFS; i++)
     {
-        cmd_ctx_out(ctx,"%c: %.06f", 'A'+i, ftma->coeffs[i]);
+        osm_cmd_ctx_out(ctx,"%c: %.06f", 'A'+i, ftma->coeffs[i]);
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* ftma_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_ftma_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "ftma_name",   "Set the FTMA name",            _ftma_name_cb   , false , NULL },
-                                       { "ftma_coeff",  "Set the FTMA coefficients",    _ftma_coeff_cb  , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    static struct osm_cmd_link_t cmds[] = {{ "ftma_name",   "Set the OSM_FTMA name",            _ftma_name_cb   , false , NULL },
+                                       { "ftma_coeff",  "Set the OSM_FTMA coefficients",    _ftma_coeff_cb  , false , NULL }};
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

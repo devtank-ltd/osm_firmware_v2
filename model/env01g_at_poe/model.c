@@ -34,14 +34,14 @@
 #include <osm/sensors/ftma.h>
 
 
-uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
+uint8_t osm_model_stm_adcs_get_channel(osm_adcs_type_t adcs_type)
 {
     switch(adcs_type)
     {
-        case ADCS_TYPE_CC_CLAMP1: return ADC1_CHANNEL_CURRENT_CLAMP_1;
-        case ADCS_TYPE_CC_CLAMP2: return ADC1_CHANNEL_CURRENT_CLAMP_2;
-        case ADCS_TYPE_CC_CLAMP3: return ADC1_CHANNEL_CURRENT_CLAMP_3;
-        case ADCS_TYPE_FTMA1: return ADC1_CHANNEL_FTMA_1;
+        case OSM_ADCS_TYPE_CC_CLAMP1: return ADC1_CHANNEL_CURRENT_CLAMP_1;
+        case OSM_ADCS_TYPE_CC_CLAMP2: return ADC1_CHANNEL_CURRENT_CLAMP_2;
+        case OSM_ADCS_TYPE_CC_CLAMP3: return ADC1_CHANNEL_CURRENT_CLAMP_3;
+        case OSM_ADCS_TYPE_FTMA1: return ADC1_CHANNEL_FTMA_1;
         default:
             break;
     }
@@ -49,13 +49,13 @@ uint8_t model_stm_adcs_get_channel(adcs_type_t adcs_type)
 }
 
 
-void model_persist_config_model_init(persist_model_config_v1_t* model_config)
+void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
 {
     model_config->mins_interval = 5 * 1000 / 60; /* 5 seconds */
-    cc_setup_default_mem(model_config->cc_configs, sizeof(model_config->cc_configs));
-    ftma_setup_default_mem(model_config->ftma_configs, sizeof(model_config->ftma_configs));
-    at_poe_config_init(&model_config->comms_config);
-    model_config->sai_no_buf = SAI_DEFAULT_NO_BUF;
+    osm_cc_setup_default_mem(model_config->cc_configs, sizeof(model_config->cc_configs));
+    osm_ftma_setup_default_mem(model_config->ftma_configs, sizeof(model_config->ftma_configs));
+    osm_at_poe_config_init(&model_config->comms_config);
+    model_config->sai_no_buf = OSM_SAI_DEFAULT_NO_BUF;
     for (unsigned i = 0; i < W1_PULSE_COUNT; i++)
     {
         model_config->pulsecount_debounces_ms[i] = 50;
@@ -65,17 +65,17 @@ void model_persist_config_model_init(persist_model_config_v1_t* model_config)
 
 /* Return true  if different
  *        false if same      */
-bool model_persist_config_cmp(persist_model_config_v1_t* d0, persist_model_config_v1_t* d1)
+bool osm_model_persist_config_cmp(osm_persist_model_config_v1_t* d0, osm_persist_model_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
         d0->mins_interval == d1->mins_interval &&
-        !modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
-        !comms_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
-        memcmp(d0->cc_configs, d1->cc_configs, sizeof(cc_config_t) * ADC_CC_COUNT) == 0 &&
-        memcmp(d0->ftma_configs, d1->ftma_configs, sizeof(ftma_config_t) * ADC_FTMA_COUNT) == 0 &&
+        !osm_modbus_persist_config_cmp(&d0->modbus_bus, &d1->modbus_bus) &&
+        !osm_comms_persist_config_cmp(&d0->comms_config, &d1->comms_config) &&
+        memcmp(d0->cc_configs, d1->cc_configs, sizeof(osm_cc_config_t) * ADC_CC_COUNT) == 0 &&
+        memcmp(d0->ftma_configs, d1->ftma_configs, sizeof(osm_ftma_config_t) * ADC_FTMA_COUNT) == 0 &&
         memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) == 0 &&
-        memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * SAI_NUM_CAL_COEFFS) == 0 &&
+        memcmp(d0->sai_cal_coeffs, d1->sai_cal_coeffs, sizeof(float) * OSM_SAI_NUM_CAL_COEFFS) == 0 &&
         d0->sai_no_buf == d1->sai_no_buf &&
         memcmp(d0->pulsecount_debounces_ms, d1->pulsecount_debounces_ms, sizeof(uint32_t) * W1_PULSE_COUNT) == 0);
 }
@@ -86,40 +86,40 @@ static void _model_core_3v3_init(void)
 }
 
 
-void model_sensors_init(void)
+void osm_model_sensors_init(void)
 {
     _model_core_3v3_init();
-    timers_init();
-    pulsecount_init();
-    ios_init();
-    sai_init();
-    adcs_init();
-    cc_init();
-    ftma_init();
-    veml7700_init();
-    ds18b20_temp_init();
-    modbus_init();
-    senxx_init();
-    comms_direct_init();
+    osm_timers_init();
+    osm_pulsecount_init();
+    osm_ios_init();
+    osm_sai_init();
+    osm_adcs_init();
+    osm_cc_init();
+    osm_ftma_init();
+    osm_veml7700_init();
+    osm_ds18b20_temp_init();
+    osm_modbus_init();
+    osm_senxx_init();
+    osm_comms_direct_init();
 }
 
 
-void model_post_init(void)
+void osm_model_post_init(void)
 {
-    io_watch_init();
+    osm_io_watch_init();
 }
 
 
-bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring)
 {
     if (uart == EXT_UART)
     {
-        modbus_uart_ring_in_process(ring);
+        osm_modbus_uart_ring_in_process(ring);
         return true;
     }
     else if (uart == RS232_UART)
     {
-        example_rs232_process(ring);
+        osm_example_rs232_process(ring);
         return true;
     }
 
@@ -127,40 +127,40 @@ bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
 }
 
 
-bool model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_do_out_drain(unsigned uart, osm_ring_buf_t * ring)
 {
     if (uart == EXT_UART)
-        return modbus_uart_ring_do_out_drain(ring);
+        return osm_modbus_uart_ring_do_out_drain(ring);
     return true;
 }
 
 
-bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool osm_model_measurements_get_inf(osm_measurements_def_t * def, osm_measurements_data_t* data, osm_measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
     // Optional callbacks: get is not optional, neither is collection
     // time if init given are not optional.
-    memset(inf, 0, sizeof(measurements_inf_t));
+    memset(inf, 0, sizeof(osm_measurements_inf_t));
     switch(def->type)
     {
-        case FW_VERSION:    fw_version_inf_init(inf);  break;
-        case CONFIG_REVISION: persist_config_inf_init(inf);  break;
-        case MODBUS:        modbus_inf_init(inf);      break;
-        case CURRENT_CLAMP: cc_inf_init(inf);          break;
-        case W1_PROBE:      ds18b20_inf_init(inf);     break;
-        case PULSE_COUNT:   pulsecount_inf_init(inf);  break;
-        case LIGHT:         veml7700_inf_init(inf);    break;
-        case SOUND:         sai_inf_init(inf);         break;
-        case IO_READING:    ios_inf_init(inf);         break;
-        case SENxx:         senxx_inf_init(inf);       break;
-        case EXAMPLE_RS232:         example_rs232_inf_init(inf);       break;
-        case FTMA:          ftma_inf_init(inf);        break;
+        case OSM_FW_VERSION:    osm_fw_version_inf_init(inf);  break;
+        case OSM_CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
+        case OSM_MODBUS:        osm_modbus_inf_init(inf);      break;
+        case OSM_CURRENT_CLAMP: osm_cc_inf_init(inf);          break;
+        case OSM_W1_PROBE:      osm_ds18b20_inf_init(inf);     break;
+        case OSM_PULSE_COUNT:   osm_pulsecount_inf_init(inf);  break;
+        case OSM_LIGHT:         osm_veml7700_inf_init(inf);    break;
+        case OSM_SOUND:         osm_sai_inf_init(inf);         break;
+        case OSM_IO_READING:    osm_ios_inf_init(inf);         break;
+        case OSM_SENxx:         osm_senxx_inf_init(inf);       break;
+        case OSM_EXAMPLE_RS232:         osm_example_rs232_inf_init(inf);       break;
+        case OSM_FTMA:          osm_ftma_inf_init(inf);        break;
         default:
-            log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
+            osm_log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
     }
 
@@ -171,113 +171,114 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
 }
 
 
-void model_measurements_repopulate(void)
+void osm_model_measurements_repopulate(void)
 {
-    measurements_repop_indiv(MEASUREMENTS_FW_VERSION,         100,  1,  FW_VERSION      );
-    measurements_repop_indiv(MEASUREMENTS_CONFIG_REVISION,    100,  1,  CONFIG_REVISION );
-    measurements_repop_indiv(MEASUREMENTS_PM1_0_NAME,           0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_PM25_NAME,            0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_PM4_NAME,             0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_PM10_NAME,            0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_REL_HUM_NAME,         0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_VOC_NAME,             0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_NOX_NAME,             0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_CO2_NAME,             0,  5,  SENxx           );
-    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  CURRENT_CLAMP   );
-    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  CURRENT_CLAMP   );
-    measurements_repop_indiv(MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  CURRENT_CLAMP   );
-    measurements_repop_indiv(MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  W1_PROBE        );
-    measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  PULSE_COUNT     );
-    measurements_repop_indiv(MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  PULSE_COUNT     );
-    measurements_repop_indiv(MEASUREMENTS_LIGHT_NAME,           1,  1,  LIGHT           );
-    measurements_repop_indiv(MEASUREMENTS_SOUND_NAME,           1,  1,  SOUND           );
-    measurements_repop_indiv(MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  EXAMPLE_RS232           );
-    measurements_repop_indiv(MEASUREMENTS_FTMA_1_NAME,          1,  1,  FTMA            );}
-
-
-void model_cmds_add_all(struct cmd_link_t* tail)
-{
-    tail = cc_add_commands(tail);
-    tail = sai_add_commands(tail);
-    tail = persist_config_add_commands(tail);
-    tail = measurements_add_commands(tail);
-    tail = ios_add_commands(tail);
-    tail = modbus_add_commands(tail);
-    tail = sleep_add_commands(tail);
-    tail = update_add_commands(tail);
-    tail = comms_add_commands(tail);
-    tail = senxx_add_commands(tail);
-    tail = comms_direct_add_commands(tail);
-    tail = comms_identify_add_commands(tail);
-    tail = ftma_add_commands(tail);
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FW_VERSION,         100,  1,  OSM_FW_VERSION      );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CONFIG_REVISION,    100,  1,  OSM_CONFIG_REVISION );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM1_0_NAME,           0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM25_NAME,            0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM4_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PM10_NAME,            0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_REL_HUM_NAME,         0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_VOC_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_NOX_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CO2_NAME,             0,  5,  OSM_SENxx           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1,  OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1,  OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1,  OSM_CURRENT_CLAMP   );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  1,  OSM_W1_PROBE        );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1,  OSM_PULSE_COUNT     );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_LIGHT_NAME,           1,  1,  OSM_LIGHT           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_SOUND_NAME,           1,  1,  OSM_SOUND           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1,  OSM_EXAMPLE_RS232           );
+    osm_measurements_repop_indiv(OSM_MEASUREMENTS_FTMA_1_NAME,          1,  1,  OSM_FTMA            );
 }
 
 
-void model_w1_pulse_enable_pupd(unsigned io, bool enabled)
+void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
+{
+    tail = osm_cc_add_commands(tail);
+    tail = osm_sai_add_commands(tail);
+    tail = osm_persist_config_add_commands(tail);
+    tail = osm_measurements_add_commands(tail);
+    tail = osm_ios_add_commands(tail);
+    tail = osm_modbus_add_commands(tail);
+    tail = osm_sleep_add_commands(tail);
+    tail = osm_update_add_commands(tail);
+    tail = osm_comms_add_commands(tail);
+    tail = osm_senxx_add_commands(tail);
+    tail = osm_comms_direct_add_commands(tail);
+    tail = osm_comms_identify_add_commands(tail);
+    tail = osm_ftma_add_commands(tail);
+}
+
+
+void osm_model_w1_pulse_enable_pupd(unsigned io, bool enabled)
 {
 }
 
 
-bool model_can_io_be_special(unsigned io, io_special_t special)
+bool osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 {
     return ((      io == W1_PULSE_1_IO                      ||      io == W1_PULSE_2_IO                         ) &&
-            ( special == IO_SPECIAL_ONEWIRE                 || special == IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
-              special == IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
-              special == IO_SPECIAL_WATCH                   ));
+            ( special == OSM_IO_SPECIAL_ONEWIRE                 || special == OSM_IO_SPECIAL_PULSECOUNT_RISING_EDGE ||
+              special == OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE || special == OSM_IO_SPECIAL_PULSECOUNT_BOTH_EDGE   ||
+              special == OSM_IO_SPECIAL_WATCH                   ));
 }
 
 
-void model_uarts_setup(void)
+void osm_model_uarts_setup(void)
 {
     uint32_t reg32 = RCC_CCIPR & ~(RCC_CCIPR_LPUART1SEL_MASK << RCC_CCIPR_LPUART1SEL_SHIFT);
     RCC_CCIPR = reg32 | ((RCC_CCIPR_LPUART1SEL_HSI16 & RCC_CCIPR_LPUART1SEL_MASK) << RCC_CCIPR_LPUART1SEL_SHIFT);
 }
 
 
-void model_setup_pulse_pupd(uint8_t* pupd)
+void osm_model_setup_pulse_pupd(uint8_t* pupd)
 {
 }
 
 
-unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FW_VERSION,         100,  1, FW_VERSION      );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CONFIG_REVISION,    100,  1, CONFIG_REVISION );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM1_0_NAME,           0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM25_NAME,            0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM4_NAME,             0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PM10_NAME,            0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_REL_HUM_NAME,         0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_VOC_NAME,             0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_NOX_NAME,             0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CO2_NAME,             0,  5, SENxx           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, CURRENT_CLAMP   );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, CURRENT_CLAMP   );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, CURRENT_CLAMP   );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_W1_PROBE_NAME_1,      0,  1, W1_PROBE        );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1, PULSE_COUNT     );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, PULSE_COUNT     );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_LIGHT_NAME,           1,  1, LIGHT           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_SOUND_NAME,           1,  1, SOUND           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1, EXAMPLE_RS232           );
-    measurements_setup_default(&measurements_arr[pos++], MEASUREMENTS_FTMA_1_NAME,          1,  1,  FTMA           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,         100,  1, OSM_FW_VERSION      );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,    100,  1, OSM_CONFIG_REVISION );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM1_0_NAME,           0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM25_NAME,            0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM4_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PM10_NAME,            0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_REL_HUM_NAME,         0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SEN5x_TEMP_NAME,      0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_VOC_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_NOX_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CO2_NAME,             0,  5, OSM_SENxx           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_1_NAME, 0,  1, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_2_NAME, 0,  1, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CURRENT_CLAMP_3_NAME, 0,  1, OSM_CURRENT_CLAMP   );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_W1_PROBE_NAME_1,      0,  1, OSM_W1_PROBE        );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_1,   0,  1, OSM_PULSE_COUNT     );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_PULSE_COUNT_NAME_2,   0,  1, OSM_PULSE_COUNT     );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_LIGHT_NAME,           1,  1, OSM_LIGHT           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_SOUND_NAME,           1,  1, OSM_SOUND           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_EXAMPLE_RS232_NAME,           0,  1, OSM_EXAMPLE_RS232           );
+    osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FTMA_1_NAME,          1,  1,  OSM_FTMA           );
     return pos;
 }
 
 
-void model_main_loop_iterate(void)
+void osm_model_main_loop_iterate(void)
 {
-    comms_direct_loop_iterate();
-    senxx_iterate();
+    osm_comms_direct_loop_iterate();
+    osm_senxx_iterate();
 }
 
 
-bool __attribute__((weak)) bat_on_battery(bool* on_battery)
+bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
 {
     /* No battery fitted */
     return false;

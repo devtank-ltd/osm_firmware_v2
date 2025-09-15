@@ -7,43 +7,43 @@
 #include <osm/core/persist_config_header.h>
 
 
-uint32_t platform_get_frequency(void);
-uint32_t platform_get_hw_id(void);
+uint32_t osm_platform_get_frequency(void);
+uint32_t osm_platform_get_hw_id(void);
 
-void platform_init(void);
-void platform_start(void);
-void platform_watchdog_init(uint32_t ms);
-void platform_watchdog_reset(void);
-void platform_blink_led_init(void);
-void platform_blink_led_toggle(void);
-void platform_set_rs485_mode(bool driver_enable);
-void platform_reset_sys(void);
-void platform_hard_reset_sys(void);
-persist_storage_t* platform_get_raw_persist(void);
-persist_measurements_storage_t* platform_get_measurements_raw_persist(void);
-bool platform_persist_commit(persist_storage_t * persist_data, persist_measurements_storage_t* persist_measurements);
-void platform_persist_wipe(void);
-bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page);
-uintptr_t platform_get_fw_addr(unsigned fw_page_index);
-void platform_finish_fw(void);
-void platform_clear_flash_flags(void);
+void osm_platform_init(void);
+void osm_platform_start(void);
+void osm_platform_watchdog_init(uint32_t ms);
+void osm_platform_watchdog_reset(void);
+void osm_platform_blink_led_init(void);
+void osm_platform_blink_led_toggle(void);
+void osm_platform_set_rs485_mode(bool driver_enable);
+void osm_platform_reset_sys(void);
+void osm_platform_hard_reset_sys(void);
+osm_persist_storage_t* osm_platform_get_raw_persist(void);
+osm_persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void);
+bool osm_platform_persist_commit(osm_persist_storage_t * persist_data, osm_persist_measurements_storage_t* persist_measurements);
+void osm_platform_persist_wipe(void);
+bool osm_platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page);
+uintptr_t osm_platform_get_fw_addr(unsigned fw_page_index);
+void osm_platform_finish_fw(void);
+void osm_platform_clear_flash_flags(void);
 
-bool platform_running(void);
-void platform_deinit(void);
+bool osm_platform_running(void);
+void osm_platform_deinit(void);
 
-void platform_setup_adc(adc_setup_config_t* config);
-void platform_adc_set_regular_sequence(uint8_t num_channels, adcs_type_t* channels);
-void platform_adc_start_conversion_regular(void);
-void platform_adc_power_off(void);
-void platform_adc_set_num_data(unsigned num_data);
+void osm_platform_setup_adc(osm_adc_setup_config_t* config);
+void osm_platform_adc_set_regular_sequence(uint8_t num_channels, osm_adcs_type_t* channels);
+void osm_platform_adc_start_conversion_regular(void);
+void osm_platform_adc_power_off(void);
+void osm_platform_adc_set_num_data(unsigned num_data);
 
-void platform_hpm_enable(bool enable);
+void osm_platform_hpm_enable(bool enable);
 
-void platform_tight_loop(void);
-void platform_main_loop_iterate(void);
+void osm_platform_tight_loop(void);
+void osm_platform_main_loop_iterate(void);
 
-void platform_gpio_init(const port_n_pins_t * gpio_pin);
-void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull);
-void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on);
-bool platform_gpio_get(const port_n_pins_t * gpio_pin);
+void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin);
+void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull);
+void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on);
+bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin);
 

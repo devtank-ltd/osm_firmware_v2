@@ -28,17 +28,17 @@ static volatile uint16_t _sleep_compare = 0;
 
 void _sleep_before_sleep(void)
 {
-    adcs_off();
-    i2cs_deinit();
-    iwdg_set_period_ms(IWDG_MAX_TIME_MS);
+    osm_adcs_off();
+    osm_i2cs_deinit();
+    iwdg_set_period_ms(OSM_IWDG_MAX_TIME_MS);
 }
 
 
 void _sleep_on_wakeup(void)
 {
-    adcs_init();
-    i2cs_init();
-    iwdg_set_period_ms(IWDG_NORMAL_TIME_MS);
+    osm_adcs_init();
+    osm_i2cs_init();
+    iwdg_set_period_ms(OSM_IWDG_NORMAL_TIME_MS);
 }
 
 
@@ -55,11 +55,11 @@ static void _sleep_enter_sleep_mode(void)
 }
 
 
-void sleep_exit_sleep_mode(void)
+void osm_sleep_exit_sleep_mode(void)
 {
     if (!(SCB_SCR & SCB_SCR_SLEEPONEXIT))
     {
-        sleep_debug("Not sleeping.");
+        osm_sleep_debug("Not sleeping.");
         return;
     }
     /* Remove SLEEPONEXIT to bring the device out of sleep mode. */
@@ -99,26 +99,26 @@ static void _sleep_setup_tim(uint16_t count, uint32_t prescaler)
 }
 
 
-bool sleep_for_ms(uint32_t ms)
+bool osm_sleep_for_ms(uint32_t ms)
 {
-    if (ms > SLEEP_MAX_TIME_MS)
-        ms = SLEEP_MAX_TIME_MS;
-    else if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+    if (ms > OSM_SLEEP_MAX_TIME_MS)
+        ms = OSM_SLEEP_MAX_TIME_MS;
+    else if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
-    uint32_t    before_time = get_since_boot_ms();
-    sleep_debug("Sleeping for %"PRIu32"ms.", ms);
-    while (uart_rings_out_busy())
+    uint32_t    before_time = osm_get_since_boot_ms();
+    osm_sleep_debug("Sleeping for %"PRIu32"ms.", ms);
+    while (osm_uart_rings_out_busy())
     {
-        uart_rings_out_drain();
-        uart_ring_in_drain(COMMS_UART);
+        osm_uart_rings_out_drain();
+        osm_uart_ring_in_drain(COMMS_UART);
     }
-    uint32_t    time_passed = since_boot_delta(get_since_boot_ms(), before_time);
+    uint32_t    time_passed = osm_since_boot_delta(osm_get_since_boot_ms(), before_time);
     if (ms <= time_passed)
         return false;
     ms -= time_passed;
-    if (ms < SLEEP_MIN_SLEEP_TIME_MS)
+    if (ms < OSM_SLEEP_MIN_SLEEP_TIME_MS)
         return false;
-    ms -= SLEEP_MIN_SLEEP_TIME_MS;
+    ms -= OSM_SLEEP_MIN_SLEEP_TIME_MS;
     /* Must sort out count and prescale depending on size of count */
     uint32_t    div_shift   = 0;
     uint64_t    count       = ms;
@@ -142,7 +142,7 @@ turn_on_sleep:
     _sleep_setup_tim(count16, (div_shift << LPTIM_CFGR_PRESC_SHIFT));
     _sleep_enter_sleep_mode();
     _sleep_on_wakeup();
-    sleep_debug("Woken back up after %"PRIu32"ms.", since_boot_delta(get_since_boot_ms(), before_time));
+    osm_sleep_debug("Woken back up after %"PRIu32"ms.", osm_since_boot_delta(osm_get_since_boot_ms(), before_time));
     return true;
 }
 
@@ -153,45 +153,45 @@ void lptim1_isr(void)
     if (lptimer_get_flag(LPTIM1, LPTIM_ICR_CMPMCF))
     {
         lptimer_clear_flag(LPTIM1, LPTIM_ICR_CMPMCF);
-        sleep_exit_sleep_mode();
+        osm_sleep_exit_sleep_mode();
     }
 }
 
 
-static command_response_t _sleep_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sleep_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     char* p;
     uint32_t sleep_ms = strtoul(args, &p, 10);
     if (p == args)
     {
-        cmd_ctx_out(ctx, "<TIME(MS)>");
-        return COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx, "<TIME(MS)>");
+        return OSM_COMMAND_RESP_ERR;
     }
-    cmd_ctx_out(ctx, "Sleeping for %"PRIu32"ms.", sleep_ms);
-    sleep_for_ms(sleep_ms);
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx, "Sleeping for %"PRIu32"ms.", sleep_ms);
+    osm_sleep_for_ms(sleep_ms);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _sleep_power_mode_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _sleep_power_mode_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    measurements_power_mode_t mode;
+    osm_measurements_power_mode_t mode;
     if (args[0] == 'A')
-        mode = MEASUREMENTS_POWER_MODE_AUTO;
+        mode = OSM_MEASUREMENTS_POWER_MODE_AUTO;
     else if (args[0] == 'B')
-        mode = MEASUREMENTS_POWER_MODE_BATTERY;
+        mode = OSM_MEASUREMENTS_POWER_MODE_BATTERY;
     else if (args[0] == 'P')
-        mode = MEASUREMENTS_POWER_MODE_PLUGGED;
+        mode = OSM_MEASUREMENTS_POWER_MODE_PLUGGED;
     else
-        return COMMAND_RESP_ERR;
-    measurements_power_mode(mode);
-    return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_ERR;
+    osm_measurements_power_mode(mode);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* sleep_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_sleep_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
+    static struct osm_cmd_link_t cmds[] = {{ "sleep",        "Sleep",                    _sleep_cb                      , false , NULL },
                                        { "power_mode",   "Power mode setting",       _sleep_power_mode_cb           , false , NULL }};
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

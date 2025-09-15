@@ -84,8 +84,8 @@ struct
     rak3172_state_t     state;
     uint32_t            cmd_last_sent;
     uint32_t            sleep_from_time;
-    port_n_pins_t       reset_pin;
-    port_n_pins_t       boot_pin;
+    osm_port_n_pins_t       reset_pin;
+    osm_port_n_pins_t       boot_pin;
     bool                config_is_valid;
     char                last_sent_msg[RAK3172_MAX_CMD_LEN+1];
     uint8_t             err_code;
@@ -125,8 +125,8 @@ char _rak3172_init_msgs[][RAK3172_INIT_MSG_LEN] =
 static void _rak3172_comms_led_set(bool on)
 {
 #ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
-    platform_gpio_set(&comms_led, !on);
+    const osm_port_n_pins_t comms_led = COMMS_LED;
+    osm_platform_gpio_set(&comms_led, !on);
 #endif // COMMS_LED
 }
 
@@ -140,7 +140,7 @@ static uint8_t _rak3172_get_port(void)
 static bool _rak3172_write(char* cmd)
 {
     unsigned len = strnlen(cmd, RAK3172_MAX_CMD_LEN);
-    return (bool)uart_ring_out(COMMS_UART, cmd, len);
+    return (bool)osm_uart_ring_out(COMMS_UART, cmd, len);
 }
 
 
@@ -151,10 +151,10 @@ static int _rak3172_printf(char* fmt, ...)
     va_start(args, fmt);
     int len = vsnprintf(buf, RAK3172_MAX_CMD_LEN - 3, fmt, args);
     va_end(args);
-    _rak3172_ctx.cmd_last_sent = get_since_boot_ms();
+    _rak3172_ctx.cmd_last_sent = osm_get_since_boot_ms();
     memcpy(_rak3172_ctx.last_sent_msg, buf, len);
     _rak3172_ctx.last_sent_msg[len] = 0;
-    comms_debug(" << %s", buf);
+    osm_comms_debug(" << %s", buf);
     buf[len] = '\r';
     buf[len+1] = '\n';
     buf[len+2] = 0;
@@ -186,9 +186,9 @@ static void _rak3172_reset_line_set(bool enabled)
 static void _rak3172_hard_reset(void)
 {
     _rak3172_comms_led_set(false);
-    comms_debug("HARD RESET");
+    osm_comms_debug("HARD RESET");
     _rak3172_reset_line_set(false);
-    spin_blocking_ms(1);
+    osm_spin_blocking_ms(1);
     _rak3172_reset_line_set(true);
 }
 
@@ -201,9 +201,9 @@ static void _rak3172_reset_now(void)
 
 static void _rak3172_process_state_off(char* msg)
 {
-    if (_rak3172_ctx.config_is_valid && msg_is(RAK3172_MSG_INIT, msg))
+    if (_rak3172_ctx.config_is_valid && osm_msg_is(RAK3172_MSG_INIT, msg))
     {
-        comms_debug("READ INIT MESSAGE");
+        osm_comms_debug("READ INIT MESSAGE");
         _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_BOOT;
         _rak3172_ctx.init_count = 0;
         _rak3172_printf((char*)_rak3172_init_msgs[0]);
@@ -213,9 +213,9 @@ static void _rak3172_process_state_off(char* msg)
 
 static void _rak3172_process_state_init_wait_boot(char* msg)
 {
-    if (msg_is(RAK3172_MSG_INIT, msg))
+    if (osm_msg_is(RAK3172_MSG_INIT, msg))
     {
-        comms_debug("READ RE-BOOT MESSAGE");
+        osm_comms_debug("READ RE-BOOT MESSAGE");
         _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_OK;
         _rak3172_printf((char*)_rak3172_init_msgs[++_rak3172_ctx.init_count]);
     }
@@ -224,9 +224,9 @@ static void _rak3172_process_state_init_wait_boot(char* msg)
 
 static void _rak3172_process_state_init_wait_replay(char* msg)
 {
-    if (msg_is(_rak3172_init_msgs[_rak3172_ctx.init_count], msg))
+    if (osm_msg_is(_rak3172_init_msgs[_rak3172_ctx.init_count], msg))
     {
-        comms_debug("READ INIT REPLAY");
+        osm_comms_debug("READ INIT REPLAY");
         _rak3172_ctx.state = RAK3172_STATE_INIT_WAIT_OK;
     }
 }
@@ -244,7 +244,7 @@ static bool _rak3172_msg_is_replay(char* msg)
 {
     unsigned len = strnlen(msg, RAK3172_MAX_CMD_LEN);
     unsigned sent_len = strnlen(_rak3172_ctx.last_sent_msg, RAK3172_MAX_CMD_LEN);
-    comms_debug("LAST SENT: %s", _rak3172_ctx.last_sent_msg);
+    osm_comms_debug("LAST SENT: %s", _rak3172_ctx.last_sent_msg);
     if (len != sent_len)
         return false;
     return (strncmp(msg, _rak3172_ctx.last_sent_msg, len) == 0);
@@ -255,18 +255,18 @@ static void _rak3172_process_state_init_wait_ok(char* msg)
 {
     /* Second command now reboots the device by the looks, so allow that
      * to pass with init message. */
-    if ((_rak3172_ctx.init_count == 1 && msg_is(RAK3172_MSG_INIT, msg)) ||
-        msg_is(RAK3172_MSG_OK, msg))
+    if ((_rak3172_ctx.init_count == 1 && osm_msg_is(RAK3172_MSG_INIT, msg)) ||
+        osm_msg_is(RAK3172_MSG_OK, msg))
     {
-        comms_debug("READ INIT OK");
-        if (ARRAY_SIZE(_rak3172_init_msgs) == _rak3172_ctx.init_count + 1)
+        osm_comms_debug("READ INIT OK");
+        if (OSM_ARRAY_SIZE(_rak3172_init_msgs) == _rak3172_ctx.init_count + 1)
         {
-            comms_debug("FINISHED INIT");
+            osm_comms_debug("FINISHED INIT");
             _rak3172_ctx.state = RAK3172_STATE_JOIN_WAIT_REPLAY;
             _rak3172_send_join();
             return;
         }
-        comms_debug("SENDING NEXT INIT");
+        osm_comms_debug("SENDING NEXT INIT");
 
         /* ATE is 3rd command so first 3 commands wont have replay */
         if (_rak3172_ctx.init_count > 2)
@@ -286,21 +286,21 @@ static void _rak3172_process_state_join_wait_replay(char* msg)
 {
     if (_rak3172_msg_is_replay(msg))
     {
-        comms_debug("READ JOIN REPLAY");
+        osm_comms_debug("READ JOIN REPLAY");
         _rak3172_ctx.state = RAK3172_STATE_JOIN_WAIT_OK;
     }
     else
     {
-        comms_debug("UNKNOWN: %s", msg);
+        osm_comms_debug("UNKNOWN: %s", msg);
     }
 }
 
 
 static void _rak3172_process_state_join_wait_ok(char* msg)
 {
-    if (msg_is(RAK3172_MSG_OK, msg))
+    if (osm_msg_is(RAK3172_MSG_OK, msg))
     {
-        comms_debug("READ JOIN OK");
+        osm_comms_debug("READ JOIN OK");
         _rak3172_ctx.state = RAK3172_STATE_JOIN_WAIT_JOIN;
     }
 }
@@ -308,17 +308,17 @@ static void _rak3172_process_state_join_wait_ok(char* msg)
 
 static void _rak3172_process_state_join_wait_join(char* msg)
 {
-    if (msg_is(RAK3172_MSG_JOINED, msg))
+    if (osm_msg_is(RAK3172_MSG_JOINED, msg))
     {
-        comms_debug("READ JOIN");
+        osm_comms_debug("READ JOIN");
         _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
         _rak3172_comms_led_set(true);
     }
-    else if (msg_is(RAK3172_MSG_JOIN_FAILED, msg))
+    else if (osm_msg_is(RAK3172_MSG_JOIN_FAILED, msg))
     {
-        comms_debug("READ JOIN FAILED");
-        rak3172_reset();
+        osm_comms_debug("READ JOIN FAILED");
+        osm_rak3172_reset();
     }
 }
 
@@ -327,7 +327,7 @@ static void _rak3172_process_state_send_replay(char* msg)
 {
     if (_rak3172_msg_is_replay(msg))
     {
-        comms_debug("READ SEND REPLAY");
+        osm_comms_debug("READ SEND REPLAY");
         _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_OK;
     }
 }
@@ -335,9 +335,9 @@ static void _rak3172_process_state_send_replay(char* msg)
 
 static void _rak3172_process_state_send_ok(char* msg)
 {
-    if (msg_is(RAK3172_MSG_OK, msg))
+    if (osm_msg_is(RAK3172_MSG_OK, msg))
     {
-        comms_debug("READ SEND OKAY");
+        osm_comms_debug("READ SEND OKAY");
         _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_ACK;
     }
 }
@@ -345,41 +345,41 @@ static void _rak3172_process_state_send_ok(char* msg)
 
 static void _rak3172_process_state_send_ack(char* msg)
 {
-    if (msg_is(RAK3172_MSG_ACK, msg))
+    if (osm_msg_is(RAK3172_MSG_ACK, msg))
     {
-        comms_debug("READ SEND ACK");
+        osm_comms_debug("READ SEND ACK");
         _rak3172_ctx.reset_count = 0;
         _rak3172_ctx.state = RAK3172_STATE_IDLE;
-        on_protocol_sent_ack(true);
+        osm_on_protocol_sent_ack(true);
         _rak3172_comms_led_set(true);
         return;
     }
-    if (msg_is(RAK3172_MSG_NACK, msg))
+    if (osm_msg_is(RAK3172_MSG_NACK, msg))
     {
-        comms_debug("READ NO SEND ACK");
-        rak3172_reset();
+        osm_comms_debug("READ NO SEND ACK");
+        osm_rak3172_reset();
         return;
     }
 }
 
 
-uint16_t rak3172_get_mtu(void)
+uint16_t osm_rak3172_get_mtu(void)
 {
     return _rak3172_packet_max_size;
 }
 
 
-bool rak3172_send_ready(void)
+bool osm_rak3172_send_ready(void)
 {
     return (_rak3172_ctx.state == RAK3172_STATE_IDLE);
 }
 
 
-bool rak3172_send_str(char* str)
+bool osm_rak3172_send_str(char* str)
 {
-    if (!rak3172_send_ready())
+    if (!osm_rak3172_send_ready())
     {
-        comms_debug("Cannot send '%s' as chip is not in IDLE state.", str);
+        osm_comms_debug("Cannot send '%s' as chip is not in IDLE state.", str);
         return false;
     }
     _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_REPLAY;
@@ -388,29 +388,29 @@ bool rak3172_send_str(char* str)
 }
 
 
-bool rak3172_send_allowed(void)
+bool osm_rak3172_send_allowed(void)
 {
     return false;
 }
 
 
-static bool _rak3172_load_config(cmd_ctx_t * ctx)
+static bool _rak3172_load_config(osm_cmd_ctx_t * ctx)
 {
-    if (!lw_persist_data_is_valid())
+    if (!osm_lw_persist_data_is_valid())
     {
         return false;
     }
 
-    lw_config_t* config = lw_get_config();
+    osm_lw_config_t* config = osm_lw_get_config();
     if (!config)
         return false;
 
-    /* If outside range, default to LW_REGION_EU868 */
-    lw_region_t region;
-    if (config->region > LW_REGION_MAX)
+    /* If outside range, default to OSM_LW_REGION_EU868 */
+    osm_lw_region_t region;
+    if (config->region > OSM_LW_REGION_MAX)
     {
-        cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
-        region = LW_REGION_EU868;
+        osm_cmd_ctx_error(ctx,"Invalid region, setting to EU868.");
+        region = OSM_LW_REGION_EU868;
     }
     else
     {
@@ -418,58 +418,58 @@ static bool _rak3172_load_config(cmd_ctx_t * ctx)
     }
 
     snprintf(
-        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-4],
+        _rak3172_init_msgs[OSM_ARRAY_SIZE(_rak3172_init_msgs)-4],
         RAK3172_INIT_MSG_LEN,
         "AT+BAND=%"PRIu8,
         (uint8_t)region);
 
     snprintf(
-        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-3],
+        _rak3172_init_msgs[OSM_ARRAY_SIZE(_rak3172_init_msgs)-3],
         RAK3172_INIT_MSG_LEN,
         "AT+DEVEUI=%.*s",
-        LW_DEV_EUI_LEN,
+        OSM_LW_DEV_EUI_LEN,
         config->dev_eui);
 
     snprintf(
-        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-2],
+        _rak3172_init_msgs[OSM_ARRAY_SIZE(_rak3172_init_msgs)-2],
         RAK3172_INIT_MSG_LEN,
         "AT+APPEUI=%.*s",
-        LW_DEV_EUI_LEN,
+        OSM_LW_DEV_EUI_LEN,
         config->dev_eui);
 
     snprintf(
-        _rak3172_init_msgs[ARRAY_SIZE(_rak3172_init_msgs)-1],
+        _rak3172_init_msgs[OSM_ARRAY_SIZE(_rak3172_init_msgs)-1],
         RAK3172_INIT_MSG_LEN,
         "AT+APPKEY=%.*s",
-        LW_APP_KEY_LEN,
+        OSM_LW_APP_KEY_LEN,
         config->app_key);
 
     return true;
 }
 
 
-void rak3172_init(void)
+void osm_rak3172_init(void)
 {
     _rak3172_ctx.config_is_valid = _rak3172_load_config(&uart_cmd_ctx);
     if (!_rak3172_ctx.config_is_valid)
     {
-        comms_debug("Config is incorrect, not initialising.");
+        osm_comms_debug("Config is incorrect, not initialising.");
     }
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(_rak3172_ctx.reset_pin.port));
     gpio_mode_setup(_rak3172_ctx.reset_pin.port,
                     GPIO_MODE_INPUT,
                     GPIO_PUPD_NONE,
                     _rak3172_ctx.reset_pin.pins);
-    rcc_periph_clock_enable(PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
+    rcc_periph_clock_enable(OSM_PORT_TO_RCC(_rak3172_ctx.boot_pin.port));
     gpio_mode_setup(_rak3172_ctx.boot_pin.port,
                     GPIO_MODE_INPUT,
                     GPIO_PUPD_NONE,
                     _rak3172_ctx.boot_pin.pins);
     _rak3172_ctx.state = RAK3172_STATE_OFF;
 #ifdef COMMS_LED
-    const port_n_pins_t comms_led = COMMS_LED;
-    platform_gpio_init(&comms_led);
-    platform_gpio_setup(&comms_led, false, IO_PUPD_NONE);
+    const osm_port_n_pins_t comms_led = COMMS_LED;
+    osm_platform_gpio_init(&comms_led);
+    osm_platform_gpio_setup(&comms_led, false, OSM_IO_PUPD_NONE);
 #endif // COMMS_LED
     _rak3172_comms_led_set(false);
 }
@@ -478,10 +478,10 @@ void rak3172_init(void)
 static const char* _rak3172_state_to_str(rak3172_state_t state);
 
 
-void rak3172_reset(void)
+void osm_rak3172_reset(void)
 {
-    comms_debug("CALLED RESET");
-    comms_debug("STATE = %s", _rak3172_state_to_str(_rak3172_ctx.state));
+    osm_comms_debug("CALLED RESET");
+    osm_comms_debug("STATE = %s", _rak3172_state_to_str(_rak3172_ctx.state));
     if (_rak3172_ctx.state == RAK3172_STATE_RESETTING)
         return;
     _rak3172_ctx.state = RAK3172_STATE_RESETTING;
@@ -489,7 +489,7 @@ void rak3172_reset(void)
     if (_rak3172_ctx.reset_count < RAK3172_SHORT_RESET_COUNT)
         _rak3172_ctx.reset_count++;
 
-    _rak3172_ctx.sleep_from_time = get_since_boot_ms();
+    _rak3172_ctx.sleep_from_time = osm_get_since_boot_ms();
 }
 
 
@@ -498,16 +498,16 @@ static unsigned _rak3172_cmd_to_ascii(char* data, char* ascii)
     unsigned len = strnlen(data, 2*CMD_LINELEN);
     if (len % 2)
     {
-        comms_debug("Data misaligned to convert to ascii.");
+        osm_comms_debug("Data misaligned to convert to ascii.");
         return 0;
     }
     char* p = ascii;
     for (unsigned i = 0; i < len; i+=2)
     {
-        char letter = (char)lw_consume(&data[i], 2);
+        char letter = (char)osm_lw_consume(&data[i], 2);
         if (!isascii(letter))
         {
-            comms_debug("Non-ascii character '0x%"PRIx8"'", letter);
+            osm_comms_debug("Non-ascii character '0x%"PRIx8"'", letter);
             return 0;
         }
         *p = letter;
@@ -521,75 +521,75 @@ static void _rak3172_process_unsol2(uint8_t fport, char* data)
 {
     char* p = data;
     unsigned len = strlen(p);
-    if (lw_consume(p, 2) != LW_UNSOL_VERSION)
+    if (osm_lw_consume(p, 2) != OSM_LW_UNSOL_VERSION)
         return;
     p += 2;
-    uint32_t pl_id = (uint32_t)lw_consume(p, 8);
+    uint32_t pl_id = (uint32_t)osm_lw_consume(p, 8);
     p += 8;
     switch (pl_id)
     {
-        case LW_ID_CMD:
+        case OSM_LW_ID_CMD:
         {
-            comms_debug("Message is command.");
+            osm_comms_debug("Message is command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
+            osm_cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
             break;
         }
-        case LW_ID_CCMD:
+        case OSM_LW_ID_CCMD:
         {
-            comms_debug("Message is confirmed command.");
+            osm_comms_debug("Message is confirmed command.");
             unsigned ascii_len = _rak3172_cmd_to_ascii(p, _rak3172_ascii_cmd);
-            _rak3172_ctx.err_code = cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
-            comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
+            _rak3172_ctx.err_code = osm_cmds_process(_rak3172_ascii_cmd, ascii_len, NULL);
+            osm_comms_debug("Command exited with ERR: %"PRIu8, _rak3172_ctx.err_code);
             break;
         }
-        case LW_ID_FW_START:
+        case OSM_LW_ID_FW_START:
         {
-            comms_debug("Message is fw start.");
-            uint16_t count = (uint16_t)lw_consume(p, 4);
-            comms_debug("FW of %"PRIu16" chunks", count);
+            osm_comms_debug("Message is fw start.");
+            uint16_t count = (uint16_t)osm_lw_consume(p, 4);
+            osm_comms_debug("FW of %"PRIu16" chunks", count);
             _rak3172_next_fw_chunk_id = 0;
-            fw_ota_reset();
+            osm_fw_ota_reset();
             break;
         }
-        case LW_ID_FW_CHUNK:
+        case OSM_LW_ID_FW_CHUNK:
         {
-            uint16_t chunk_id = (uint16_t)lw_consume(p, 4);
+            uint16_t chunk_id = (uint16_t)osm_lw_consume(p, 4);
             p += 4;
             unsigned chunk_len = len - ((uintptr_t)p - (uintptr_t)data);
-            comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
+            osm_comms_debug("FW chunk %"PRIu16" len %u", chunk_id, chunk_len/2);
             if (_rak3172_next_fw_chunk_id != chunk_id)
             {
-                log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _rak3172_next_fw_chunk_id);
+                osm_log_error("FW chunk %"PRIu16" ,expecting %"PRIu16, chunk_id, _rak3172_next_fw_chunk_id);
                 return;
             }
             _rak3172_next_fw_chunk_id = chunk_id + 1;
             char * p_end = p + chunk_len;
             while(p < p_end)
             {
-                uint8_t b = (uint8_t)lw_consume(p, 2);
+                uint8_t b = (uint8_t)osm_lw_consume(p, 2);
                 p += 2;
-                if (!fw_ota_add_chunk(&b, 1, NULL))
+                if (!osm_fw_ota_add_chunk(&b, 1, NULL))
                     break;
             }
             break;
         }
-        case LW_ID_FW_COMPLETE:
+        case OSM_LW_ID_FW_COMPLETE:
         {
-            comms_debug("Message is fw complete.");
+            osm_comms_debug("Message is fw complete.");
             if (len < 12 || !_rak3172_next_fw_chunk_id)
             {
-                log_error("RAK4270 FW Finish invalid");
+                osm_log_error("RAK4270 FW Finish invalid");
                 return;
             }
-            uint16_t crc = (uint16_t)lw_consume(p, 4);
-            fw_ota_complete(crc);
+            uint16_t crc = (uint16_t)osm_lw_consume(p, 4);
+            osm_fw_ota_complete(crc);
             _rak3172_next_fw_chunk_id = 0;
             break;
         }
         default:
         {
-            comms_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
+            osm_comms_debug("Unknown unsol ID 0x%"PRIx32, pl_id);
             break;
         }
     }
@@ -604,12 +604,12 @@ static void _rak3172_process_unsol(char* msg)
     unsigned evt_len = strlen(evt);
     if (len < evt_len)
     {
-        comms_debug("Too short for unsol.");
+        osm_comms_debug("Too short for unsol.");
         return;
     }
     if (strncmp(msg, evt, evt_len) != 0)
     {
-        comms_debug("Does not match event.");
+        osm_comms_debug("Does not match event.");
         return;
     }
     char * p, * np;
@@ -617,20 +617,20 @@ static void _rak3172_process_unsol(char* msg)
     strtol(p, &np, 10);
     if (p == np)
     {
-        comms_debug("No RSSI given.");
+        osm_comms_debug("No RSSI given.");
         return;
     }
     p = np;
     if (*p != ':')
     {
-        comms_debug("Incorrect syntax");
+        osm_comms_debug("Incorrect syntax");
         return;
     }
     p++;
     strtol(p, &np, 10);
     if (p == np)
     {
-        comms_debug("No SNR given.");
+        osm_comms_debug("No SNR given.");
         return;
     }
     p = np;
@@ -639,25 +639,25 @@ static void _rak3172_process_unsol(char* msg)
     const unsigned unicast_len = strlen(unicast);
     if (len < unicast_len)
     {
-        comms_debug("Too short for UNICAST.");
+        osm_comms_debug("Too short for UNICAST.");
         return;
     }
     if (strncmp(p, unicast, unicast_len) != 0)
     {
-        comms_debug("Does not match UNICAST.");
+        osm_comms_debug("Does not match UNICAST.");
         return;
     }
     p += unicast_len;
     uint8_t fport = strtoul(p, &np, 10);
     if (p == np)
     {
-        comms_debug("No port given.");
+        osm_comms_debug("No port given.");
         return;
     }
     p = np;
     if (*p != ':')
     {
-        comms_debug("Incorrect syntax.");
+        osm_comms_debug("Incorrect syntax.");
         return;
     }
     p++;
@@ -666,7 +666,7 @@ static void _rak3172_process_unsol(char* msg)
     {
         if (!isxdigit(p[i]))
         {
-            comms_debug("Data is not ascii.");
+            osm_comms_debug("Data is not ascii.");
             return;
         }
     }
@@ -688,7 +688,7 @@ static char* _rak3172_skip_to_msg(char* msg)
 }
 
 
-void rak3172_process(char* msg)
+void osm_rak3172_process(char* msg)
 {
     char* p = _rak3172_skip_to_msg(msg);
     _rak3172_process_unsol(p);
@@ -729,7 +729,7 @@ void rak3172_process(char* msg)
             _rak3172_process_state_send_ack(p);
             break;
         default:
-            comms_debug("Unknown state. (%d)", _rak3172_ctx.state);
+            osm_comms_debug("Unknown state. (%d)", _rak3172_ctx.state);
             return;
     }
 }
@@ -737,15 +737,15 @@ void rak3172_process(char* msg)
 
 static bool _rak3172_wait_send(void* userdata)
 {
-    return !(since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) < RAK3172_SEND_DELAY_MS);
+    return !(osm_since_boot_delta(osm_get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) < RAK3172_SEND_DELAY_MS);
 }
 
 
-bool rak3172_send(int8_t* hex_arr, uint16_t arr_len)
+bool osm_rak3172_send(int8_t* hex_arr, uint16_t arr_len)
 {
     if (_rak3172_ctx.state != RAK3172_STATE_IDLE)
     {
-        comms_debug("Incorrect state to send : %s",
+        osm_comms_debug("Incorrect state to send : %s",
             _rak3172_state_to_str((unsigned)_rak3172_ctx.state));
         return false;
     }
@@ -760,11 +760,11 @@ bool rak3172_send(int8_t* hex_arr, uint16_t arr_len)
         RAK3172_MSG_SEND_HEADER_FMT,
         _rak3172_get_port());
 
-    main_loop_iterate_for(RAK3172_SEND_DELAY_MS, _rak3172_wait_send, NULL);
+    osm_main_loop_iterate_for(RAK3172_SEND_DELAY_MS, _rak3172_wait_send, NULL);
 
     if (!_rak3172_write(send_header))
     {
-        comms_debug("Could not write SEND header.");
+        osm_comms_debug("Could not write SEND header.");
         _rak3172_comms_led_set(true);
         return false;
     }
@@ -774,17 +774,17 @@ bool rak3172_send(int8_t* hex_arr, uint16_t arr_len)
     {
         snprintf(hex_str, 3, "%02"PRIx8, hex_arr[i]);
         _rak3172_write(hex_str);
-        uart_ring_out(CMD_UART, hex_str, 2);
+        osm_uart_ring_out(CMD_UART, hex_str, 2);
     }
     _rak3172_write("\r\n");
-    uart_ring_out(CMD_UART, "\r\n", 2);
+    osm_uart_ring_out(CMD_UART, "\r\n", 2);
     _rak3172_ctx.state = RAK3172_STATE_SEND_WAIT_OK;
-    _rak3172_ctx.cmd_last_sent = get_since_boot_ms();
+    _rak3172_ctx.cmd_last_sent = osm_get_since_boot_ms();
     return true;
 }
 
 
-bool rak3172_get_connected(void)
+bool osm_rak3172_get_connected(void)
 {
     return (_rak3172_ctx.state == RAK3172_STATE_IDLE                ||
             _rak3172_ctx.state == RAK3172_STATE_SEND_WAIT_REPLAY    ||
@@ -793,14 +793,14 @@ bool rak3172_get_connected(void)
 }
 
 
-void rak3172_loop_iteration(void)
+void osm_rak3172_loop_iteration(void)
 {
     switch(_rak3172_ctx.state)
     {
         case RAK3172_STATE_OFF:
         {
-            uint32_t now = get_since_boot_ms();
-            if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > RAK3172_LONG_RESET_TIME_MS)
+            uint32_t now = osm_get_since_boot_ms();
+            if (osm_since_boot_delta(now, _rak3172_ctx.sleep_from_time) > RAK3172_LONG_RESET_TIME_MS)
             {
                 /* Most likely here from trying to reset, but not
                  * resetting successfully */
@@ -812,15 +812,15 @@ void rak3172_loop_iteration(void)
         case RAK3172_STATE_IDLE:
             if (_rak3172_ctx.err_code)
             {
-                protocol_send_error_code(_rak3172_ctx.err_code);
+                osm_protocol_send_error_code(_rak3172_ctx.err_code);
                 _rak3172_ctx.err_code = 0;
             }
             break;
         case RAK3172_STATE_RESETTING:
         {
             uint32_t sleep_delay = _rak3172_ctx.reset_count >= RAK3172_SHORT_RESET_COUNT ? RAK3172_LONG_RESET_TIME_MS : RAK3172_SHORT_RESET_TIME_MS;
-            uint32_t now = get_since_boot_ms();
-            if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
+            uint32_t now = osm_get_since_boot_ms();
+            if (osm_since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
             {
                 _rak3172_ctx.sleep_from_time = now;
                 _rak3172_ctx.state = RAK3172_STATE_OFF;
@@ -829,19 +829,19 @@ void rak3172_loop_iteration(void)
             break;
         }
         case RAK3172_STATE_SEND_WAIT_ACK:
-            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_ACK_TIMEOUT_MS)
+            if (osm_since_boot_delta(osm_get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_ACK_TIMEOUT_MS)
             {
-                comms_debug("TIMED OUT WAITING FOR ACK");
-                on_protocol_sent_ack(false);
+                osm_comms_debug("TIMED OUT WAITING FOR ACK");
+                osm_on_protocol_sent_ack(false);
                 _rak3172_comms_led_set(true);
-                rak3172_reset();
+                osm_rak3172_reset();
             }
             break;
         default:
-            if (since_boot_delta(get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_TIMEOUT_MS)
+            if (osm_since_boot_delta(osm_get_since_boot_ms(), _rak3172_ctx.cmd_last_sent) > RAK3172_TIMEOUT_MS)
             {
-                comms_debug("TIMED OUT");
-                rak3172_reset();
+                osm_comms_debug("TIMED OUT");
+                osm_rak3172_reset();
             }
             break;
     }
@@ -850,9 +850,9 @@ void rak3172_loop_iteration(void)
 
 void _rak3172_send_alive(void)
 {
-    if (!rak3172_send_ready())
+    if (!osm_rak3172_send_ready())
     {
-        comms_debug("Attempted to send alive packet, not in idle state");
+        osm_comms_debug("Attempted to send alive packet, not in idle state");
         return;
     }
 
@@ -866,44 +866,44 @@ void _rak3172_send_alive(void)
 
     send_packet[len] = 0;
 
-    comms_debug("Sending an 'is alive' packet.");
+    osm_comms_debug("Sending an 'is alive' packet.");
     _rak3172_write(send_packet);
     _rak3172_write("1234\r\n");
     return;
 }
 
 
-command_response_t rak3172_cmd_config_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_config_cb(char* str, osm_cmd_ctx_t * ctx)
 {
-    if (lw_config_setup_str(str, ctx))
+    if (osm_lw_config_setup_str(str, ctx))
     {
         _rak3172_ctx.config_is_valid = _rak3172_load_config(ctx);
         if (_rak3172_ctx.config_is_valid)
         {
             _rak3172_ctx.reset_count = 0;
-            rak3172_reset();
+            osm_rak3172_reset();
         }
-        return COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_OK;
     }
-    return COMMAND_RESP_ERR;
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
-bool rak3172_get_id(char* str, uint8_t len)
+bool osm_rak3172_get_id(char* str, uint8_t len)
 {
-    return lw_get_id(str, len);
+    return osm_lw_get_id(str, len);
 }
 
 
-static command_response_t _rak3172_print_boot_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_print_boot_reset_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,"BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
-    cmd_ctx_out(ctx,"RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx,"BOOT = %"PRIu8, (uint8_t)_rak3172_boot_enabled);
+    osm_cmd_ctx_out(ctx,"RESET = %"PRIu8, (uint8_t)_rak3172_reset_enabled);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_boot_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     bool enabled = strtoul(args, NULL, 10);
     if (enabled)
@@ -926,7 +926,7 @@ static command_response_t _rak3172_boot_cb(char* args, cmd_ctx_t * ctx)
 }
 
 
-static command_response_t _rak3172_reset_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_reset_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     bool enabled = strtoul(args, NULL, 10);
     _rak3172_reset_line_set(enabled);
@@ -952,7 +952,7 @@ static const char* _rak3172_state_to_str(rak3172_state_t state)
         {"RAK3172_STATE_SEND_WAIT_ACK"},
     };
     static const char none[] = "";
-    if (state >= ARRAY_SIZE(state_strs))
+    if (state >= OSM_ARRAY_SIZE(state_strs))
         return none;
     return state_strs[state];
 }
@@ -961,153 +961,153 @@ static const char* _rak3172_state_to_str(rak3172_state_t state)
 static const char* _rak3172_init_count_to_str(uint8_t init_count)
 {
     static const char none[] = "";
-    if (init_count >= ARRAY_SIZE(_rak3172_init_msgs))
+    if (init_count >= OSM_ARRAY_SIZE(_rak3172_init_msgs))
         return none;
     return _rak3172_init_msgs[init_count];
 }
 
 
-static command_response_t _rak3172_state_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_state_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    cmd_ctx_out(ctx,"STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
+    osm_cmd_ctx_out(ctx,"STATE: %s (%d)", _rak3172_state_to_str(_rak3172_ctx.state), _rak3172_ctx.state);
     switch (_rak3172_ctx.state)
     {
         case RAK3172_STATE_INIT_WAIT_OK:
             /* Fall through */
         case RAK3172_STATE_INIT_WAIT_REPLAY:
-            cmd_ctx_out(ctx,"INIT COUNT         : %"PRIu8,  _rak3172_ctx.init_count);
-            cmd_ctx_out(ctx,"INIT MESSAGE       : %s",      _rak3172_init_count_to_str(_rak3172_ctx.init_count));
+            osm_cmd_ctx_out(ctx,"INIT COUNT         : %"PRIu8,  _rak3172_ctx.init_count);
+            osm_cmd_ctx_out(ctx,"INIT MESSAGE       : %s",      _rak3172_init_count_to_str(_rak3172_ctx.init_count));
             break;
         case RAK3172_STATE_RESETTING:
         {
-            uint32_t now         = get_since_boot_ms();
+            uint32_t now         = osm_get_since_boot_ms();
             uint32_t sleep_delay = _rak3172_ctx.reset_count >= RAK3172_SHORT_RESET_COUNT ? RAK3172_LONG_RESET_TIME_MS : RAK3172_SHORT_RESET_TIME_MS;
-            cmd_ctx_out(ctx,"SLEEP DELAY        : %"PRIu32" ms", sleep_delay);
-            cmd_ctx_out(ctx,"SLEEP FROM         : %"PRIu32" ms", _rak3172_ctx.sleep_from_time);
+            osm_cmd_ctx_out(ctx,"SLEEP DELAY        : %"PRIu32" ms", sleep_delay);
+            osm_cmd_ctx_out(ctx,"SLEEP FROM         : %"PRIu32" ms", _rak3172_ctx.sleep_from_time);
             uint32_t sleep_until = _rak3172_ctx.sleep_from_time + sleep_delay;
-            cmd_ctx_out(ctx,"SLEEP UNTIL        : %"PRIu32" ms", sleep_until);
-            if (since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
+            osm_cmd_ctx_out(ctx,"SLEEP UNTIL        : %"PRIu32" ms", sleep_until);
+            if (osm_since_boot_delta(now, _rak3172_ctx.sleep_from_time) > sleep_delay)
             {
-                cmd_ctx_out(ctx,"TIME UNTIL WAKEUP  : IMMINENT");
+                osm_cmd_ctx_out(ctx,"TIME UNTIL WAKEUP  : IMMINENT");
                 break;
             }
-            uint32_t wakeup_time = since_boot_delta(sleep_until, now);
-            cmd_ctx_out(ctx,"TIME UNTIL WAKEUP  : %"PRIu32" ms", wakeup_time);
+            uint32_t wakeup_time = osm_since_boot_delta(sleep_until, now);
+            osm_cmd_ctx_out(ctx,"TIME UNTIL WAKEUP  : %"PRIu32" ms", wakeup_time);
             break;
         }
         default:
             break;
     }
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_restart_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_restart_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     _rak3172_ctx.state          = RAK3172_STATE_OFF;
     _rak3172_ctx.reset_count    = 0;
     _rak3172_reset_now();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-static command_response_t _rak3172_join(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_join(char* str, osm_cmd_ctx_t * ctx)
 {
     _rak3172_send_alive();
-    return COMMAND_RESP_OK;
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-command_response_t rak3172_cmd_conn_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_conn_cb(char* str, osm_cmd_ctx_t * ctx)
 {
-    if (rak3172_get_connected())
+    if (osm_rak3172_get_connected())
     {
-        cmd_ctx_out(ctx,"1 | Connected");
-        return COMMAND_RESP_OK;
+        osm_cmd_ctx_out(ctx,"1 | Connected");
+        return OSM_COMMAND_RESP_OK;
     }
-    cmd_ctx_out(ctx,"0 | Disconnected");
-    return COMMAND_RESP_ERR;
+    osm_cmd_ctx_out(ctx,"0 | Disconnected");
+    return OSM_COMMAND_RESP_ERR;
 }
 
 
-static command_response_t _rak3172_tx_power_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_tx_power_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     char* np;
     unsigned pwr = strtoul(str, &np, 10);
-    command_response_t status = COMMAND_RESP_OK;
+    osm_command_response_t status = OSM_COMMAND_RESP_OK;
     if (str != np)
     {
-        status = _rak3172_printf("AT+TXP=%u", pwr) ? COMMAND_RESP_OK  :
-                                                     COMMAND_RESP_ERR ;
+        status = _rak3172_printf("AT+TXP=%u", pwr) ? OSM_COMMAND_RESP_OK  :
+                                                     OSM_COMMAND_RESP_ERR ;
     }
     else
     {
-        cmd_ctx_out(ctx,"Enter a valid number.");
-        status = COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Enter a valid number.");
+        status = OSM_COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-static command_response_t _rak3172_trssi_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_trssi_cb(char* str, osm_cmd_ctx_t * ctx)
 {
-    return _rak3172_printf("AT+TRSSI=?") ? COMMAND_RESP_OK  :
-                                           COMMAND_RESP_ERR ;
+    return _rak3172_printf("AT+TRSSI=?") ? OSM_COMMAND_RESP_OK  :
+                                           OSM_COMMAND_RESP_ERR ;
 }
 
 
-static command_response_t _rak3172_ttx_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_ttx_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
-    command_response_t status = COMMAND_RESP_OK;
+    osm_command_response_t status = OSM_COMMAND_RESP_OK;
     if (str != np)
     {
-        status = _rak3172_printf("AT+TTX=%u", inp) ? COMMAND_RESP_OK  :
-                                                     COMMAND_RESP_ERR ;
+        status = _rak3172_printf("AT+TTX=%u", inp) ? OSM_COMMAND_RESP_OK  :
+                                                     OSM_COMMAND_RESP_ERR ;
     }
     else
     {
-        cmd_ctx_out(ctx,"Enter a valid number.");
-        status = COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Enter a valid number.");
+        status = OSM_COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-static command_response_t _rak3172_trx_cb(char* str, cmd_ctx_t * ctx)
+static osm_command_response_t _rak3172_trx_cb(char* str, osm_cmd_ctx_t * ctx)
 {
     char* np;
     unsigned inp = strtoul(str, &np, 10);
-    command_response_t status = COMMAND_RESP_OK;
+    osm_command_response_t status = OSM_COMMAND_RESP_OK;
     if (str != np)
     {
-        status = _rak3172_printf("AT+TRX=%u", inp) ? COMMAND_RESP_OK  :
-                                                     COMMAND_RESP_ERR ;
+        status = _rak3172_printf("AT+TRX=%u", inp) ? OSM_COMMAND_RESP_OK  :
+                                                     OSM_COMMAND_RESP_ERR ;
     }
     else
     {
-        cmd_ctx_out(ctx,"Enter a valid number.");
-        status = COMMAND_RESP_ERR;
+        osm_cmd_ctx_out(ctx,"Enter a valid number.");
+        status = OSM_COMMAND_RESP_ERR;
     }
     return status;
 }
 
 
-command_response_t rak3172_cmd_j_cfg_cb(char* str, cmd_ctx_t * ctx)
+osm_command_response_t osm_rak3172_cmd_j_cfg_cb(char* str, osm_cmd_ctx_t * ctx)
 {
-    lw_print_config(ctx);
-    return COMMAND_RESP_OK;
+    osm_lw_print_config(ctx);
+    return OSM_COMMAND_RESP_OK;
 }
 
 
-struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* osm_rak3172_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "comms_print",  "Print boot/reset line",       _rak3172_print_boot_reset_cb  , false , NULL },
         { "comms_boot",   "Enable/disable boot line",    _rak3172_boot_cb              , false , NULL },
-        { "comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
+        { "osm_comms_reset",  "Enable/disable reset line",   _rak3172_reset_cb             , false , NULL },
         { "comms_state",  "Print comms state",           _rak3172_state_cb             , false , NULL },
         { "comms_restart","Comms restart",               _rak3172_restart_cb           , false , NULL },
         { "connect",      "Send an alive packet",        _rak3172_join                 , false , NULL },
@@ -1116,10 +1116,10 @@ struct cmd_link_t* rak3172_add_commands(struct cmd_link_t* tail)
         { "comms_ttx",    "Start RF TX test",            _rak3172_ttx_cb               , false , NULL },
         { "comms_trx",    "Start RF RX test",            _rak3172_trx_cb               , false , NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
-void rak3172_power_down(void)
+void osm_rak3172_power_down(void)
 {
     _rak3172_ctx.state = RAK3172_STATE_OFF;
 }
@@ -1127,9 +1127,9 @@ void rak3172_power_down(void)
 
 /* Return false if different
  *        true  if same      */
-bool rak3172_persist_config_cmp(void* d0, void* d1)
+bool osm_rak3172_persist_config_cmp(void* d0, void* d1)
 {
-    return lw_persist_config_cmp(
-        (lw_config_t*)((comms_config_t*)d0),
-        (lw_config_t*)((comms_config_t*)d1));
+    return osm_lw_persist_config_cmp(
+        (osm_lw_config_t*)((osm_comms_config_t*)d0),
+        (osm_lw_config_t*)((osm_comms_config_t*)d1));
 }

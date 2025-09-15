@@ -23,16 +23,16 @@
 
 #define ADC_DMA_CHANNELS                                                  \
 {                                                                               \
-    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, ADC_PRIORITY  , true } , /* ADC1 */   \
+    { ADC1, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL1_IRQ, DMA_CHANNEL1, OSM_ADC_PRIORITY  , true } , /* ADC1 */   \
 }
 
 #define ADC_DMA_CHANNELS_COUNT  1
 
 #define ADC_COUNT       5
 
-#define ADC_TYPES_ALL_CC { ADCS_TYPE_CC_CLAMP1,  \
-                           ADCS_TYPE_CC_CLAMP2,  \
-                           ADCS_TYPE_CC_CLAMP3   }
+#define ADC_TYPES_ALL_CC { OSM_ADCS_TYPE_CC_CLAMP1,  \
+                           OSM_ADCS_TYPE_CC_CLAMP2,  \
+                           OSM_ADCS_TYPE_CC_CLAMP3   }
 
 #define IOS_WATCH_IOS                       { W1_PULSE_1_IO, W1_PULSE_2_IO }
 #define IOS_WATCH_COUNT 2
@@ -78,7 +78,7 @@
 
 
 #define DS18B20_INSTANCES   {                                          \
-    { { MEASUREMENTS_W1_PROBE_NAME_1, 2} ,                             \
+    { { OSM_MEASUREMENTS_W1_PROBE_NAME_1, 2} ,                             \
         0 },                                                           \
 }
 
@@ -97,9 +97,9 @@
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
-    IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
-    IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 0   */ \
+    OSM_IO_SPECIAL_PULSECOUNT_FALLING_EDGE,                 /* GPIO 1   */ \
+    OSM_IO_SPECIAL_ONEWIRE,                                 /* GPIO 2   */ \
 }
 
 
@@ -120,12 +120,12 @@
 
 #define UART_CHANNELS                                   \
 {                                                                      \
-    { USART2,  RCC_USART2,  UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2, GPIO3,   GPIO_AF7, NVIC_USART2_IRQ, (uint32_t)&USART2_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, UART2_PRIORITY,   true , 2 }, /* UART 0 Debug */ \
-    { USART3,  RCC_USART3,  UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4, GPIO5,   GPIO_AF7, NVIC_USART3_IRQ, (uint32_t)&USART3_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, UART3_PRIORITY,   true , 2 }, \
-    { USART1,  RCC_USART1,  UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6, GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL4_IRQ, DMA_CHANNEL4, UART1_PRIORITY,   true , 2 }, \
-    { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10, GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, UART4_PRIORITY, true , 4 }, \
+    { USART2,  RCC_USART2,  UART_2_SPEED, UART_2_DATABITS, UART_2_PARITY, UART_2_STOP, GPIOA, GPIO2, GPIO3,   GPIO_AF7, NVIC_USART2_IRQ, (uint32_t)&USART2_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL7_IRQ, DMA_CHANNEL7, OSM_UART2_PRIORITY,   true , 2 }, /* UART 0 Debug */ \
+    { USART3,  RCC_USART3,  UART_3_SPEED, UART_3_DATABITS, UART_3_PARITY, UART_3_STOP, GPIOC, GPIO4, GPIO5,   GPIO_AF7, NVIC_USART3_IRQ, (uint32_t)&USART3_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL2_IRQ, DMA_CHANNEL2, OSM_UART3_PRIORITY,   true , 2 }, \
+    { USART1,  RCC_USART1,  UART_1_SPEED, UART_1_DATABITS, UART_1_PARITY, UART_1_STOP, GPIOB, GPIO6, GPIO7,   GPIO_AF7, NVIC_USART1_IRQ, (uint32_t)&USART1_TDR, DMA1, RCC_DMA1, NVIC_DMA1_CHANNEL4_IRQ, DMA_CHANNEL4, OSM_UART1_PRIORITY,   true , 2 }, \
+    { LPUART1, RCC_LPUART1, UART_4_SPEED, UART_4_DATABITS, UART_4_PARITY, UART_4_STOP, GPIOB, GPIO10, GPIO11, GPIO_AF8, NVIC_LPUART1_IRQ, (uint32_t)&USART_TDR(LPUART1_BASE), DMA2, RCC_DMA2, NVIC_DMA2_CHANNEL6_IRQ, DMA_CHANNEL6, OSM_UART4_PRIORITY, true , 4 }, \
 }
 
 
-#define SEN5x_I2C                           I2C1
+#define OSM_SENxx_I2C                           I2C1
 #define E_24LC00T_I2C                       I2C1

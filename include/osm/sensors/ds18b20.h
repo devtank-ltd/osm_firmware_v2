@@ -5,8 +5,8 @@
 #include <osm/core/measurements.h>
 
 
-void                         ds18b20_enable(bool enable);
+void                         osm_ds18b20_enable(bool enable);
 
-void                         ds18b20_temp_init(void);
+void                         osm_ds18b20_temp_init(void);
 
-void                         ds18b20_inf_init(measurements_inf_t* inf);
+void                         osm_ds18b20_inf_init(osm_measurements_inf_t* inf);

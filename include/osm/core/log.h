@@ -8,58 +8,58 @@
 extern bool log_async_log;
 extern uint32_t log_debug_mask;
 
-void platform_raw_msg(const char * s);
+void osm_platform_raw_msg(const char * s);
 
-void log_debugv(uint32_t flag, const char * s,va_list ap);
-void log_debug(uint32_t flag, const char * s, ...) PRINTF_FMT_CHECK( 2, 3);
+void osm_log_debugv(uint32_t flag, const char * s,va_list ap);
+void osm_log_debug(uint32_t flag, const char * s, ...) OSM_PRINTF_FMT_CHECK( 2, 3);
 
-void log_bad_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
-void log_error(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
-void log_out(const char * s, ...) PRINTF_FMT_CHECK( 1, 2);
-void log_init(void);
+void osm_log_bad_error(const char * s, ...) OSM_PRINTF_FMT_CHECK( 1, 2);
+void osm_log_error(const char * s, ...) OSM_PRINTF_FMT_CHECK( 1, 2);
+void osm_log_out(const char * s, ...) OSM_PRINTF_FMT_CHECK( 1, 2);
+void osm_log_init(void);
 
-void log_errorv(const char * s, va_list ap);
-void log_outv(const char * s, va_list ap);
+void osm_log_errorv(const char * s, va_list ap);
+void osm_log_outv(const char * s, va_list ap);
 
-void log_debug_data(uint32_t flag, const void * data, unsigned size);
+void osm_log_debug_data(uint32_t flag, const void * data, unsigned size);
 
 #ifdef NOPODEBUG
 inline static void _empty_log() {}
-#define log_sys_debug(...)      _empty_log(__VA_ARGS__)
-#define adc_debug(...)          _empty_log(__VA_ARGS__)
-#define comms_debug(...)        _empty_log(__VA_ARGS__)
-#define io_debug(...)           _empty_log(__VA_ARGS__)
-#define uart_debug(_uart_, ...) _empty_log(__VA_ARGS__)
-#define particulate_debug(...)  _empty_log(__VA_ARGS__)
-#define modbus_debug(...)       _empty_log(__VA_ARGS__)
-#define measurements_debug(...) _empty_log(__VA_ARGS__)
-#define fw_debug(...)           _empty_log(__VA_ARGS__)
-#define pulsecount_debug(...)   _empty_log(__VA_ARGS__)
-#define exttemp_debug(...)      _empty_log(__VA_ARGS__)
-#define light_debug(...)        _empty_log(__VA_ARGS__)
-#define sound_debug(...)        _empty_log(__VA_ARGS__)
-#define sleep_debug(...)        _empty_log(__VA_ARGS__)
-#define can_debug(...)          _empty_log(__VA_ARGS__)
-#define dm_debug(...)           _empty_log(__VA_ARGS__)
-#define custom_0_debug(...)     _empty_log(__VA_ARGS__)
-#define custom_1_debug(...)     _empty_log(__VA_ARGS__)
+#define osm_log_sys_debug(...)      _empty_log(__VA_ARGS__)
+#define osm_adc_debug(...)          _empty_log(__VA_ARGS__)
+#define osm_comms_debug(...)        _empty_log(__VA_ARGS__)
+#define osm_io_debug(...)           _empty_log(__VA_ARGS__)
+#define osm_uart_debug(_uart_, ...) _empty_log(__VA_ARGS__)
+#define osm_particulate_debug(...)  _empty_log(__VA_ARGS__)
+#define osm_modbus_debug(...)       _empty_log(__VA_ARGS__)
+#define osm_measurements_debug(...) _empty_log(__VA_ARGS__)
+#define osm_fw_debug(...)           _empty_log(__VA_ARGS__)
+#define osm_pulsecount_debug(...)   _empty_log(__VA_ARGS__)
+#define osm_exttemp_debug(...)      _empty_log(__VA_ARGS__)
+#define osm_light_debug(...)        _empty_log(__VA_ARGS__)
+#define osm_sound_debug(...)        _empty_log(__VA_ARGS__)
+#define osm_sleep_debug(...)        _empty_log(__VA_ARGS__)
+#define osm_can_debug(...)          _empty_log(__VA_ARGS__)
+#define osm_dm_debug(...)           _empty_log(__VA_ARGS__)
+#define osm_custom_0_debug(...)     _empty_log(__VA_ARGS__)
+#define osm_custom_1_debug(...)     _empty_log(__VA_ARGS__)
 #else
-#define log_sys_debug(...)      log_debug(DEBUG_SYS, "SYS:" __VA_ARGS__)
-#define adc_debug(...)          log_debug(DEBUG_ADC, "ADC: " __VA_ARGS__)
-#define comms_debug(...)        log_debug(DEBUG_COMMS, "COMMS: " __VA_ARGS__)
-#define io_debug(...)           log_debug(DEBUG_IO, "IO: " __VA_ARGS__)
-#define uart_debug(_uart_, ...) log_debug(DEBUG_UART(uart), "UART"STR(_uart_)": " __VA_ARGS__)
-#define particulate_debug(...)  log_debug(DEBUG_PARTICULATE, "PART: " __VA_ARGS__)
-#define modbus_debug(...)       log_debug(DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
-#define measurements_debug(...) log_debug(DEBUG_MEASUREMENTS, "Measure: " __VA_ARGS__)
-#define fw_debug(...)           log_debug(DEBUG_FW, "FW: " __VA_ARGS__)
-#define pulsecount_debug(...)   log_debug(DEBUG_PULSECOUNT, "PLSECNT: " __VA_ARGS__)
-#define exttemp_debug(...)      log_debug(DEBUG_EXTTEMP, "EXTTEMP: "  __VA_ARGS__)
-#define light_debug(...)        log_debug(DEBUG_LIGHT, "LIGHT: "  __VA_ARGS__)
-#define sound_debug(...)        log_debug(DEBUG_SOUND, "SOUND: "  __VA_ARGS__)
-#define sleep_debug(...)        log_debug(DEBUG_SLEEP, "SLEEP: "  __VA_ARGS__)
-#define can_debug(...)          log_debug(DEBUG_CAN, "CAN: "  __VA_ARGS__)
-#define dm_debug(...)           log_debug(DEBUG_MODE, "DEBUG:"  __VA_ARGS__)
-#define custom_0_debug(...)     log_debug(DEBUG_CUSTOM_0, "CUSTOM_0:"  __VA_ARGS__)
-#define custom_1_debug(...)     log_debug(DEBUG_CUSTOM_1, "CUSTOM_1:"  __VA_ARGS__)
+#define osm_log_sys_debug(...)      osm_log_debug(OSM_DEBUG_SYS, "SYS:" __VA_ARGS__)
+#define osm_adc_debug(...)          osm_log_debug(OSM_DEBUG_ADC, "ADC: " __VA_ARGS__)
+#define osm_comms_debug(...)        osm_log_debug(OSM_DEBUG_COMMS, "COMMS: " __VA_ARGS__)
+#define osm_io_debug(...)           osm_log_debug(OSM_DEBUG_IO, "IO: " __VA_ARGS__)
+#define osm_uart_debug(_uart_, ...) osm_log_debug(DEBUG_UART(uart), "UART"STR(_uart_)": " __VA_ARGS__)
+#define osm_particulate_debug(...)  osm_log_debug(OSM_DEBUG_PARTICULATE, "PART: " __VA_ARGS__)
+#define osm_modbus_debug(...)       osm_log_debug(OSM_DEBUG_MODBUS, "Modbus: " __VA_ARGS__)
+#define osm_measurements_debug(...) osm_log_debug(OSM_DEBUG_MEASUREMENTS, "Measure: " __VA_ARGS__)
+#define osm_fw_debug(...)           osm_log_debug(OSM_DEBUG_FW, "FW: " __VA_ARGS__)
+#define osm_pulsecount_debug(...)   osm_log_debug(OSM_DEBUG_PULSECOUNT, "PLSECNT: " __VA_ARGS__)
+#define osm_exttemp_debug(...)      osm_log_debug(OSM_DEBUG_EXTTEMP, "EXTTEMP: "  __VA_ARGS__)
+#define osm_light_debug(...)        osm_log_debug(OSM_DEBUG_LIGHT, "LIGHT: "  __VA_ARGS__)
+#define osm_sound_debug(...)        osm_log_debug(OSM_DEBUG_SOUND, "SOUND: "  __VA_ARGS__)
+#define osm_sleep_debug(...)        osm_log_debug(OSM_DEBUG_SLEEP, "SLEEP: "  __VA_ARGS__)
+#define osm_can_debug(...)          osm_log_debug(OSM_DEBUG_CAN, "CAN: "  __VA_ARGS__)
+#define osm_dm_debug(...)           osm_log_debug(DEBUG_MODE, "DEBUG:"  __VA_ARGS__)
+#define osm_custom_0_debug(...)     osm_log_debug(OSM_DEBUG_CUSTOM_0, "CUSTOM_0:"  __VA_ARGS__)
+#define osm_custom_1_debug(...)     osm_log_debug(OSM_DEBUG_CUSTOM_1, "CUSTOM_1:"  __VA_ARGS__)
 #endif

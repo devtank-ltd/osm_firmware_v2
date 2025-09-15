@@ -2,8 +2,8 @@
 
 #include "platform_base_types.h"
 
-#define SLEEP_MIN_SLEEP_TIME_MS                                     33
+#define OSM_SLEEP_MIN_SLEEP_TIME_MS                                     33
 
-bool sleep_for_ms(uint32_t ms);
-void sleep_exit_sleep_mode(void);
-struct cmd_link_t* sleep_add_commands(struct cmd_link_t* tail);
+bool osm_sleep_for_ms(uint32_t ms);
+void osm_sleep_exit_sleep_mode(void);
+struct osm_cmd_link_t* osm_sleep_add_commands(struct osm_cmd_link_t* tail);

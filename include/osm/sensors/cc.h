@@ -5,8 +5,8 @@
 #include <osm/core/measurements.h>
 
 
-#define CC_TYPE_A               'A'
-#define CC_TYPE_V               'V'
+#define OSM_CC_TYPE_A               'A'
+#define OSM_CC_TYPE_V               'V'
 
 
 typedef struct
@@ -15,18 +15,18 @@ typedef struct
     uint32_t ext_max_mA;
     uint32_t int_max_mV;
     char     type;
-} cc_config_t;
+} osm_cc_config_t;
 
 
-void                         cc_init(void);
+void                         osm_cc_init(void);
 
-bool                         cc_get_blocking(char* name, measurements_reading_t* value);
-bool                         cc_get_all_blocking(measurements_reading_t* value_1, measurements_reading_t* value_2, measurements_reading_t* value_3);
+bool                         osm_cc_get_blocking(char* name, osm_measurements_reading_t* value);
+bool                         osm_cc_get_all_blocking(osm_measurements_reading_t* value_1, osm_measurements_reading_t* value_2, osm_measurements_reading_t* value_3);
 
-bool                         cc_set_active_clamps(adcs_type_t* clamps, unsigned len);
+bool                         osm_cc_set_active_clamps(osm_adcs_type_t* clamps, unsigned len);
 
-void                         cc_inf_init(measurements_inf_t* inf);
+void                         osm_cc_inf_init(osm_measurements_inf_t* inf);
 
-struct cmd_link_t*           cc_add_commands(struct cmd_link_t* tail);
+struct osm_cmd_link_t*           osm_cc_add_commands(struct osm_cmd_link_t* tail);
 
-void                         cc_setup_default_mem(cc_config_t* memory, unsigned size);
+void                         osm_cc_setup_default_mem(osm_cc_config_t* memory, unsigned size);

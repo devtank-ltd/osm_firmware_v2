@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sqlite3
 import yaml
 import os
@@ -222,12 +224,18 @@ def generate_db(path_to_db):
     cur.execute(*CREATE_REGISTERS('0x3d', 3, 'I16', 'rol', 'X Axis Angle', 3, 3))
     cur.execute(*CREATE_REGISTERS('0x3e', 3, 'I16', 'pit', 'X Axis Angle', 3, 3))
     cur.execute(*CREATE_REGISTERS('0x3f', 3, 'I16', 'yaw', 'X Axis Angle', 3, 3))
+    cur.execute(*CREATE_MEASUREMENTS('TMP5', 'Temperature 2', 22.5, 2.5))
+    cur.execute(*CREATE_MEASUREMENTS('HUM2', 'Humidity 2', 45.1, 2.5))
     cur.execute(*CREATE_MEASUREMENTS('TEMP', 'Temperature', 20.0, 2.5))
     cur.execute(*CREATE_MEASUREMENTS('HUMI', 'Humidity', 50.0, 2.5))
-    cur.execute(*CREATE_MEASUREMENTS('LGHT', 'Light', 1000.0, 100.0))
+    cur.execute(*CREATE_MEASUREMENTS('LGHT', 'Light', 159.0, 0.01))
     cur.execute(*CREATE_MEASUREMENTS('TMP2', 'One wire probe', 25.0625, 0.01))
     cur.execute(*CREATE_MEASUREMENTS('PM25', 'PM 2.5', 20.0, 0.0))
     cur.execute(*CREATE_MEASUREMENTS('PM10', 'PM 10', 30.0, 0.0))
+    cur.execute(*CREATE_MEASUREMENTS('PM4',  'PM 4', 3.3, 0.0))
+    cur.execute(*CREATE_MEASUREMENTS('PM1',  'PM 1', 1.1, 0.0))
+    cur.execute(*CREATE_MEASUREMENTS('VOC',  'Volatile Compound Index', 5.5, 0.0))
+    cur.execute(*CREATE_MEASUREMENTS('NOX',  'Nitrogen Oxide Index', 6.6, 0.0))
     cur.execute(*CREATE_MEASUREMENTS('CC1', 'Current clamp phase 1', 5000.0, 100.0))
     cur.execute(*CREATE_MEASUREMENTS('CC2', 'Current clamp phase 2', 7500.0, 100.0))
     cur.execute(*CREATE_MEASUREMENTS('CC3', 'Current clamp phase 3', 10000.0, 100.0))
@@ -241,8 +249,9 @@ def generate_db(path_to_db):
     cur.execute(*CREATE_MEASUREMENTS('FTA4', '4-20 mA', 20.0, 0.2))
     cur.execute(*CREATE_MEASUREMENTS('CNT1', 'Pulsecount 1', 0, 0))
     cur.execute(*CREATE_MEASUREMENTS('CNT2', 'Pulsecount 2', 0, 0))
-    cur.execute(*CREATE_MEASUREMENTS('IO04', 'IO pin', 0, 0))
-    cur.execute(*CREATE_MEASUREMENTS('IO05', 'IO pin', 0, 0))
+    cur.execute(*CREATE_MEASUREMENTS('IO00', 'IO pin', 0, 0))
+    cur.execute(*CREATE_MEASUREMENTS('IO01', 'IO pin', 0, 0))
+    cur.execute(*CREATE_MEASUREMENTS('CREV', 'Revision', 1.0, 0))
     conn.commit()
 
 class modb_database_t(object):
@@ -389,4 +398,4 @@ class modb_database_t(object):
         return data.fetchone()
 
 if __name__ == "__main__":
-    generate_db('./config_database/modbus_templates.db')
+    generate_db('modbus_templates.db')

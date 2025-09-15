@@ -5,54 +5,54 @@
 #include <osm/core/base_types.h>
 
 
-#define AT_BASE_MAX_CMD_LEN                                  (1024 + 128)
+#define OSM_AT_BASE_MAX_CMD_LEN                                  (1024 + 128)
 
-#define AT_BASE_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT "COMMS_ID_STR"\",\n\r  \"config\": {"
-#define AT_BASE_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
+#define OSM_AT_BASE_PRINT_CFG_JSON_HEADER                       "{\n\r  \"type\": \"AT "COMMS_ID_STR"\",\n\r  \"config\": {"
+#define OSM_AT_BASE_PRINT_CFG_JSON_TAIL                         "  }\n\r}"
 
-#define AT_BASE_MAC_ADDRESS_LEN                             18
+#define OSM_AT_BASE_MAC_ADDRESS_LEN                             18
 
-#define AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\""
-#define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , AT_BASE_MAC_ADDRESS_LEN       , _mac
+#define OSM_AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS              "    \"HWID\": \"%.*s\""
+#define AT_BASE_PRINT_CFG_JSON_MAC_ADDRESS(_mac)            OSM_AT_BASE_PRINT_CFG_JSON_FMT_MAC_ADDRESS  , OSM_AT_BASE_MAC_ADDRESS_LEN       , _mac
 
 #define AT_BASE_SANIT_STR(_s)                                           \
-    comms_common_json_escape(_s, sizeof(_s), '\\', "\",", 2)
+    osm_comms_common_json_escape(_s, sizeof(_s), '\\', "\",", 2)
 
 
 typedef struct
 {
-    char        str[AT_BASE_MAX_CMD_LEN];
+    char        str[OSM_AT_BASE_MAX_CMD_LEN];
     unsigned    len;
-} at_base_cmd_t;
+} osm_at_base_cmd_t;
 
 typedef struct
 {
     uint64_t ts_unix;
     uint32_t sys;
-} at_base_time_t;
+} osm_at_base_time_t;
 
 typedef struct
 {
     uint32_t        last_sent;
     uint32_t        last_recv;
     uint32_t        off_since;
-    at_base_cmd_t    last_cmd;
-    port_n_pins_t   reset_pin;
-    port_n_pins_t   boot_pin;
-    at_base_time_t   time;
-    at_base_cmd_t    cmd_line;
-    char            mac_address[AT_BASE_MAC_ADDRESS_LEN];
-} at_base_ctx_t;
+    osm_at_base_cmd_t    last_cmd;
+    osm_port_n_pins_t   reset_pin;
+    osm_port_n_pins_t   boot_pin;
+    osm_at_base_time_t   time;
+    osm_at_base_cmd_t    cmd_line;
+    char            mac_address[OSM_AT_BASE_MAC_ADDRESS_LEN];
+} osm_at_base_ctx_t;
 
 
-unsigned    at_base_raw_send(char* msg, unsigned len);
-bool        at_base_send_str(char* str);
-void        at_base_init(at_base_ctx_t* ctx);
-bool        at_base_is_ok(char* msg, unsigned len);
-bool        at_base_is_error(char* msg, unsigned len);
-void        at_base_sleep(void);
-void        at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, cmd_ctx_t * ctx);
-bool        at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, cmd_ctx_t * ctx);
-void        at_base_boot(char* args, cmd_ctx_t * ctx);
-void        at_base_reset(char* args, cmd_ctx_t * ctx);
-command_response_t at_base_config_setup_str(struct cmd_link_t * cmds, char * str, cmd_ctx_t * ctx);
+unsigned    osm_at_base_raw_send(char* msg, unsigned len);
+bool        osm_at_base_send_str(char* str);
+void        osm_at_base_init(osm_at_base_ctx_t* ctx);
+bool        osm_at_base_is_ok(char* msg, unsigned len);
+bool        osm_at_base_is_error(char* msg, unsigned len);
+void        osm_at_base_sleep(void);
+void        osm_at_base_config_get_set_str(const char* name, char* dest, unsigned max_dest_len, char* src, osm_cmd_ctx_t * ctx);
+bool        osm_at_base_config_get_set_u16(const char* name, uint16_t* dest, char* src, osm_cmd_ctx_t * ctx);
+void        osm_at_base_boot(char* args, osm_cmd_ctx_t * ctx);
+void        osm_at_base_reset(char* args, osm_cmd_ctx_t * ctx);
+osm_command_response_t osm_at_base_config_setup_str(struct osm_cmd_link_t * cmds, char * str, osm_cmd_ctx_t * ctx);
