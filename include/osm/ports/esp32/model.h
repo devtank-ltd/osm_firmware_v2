@@ -9,8 +9,8 @@
 
 uint8_t  osm_model_stm_adcs_get_channel(osm_adcs_type_t adcs_type);
 void     osm_model_sensors_init(void);
-void     osm_model_persist_config_model_init(persist_model_config_t * config);
-bool     osm_model_persist_config_cmp(persist_model_config_t* d0, persist_model_config_t* d1);
+void     osm_model_persist_config_model_init(osm_persist_model_config_t * config);
+bool     osm_model_persist_config_cmp(osm_persist_model_config_t* d0, osm_persist_model_config_t* d1);
 void     osm_model_post_init(void);
 bool     osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring);
 bool     osm_model_uart_ring_do_out_drain(unsigned uart, osm_ring_buf_t * ring);
@@ -23,4 +23,4 @@ void     osm_model_uarts_setup(void);
 void     osm_model_setup_pulse_pupd(uint8_t* pupd);
 unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr);
 void     osm_model_main_loop_iterate(void);
-bool     osm_model_config_update(const void* from_config, persist_model_config_t* to_config, uint16_t from_model_version);
+bool     osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version);
