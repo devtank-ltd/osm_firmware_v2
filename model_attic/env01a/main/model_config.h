@@ -27,10 +27,10 @@
 
 #define EXT_UART    1
 
-#define MODBUS_SPEED        9600
-#define MODBUS_PARITY       osm_uart_parity_none
-#define MODBUS_DATABITS     8
-#define MODBUS_STOP         osm_uart_stop_bits_1
+#define OSM_MODBUS_SPEED        9600
+#define OSM_MODBUS_PARITY       osm_uart_parity_none
+#define OSM_MODBUS_DATABITS     8
+#define OSM_MODBUS_STOP         osm_uart_stop_bits_1
 
 #define ADC_MAX_MV          3300
 
@@ -49,4 +49,4 @@ typedef struct
     /* 16 byte boundary ---- */
 } osm_persist_model_config_v1_t;
 
-#define persist_model_config_t        osm_persist_model_config_v1_t
+#define osm_persist_model_config_t        osm_persist_model_config_v1_t

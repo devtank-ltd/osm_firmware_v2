@@ -114,13 +114,13 @@
 
 #define IOS_STATE                                                      \
 {                                                                      \
-    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
-    OSM_IO_AS_INPUT,                                        /* GPIO 1   */ \
-    OSM_IO_AS_INPUT,                                        /* GPIO 2   */ \
-    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
-    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 4   */ \
-    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 5   */ \
-    OSM_IO_AS_INPUT | OSM_GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
+    OSM_IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 0   */ \
+    OSM_IO_AS_INPUT,                                    /* GPIO 1   */ \
+    OSM_IO_AS_INPUT,                                    /* GPIO 2   */ \
+    OSM_IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 3   */ \
+    OSM_IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 4   */ \
+    OSM_IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 5   */ \
+    OSM_IO_AS_INPUT | GPIO_PUPD_PULLDOWN,                   /* GPIO 6   */ \
 }
 
 

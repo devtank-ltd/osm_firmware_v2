@@ -66,10 +66,10 @@
 #define UART_3_STOP         osm_uart_stop_bits_1
 #define UART_4_STOP         osm_uart_stop_bits_1
 
-#define MODBUS_SPEED        UART_4_SPEED
-#define MODBUS_PARITY       UART_4_PARITY
-#define MODBUS_DATABITS     UART_4_DATABITS
-#define MODBUS_STOP         UART_4_STOP
+#define OSM_MODBUS_SPEED        UART_4_SPEED
+#define OSM_MODBUS_PARITY       UART_4_PARITY
+#define OSM_MODBUS_DATABITS     UART_4_DATABITS
+#define OSM_MODBUS_STOP         UART_4_STOP
 
 #define IOS_COUNT           7
 
@@ -104,4 +104,4 @@ typedef struct
     /* 7 x 16 bytes          */
 } osm_persist_model_config_v4_t;
 
-#define persist_model_config_t        osm_persist_model_config_v4_t
+#define osm_persist_model_config_t        osm_persist_model_config_v4_t

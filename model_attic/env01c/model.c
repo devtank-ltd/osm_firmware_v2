@@ -49,7 +49,7 @@ uint8_t osm_model_stm_adcs_get_channel(osm_adcs_type_t adcs_type)
 }
 
 
-void osm_model_persist_config_model_init(persist_model_config_t* model_config)
+void osm_model_persist_config_model_init(osm_persist_model_config_t* model_config)
 {
     model_config->mins_interval = OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
     osm_cc_setup_default_mem(model_config->cc_configs, sizeof(model_config->cc_configs));
@@ -64,7 +64,7 @@ void osm_model_persist_config_model_init(persist_model_config_t* model_config)
 
 /* Return true  if different
  *        false if same      */
-bool osm_model_persist_config_cmp(persist_model_config_t* d0, persist_model_config_t* d1)
+bool osm_model_persist_config_cmp(osm_persist_model_config_t* d0, osm_persist_model_config_t* d1)
 {
     return !(
         d0 && d1 &&
