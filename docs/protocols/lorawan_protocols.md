@@ -35,7 +35,7 @@ Version number of protocol. Currently 2.
 Data Name
 =========
 Four characters of the name of the measurement.
-For a list of non-configuration defined measurements names see  [measurements_mem.h](../../core/include/measurements_mem.h)
+For a list of non-configuration defined measurements names see  [measurements_mem.h](../../include/osm/core/measurements_mem.h)
 
 Data Type
 =========
