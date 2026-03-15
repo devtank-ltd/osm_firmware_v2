@@ -44,7 +44,7 @@ typedef enum {
 static void _i2s_dma_setup(PIO pio, uint32_t in_sm, uint32_t out_sm);
 static void _i2s_dma_irq(void);
 static void _i2s_process_audio(const int32_t* input, size_t num_frames);
-static command_response_t _i2s_get_audio_cb(char* args, cmd_ctx_t * ctx);
+static osm_command_response_t _i2s_get_audio_cb(char* args, osm_cmd_ctx_t * ctx);
 static void _i2s_get_audio(int32_t* left, int32_t* right);
 
 static int _dma_chs[DMA_CH_COUNT] = {-1};
@@ -75,21 +75,21 @@ void i2s_init(void)
     pio_enable_sm_mask_in_sync(pio, sm_mask);
 }
 
-struct cmd_link_t* i2s_add_commands(struct cmd_link_t* tail)
+struct osm_cmd_link_t* i2s_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct cmd_link_t cmds[] =
+    static struct osm_cmd_link_t cmds[] =
     {
         { "get_audio", "Set audio.", _i2s_get_audio_cb, false, NULL },
     };
-    return add_commands(tail, cmds, ARRAY_SIZE(cmds));
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
 
-static command_response_t _i2s_get_audio_cb(char* args, cmd_ctx_t * ctx)
+static osm_command_response_t _i2s_get_audio_cb(char* args, osm_cmd_ctx_t * ctx)
 {
     int32_t left = 0, right = 0;
     _i2s_get_audio(&left, &right);
-    cmd_ctx_out(ctx,"L: %"PRId32" R: %"PRId32, left, right);
-    return COMMAND_RESP_OK;
+    osm_cmd_ctx_out(ctx,"L: %"PRId32" R: %"PRId32, left, right);
+    return OSM_COMMAND_RESP_OK;
 }
 
 static void _i2s_get_audio(int32_t* left, int32_t* right)

@@ -12,44 +12,44 @@
 #include <osm/core/update.h>
 #include "i2s.h"
 
-void model_post_init(void) {}
+void osm_model_post_init(void) {}
 
-void model_sensors_init(void)
+void osm_model_sensors_init(void)
 {
     i2s_init();
 }
 
 /* Return true  if different
  *        false if same      */
-bool model_persist_config_cmp(persist_model_config_v1_t* d0, persist_model_config_v1_t* d1)
+bool osm_model_persist_config_cmp(osm_persist_model_config_v1_t* d0, osm_persist_model_config_v1_t* d1)
 {
     return !(
         d0 && d1 &&
         d0->mins_interval == d1->mins_interval &&
-        !comms_persist_config_cmp(&d0->comms_config, &d1->comms_config));
+        !osm_comms_persist_config_cmp(&d0->comms_config, &d1->comms_config));
 }
 
-bool model_uart_ring_done_in_process(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring)
 {
     return false;
 }
 
-bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* data, measurements_inf_t* inf)
+bool osm_model_measurements_get_inf(osm_measurements_def_t * def, osm_measurements_data_t* data, osm_measurements_inf_t* inf)
 {
     if (!def || !inf)
     {
-        measurements_debug("Handed NULL pointer.");
+        osm_measurements_debug("Handed NULL pointer.");
         return false;
     }
     // Optional callbacks: get is not optional, neither is collection
     // time if init given are not optional.
-    memset(inf, 0, sizeof(measurements_inf_t));
+    memset(inf, 0, sizeof(osm_measurements_inf_t));
     switch(def->type)
     {
-        case FW_VERSION:      fw_version_inf_init(inf);  break;
-        case CONFIG_REVISION: persist_config_inf_init(inf);  break;
+        case OSM_FW_VERSION:      osm_fw_version_inf_init(inf);  break;
+        case OSM_CONFIG_REVISION: osm_persist_config_inf_init(inf);  break;
         default:
-            log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
+            osm_log_error("Unknown measurements type! : 0x%"PRIx8, def->type);
             return false;
     }
 
@@ -60,59 +60,59 @@ bool model_measurements_get_inf(measurements_def_t * def, measurements_data_t* d
 }
 
 
-bool model_uart_ring_do_out_drain(unsigned uart, ring_buf_t * ring)
+bool osm_model_uart_ring_do_out_drain(unsigned uart, osm_ring_buf_t * ring)
 {
     return true;
 }
 
-void model_measurements_repopulate(void)
+void osm_model_measurements_repopulate(void)
 {
-    measurements_repop_indiv((char*)MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    measurements_repop_indiv((char*)MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    osm_measurements_repop_indiv((char*)OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
+    osm_measurements_repop_indiv((char*)OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
 }
 
 
-void model_cmds_add_all(struct cmd_link_t* tail)
+void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
 {
-    tail = persist_config_add_commands(tail);
-    tail = measurements_add_commands(tail);
-    tail = update_add_commands(tail);
+    tail = osm_persist_config_add_commands(tail);
+    tail = osm_measurements_add_commands(tail);
+    tail = osm_update_add_commands(tail);
     tail = i2s_add_commands(tail);
 }
 
 
-void model_uarts_setup(void) {}
+void osm_model_uarts_setup(void) {}
 
 
-unsigned model_measurements_add_defaults(measurements_def_t * measurements_arr)
+unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr)
 {
     if (!measurements_arr)
         return 0;
     unsigned pos = 0;
-    measurements_setup_default(&measurements_arr[pos++], (char*)MEASUREMENTS_FW_VERSION,           4,  1,  FW_VERSION      );
-    measurements_setup_default(&measurements_arr[pos++], (char*)MEASUREMENTS_CONFIG_REVISION,      4,  1,  CONFIG_REVISION );
+    osm_measurements_setup_default(&measurements_arr[pos++], (char*)OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
+    osm_measurements_setup_default(&measurements_arr[pos++], (char*)OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
     return pos;
 }
 
 
-void model_persist_config_model_init(persist_model_config_v1_t* model_config)
+void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
 {
-    model_config->mins_interval = MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
+    model_config->mins_interval = OSM_MEASUREMENTS_DEFAULT_TRANSMIT_INTERVAL;
 }
 
-void model_main_loop_iterate(void)
+void osm_model_main_loop_iterate(void)
 {
 }
 
 
-bool __attribute__((weak)) bat_on_battery(bool* on_battery)
+bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
 {
     /* No battery fitted */
     return false;
 }
 
 
-unsigned ios_get_count(void)
+unsigned osm_ios_get_count(void)
 {
     return 0;
 }

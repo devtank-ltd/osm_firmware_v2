@@ -131,11 +131,11 @@ static bool _persist_commit2(uint8_t* dst, uint8_t* src, uint32_t size)
 }
 
 
-static bool _persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+static bool _persist_commit(osm_persist_storage_t* persist_data, osm_persist_measurements_storage_t* persist_measurements)
 {
     flash_range_erase(PERSIST_CONFIG_SECTOR, FLASH_SECTOR_SIZE);
-    return (_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(persist_storage_t)) &&
-        (_persist_commit2(PERSIST_RAW_MEASUREMENTS, (uint8_t*)persist_measurements, sizeof(persist_measurements_storage_t))));
+    return (_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(osm_persist_storage_t)) &&
+        (_persist_commit2(PERSIST_RAW_MEASUREMENTS, (uint8_t*)persist_measurements, sizeof(osm_persist_measurements_storage_t))));
 }
 
 
@@ -145,7 +145,7 @@ int main(void)
     _uart_send_str("Bootloader");
     _led_setup();
 
-    persist_storage_t * config = (persist_storage_t*)PERSIST_RAW_DATA;
+    osm_persist_storage_t * config = (osm_persist_storage_t*)PERSIST_RAW_DATA;
 
     if (config->pending_fw && config->pending_fw != 0xFFFFFFFF)
     {
@@ -196,10 +196,10 @@ int main(void)
         }
         else _uart_send_str("No New Firmware!");
 
-        static persist_storage_t _config = {0};
+        static osm_persist_storage_t _config = {0};
         _config = *config;
-        static persist_measurements_storage_t _measurements = {0};
-        _measurements = *(persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
+        static osm_persist_measurements_storage_t _measurements = {0};
+        _measurements = *(osm_persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
         _config.pending_fw = 0;
         if (!_persist_commit(&_config, &_measurements))
         {

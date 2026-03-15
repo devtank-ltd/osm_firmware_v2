@@ -25,12 +25,12 @@
 #include "model_config.h"
 
 
-uint32_t platform_get_frequency(void)
+uint32_t osm_platform_get_frequency(void)
 {
     return clock_get_hz(clk_sys);
 }
 
-uint32_t platform_get_hw_id(void)
+uint32_t osm_platform_get_hw_id(void)
 {
     pico_unique_board_id_t id = {0};
     pico_get_unique_board_id(&id);
@@ -42,7 +42,7 @@ uint32_t platform_get_hw_id(void)
 }
 
 
-void platform_blink_led_init(void)
+void osm_platform_blink_led_init(void)
 {
 #ifdef LED_PIN
     gpio_init(LED_PIN);
@@ -57,7 +57,7 @@ void platform_blink_led_init(void)
 }
 
 
-void platform_blink_led_toggle(void)
+void osm_platform_blink_led_toggle(void)
 {
 #ifdef LED_PIN
     bool out = gpio_get_out_level(LED_PIN);
@@ -69,19 +69,19 @@ void platform_blink_led_toggle(void)
 }
 
 
-void platform_watchdog_reset(void)
+void osm_platform_watchdog_reset(void)
 {
     watchdog_update();
 }
 
 
-void platform_watchdog_init(uint32_t ms)
+void osm_platform_watchdog_init(uint32_t ms)
 {
     watchdog_enable(ms, 1);
 }
 
 
-void platform_init(void)
+void osm_platform_init(void)
 {
 #ifdef CYW43_WL_GPIO_LED_PIN
     cyw43_arch_init();
@@ -90,32 +90,32 @@ void platform_init(void)
 }
 
 
-void platform_set_rs485_mode(bool driver_enable)
+void osm_platform_set_rs485_mode(bool driver_enable)
 {
 }
 
 
-void platform_reset_sys(void)
+void osm_platform_reset_sys(void)
 {
     watchdog_reboot(0, 0, 0);
 }
 
 
-void platform_hard_reset_sys(void)
+void osm_platform_hard_reset_sys(void)
 {
     watchdog_reboot(0, 0, 0);
 }
 
 
-persist_storage_t* platform_get_raw_persist(void)
+osm_persist_storage_t* osm_platform_get_raw_persist(void)
 {
-    return (persist_storage_t*)PERSIST_RAW_DATA;
+    return (osm_persist_storage_t*)PERSIST_RAW_DATA;
 }
 
 
-persist_measurements_storage_t* platform_get_measurements_raw_persist(void)
+osm_persist_measurements_storage_t* osm_platform_get_measurements_raw_persist(void)
 {
-    return (persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
+    return (osm_persist_measurements_storage_t*)PERSIST_RAW_MEASUREMENTS;
 }
 
 
@@ -139,7 +139,7 @@ static bool _rp2350_persist_commit2(uint8_t* dst, uint8_t* src, uint32_t size)
 }
 
 
-bool platform_persist_commit(persist_storage_t* persist_data, persist_measurements_storage_t* persist_measurements)
+bool osm_platform_persist_commit(osm_persist_storage_t* persist_data, osm_persist_measurements_storage_t* persist_measurements)
 {
     /* ============================ WARNING ============================
      * Entering critical section, will potentially miss interrupts here
@@ -148,20 +148,20 @@ bool platform_persist_commit(persist_storage_t* persist_data, persist_measuremen
     critical_section_init(&crit_sec);
     critical_section_enter_blocking(&crit_sec);
     flash_range_erase(PERSIST_CONFIG_SECTOR, FLASH_SECTOR_SIZE);
-    bool ret = (_rp2350_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(persist_storage_t)) &&
-        (_rp2350_persist_commit2(PERSIST_RAW_MEASUREMENTS, (uint8_t*)persist_measurements, sizeof(persist_measurements_storage_t))));
+    bool ret = (_rp2350_persist_commit2(PERSIST_RAW_DATA, (uint8_t*)persist_data, sizeof(osm_persist_storage_t)) &&
+        (_rp2350_persist_commit2(PERSIST_RAW_MEASUREMENTS, (uint8_t*)persist_measurements, sizeof(osm_persist_measurements_storage_t))));
     critical_section_exit(&crit_sec);
     critical_section_deinit(&crit_sec);
     return ret;
 }
 
-void platform_persist_wipe(void)
+void osm_platform_persist_wipe(void)
 {
     flash_range_erase(PERSIST_CONFIG_SECTOR, FLASH_SECTOR_SIZE);
 }
 
 
-bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
+bool osm_platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_page)
 {
     uintptr_t flash_dst = dst - XIP_BASE;
     if (flash_dst % FLASH_SECTOR_SIZE == 0)
@@ -174,44 +174,44 @@ bool platform_overwrite_fw_page(uintptr_t dst, unsigned abs_page, uint8_t* fw_pa
 }
 
 
-uintptr_t platform_get_fw_addr(unsigned fw_page_index)
+uintptr_t osm_platform_get_fw_addr(unsigned fw_page_index)
 {
     return (uintptr_t)(NEW_FW_ADDR + (fw_page_index * FLASH_PAGE_SIZE));
 }
 
 
-void platform_finish_fw(void)
+void osm_platform_finish_fw(void)
 {
 }
 
 
-void platform_clear_flash_flags(void)
+void osm_platform_clear_flash_flags(void)
 {
 }
 
 
-void platform_start(void)
+void osm_platform_start(void)
 {
 }
 
 
-bool platform_running(void)
+bool osm_platform_running(void)
 {
     return true;
 }
 
 
-void platform_deinit(void)
+void osm_platform_deinit(void)
 {
 }
 
 
-void platform_hpm_enable(bool enable)
+void osm_platform_hpm_enable(bool enable)
 {
 }
 
 
-void platform_tight_loop(void)
+void osm_platform_tight_loop(void)
 {
     tight_loop_contents();
 }
@@ -220,13 +220,13 @@ void platform_tight_loop(void)
 void __attribute__((weak)) model_main_loop_iterate(void) {}
 
 
-void platform_main_loop_iterate(void)
+void osm_platform_main_loop_iterate(void)
 {
     model_main_loop_iterate();
 }
 
 
-uint32_t get_since_boot_ms(void)
+uint32_t osm_get_since_boot_ms(void)
 {
     uint64_t t64 = time_us_64();
     t64 /= 1000;
@@ -235,25 +235,25 @@ uint32_t get_since_boot_ms(void)
 }
 
 
-void platform_gpio_init(const port_n_pins_t * gpio_pin)
+void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin)
 {
     gpio_init(gpio_pin->pins);
 }
 
 
-void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
     gpio_init(gpio_pin->pins);
     gpio_set_dir(gpio_pin->pins, !is_input);
     switch(pull)
     {
-        case IO_PUPD_DOWN:
+        case OSM_IO_PUPD_DOWN:
             gpio_pull_down(gpio_pin->pins);
             break;
-        case IO_PUPD_UP:
+        case OSM_IO_PUPD_UP:
             gpio_pull_up(gpio_pin->pins);
             break;
-        case IO_PUPD_NONE:
+        case OSM_IO_PUPD_NONE:
             /* fall through */
         default:
             gpio_disable_pulls(gpio_pin->pins);
@@ -261,12 +261,12 @@ void platform_gpio_setup(const port_n_pins_t * gpio_pin, bool is_input, uint32_t
     }
 }
 
-void platform_gpio_set(const port_n_pins_t * gpio_pin, bool is_on)
+void platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
 {
     gpio_put(gpio_pin->pins, is_on);
 }
 
-bool platform_gpio_get(const port_n_pins_t * gpio_pin)
+bool platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     if (gpio_get_dir(gpio_pin->pins))
     {
