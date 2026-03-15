@@ -29,7 +29,7 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
     {
         uint64_t page64 = 0;
         memcpy(&page64, _fw_page, sizeof(uint64_t));
-        osm_fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, *(uint64_t*)_fw_page);
+        osm_fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, page64);
         if (osm_platform_overwrite_fw_page(dst, abs_page, _fw_page))
         {
             osm_fw_debug("Written page");
