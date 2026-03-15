@@ -8,7 +8,7 @@
 #include "rp2350_comms.h"
 
 #define PERSIST_MODEL_VERSION       3
-#define PERSIST_VERSION             PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
+#define PERSIST_VERSION             OSM_PERSIST_VERSION_SET(PERSIST_MODEL_VERSION)
 
 /* We have 2MB of flash. Given 32kB to the bootloader, 2 sectors
    reserved for config (8kB), leaving 2056kB for
@@ -68,20 +68,20 @@
 #define UART_2_SPEED        9600    /* RS485 */
 #define UART_3_SPEED        9600    /* RS232 */
 
-#define UART_0_PARITY       uart_parity_none
-#define UART_1_PARITY       uart_parity_none
-#define UART_2_PARITY       uart_parity_none
-#define UART_3_PARITY       uart_parity_none
+#define UART_0_PARITY       osm_uart_parity_none
+#define UART_1_PARITY       osm_uart_parity_none
+#define UART_2_PARITY       osm_uart_parity_none
+#define UART_3_PARITY       osm_uart_parity_none
 
 #define UART_0_DATABITS     8
 #define UART_1_DATABITS     8
 #define UART_2_DATABITS     8
 #define UART_3_DATABITS     8
 
-#define UART_0_STOP         uart_stop_bits_1
-#define UART_1_STOP         uart_stop_bits_1
-#define UART_2_STOP         uart_stop_bits_1
-#define UART_3_STOP         uart_stop_bits_1
+#define UART_0_STOP         osm_uart_stop_bits_1
+#define UART_1_STOP         osm_uart_stop_bits_1
+#define UART_2_STOP         osm_uart_stop_bits_1
+#define UART_3_STOP         osm_uart_stop_bits_1
 
 #define IOS_COUNT 0
 
@@ -90,8 +90,8 @@ typedef struct
     uint32_t                mins_interval;
     uint8_t                 _[12];
     /* 16 byte boundary ---- */
-    comms_config_t          comms_config;
+    osm_comms_config_t      comms_config;
     /* 16 byte boundary ---- */
-} persist_model_config_v1_t;
+} osm_persist_model_config_v1_t;
 
-#define persist_model_config_t        persist_model_config_v1_t
+#define osm_persist_model_config_t        osm_persist_model_config_v1_t
