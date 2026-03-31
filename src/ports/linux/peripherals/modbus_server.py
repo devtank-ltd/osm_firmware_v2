@@ -2,20 +2,26 @@
 import os
 import logging
 from pymodbus.payload import BinaryPayloadBuilder
-from pymodbus.transaction import ModbusRtuFramer
 try:
     from pymodbus.version import version
 except ModuleNotFoundError:
     import pymodbus
     version_short = pymodbus.__version__
     version_major = int(version_short.split(".")[0])
+    version_minor = int(version_short.split(".")[1])
 else:
     version_major = version.major
+    version_minor = version.minor
     version_short = version.short
 if version_major < 3:
     from pymodbus.server.sync import StartSerialServer
 else:
     from pymodbus.server import StartSerialServer
+if version_major >= 3 and version_minor > 1:
+    FRAMER = "rtu"
+else:
+    from pymodbus.transaction import ModbusRtuFramer as FRAMER
+
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
 from pymodbus.constants import Endian
@@ -77,9 +83,9 @@ class modbus_server_t(object):
         rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=endian_big, wordorder=endian_little)
         rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=endian_big, wordorder=endian_big)
 
-        slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block, zero_mode=True),
-                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block, zero_mode=True),
-                  MODBUS_DEV_ADDRESS_RDL : ModbusSlaveContext(ir=rdl_slave_block, zero_mode=True),
+        slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block),
+                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block),
+                  MODBUS_DEV_ADDRESS_RDL : ModbusSlaveContext(ir=rdl_slave_block),
                   }
         self._context = ModbusServerContext(slaves=slaves, single=False)
         self._identity = ModbusDeviceIdentification()
@@ -92,18 +98,21 @@ class modbus_server_t(object):
 
     def run_forever(self):
         log = self._logger
-        StartSerialServer(context=self._context, framer=ModbusRtuFramer, identity=self._identity,
+        StartSerialServer(context=self._context, framer=FRAMER, identity=self._identity,
                       port=self._port, timeout=1, baudrate=9600)
 
-    def _create_block(self, src, byteorder, wordorder):
-        builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=wordorder)
+    def _create_block(self, src, byteorder, wordorder, zero=True):
+        builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=endian_big)
         dst = {}
         for key, value in src.items():
             type_func, somevalue = value
             type_func(builder, somevalue)
             data = builder.to_registers()
+            base = (key + 1) if zero else key
+            if len(data) == 2 and wordorder == endian_little:
+                data = [data[1], data[0]]
             for n in range(len(data)):
-                dst[key + n] = data[n]
+                dst[base + n] = data[n]
             builder.reset()
         return ModbusSparseDataBlock(values=dst)
 
