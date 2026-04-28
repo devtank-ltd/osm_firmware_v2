@@ -26,6 +26,9 @@ env01c_SOURCES := \
     $(OSM_DIR)/src/ports/stm/uarts.c \
     $(OSM_DIR)/src/ports/stm/w1.c \
     $(OSM_DIR)/src/ports/stm/bat.c \
+    $(OSM_DIR)/src/ports/stm/pulsecount.c \
+    $(OSM_DIR)/src/ports/stm/sai.c \
+    $(OSM_DIR)/src/ports/stm/io_watch.c \
     $(OSM_DIR)/src/protocols/hexblob.c \
     $(OSM_DIR)/src/protocols/comms_behind.c \
     $(OSM_DIR)/src/comms/common.c \
@@ -34,13 +37,10 @@ env01c_SOURCES := \
     $(OSM_DIR)/src/sensors/hpm.c \
     $(OSM_DIR)/src/sensors/htu21d.c \
     $(OSM_DIR)/src/sensors/ds18b20.c \
-    $(OSM_DIR)/src/sensors/pulsecount.c \
     $(OSM_DIR)/src/sensors/veml7700.c \
-    $(OSM_DIR)/src/sensors/sai.c \
     $(OSM_DIR)/src/sensors/cc.c \
     $(OSM_DIR)/src/sensors/can_impl.c \
     $(OSM_DIR)/src/sensors/fw.c \
-    $(OSM_DIR)/src/sensors/io_watch.c \
     $(OSM_MODEL_DIR)/env01c/model.c \
 
 env01c_LINK_SCRIPT := $(OSM_DIR)/src/ports/stm/stm32l4.ld
