@@ -75,7 +75,7 @@ static void _stm_adcs_set_prescale(uint32_t adc, uint32_t prescale)
 static void _stm_setup_adc_unit(void)
 {
     adc_power_off(ADC1);
-    RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
+    RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYSCLK << RCC_CCIPR_ADCSEL_SHIFT;
     if (ADC_CR(ADC1) & ADC_CR_DEEPPWD)
     {
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
