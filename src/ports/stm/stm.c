@@ -1,4 +1,5 @@
 #include <string.h>
+#include <sys/types.h>
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/iwdg.h>
@@ -450,3 +451,17 @@ bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     return gpio_get(gpio_pin->port, gpio_pin->pins) != 0;
 }
+
+/*
+ * In some more recent version of GCC, the weak reference for these generate warnings and these are getting pulled in.
+ * So we bring out own that don't cause a warning.
+ * */
+
+int _fstat_r(void * p1, int i, void * p2) {return -1;}
+int _getpid(void) {return -1;}
+int _isatty(int tty) {return -1;}
+int _kill(pid_t pid, int sig) {return -1;}
+int _close(int fd) {return -1;}
+long _lseek(int handle, long offset, int origin ) {return -1;}
+ssize_t _read(int fildes, void *buf, size_t nbyte) {return -1;}
+ssize_t _write(int fildes, const void *buf, size_t nbyte) {return -1;}
