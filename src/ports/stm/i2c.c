@@ -18,7 +18,7 @@ static void _i2c_setup(const osm_i2c_def_t * i2c_bus)
 {
     uint32_t i2c = i2c_bus->i2c;
 
-    rcc_periph_reset_pulse(i2c_bus->rcc);
+    rcc_periph_reset_pulse(i2c_bus->rst);
 
     i2c_peripheral_disable(i2c);
 

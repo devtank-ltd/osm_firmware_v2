@@ -42,6 +42,7 @@ typedef struct
 typedef struct
 {
     uint32_t rcc;
+    uint32_t rst;
     uint32_t i2c;
     uint32_t speed;
     uint32_t clock_megahz;
