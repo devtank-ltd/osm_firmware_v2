@@ -664,7 +664,8 @@ static void _rak3172_process_unsol(char* msg)
     unsigned len_left = p - msg;
     for (unsigned i = 0; i < len_left; i++)
     {
-        if (!isxdigit(p[i]))
+        char c = p[i]; /* isxdigit is either char or int, and gcc wants to be sure it is what which we wanted: error: array subscript has type 'char' */
+        if (!isxdigit(c))
         {
             osm_comms_debug("Data is not ascii.");
             return;

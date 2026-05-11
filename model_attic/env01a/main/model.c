@@ -98,6 +98,7 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
     unsigned pos = 0;
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_FW_VERSION,           4,  1,  OSM_FW_VERSION      );
     osm_measurements_setup_default(&measurements_arr[pos++], OSM_MEASUREMENTS_CONFIG_REVISION,      4,  1,  OSM_CONFIG_REVISION );
+    osm_ios_measurements_init();
     return pos;
 }
 

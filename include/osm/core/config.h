@@ -18,6 +18,15 @@
 #ifndef PRIu64
 #define PRIu64 "llu"
 #endif
+#ifndef PRIi64
+#define PRIi64 "lli"
+#endif
+#ifndef PRId64
+#define PRId64 "lld"
+#endif
+#ifndef PRIx64
+#define PRIx64 "llx"
+#endif
 
 #ifndef DOXYGEN
 #define OSM_PRINTF_FMT_CHECK(_fmt_arg, _el_arg)  __attribute__ ((format (printf, _fmt_arg, _el_arg)))

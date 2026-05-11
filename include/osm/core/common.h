@@ -1,8 +1,7 @@
 #pragma once
 
 #include <osm/core/config.h>
-#include <osm/core/w1.h>
-#include <osm/sensors/pulsecount.h>
+#include <osm/core/uart_rings.h>
 
 
 _Static_assert(OSM_STRLEN(GIT_VERSION)-3, "No git commit.");
@@ -10,7 +9,7 @@ _Static_assert(OSM_STRLEN(GIT_VERSION)-3, "No git commit.");
 
 typedef struct
 {
-    char        name[OSM_MEASURE_NAME_LEN];
+    char        name[OSM_MEASURE_NAME_LEN] __attribute__((nonstring));
     unsigned    io;
 } osm_special_io_info_t;
 

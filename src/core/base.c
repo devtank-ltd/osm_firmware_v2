@@ -26,7 +26,7 @@ char * osm_skip_to_space(char * pos)
 #define IO_PULL_STR_DOWN "DOWN"
 
 
-char* osm_io_get_pull_str(uint16_t io_state)
+const char* osm_io_get_pull_str(uint16_t io_state)
 {
     switch(io_state & OSM_IO_PULL_MASK)
     {

@@ -1,4 +1,5 @@
 #include <string.h>
+#include <sys/types.h>
 
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/iwdg.h>
@@ -20,6 +21,7 @@
 #include <osm/comms/comms.h>
 #include <osm/core/sleep.h>
 #include <osm/comms/comms_identify.h>
+#include <osm/core/i2c.h>
 
 #include <osm/core/adcs.h>
 
@@ -74,7 +76,7 @@ static void _stm_adcs_set_prescale(uint32_t adc, uint32_t prescale)
 static void _stm_setup_adc_unit(void)
 {
     adc_power_off(ADC1);
-    RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYS << RCC_CCIPR_ADCSEL_SHIFT;
+    RCC_CCIPR |= RCC_CCIPR_ADCSEL_SYSCLK << RCC_CCIPR_ADCSEL_SHIFT;
     if (ADC_CR(ADC1) & ADC_CR_DEEPPWD)
     {
         ADC_CR(ADC1) &= ~ADC_CR_DEEPPWD;
@@ -180,6 +182,8 @@ void osm_platform_init(void)
     {
         osm_log_sys_debug("Failed write COMMS identity");
     }
+
+    osm_i2cs_init();
 }
 
 
@@ -447,3 +451,17 @@ bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     return gpio_get(gpio_pin->port, gpio_pin->pins) != 0;
 }
+
+/*
+ * In some more recent version of GCC, the weak reference for these generate warnings and these are getting pulled in.
+ * So we bring out own that don't cause a warning.
+ * */
+
+int _fstat_r(void * p1, int i, void * p2) {return -1;}
+int _getpid(void) {return -1;}
+int _isatty(int tty) {return -1;}
+int _kill(pid_t pid, int sig) {return -1;}
+int _close(int fd) {return -1;}
+long _lseek(int handle, long offset, int origin ) {return -1;}
+ssize_t _read(int fildes, void *buf, size_t nbyte) {return -1;}
+ssize_t _write(int fildes, const void *buf, size_t nbyte) {return -1;}

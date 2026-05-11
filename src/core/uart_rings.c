@@ -255,7 +255,7 @@ void osm_uart_rings_drain_all_out(void)
 }
 
 
-static void uart_ring_check(osm_ring_buf_t * ring, char * name, unsigned index)
+static void uart_ring_check(osm_ring_buf_t * ring, const char * name, unsigned index)
 {
     osm_log_debug(DEBUG_UART(index), "UART %u %s r_pos %u", index, name, ring->r_pos);
     osm_log_debug(DEBUG_UART(index), "UART %u %s w_pos %u", index, name, ring->w_pos);

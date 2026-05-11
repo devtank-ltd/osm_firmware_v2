@@ -14,7 +14,7 @@
 
 #include "model_pinmap.h"
 
-#define OSM_I2C_BUSES {{RCC_I2C1, I2C1, i2c_speed_sm_100k, 8, GPIO_AF4, {GPIOB, GPIO8|GPIO9} }}
+#define OSM_I2C_BUSES {{RCC_I2C1, RST_I2C1, I2C1, i2c_speed_sm_100k, 8, GPIO_AF4, {GPIOB, GPIO8|GPIO9} }}
 
 #define OSM_HTU21D_I2C          I2C1
 #define OSM_HTU21D_I2C_INDEX    0

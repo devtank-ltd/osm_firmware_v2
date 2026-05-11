@@ -14,9 +14,12 @@ static const osm_i2c_def_t i2c_buses[]     = OSM_I2C_BUSES;
 static uint8_t         i2c_buses_ready = 0;
 
 
-static void _i2c_setup(uint32_t i2c)
+static void _i2c_setup(const osm_i2c_def_t * i2c_bus)
 {
-    i2c_reset(i2c);
+    uint32_t i2c = i2c_bus->i2c;
+
+    rcc_periph_reset_pulse(i2c_bus->rst);
+
     i2c_peripheral_disable(i2c);
 
     i2c_set_scl_low_period(i2c, 236);
@@ -55,7 +58,7 @@ static void i2c_init(unsigned i2c_index)
     gpio_mode_setup(i2c_bus->port_n_pins.port,  GPIO_MODE_AF, GPIO_PUPD_NONE, i2c_bus->port_n_pins.pins);
     gpio_set_output_options(i2c_bus->port_n_pins.port, GPIO_OTYPE_OD, GPIO_OSPEED_VERYHIGH, i2c_bus->port_n_pins.pins);
 
-    _i2c_setup(i2c_bus->i2c);
+    _i2c_setup(i2c_bus);
 }
 
 
@@ -63,6 +66,22 @@ bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsi
 {
     /* i2c_transfer7 but with ms timeout. */
     uint32_t start_ms = osm_get_since_boot_ms();
+
+    const osm_i2c_def_t * i2c_bus = NULL;
+    for (uint8_t i = 0; i < OSM_ARRAY_SIZE(i2c_buses); i++)
+    {
+        if (i2c_buses[i].i2c == i2c)
+        {
+            i2c_bus = & i2c_buses[i];
+            break;
+        }
+    }
+
+    if (!i2c_bus)
+    {
+        osm_log_error("I2C given invalid");
+        return false;
+    }
 
     if (wn)
     {
@@ -88,7 +107,7 @@ bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsi
                 if (osm_since_boot_delta(osm_get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     osm_log_error("I2C timeout WAITing");
-                    _i2c_setup(i2c);
+                    _i2c_setup(i2c_bus);
                     return false;
                 }
                 while (i2c_nack(i2c))
@@ -96,7 +115,7 @@ bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsi
                     if (osm_since_boot_delta(osm_get_since_boot_ms(), start_ms) > timeout_ms)
                     {
                         osm_log_error("I2C timeout NACKing");
-                        _i2c_setup(i2c);
+                        _i2c_setup(i2c_bus);
                         return false;
                     }
                     osm_uart_rings_out_drain();
@@ -112,7 +131,7 @@ bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsi
                 if (osm_since_boot_delta(osm_get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     osm_log_error("I2C timeout READing");
-                    _i2c_setup(i2c);
+                    _i2c_setup(i2c_bus);
                     return false;
                 }
                 osm_uart_rings_out_drain();
@@ -136,7 +155,7 @@ bool osm_i2c_transfer_timeout(uint32_t i2c, uint8_t addr, const uint8_t *w, unsi
                 if (osm_since_boot_delta(osm_get_since_boot_ms(), start_ms) > timeout_ms)
                 {
                     osm_log_error("I2C timeout");
-                    _i2c_setup(i2c);
+                    _i2c_setup(i2c_bus);
                     return false;
                 }
                 osm_uart_rings_out_drain();

@@ -306,7 +306,7 @@ static void _pulsecount_init_instance(pulsecount_instance_t* instance)
     nvic_enable_irq(instance->tim_irq);
     nvic_enable_irq(instance->exti_irq);
 
-    osm_pulsecount_debug("Pulsecount '%s' enabled", instance->info.name);
+    osm_pulsecount_debug("Pulsecount '%.4s' enabled", instance->info.name);
 }
 
 
@@ -348,7 +348,7 @@ static void _pulsecount_shutdown_instance(pulsecount_instance_t* instance)
     nvic_disable_irq(instance->exti_irq);
     instance->count = 0;
     instance->send_count = 0;
-    osm_pulsecount_debug("Pulsecount '%s' disabled", instance->info.name);
+    osm_pulsecount_debug("Pulsecount '%.4s' disabled", instance->info.name);
 }
 
 
@@ -419,7 +419,7 @@ static osm_measurements_sensor_state_t _pulsecount_begin(char* name, bool in_iso
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
     if (!osm_io_is_pulsecount_now(instance->info.io))
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
-    osm_pulsecount_debug("%s at start %"PRIu32, instance->info.name, instance->count);
+    osm_pulsecount_debug("%.4s at start %"PRIu32, instance->info.name, instance->count);
     return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
 
@@ -444,7 +444,7 @@ static osm_measurements_sensor_state_t _pulsecount_get(char* name, osm_measureme
     }
 
     instance->send_count = instance->count;
-    osm_pulsecount_debug("%s at end %"PRIu32, instance->info.name, instance->send_count);
+    osm_pulsecount_debug("%.4s at end %"PRIu32, instance->info.name, instance->send_count);
     value->v_i64 = (int64_t)instance->send_count;
     return OSM_MEASUREMENTS_SENSOR_STATE_SUCCESS;
 }
@@ -455,7 +455,7 @@ static void _pulsecount_ack(char* name)
     pulsecount_instance_t* instance;
     if (!_pulsecount_get_instance(&instance, name))
         return;
-    osm_pulsecount_debug("%s ack'ed", instance->info.name);
+    osm_pulsecount_debug("%s.4 ack'ed", instance->info.name);
     __sync_sub_and_fetch(&instance->count, instance->send_count);
     instance->send_count = 0;
 }

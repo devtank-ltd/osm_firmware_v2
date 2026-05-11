@@ -26,6 +26,9 @@ env01g_at_wifi_SOURCES := \
     $(OSM_DIR)/src/ports/stm/uarts.c \
     $(OSM_DIR)/src/ports/stm/w1.c \
     $(OSM_DIR)/src/ports/stm/comms_direct.c \
+    $(OSM_DIR)/src/ports/stm/pulsecount.c \
+    $(OSM_DIR)/src/ports/stm/sai.c \
+    $(OSM_DIR)/src/ports/stm/io_watch.c \
     $(OSM_DIR)/src/protocols/jsonblob.c \
     $(OSM_DIR)/src/protocols/comms_behind.c \
     $(OSM_DIR)/src/comms/at_base.c \
@@ -37,13 +40,10 @@ env01g_at_wifi_SOURCES := \
     $(OSM_DIR)/src/sensors/senxx.c \
     $(OSM_DIR)/src/sensors/sensirion_i2c_hal.c \
     $(OSM_DIR)/src/sensors/ds18b20.c \
-    $(OSM_DIR)/src/sensors/pulsecount.c \
     $(OSM_DIR)/src/sensors/veml7700.c \
-    $(OSM_DIR)/src/sensors/sai.c \
     $(OSM_DIR)/src/sensors/cc.c \
     $(OSM_DIR)/src/sensors/ftma.c \
     $(OSM_DIR)/src/sensors/fw.c \
-    $(OSM_DIR)/src/sensors/io_watch.c \
     $(OSM_DIR)/src/sensors/example_rs232.c \
     $(OSM_LIB_DIR)/embedded-i2c-sen5x/sen5x_i2c.c \
     $(OSM_LIB_DIR)/embedded-i2c-sen66/sensirion_common.c \

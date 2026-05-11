@@ -76,8 +76,8 @@ typedef enum
 } osm_io_special_t;
 
 
-char* osm_io_get_pull_str(uint16_t io_state);
-bool  osm_io_is_special(uint16_t io_state);
+const char* osm_io_get_pull_str(uint16_t io_state);
+bool osm_io_is_special(uint16_t io_state);
 
 
 typedef enum
@@ -307,3 +307,11 @@ struct osm_cmd_link_t
     bool hidden;
     struct osm_cmd_link_t * next;
 };
+
+
+typedef enum
+{
+    OSM_IO_PUPD_NONE    = 0,
+    OSM_IO_PUPD_UP      = 1,
+    OSM_IO_PUPD_DOWN    = 2,
+} osm_io_pupd_t;
