@@ -10,6 +10,7 @@
 #include <esp_wifi.h>
 
 #include <osm/core/platform.h>
+#include <osm/core/i2c.h>
 
 #include "pinmap.h"
 #include <osm/core/log.h>
