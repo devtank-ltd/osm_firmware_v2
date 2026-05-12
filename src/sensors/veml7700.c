@@ -333,7 +333,7 @@ static uint16_t _veml7700_read_als(void)
 }
 
 
-#ifndef VEML7700_DEVTANK_CORRECTED
+#ifndef OSM_VEML7700_DEVTANK_CORRECTED
 static bool _veml7700_conv(uint32_t* lux_corrected, uint16_t counts)
 {
     /**

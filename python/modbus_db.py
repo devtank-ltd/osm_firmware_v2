@@ -228,7 +228,7 @@ def generate_db(path_to_db):
     cur.execute(*CREATE_MEASUREMENTS('HUM2', 'Humidity 2', 45.1, 2.5))
     cur.execute(*CREATE_MEASUREMENTS('TEMP', 'Temperature', 20.0, 2.5))
     cur.execute(*CREATE_MEASUREMENTS('HUMI', 'Humidity', 50.0, 2.5))
-    cur.execute(*CREATE_MEASUREMENTS('LGHT', 'Light', 159.0, 0.01))
+    cur.execute(*CREATE_MEASUREMENTS('LGHT', 'Light', 1000.0, 100.0))
     cur.execute(*CREATE_MEASUREMENTS('TMP2', 'One wire probe', 25.0625, 0.01))
     cur.execute(*CREATE_MEASUREMENTS('PM25', 'PM 2.5', 20.0, 0.0))
     cur.execute(*CREATE_MEASUREMENTS('PM10', 'PM 10', 30.0, 0.0))
