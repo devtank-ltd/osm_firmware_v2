@@ -23,7 +23,7 @@ OSM_MODELS_CPPCHECK = $(OSM_MODELS:%=%_cppcheck)
 OSM_RELEASE_DIR ?= $(OSM_BUILD_DIR)/releases
 OSM_RELEASE_NAME := $(OSM_GIT_TAG)_release_bundle
 
-REAL_OSM_MODELS = $(shell find $(OSM_MODEL_DIR)/* -maxdepth 0 -type d ! -name "*penguin*" -printf '%f\n')
+REAL_OSM_MODELS := $(shell find $(OSM_MODEL_DIR)/* -maxdepth 0 -type d ! -name "*penguin*" -printf '%f\n')
 OSM_MODELS_RELEASE_BUNDLES =$(REAL_OSM_MODELS:%=$(OSM_RELEASE_DIR)/%_$(OSM_RELEASE_NAME).tar.gz)
 REAL_OSM_MODELS_FW = $(REAL_OSM_MODELS:%=$(OSM_BUILD_DIR)/%/complete.bin)
 OSM_FW_VERSION_DIR:= $(OSM_BUILD_DIR)/fw_releases.$(OSM_GIT_TAG)
