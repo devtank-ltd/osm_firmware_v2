@@ -7,7 +7,6 @@
 
 #include <osm/core/cmd.h>
 #include <osm/core/io.h>
-#include <osm/core/timers.h>
 #include <osm/core/persist_config.h>
 #include <osm/core/common.h>
 #include <osm/core/log.h>
@@ -54,17 +53,6 @@ static osm_command_response_t _cmd_debug_cb(char * args, osm_cmd_ctx_t * ctx)
         osm_persist_set_log_debug_mask(mask);
         osm_cmd_ctx_out(ctx,"Setting debug mask to 0x%x", mask);
     }
-    return OSM_COMMAND_RESP_OK;
-}
-
-
-static osm_command_response_t _cmd_timer_cb(char* args, osm_cmd_ctx_t * ctx)
-{
-    char* pos = osm_skip_space(args);
-    uint32_t delay_ms = strtoul(pos, NULL, 10);
-    uint32_t start_time = osm_get_since_boot_ms();
-    osm_timer_delay_us_64(delay_ms * 1000);
-    osm_cmd_ctx_out(ctx,"Time elapsed: %"PRIu32, osm_since_boot_delta(osm_get_since_boot_ms(), start_time));
     return OSM_COMMAND_RESP_OK;
 }
 
@@ -166,7 +154,6 @@ void osm_cmds_init(void)
         { "count",        "Counts of controls.",      _cmd_count_cb                  , false , NULL},
         { "version",      "Print version.",           _cmd_version_cb                , false , NULL},
         { "debug",        "Set hex debug mask",       _cmd_debug_cb                  , false , NULL},
-        { "timer",        "Test usecs timer",         _cmd_timer_cb                  , false , NULL},
         { "serial_num",   "Set/get serial number",    _cmd_serial_num_cb             , true  , NULL},
         { "name",         "Set/get serial number",    _cmd_human_name_cb             , false , NULL},
         { "hw_id",        "Get Hardware ID",          _cmd_hw_id_cb                  , false , NULL},

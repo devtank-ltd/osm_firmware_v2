@@ -35,6 +35,7 @@
 #include "platform_model.h"
 #include "pinmap.h"
 #include <osm/core/cmd.h>
+#include <osm/core/i2c.h>
 
 #define LINUX_PTY_BUF_SIZ       64
 #define LINUX_LINE_BUF_SIZ      1024
@@ -1411,6 +1412,8 @@ void osm_platform_init(void)
     pthread_create(&_linux_listener_thread_id, NULL, thread_proc, NULL);
 
     osm_model_linux_spawn_fakes();
+
+    osm_i2cs_init();
 }
 
 
