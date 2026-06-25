@@ -25,7 +25,7 @@ Which breaks down to: `<model>-[commit-num]-<commit-sha1>-<commit-comment>`
 
 The "debug" command is to change the debug output.
 
-The full list can be seen at [config.h](../../include/osm/core/config.h)
+The full list can be seen at [config.h](../include/osm/core/config.h)
 
 However, the most useful is 0x4 for Comms. There you can see why it's not connecting!
 
