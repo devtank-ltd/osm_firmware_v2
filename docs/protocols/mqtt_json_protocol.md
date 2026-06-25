@@ -83,9 +83,11 @@ And the error code is sent to:
 For example:
 
 Term 1:
+
     mosquitto_sub -h some-host -u some-username -P some-password -t 'osm/XXXXXXXX/cmd/resp'
 
 Term 2:
+
     mosquitto_pub -h some-host -u some-username -P some-password -t 'osm/XXXXXXXX/cmd' -m 'name my-osm'
 
 The exact commands are different from model to model. See : [Commands](../commands.md)
