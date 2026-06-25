@@ -37,10 +37,10 @@ Then "name" command is just the name reported in the devices payload.
 
 For example, "name kettle", well mean kettle is reported. Just doing "name" will report back what the name is set to.
 
-The "hw_id" command just reports the unique hex ID of the hardware.
-The "save" command commits and changes to persistent storage.
-The "wipe" command wipes that persistent storage.
-The "reset" command just reboots the device.
+The "hw_id" command just reports the unique hex ID of the hardware.  
+The "save" command commits and changes to persistent storage.  
+The "wipe" command wipes that persistent storage.  
+The "reset" command just reboots the device.  
 
 
 The are core measurement related commands:
@@ -56,15 +56,15 @@ The are core measurement related commands:
             repop : Repopulate measurements.
      is_immediate : Set/unset immediate measurements.
 
-The "measurements" command lists all the measurements avaiable.
-The "meas_enable" command just enables/disables collecting measurements.
-The "get_meas" command gets the current value of the given measurement.
-The "get_meas_to" command is the same but timesout on the "collection" time.
-The "interval" command set the number of internvals between reporting the measurement.
-The "samplecount" command sets the number of samples to take for the measurement between reporting.
-The "interval_mins" command sets the numnber of minutes (as a fraction) a measurement interval is.
-The "repop" command puts all the measurements back to the model default.
-The "is_immediate" command changes if the measurement is read straight away. This is specially for pulses or GPIOs.
+The "measurements" command lists all the measurements avaiable.  
+The "meas_enable" command just enables/disables collecting measurements.  
+The "get_meas" command gets the current value of the given measurement.  
+The "get_meas_to" command is the same but timesout on the "collection" time.  
+The "interval" command set the number of internvals between reporting the measurement.  
+The "samplecount" command sets the number of samples to take for the measurement between reporting.  
+The "interval_mins" command sets the numnber of minutes (as a fraction) a measurement interval is.  
+The "repop" command puts all the measurements back to the model default.  
+The "is_immediate" command changes if the measurement is read straight away. This is specially for pulses or GPIOs.  
 
 
 The are core comms related commands:
