@@ -21,8 +21,7 @@ The "version" command outputs something like:
     Version : penguin_at_wifi-[3199]-14172cc8-Allow-stating-which-models-to-build
     }============
 
-Which breaks down to:
-    <model>-[commit num]-<commit sha1>-<commit comment>
+Which breaks down to: `<model>-[commit-num]-<commit-sha1>-<commit-comment>`
 
 The "debug" command is to change the debug output.
 
