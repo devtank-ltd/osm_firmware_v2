@@ -1,6 +1,12 @@
 JSON over MQTT
 ==============
 
+The MQTT payload is sent to:
+
+    osm/XXXXXXXX/measurements
+
+where XXXXXXXX is the unique hardware ID of the device.
+
 Devtank's wifi protocol is a simple JSON payload over MQTT.
 
 An example of the payload is:
@@ -60,3 +66,26 @@ The schema for the payload is :
 For a list of non-configuration defined measurements see  [measurements_mem.h](../../include/osm/core/measurements_mem.h)
 
 However modbus measurement names are down to the configuration.
+
+Commands over MQTT
+==================
+
+You can also send any of the commands over MQTT and get an error code result.
+
+The command is sent to:
+
+    osm/XXXXXXXX/cmd
+
+And the error code is sent to:
+
+    osm/XXXXXXXX/cmd/resp
+
+For example:
+
+Term 1:
+    mosquitto_sub -h some-host -u some-username -P some-password -t 'osm/XXXXXXXX/cmd/resp'
+
+Term 2:
+    mosquitto_pub -h some-host -u some-username -P some-password -t 'osm/XXXXXXXX/cmd' -m 'name my-osm'
+
+The exact commands are different from model to model. See : [Commands](../commands.md)
