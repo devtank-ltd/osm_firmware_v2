@@ -1,6 +1,8 @@
 Commands
 ========
 
+You can issue commands via the USB port. It is a UART at 115200 baud rate and 8 bit characters, one stop bit and no parity (8N1).
+
 Different models and ports have different commands, however, there is core set of commands.
 
 Anything that has "Get/Set" will get with no further arguments, and set with the further argument if there is one.
