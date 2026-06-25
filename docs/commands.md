@@ -33,7 +33,7 @@ The number is taken as a hex, regardless of 0x prefix or not.
 
 The system log mask 0x1, isn't optional. So you can do "debug 4" but you get 5.
 
-Then "name" command is just the name reported in the devices payload.
+Then "name" command is just the name reported in the devices' payload.
 
 For example, "name kettle", well mean kettle is reported. Just doing "name" will report back what the name is set to.
 
@@ -56,13 +56,13 @@ The are core measurement related commands:
             repop : Repopulate measurements.
      is_immediate : Set/unset immediate measurements.
 
-The "measurements" command lists all the measurements avaiable.  
+The "measurements" command lists all the measurements available.  
 The "meas_enable" command just enables/disables collecting measurements.  
 The "get_meas" command gets the current value of the given measurement.  
-The "get_meas_to" command is the same but timesout on the "collection" time.  
-The "interval" command set the number of internvals between reporting the measurement.  
+The "get_meas_to" command is the same but times out on the "collection" time.  
+The "interval" command set the number of intervals between reporting the measurement.  
 The "samplecount" command sets the number of samples to take for the measurement between reporting.  
-The "interval_mins" command sets the numnber of minutes (as a fraction) a measurement interval is.  
+The "interval_mins" command sets the number of minutes (as a fraction) a measurement interval is.  
 The "repop" command puts all the measurements back to the model default.  
 The "is_immediate" command changes if the measurement is read straight away. This is specially for pulses or GPIOs.  
 
@@ -101,7 +101,8 @@ So for example to set the wifi:
 "mqtt_port" is just the host port to use for MQTT.
 "mqtt_user" + "mqtt_pwd" is just username and password for MQTT auth.
 
-"mqtt_sch" is a number of the scheme. Broadly it is plain TCP without SSL, with SSL, Websockets wtihout SSL or with SSL and differnet auths of SSL.
+"mqtt_sch" is a number of the scheme. Broadly it is plain TCP without SSL, with SSL, Websockets without SSL or with SSL and different auths of SSL.
+This is the scheme numbering:
 
 * 1  - MQTT over TCP.
 * 2  - MQTT over TLS (no certificate verify).
