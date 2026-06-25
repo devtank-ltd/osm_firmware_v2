@@ -70,7 +70,7 @@ However modbus measurement names are down to the configuration.
 Commands over MQTT
 ==================
 
-You can also send any of the commands over MQTT and get an error code result.
+You can also send any of the commands over MQTT and get an error code result. Zero is success.
 
 The command is sent to:
 
