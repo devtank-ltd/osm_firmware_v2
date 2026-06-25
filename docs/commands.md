@@ -78,19 +78,19 @@ The "comms_config" is a meta command and has it's own commands, different for di
 
 For example a WiFi OSM would give:
 
-============{
- wifi_ssid : Set/get SSID
-  wifi_pwd : Set/get password
-   country : Set/get country
-     schan : Set/get start channel
-     nchan : Set/get number of channels
- mqtt_addr : Set/get MQTT address
- mqtt_user : Set/get MQTT user
-  mqtt_pwd : Set/get MQTT password
-  mqtt_sch : Set/get MQTT scheme
- mqtt_path : Set/get MQTT PATH
- mqtt_port : Set/get MQTT port
-}============
+    ============{
+     wifi_ssid : Set/get SSID
+      wifi_pwd : Set/get password
+       country : Set/get country
+         schan : Set/get start channel
+         nchan : Set/get number of channels
+     mqtt_addr : Set/get MQTT address
+     mqtt_user : Set/get MQTT user
+      mqtt_pwd : Set/get MQTT password
+      mqtt_sch : Set/get MQTT scheme
+     mqtt_path : Set/get MQTT PATH
+     mqtt_port : Set/get MQTT port
+    }============
 
 So for example to set the wifi:
 
