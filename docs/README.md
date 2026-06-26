@@ -5,6 +5,7 @@ Contents
 * [stm_dev](stm_dev.md) STM OSM specific development reference.
 * [modbus_registers](modbus_registers.md) Guide to setting up OSM Modbus.
 * [osm_lorawan](osm_lorawan.md) OSM LoRaWAN server setup.
+* [commands](commands.md) OSM Commands over UART (or MQTT)
 
 Protocols
 =========
