@@ -33,7 +33,7 @@ The number is taken as a hex, regardless of 0x prefix or not.
 
 The system log mask 0x1, isn't optional. So you can do "debug 4" but you get 5.
 
-Then "name" command is just the name reported in the devices' payload.
+The "name" command is just the name reported in the devices' payload.
 
 For example, "name kettle", well mean kettle is reported. Just doing "name" will report back what the name is set to.
 
