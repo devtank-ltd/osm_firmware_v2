@@ -940,7 +940,7 @@ static osm_command_response_t _modbus_set_reg_cb(char* args, osm_cmd_ctx_t * ctx
         (
             reg_desc,
             MODBUS_REG_DESC_BUF_LEN,
-            "%.*s(0x%"PRIX8"):%.*s(0x%"PRIX8") = %.*s:%f",
+            "%.*s(0x%"PRIX8"):%.*s(0x%"PRIX16") = %.*s:%f",
             OSM_MODBUS_NAME_LEN,
             dev->name,
             dev->unit_id,
@@ -958,7 +958,7 @@ static osm_command_response_t _modbus_set_reg_cb(char* args, osm_cmd_ctx_t * ctx
         (
             reg_desc,
             MODBUS_REG_DESC_BUF_LEN,
-            "%.*s(0x%"PRIX8"):0x%"PRIX8" = %.*s:%f",
+            "%.*s(0x%"PRIX8"):0x%"PRIX16" = %.*s:%f",
             OSM_MODBUS_NAME_LEN,
             dev->name,
             dev->unit_id,
