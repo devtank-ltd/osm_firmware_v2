@@ -39,7 +39,7 @@ It should be configured to the Unit/Slave ID of 5.
 The OSM can then be configured from it's terminal with:
 
     mb_setup RTU 9600 8N1
-    mb_dev_add 5 E53
+    mb_dev_add 5 MSW MSB E53
 
     mb_reg_add 5 0xc56e 3 U32 PF
     mb_reg_add 5 0xc552 3 U32 cVP1
@@ -81,7 +81,7 @@ The OSM can then be configured from it's terminal with:
 
 
     mb_setup RTU 9600 8N1
-    mb_dev_add 1 RIF
+    mb_dev_add 1 LSW MSB RIF
 
     mb_reg_add 1 0x36 4 F PF
     mb_reg_add 1 0x00 4 F VP1
