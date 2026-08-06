@@ -487,6 +487,15 @@ class dev_t(dev_base_t):
         return comms_cfg
 
     @property
+    def hw_id(self):
+        line = self.do_cmd("hw_id")
+        parts = line.split(":")
+        if len(parts) != 2:
+            self._log("Could not hardware ID.")
+            return "Unknown"
+        return parts[1].strip()
+
+    @property
     def mac_address(self):
         try:
             mac = self.comms_cfg["config"]["HWID"]
