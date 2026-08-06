@@ -49,6 +49,7 @@ class dev_json_t:
         self.cc1_mp = self.dev.cc_midpoint("CC1")
         self.cc2_mp = self.dev.cc_midpoint("CC2")
         self.cc3_mp = self.dev.cc_midpoint("CC3")
+        self.hw_id = self.dev.hw_id
         modbus_exists = self.modbus_devices
         self.modbus_devs = []
         if modbus_exists:
@@ -82,6 +83,8 @@ class dev_json_t:
             "version": self.fw,
             "name": self.name,
             "serial_num": self.serial_num,
+            "hw_id" : self.hw_id, # Not loaded, but useful to record.
+            "mac_address" : self.dev.mac_address if self.comms.get("mqtt_addr") else "N/A", # Not loaded, but useful to record.
             "interval_mins":self.interval_mins,
             "comms": self.comms,
             "ios": {},
