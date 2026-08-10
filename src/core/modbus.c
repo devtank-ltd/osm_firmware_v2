@@ -1100,12 +1100,33 @@ static osm_command_response_t _modbus_log_cb(char* args, osm_cmd_ctx_t * ctx)
 }
 
 
+static osm_command_response_t _modbus_cancel_cb(char* args, osm_cmd_ctx_t * ctx)
+{
+    modbuspacket_len = 0;
+    modbus_read_timing_init = 0;
+    modbus_want_rx = false;
+
+    osm_modbus_reg_t * current_reg = NULL;
+
+    osm_modbus_debug("Dropping message in queue.");
+    modbus_retransmit_count = 0;
+
+    if (osm_ring_buf_read(&_message_queue, (char*)&current_reg, sizeof(current_reg)) != sizeof(current_reg) || current_reg == NULL)
+    {
+        osm_modbus_debug("Failed to drop message, dropping all messages.");
+        ring_buf_clear(&_message_queue);
+    }
+    return OSM_COMMAND_RESP_OK;
+}
+
+
 struct osm_cmd_link_t* osm_modbus_add_commands(struct osm_cmd_link_t* tail)
 {
     static struct osm_cmd_link_t cmds[] =
     {
         { "mb_setup",     "Change Modbus comms",      _modbus_setup_cb               , false , NULL },
         { "mb_log",       "Show modbus setup",        _modbus_log_cb                 , false , NULL },
+        { "mb_cancel",    "Cancel current transaction",  _modbus_cancel_cb           , true , NULL },
     };
     return osm_modbus_add_mem_commands(osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds)));
 }
