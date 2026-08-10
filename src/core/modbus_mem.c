@@ -395,7 +395,7 @@ void osm_modbus_reg_del(osm_modbus_reg_t * reg)
 
 osm_modbus_dev_t * osm_modbus_add_device(unsigned unit_id, char *name, osm_modbus_byte_orders_t byte_order, osm_modbus_word_orders_t word_order)
 {
-    if (!name || !unit_id)
+    if (!name)
         return NULL;
 
     unsigned len = strlen(name);
