@@ -282,6 +282,7 @@ static void _modbus_do_start_read(osm_modbus_reg_t * reg)
         if (osm_modbus_requires_echo_removal())
             _echo_bytes = 8;
     }
+    osm_log_debug_data(OSM_DEBUG_MODBUS, tx_modbuspacket, 8);
     reg->value_state = OSM_MB_REG_WAITING;
 }
 
