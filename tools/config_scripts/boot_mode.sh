@@ -2,7 +2,14 @@
 
 if [ -z "$dev" ]
 then
-  dev=$(basename $(readlink /dev/serial/by-id/*CP210*))
+  ttys=($(ls -1 /dev/serial/by-id/*CP210*))
+  if [ ${#ttys[@]} -gt 1 ]
+  then
+    echo "ERROR: Multiple CP210 devices found."
+    echo "Example: Use envvar dev=ttyUSB0 to select ttyUSB0"
+    exit -1
+  fi
+  dev=$(basename $(readlink /dev/serial/by-id/*CP210* | head -n1))
 fi
 
 if [ -z "$dev" ]
