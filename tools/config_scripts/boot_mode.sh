@@ -5,7 +5,7 @@ then
   dev=$(basename $(readlink /dev/serial/by-id/*CP210*))
 fi
 
-if [ -z "$$dev" ]
+if [ -z "$dev" ]
 then
   echo "No CP210 device found or given."
   exit -1
