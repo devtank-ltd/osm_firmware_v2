@@ -61,3 +61,27 @@ Value Type
         VALUE_DOUBLE  = 6 | VALUE_TYPE_IS_SIGNED,
 
    Type tells you the payload length and type.
+
+Commands
+========
+
+As with other comms types, it is possible to send commands over LoRaWAN, but this depends on the LoRaWAN Network Server.
+
+Chirpstack have an Python example at : https://www.chirpstack.io/docs/chirpstack/api/python-examples.html
+
+An example in Python sending a JSON packet with a OSM command in it would be:
+
+    def _send_command_json(port, json, dev_eui, port, auth_token):
+        req = api.EnqueueDeviceQueueItemRequest()
+        req.device_queue_item.confirmed = True
+        req.device_queue_item.json_object = json
+        req.device_queue_item.dev_eui = dev_eui
+        req.device_queue_item.f_port = port
+        resp = client.Enqueue(req, metadata=auth_token)
+        print("resp", resp.f_cnt)
+
+The command JSON packet takes the form of '{"CMD":"name my-osm"}' to call the "name" command with the argument "my-osm".
+
+The exact commands are different from model to model. See : [Commands](../commands.md)
+
+
