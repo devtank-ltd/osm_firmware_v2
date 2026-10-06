@@ -2,11 +2,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
-if(NOT DEFINED OSM_MODEL_NAME)
-  message( FATAL_ERROR "You must define OSM_MODEL_NAME." )
-endif()
-
-
 add_definitions(-DGIT_VERSION="\""$ENV{OSM_GIT_VERSION}"\"" -DGIT_SHA1="$ENV{OSM_GIT_SHA1}")
 
 add_compile_options(-Wall
@@ -57,7 +52,7 @@ target_link_libraries(application
 pico_add_extra_outputs(application)
 
 target_include_directories(application PUBLIC
-    $ENV{OSM_MODEL_DIR}/${OSM_MODEL_NAME}/main
+    $ENV{OSM_MODEL_DIR}/$ENV{OSM_MODEL_NAME}/main
     $ENV{OSM_DIR}/include/osm/ports/rp2350
     $ENV{OSM_DIR}/include
 )
@@ -83,7 +78,7 @@ pico_add_extra_outputs(bootloader)
 
 target_include_directories(bootloader PUBLIC
     $ENV{OSM_DIR}/src/ports/rp2350/bootloader
-    $ENV{OSM_MODEL_DIR}/${OSM_MODEL_NAME}/main
+    $ENV{OSM_MODEL_DIR}/$ENV{OSM_MODEL_NAME}/main
     $ENV{OSM_DIR}/include/osm/ports/rp2350
     $ENV{OSM_DIR}/include
 )
@@ -98,7 +93,7 @@ add_custom_target(firmware ALL
         dd if=bootloader.bin of=firmware.bin bs=256 &&
         dd if=application.bin of=firmware.bin bs=256 seek=160 &&
         chmod +x firmware.bin &&
-        ${picotool_INSTALL_DIR}/picotool/picotool uf2 convert firmware.bin firmware.uf2 --family rp2350-arm-s --abs-block
+        $ENV{picotool_INSTALL_DIR}/picotool/picotool uf2 convert firmware.bin firmware.uf2 --family rp2350-arm-s --abs-block
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Combining bootloader and application"
 )
