@@ -3,10 +3,6 @@ $(call PORT_BASE_RULES,$(1),RP2350)
 
 $(1): $$(OSM_BUILD_DIR)/$(1)/.complete
 
-ifeq ($$(origin PICO_SDK_PATH), undefined)
-  export PICO_SDK_PATH := $$(shell realpath $(OSM_DIR)/libs/pico-sdk)
-endif
-
 ifneq ($$(origin PICO_SDK_PATH), undefined)
 $$(OSM_BUILD_DIR)/$(1)/Makefile:
 	mkdir -p $$(OSM_BUILD_DIR)/$(1)
