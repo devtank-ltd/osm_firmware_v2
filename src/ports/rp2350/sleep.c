@@ -51,7 +51,9 @@ bool osm_sleep_for_ms(uint32_t ms)
     while (osm_uart_rings_out_busy())
     {
         osm_uart_rings_out_drain();
+#ifdef COMMS_UART
         osm_uart_ring_in_drain(COMMS_UART);
+#endif
     }
     uint32_t time_passed = osm_since_boot_delta(osm_get_since_boot_ms(), before_time);
     if (ms <= time_passed)
