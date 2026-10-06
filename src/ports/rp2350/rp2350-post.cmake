@@ -93,7 +93,7 @@ add_custom_target(firmware ALL
         dd if=bootloader.bin of=firmware.bin bs=256 &&
         dd if=application.bin of=firmware.bin bs=256 seek=160 &&
         chmod +x firmware.bin &&
-        $ENV{picotool_INSTALL_DIR}/picotool/picotool uf2 convert firmware.bin firmware.uf2 --family rp2350-arm-s --abs-block
+        picotool uf2 convert firmware.bin firmware.uf2 --family rp2350-arm-s --abs-block
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Combining bootloader and application"
 )
