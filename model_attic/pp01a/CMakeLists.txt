@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
+set(OSM_MODEL_NAME "pp01a")
+
 include($ENV{OSM_DIR}/src/ports/rp2350/rp2350-pre.cmake)
 
 project(osm_firmware C CXX ASM)
