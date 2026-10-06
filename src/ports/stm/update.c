@@ -26,7 +26,7 @@ static bool _fw_ota_flush_page(unsigned fw_page_index)
 
     while(retries--)
     {
-        osm_fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, *(uint64_t*)_fw_page);
+        osm_fw_debug("%"PRIx64" %"PRIx64, *(uint64_t*)dst, *(uint64_t*)(void*)_fw_page);
         if (osm_platform_overwrite_fw_page(dst, abs_page, _fw_page))
         {
             osm_fw_debug("Written page");
