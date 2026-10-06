@@ -13,7 +13,9 @@ typedef struct
     uint16_t              tx_pin;
     uint16_t              rx_pin;
     uint8_t               enabled;
-    int                   pio; /* if pio < 0 then don't use pio */
+    uint8_t               en_pio:1;
+    uint8_t               en_usb:1;
+    int8_t                index:6; /* USB interface or PIO index */
 } osm_uart_channel_t;
 
 

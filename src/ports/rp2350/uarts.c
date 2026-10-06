@@ -82,10 +82,10 @@ static void _uart_process(void)
     for (unsigned uart = 0; uart < OSM_UART_CHANNELS_COUNT; uart++)
     {
         osm_uart_channel_t* channel = &_uarts_channels[uart];
-        if (0 <= channel->pio)
+        if (channel->en_pio)
         {
             uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
-            PIO pio_inst = PIO_INSTANCE(channel->pio);
+            PIO pio_inst = PIO_INSTANCE(channel->index);
             if (pio_sm_is_rx_fifo_empty(pio_inst, sms->rx))
             {
                 continue;
@@ -118,12 +118,12 @@ static int _uart_pio_add_program(unsigned uart, const void* program)
         }
         osm_uart_channel_t* channel = &_uarts_channels[u];
         uart_pio_sm_t* sms = &_uarts_pio_sms[u];
-        if (0 > channel->pio)
+        if (!channel->en_pio)
         {
             /* This isn't a PIO UART */
             continue;
         }
-        if (channel->pio == _uarts_channels[uart].pio)
+        if (channel->index == _uarts_channels[uart].index)
         {
             if (program == &uart_rx_program
                 && sms->rx_offset >= 0)
@@ -139,7 +139,7 @@ static int _uart_pio_add_program(unsigned uart, const void* program)
             }
         }
     }
-    PIO pio_inst = PIO_INSTANCE(_uarts_channels[uart].pio);
+    PIO pio_inst = PIO_INSTANCE(_uarts_channels[uart].index);
     int offset = pio_add_program(pio_inst, program);
     if (0 > offset) {
         /* ADD PROGRAM FAILED */
@@ -149,14 +149,14 @@ static int _uart_pio_add_program(unsigned uart, const void* program)
 }
 
 
-static void osm_uart_setup(unsigned uart)
+static void _osm_uart_setup(unsigned uart)
 {
     osm_uart_channel_t* channel = &_uarts_channels[uart];
     uint dreq = 0;
-    if (0 <= channel->pio)
+    if (channel->en_pio)
     {
         uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
-        PIO pio_inst = PIO_INSTANCE(channel->pio);
+        PIO pio_inst = PIO_INSTANCE(channel->index);
 
         int rx_sm = pio_claim_unused_sm(pio_inst, true);
         if (0 > rx_sm) {
@@ -204,10 +204,10 @@ static void osm_uart_setup(unsigned uart)
     channel_config_set_dreq(&dma_config, dreq);
     dma_channel_set_config(dma_channel, &dma_config, false);
 
-    if (0 <= channel->pio)
+    if (channel->en_pio)
     {
         uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
-        PIO pio_inst = PIO_INSTANCE(channel->pio);
+        PIO pio_inst = PIO_INSTANCE(channel->index);
         dma_channel_set_write_addr(dma_channel, &pio_inst->txf[sms->tx], false);
 
         irq_add_shared_handler(pio_get_irq_num(pio_inst, 0), _uart_process, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
@@ -256,7 +256,7 @@ void osm_uart_enable(unsigned uart, bool enable)
         uart_deinit(uart_inst);
         channel->enabled = 0;
     }
-    else osm_uart_setup(uart);
+    else _osm_uart_setup(uart);
 }
 
 
@@ -349,7 +349,7 @@ void osm_uarts_setup(void)
     osm_model_uarts_setup();
 
     for(unsigned n = 0; n < OSM_UART_CHANNELS_COUNT; n++)
-        osm_uart_setup(n);
+        _osm_uart_setup(n);
 }
 
 bool osm_uart_is_tx_empty(unsigned uart)
@@ -363,10 +363,10 @@ bool osm_uart_is_tx_empty(unsigned uart)
         return false;
 
     uart_inst_t* uart_inst = uart_get_instance(channel->uart);
-    if (0 <= channel->pio)
+    if (channel->en_pio)
     {
         uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
-        PIO pio_inst = PIO_INSTANCE(channel->pio);
+        PIO pio_inst = PIO_INSTANCE(channel->index);
         return !pio_sm_is_rx_fifo_full(pio_inst, sms->tx);
     }
     /* As we aren't using any FIFO, the TX will be empty if the UART is
@@ -381,9 +381,9 @@ void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
         return;
 
     osm_uart_channel_t* channel = &_uarts_channels[uart];
-    if (0 <= channel->pio)
+    if (channel->en_pio)
     {
-        PIO pio_inst = PIO_INSTANCE(channel->pio);
+        PIO pio_inst = PIO_INSTANCE(channel->index);
         uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
         uart_tx_program_puts(pio_inst, sms->tx, data);
         return;
@@ -420,9 +420,9 @@ unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
     {
         if (uart)
             osm_uart_debug(uart, "single out.");
-        if (0 <= channel->pio)
+        if (channel->en_pio)
         {
-            PIO pio_inst = PIO_INSTANCE(channel->pio);
+            PIO pio_inst = PIO_INSTANCE(channel->index);
             uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
             uart_tx_program_putc(pio_inst, sms->tx, *data);
             return true;

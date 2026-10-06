@@ -11,7 +11,6 @@
         .tx_pin = 0,                                                \
         .rx_pin = 1,                                                \
         .enabled = true,                                            \
-        .pio = -1,                                                  \
     },                                                              \
     {                                                               \
         .uart = 1,        /* COMMS */                               \
@@ -22,7 +21,8 @@
         .tx_pin = 2,                                                \
         .rx_pin = 3,                                                \
         .enabled = true,                                            \
-        .pio = 0,                                                   \
+        .en_pio = 1,                                                \
+        .index = 0,                                                 \
     },                                                              \
     {                                                               \
         .uart = 2,        /* RS485 */                               \
@@ -33,7 +33,8 @@
         .tx_pin = 14,                                               \
         .rx_pin = 15,                                               \
         .enabled = true,                                            \
-        .pio = 0,                                                   \
+        .en_pio = 1,                                                \
+        .index = 0,                                                 \
     },                                                              \
     {                                                               \
         .uart = 3,        /* RS232 */                               \
@@ -44,7 +45,6 @@
         .tx_pin = 4,                                                \
         .rx_pin = 5,                                                \
         .enabled = true,                                            \
-        .pio = -1,                                                  \
     },                                                              \
 }
 
