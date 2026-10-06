@@ -11,10 +11,10 @@ add_compile_options(-Wall
     -Wno-unused-parameter
     -Wno-maybe-uninitialized
     -Wno-discarded-qualifier
+    -Wno-pointer-arith
     -Wextra
     -Wformat=2
     -Wcast-align
-    -Wpointer-arith
     -Wwrite-strings
     -Wunreachable-code
     -Wstrict-aliasing=2
