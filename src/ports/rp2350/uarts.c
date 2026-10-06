@@ -10,6 +10,7 @@
 #include "hardware/pio.h"
 
 #include "uarts.pio.h"
+#include "tusb.h"
 
 #include <osm/core/cmd.h>
 #include <osm/core/log.h>
@@ -76,12 +77,33 @@ static uart_inst_t* _uart_up(const osm_uart_channel_t * channel)
 }
 
 
+void uart_usb_poll(void)
+{
+#if(CFG_TUD_CDC > 0)
+    for (unsigned uart = 0; uart < OSM_UART_CHANNELS_COUNT; uart++)
+    {
+        osm_uart_channel_t* channel = &_uarts_channels[uart];
+        if (channel->en_usb)
+        {
+            unsigned len = tud_cdc_n_available(channel->index);
+            while(len--)
+            {
+                char c = tud_cdc_n_read_char(channel->index);
+                osm_uart_ring_in(uart, &c, 1);
+            }
+        }
+    }
+#endif
+}
+
 
 static void _uart_process(void)
 {
     for (unsigned uart = 0; uart < OSM_UART_CHANNELS_COUNT; uart++)
     {
         osm_uart_channel_t* channel = &_uarts_channels[uart];
+        if (channel->en_usb)
+            continue;
         if (channel->en_pio)
         {
             uart_pio_sm_t* sms = &_uarts_pio_sms[uart];
@@ -152,6 +174,13 @@ static int _uart_pio_add_program(unsigned uart, const void* program)
 static void _osm_uart_setup(unsigned uart)
 {
     osm_uart_channel_t* channel = &_uarts_channels[uart];
+
+    if (channel->en_usb)
+    {
+        channel->enabled = 1;
+        return;
+    }
+
     uint dreq = 0;
     if (channel->en_pio)
     {
@@ -358,6 +387,17 @@ bool osm_uart_is_tx_empty(unsigned uart)
         return false;
 
     osm_uart_channel_t* channel = &_uarts_channels[uart];
+
+    if (channel->en_usb)
+    {
+#if(CFG_TUD_CDC > 0)
+        uint32_t space_available = tud_cdc_n_write_available(channel->index);
+        return space_available == 0;
+#else
+        return false;
+#endif
+    }
+
     int dma_channel = _uarts_dma_channels[uart];
     if (0 > dma_channel || dma_channel_is_busy(dma_channel))
         return false;
@@ -389,6 +429,32 @@ void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
         return;
     }
 
+    if (channel->en_usb)
+    {
+#if(CFG_TUD_CDC > 0)
+        while(size)
+        {
+            /* Not sure about this. */
+            uint32_t space_available = tud_cdc_n_write_available(channel->index);
+            if (space_available < size)
+            {
+                tud_cdc_n_write(channel->index, data, space_available);
+                tud_cdc_n_write_flush(channel->index);
+                size -= space_available;
+                data += space_available;
+            }
+            else
+            {
+                tud_cdc_n_write(channel->index, data, size);
+                tud_cdc_n_write_flush(channel->index);
+                return;
+            }
+        }
+#else
+        return;
+#endif
+    }
+
     uart_inst_t* uart_inst = uart_get_instance(_uarts_channels[uart].uart);
 
     while(size--)
@@ -408,6 +474,25 @@ unsigned osm_uart_dma_out(unsigned uart, char *data, unsigned size)
     if (!channel->enabled)
     {
         return size; /* Drop the data */
+    }
+
+    if (channel->en_usb)
+    {
+#if(CFG_TUD_CDC > 0)
+        if (!tud_cdc_n_connected(channel->index))
+            return size; /* Drop the data */
+
+        uint32_t space_available = tud_cdc_n_write_available(channel->index);
+        if (!space_available)
+            return 0;
+
+        if (space_available < size)
+            size = space_available;
+
+        tud_cdc_n_write(channel->index, data, size);
+        tud_cdc_n_write_flush(channel->index);
+#endif
+        return size;
     }
 
     if (!osm_uart_is_tx_empty(uart))

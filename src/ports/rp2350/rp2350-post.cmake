@@ -47,6 +47,8 @@ target_link_libraries(application
     hardware_dma
     hardware_flash
     hardware_pio
+    tinyusb_device
+    tinyusb_board
 )
 
 pico_add_extra_outputs(application)

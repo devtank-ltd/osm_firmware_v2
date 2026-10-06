@@ -20,6 +20,7 @@
 #include <osm/comms/comms_identify.h>
 
 #include "sos.h"
+#include "usb.h"
 #include "pinmap.h"
 #include "platform_model.h"
 #include "model_config.h"
@@ -223,6 +224,7 @@ void __attribute__((weak)) model_main_loop_iterate(void) {}
 void osm_platform_main_loop_iterate(void)
 {
     model_main_loop_iterate();
+    uart_usb_poll();
 }
 
 
