@@ -13,6 +13,7 @@ loti2_SOURCES := \
     $(OSM_DIR)/src/ports/rp2350/sleep.c \
     $(OSM_DIR)/src/ports/rp2350/uarts.c \
     $(OSM_DIR)/src/ports/rp2350/update.c \
+    $(OSM_DIR)/src/ports/rp2350/usb_descriptors.c \
     $(OSM_DIR)/src/sensors/fw.c \
     $(OSM_MODEL_DIR)/loti2/main/model.c
 
