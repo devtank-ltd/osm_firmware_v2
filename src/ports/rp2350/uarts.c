@@ -393,7 +393,7 @@ bool osm_uart_is_tx_empty(unsigned uart)
     {
 #if(CFG_TUD_CDC > 0)
         uint32_t space_available = tud_cdc_n_write_available(channel->index);
-        return space_available == 0;
+        return space_available >= OSM_LOG_LINELEN;
 #else
         return false;
 #endif
@@ -441,6 +441,7 @@ void osm_uart_blocking(unsigned uart, const char *data, unsigned size)
             {
                 tud_cdc_n_write(channel->index, data, space_available);
                 tud_cdc_n_write_flush(channel->index);
+                tud_task();
                 size -= space_available;
                 data += space_available;
             }
