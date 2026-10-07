@@ -9,6 +9,8 @@
 #include "hardware/timer.h"
 #include "hardware/clocks.h"
 #include "hardware/flash.h"
+#include "bsp/board_api.h"
+#include "tusb.h"
 
 #ifdef CYW43_WL_GPIO_LED_PIN
 #include "pico/cyw43_arch.h"
@@ -88,6 +90,8 @@ void osm_platform_init(void)
     cyw43_arch_init();
 #endif
     set_sys_clock_khz(150000, true);
+    board_init();
+    tusb_init();
 }
 
 

@@ -5,6 +5,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <osm/core/config.h>
+
 #include "usb_descriptors.h"
 
 #include "bsp/board.h"
@@ -22,7 +24,7 @@
 char const* string_desc_arr[] = {
     (const char[]){0x09, 0x04},  // 0: is supported language is English (0x0409)
     "Devtank Ltd",               // 1: Manufacturer
-    "Jig Board",                 // 2: Product
+    STR(fw_name),                // 2: Product
     "Command"                    // 3: Command (cdc) interface
     "Command Data"               // 4: Command data (cdc data) interface
 };
