@@ -41,19 +41,19 @@ osm_cmd_ctx_t uart_cmd_ctx = {.output_cb = _uart_cmd_out,
 
 static void _uart_cmd_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
-    osm_log_outv(fmt, ap);
+    log_msgv(CMD_UART, false, NULL, fmt, ap);
 }
 
 
 static void _uart_cmd_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
-    osm_log_errorv(fmt, ap);
+    log_msgv(CMD_UART, false, "ERROR:", fmt, ap);
 }
 
 
 static void _uart_cmd_flush(osm_cmd_ctx_t * ctx)
 {
-    osm_log_out_drain(1000);
+    osm_uart_out_drain(1000, CMD_UART);
 }
 
 

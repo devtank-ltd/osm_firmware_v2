@@ -115,7 +115,7 @@ bool osm_u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t 
 }
 
 
-bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
+bool osm_main_loop_iterate_for(uint32_t timeout, osm_loop_done_cb_t should_exit_cb, void *userdata)
 {
     uint32_t start_time = osm_get_since_boot_ms();
     uint32_t watch_dog_kick = OSM_IWDG_NORMAL_TIME_MS/2;
@@ -124,7 +124,7 @@ bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *us
     if (timeout > OSM_IWDG_NORMAL_TIME_MS)
         osm_log_debug(OSM_DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 
-    if (should_exit_db(userdata))
+    if (should_exit_cb(userdata))
         return true;
 
     while(osm_since_boot_delta(osm_get_since_boot_ms(), start_time) < timeout)
@@ -137,7 +137,7 @@ bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *us
 
         osm_uart_rings_out_drain();
         osm_platform_tight_loop();
-        if (should_exit_db(userdata))
+        if (should_exit_cb(userdata))
             return true;
         if (osm_since_boot_delta(osm_get_since_boot_ms(), start_time) > watch_dog_kick)
         {
@@ -201,15 +201,21 @@ uint16_t osm_modbus_crc(uint8_t * buf, unsigned length)
 }
 
 
-static bool _log_out_drain_iteration(void* userdata)
+static bool _log_out_drain_iteration(unsigned* uart)
 {
-    return !osm_uart_ring_out_busy(CMD_UART);
+    return !osm_uart_ring_out_busy(*uart);
+}
+
+
+bool osm_uart_out_drain(uint32_t timeout, unsigned uart)
+{
+    return osm_main_loop_iterate_for(timeout, (osm_loop_done_cb_t)_log_out_drain_iteration, &uart);
 }
 
 
 bool osm_log_out_drain(uint32_t timeout)
 {
-    return osm_main_loop_iterate_for(timeout, _log_out_drain_iteration, NULL);
+    return osm_uart_out_drain(timeout, CMD_UART);
 }
 
 

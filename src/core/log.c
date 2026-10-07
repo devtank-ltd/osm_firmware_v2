@@ -41,7 +41,7 @@ static void _dispatch_line(unsigned uart, bool blocking, const char * prefix, un
 }
 
 
-static void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
+void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
 {
     unsigned len = vsnprintf(log_buffer, OSM_LOG_LINELEN, s, ap);
     log_buffer[OSM_LOG_LINELEN-1] = 0;
