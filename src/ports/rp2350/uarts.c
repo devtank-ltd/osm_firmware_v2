@@ -93,6 +93,7 @@ void uart_usb_poll(void)
             }
         }
     }
+    tud_task();
 #endif
 }
 
