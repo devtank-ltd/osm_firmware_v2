@@ -37,4 +37,9 @@ $(1)_flash: $$(OSM_BUILD_DIR)/$(1)/bootloader.bin $$(OSM_BUILD_DIR)/$(1)/applica
 	        -c "program $$(OSM_BUILD_DIR)/$(1)/application.bin 0x1000a000 verify reset exit" \
 	        -c "reset" \
 	        -c "shutdown"
+
+$(1)_picotool: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2
+	sudo `which picotool` load $$(OSM_BUILD_DIR)/$(1)/firmware.bin
+	sudo `which picotool` reboot
+
 endef
