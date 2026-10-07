@@ -12,22 +12,29 @@
         .rx_pin = 1,                                                \
         .enabled = true,                                            \
     },                                                              \
+    {                                                               \
+        .enabled = true,                                            \
+        .en_usb = true,                                             \
+        .index = 0,                                                 \
+    },                                                              \
 }
 
-#define OSM_UART_CHANNELS_COUNT 1
+#define OSM_UART_CHANNELS_COUNT 2
 
-#define CMD_UART            0
-
-#define OSM_UART_BUFFERS_INIT            \
-char uart_0_in_buf[UART_0_IN_BUF_SIZE];  \
-char uart_0_out_buf[UART_0_OUT_BUF_SIZE];
+#define OSM_UART_BUFFERS_INIT             \
+char uart_0_in_buf[UART_0_IN_BUF_SIZE];   \
+char uart_0_out_buf[UART_0_OUT_BUF_SIZE]; \
+char uart_1_in_buf[UART_1_IN_BUF_SIZE];   \
+char uart_1_out_buf[UART_1_OUT_BUF_SIZE];
 
 #define OSM_UART_IN_RINGS                               \
 {                                                       \
     RING_BUF_INIT(uart_0_in_buf, sizeof(uart_0_in_buf)),\
+    RING_BUF_INIT(uart_1_in_buf, sizeof(uart_1_in_buf)),\
 }
 
 #define OSM_UART_OUT_RINGS                                \
 {                                                         \
     RING_BUF_INIT(uart_0_out_buf, sizeof(uart_0_out_buf)),\
+    RING_BUF_INIT(uart_1_out_buf, sizeof(uart_1_out_buf)),\
 }

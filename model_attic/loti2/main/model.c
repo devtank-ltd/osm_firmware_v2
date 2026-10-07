@@ -10,6 +10,38 @@
 #include <osm/sensors/fw.h>
 #include <osm/protocols/protocol.h>
 #include <osm/core/update.h>
+#include <osm/core/common.h>
+#include <osm/core/cmd.h>
+
+char debug_line_buffer[CMD_LINELEN];
+
+static void _uart_debug_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+static void _uart_debug_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+static void _uart_debug_flush(osm_cmd_ctx_t * ctx);
+
+static osm_cmd_ctx_t real_uart_ctx = {.output_cb = _uart_debug_out,
+                                      .error_cb = _uart_debug_error,
+                                      .flush_cb = _uart_debug_flush };
+
+
+static void _uart_debug_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    osm_log_outv(fmt, ap);
+}
+
+
+static void _uart_debug_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    osm_log_errorv(fmt, ap);
+}
+
+
+static void _uart_debug_flush(osm_cmd_ctx_t * ctx)
+{
+    osm_uart_out_drain(1000, REAL_UART);
+}
+
+
 
 void osm_model_post_init(void) {}
 
@@ -26,6 +58,13 @@ bool osm_model_persist_config_cmp(osm_persist_model_config_v1_t* d0, osm_persist
 
 bool osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring)
 {
+    if (uart == REAL_UART)
+    {
+        unsigned len = osm_ring_buf_readline(ring, debug_line_buffer, CMD_LINELEN);
+        if (len)
+            osm_cmds_process(debug_line_buffer, len, &real_uart_ctx);
+        return true;
+    }
     return false;
 }
 
@@ -66,10 +105,6 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
 
 
 void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
-{
-}
-
-void osm_model_main_loop_iterate(void)
 {
 }
 
