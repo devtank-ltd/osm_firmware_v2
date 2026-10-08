@@ -310,6 +310,11 @@ bool __attribute__((weak)) osm_model_set_io_name(unsigned io, const char * name)
     return false;
 }
 
+bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
+{
+    /* No battery fitted */
+    return false;
+}
 
 bool osm_parse_to_index(char * text, char ** pos, unsigned * index, bool (*cb)(const char * name, unsigned * index))
 {

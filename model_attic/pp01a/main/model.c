@@ -105,13 +105,6 @@ void osm_model_main_loop_iterate(void)
 }
 
 
-bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
-{
-    /* No battery fitted */
-    return false;
-}
-
-
 unsigned osm_ios_get_count(void)
 {
     return 0;
