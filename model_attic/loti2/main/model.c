@@ -110,16 +110,63 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
 void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
 {
     /*model_config->ios_state will be set in osm_ios_init */
+    io_name_t init_ios_names[IOS_COUNT] = IOS_NAMES;
+    memcpy(model_config->ios_names, init_ios_names, sizeof(init_ios_names));
+}
+
+
+const char* osm_model_get_io_name(unsigned io)
+{
+    if (io >= IOS_COUNT)
+        return NULL;
+
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    const io_name_t * ios_names = persist_data.model_config.ios_names;
+    #pragma GCC diagnostic pop
+
+    return ios_names[io];
 }
 
 
 bool osm_model_get_io_index(const char * name, unsigned * io)
 {
+    if (!name || !io)
+        return false;
+
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    const io_name_t * ios_names = persist_data.model_config.ios_names;
+    #pragma GCC diagnostic pop
+
+    for(unsigned n = 0; n < IOS_COUNT; n++)
+    {
+        if (!strcmp(name, ios_names[n]))
+        {
+            *io = n;
+            return true;
+        }
+    }
     return false;
 }
 
 
 bool osm_model_set_io_name(unsigned io, const char * name)
 {
-    return false;
+    if (io >= IOS_COUNT || !name)
+        return false;
+
+    unsigned len = strlen(name) + 1;
+
+    if (len > sizeof(io_name_t))
+        return false;
+
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    io_name_t * ios_names = persist_data.model_config.ios_names;
+    #pragma GCC diagnostic pop
+
+    memcpy(ios_names[io], name, len);
+
+    return true;
 }

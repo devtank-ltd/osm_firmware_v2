@@ -35,6 +35,25 @@
     OSM_IO_AS_INPUT,                                                   \
 }
 
+
+#define IOS_NAMES                                                  \
+{                                                                  \
+    "IO01_RP02",                                                   \
+    "IO02_RP05",                                                   \
+    "IO03_RP06",                                                   \
+    "IO04_RP07",                                                   \
+    "IO05_RP08",                                                   \
+    "IO06_RP10",                                                   \
+    "IO07_RP11",                                                   \
+    "IO08_RP24",                                                   \
+    "IO09_RP26",                                                   \
+    "IO10_RP27",                                                   \
+    "IO11_RP30",                                                   \
+    "IO12_RP31",                                                   \
+    "IO13_RP32",                                                   \
+}
+
+
 #define COMMS_RESET_PORT_N
 
 #define UART_CHANNELS                                               \
