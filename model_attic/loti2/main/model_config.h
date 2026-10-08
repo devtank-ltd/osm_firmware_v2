@@ -62,8 +62,6 @@
 typedef struct
 {
     /* 16 byte boundary ---- */
-    osm_comms_config_t      comms_config;
-    /* 16 byte boundary ---- */
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 _[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
