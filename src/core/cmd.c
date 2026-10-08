@@ -164,6 +164,7 @@ void osm_cmds_init(void)
     for (struct osm_cmd_link_t* cur = cmds; cur != tail; cur++)
         cur->next = cur + 1;
 
+    tail = osm_platform_extra_cmds_add(tail);
     osm_model_cmds_add_all(tail);
     _cmds = cmds;
 }

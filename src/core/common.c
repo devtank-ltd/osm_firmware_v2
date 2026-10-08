@@ -280,3 +280,9 @@ bool __attribute__((weak)) osm_model_config_update(const void* from_config, osm_
 {
     return false;
 }
+
+
+struct osm_cmd_link_t* __attribute__((weak)) osm_platform_extra_cmds_add(struct osm_cmd_link_t* tail)
+{
+    return tail;
+}

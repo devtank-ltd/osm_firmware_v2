@@ -41,3 +41,4 @@ void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, 
 void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on);
 bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin);
 
+struct osm_cmd_link_t* osm_platform_extra_cmds_add(struct osm_cmd_link_t* tail);
