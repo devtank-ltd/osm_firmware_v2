@@ -152,7 +152,10 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
 
 void     osm_ios_init(void)
 {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
     ios_state = persist_data.model_config.ios_state;
+    #pragma GCC diagnostic pop
 
     if (ios_state[0] == 0 || ios_state[0] == 0xFFFF)
     {

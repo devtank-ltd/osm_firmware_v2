@@ -1,5 +1,42 @@
 #pragma once
 
+
+#define IOS_PORT_N_PINS     \
+{                           \
+    { 2  },                 \
+    { 5  },                 \
+    { 6  },                 \
+    { 7  },                 \
+    { 8  },                 \
+    { 10 },                 \
+    { 11 },                 \
+    { 24 },                 \
+    { 26 },                 \
+    { 27 },                 \
+    { 30 },                 \
+    { 31 },                 \
+    { 32 },                 \
+}
+
+#define IOS_STATE                                                      \
+{                                                                      \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+    OSM_IO_AS_INPUT,                                                   \
+}
+
+#define COMMS_RESET_PORT_N
+
 #define UART_CHANNELS                                               \
 {                                                                   \
     {                                                               \

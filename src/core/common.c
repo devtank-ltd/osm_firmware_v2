@@ -286,3 +286,8 @@ struct osm_cmd_link_t* __attribute__((weak)) osm_platform_extra_cmds_add(struct 
 {
     return tail;
 }
+
+bool __attribute__((weak))  osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
+{
+    return false;
+}

@@ -4,6 +4,7 @@ loti2_SOURCES := \
     $(OSM_DIR)/src/core/cmd.c \
     $(OSM_DIR)/src/core/common.c \
     $(OSM_DIR)/src/core/log.c \
+    $(OSM_DIR)/src/core/io.c \
     $(OSM_DIR)/src/core/persist_base.c \
     $(OSM_DIR)/src/core/platform_common.c \
     $(OSM_DIR)/src/core/ring.c \

@@ -12,6 +12,7 @@
 #include <osm/core/update.h>
 #include <osm/core/common.h>
 #include <osm/core/cmd.h>
+#include <osm/core/io.h>
 
 char debug_line_buffer[CMD_LINELEN];
 
@@ -91,6 +92,7 @@ void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
 {
     tail = osm_persist_config_add_commands(tail);
     tail = osm_update_add_commands(tail);
+    tail = osm_ios_add_commands(tail);
 }
 
 void osm_measurements_init(void) {}
@@ -113,10 +115,4 @@ bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
 {
     /* No battery fitted */
     return false;
-}
-
-
-unsigned osm_ios_get_count(void)
-{
-    return 0;
 }

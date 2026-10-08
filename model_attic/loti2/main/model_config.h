@@ -56,14 +56,17 @@
 
 #define UART_0_STOP         osm_uart_stop_bits_1
 
-#define IOS_COUNT 0
+#define IOS_WATCH_COUNT 0
+#define IOS_COUNT 13
 
 typedef struct
 {
-    uint8_t                 _[16];
     /* 16 byte boundary ---- */
     osm_comms_config_t      comms_config;
     /* 16 byte boundary ---- */
-} osm_persist_model_config_v1_t;
+    uint16_t                ios_state[IOS_COUNT];
+    uint8_t                 _[16-((IOS_COUNT * sizeof(uint16_t))%16)];
+    /* 16 byte boundary ---- */
+} __attribute__((__packed__)) osm_persist_model_config_v1_t;
 
 #define osm_persist_model_config_t        osm_persist_model_config_v1_t

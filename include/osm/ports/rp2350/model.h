@@ -20,3 +20,4 @@ void     osm_model_uarts_setup(void);
 unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr);
 void     osm_model_main_loop_iterate(void);
 bool     osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version);
+bool     osm_model_can_io_be_special(unsigned io, osm_io_special_t special);

@@ -249,7 +249,7 @@ void osm_platform_gpio_init(const osm_port_n_pins_t * gpio_pin)
 }
 
 
-void platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
+void osm_platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint32_t pull)
 {
     gpio_init(gpio_pin->pins);
     gpio_set_dir(gpio_pin->pins, !is_input);
@@ -269,12 +269,12 @@ void platform_gpio_setup(const osm_port_n_pins_t * gpio_pin, bool is_input, uint
     }
 }
 
-void platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
+void osm_platform_gpio_set(const osm_port_n_pins_t * gpio_pin, bool is_on)
 {
     gpio_put(gpio_pin->pins, is_on);
 }
 
-bool platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
+bool osm_platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 {
     if (gpio_get_dir(gpio_pin->pins))
     {
@@ -282,7 +282,16 @@ bool platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
         return gpio_get_out_level(gpio_pin->pins);
     }
     return gpio_get(gpio_pin->pins);
+
 }
+
+void     osm_w1_enable(unsigned io, bool enabled) {}
+
+void osm_pulsecount_enable(unsigned io, bool enable, osm_io_pupd_t pupd, osm_io_special_t edge) {}
+
+bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd) { return false; }
+
+struct osm_cmd_link_t* osm_pulsecount_add_commands(struct osm_cmd_link_t* tail) { return tail; }
 
 
 static osm_command_response_t _reset_usb_boot_cb(char* args, osm_cmd_ctx_t * ctx)
