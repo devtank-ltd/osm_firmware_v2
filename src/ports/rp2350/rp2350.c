@@ -287,7 +287,7 @@ bool platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
 
 static osm_command_response_t _reset_usb_boot_cb(char* args, osm_cmd_ctx_t * ctx)
 {
-    rom_reset_usb_boot(0,2);
+    rom_reset_usb_boot(0, 0);
     osm_cmd_ctx_error(ctx, "Failed to reset into usb boot.");
     return OSM_COMMAND_RESP_ERR;
 }
@@ -295,6 +295,6 @@ static osm_command_response_t _reset_usb_boot_cb(char* args, osm_cmd_ctx_t * ctx
 
 struct osm_cmd_link_t* osm_platform_extra_cmds_add(struct osm_cmd_link_t* tail)
 {
-    static struct osm_cmd_link_t cmds[] = {{ "reset_usb_boot", "Reboot into BOOTSEL mode",  _reset_usb_boot_cb, false, NULL }};
+    static struct osm_cmd_link_t cmds[] = {{ "usb_boot", "Reboot into BOOTSEL mode",  _reset_usb_boot_cb, false, NULL }};
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
