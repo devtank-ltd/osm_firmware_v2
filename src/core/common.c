@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include <osm/core/config.h>
 #include <osm/core/common.h>
@@ -287,7 +288,77 @@ struct osm_cmd_link_t* __attribute__((weak)) osm_platform_extra_cmds_add(struct 
     return tail;
 }
 
-bool __attribute__((weak))  osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
+bool __attribute__((weak)) osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 {
     return false;
+}
+
+
+const char* __attribute__((weak)) osm_model_get_io_name(unsigned io)
+{
+    return NULL;
+}
+
+bool __attribute__((weak)) osm_model_get_io_index(const char * name, unsigned * io)
+{
+    return false;
+}
+
+
+bool __attribute__((weak)) osm_model_set_io_name(unsigned io, const char * name)
+{
+    return false;
+}
+
+
+bool osm_parse_to_index(char * text, char ** pos, unsigned * index, bool (*cb)(const char * name, unsigned * index))
+{
+    if (!isdigit((int)text[0]))
+    {
+        char * name_end = osm_skip_to_space(text);
+        if (name_end[0])
+        {
+            *name_end = 0;
+            if (pos)
+                *pos = osm_skip_space(name_end+1);
+        }
+        else if (pos)
+        {
+            *pos = name_end;
+        }
+        if (!cb(text, index))
+            return false;
+    }
+    else
+    {
+        *index = strtoul(text, pos, 10);
+        if (pos)
+            *pos = osm_skip_space(*pos);
+    }
+    return true;
+}
+
+
+bool osm_parse_and_set(osm_cmd_ctx_t * ctx,
+                       const char * type_name,
+                       char * text,
+                       bool (*get_cb)(const char * name, unsigned * index),
+                       bool (*set_cb)(unsigned index, const char * name))
+{
+    char * pos = NULL;
+    unsigned index;
+    if (!osm_parse_to_index(text, &pos, &index, get_cb))
+        return false;
+
+    if (pos[0])
+    {
+        if (!set_cb(index, pos))
+        {
+            osm_cmd_ctx_error(ctx, "Failed to rename %s %u to \"%s\"", type_name, index, pos);
+            return false;
+        }
+        else osm_cmd_ctx_out(ctx, "Renamed %s %u to \"%s\"", type_name, index, pos);
+    }
+    else osm_cmd_ctx_out(ctx, "%s %u : \"%s\"", type_name, index, text);
+    return true;
 }

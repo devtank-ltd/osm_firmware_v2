@@ -44,3 +44,13 @@ void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx);
 
 bool osm_str_is_valid_ascii(char* str, unsigned max_len, bool required);
 bool osm_is_str(const char* ref, char* cmp, unsigned cmplen);
+
+bool osm_parse_to_index(char * text,
+                        char ** pos,
+                        unsigned * index,
+                        bool (*cb)(const char * name, unsigned * index));
+bool osm_parse_and_set(osm_cmd_ctx_t * ctx,
+                       const char * type_name,
+                       char * text,
+                       bool (*get_cb)(const char * name, unsigned * index),
+                       bool (*set_cb)(unsigned index, const char * name));

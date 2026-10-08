@@ -23,3 +23,6 @@ void     osm_model_linux_spawn_fakes(void);
 void     osm_model_linux_close_fakes(void);
 void     osm_model_main_loop_iterate(void);
 bool     osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version);
+const char * osm_model_get_io_name(unsigned io);
+bool     osm_model_get_io_index(const char * name, unsigned * io);
+bool     osm_model_set_io_name(unsigned io, const char * name);

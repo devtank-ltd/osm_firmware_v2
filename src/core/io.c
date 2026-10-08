@@ -396,34 +396,36 @@ void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
     const osm_port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
     const char * pretype = "";
-    const char * posttype = "";
+    const char * posttype = pretype;
+    const char * prename = pretype;
+    const char * postname = pretype;
 
     const char * type = _ios_get_type_possible(io);
+    const char * name = osm_model_get_io_name(io);
 
     if (type[0])
     {
         pretype = "[";
         posttype = "] ";
     }
-    else
-    {
-        pretype = "";
-        posttype = " ";
+
+    if (name) {
+        prename=" \"";
+        postname="\"";
     }
+    else name="";
 
     if (!(io_state & OSM_IO_ACTIVE_SPECIAL_MASK))
     {
+        const char * in_out = (io_state & OSM_IO_AS_INPUT)?"IN":"OUT";
 
-        if (io_state & OSM_IO_AS_INPUT)
-            osm_cmd_ctx_out(ctx,"IO %02u : %s%s%sIN %s = %s",
-                       io, pretype, type, posttype,
-                       osm_io_get_pull_str(io_state),
-                       (osm_platform_gpio_get(gpio_pin))?"ON":"OFF");
-        else
-            osm_cmd_ctx_out(ctx,"IO %02u : %s%s%sOUT %s = %s",
-                       io, pretype, type, posttype,
-                       osm_io_get_pull_str(io_state),
-                       (osm_platform_gpio_get(gpio_pin))?"ON":"OFF");
+        osm_cmd_ctx_out(ctx,"IO %02u%s%s%s : %s%s%s" "%s %s = %s",
+                   io,
+                   prename, name, postname,
+                   pretype, type, posttype,
+                   in_out,
+                   osm_io_get_pull_str(io_state),
+                   (osm_platform_gpio_get(gpio_pin))?"ON":"OFF");
     }
     else
     {
@@ -437,7 +439,11 @@ void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
             pupd_char = 'N';
         else
             pupd_char = ' ';
-        osm_cmd_ctx_out(ctx,"IO %02u : %s%s%sUSED %s %c", io, pretype, type, posttype, active_type, pupd_char);
+        osm_cmd_ctx_out(ctx,"IO %02u%s%s%s : %s%s%s%s%s%sUSED %s %c",
+                        io,
+                        prename, name, postname,
+                        pretype, type, posttype,
+                        active_type, pupd_char);
     }
 }
 
@@ -463,7 +469,13 @@ static osm_command_response_t _io_cb(char *args, osm_cmd_ctx_t * ctx)
      * io 2 = ON
      */
     char * pos = NULL;
-    unsigned io = strtoul(args, &pos, 10);
+    unsigned io;
+    if (!osm_parse_to_index(args, &pos, &io, osm_model_get_io_index))
+    {
+        osm_cmd_ctx_error(ctx,"Unable to determine IO.");
+        return OSM_COMMAND_RESP_ERR;
+    }
+
     pos = osm_skip_space(pos);
     bool do_read = false;
 
@@ -563,7 +575,12 @@ static osm_command_response_t _io_cmd_enable_pulsecount_cb(char * args, osm_cmd_
     /* <io> <R/F/B> <U/D/N>
      */
     char * pos = NULL;
-    unsigned io = strtoul(args, &pos, 10);
+    unsigned io;
+    if (!osm_parse_to_index(args, &pos, &io, osm_model_get_io_index))
+    {
+        osm_cmd_ctx_error(ctx,"Unable to determine IO.");
+        goto bad_exit;
+    }
     if (args == pos)
         goto bad_exit;
     pos = osm_skip_space(pos);
@@ -602,7 +619,12 @@ bad_exit:
 static osm_command_response_t _io_cmd_enable_onewire_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     char * pos = NULL;
-    unsigned io = strtoul(args, &pos, 10);
+    unsigned io;
+    if (!osm_parse_to_index(args, &pos, &io, osm_model_get_io_index))
+    {
+        osm_cmd_ctx_error(ctx,"Unable to determine IO.");
+        return OSM_COMMAND_RESP_ERR;
+    }
 
     if (osm_io_enable_w1(io))
     {
@@ -620,7 +642,12 @@ static osm_command_response_t _io_cmd_enable_watch_cb(char* args, osm_cmd_ctx_t 
     /* <io> <U/D/N>
      */
     char * pos = NULL;
-    unsigned io = strtoul(args, &pos, 10);
+    unsigned io;
+    if (!osm_parse_to_index(args, &pos, &io, osm_model_get_io_index))
+    {
+        osm_cmd_ctx_error(ctx,"Unable to determine IO.");
+        goto bad_exit;
+    }
     if (args == pos)
         goto bad_exit;
     pos = osm_skip_space(pos);
@@ -645,13 +672,25 @@ bad_exit:
 }
 
 
+static osm_command_response_t _io_name_cb(char* args, osm_cmd_ctx_t * ctx)
+{
+    return (osm_parse_and_set(ctx,
+                              "IO",
+                              args,
+                              osm_model_get_io_index,
+                              osm_model_set_io_name))?
+            OSM_COMMAND_RESP_OK:OSM_COMMAND_RESP_ERR;
+}
+
+
 struct osm_cmd_link_t* osm_ios_add_commands(struct osm_cmd_link_t* tail)
 {
-    static struct osm_cmd_link_t cmds[] = {{ "ios",          "Print all IOs.",           _io_log_cb                        , false , NULL },
-                                       { "io",           "Get/set IO set.",          _io_cb                            , false , NULL },
-                                       { "en_pulse",     "Enable Pulsecount IO.",    _io_cmd_enable_pulsecount_cb      , false , NULL },
-                                       { "en_w1",        "Enable OneWire IO.",       _io_cmd_enable_onewire_cb         , false , NULL },
-                                       { "en_watch",     "Enable Watch IO.",         _io_cmd_enable_watch_cb           , false , NULL }};
+    static struct osm_cmd_link_t cmds[] = {{ "ios",      "Print all IOs.",        _io_log_cb                  , false, NULL },
+                                           { "io",       "Get/set IO set.",       _io_cb                      , false, NULL },
+                                           { "en_pulse", "Enable Pulsecount IO.", _io_cmd_enable_pulsecount_cb, false, NULL },
+                                           { "en_w1",    "Enable OneWire IO.",    _io_cmd_enable_onewire_cb   , false, NULL },
+                                           { "en_watch", "Enable Watch IO.",      _io_cmd_enable_watch_cb     , false, NULL },
+                                           { "io_name",  "Get/Set name of IO.",   _io_name_cb                 , false, NULL }};
     tail = osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
     return osm_pulsecount_add_commands(tail);
 }
@@ -682,7 +721,7 @@ void osm_ios_measurements_init(void)
 }
 
 
-static bool _ios_name_to_index(char* name, unsigned* io)
+static bool _ios_meas_name_to_index(char* name, unsigned* io)
 {
     if (!name)
         return false;
@@ -703,7 +742,7 @@ static bool _ios_name_to_index(char* name, unsigned* io)
 static osm_measurements_sensor_state_t _ios_collect(char* name, osm_measurements_reading_t* value)
 {
     unsigned index;
-    if (!_ios_name_to_index(name, &index))
+    if (!_ios_meas_name_to_index(name, &index))
     {
         osm_io_debug("Unable to get index from name.");
         return OSM_MEASUREMENTS_SENSOR_STATE_ERROR;
