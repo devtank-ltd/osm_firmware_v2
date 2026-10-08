@@ -3,6 +3,7 @@
 #include "pico/unique_id.h"
 #include "pico/flash.h"
 #include "pico/sync.h"
+#include "pico/bootrom.h"
 #include "hardware/gpio.h"
 #include "hardware/watchdog.h"
 #include "hardware/divider.h"
@@ -19,6 +20,7 @@
 #include <osm/core/platform.h>
 #include <osm/core/log.h>
 #include <osm/core/sleep.h>
+#include <osm/core/common.h>
 #include <osm/comms/comms_identify.h>
 
 #include "sos.h"
@@ -280,4 +282,19 @@ bool platform_gpio_get(const osm_port_n_pins_t * gpio_pin)
         return gpio_get_out_level(gpio_pin->pins);
     }
     return gpio_get(gpio_pin->pins);
+}
+
+
+static osm_command_response_t _reset_usb_boot_cb(char* args, osm_cmd_ctx_t * ctx)
+{
+    rom_reset_usb_boot(0,2);
+    osm_cmd_ctx_error(ctx, "Failed to reset into usb boot.");
+    return OSM_COMMAND_RESP_ERR;
+}
+
+
+struct osm_cmd_link_t* osm_platform_extra_cmds_add(struct osm_cmd_link_t* tail)
+{
+    static struct osm_cmd_link_t cmds[] = {{ "reset_usb_boot", "Reboot into BOOTSEL mode",  _reset_usb_boot_cb, false, NULL }};
+    return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
