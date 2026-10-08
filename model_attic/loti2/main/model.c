@@ -48,6 +48,7 @@ void osm_model_post_init(void) {}
 
 void osm_model_sensors_init(void)
 {
+    osm_ios_init();
 }
 
 /* Return true  if different
@@ -108,6 +109,7 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
 
 void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
 {
+    /*model_config->ios_state will be set in osm_ios_init */
 }
 
 
