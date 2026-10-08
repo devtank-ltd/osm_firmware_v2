@@ -36,7 +36,7 @@ static bool _ios_append_special_str(char special_str[IOS_SPECIAL_STR_LEN+1], con
 }
 
 
-static char* _ios_get_type_active(uint16_t io_state)
+static const char* _ios_get_type_active(uint16_t io_state)
 {
     switch(io_state & OSM_IO_ACTIVE_SPECIAL_MASK)
     {
@@ -56,7 +56,7 @@ static char* _ios_get_type_active(uint16_t io_state)
 }
 
 
-static char* _ios_get_type_possible(unsigned io)
+static const char* _ios_get_type_possible(unsigned io)
 {
     static char special_str[IOS_SPECIAL_STR_LEN+1];
     memset(special_str, 0, IOS_SPECIAL_STR_LEN+1);
@@ -134,7 +134,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
-    char * type = _ios_get_type_possible(io);
+    const char * type = _ios_get_type_possible(io);
 
     const osm_port_n_pins_t * gpio_pin = &ios_pins[io];
 
@@ -392,10 +392,10 @@ void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
 
     const osm_port_n_pins_t * gpio_pin = &ios_pins[io];
     uint16_t io_state = ios_state[io];
-    char * pretype = "";
-    char * posttype = "";
+    const char * pretype = "";
+    const char * posttype = "";
 
-    char * type = _ios_get_type_possible(io);
+    const char * type = _ios_get_type_possible(io);
 
     if (type[0])
     {
@@ -424,7 +424,7 @@ void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
     }
     else
     {
-        char * active_type = _ios_get_type_active(io_state);
+        const char * active_type = _ios_get_type_active(io_state);
         char pupd_char;
         if ((io_state & OSM_IO_PULL_MASK) == GPIO_PUPD_PULLUP)
             pupd_char = 'U';
@@ -728,7 +728,7 @@ void osm_ios_inf_init(osm_measurements_inf_t* inf)
     inf->value_type_cb      = _ios_value_type;
 }
 
-
+#ifdef W1_PULSE_1_IO
 // cppcheck-suppress unusedFunction ; System handler
 void W1_PULSE_1_ISR(void)
 {
@@ -743,8 +743,9 @@ void W1_PULSE_1_ISR(void)
         return;
     }
 }
+#endif
 
-
+#ifdef W1_PULSE_2_IO
 // cppcheck-suppress unusedFunction ; System handler
 void W1_PULSE_2_ISR(void)
 {
@@ -759,3 +760,4 @@ void W1_PULSE_2_ISR(void)
         return;
     }
 }
+#endif
