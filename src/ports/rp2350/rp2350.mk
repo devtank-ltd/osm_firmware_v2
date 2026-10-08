@@ -4,7 +4,7 @@ $(call PORT_BASE_RULES,$(1),RP2350)
 $(1): $$(OSM_BUILD_DIR)/$(1)/.complete
 
 ifneq ($$(origin PICO_SDK_PATH), undefined)
-$$(OSM_BUILD_DIR)/$(1)/Makefile: $$($(1)_SOURCES)
+$$(OSM_BUILD_DIR)/$(1)/Makefile: $$($(1)_SOURCES) $$(shell find $$(OSM_DIR) -name "*.h")
 	mkdir -p $$(OSM_BUILD_DIR)/$(1)
 	OSM_DIR="$$(shell realpath $$(OSM_DIR))" \
 	OSM_MODEL_NAME=$(1) \
