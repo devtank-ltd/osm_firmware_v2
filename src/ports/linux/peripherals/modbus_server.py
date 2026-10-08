@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import logging
-from pymodbus.payload import BinaryPayloadBuilder
 try:
     from pymodbus.version import version
 except ModuleNotFoundError:
@@ -24,30 +23,60 @@ else:
 
 from pymodbus.device import ModbusDeviceIdentification
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
-from pymodbus.constants import Endian
-
-try:
-    endian_big = Endian.Big
-    endian_little = Endian.Little
-except AttributeError:
-    endian_big = Endian.BIG
-    endian_little = Endian.LITTLE
 
 BIG    = "big"
 LITTLE = "little"
 
-_BUILDER_FUNCS = {"uint16":  BinaryPayloadBuilder.add_16bit_uint,
-                  "int16":   BinaryPayloadBuilder.add_16bit_int,
-                  "uint32":  BinaryPayloadBuilder.add_32bit_uint,
-                  "int32":   BinaryPayloadBuilder.add_32bit_int,
-                  "float32": BinaryPayloadBuilder.add_32bit_float,
-                  }
+_convert_to_registers = None
+if "MODBUS_LEGACY_PAYLOAD" not in os.environ:
+    try:
+        from pymodbus.client.mixin import ModbusClientMixin
+        _convert_to_registers = ModbusClientMixin.convert_to_registers
+        _DT = ModbusClientMixin.DATATYPE
+        _DATATYPES = {"uint16":  _DT.UINT16,
+                      "int16":   _DT.INT16,
+                      "uint32":  _DT.UINT32,
+                      "int32":   _DT.INT32,
+                      "float32": _DT.FLOAT32,
+                      "uint64":  _DT.UINT64,
+                      "int64":   _DT.INT64,
+                      "float64": _DT.FLOAT64,
+                      }
+    except (ImportError, AttributeError):
+        _convert_to_registers = None
+
+if _convert_to_registers is not None:
+    PAYLOAD_BACKEND = "convert_to_registers"
+
+    def _encode_big(value, data_type):
+        return list(_convert_to_registers(value, _DATATYPES[data_type]))
+else:
+    PAYLOAD_BACKEND = "BinaryPayloadBuilder"
+    from pymodbus.payload import BinaryPayloadBuilder
+    from pymodbus.constants import Endian
+    try:
+        _endian_big = Endian.Big
+    except AttributeError:
+        _endian_big = Endian.BIG
+
+    _BUILDER_FUNCS = {"uint16":  BinaryPayloadBuilder.add_16bit_uint,
+                      "int16":   BinaryPayloadBuilder.add_16bit_int,
+                      "uint32":  BinaryPayloadBuilder.add_32bit_uint,
+                      "int32":   BinaryPayloadBuilder.add_32bit_int,
+                      "float32": BinaryPayloadBuilder.add_32bit_float,
+                      "uint64":  BinaryPayloadBuilder.add_64bit_uint,
+                      "int64":   BinaryPayloadBuilder.add_64bit_int,
+                      "float64": BinaryPayloadBuilder.add_64bit_float,
+                      }
+
+    def _encode_big(value, data_type):
+        builder = BinaryPayloadBuilder(byteorder=_endian_big, wordorder=_endian_big)
+        _BUILDER_FUNCS[data_type](builder, value)
+        return list(builder.to_registers())
 
 
 def encode_registers(value, data_type, byteorder=BIG, wordorder=BIG):
-    builder = BinaryPayloadBuilder(byteorder=endian_big, wordorder=endian_big)
-    _BUILDER_FUNCS[data_type](builder, value)
-    regs = list(builder.to_registers())
+    regs = _encode_big(value, data_type)
     if wordorder == LITTLE:
         regs.reverse()
     if byteorder == LITTLE:
@@ -97,6 +126,8 @@ class modbus_server_t(object):
                 log.setLevel(logging.CRITICAL)
         else:
             self._logger = log = logger
+
+        log.debug("pymodbus %s, payload backend: %s", version_short, PAYLOAD_BACKEND)
 
         self._port = port
 
