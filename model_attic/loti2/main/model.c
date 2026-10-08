@@ -55,8 +55,10 @@ void osm_model_sensors_init(void)
  *        false if same      */
 bool osm_model_persist_config_cmp(osm_persist_model_config_v1_t* d0, osm_persist_model_config_v1_t* d1)
 {
-    return false;
+    return (memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) ||
+            memcmp(d0->ios_names, d1->ios_names, sizeof(io_name_t) * IOS_COUNT));
 }
+
 
 bool osm_model_uart_ring_done_in_process(unsigned uart, osm_ring_buf_t * ring)
 {
