@@ -113,8 +113,13 @@ void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_co
 }
 
 
-bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
+bool osm_model_get_io_index(const char * name, unsigned * io)
 {
-    /* No battery fitted */
+    return false;
+}
+
+
+bool osm_model_set_io_name(unsigned io, const char * name)
+{
     return false;
 }
