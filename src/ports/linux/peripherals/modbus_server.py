@@ -33,33 +33,54 @@ except AttributeError:
     endian_big = Endian.BIG
     endian_little = Endian.LITTLE
 
+BIG    = "big"
+LITTLE = "little"
+
+_BUILDER_FUNCS = {"uint16":  BinaryPayloadBuilder.add_16bit_uint,
+                  "int16":   BinaryPayloadBuilder.add_16bit_int,
+                  "uint32":  BinaryPayloadBuilder.add_32bit_uint,
+                  "int32":   BinaryPayloadBuilder.add_32bit_int,
+                  "float32": BinaryPayloadBuilder.add_32bit_float,
+                  }
+
+
+def encode_registers(value, data_type, byteorder=BIG, wordorder=BIG):
+    builder = BinaryPayloadBuilder(byteorder=endian_big, wordorder=endian_big)
+    _BUILDER_FUNCS[data_type](builder, value)
+    regs = list(builder.to_registers())
+    if wordorder == LITTLE:
+        regs.reverse()
+    if byteorder == LITTLE:
+        regs = [((r & 0xFF) << 8) | (r >> 8) for r in regs]
+    return regs
+
 
 MODBUS_DEV_ADDRESS_E53  = 0x5
-MODBUS_REGISTERS_E53    = {0xc56e: (BinaryPayloadBuilder.add_32bit_uint,  1000),  # PF    "PowerFactorP1",  "PF"
-                           0xc552: (BinaryPayloadBuilder.add_32bit_uint, 24001),  # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
-                           0xc554: (BinaryPayloadBuilder.add_32bit_uint, 24002),  # cVP2  "VoltageP2",      "V / 100"         ,
-                           0xc556: (BinaryPayloadBuilder.add_32bit_uint, 24003),  # cVP3  "VoltageP3",      "V / 100"         ,
-                           0xc560: (BinaryPayloadBuilder.add_32bit_uint,  3001),  # mAP1  "CurrentP1",      "A / 1000"        , 3000 for 3A in milliamps
-                           0xc562: (BinaryPayloadBuilder.add_32bit_uint,  3002),  # mAP2  "CurrentP2",      "A / 1000"        ,
-                           0xc564: (BinaryPayloadBuilder.add_32bit_uint,  3003),  # mAP3  "CurrentP3",      "A / 1000"        ,
-                           0xc652: (BinaryPayloadBuilder.add_32bit_uint,  1000)   # ImEn  "ImportEnergy",   "watt/hours/0.001", 1000 for 1.0
+MODBUS_REGISTERS_E53    = {0xc56e: ("uint32",  1000),  # PF    "PowerFactorP1",  "PF"
+                           0xc552: ("uint32", 24001),  # cVP1  "VoltageP1",      "V / 100"         , 24000 for 240 in centivolts
+                           0xc554: ("uint32", 24002),  # cVP2  "VoltageP2",      "V / 100"         ,
+                           0xc556: ("uint32", 24003),  # cVP3  "VoltageP3",      "V / 100"         ,
+                           0xc560: ("uint32",  3001),  # mAP1  "CurrentP1",      "A / 1000"        , 3000 for 3A in milliamps
+                           0xc562: ("uint32",  3002),  # mAP2  "CurrentP2",      "A / 1000"        ,
+                           0xc564: ("uint32",  3003),  # mAP3  "CurrentP3",      "A / 1000"        ,
+                           0xc652: ("uint32",  1000)   # ImEn  "ImportEnergy",   "watt/hours/0.001", 1000 for 1.0
                            }
 
 MODBUS_DEV_ADDRESS_RIF  = 0x1
-MODBUS_REGISTERS_RIF    = {0x36: (BinaryPayloadBuilder.add_32bit_float, 1. ),   # PF   "PowerFactorP1",  "PF"
-                           0x00: (BinaryPayloadBuilder.add_32bit_float, 240.1), # VP1  "VoltageP1",      "V"
-                           0x02: (BinaryPayloadBuilder.add_32bit_float, 240.2), # VP2  "VoltageP2",      "V"
-                           0x04: (BinaryPayloadBuilder.add_32bit_float, 240.3), # VP3  "VoltageP3",      "V"
-                           0x10: (BinaryPayloadBuilder.add_32bit_float, 30.1),  # AP1  "CurrentP1",      "A"
-                           0x12: (BinaryPayloadBuilder.add_32bit_float, 30.2),  # AP2  "CurrentP2",      "A"
-                           0x14: (BinaryPayloadBuilder.add_32bit_float, 30.3),  # AP3  "CurrentP3",      "A"
-                           0x60: (BinaryPayloadBuilder.add_32bit_float, 1.)     # Imp  "ImportEnergy",   "watt/hours/1"
+MODBUS_REGISTERS_RIF    = {0x36: ("float32", 1. ),   # PF   "PowerFactorP1",  "PF"
+                           0x00: ("float32", 240.1), # VP1  "VoltageP1",      "V"
+                           0x02: ("float32", 240.2), # VP2  "VoltageP2",      "V"
+                           0x04: ("float32", 240.3), # VP3  "VoltageP3",      "V"
+                           0x10: ("float32", 30.1),  # AP1  "CurrentP1",      "A"
+                           0x12: ("float32", 30.2),  # AP2  "CurrentP2",      "A"
+                           0x14: ("float32", 30.3),  # AP3  "CurrentP3",      "A"
+                           0x60: ("float32", 1.)     # Imp  "ImportEnergy",   "watt/hours/1"
                            }
 MODBUS_DEV_ADDRESS_RDL  = 0x2
 MODBUS_REGISTERS_RDL    = {
-                           0x01: (BinaryPayloadBuilder.add_16bit_uint, 2 ),
-                           0x02: (BinaryPayloadBuilder.add_16bit_int,  2 ),
-                           0x03: (BinaryPayloadBuilder.add_16bit_int, -178 ),
+                           0x01: ("uint16", 2 ),
+                           0x02: ("int16",  2 ),
+                           0x03: ("int16", -178 ),
                            }
 
 
@@ -79,9 +100,10 @@ class modbus_server_t(object):
 
         self._port = port
 
-        e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=endian_big, wordorder=endian_big)
-        rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=endian_big, wordorder=endian_little)
-        rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=endian_big, wordorder=endian_big)
+        e53_slave_block = self._create_block(MODBUS_REGISTERS_E53, byteorder=BIG, wordorder=BIG)
+        rif_slave_block = self._create_block(MODBUS_REGISTERS_RIF, byteorder=BIG, wordorder=LITTLE)
+        rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=BIG, wordorder=BIG)
+
 
         slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block),
                   MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block),
@@ -102,18 +124,12 @@ class modbus_server_t(object):
                       port=self._port, timeout=1, baudrate=9600)
 
     def _create_block(self, src, byteorder, wordorder, zero=True):
-        builder = BinaryPayloadBuilder(byteorder=byteorder, wordorder=endian_big)
         dst = {}
-        for key, value in src.items():
-            type_func, somevalue = value
-            type_func(builder, somevalue)
-            data = builder.to_registers()
+        for key, (data_type, value) in src.items():
+            data = encode_registers(value, data_type, byteorder=byteorder, wordorder=wordorder)
             base = (key + 1) if zero else key
-            if len(data) == 2 and wordorder == endian_little:
-                data = [data[1], data[0]]
-            for n in range(len(data)):
-                dst[base + n] = data[n]
-            builder.reset()
+            for n, reg in enumerate(data):
+                dst[base + n] = reg
         return ModbusSparseDataBlock(values=dst)
 
 
