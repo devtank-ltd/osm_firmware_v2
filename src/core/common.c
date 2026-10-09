@@ -299,9 +299,17 @@ const char* __attribute__((weak)) osm_model_get_io_name(unsigned io)
     return NULL;
 }
 
-bool __attribute__((weak)) osm_model_get_io_index(const char * name, unsigned * io)
+bool _stub_osm_model_get_io_index(const char * name, unsigned * io)
 {
     return false;
+}
+
+bool osm_model_get_io_index(const char * name, unsigned * io) __attribute__((weak, alias ("_stub_osm_model_get_io_index")));
+
+
+bool osm_has_io_names(void)
+{
+    return (osm_model_get_io_index != _stub_osm_model_get_io_index);
 }
 
 

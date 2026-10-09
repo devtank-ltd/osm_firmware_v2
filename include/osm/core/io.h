@@ -40,3 +40,5 @@ struct osm_cmd_link_t* osm_ios_add_commands(struct osm_cmd_link_t* tail);
 
 void     osm_ios_inf_init(osm_measurements_inf_t* inf);
 void     osm_ios_measurements_init(void);
+
+bool     osm_has_io_names(void);
