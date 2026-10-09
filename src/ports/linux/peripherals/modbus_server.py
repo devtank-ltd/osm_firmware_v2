@@ -21,7 +21,10 @@ if version_major >= 3 and version_minor > 1:
 else:
     from pymodbus.transaction import ModbusRtuFramer as FRAMER
 
-from pymodbus.device import ModbusDeviceIdentification
+try:
+    from pymodbus.device import ModbusDeviceIdentification           # pymodbus < 3.10
+except ImportError:
+    from pymodbus import ModbusDeviceIdentification                  # pymodbus >= 3.10
 from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
 
 BIG    = "big"
