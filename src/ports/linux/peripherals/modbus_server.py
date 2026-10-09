@@ -25,7 +25,30 @@ try:
     from pymodbus.device import ModbusDeviceIdentification           # pymodbus < 3.10
 except ImportError:
     from pymodbus import ModbusDeviceIdentification                  # pymodbus >= 3.10
-from pymodbus.datastore import ModbusSlaveContext, ModbusServerContext, ModbusSparseDataBlock
+try:
+    from pymodbus.datastore import ModbusSlaveContext as ModbusDeviceContext   # pymodbus < 3.10
+    SERVER_CONTEXT_KW = "slaves"
+except ImportError:
+    from pymodbus.datastore import ModbusDeviceContext                         # pymodbus >= 3.10
+    SERVER_CONTEXT_KW = "devices"
+from pymodbus.datastore import ModbusServerContext, ModbusSparseDataBlock, ModbusSequentialDataBlock
+
+
+# Before pymodbus 3.14, a request for address N reads datastore key N + 1, so
+# keys are stored one higher. From 3.14 the datastore is zero-based.
+SPARSE_ADDRESS_OFFSET = 0 if (version_major, version_minor) >= (3, 14) else 1
+
+
+def _slave_context(hr=None, ir=None):
+    # Always pass every block explicitly as pymodbus 3.9 checks "di is not None"
+    # for all four stores, so hr/ir given without di are silently dropped.
+    def empty():
+        # Placeholder block; starts at 1 because newer pymodbus rejects address 0.
+        return ModbusSequentialDataBlock(1, [0])
+    return ModbusDeviceContext(di=empty(), co=empty(),
+                              hr=hr if hr is not None else empty(),
+                              ir=ir if ir is not None else empty())
+
 
 BIG    = "big"
 LITTLE = "little"
@@ -55,7 +78,11 @@ if _convert_to_registers is not None:
         return list(_convert_to_registers(value, _DATATYPES[data_type]))
 else:
     PAYLOAD_BACKEND = "BinaryPayloadBuilder"
-    from pymodbus.payload import BinaryPayloadBuilder
+    try:
+        from pymodbus.payload import BinaryPayloadBuilder
+    except ImportError:
+        raise ImportError(f"pymodbus {version_short} has no BinaryPayloadBuilder \
+                           (removed in 3.10); unset MODBUS_LEGACY_PAYLOAD")
     from pymodbus.constants import Endian
     try:
         _endian_big = Endian.Big
@@ -139,11 +166,11 @@ class modbus_server_t(object):
         rdl_slave_block = self._create_block(MODBUS_REGISTERS_RDL, byteorder=BIG, wordorder=BIG)
 
 
-        slaves = {MODBUS_DEV_ADDRESS_E53 : ModbusSlaveContext(hr=e53_slave_block),
-                  MODBUS_DEV_ADDRESS_RIF : ModbusSlaveContext(ir=rif_slave_block),
-                  MODBUS_DEV_ADDRESS_RDL : ModbusSlaveContext(ir=rdl_slave_block),
+        slaves = {MODBUS_DEV_ADDRESS_E53 : _slave_context(hr=e53_slave_block),
+                  MODBUS_DEV_ADDRESS_RIF : _slave_context(ir=rif_slave_block),
+                  MODBUS_DEV_ADDRESS_RDL : _slave_context(ir=rdl_slave_block),
                   }
-        self._context = ModbusServerContext(slaves=slaves, single=False)
+        self._context = ModbusServerContext(**{SERVER_CONTEXT_KW: slaves}, single=False)
         self._identity = ModbusDeviceIdentification()
         self._identity.VendorName = 'Pymodbus'
         self._identity.ProductCode = 'PM'
@@ -161,7 +188,7 @@ class modbus_server_t(object):
         dst = {}
         for key, (data_type, value) in src.items():
             data = encode_registers(value, data_type, byteorder=byteorder, wordorder=wordorder)
-            base = (key + 1) if zero else key
+            base = (key + SPARSE_ADDRESS_OFFSET) if zero else key
             for n, reg in enumerate(data):
                 dst[base + n] = reg
         return ModbusSparseDataBlock(values=dst)
