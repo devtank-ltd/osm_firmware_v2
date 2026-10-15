@@ -8,6 +8,7 @@
 #include <osm/core/measurements.h>
 #include <osm/core/modbus_measurements.h>
 #include <osm/sensors/fw.h>
+#include <osm/sensors/adc_loop.h>
 #include <osm/protocols/protocol.h>
 #include <osm/core/update.h>
 #include <osm/core/common.h>
@@ -49,6 +50,7 @@ void osm_model_post_init(void) {}
 void osm_model_sensors_init(void)
 {
     osm_ios_init();
+    osm_adc_loop_init();
 }
 
 /* Return true  if different

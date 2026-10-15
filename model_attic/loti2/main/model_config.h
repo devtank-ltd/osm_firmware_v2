@@ -59,6 +59,9 @@
 #define IOS_WATCH_COUNT 0
 #define IOS_COUNT 13
 
+#define ADC_GPIO_BASE                   26
+#define ADCS_CHANNEL_COUNT 4
+
 typedef char io_name_t[16];
 
 typedef struct

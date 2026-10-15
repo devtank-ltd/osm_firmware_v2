@@ -9,6 +9,7 @@ loti2_SOURCES := \
     $(OSM_DIR)/src/core/platform_common.c \
     $(OSM_DIR)/src/core/ring.c \
     $(OSM_DIR)/src/core/uart_rings.c \
+    $(OSM_DIR)/src/ports/rp2350/adc_loop.c \
     $(OSM_DIR)/src/ports/rp2350/rp2350.c \
     $(OSM_DIR)/src/ports/rp2350/persist_config.c \
     $(OSM_DIR)/src/ports/rp2350/sleep.c \
@@ -16,6 +17,7 @@ loti2_SOURCES := \
     $(OSM_DIR)/src/ports/rp2350/update.c \
     $(OSM_DIR)/src/ports/rp2350/usb_descriptors.c \
     $(OSM_DIR)/src/sensors/fw.c \
+    $(OSM_DIR)/src/sensors/adc_loop.c \
     $(OSM_MODEL_DIR)/loti2/main/model.c
 
 $(eval $(call RP2350_FIRMWARE,loti2))

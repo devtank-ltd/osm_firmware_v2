@@ -42,6 +42,7 @@ target_link_libraries(application
     pico_time
     hardware_clocks
     hardware_gpio
+    hardware_adc
     hardware_watchdog
     hardware_irq
     hardware_dma
