@@ -125,49 +125,11 @@ void osm_adc_loop_interate(void)
 }
 
 
-bool     adc_get_index(char * name, unsigned * index)
-{
-    if (!name || !index)
-        return false;
-
-    for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
-    {
-        if (strcmp(name, adcs_names[n]) == 0)
-        {
-            *index = n;
-            return true;
-        }
-    }
-    return false;
-}
-
-
-bool     adc_set_name(unsigned adc, char * name)
+bool     adc_enable_averaged_limits(unsigned adc, bool enable)
 {
     if (adc >= ADCS_CHANNEL_COUNT)
         return false;
-    unsigned name_len = strlen(name);
-    if (name_len > ADC_NAME_LEN)
-        return false;
-    memcpy(adcs_names[adc], name, name_len + 1);
-    return true;
-}
 
-
-const char* adc_get_name(unsigned index)
-{
-    if (index >= ADCS_CHANNEL_COUNT)
-        return UNKNOWN_NAME;
-
-    return adcs_names[index];
-}
-
-
-bool     adc_enable_averaged_limits(unsigned adc, bool enable)
-{
-    if (adc >= ARRAY_SIZE(adc_channel_array))
-        return false;
-
-    adc_channel_info[adc].average_limits = enable;
+    _adc_channel_info[adc].average_limits = enable;
     return true;
 }

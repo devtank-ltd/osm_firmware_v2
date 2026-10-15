@@ -24,6 +24,11 @@ void     osm_model_setup_pulse_pupd(uint8_t* pupd);
 unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measurements_arr);
 void     osm_model_main_loop_iterate(void);
 bool     osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version);
+
 const char * osm_model_get_io_name(unsigned io);
 bool     osm_model_get_io_index(const char * name, unsigned * io);
 bool     osm_model_set_io_name(unsigned io, const char * name);
+
+const char * osm_model_get_adc_name(unsigned adc);
+bool     osm_model_get_adc_index(const char * name, unsigned * adc);
+bool     osm_model_set_adc_name(unsigned adc, const char * name);

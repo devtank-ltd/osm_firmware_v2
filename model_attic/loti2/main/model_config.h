@@ -62,7 +62,7 @@
 #define ADC_GPIO_BASE                   26
 #define ADCS_CHANNEL_COUNT 4
 
-typedef char io_name_t[16];
+typedef char obj_name_t[16];
 
 typedef struct
 {
@@ -70,7 +70,10 @@ typedef struct
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 _[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
-    io_name_t               ios_names[IOS_COUNT];
+    obj_name_t               ios_names[IOS_COUNT];
+    uint8_t                 __[16-((IOS_COUNT * sizeof(obj_name_t))%16)];
+    /* 16 byte boundary ---- */
+    obj_name_t               adcs_names[ADCS_CHANNEL_COUNT];
 } __attribute__((__packed__)) osm_persist_model_config_v1_t;
 
 #define osm_persist_model_config_t        osm_persist_model_config_v1_t

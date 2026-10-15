@@ -15,7 +15,14 @@
 #include <osm/core/cmd.h>
 #include <osm/core/io.h>
 
-char debug_line_buffer[CMD_LINELEN];
+static char debug_line_buffer[CMD_LINELEN];
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+static obj_name_t * ios_names = persist_data.model_config.ios_names;
+static obj_name_t * adcs_names = persist_data.model_config.adcs_names;
+#pragma GCC diagnostic pop
 
 static void _uart_debug_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
 static void _uart_debug_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
@@ -58,7 +65,7 @@ void osm_model_sensors_init(void)
 bool osm_model_persist_config_cmp(osm_persist_model_config_v1_t* d0, osm_persist_model_config_v1_t* d1)
 {
     return (memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) ||
-            memcmp(d0->ios_names, d1->ios_names, sizeof(io_name_t) * IOS_COUNT));
+            memcmp(d0->ios_names, d1->ios_names, sizeof(obj_name_t) * IOS_COUNT));
 }
 
 
@@ -114,63 +121,82 @@ unsigned osm_model_measurements_add_defaults(osm_measurements_def_t * measuremen
 void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_config)
 {
     /*model_config->ios_state will be set in osm_ios_init */
-    io_name_t init_ios_names[IOS_COUNT] = IOS_NAMES;
+    obj_name_t init_ios_names[IOS_COUNT] = IOS_NAMES;
     memcpy(model_config->ios_names, init_ios_names, sizeof(init_ios_names));
 }
 
-
-const char* osm_model_get_io_name(unsigned io)
+static const char* osm_model_get_obj_name(const obj_name_t * names, unsigned count, unsigned index)
 {
-    if (io >= IOS_COUNT)
+    if (index >= count)
         return NULL;
 
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
-    const io_name_t * ios_names = persist_data.model_config.ios_names;
-    #pragma GCC diagnostic pop
-
-    return ios_names[io];
+    return names[index];
 }
 
-
-bool osm_model_get_io_index(const char * name, unsigned * io)
+static bool osm_model_get_obj_index(const obj_name_t * names, unsigned count, const char * name, unsigned * index)
 {
-    if (!name || !io)
+    if (!name || !index)
         return false;
 
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
-    const io_name_t * ios_names = persist_data.model_config.ios_names;
-    #pragma GCC diagnostic pop
-
-    for(unsigned n = 0; n < IOS_COUNT; n++)
+    for(unsigned n = 0; n < count; n++)
     {
-        if (!strcmp(name, ios_names[n]))
+        if (!strcmp(name, names[n]))
         {
-            *io = n;
+            *index = n;
             return true;
         }
     }
     return false;
 }
 
-
-bool osm_model_set_io_name(unsigned io, const char * name)
+static bool osm_model_set_obj_name(obj_name_t * names, unsigned count, unsigned index, const char * name)
 {
-    if (io >= IOS_COUNT || !name)
+    if (index >= count || !name)
         return false;
 
     unsigned len = strlen(name) + 1;
 
-    if (len > sizeof(io_name_t))
+    if (len > sizeof(obj_name_t))
         return false;
 
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
-    io_name_t * ios_names = persist_data.model_config.ios_names;
-    #pragma GCC diagnostic pop
-
-    memcpy(ios_names[io], name, len);
+    memcpy(names[index], name, len);
 
     return true;
+}
+
+
+const char* osm_model_get_io_name(unsigned io)
+{
+    return osm_model_get_obj_name(ios_names, IOS_COUNT, io);
+}
+
+
+bool osm_model_get_io_index(const char * name, unsigned * io)
+{
+    return osm_model_get_obj_index(ios_names, IOS_COUNT, name, io);
+}
+
+
+bool osm_model_set_io_name(unsigned io, const char * name)
+{
+    return osm_model_set_obj_name(ios_names, IOS_COUNT, io, name);
+}
+
+
+
+bool     osm_model_adc_get_index(char * name, unsigned * adc)
+{
+    return osm_model_get_obj_index(adcs_names, ADCS_CHANNEL_COUNT, name, adc);
+}
+
+
+bool    osm_model_adc_set_name(unsigned adc, char * name)
+{
+    return osm_model_set_obj_name(adcs_names, ADCS_CHANNEL_COUNT, adc, name);
+}
+
+
+const char* osm_model_adc_get_name(unsigned adc)
+{
+    return osm_model_get_obj_name(adcs_names, ADCS_CHANNEL_COUNT, adc);
 }

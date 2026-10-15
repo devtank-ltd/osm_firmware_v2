@@ -288,6 +288,10 @@ struct osm_cmd_link_t* __attribute__((weak)) osm_platform_extra_cmds_add(struct 
     return tail;
 }
 
+/*
+ * IO DEFAULT FUNCTIONS
+*/
+
 bool __attribute__((weak)) osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
 {
     return false;
@@ -299,17 +303,17 @@ const char* __attribute__((weak)) osm_model_get_io_name(unsigned io)
     return NULL;
 }
 
-bool _stub_osm_model_get_io_index(const char * name, unsigned * io)
+bool _stub_osm_model_get_index(const char * name, unsigned * io)
 {
     return false;
 }
 
-bool osm_model_get_io_index(const char * name, unsigned * io) __attribute__((weak, alias ("_stub_osm_model_get_io_index")));
+bool osm_model_get_io_index(const char * name, unsigned * io) __attribute__((weak, alias ("_stub_osm_model_get_index")));
 
 
 bool osm_has_io_names(void)
 {
-    return (osm_model_get_io_index != _stub_osm_model_get_io_index);
+    return (osm_model_get_io_index != _stub_osm_model_get_index);
 }
 
 
@@ -317,6 +321,31 @@ bool __attribute__((weak)) osm_model_set_io_name(unsigned io, const char * name)
 {
     return false;
 }
+
+/*
+ * ADC DEFAULT FUNCTIONS
+*/
+
+const char* __attribute__((weak)) osm_model_get_adc_name(unsigned adc)
+{
+    return NULL;
+}
+
+
+bool osm_model_get_adc_index(const char * name, unsigned * io) __attribute__((weak, alias ("_stub_osm_model_get_index")));
+
+
+bool osm_has_adcs_names(void)
+{
+    return (osm_model_get_adc_index != _stub_osm_model_get_index);
+}
+
+
+bool __attribute__((weak)) osm_model_set_adc_name(unsigned adc, const char * name)
+{
+    return false;
+}
+
 
 bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
 {
