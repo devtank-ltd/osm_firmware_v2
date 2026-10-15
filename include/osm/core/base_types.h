@@ -315,3 +315,7 @@ typedef enum
     OSM_IO_PUPD_UP      = 1,
     OSM_IO_PUPD_DOWN    = 2,
 } osm_io_pupd_t;
+
+#define MAX_ADC_CAL_POLY_NUM 4
+
+typedef double osm_adc_coeffs_t[MAX_ADC_CAL_POLY_NUM];

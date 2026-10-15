@@ -15,6 +15,9 @@
 #include <osm/core/cmd.h>
 #include <osm/core/io.h>
 
+#include "model_config.h"
+#include "platform_model.h"
+
 static char debug_line_buffer[CMD_LINELEN];
 
 
@@ -105,6 +108,7 @@ void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
     tail = osm_persist_config_add_commands(tail);
     tail = osm_update_add_commands(tail);
     tail = osm_ios_add_commands(tail);
+    tail = osm_adc_loop_add(tail);
 }
 
 void osm_measurements_init(void) {}
@@ -123,6 +127,12 @@ void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_co
     /*model_config->ios_state will be set in osm_ios_init */
     obj_name_t init_ios_names[IOS_COUNT] = IOS_NAMES;
     memcpy(model_config->ios_names, init_ios_names, sizeof(init_ios_names));
+
+    adc_init_t adcs_init[ADCS_CHANNEL_COUNT] = ADCS_INIT;
+    for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
+    {
+        osm_model_set_adc_name(n, adcs_init[n].name);
+    }
 }
 
 static const char* osm_model_get_obj_name(const obj_name_t * names, unsigned count, unsigned index)
@@ -184,19 +194,19 @@ bool osm_model_set_io_name(unsigned io, const char * name)
 
 
 
-bool     osm_model_adc_get_index(char * name, unsigned * adc)
+bool     osm_model_get_adc_index(const char * name, unsigned * adc)
 {
     return osm_model_get_obj_index(adcs_names, ADCS_CHANNEL_COUNT, name, adc);
 }
 
 
-bool    osm_model_adc_set_name(unsigned adc, char * name)
+bool    osm_model_set_adc_name(unsigned adc, const char * name)
 {
     return osm_model_set_obj_name(adcs_names, ADCS_CHANNEL_COUNT, adc, name);
 }
 
 
-const char* osm_model_adc_get_name(unsigned adc)
+const char* osm_model_get_adc_name(unsigned adc)
 {
     return osm_model_get_obj_name(adcs_names, ADCS_CHANNEL_COUNT, adc);
 }

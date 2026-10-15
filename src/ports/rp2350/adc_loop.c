@@ -17,7 +17,7 @@
 
 #include "model_config.h"
 
-#include "osm/sensors/adc_loop.h"
+#include <osm/sensors/adc_loop.h>
 
 
 #define ADCS_BUFSIZ                             (1024 * ADCS_CHANNEL_COUNT)

@@ -346,6 +346,12 @@ bool __attribute__((weak)) osm_model_set_adc_name(unsigned adc, const char * nam
     return false;
 }
 
+const char * __attribute__((weak)) osm_model_get_adc_unit(unsigned adc) { return NULL; }
+bool     __attribute__((weak)) osm_model_set_adc_unit(unsigned adc, const char * unit) { return false; }
+
+osm_adc_coeffs_t* __attribute__((weak)) osm_model_get_adc_cal(unsigned adc) { return NULL; }
+bool __attribute__((weak)) osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t * cal) { return false; }
+
 
 bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
 {

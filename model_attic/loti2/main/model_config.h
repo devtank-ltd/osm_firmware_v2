@@ -64,16 +64,26 @@
 
 typedef char obj_name_t[16];
 
+typedef char unit_name_t[8];
+
+
 typedef struct
 {
     /* 16 byte boundary ---- */
     uint16_t                ios_state[IOS_COUNT];
     uint8_t                 _[16-((IOS_COUNT * sizeof(uint16_t))%16)];
     /* 16 byte boundary ---- */
-    obj_name_t               ios_names[IOS_COUNT];
+    obj_name_t              ios_names[IOS_COUNT];
     uint8_t                 __[16-((IOS_COUNT * sizeof(obj_name_t))%16)];
     /* 16 byte boundary ---- */
-    obj_name_t               adcs_names[ADCS_CHANNEL_COUNT];
+    obj_name_t              adcs_names[ADCS_CHANNEL_COUNT];
+    uint8_t                 ___[16-((ADCS_CHANNEL_COUNT * sizeof(obj_name_t))%16)];
+    /* 16 byte boundary ---- */
+    unit_name_t             adcs_units[ADCS_CHANNEL_COUNT];
+    uint8_t                 ____[16-((ADCS_CHANNEL_COUNT * sizeof(unit_name_t))%16)];
+    /* 16 byte boundary ---- */
+    osm_adc_coeffs_t        adcs_cals[ADCS_CHANNEL_COUNT];
+    uint8_t                 _____[16-((ADCS_CHANNEL_COUNT * sizeof(osm_adc_coeffs_t))%16)];
 } __attribute__((__packed__)) osm_persist_model_config_v1_t;
 
 #define osm_persist_model_config_t        osm_persist_model_config_v1_t
