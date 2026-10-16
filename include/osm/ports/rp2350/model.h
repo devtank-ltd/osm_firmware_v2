@@ -33,5 +33,5 @@ bool     osm_model_set_adc_name(unsigned adc, const char * name);
 const char * osm_model_get_adc_unit(unsigned adc);
 bool     osm_model_set_adc_unit(unsigned adc, const char * unit);
 
-osm_adc_coeffs_t* osm_model_get_adc_cal(unsigned adc);
-bool osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t * cal);
+double* osm_model_get_adc_cal(unsigned adc);
+bool osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t cal);

@@ -179,7 +179,7 @@ static osm_command_response_t _cal_cb(char * args, osm_cmd_ctx_t * ctx)
         goto bad_exit;
     }
 
-    osm_adc_coeffs_t* cal = osm_model_get_adc_cal(adc_index);
+    double* cal = osm_model_get_adc_cal(adc_index);
     if (!cal)
     {
         osm_cmd_ctx_error(ctx, "Failed to get ADC cal.");
@@ -258,7 +258,7 @@ static osm_command_response_t _cal_cb(char * args, osm_cmd_ctx_t * ctx)
         goto bad_exit;
     }
 
-    *cal[coeff_num] = strtod(p, &np);
+    cal[coeff_num] = strtod(p, &np);
 
     if (p == np)
     {
@@ -273,13 +273,13 @@ bad_exit:
 }
 
 
-static double _get_adc_called_value(double value, osm_adc_coeffs_t* cal)
+static double _get_adc_called_value(double value, double* cal)
 {
     double total = 0;
 
     for (unsigned i = 0; i < MAX_ADC_CAL_POLY_NUM; i++)
     {
-        double coeff = *cal[i];
+        double coeff = cal[i];
 
         if (coeff == 0)
             continue;
@@ -305,7 +305,7 @@ static bool _adc_log_calc(unsigned adc, double value, const char * name, osm_cmd
         osm_cmd_ctx_error(ctx, "Failed to get ADC unit.");
         return false;
     }
-    osm_adc_coeffs_t* cal = osm_model_get_adc_cal(adc);
+    double* cal = osm_model_get_adc_cal(adc);
     if (!cal)
     {
         osm_cmd_ctx_error(ctx, "Failed to get ADC cal.");

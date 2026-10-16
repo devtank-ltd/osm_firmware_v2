@@ -81,7 +81,7 @@ void osm_adc_loop_init(void)
     uint32_t sys_clk = clock_get_hz(clk_sys);
     adc_set_clkdiv(ADCS_CLKDIV(sys_clk));
 
-    adc_set_round_robin(adc_mask);
+    adc_set_round_robin(0x1e);
 
     adc_fifo_setup(
         true,    // Write each completed conversion to the sample FIFO

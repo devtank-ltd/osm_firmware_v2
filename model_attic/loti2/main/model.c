@@ -261,15 +261,15 @@ bool     osm_model_set_adc_unit(unsigned adc, const char * unit)
 }
 
 
-osm_adc_coeffs_t* osm_model_get_adc_cal(unsigned adc)
+double* osm_model_get_adc_cal(unsigned adc)
 {
     if (adc >= ADCS_CHANNEL_COUNT)
         return NULL;
-    return &adcs_cals[adc];
+    return adcs_cals[adc];
 }
 
 
-bool osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t * cal)
+bool osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t cal)
 {
     if (adc >= ADCS_CHANNEL_COUNT || !cal)
         return false;
