@@ -60,12 +60,12 @@ typedef struct
     osm_adc_coeffs_t coeffs;
 } adc_init_t;
 
-#define ADCS_INIT                                   \
-{                                                   \
-    {"ADC0", "mV", {1.241f, 0.2f, 0.f, 0.f}},       \
-    {"ADC1", "mV", {1.241f, 0.2f, 0.f, 0.f}},       \
-    {"ADC2", "mV", {1.241f, 0.2f, 0.f, 0.f}},       \
-    {"ADC3", "mV", {1.241f, 0.2f, 0.f, 0.f}},       \
+#define ADCS_INIT                                  \
+{                                                  \
+    {"ADC0", "mV", {0.f, 0.806f, 0.f, 0.f}},       \
+    {"ADC1", "mV", {0.f, 0.806f, 0.f, 0.f}},       \
+    {"ADC2", "mV", {0.f, 0.806f, 0.f, 0.f}},       \
+    {"ADC3", "mV", {0.f, 0.806f, 0.f, 0.f}},       \
 }
 
 
