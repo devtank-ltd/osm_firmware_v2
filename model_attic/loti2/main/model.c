@@ -25,6 +25,8 @@ static char debug_line_buffer[CMD_LINELEN];
 #pragma GCC diagnostic ignored "-Waddress-of-packed-member"
 static obj_name_t * ios_names = persist_data.model_config.ios_names;
 static obj_name_t * adcs_names = persist_data.model_config.adcs_names;
+static unit_name_t * adcs_units = persist_data.model_config.adcs_units;
+static osm_adc_coeffs_t * adcs_cals = persist_data.model_config.adcs_cals;
 #pragma GCC diagnostic pop
 
 static void _uart_debug_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
@@ -132,6 +134,8 @@ void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_co
     for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
     {
         osm_model_set_adc_name(n, adcs_init[n].name);
+        osm_model_set_adc_unit(n, adcs_init[n].unit);
+        osm_model_set_adc_cal(n, &adcs_init[n].coeffs);
     }
 }
 
@@ -209,4 +213,41 @@ bool    osm_model_set_adc_name(unsigned adc, const char * name)
 const char* osm_model_get_adc_name(unsigned adc)
 {
     return osm_model_get_obj_name(adcs_names, ADCS_CHANNEL_COUNT, adc);
+}
+
+
+const char * osm_model_get_adc_unit(unsigned adc)
+{
+    if (adc >= ADCS_CHANNEL_COUNT)
+        return NULL;
+    return adcs_units[adc];
+}
+
+
+bool     osm_model_set_adc_unit(unsigned adc, const char * unit)
+{
+    if (adc >= ADCS_CHANNEL_COUNT || !unit)
+        return false;
+    unsigned len = strlen(unit) + 1;
+    if (len > sizeof(unit_name_t))
+        return false;
+    memcpy(adcs_units[adc], unit, len);
+    return true;
+}
+
+
+osm_adc_coeffs_t* osm_model_get_adc_cal(unsigned adc)
+{
+    if (adc >= ADCS_CHANNEL_COUNT)
+        return NULL;
+    return &adcs_cals[adc];
+}
+
+
+bool osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t * cal)
+{
+    if (adc >= ADCS_CHANNEL_COUNT || !cal)
+        return false;
+    memcpy(adcs_cals[adc], cal, sizeof(osm_adc_coeffs_t));
+    return true;
 }
