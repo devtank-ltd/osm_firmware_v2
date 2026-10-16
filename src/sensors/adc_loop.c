@@ -26,7 +26,7 @@ typedef struct
 static volatile adc_channel_info_t _adc_channel_info[ADCS_CHANNEL_COUNT] = {{0}};
 static volatile adc_channel_info_t _adc_channel_info_cur[ADCS_CHANNEL_COUNT] = {{0}};
 
-static volatile uint32_t _collection_ms = 1000;
+static volatile unsigned _collection_ms = 1000;
 
 static volatile uint64_t _last_sample = 0;
 
@@ -405,7 +405,7 @@ static osm_command_response_t _adc_name_cb(char * args, osm_cmd_ctx_t * ctx)
         if (!osm_model_set_adc_name(adc_index, p))
         {
             osm_cmd_ctx_error(ctx, "Failed to set ADC name.");
-            return OSM_COMMAND_RESP_OK;
+            return OSM_COMMAND_RESP_ERR;
         }
         osm_cmd_ctx_out(ctx, "Renamed ADC %u to \"%s\"", adc_index, p);
     }
@@ -425,7 +425,7 @@ static osm_command_response_t _adc_lavg_cb(char * args, osm_cmd_ctx_t * ctx)
     if (!osm_parse_to_index(args, &pos, &adc_index, osm_model_get_adc_index))
     {
         osm_cmd_ctx_error(ctx, "Failed to get ADC.");
-        return OSM_COMMAND_RESP_OK;
+        return OSM_COMMAND_RESP_ERR;
     }
     bool enable = (pos[0]=='1' || tolower(pos[0]) == 't')?true:false;
 
@@ -440,6 +440,25 @@ static osm_command_response_t _adc_lavg_cb(char * args, osm_cmd_ctx_t * ctx)
 }
 
 
+static osm_command_response_t _adc_rate_cb(char * args, osm_cmd_ctx_t * ctx)
+{
+    if (*args)
+    {
+        unsigned ms = strtoul(args, NULL, 10);
+
+        if (ms < 50)
+        {
+            osm_cmd_ctx_error(ctx, "Failed to get ADC.");
+            return OSM_COMMAND_RESP_ERR;
+        }
+
+        _collection_ms = ms;
+    }
+
+    osm_cmd_ctx_out(ctx, "ADC sampling interval : %ums", _collection_ms);
+    return OSM_COMMAND_RESP_OK;
+}
+
 
 struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail)
 {
@@ -447,8 +466,9 @@ struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail)
                                            { "adc",      "Print ADC.",                   _adc_cb, false, NULL },
                                            { "adcs",     "Print all ADCs.",              _adcs_cb, false, NULL },
                                            { "adcsw",    "Wait to print all ADCs.",      _adcsw_cb, false, NULL },
-                                           { "adc_name", "Get/Set name of ADC.",         _adc_name_cb,  false, NULL },
-                                           { "adc_lavg", "Get/Set ADC limit averaging.", _adc_lavg_cb,  false, NULL },
+                                           { "adc_name", "Get/Set name of ADC.",         _adc_name_cb, false, NULL },
+                                           { "adc_lavg", "Get/Set ADC limit averaging.", _adc_lavg_cb, false, NULL },
+                                           { "adc_ms",   "Get/Set ADC rate in ms.",      _adc_rate_cb, false, NULL },
     };
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
