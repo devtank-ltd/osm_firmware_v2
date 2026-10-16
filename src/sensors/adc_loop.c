@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 #include <osm/core/common.h>
+#include <osm/core/log.h>
 #include "model_config.h"
 #include "platform_model.h"
 
@@ -109,6 +110,8 @@ void osm_adc_loop_interate(void)
 
     if ((now - _last_sample) < _collection_ms)
         return;
+
+    osm_adc_debug("ADCS read buffers swap.");
 
     for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
     {
@@ -375,7 +378,11 @@ static osm_command_response_t _adcsw_cb(char * args, osm_cmd_ctx_t * ctx)
     uint64_t endtime = cur + _collection_ms;
 
     if (endtime > now)
-        osm_main_loop_iterate_for(endtime - now, _adcsw_done, &cur);
+    {
+        uint64_t delta = endtime - now;
+        osm_adc_debug("Waiting for %"PRIu64"ms", delta);
+        osm_main_loop_iterate_for(delta, _adcsw_done, &cur);
+    }
 
     for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
         _adc_log(n, ctx);
