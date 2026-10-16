@@ -150,8 +150,15 @@ bool osm_adc_loop_set_interval(unsigned ms)
         osm_adc_debug("Interval given too big or small.");
         return false;
     }
+    osm_adc_debug("Set interval to %ums", ms);
     _collection_ms = ms;
     return true;
+}
+
+
+unsigned osm_adc_loop_get_interval(void)
+{
+    return _collection_ms;
 }
 
 
