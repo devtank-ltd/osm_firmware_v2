@@ -188,12 +188,6 @@ void     osm_ios_init(void)
 }
 
 
-unsigned osm_ios_get_count(void)
-{
-    return OSM_ARRAY_SIZE(ios_pins);
-}
-
-
 bool osm_io_enable_w1(unsigned io)
 {
     if (io >= OSM_ARRAY_SIZE(ios_pins))

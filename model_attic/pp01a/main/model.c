@@ -103,9 +103,3 @@ void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_co
 void osm_model_main_loop_iterate(void)
 {
 }
-
-
-unsigned osm_ios_get_count(void)
-{
-    return 0;
-}

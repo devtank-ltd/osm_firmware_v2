@@ -19,7 +19,7 @@ bool     osm_ios_get_pupd(unsigned io, uint8_t* pupd);
 
 void     osm_ios_init(void);
 void     osm_ios_post_init(void);
-unsigned osm_ios_get_count(void);
+#define osm_ios_get_count() IOS_COUNT /* Legacy compatibility*/
 void     osm_io_configure(unsigned io, bool as_input, osm_io_pupd_t pull);
 
 

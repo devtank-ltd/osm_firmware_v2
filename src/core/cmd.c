@@ -22,7 +22,10 @@ static struct osm_cmd_link_t* _cmds;
 
 static osm_command_response_t _cmd_count_cb(char * args, osm_cmd_ctx_t * ctx)
 {
-    osm_cmd_ctx_out(ctx,"IOs     : %u", osm_ios_get_count());
+    osm_cmd_ctx_out(ctx,"IOs     : %u", (unsigned)IOS_COUNT);
+#ifdef ADCS_CHANNEL_COUNT /* Directly exposed ADCs is optional. */
+    osm_cmd_ctx_out(ctx,"ADCs    : %u", (unsigned)ADCS_CHANNEL_COUNT);
+#endif //ADCS_CHANNEL_COUNT
     return OSM_COMMAND_RESP_OK;
 }
 
