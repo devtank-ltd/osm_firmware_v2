@@ -17,6 +17,7 @@
 
 #include "model_config.h"
 
+#include <osm/core/log.h>
 #include <osm/sensors/adc_loop.h>
 
 
@@ -70,18 +71,20 @@ void osm_adc_loop_init(void)
 {
     uint32_t adc_mask = 0;
 
-    for(unsigned n = 0; n <= ADCS_CHANNEL_COUNT; n++)
+    for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
     {
         adc_gpio_init(ADC_GPIO_BASE + n);
         adc_mask |= 1U << n;
     }
+
+    osm_log_sys_debug("RP2350 ADC round robin mask: 0x%"PRIx32, adc_mask);
 
     adc_init();
 
     uint32_t sys_clk = clock_get_hz(clk_sys);
     adc_set_clkdiv(ADCS_CLKDIV(sys_clk));
 
-    adc_set_round_robin(0x1e);
+    adc_set_round_robin(adc_mask);
 
     adc_fifo_setup(
         true,    // Write each completed conversion to the sample FIFO
