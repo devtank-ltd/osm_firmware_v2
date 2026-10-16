@@ -693,9 +693,11 @@ struct osm_cmd_link_t* osm_ios_add_commands(struct osm_cmd_link_t* tail)
                                            { "io_name",  "Get/Set name of IO.",   _io_name_cb                 , false, NULL }};
 
     if (!osm_has_io_names())
+    {
         memset(&cmds[OSM_ARRAY_SIZE(cmds)-1], 0, sizeof(struct osm_cmd_link_t));
-
-    tail = osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
+        tail = osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds) - 1);
+    }
+    else tail = osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
     return osm_pulsecount_add_commands(tail);
 }
 
