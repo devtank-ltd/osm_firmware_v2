@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 #include <osm/core/common.h>
 #include <osm/core/log.h>
@@ -29,6 +30,9 @@ static volatile adc_channel_info_t _adc_channel_info_cur[ADCS_CHANNEL_COUNT] = {
 static volatile unsigned _collection_ms = 1000;
 
 static volatile uint64_t _last_sample = 0;
+
+static bool _use_calibration = true;
+
 
 static void _setup_lowest_max(volatile adc_channel_info_t * channel_info)
 {
@@ -299,6 +303,8 @@ static double _get_adc_called_value(double value, double* cal)
 
 static bool _adc_log_calc(unsigned adc, double value, const char * name, osm_cmd_ctx_t * ctx)
 {
+    if (!_use_calibration)
+        return false;
     const char* unit = osm_model_get_adc_unit(adc);
     if (!unit)
     {
@@ -477,6 +483,32 @@ static osm_command_response_t _adc_rate_cb(char * args, osm_cmd_ctx_t * ctx)
 }
 
 
+static osm_command_response_t _en_cal_cb(char * args, osm_cmd_ctx_t * ctx)
+{
+    if (*args)
+    {
+        if (strncmp(args, "ON", 2) == 0 || args[0] == '1')
+        {
+            _use_calibration = true;
+            osm_cmd_ctx_out(ctx, "Enabled ADC Cals");
+        }
+        else
+        {
+            _use_calibration = false;
+            osm_cmd_ctx_out(ctx, "Disabled ADC Cals");
+        }
+    }
+    else
+    {
+        if (_use_calibration)
+            osm_cmd_ctx_out(ctx, "ADC Cals Enabled");
+        else
+            osm_cmd_ctx_out(ctx, "ADC Cals Disabled");
+    }
+    return OSM_COMMAND_RESP_OK;
+}
+
+
 struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail)
 {
     static struct osm_cmd_link_t cmds[] = {{ "cal",      "Get/Set ADC callibration.",    _cal_cb, false, NULL },
@@ -486,6 +518,7 @@ struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail)
                                            { "adc_name", "Get/Set name of ADC.",         _adc_name_cb, false, NULL },
                                            { "adc_lavg", "Get/Set ADC limit averaging.", _adc_lavg_cb, false, NULL },
                                            { "adc_ms",   "Get/Set ADC rate in ms.",      _adc_rate_cb, false, NULL },
+                                           { "en_cal",   "Enable ADC Calibration.",      _en_cal_cb, false, NULL},
     };
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }
