@@ -92,8 +92,10 @@ void osm_platform_init(void)
     cyw43_arch_init();
 #endif
     set_sys_clock_khz(150000, true);
+#if (CFG_TUD_CDC > 0)
     board_init();
     tusb_init();
+#endif
 }
 
 
