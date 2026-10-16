@@ -62,6 +62,7 @@ void osm_model_post_init(void) {}
 void osm_model_sensors_init(void)
 {
     osm_ios_init();
+    osm_adc_loop_set_interval(model_config.adc_interval);
     osm_adc_loop_init();
 }
 
@@ -69,8 +70,20 @@ void osm_model_sensors_init(void)
  *        false if same      */
 bool osm_model_persist_config_cmp(osm_persist_model_config_v1_t* d0, osm_persist_model_config_v1_t* d1)
 {
-    return (memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) ||
-            memcmp(d0->ios_names, d1->ios_names, sizeof(obj_name_t) * IOS_COUNT));
+    unsigned adc_interval = osm_adc_loop_get_interval();
+    if (adc_interval != model_config.adc_interval)
+    {
+        /* So this is where we make this persistent.*/
+        model_config.adc_interval = adc_interval;
+        return true;
+    }
+    return (d0->adc_interval != d1->adc_interval ||
+            memcmp(d0->ios_state, d1->ios_state, sizeof(uint16_t) * IOS_COUNT) ||
+            memcmp(d0->ios_names, d1->ios_names, sizeof(obj_name_t) * IOS_COUNT) ||
+            memcmp(d0->adcs_names, d1->adcs_names, sizeof(obj_name_t) * ADCS_CHANNEL_COUNT) ||
+            memcmp(d0->adcs_units, d1->adcs_units, sizeof(unit_name_t) * ADCS_CHANNEL_COUNT) ||
+            memcmp(d0->adcs_cals,  d1->adcs_cals,  sizeof(osm_adc_coeffs_t) * ADCS_CHANNEL_COUNT))
+            );
 }
 
 
@@ -133,10 +146,14 @@ void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_co
     adc_init_t adcs_init[ADCS_CHANNEL_COUNT] = ADCS_INIT;
     for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
     {
-        osm_model_set_adc_name(n, adcs_init[n].name);
-        osm_model_set_adc_unit(n, adcs_init[n].unit);
-        osm_model_set_adc_cal(n, &adcs_init[n].coeffs);
+        if (!osm_model_set_adc_name(n, adcs_init[n].name))
+            osm_log_error("Failed to load ADC %u name", n);
+        if (!osm_model_set_adc_unit(n, adcs_init[n].unit))
+            osm_log_error("Failed to load ADC %u unit", n);
+        if (!osm_model_set_adc_cal(n, &adcs_init[n].coeffs))
+            osm_log_error("Failed to load ADC %u cal", n);
     }
+    model_config.adc_interval = 1000;
 }
 
 static const char* osm_model_get_obj_name(const obj_name_t * names, unsigned count, unsigned index)

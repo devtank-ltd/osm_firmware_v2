@@ -83,7 +83,7 @@ typedef struct
     uint8_t                 ____[16-((ADCS_CHANNEL_COUNT * sizeof(unit_name_t))%16)];
     /* 16 byte boundary ---- */
     osm_adc_coeffs_t        adcs_cals[ADCS_CHANNEL_COUNT];
-    uint8_t                 _____[16-((ADCS_CHANNEL_COUNT * sizeof(osm_adc_coeffs_t))%16)];
+    uint32_t                adc_interval;
 } __attribute__((__packed__)) osm_persist_model_config_v1_t;
 
 #define osm_persist_model_config_t        osm_persist_model_config_v1_t
