@@ -56,6 +56,45 @@ static void _uart_debug_flush(osm_cmd_ctx_t * ctx)
 }
 
 
+static const char* osm_model_get_obj_name(const obj_name_t * names, unsigned count, unsigned index)
+{
+    if (index >= count)
+        return NULL;
+
+    return names[index];
+}
+
+static bool osm_model_get_obj_index(const obj_name_t * names, unsigned count, const char * name, unsigned * index)
+{
+    if (!name || !index)
+        return false;
+
+    for(unsigned n = 0; n < count; n++)
+    {
+        if (!strcmp(name, names[n]))
+        {
+            *index = n;
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool osm_model_set_obj_name(obj_name_t * names, unsigned count, unsigned index, const char * name)
+{
+    if (index >= count || !name)
+        return false;
+
+    unsigned len = strlen(name) + 1;
+
+    if (len > sizeof(obj_name_t))
+        return false;
+
+    memcpy(names[index], name, len);
+
+    return true;
+}
+
 
 void osm_model_post_init(void) {}
 
@@ -146,53 +185,22 @@ void osm_model_persist_config_model_init(osm_persist_model_config_v1_t* model_co
     adc_init_t adcs_init[ADCS_CHANNEL_COUNT] = ADCS_INIT;
     for(unsigned n = 0; n < ADCS_CHANNEL_COUNT; n++)
     {
-        if (!osm_model_set_adc_name(n, adcs_init[n].name))
+        if (!osm_model_set_obj_name(model_config->adcs_names,
+                                    ADCS_CHANNEL_COUNT,
+                                    n,
+                                    adcs_init[n].name))
             osm_log_error("Failed to load ADC %u name", n);
-        if (!osm_model_set_adc_unit(n, adcs_init[n].unit))
+
+        const char * unit = adcs_init[n].unit;
+        unsigned len = strlen(unit) + 1;
+        if (len > sizeof(unit_name_t))
             osm_log_error("Failed to load ADC %u unit", n);
-        if (!osm_model_set_adc_cal(n, &adcs_init[n].coeffs))
-            osm_log_error("Failed to load ADC %u cal", n);
+        else
+            memcpy(model_config->adcs_units[n], unit, len);
+
+        memcpy(model_config->adcs_cals[n], adcs_init[n].coeffs, sizeof(osm_adc_coeffs_t));
     }
-    persist_data.model_config.adc_interval = 1000;
-}
-
-static const char* osm_model_get_obj_name(const obj_name_t * names, unsigned count, unsigned index)
-{
-    if (index >= count)
-        return NULL;
-
-    return names[index];
-}
-
-static bool osm_model_get_obj_index(const obj_name_t * names, unsigned count, const char * name, unsigned * index)
-{
-    if (!name || !index)
-        return false;
-
-    for(unsigned n = 0; n < count; n++)
-    {
-        if (!strcmp(name, names[n]))
-        {
-            *index = n;
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool osm_model_set_obj_name(obj_name_t * names, unsigned count, unsigned index, const char * name)
-{
-    if (index >= count || !name)
-        return false;
-
-    unsigned len = strlen(name) + 1;
-
-    if (len > sizeof(obj_name_t))
-        return false;
-
-    memcpy(names[index], name, len);
-
-    return true;
+    model_config->adc_interval = 1000;
 }
 
 
