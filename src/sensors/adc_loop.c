@@ -143,6 +143,18 @@ bool     adc_enable_averaged_limits(unsigned adc, bool enable)
 }
 
 
+bool osm_adc_loop_set_interval(unsigned ms)
+{
+    if (ms < 50 || ms > 1000)
+    {
+        osm_adc_debug("Interval given too big or small.");
+        return false;
+    }
+    _collection_ms = ms;
+    return true;
+}
+
+
 static osm_command_response_t _cal_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     /* cal <adc name/num> <O/S/E/0..3>:<value>
@@ -446,13 +458,11 @@ static osm_command_response_t _adc_rate_cb(char * args, osm_cmd_ctx_t * ctx)
     {
         unsigned ms = strtoul(args, NULL, 10);
 
-        if (ms < 50)
+        if (!osm_adc_loop_set_interval(ms))
         {
-            osm_cmd_ctx_error(ctx, "Failed to get ADC.");
+            osm_cmd_ctx_error(ctx, "Failed to set ADCs interval.");
             return OSM_COMMAND_RESP_ERR;
         }
-
-        _collection_ms = ms;
     }
 
     osm_cmd_ctx_out(ctx, "ADC sampling interval : %ums", _collection_ms);
