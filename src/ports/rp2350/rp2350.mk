@@ -33,6 +33,7 @@ $(1)_flash: $$(OSM_BUILD_DIR)/$(1)/bootloader.bin $$(OSM_BUILD_DIR)/$(1)/applica
 $$(OSM_BUILD_DIR)/picotool/picotool:
 	mkdir -p $$(OSM_BUILD_DIR)/picotool
 	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) cmake $$(OSM_DIR)/libs/picotool -B $$(OSM_BUILD_DIR)/picotool
+	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) make -C $$(OSM_BUILD_DIR)/picotool
 
 
 $(1)_picotool: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2 $$(OSM_BUILD_DIR)/picotool/picotool
