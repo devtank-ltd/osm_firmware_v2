@@ -433,7 +433,7 @@ void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
             pupd_char = 'N';
         else
             pupd_char = ' ';
-        osm_cmd_ctx_out(ctx,"IO %02u%s%s%s : %s%s%s%s%s%sUSED %s %c",
+        osm_cmd_ctx_out(ctx,"IO %02u%s%s%s : %s%s%sUSED %s %c",
                         io,
                         prename, name, postname,
                         pretype, type, posttype,
