@@ -7,3 +7,9 @@
 [submodule "libs/embedded-i2c-sen66"]
 	path = libs/embedded-i2c-sen66
 	url = ../embedded-i2c-sen66
+[submodule "libs/pico-sdk"]
+	path = libs/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk.git
+[submodule "libs/picotool"]
+	path = libs/picotool
+	url = https://github.com/raspberrypi/picotool

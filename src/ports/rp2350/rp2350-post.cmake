@@ -25,7 +25,7 @@ add_compile_options(-Wall
 
 separate_arguments(OSM_SRCS UNIX_COMMAND PROGRAM SEPARATE_ARGS $ENV{OSM_SRCS})
 
-list(TRANSFORM OSM_SRCS PREPEND $ENV{OSM_DIR}/)
+list(TRANSFORM OSM_SRCS PREPEND $ENV{PWD}/)
 
 add_executable(application)
 
