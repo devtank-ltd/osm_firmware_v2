@@ -24,9 +24,6 @@
 #define ADCS_BUFSIZ                             (1024 * ADCS_CHANNEL_COUNT)
 _Static_assert(ADCS_BUFSIZ % ADCS_CHANNEL_COUNT == 0, "Buffer size misaligned");
 
-#define ADCS_TARGET_FREQ_PER_CHAN_HZ            (1000 * 100) /* For CP we need to get 100 samples per wave form */
-#define ADCS_TARGET_FREQ_HZ                     (ADCS_TARGET_FREQ_PER_CHAN_HZ * ADCS_CHANNEL_COUNT)
-#define ADCS_CLKDIV(_sys_clk)                   ((float)_sys_clk / (float)ADCS_TARGET_FREQ_HZ)
 
 static int _adcs_dma_channel = -1;
 static volatile uint16_t _adcs_buf[ADCS_BUFSIZ * 2];
@@ -81,8 +78,7 @@ void osm_adc_loop_init(void)
 
     adc_init();
 
-    uint32_t sys_clk = clock_get_hz(clk_sys);
-    adc_set_clkdiv(ADCS_CLKDIV(sys_clk));
+    adc_set_clkdiv(0);
 
     adc_set_round_robin(adc_mask);
 
