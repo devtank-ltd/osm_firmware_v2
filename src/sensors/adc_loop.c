@@ -391,7 +391,7 @@ static osm_command_response_t _adcs_cb(char * args, osm_cmd_ctx_t * ctx)
 
 static bool _adcsw_done(void *userdata)
 {
-    return (*(uint64_t*)userdata) == _last_sample;
+    return (*(uint64_t*)userdata) != _last_sample;
 }
 
 static osm_command_response_t _adcsw_cb(char * args, osm_cmd_ctx_t * ctx)
