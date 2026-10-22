@@ -41,7 +41,7 @@ static void _dispatch_line(unsigned uart, bool blocking, const char * prefix, un
 }
 
 
-void log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
+void osm_log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
 {
     unsigned len = vsnprintf(log_buffer, OSM_LOG_LINELEN, s, ap);
     log_buffer[OSM_LOG_LINELEN-1] = 0;
@@ -61,7 +61,7 @@ void osm_log_debugv(uint32_t flag, const char * s,va_list ap)
 
     snprintf(prefix, sizeof(prefix), "DEBUG:%010u:", (unsigned)osm_get_since_boot_ms());
 
-    log_msgv(OSM_UART_ERR_NU, false, prefix, s, ap);
+    osm_log_msgv(OSM_UART_ERR_NU, false, prefix, s, ap);
 }
 
 
@@ -77,7 +77,7 @@ void osm_log_debug(uint32_t flag, const char *s, ...)
 
     snprintf(prefix, sizeof(prefix), "DEBUG:%010u:", (unsigned)osm_get_since_boot_ms());
 
-    log_msgv(OSM_UART_ERR_NU, false, prefix, s, ap);
+    osm_log_msgv(OSM_UART_ERR_NU, false, prefix, s, ap);
     va_end(ap);
 }
 
@@ -87,14 +87,14 @@ void osm_log_bad_error(const char * s, ...)
     va_list ap;
     va_start(ap, s);
     /*We block write errors as we don't know what is broken at this point.*/
-    log_msgv(OSM_UART_ERR_NU, true, "ERROR:", s, ap);
+    osm_log_msgv(OSM_UART_ERR_NU, true, "ERROR:", s, ap);
     va_end(ap);
 }
 
 
 void osm_log_errorv(const char * s, va_list ap)
 {
-    log_msgv(OSM_UART_ERR_NU, false, "ERROR:", s, ap);
+    osm_log_msgv(OSM_UART_ERR_NU, false, "ERROR:", s, ap);
 }
 
 
@@ -109,7 +109,7 @@ void osm_log_error(const char * s, ...)
 
 void osm_log_outv(const char * s, va_list ap)
 {
-    log_msgv(OSM_CMD_VUART, false, NULL, s, ap);
+    osm_log_msgv(OSM_CMD_VUART, false, NULL, s, ap);
 }
 
 
