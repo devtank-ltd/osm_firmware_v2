@@ -14,6 +14,7 @@
 #include <osm/core/common.h>
 #include <osm/core/cmd.h>
 #include <osm/core/io.h>
+#include <osm/core/jdesc.h>
 
 #include "model_config.h"
 #include "platform_model.h"
@@ -173,6 +174,7 @@ void osm_model_cmds_add_all(struct osm_cmd_link_t* tail)
     tail = osm_update_add_commands(tail);
     tail = osm_ios_add_commands(tail);
     tail = osm_adc_loop_add(tail);
+    tail = osm_jdesc_add(tail);
 }
 
 void osm_measurements_init(void) {}

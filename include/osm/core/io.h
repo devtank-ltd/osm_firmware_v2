@@ -32,6 +32,8 @@ bool     osm_io_is_watch_now(unsigned io);
 
 bool     osm_io_is_input(unsigned io);
 unsigned osm_io_get_bias(unsigned io);
+const char* osm_ios_get_special_name(unsigned io);
+bool     osm_io_special_enabled(unsigned io);
 void     osm_io_on(unsigned io, bool on_off);
 void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx);
 void     osm_ios_log(osm_cmd_ctx_t * ctx);

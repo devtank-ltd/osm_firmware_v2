@@ -56,7 +56,7 @@ static const char* _ios_get_type_active(uint16_t io_state)
 }
 
 
-static const char* _ios_get_type_possible(unsigned io)
+const char* osm_ios_get_special_name(unsigned io)
 {
     static char special_str[IOS_SPECIAL_STR_LEN+1];
     memset(special_str, 0, IOS_SPECIAL_STR_LEN+1);
@@ -112,6 +112,15 @@ static const char* _ios_get_type_possible(unsigned io)
 }
 
 
+bool     osm_io_special_enabled(unsigned io)
+{
+    if (io >= OSM_ARRAY_SIZE(ios_pins))
+        return false;
+
+    return (ios_state[io] & (OSM_IO_ACTIVE_SPECIAL_MASK)) != 0;
+}
+
+
 bool osm_ios_get_pupd(unsigned io, uint8_t* pupd)
 {
     if (!pupd)
@@ -134,7 +143,7 @@ static void _ios_setup_gpio(unsigned io, uint16_t io_state)
     if (io >= OSM_ARRAY_SIZE(ios_pins))
         return;
 
-    const char * type = _ios_get_type_possible(io);
+    const char * type = osm_ios_get_special_name(io);
 
     const osm_port_n_pins_t * gpio_pin = &ios_pins[io];
 
@@ -394,7 +403,7 @@ void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx)
     const char * prename = pretype;
     const char * postname = pretype;
 
-    const char * type = _ios_get_type_possible(io);
+    const char * type = osm_ios_get_special_name(io);
     const char * name = osm_model_get_io_name(io);
 
     if (type[0])

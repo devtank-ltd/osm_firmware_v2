@@ -9,6 +9,7 @@ loti2_SOURCES := \
     $(OSM_DIR)/src/core/platform_common.c \
     $(OSM_DIR)/src/core/ring.c \
     $(OSM_DIR)/src/core/uart_rings.c \
+    $(OSM_DIR)/src/core/jdesc.c \
     $(OSM_DIR)/src/ports/rp2350/adc_loop.c \
     $(OSM_DIR)/src/ports/rp2350/rp2350.c \
     $(OSM_DIR)/src/ports/rp2350/persist_config.c \
