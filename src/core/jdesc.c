@@ -34,7 +34,7 @@ static osm_command_response_t jdesc_cb(char * args, osm_cmd_ctx_t * ctx)
 {
     jdesc_out(ctx, "{");
     jdesc_out(ctx, "\"version\":"STR(JDESC_VERSION)",");
-    jdesc_out(ctx, "\"model:\":"STR(fw_name)",");
+    jdesc_out(ctx, "\"model:\":\""STR(fw_name)"\",");
     jdesc_out(ctx, "\"config\":\""); jdesc_out(ctx, osm_persist_get_human_name()); jdesc_out(ctx, "\",");
     jdesc_out(ctx, "\"serial\":\"TODO\",");
     jdesc_out(ctx, "\"objects\":{");
