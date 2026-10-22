@@ -5,6 +5,7 @@
 
 #include <osm/core/common.h>
 #include <osm/core/log.h>
+#include <osm/sensors/adc_loop.h>
 #include "model_config.h"
 #include "platform_model.h"
 
@@ -509,6 +510,24 @@ static osm_command_response_t _en_cal_cb(char * args, osm_cmd_ctx_t * ctx)
 }
 
 
+static osm_command_response_t _adc_freq_cb(char * args, osm_cmd_ctx_t * ctx)
+{
+    unsigned count = _adc_channel_info_cur[0].count;
+    unsigned hz = count * 1000 / _collection_ms;
+    osm_cmd_ctx_out(ctx, "ADC Freq: %uHz", hz);
+
+    if (*args)
+    {
+        unsigned hz = strtoul(args, NULL, 10);
+
+        if (!osm_adc_loop_set_freq(hz))
+            osm_cmd_ctx_error(ctx, "Failed to set ADCs frequency.");
+    }
+
+    return OSM_COMMAND_RESP_OK;
+}
+
+
 struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail)
 {
     static struct osm_cmd_link_t cmds[] = {{ "cal",      "Get/Set ADC callibration.",    _cal_cb, false, NULL },
@@ -519,6 +538,7 @@ struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail)
                                            { "adc_lavg", "Get/Set ADC limit averaging.", _adc_lavg_cb, false, NULL },
                                            { "adc_ms",   "Get/Set ADC rate in ms.",      _adc_rate_cb, false, NULL },
                                            { "en_cal",   "Enable ADC Calibration.",      _en_cal_cb, false, NULL},
+                                           { "adc_freq", "Get/Set ADC frequency.",       _adc_freq_cb, false, NULL},
     };
     return osm_add_commands(tail, cmds, OSM_ARRAY_SIZE(cmds));
 }

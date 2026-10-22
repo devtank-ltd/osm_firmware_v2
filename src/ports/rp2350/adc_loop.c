@@ -120,3 +120,11 @@ void osm_adc_loop_init(void)
 
     adc_run(true);
 }
+
+
+bool osm_adc_loop_set_freq(unsigned hz)
+{
+    osm_adc_debug("Setting ADC clock divider to %u", hz);
+    adc_set_clkdiv(hz);
+    return true;
+}

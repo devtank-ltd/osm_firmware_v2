@@ -10,3 +10,5 @@ bool osm_adc_loop_set_interval(unsigned ms);
 unsigned osm_adc_loop_get_interval(void);
 
 struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail);
+
+bool osm_adc_loop_set_freq(unsigned hz);
