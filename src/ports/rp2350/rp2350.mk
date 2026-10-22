@@ -40,7 +40,7 @@ $(1)_picotool: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2 $$(OSM_BUILD_DIR)/picotool/pi
 	sudo $$(OSM_BUILD_DIR)/picotool/picotool load $$(OSM_BUILD_DIR)/$(1)/firmware.bin
 	sudo $$(OSM_BUILD_DIR)/picotool/picotool reboot
 
-$(1)_picotool_self: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2
+$(1)_picotool_self: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2 $$(OSM_BUILD_DIR)/picotool/picotool
 	echo "usb_boot" > `ls /dev/serial/by-id/*Devtank_Ltd_$(1)*`
 	echo "Waiting for RP2350 Boot device"
 	while ! grep "RP2350 Boot" /sys/bus/usb/devices/*/product; do sleep 1; done
