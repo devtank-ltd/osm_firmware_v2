@@ -113,7 +113,7 @@ void osm_model_sensors_init(void)
 {
     osm_ios_init();
     osm_adc_loop_set_interval(persist_data.model_config.adc_interval);
-    osm_adc_loop_init();
+    osm_platform_adc_loop_init();
 }
 
 /* Return true  if different

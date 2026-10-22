@@ -64,7 +64,7 @@ static void _adcs_dma_isr(void)
 }
 
 
-void osm_adc_loop_init(void)
+void osm_platform_adc_loop_init(void)
 {
     uint32_t adc_mask = 0;
 
@@ -122,7 +122,7 @@ void osm_adc_loop_init(void)
 }
 
 
-bool osm_adc_loop_set_freq(unsigned hz)
+bool osm_platform_adc_loop_set_freq(unsigned hz)
 {
     osm_adc_debug("Setting ADC clock divider to %u", hz);
     adc_set_clkdiv(hz);

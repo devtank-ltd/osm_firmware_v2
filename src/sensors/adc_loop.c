@@ -520,7 +520,7 @@ static osm_command_response_t _adc_freq_cb(char * args, osm_cmd_ctx_t * ctx)
     {
         unsigned hz = strtoul(args, NULL, 10);
 
-        if (!osm_adc_loop_set_freq(hz))
+        if (!osm_platform_adc_loop_set_freq(hz))
             osm_cmd_ctx_error(ctx, "Failed to set ADCs frequency.");
     }
 

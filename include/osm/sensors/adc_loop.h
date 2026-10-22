@@ -1,6 +1,6 @@
 #pragma once
 
-void osm_adc_loop_init(void);
+void osm_platform_adc_loop_init(void);
 
 void osm_adc_loop_channel_add(unsigned channel, uint16_t adc);
 
@@ -11,4 +11,4 @@ unsigned osm_adc_loop_get_interval(void);
 
 struct osm_cmd_link_t* osm_adc_loop_add(struct osm_cmd_link_t* tail);
 
-bool osm_adc_loop_set_freq(unsigned hz);
+bool osm_platform_adc_loop_set_freq(unsigned hz);
