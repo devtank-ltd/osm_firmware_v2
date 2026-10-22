@@ -244,6 +244,12 @@ void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 }
 
 
+void osm_cmd_ctx_write(osm_cmd_ctx_t* ctx, const char* fmt, ...)
+{
+    __CMD_CTX_PRINT(ctx->write_cb)
+}
+
+
 void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx)
 {
     if (ctx && ctx->flush_cb)

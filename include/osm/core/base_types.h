@@ -295,6 +295,7 @@ struct osm_cmd_ctx_t
 {
     void (*output_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
     void (*error_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*write_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
     void (*flush_cb)(osm_cmd_ctx_t * ctx);
 };
 

@@ -44,7 +44,7 @@
 #define UART_1_IN_BUF_SIZE  CMD_LINELEN
 #define UART_1_OUT_BUF_SIZE 2048
 
-#define REAL_UART           0
+#define REAL_UART           0 /*same as OSM_CMD_VUART*/
 #define CMD_UART            1
 
 #define UART_0_SPEED        115200  /* DEBUG */

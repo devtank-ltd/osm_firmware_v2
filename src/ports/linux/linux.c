@@ -1753,6 +1753,13 @@ static void _socket_cmd_ctx_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list a
 }
 
 
+static void _socket_cmd_ctx_write(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    socket_osm_cmd_ctx_t * socket_cmd_ctx = (socket_osm_cmd_ctx_t*)ctx;
+    vdprintf(socket_cmd_ctx->sock, fmt, ap);
+}
+
+
 static void _socket_cmd_ctx_flush(osm_cmd_ctx_t * ctx)
 {
 }
@@ -1764,6 +1771,7 @@ void osm_platform_main_loop_iterate(void)
     {
         socket_osm_cmd_ctx_t ctx = {{.output_cb = _socket_cmd_ctx_out,
                                   .error_cb = _socket_cmd_ctx_out,
+                                  .write_cb = _socket_cmd_ctx_write,
                                   .flush_cb = _socket_cmd_ctx_flush},
                                  .sock = _sock_cmd_sock};
 

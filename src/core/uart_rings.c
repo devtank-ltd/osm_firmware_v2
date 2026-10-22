@@ -32,10 +32,12 @@ static dma_uart_buf_t uart_dma_buf[OSM_UART_CHANNELS_COUNT];
 
 static void _uart_cmd_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
 static void _uart_cmd_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+static void _uart_cmd_write(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
 static void _uart_cmd_flush(osm_cmd_ctx_t * ctx);
 
 osm_cmd_ctx_t uart_cmd_ctx = {.output_cb = _uart_cmd_out,
                           .error_cb = _uart_cmd_error,
+                          .write_cb = _uart_cmd_write,
                           .flush_cb = _uart_cmd_flush };
 
 
@@ -48,6 +50,13 @@ static void _uart_cmd_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 static void _uart_cmd_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
     osm_log_msgv(CMD_UART, false, "ERROR:", fmt, ap);
+}
+
+
+
+static void _uart_cmd_write(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    osm_log_writev(CMD_UART, false, NULL, fmt, ap);
 }
 
 

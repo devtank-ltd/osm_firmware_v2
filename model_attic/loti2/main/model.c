@@ -31,10 +31,12 @@ static osm_adc_coeffs_t * adcs_cals = persist_data.model_config.adcs_cals;
 
 static void _uart_debug_out(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
 static void _uart_debug_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+static void _uart_debug_write(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
 static void _uart_debug_flush(osm_cmd_ctx_t * ctx);
 
 static osm_cmd_ctx_t real_uart_ctx = {.output_cb = _uart_debug_out,
                                       .error_cb = _uart_debug_error,
+                                      .write_cb = _uart_debug_write,
                                       .flush_cb = _uart_debug_flush };
 
 
@@ -48,6 +50,14 @@ static void _uart_debug_error(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
 {
     osm_log_errorv(fmt, ap);
 }
+
+
+static void _uart_debug_write(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap)
+{
+    osm_log_writev(REAL_UART, false, NULL, fmt, ap);
+}
+
+
 
 
 static void _uart_debug_flush(osm_cmd_ctx_t * ctx)

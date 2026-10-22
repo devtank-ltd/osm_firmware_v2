@@ -40,6 +40,7 @@ struct osm_cmd_link_t* osm_add_commands(struct osm_cmd_link_t* tail, struct osm_
 
 void osm_cmd_ctx_out(osm_cmd_ctx_t* ctx, const char* fmt, ...);
 void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...);
+void osm_cmd_ctx_write(osm_cmd_ctx_t* ctx, const char* fmt, ...);
 void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx);
 
 bool osm_str_is_valid_ascii(char* str, unsigned max_len, bool required);
