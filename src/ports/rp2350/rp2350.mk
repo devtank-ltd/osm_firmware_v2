@@ -13,7 +13,7 @@ $$(OSM_BUILD_DIR)/$(1)/Makefile: $$($(1)_SOURCES) $$(shell find $$(OSM_DIR) -nam
 	OSM_SRCS="$$($(1)_SOURCES)" \
 	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) cmake $$(OSM_MODEL_DIR)/$(1)/ -B $$(OSM_BUILD_DIR)/$(1)/
 
-$$(OSM_BUILD_DIR)/$(1)/firmware.uf2: $$(OSM_BUILD_DIR)/$(1)/Makefile
+$$(OSM_BUILD_DIR)/$(1)/firmware.uf2: $$(OSM_BUILD_DIR)/$(1)/Makefile $$(OSM_BUILD_DIR)/picotool/picotool
 	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) $(MAKE) -C $$(OSM_BUILD_DIR)/$(1)
 
 $$(OSM_BUILD_DIR)/$(1)/.complete: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2
@@ -36,11 +36,11 @@ $$(OSM_BUILD_DIR)/picotool/picotool:
 	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) make -C $$(OSM_BUILD_DIR)/picotool
 
 
-$(1)_picotool: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2 $$(OSM_BUILD_DIR)/picotool/picotool
+$(1)_picotool: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2
 	sudo $$(OSM_BUILD_DIR)/picotool/picotool load $$(OSM_BUILD_DIR)/$(1)/firmware.bin
 	sudo $$(OSM_BUILD_DIR)/picotool/picotool reboot
 
-$(1)_picotool_self: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2 $$(OSM_BUILD_DIR)/picotool/picotool
+$(1)_picotool_self: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2
 	echo "usb_boot" > `ls /dev/serial/by-id/*Devtank_Ltd_$(1)*`
 	echo "Waiting for RP2350 Boot device"
 	while ! grep "RP2350 Boot" /sys/bus/usb/devices/*/product; do sleep 1; done
