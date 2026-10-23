@@ -1,3 +1,10 @@
+
+$(OSM_BUILD_DIR)/picotool/picotool:
+	mkdir -p $(OSM_BUILD_DIR)/picotool
+	PICO_SDK_PATH=$(shell realpath $(OSM_DIR)/libs/pico-sdk) cmake $(OSM_DIR)/libs/picotool -B $(OSM_BUILD_DIR)/picotool
+	PICO_SDK_PATH=$(shell realpath $(OSM_DIR)/libs/pico-sdk) make -C $(OSM_BUILD_DIR)/picotool
+
+
 define RP2350_FIRMWARE
 $(call PORT_BASE_RULES,$(1),RP2350)
 
@@ -28,13 +35,6 @@ $(1)_flash: $$(OSM_BUILD_DIR)/$(1)/bootloader.bin $$(OSM_BUILD_DIR)/$(1)/applica
 	        -c "program $$(OSM_BUILD_DIR)/$(1)/application.bin 0x1000a000 verify reset exit" \
 	        -c "reset" \
 	        -c "shutdown"
-
-
-$$(OSM_BUILD_DIR)/picotool/picotool:
-	mkdir -p $$(OSM_BUILD_DIR)/picotool
-	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) cmake $$(OSM_DIR)/libs/picotool -B $$(OSM_BUILD_DIR)/picotool
-	PICO_SDK_PATH=$$(shell realpath $$(OSM_DIR)/libs/pico-sdk) make -C $$(OSM_BUILD_DIR)/picotool
-
 
 $(1)_picotool: $$(OSM_BUILD_DIR)/$(1)/firmware.uf2
 	sudo $$(OSM_BUILD_DIR)/picotool/picotool load $$(OSM_BUILD_DIR)/$(1)/firmware.bin
