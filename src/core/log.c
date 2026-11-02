@@ -62,14 +62,14 @@ static unsigned _print_to_log_buffer(const char *s, va_list ap)
 void osm_log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
 {
     unsigned len = _print_to_log_buffer(s, ap);
-    _dispatch_line(uart, blocking, prefix, len);
+    _dispatch_line(uart, blocking || !log_async_log, prefix, len);
 }
 
 
 void osm_log_writev(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap)
 {
     unsigned len = _print_to_log_buffer(s, ap);
-    _dispatch(uart, blocking, prefix, len, false);
+    _dispatch(uart, blocking || !log_async_log, prefix, len, false);
 }
 
 
