@@ -17,7 +17,7 @@ def log(msg):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     print("[%s] JSON : %s" % (now, msg), file=sys.stderr, flush=True)
 
-IOS_PATTERN = "^IO (?P<io>[0-9]{2}) : +(\[(?P<specials_avail>[A-Za-z0-9 \|]+)\])? ((USED (?P<special_used>[A-Za-z0-9]+)( (?P<edge>F|R|B))?)|(?P<dir>IN|OUT)) (?P<pupd>DOWN|UP|NONE|D|U|N)( = (?P<level>ON|OFF))?$"
+IOS_PATTERN = "^IO (?P<io>[0-9]{2}) :\s*(\[(?P<specials_avail>[A-Za-z0-9 \|]+)\])?\s*((USED (?P<special_used>[A-Za-z0-9]+)( (?P<edge>F|R|B))?)|(?P<dir>IN|OUT)) (?P<pupd>DOWN|UP|NONE|D|U|N)( = (?P<level>ON|OFF))?$"
 
 class dev_json_t:
     def __init__(self, dev):

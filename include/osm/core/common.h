@@ -19,6 +19,8 @@ bool     osm_msg_is(const char* ref, char* message);
 uint32_t osm_get_since_boot_ms(void);
 uint32_t osm_since_boot_delta(uint32_t newer, uint32_t older);
 
+typedef bool (*osm_loop_done_cb_t)(void *userdata);
+
 float    osm_Q_rsqrt( float number );
 int32_t  osm_nlz(uint32_t x);
 int32_t  osm_ilog10(uint32_t x);
@@ -26,18 +28,30 @@ uint64_t osm_abs_i64(int64_t val);
 bool     osm_u64_multiply_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2);
 bool     osm_u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t arg_2);
 void     osm_spin_blocking_ms(uint32_t ms);
-bool     osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata);
+bool     osm_main_loop_iterate_for(uint32_t timeout, osm_loop_done_cb_t should_exit_cb, void *userdata);
 int32_t  osm_to_f32_from_float(float in);
 int32_t  osm_to_f32_from_double(double in);
 
 bool osm_log_out_drain(uint32_t timeout);
+bool osm_uart_out_drain(uint32_t timeout, unsigned uart);
 
 struct osm_cmd_link_t* osm_add_commands(struct osm_cmd_link_t* tail, struct osm_cmd_link_t* cmds, unsigned num_cmds);
 
 
 void osm_cmd_ctx_out(osm_cmd_ctx_t* ctx, const char* fmt, ...);
 void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...);
+void osm_cmd_ctx_write(osm_cmd_ctx_t* ctx, const char* fmt, ...);
 void osm_cmd_ctx_flush(osm_cmd_ctx_t* ctx);
 
 bool osm_str_is_valid_ascii(char* str, unsigned max_len, bool required);
 bool osm_is_str(const char* ref, char* cmp, unsigned cmplen);
+
+bool osm_parse_to_index(char * text,
+                        char ** pos,
+                        unsigned * index,
+                        bool (*cb)(const char * name, unsigned * index));
+bool osm_parse_and_set(osm_cmd_ctx_t * ctx,
+                       const char * type_name,
+                       char * text,
+                       bool (*get_cb)(const char * name, unsigned * index),
+                       bool (*set_cb)(unsigned index, const char * name));

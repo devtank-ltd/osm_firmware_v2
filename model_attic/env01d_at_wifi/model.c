@@ -271,10 +271,3 @@ void osm_model_main_loop_iterate(void)
     osm_comms_direct_loop_iterate();
     osm_senxx_iterate();
 }
-
-
-bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
-{
-    /* No battery fitted */
-    return false;
-}

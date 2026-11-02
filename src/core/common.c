@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#include <stdlib.h>
 
 #include <osm/core/config.h>
 #include <osm/core/common.h>
@@ -115,7 +116,7 @@ bool osm_u64_addition_overflow_check(uint64_t* result, uint64_t arg_1, uint64_t 
 }
 
 
-bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *userdata),  void *userdata)
+bool osm_main_loop_iterate_for(uint32_t timeout, osm_loop_done_cb_t should_exit_cb, void *userdata)
 {
     uint32_t start_time = osm_get_since_boot_ms();
     uint32_t watch_dog_kick = OSM_IWDG_NORMAL_TIME_MS/2;
@@ -124,7 +125,7 @@ bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *us
     if (timeout > OSM_IWDG_NORMAL_TIME_MS)
         osm_log_debug(OSM_DEBUG_SYS, "Warning, timeout required watchdog kicking.");
 
-    if (should_exit_db(userdata))
+    if (should_exit_cb(userdata))
         return true;
 
     while(osm_since_boot_delta(osm_get_since_boot_ms(), start_time) < timeout)
@@ -137,7 +138,7 @@ bool osm_main_loop_iterate_for(uint32_t timeout, bool (*should_exit_db)(void *us
 
         osm_uart_rings_out_drain();
         osm_platform_tight_loop();
-        if (should_exit_db(userdata))
+        if (should_exit_cb(userdata))
             return true;
         if (osm_since_boot_delta(osm_get_since_boot_ms(), start_time) > watch_dog_kick)
         {
@@ -201,15 +202,21 @@ uint16_t osm_modbus_crc(uint8_t * buf, unsigned length)
 }
 
 
-static bool _log_out_drain_iteration(void* userdata)
+static bool _log_out_drain_iteration(unsigned* uart)
 {
-    return !osm_uart_ring_out_busy(CMD_UART);
+    return !osm_uart_ring_out_busy(*uart);
+}
+
+
+bool osm_uart_out_drain(uint32_t timeout, unsigned uart)
+{
+    return osm_main_loop_iterate_for(timeout, (osm_loop_done_cb_t)_log_out_drain_iteration, &uart);
 }
 
 
 bool osm_log_out_drain(uint32_t timeout)
 {
-    return osm_main_loop_iterate_for(timeout, _log_out_drain_iteration, NULL);
+    return osm_uart_out_drain(timeout, CMD_UART);
 }
 
 
@@ -234,6 +241,12 @@ void osm_cmd_ctx_out(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 void osm_cmd_ctx_error(osm_cmd_ctx_t* ctx, const char* fmt, ...)
 {
     __CMD_CTX_PRINT(ctx->error_cb)
+}
+
+
+void osm_cmd_ctx_write(osm_cmd_ctx_t* ctx, const char* fmt, ...)
+{
+    __CMD_CTX_PRINT(ctx->write_cb)
 }
 
 
@@ -273,4 +286,133 @@ bool osm_is_str(const char* ref, char* cmp, unsigned cmplen)
 bool __attribute__((weak)) osm_model_config_update(const void* from_config, osm_persist_model_config_t* to_config, uint16_t from_model_version)
 {
     return false;
+}
+
+
+struct osm_cmd_link_t* __attribute__((weak)) osm_platform_extra_cmds_add(struct osm_cmd_link_t* tail)
+{
+    return tail;
+}
+
+/*
+ * IO DEFAULT FUNCTIONS
+*/
+
+bool __attribute__((weak)) osm_model_can_io_be_special(unsigned io, osm_io_special_t special)
+{
+    return false;
+}
+
+
+const char* __attribute__((weak)) osm_model_get_io_name(unsigned io)
+{
+    return NULL;
+}
+
+bool _stub_osm_model_get_index(const char * name, unsigned * io)
+{
+    return false;
+}
+
+bool osm_model_get_io_index(const char * name, unsigned * io) __attribute__((weak, alias ("_stub_osm_model_get_index")));
+
+
+bool osm_has_io_names(void)
+{
+    return (osm_model_get_io_index != _stub_osm_model_get_index);
+}
+
+
+bool __attribute__((weak)) osm_model_set_io_name(unsigned io, const char * name)
+{
+    return false;
+}
+
+/*
+ * ADC DEFAULT FUNCTIONS
+*/
+
+const char* __attribute__((weak)) osm_model_get_adc_name(unsigned adc)
+{
+    return NULL;
+}
+
+
+bool osm_model_get_adc_index(const char * name, unsigned * io) __attribute__((weak, alias ("_stub_osm_model_get_index")));
+
+
+bool osm_has_adcs_names(void)
+{
+    return (osm_model_get_adc_index != _stub_osm_model_get_index);
+}
+
+
+bool __attribute__((weak)) osm_model_set_adc_name(unsigned adc, const char * name)
+{
+    return false;
+}
+
+const char * __attribute__((weak)) osm_model_get_adc_unit(unsigned adc) { return NULL; }
+bool     __attribute__((weak)) osm_model_set_adc_unit(unsigned adc, const char * unit) { return false; }
+
+double* __attribute__((weak)) osm_model_get_adc_cal(unsigned adc) { return NULL; }
+bool __attribute__((weak)) osm_model_set_adc_cal(unsigned adc, osm_adc_coeffs_t cal) { return false; }
+
+
+bool __attribute__((weak)) osm_bat_on_battery(bool* on_battery)
+{
+    /* No battery fitted */
+    return false;
+}
+
+bool osm_parse_to_index(char * text, char ** pos, unsigned * index, bool (*cb)(const char * name, unsigned * index))
+{
+    if (!isdigit((int)text[0]))
+    {
+        char * name_end = osm_skip_to_space(text);
+        if (name_end[0])
+        {
+            *name_end = 0;
+            if (pos)
+                *pos = osm_skip_space(name_end+1);
+        }
+        else if (pos)
+        {
+            *pos = name_end;
+        }
+        if (!cb(text, index))
+            return false;
+    }
+    else
+    {
+        *index = strtoul(text, pos, 10);
+        if (pos)
+            *pos = osm_skip_space(*pos);
+    }
+    return true;
+}
+
+
+bool osm_parse_and_set(osm_cmd_ctx_t * ctx,
+                       const char * type_name,
+                       char * text,
+                       bool (*get_cb)(const char * name, unsigned * index),
+                       bool (*set_cb)(unsigned index, const char * name))
+{
+    char * pos = NULL;
+    unsigned index;
+    if (!osm_parse_to_index(text, &pos, &index, get_cb))
+        return false;
+
+    if (pos[0])
+    {
+        if (!set_cb(index, pos))
+        {
+            osm_cmd_ctx_error(ctx, "Failed to rename %s %u to \"%s\"", type_name, index, pos);
+            return false;
+        }
+        else osm_cmd_ctx_out(ctx, "Renamed %s %u to \"%s\"", type_name, index, pos);
+    }
+    else osm_cmd_ctx_out(ctx, "%s %u : \"%s\"", type_name, index, text);
+    return true;
 }

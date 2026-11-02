@@ -23,6 +23,9 @@ void osm_log_outv(const char * s, va_list ap);
 
 void osm_log_debug_data(uint32_t flag, const void * data, unsigned size);
 
+void osm_log_msgv(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap);
+void osm_log_writev(unsigned uart, bool blocking, const char * prefix, const char *s, va_list ap);
+
 #ifdef NOPODEBUG
 inline static void _empty_log() {}
 #define osm_log_sys_debug(...)      _empty_log(__VA_ARGS__)

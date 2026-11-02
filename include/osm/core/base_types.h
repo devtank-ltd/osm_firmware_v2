@@ -295,6 +295,7 @@ struct osm_cmd_ctx_t
 {
     void (*output_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
     void (*error_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
+    void (*write_cb)(osm_cmd_ctx_t * ctx, const char * fmt, va_list ap);
     void (*flush_cb)(osm_cmd_ctx_t * ctx);
 };
 
@@ -315,3 +316,7 @@ typedef enum
     OSM_IO_PUPD_UP      = 1,
     OSM_IO_PUPD_DOWN    = 2,
 } osm_io_pupd_t;
+
+#define MAX_ADC_CAL_POLY_NUM 4
+
+typedef double osm_adc_coeffs_t[MAX_ADC_CAL_POLY_NUM];

@@ -115,8 +115,6 @@ void osm_model_main_loop_iterate(void)
 void osm_can_impl_init(void) {}
 void osm_can_impl_send_example(void) {}
 
-bool osm_bat_on_battery(void) { return false; }
-
 bool osm_io_watch_enable(unsigned io, bool enabled, osm_io_pupd_t pupd)
 {
     return false;

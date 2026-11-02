@@ -19,7 +19,7 @@ bool     osm_ios_get_pupd(unsigned io, uint8_t* pupd);
 
 void     osm_ios_init(void);
 void     osm_ios_post_init(void);
-unsigned osm_ios_get_count(void);
+#define osm_ios_get_count() IOS_COUNT /* Legacy compatibility*/
 void     osm_io_configure(unsigned io, bool as_input, osm_io_pupd_t pull);
 
 
@@ -32,6 +32,8 @@ bool     osm_io_is_watch_now(unsigned io);
 
 bool     osm_io_is_input(unsigned io);
 unsigned osm_io_get_bias(unsigned io);
+const char* osm_ios_get_special_name(unsigned io);
+bool     osm_io_special_enabled(unsigned io);
 void     osm_io_on(unsigned io, bool on_off);
 void     osm_io_log(unsigned io, osm_cmd_ctx_t * ctx);
 void     osm_ios_log(osm_cmd_ctx_t * ctx);
@@ -40,3 +42,5 @@ struct osm_cmd_link_t* osm_ios_add_commands(struct osm_cmd_link_t* tail);
 
 void     osm_ios_inf_init(osm_measurements_inf_t* inf);
 void     osm_ios_measurements_init(void);
+
+bool     osm_has_io_names(void);

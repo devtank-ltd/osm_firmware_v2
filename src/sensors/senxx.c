@@ -308,7 +308,7 @@ senxx_model_t _senxx_get_product(char* name, unsigned name_size)
         osm_particulate_debug("Could not parse product name");
         return SENxx_MODEL_NONE;
     }
-    char model_number_str[4];
+    char model_number_str[4] = {0};
     memcpy(model_number_str, &buf[3], 2);
     model_number_str[3] = 0;
     char* next = NULL;
