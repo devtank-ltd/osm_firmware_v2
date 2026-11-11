@@ -48,10 +48,13 @@ static void _adcs_dma_isr(void)
     );
     /* Now the dma is off running again, start processing the results */
 
+    unsigned errors = 0;
+
     for (unsigned i = 0; i < ADCS_BUFSIZ; i++) {
         uint16_t v = r_buf[i];
         if ((1 << 15) & v) {
             /* Error bit set, skip */
+            errors++;
             continue;
         }
         v &= ((1 << 12) - 1);
@@ -59,6 +62,9 @@ static void _adcs_dma_isr(void)
 
         osm_adc_loop_channel_add(adc_chan, v);
     }
+
+	if (errors)
+		osm_adc_debug("ADC sample errors %u/%u", errors, ADCS_BUFSIZ);
 
     osm_adc_loop_interate();
 }
